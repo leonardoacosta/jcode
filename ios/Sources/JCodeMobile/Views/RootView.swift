@@ -49,7 +49,11 @@ struct RootView: View {
     }
 }
 
-/// Connection status pill shown in the chat header.
+/// Connection status shown in the chat header.
+///
+/// Connected is the steady state, so it renders as a single calm mint dot;
+/// any degraded phase gets a labeled pill so the words appear exactly when
+/// they carry information.
 struct StatusPill: View {
     let phase: ConnectionPhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
