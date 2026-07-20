@@ -145,4 +145,13 @@ struct ChatView: View {
         }
         return name
     }
+
+    /// Strips the auth-route prefix ("claude-api:claude-fable-5" -> "claude-fable-5")
+    /// so the header shows the model, not plumbing.
+    private func shortModelName(_ name: String) -> String {
+        if let idx = name.firstIndex(of: ":"), idx != name.startIndex {
+            return String(name[name.index(after: idx)...])
+        }
+        return name
+    }
 }
