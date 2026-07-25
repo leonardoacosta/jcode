@@ -2,6 +2,11 @@ import JCodeKit
 import SwiftUI
 
 /// Collapsible tool call card with live status.
+///
+/// The header leads with the agent's stated intent ("Verify the build passes")
+/// rather than only the tool name, so scanning a transcript tells you *why*
+/// each call happened without expanding anything. Extraction lives in
+/// `ToolCallSummary` (unit tested, streaming-tolerant).
 struct ToolCallCard: View {
     let call: TranscriptEntry.ToolCall
     @State private var expanded = false
@@ -13,7 +18,7 @@ struct ToolCallCard: View {
                     expanded.toggle()
                 }
             } label: {
-                HStack(spacing: 8) {
+                HStack(alignment: .top, spacing: 8) {
                     statusIcon
                         .frame(width: 16, height: 16)
                     Text(call.name)
@@ -31,6 +36,7 @@ struct ToolCallCard: View {
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(Theme.textTertiary)
                         .rotationEffect(.degrees(expanded ? 180 : 0))
+                        .frame(width: 44, height: 44, alignment: .trailing)
                 }
                 .contentShape(Rectangle())
             }
@@ -107,24 +113,11 @@ struct ToolCallCard: View {
         }
     }
 
-    /// One-line human summary of the tool input for the collapsed header,
-    /// so most calls never need expanding (cheaper than a tap + read).
-    private var inputSummary: String? {
-        let input = call.input
-        guard !input.isEmpty else { return nil }
-        // Common shape: {"command": "..."} / {"file_path": "..."}; fall back
-        // to the raw (single-line) input when it is not JSON.
-        if let data = input.data(using: .utf8),
-            let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            for key in ["command", "file_path", "path", "query", "url"] {
-                if let value = obj[key] as? String, !value.isEmpty {
-                    return value
-                }
-            }
-        }
-        let flat = input.replacingOccurrences(of: "\n", with: " ")
-        return flat.isEmpty ? nil : flat
-    }
+    /// The agent's stated reason for this call, when it provided one.
+    private var intent: String? { ToolCallSummary.intent(from: call.input) }
+
+    /// What the call operates on (command, file, query) for the secondary line.
+    private var subject: String? { ToolCallSummary.subject(from: call.input) }
 
     private var statusText: String {
         switch call.status {
