@@ -1,15 +1,18 @@
 import JCodeKit
 import SwiftUI
 
-/// Settings sheet: model picker, reasoning effort, sessions, servers, info.
+/// Settings: the rarely-touched configuration surface, reached from a row inside
+/// `SessionsView`.
+///
+/// Frequent decisions moved out of here on purpose: session switching lives in
+/// `SessionsView` (top-left of chat) and model/reasoning in `ModelPickerView`
+/// (the header model label). What remains is the low-frequency, look-it-up work.
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.dismiss) private var dismiss
-    @State var renameDraft = ""
-    @State var showRename = false
-    @State var showPairNew = false
 
     /// Reasoning effort levels offered when the provider exposes the knob.
+    /// Owned here (rather than in the picker) because it is the canonical list
+    /// of provider-supported values.
     static let reasoningEfforts = ["none", "low", "medium", "high", "xhigh"]
 
     var body: some View {
@@ -88,7 +91,13 @@ struct SettingsView: View {
                 .accessibilityHint("Selects this model")
                 .accessibilityAddTraits(isActive ? [.isSelected] : [])
             }
+            SettingsInfoSection()
         }
+        .scrollContentBackground(.hidden)
+        .background(Theme.background)
+        .dynamicTypeSize(.large ... .accessibility3)
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
     }
 
     private var reasoningSection: some View {

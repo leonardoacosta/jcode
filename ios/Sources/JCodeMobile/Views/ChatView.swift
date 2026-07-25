@@ -5,7 +5,8 @@ import SwiftUI
 struct ChatView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.compactEdgePads) private var edgePads
-    @State private var showSettings = false
+    @State private var showSessions = false
+    @State private var showModelPicker = false
     @State private var sendCount = 0
 
     var body: some View {
@@ -59,8 +60,11 @@ struct ChatView: View {
                 onInterrupt: { model.interrupt() }
             )
         }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
+        .sheet(isPresented: $showSessions) {
+            SessionsView()
+        }
+        .sheet(isPresented: $showModelPicker) {
+            ModelPickerView()
         }
         .sensoryFeedback(.impact(weight: .light), trigger: sendCount)
         .sensoryFeedback(.impact(flexibility: .soft), trigger: finishedToolCallCount) {
@@ -108,7 +112,7 @@ struct ChatView: View {
             Spacer(minLength: 8)
             StatusPill(phase: model.session.phase)
             Button {
-                showSettings = true
+                showSessions = true
             } label: {
                 Image(systemName: "ellipsis")
                     .font(.subheadline.weight(.bold))
