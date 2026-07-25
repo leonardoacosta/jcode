@@ -1,6 +1,11 @@
+import JCodeKit
 import SwiftUI
 
 /// Message composer with send/interrupt.
+///
+/// Submit behavior (which draft sends, which queues, which is ignored) lives in
+/// `ComposerRules` so it is unit tested without a UI. This view only handles
+/// focus, the Return key, and rendering.
 struct Composer: View {
     @Environment(\.compactEdgePads) private var edgePads
     @FocusState private var isFocused: Bool
@@ -9,6 +14,8 @@ struct Composer: View {
     let isConnected: Bool
     let onSend: () -> Void
     let onInterrupt: () -> Void
+
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 10) {
@@ -86,7 +93,18 @@ struct Composer: View {
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: isProcessing)
     }
 
+    /// Send if the rules allow it, keeping the keyboard up for the next message.
+    private func submit() {
+        guard canSend else {
+            // Return on an all-whitespace draft: clear it rather than leaving
+            // stray newlines behind.
+            if !draft.isEmpty, ComposerRules.normalize(draft).isEmpty { draft = "" }
+            return
+        }
+        onSend()
+    }
+
     private var canSend: Bool {
-        isConnected && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        ComposerRules.canSubmit(draft: draft, isConnected: isConnected)
     }
 }
