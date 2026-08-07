@@ -400,6 +400,18 @@ impl Provider for OpenRouterProvider {
             // preserve the caller's model string exactly for custom endpoints.
             (trimmed.to_string(), None)
         };
+        if self.profile_id.is_some()
+            && !self.supports_provider_features
+            && !self.supports_model_catalog
+            && !self.static_models.is_empty()
+            && !self.static_models.iter().any(|id| id == &model_id)
+        {
+            anyhow::bail!(
+                "Model '{}' is not allowed by this provider profile. Choose one of: {}",
+                model_id,
+                self.static_models.join(", ")
+            );
+        }
         if let Some(profile_id) = self.profile_id.as_deref()
             && !jcode_base::provider_catalog::openai_compatible_profile_model_supports_chat(
                 profile_id, &model_id,

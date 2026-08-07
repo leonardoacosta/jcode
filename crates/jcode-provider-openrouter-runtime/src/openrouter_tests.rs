@@ -302,6 +302,37 @@ fn named_openai_compatible_provider_exposes_static_models_as_routes() {
 }
 
 #[test]
+fn named_openai_compatible_static_profile_rejects_unlisted_model_switches() {
+    let _lock = ENV_LOCK.lock();
+    let _namespace = EnvVarGuard::remove("JCODE_OPENROUTER_CACHE_NAMESPACE");
+
+    let profile = jcode_base::config::NamedProviderConfig {
+        base_url: "http://localhost:1234/v1".to_string(),
+        auth: jcode_base::config::NamedProviderAuth::None,
+        default_model: Some("allowed-model".to_string()),
+        models: vec![jcode_base::config::NamedProviderModelConfig {
+            id: "allowed-model".to_string(),
+            ..Default::default()
+        }],
+        ..Default::default()
+    };
+
+    let provider = OpenRouterProvider::new_named_openai_compatible("local-compat", &profile)
+        .expect("local named profile should initialize without auth");
+
+    provider
+        .set_model("local-compat:allowed-model")
+        .expect("listed model should be accepted");
+    let err = provider
+        .set_model("gpt-5.6-sol")
+        .expect_err("unlisted model should be rejected");
+    assert!(
+        err.to_string().contains("not allowed by this provider profile"),
+        "unexpected error: {err:#}"
+    );
+}
+
+#[test]
 fn direct_openai_compatible_provider_advertises_image_input_support() {
     let _lock = ENV_LOCK.lock();
     let _namespace = EnvVarGuard::remove("JCODE_OPENROUTER_CACHE_NAMESPACE");
