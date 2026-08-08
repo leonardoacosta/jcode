@@ -1,6 +1,14 @@
 # Category Rubrics
 
-Use these rubrics alongside the deterministic `score-artifacts` output. Each axis is scored 0 to 2.
+Use these rubrics alongside the deterministic `score-artifacts` output. The structured rubric JSON uses five shared dimensions scored 1 to 5:
+
+- Requirement coverage
+- Decomposition quality
+- Risk handling
+- Scope control
+- Executability
+
+The category emphasis below explains what to look for when assigning those shared scores.
 
 ## Shared axes
 

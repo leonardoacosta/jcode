@@ -18,10 +18,26 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "evals" / "task-decomposition" / "fixtures" / "catalog.json"
+DEFAULT_PROMPTS = ROOT / "evals" / "task-decomposition" / "prompts" / "catalog.json"
 REQUIRED_ARTIFACTS = ("proposal.md", "design.md", "tasks.md")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 TOKEN_RE = re.compile(r"[a-zA-Z0-9_/-]+")
+BASELINE_MODES = (
+    "openspec-gold",
+    "jcode-no-openspec",
+    "jcode-openspec",
+    "jcode-openspec-orchestrated",
+)
+PROMPT_KINDS = ("original", "reconstructed")
+PROMPT_CONFIDENCE = ("high", "medium", "low")
+RUBRIC_DIMENSIONS = (
+    "requirement_coverage",
+    "decomposition_quality",
+    "risk_handling",
+    "scope_control",
+    "executability",
+)
 
 EXPECTED_CATEGORIES = {
     "free design/product choices",
@@ -152,6 +168,71 @@ def find_fixture(catalog: dict[str, Any], fixture_id: str) -> dict[str, Any]:
     raise EvalError(f"unknown fixture id: {fixture_id}")
 
 
+def load_prompt_catalog(path: Path = DEFAULT_PROMPTS) -> dict[str, Any]:
+    data = load_catalog(path)
+    if data.get("version") != 1:
+        raise EvalError("prompt catalog version must be 1")
+    prompts = data.get("prompts")
+    if not isinstance(prompts, list):
+        raise EvalError("prompt catalog prompts must be an array")
+    return data
+
+
+def validate_prompt_catalog(path: Path = DEFAULT_PROMPTS, catalog_path: Path = DEFAULT_CATALOG) -> dict[str, Any]:
+    fixture_catalog = load_catalog(catalog_path)
+    fixture_ids = {fixture.get("id") for fixture in fixture_catalog.get("fixtures", []) if isinstance(fixture, dict)}
+    data = load_prompt_catalog(path)
+    failures: list[str] = []
+    prompts = data["prompts"]
+    seen: set[str] = set()
+
+    for index, prompt in enumerate(prompts):
+        prefix = f"prompts[{index}]"
+        if not isinstance(prompt, dict):
+            failures.append(f"{prefix} must be an object")
+            continue
+        required = {"fixture_id", "kind", "confidence", "source", "prompt", "notes"}
+        missing = sorted(required - set(prompt))
+        extra = sorted(set(prompt) - required)
+        if missing:
+            failures.append(f"{prefix} missing keys: {', '.join(missing)}")
+        if extra:
+            failures.append(f"{prefix} has unknown keys: {', '.join(extra)}")
+        fixture_id = prompt.get("fixture_id")
+        if not isinstance(fixture_id, str) or not ID_RE.match(fixture_id):
+            failures.append(f"{prefix}.fixture_id must be kebab-case")
+        elif fixture_id not in fixture_ids:
+            failures.append(f"{prefix}.fixture_id is not in fixture catalog: {fixture_id}")
+        elif fixture_id in seen:
+            failures.append(f"duplicate prompt fixture_id: {fixture_id}")
+        else:
+            seen.add(fixture_id)
+        if prompt.get("kind") not in PROMPT_KINDS:
+            failures.append(f"{prefix}.kind must be one of: {', '.join(PROMPT_KINDS)}")
+        if prompt.get("confidence") not in PROMPT_CONFIDENCE:
+            failures.append(f"{prefix}.confidence must be one of: {', '.join(PROMPT_CONFIDENCE)}")
+        for key in ("source", "prompt", "notes"):
+            if not isinstance(prompt.get(key), str) or not prompt.get(key):
+                failures.append(f"{prefix}.{key} must be a non-empty string")
+
+    result = {
+        "catalog": str(path),
+        "prompt_count": len(prompts),
+        "fixture_ids": sorted(seen),
+        "failures": failures,
+    }
+    if failures:
+        raise EvalError(json.dumps(result, indent=2))
+    return result
+
+
+def find_prompt(prompt_catalog: dict[str, Any], fixture_id: str) -> dict[str, Any]:
+    for prompt in prompt_catalog.get("prompts", []):
+        if prompt.get("fixture_id") == fixture_id:
+            return prompt
+    raise EvalError(f"missing prompt metadata for fixture: {fixture_id}")
+
+
 def require_repo_root(fixture: dict[str, Any], roots: dict[str, Path]) -> Path:
     project = fixture["project"]
     root = roots.get(project)
@@ -194,6 +275,47 @@ def materialize(args: argparse.Namespace) -> dict[str, Any]:
     }
     (output / ".jcode-eval-fixture.json").write_text(json.dumps(metadata, indent=2) + "\n")
     return {"fixture": fixture["id"], "output": str(output), "metadata": metadata}
+
+
+def prepare_run(args: argparse.Namespace) -> dict[str, Any]:
+    catalog = load_catalog(args.catalog)
+    prompt_catalog = load_prompt_catalog(args.prompts)
+    fixture = find_fixture(catalog, args.fixture)
+    prompt = find_prompt(prompt_catalog, fixture["id"])
+    roots = parse_repo_roots(args.repo_root)
+    repo = require_repo_root(fixture, roots)
+    verify_commit(repo, fixture["base_commit"])
+    verify_commit(repo, fixture["gold_proposal_commit"])
+    output = args.output.expanduser().resolve()
+    if output.exists():
+        raise EvalError(f"output already exists, refusing to prepare run: {output}")
+    if args.baseline_mode not in BASELINE_MODES:
+        raise EvalError(f"baseline mode must be one of: {', '.join(BASELINE_MODES)}")
+    return {
+        "fixture": fixture["id"],
+        "category": fixture["category"],
+        "project": fixture["project"],
+        "baseline_mode": args.baseline_mode,
+        "repo_root": str(repo),
+        "output": str(output),
+        "base_commit": fixture["base_commit"],
+        "gold_proposal_commit": fixture["gold_proposal_commit"],
+        "change_slug": fixture["change_slug"],
+        "prompt": {
+            "kind": prompt["kind"],
+            "confidence": prompt["confidence"],
+            "source": prompt["source"],
+            "text": prompt["prompt"],
+        },
+        "will_materialize": False,
+        "will_run_model": False,
+        "next_manual_steps": [
+            "materialize the fixture when ready to execute",
+            "run the selected baseline mode in the materialized checkout",
+            "save generated OpenSpec artifacts under the output path",
+            "score artifacts and apply rubric review",
+        ],
+    }
 
 
 def git_show(repo: Path, commit: str, rel: str) -> str | None:
@@ -269,6 +391,64 @@ def score_artifacts(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def validate_rubric_score(args: argparse.Namespace) -> dict[str, Any]:
+    catalog = load_catalog(args.catalog)
+    data = load_catalog(args.score)
+    failures: list[str] = []
+    if data.get("version") != 1:
+        failures.append("version must be 1")
+    fixture_id = data.get("fixture_id")
+    if not isinstance(fixture_id, str) or not ID_RE.match(fixture_id):
+        failures.append("fixture_id must be kebab-case")
+    else:
+        try:
+            find_fixture(catalog, fixture_id)
+        except EvalError:
+            failures.append(f"fixture_id is not in fixture catalog: {fixture_id}")
+    baseline_mode = data.get("baseline_mode")
+    if baseline_mode not in BASELINE_MODES:
+        failures.append(f"baseline_mode must be one of: {', '.join(BASELINE_MODES)}")
+    if not isinstance(data.get("reviewer"), str) or not data.get("reviewer"):
+        failures.append("reviewer must be a non-empty string")
+
+    scores = data.get("scores")
+    notes = data.get("notes")
+    if not isinstance(scores, dict):
+        failures.append("scores must be an object")
+        scores = {}
+    if not isinstance(notes, dict):
+        failures.append("notes must be an object")
+        notes = {}
+    extra_scores = sorted(set(scores) - set(RUBRIC_DIMENSIONS))
+    extra_notes = sorted(set(notes) - set(RUBRIC_DIMENSIONS))
+    if extra_scores:
+        failures.append("scores has unknown dimensions: " + ", ".join(extra_scores))
+    if extra_notes:
+        failures.append("notes has unknown dimensions: " + ", ".join(extra_notes))
+    for dimension in RUBRIC_DIMENSIONS:
+        score = scores.get(dimension)
+        if not isinstance(score, int) or not 1 <= score <= 5:
+            failures.append(f"scores.{dimension} must be an integer from 1 to 5")
+        note = notes.get(dimension)
+        if not isinstance(note, str) or not note:
+            failures.append(f"notes.{dimension} must be a non-empty string")
+
+    average = 0.0
+    if not failures:
+        average = round(sum(scores[dimension] for dimension in RUBRIC_DIMENSIONS) / len(RUBRIC_DIMENSIONS), 2)
+    result = {
+        "score_file": str(args.score),
+        "fixture": fixture_id,
+        "baseline_mode": baseline_mode,
+        "average": average,
+        "dimensions": list(RUBRIC_DIMENSIONS),
+        "failures": failures,
+    }
+    if failures:
+        raise EvalError(json.dumps(result, indent=2))
+    return result
+
+
 def emit(result: dict[str, Any]) -> None:
     print(json.dumps(result, indent=2, sort_keys=True))
 
@@ -280,6 +460,16 @@ def main(argv: list[str]) -> int:
 
     sub.add_parser("validate-catalog", help="validate the checked-in fixture catalog")
 
+    prompt_parser = sub.add_parser("validate-prompt-catalog", help="validate the checked-in prompt catalog")
+    prompt_parser.add_argument("--prompts", type=Path, default=DEFAULT_PROMPTS)
+
+    prepare_parser = sub.add_parser("prepare-run", help="validate a fixture run plan without materializing or running models")
+    prepare_parser.add_argument("--fixture", required=True)
+    prepare_parser.add_argument("--output", required=True, type=Path)
+    prepare_parser.add_argument("--repo-root", action="append", default=[], help="project=/path/to/local/repo")
+    prepare_parser.add_argument("--prompts", type=Path, default=DEFAULT_PROMPTS)
+    prepare_parser.add_argument("--baseline-mode", required=True, choices=BASELINE_MODES)
+
     materialize_parser = sub.add_parser("materialize", help="create a base checkout for one fixture")
     materialize_parser.add_argument("--fixture", required=True)
     materialize_parser.add_argument("--output", required=True, type=Path)
@@ -290,16 +480,29 @@ def main(argv: list[str]) -> int:
     score_parser.add_argument("--candidate", required=True, type=Path)
     score_parser.add_argument("--repo-root", action="append", default=[], help="project=/path/to/local/repo")
 
+    rubric_parser = sub.add_parser("validate-rubric-score", help="validate a human rubric score JSON file")
+    rubric_parser.add_argument("--score", required=True, type=Path)
+
     args = parser.parse_args(argv)
     try:
         if args.command == "validate-catalog":
             emit(validate_catalog(args.catalog))
+        elif args.command == "validate-prompt-catalog":
+            validate_catalog(args.catalog)
+            emit(validate_prompt_catalog(args.prompts, args.catalog))
+        elif args.command == "prepare-run":
+            validate_catalog(args.catalog)
+            validate_prompt_catalog(args.prompts, args.catalog)
+            emit(prepare_run(args))
         elif args.command == "materialize":
             validate_catalog(args.catalog)
             emit(materialize(args))
         elif args.command == "score-artifacts":
             validate_catalog(args.catalog)
             emit(score_artifacts(args))
+        elif args.command == "validate-rubric-score":
+            validate_catalog(args.catalog)
+            emit(validate_rubric_score(args))
         else:  # pragma: no cover
             raise EvalError(f"unsupported command {args.command}")
     except EvalError as exc:

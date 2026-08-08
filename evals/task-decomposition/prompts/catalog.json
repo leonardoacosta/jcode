@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "prompts": [
+    {
+      "fixture_id": "free-design-otaku-staff-console",
+      "kind": "reconstructed",
+      "confidence": "medium",
+      "source": "reconstructed from fixture metadata and gold proposal slug refresh-staff-operations-console",
+      "prompt": "Create an OpenSpec proposal for refreshing the Otaku Odyssey staff operations console. Focus on the staff-facing operations routes, preserve existing role and permission boundaries, identify reusable patterns, and produce proposal, design, task checklist, and delta spec artifacts before implementation.",
+      "notes": "Pilot free-design fixture. Replace with original session prompt if mined later."
+    },
+    {
+      "fixture_id": "infra-civalent-dotenvx-management",
+      "kind": "reconstructed",
+      "confidence": "medium",
+      "source": "reconstructed from fixture metadata and gold proposal slug align-dotenvx-environment-management",
+      "prompt": "Create an OpenSpec proposal to align Civalent environment management around dotenvx. Cover encrypted environment files, server/client boundaries, Next.js instrumentation bootstrap, deployment tracing constraints, rollback risks, and verification gates without implementing the change.",
+      "notes": "Pilot infra fixture. Replace with original session prompt if mined later."
+    },
+    {
+      "fixture_id": "business-tavern-session-controls",
+      "kind": "reconstructed",
+      "confidence": "medium",
+      "source": "reconstructed from fixture metadata and gold proposal slug update-session-controls",
+      "prompt": "Create an OpenSpec proposal for updating Tavern Ledger session controls. Account for DM and player roles, lobby/session state transitions, live controls, view permissions, API and UI surfaces, and executable tasks before implementation.",
+      "notes": "Pilot business-logic fixture. Replace with original session prompt if mined later."
+    }
+  ]
+}

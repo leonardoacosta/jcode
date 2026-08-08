@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Jcode task decomposition rubric score",
+  "type": "object",
+  "required": ["version", "fixture_id", "baseline_mode", "reviewer", "scores", "notes"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "fixture_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+    "baseline_mode": {
+      "type": "string",
+      "enum": ["openspec-gold", "jcode-no-openspec", "jcode-openspec", "jcode-openspec-orchestrated"]
+    },
+    "reviewer": { "type": "string", "minLength": 1 },
+    "scores": {
+      "type": "object",
+      "required": ["requirement_coverage", "decomposition_quality", "risk_handling", "scope_control", "executability"],
+      "additionalProperties": false,
+      "properties": {
+        "requirement_coverage": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "decomposition_quality": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "risk_handling": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "scope_control": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "executability": { "type": "integer", "minimum": 1, "maximum": 5 }
+      }
+    },
+    "notes": {
+      "type": "object",
+      "required": ["requirement_coverage", "decomposition_quality", "risk_handling", "scope_control", "executability"],
+      "additionalProperties": false,
+      "properties": {
+        "requirement_coverage": { "type": "string" },
+        "decomposition_quality": { "type": "string" },
+        "risk_handling": { "type": "string" },
+        "scope_control": { "type": "string" },
+        "executability": { "type": "string" }
+      }
+    }
+  }
+}

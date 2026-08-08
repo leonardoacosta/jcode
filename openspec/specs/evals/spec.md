@@ -1,7 +1,8 @@
 # evals Specification
 
 ## Purpose
-TBD - created by archiving change evaluate-task-decomposition-quality. Update Purpose after archive.
+
+Define the repository's evaluation surfaces for measuring Jcode planning and task-decomposition behavior against historical OpenSpec proposal work.
 ## Requirements
 ### Requirement: Task decomposition fixture catalog
 
@@ -32,4 +33,3 @@ The project SHALL support deterministic scoring of candidate OpenSpec artifacts 
 - **GIVEN** a fixture ID, a candidate OpenSpec change directory, and a `project=/path/to/repo` mapping for the fixture project
 - **WHEN** the scoring command is run
 - **THEN** it SHALL compare required artifact presence and token overlap against the gold change artifacts and emit a JSON score report.
-

@@ -23,6 +23,35 @@ python3 scripts/eval_task_decomposition.py materialize \
 
 The command refuses to overwrite an existing output path.
 
+## Validate prompt metadata
+
+Prompt records live separately from fixture metadata so original or reconstructed prompts can be improved without changing repository/commit facts.
+
+```bash
+python3 scripts/eval_task_decomposition.py validate-prompt-catalog
+```
+
+Each prompt record declares its fixture, whether it is `original` or `reconstructed`, confidence, source, prompt text, and notes. The initial prompt catalog covers the three pilot categories: free design/product, infra/platform/config, and business/domain logic.
+
+## Prepare a run without running evals
+
+Use `prepare-run` before a real eval to validate the local inputs and baseline mode. It checks the fixture, prompt metadata, local repository, base commit, gold proposal commit, output path, and selected baseline mode. It does not create a checkout and does not call Jcode or any model.
+
+```bash
+python3 scripts/eval_task_decomposition.py prepare-run \
+  --fixture free-design-otaku-staff-console \
+  --repo-root otaku-odyssey=/home/you/dev/otaku-odyssey \
+  --baseline-mode jcode-openspec \
+  --output "$JCODE_SCRATCH_DIR/evals/free-design-otaku-staff-console/jcode-openspec"
+```
+
+Supported baseline modes:
+
+- `openspec-gold`: historical gold proposal reference.
+- `jcode-no-openspec`: Jcode planning without OpenSpec guidance.
+- `jcode-openspec`: Jcode planning with OpenSpec guidance.
+- `jcode-openspec-orchestrated`: Jcode planning with OpenSpec guidance and orchestration.
+
 ## Score generated artifacts
 
 After an evaluator creates an OpenSpec change directory for the same fixture, score it against the historical gold proposal commit:
@@ -35,6 +64,17 @@ python3 scripts/eval_task_decomposition.py score-artifacts \
 ```
 
 The score is deterministic and heuristic. It checks required artifact presence and token overlap with the gold OpenSpec artifacts. It is not a semantic judge.
+
+## Validate human rubric scores
+
+After a candidate exists, a reviewer can record semantic scores in JSON and validate the structure before aggregation:
+
+```bash
+python3 scripts/eval_task_decomposition.py validate-rubric-score \
+  --score path/to/rubric-score.json
+```
+
+Rubric scores use five 1-5 dimensions: requirement coverage, decomposition quality, risk handling, scope control, and executability. The validator checks every score and note and emits the computed average.
 
 ## Recommended evaluation loop
 
