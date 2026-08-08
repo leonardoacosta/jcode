@@ -39,6 +39,7 @@ socket_path = os.environ.get("HERDR_SOCKET_PATH")
 event = os.environ.get("JCODE_HOOK_EVENT", "")
 session_id = os.environ.get("JCODE_HOOK_SESSION_ID") or None
 hook_source = os.environ.get("JCODE_HOOK_SOURCE") or None
+cwd = os.environ.get("JCODE_HOOK_CWD") or None
 
 if not pane_id or not socket_path:
     raise SystemExit(0)
@@ -60,6 +61,47 @@ if not hook_source:
 
 seq = time.time_ns()
 request_id = f"{SOURCE}:{seq}:{random.randrange(1_000_000):06d}"
+
+
+def socket_request(request):
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    client.settimeout(0.5)
+    client.connect(socket_path)
+    client.sendall((json.dumps(request, separators=(",", ":")) + "\n").encode("utf-8"))
+    response_raw = b""
+    try:
+        response_raw = client.recv(4096)
+    except Exception:
+        pass
+    client.close()
+    if not response_raw:
+        return None
+    try:
+        return json.loads(response_raw.decode("utf-8", "replace"))
+    except Exception:
+        return None
+
+
+def pane_not_found(response):
+    return isinstance(response, dict) and response.get("error", {}).get("code") == "pane_not_found"
+
+
+def fallback_pane_for_cwd():
+    if not cwd:
+        return None
+    response = socket_request({"id": f"{SOURCE}:snapshot:{time.time_ns()}", "method": "session.snapshot", "params": {}})
+    snapshot = response.get("result", {}).get("snapshot") if isinstance(response, dict) else None
+    panes = snapshot.get("panes", []) if isinstance(snapshot, dict) else []
+    matches = []
+    for pane in panes:
+        if not isinstance(pane, dict):
+            continue
+        if pane.get("cwd") == cwd or pane.get("foreground_cwd") == cwd:
+            candidate = pane.get("pane_id")
+            if isinstance(candidate, str) and candidate:
+                matches.append(candidate)
+    unique = sorted(set(matches))
+    return unique[0] if len(unique) == 1 else None
 
 request = None
 if event == "session_start":
@@ -99,15 +141,12 @@ else:
     raise SystemExit(0)
 
 try:
-    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.settimeout(0.5)
-    client.connect(socket_path)
-    client.sendall((json.dumps(request, separators=(",", ":")) + "\n").encode("utf-8"))
-    try:
-        client.recv(4096)
-    except Exception:
-        pass
-    client.close()
+    response = socket_request(request)
+    if pane_not_found(response):
+        fallback_pane = fallback_pane_for_cwd()
+        if fallback_pane:
+            request["params"]["pane_id"] = fallback_pane
+            socket_request(request)
 except Exception:
     pass
 PY

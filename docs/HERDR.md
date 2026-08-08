@@ -42,6 +42,8 @@ session_end = [
 
 The adapter exits successfully without side effects unless it is running inside Herdr (`HERDR_ENV=1`) with `HERDR_SOCKET_PATH`, `HERDR_PANE_ID`, and `python3` available.
 
+If the inherited `HERDR_PANE_ID` is stale and Herdr replies `pane_not_found`, the adapter queries `session.snapshot` and retries only when exactly one live pane has `cwd` or `foreground_cwd` equal to `JCODE_HOOK_CWD`. This keeps moved/restored panes working without guessing when multiple panes share a directory.
+
 On Jcode `session_start`, the Herdr hook should send one newline-delimited JSON request to `HERDR_SOCKET_PATH`:
 
 ```json
@@ -96,6 +98,8 @@ A first-class integration cannot be shipped only as a remote detection manifest.
 5. Add Jcode process detection and a bundled screen manifest for idle, working, and blocked UI states.
 6. Keep screen-manifest detection authoritative until Jcode exposes complete blocked, approval-result, interrupt, and exit transitions.
 7. Add integration versioning, replacement-source handling, schema/UI wiring, install/uninstall tests, restore-plan tests, detection fixtures, and documentation.
+
+Herdr versions that do not include `jcode` in their built-in agent kind list may accept `pane.report_agent_session` with `{"type":"ok"}` but still omit Jcode from the agent panel. That is a Herdr-side recognition gap, not a Jcode hook delivery failure.
 
 Relevant upstream files as of Herdr commit `eacea2daf0b72973173b728936b27478374f2cd2`:
 
