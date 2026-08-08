@@ -326,6 +326,84 @@ Agents are also able to spawn their own swarms autonomously. They have a swarm t
 
 ---
 
+## Workflows in concert
+
+jcode is most useful when its features are used as a loop instead of as isolated
+commands. The examples below are deliberately small and repeatable. They use the
+same repo, sessions, memory, side panel, swarm, and headless run capabilities that
+are available elsewhere in this README.
+
+### 1. Explore once, implement in parallel, verify once
+
+Use this for a change whose shape is not obvious yet:
+
+1. Start an interactive session in the repository and ask the agent to inspect the
+   current code, relevant history, and existing conventions.
+2. Ask it to save the decisions that should survive the session in memory. The next
+   session can retrieve those decisions instead of repeating the exploration.
+3. Spawn a swarm with focused roles: one agent maps the implementation surface, one
+   proposes tests, and one checks for compatibility or documentation impact. Keep
+   the coordinator responsible for the final design and merge decisions.
+4. Have the coordinator write the plan or diff to the side panel. The panel can show
+   a live file, a proposed diff, or a Mermaid diagram while the workers continue.
+5. Run the finished behavior non-interactively as a smoke test:
+
+   ```bash
+   jcode run "Run the focused tests for this change and report failures with file and line numbers."
+   ```
+
+   This separates discovery, parallel work, review, and verification while keeping
+   the result in one observable session.
+
+### 2. Build a provider profile, prove it, then reuse it
+
+Use this when a team wants a repeatable model setup without putting a key in shell
+history:
+
+```bash
+printf '%s' "$MY_API_KEY" | jcode provider add team-api \
+  --base-url https://llm.example.com/v1 \
+  --model my-model-id \
+  --api-key-stdin \
+  --set-default \
+  --json
+
+jcode --provider-profile team-api auth-test \
+  --prompt 'Reply exactly JCODE_PROVIDER_SETUP_OK'
+
+jcode --provider-profile team-api run \
+  'Summarize the current repository status in five bullets.'
+```
+
+The first command creates a named profile and keeps the secret out of command-line
+arguments. The second is a deterministic setup check. The third makes the profile
+the reusable input to a headless repository workflow. A local server follows the
+same pattern with `--no-api-key`.
+
+### 3. Make a jcode change and test the binary that actually serves sessions
+
+Use this when developing jcode itself. A normal `cargo build` is not enough because
+interactive sessions are served by a long-lived daemon. The repository's runtime
+verification contract is:
+
+```bash
+cargo build --profile selfdev
+./target/selfdev/jcode run --no-update \
+  --socket /run/user/1000/jcode-mytest.sock \
+  'Exercise the changed behavior and report the observed result.'
+```
+
+For a full self-development cycle, `jcode self-dev --build` rebuilds and restarts
+the active daemon. Use the private socket form when you need an isolated check that
+does not disturb the shared server or another user's session. Pair the run with a
+side-panel diff and a swarm reviewer when the change crosses multiple modules.
+
+These workflows have a common shape: establish durable context, parallelize only
+independent work, keep a human-readable artifact visible, and finish with a command
+whose output can be checked independently of the conversation.
+
+---
+
 ## OAuth and Providers
 
 jcode works with subscription-backed OAuth flows and many provider integrations, so you can use the models you already pay for and still fall back to direct API providers when needed.
