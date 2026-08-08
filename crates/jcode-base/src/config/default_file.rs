@@ -548,9 +548,13 @@ swarm_max_concurrent_agents = 32
 #
 # Runs when a session becomes active. Extra: JCODE_HOOK_SOURCE
 # ("create"/"attach"/"resume").
+# Herdr session identity example:
+# session_start = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
 # session_start = ""
 #
 # Runs when a session closes normally. Extra: JCODE_HOOK_SOURCE ("close").
+# Herdr normal-release example:
+# session_end = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
 # session_end = ""
 #
 # Gate hook before every tool call. Receives JCODE_HOOK_TOOL_NAME and the tool

@@ -18,6 +18,30 @@ Jcode already:
 
 The initial upstream Herdr integration should provide **native session identity plus screen-manifest state**, matching Herdr's Claude Code and Codex model. Jcode's current hooks reliably identify session and turn boundaries, but do not yet provide a complete authoritative `blocked` lifecycle. Reporting only `working` and `idle` as lifecycle authority would suppress Herdr's screen fallback and make approval/question detection worse.
 
+Jcode ships a hook adapter at `scripts/jcode-herdr-agent-state.sh` for this safe first integration. Add it as an additional hook command rather than replacing existing user hooks:
+
+```toml
+[hooks]
+session_start = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
+session_end = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
+```
+
+When composing with existing hooks, keep every command in the array:
+
+```toml
+[hooks]
+session_start = [
+  "~/bin/my-existing-session-hook",
+  "/path/to/jcode/scripts/jcode-herdr-agent-state.sh session",
+]
+session_end = [
+  "~/bin/my-existing-session-end-hook",
+  "/path/to/jcode/scripts/jcode-herdr-agent-state.sh session",
+]
+```
+
+The adapter exits successfully without side effects unless it is running inside Herdr (`HERDR_ENV=1`) with `HERDR_SOCKET_PATH`, `HERDR_PANE_ID`, and `python3` available.
+
 On Jcode `session_start`, the Herdr hook should send one newline-delimited JSON request to `HERDR_SOCKET_PATH`:
 
 ```json
@@ -47,6 +71,19 @@ jcode --resume <agent_session_id>
 ```
 
 Jcode session IDs are opaque strings and fit Herdr's ID-based session reference model. No transcript path is needed.
+
+On Jcode `session_end`, the adapter sends `pane.release_agent` for the same `("herdr:jcode", "jcode")` source/agent pair. This clears normal closed sessions without claiming turn-state authority.
+
+## Hook mapping
+
+| Jcode hook | Herdr action now | Rationale |
+| --- | --- | --- |
+| `session_start` | Active: `pane.report_agent_session` with `agent_session_id = JCODE_HOOK_SESSION_ID`. | Gives Herdr stable native session identity and enables restore with `jcode --resume <id>`. |
+| `session_end` | Active: `pane.release_agent`. | Clears Herdr authority on normal close without inferring working/idle state. |
+| `turn_start` | No-op for Herdr authority. | It observes work beginning, but cannot distinguish ordinary thinking from approval/question blocking. |
+| `turn_end` | No-op for Herdr authority. | It observes a turn ending, but using it as durable `idle` could mask later blocked or interrupted states. |
+| `pre_tool` | No-op for Herdr authority. | It is a gate for tool policy, not a complete agent-state transition. |
+| `post_tool` | No-op for Herdr authority. | It observes tool completion only; text streaming, approvals, and interrupts happen outside this boundary. |
 
 ## Required Herdr-side work
 
