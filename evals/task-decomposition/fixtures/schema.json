@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Jcode task decomposition eval fixture catalog",
+  "type": "object",
+  "required": ["version", "fixtures"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "fixtures": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "project",
+          "remote",
+          "base_commit",
+          "gold_proposal_commit",
+          "change_slug",
+          "expected_artifacts",
+          "notes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "category": { "type": "string", "minLength": 1 },
+          "project": { "type": "string", "minLength": 1 },
+          "remote": { "type": "string", "minLength": 1 },
+          "base_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "gold_proposal_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "change_slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "expected_artifacts": {
+            "type": "array",
+            "minItems": 3,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

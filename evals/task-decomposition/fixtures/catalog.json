@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "fixtures": [
+    {
+      "id": "free-design-otaku-staff-console",
+      "category": "free design/product choices",
+      "project": "otaku-odyssey",
+      "remote": "git@github.com:Priceless-Development/otaku-odyssey.git",
+      "base_commit": "2645f45e354dd5d2f3cc036d70d862d12a8c75a2",
+      "gold_proposal_commit": "f20d93f43355e27d200c020c5b43e4883087d586",
+      "change_slug": "refresh-staff-operations-console",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Large ambiguous staff-console redesign with many route surfaces, reusable patterns, and preservation constraints."
+    },
+    {
+      "id": "free-design-shepherd-configurable-chrome",
+      "category": "free design/product choices",
+      "project": "shepherd",
+      "remote": "local-or-private:shepherd",
+      "base_commit": "9bd33861aaf9494ad57050c625e770e38a1a11ae",
+      "gold_proposal_commit": "4d8e5194a53ba404113561b592ce29efaa632d8e",
+      "change_slug": "surface-configurable-chrome",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Product/UX architecture choice for configurable terminal chrome, dock geometry, focus behavior, and persistence boundaries."
+    },
+    {
+      "id": "business-tavern-session-controls",
+      "category": "business/domain logic",
+      "project": "tavern-ledger",
+      "remote": "local-or-private:tavern-ledger",
+      "base_commit": "1175194b6a431544cbea82452431c02ddca8ea58",
+      "gold_proposal_commit": "349346e0954eb3385544c23921fd438a830a09b4",
+      "change_slug": "update-session-controls",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Domain-heavy RPG session/lobby model with DM/player roles, live states, control surfaces, and view permissions."
+    },
+    {
+      "id": "business-recon-coworker-profiles",
+      "category": "business/domain logic",
+      "project": "recon",
+      "remote": "local-or-private:recon",
+      "base_commit": "11ad0840eb02ccf59decd6d895d9e832197eda0e",
+      "gold_proposal_commit": "c45f9adf1eaf36553e99bb536d770eb808cd703c",
+      "change_slug": "add-evaluative-coworker-profiles",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Complex product semantics around coworker profiles, privacy, evidence thresholds, refresh cadence, and validator controls."
+    },
+    {
+      "id": "infra-civalent-dotenvx-management",
+      "category": "infra/platform/config",
+      "project": "civalent",
+      "remote": "local-or-private:civalent",
+      "base_commit": "067e4a33d582dd82f9300259440e5910a15e0051",
+      "gold_proposal_commit": "f8b226a379470b4c5e01c1aef15f16d7f6d2bf7e",
+      "change_slug": "align-dotenvx-environment-management",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Runtime environment boundary, encrypted env files, Next.js instrumentation bootstrap, and deploy tracing constraints."
+    },
+    {
+      "id": "infra-civalent-env-logging-standard",
+      "category": "infra/platform/config",
+      "project": "civalent",
+      "remote": "local-or-private:civalent",
+      "base_commit": "198adbad4d38a1aa55df410e1b9383e69685495a",
+      "gold_proposal_commit": "ad47980ae32c0096f38c1d561d624ad8a9dbf9a3",
+      "change_slug": "enforce-civalent-environment-and-logging-standard",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Repository-wide environment and secret-safe logging standards with typed boundaries and regression contracts."
+    },
+    {
+      "id": "e2e-otaku-fleet-standards",
+      "category": "test strategy/e2e remediation",
+      "project": "otaku-odyssey",
+      "remote": "git@github.com:Priceless-Development/otaku-odyssey.git",
+      "base_commit": "113feff477b8e377a71e872ef3e0846b6789650c",
+      "gold_proposal_commit": "dfc779e2b67b7ab97e93d8d58af03b45f255ed85",
+      "change_slug": "align-otaku-e2e-standards",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Fleet-standard Playwright strategy with auth setup, sharding, cleanup, reporting, and gates."
+    },
+    {
+      "id": "e2e-tavern-failure-remediation",
+      "category": "test strategy/e2e remediation",
+      "project": "tavern-ledger",
+      "remote": "local-or-private:tavern-ledger",
+      "base_commit": "9069276b3f2039b3ae05a359c443de8c62916aff",
+      "gold_proposal_commit": "bba49d48e6966756bb4aedd34be1787740fa5243",
+      "change_slug": "fix-remaining-e2e-failures",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Failure-remediation decomposition across API routers, web UI, mobile, and WebSocket fallbacks."
+    },
+    {
+      "id": "data-mesh-recon-pkm-migration",
+      "category": "data/schema/migration",
+      "project": "mesh",
+      "remote": "local-or-private:mesh",
+      "base_commit": "ce27a292e8152b2cb97aa1d26ae48f4e4b388fa2",
+      "gold_proposal_commit": "e48a11c1066e16d294ab532602bd146c30b1c023",
+      "change_slug": "extract-recon-pkm-repo",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Ownership migration of PKM notes/evidence/manifests/indexes with loopback API and sidecar retirement."
+    },
+    {
+      "id": "security-recon-local-synthesis-shim",
+      "category": "auth/security/permissions",
+      "project": "recon",
+      "remote": "local-or-private:recon",
+      "base_commit": "21ab755d5d030ae998998517d155b6f085223769",
+      "gold_proposal_commit": "63423340c52a80f2f56a484991b0e2526c9dfebb",
+      "change_slug": "add-local-synthesis-shim",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Authenticated local synthesis bridge with loopback service, provider boundaries, and daemon behavior."
+    },
+    {
+      "id": "observability-civalent-telemetry-retirement",
+      "category": "observability/telemetry",
+      "project": "civalent",
+      "remote": "local-or-private:civalent",
+      "base_commit": "c5f665536079faf23c1da35fbf510fd9971ca990",
+      "gold_proposal_commit": "8547d44b12d42b012943ada89c0a09805cec87c0",
+      "change_slug": "retire-stale-telemetry-vendors",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Telemetry provider retirement with Loki receipt proof, credential revocation, and logging/drain constraints."
+    },
+    {
+      "id": "tooling-pi-31-tool-abi",
+      "category": "developer tooling/agent integration",
+      "project": "pi",
+      "remote": "local-or-private:pi",
+      "base_commit": "8d321f47d712c949e25c0e046014f8090d50e0b1",
+      "gold_proposal_commit": "3e6c84dce87307b4db66523728a3d1e9f40d943f",
+      "change_slug": "replace-pi-agent-surface-with-31-tool-abi",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Agent tool ABI replacement across 31 catalog entries with parity, memory, discovery, cutover, and rollback gates."
+    },
+    {
+      "id": "refactor-otaku-residual-entropy",
+      "category": "refactor/dead-code/entropy cleanup",
+      "project": "otaku-odyssey",
+      "remote": "git@github.com:Priceless-Development/otaku-odyssey.git",
+      "base_commit": "2f22438eefee79666680e32a9e0f0ea5d6934cde",
+      "gold_proposal_commit": "12124228f40a401efc20236de9e48066d9423f83",
+      "change_slug": "prune-residual-code-entropy",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Large Fallow-driven cleanup with dependency hygiene, private type leaks, duplicates, suppressions, and public-surface exceptions."
+    },
+    {
+      "id": "ui-truly-three-pillar-polish",
+      "category": "UI/UX polish",
+      "project": "truly-atelier",
+      "remote": "local-or-private:truly-atelier",
+      "base_commit": "599d9996214fd10efad776a22df17fd58c133b69",
+      "gold_proposal_commit": "e02b4c1ff27f1413656bdddb63d1c0bef7c205ba",
+      "change_slug": "polish-three-pillar-hover-and-hero-ornament-size",
+      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
+      "notes": "Small but subjective visual polish fixture with hover affordance, hero ornament sizing, and editorial restraint."
+    }
+  ]
+}
