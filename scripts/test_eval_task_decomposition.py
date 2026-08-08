@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -44,7 +45,8 @@ class EvalPreparationTests(unittest.TestCase):
             )
 
             with patch.object(module, "verify_commit") as verify_commit:
-                result = module.prepare_run(args)
+                with patch.object(module, "run", return_value=subprocess.CompletedProcess([], 0, "", "")):
+                    result = module.prepare_run(args)
 
         self.assertEqual(result["fixture"], "free-design-otaku-staff-console")
         self.assertEqual(result["baseline_mode"], "jcode-openspec")
@@ -72,7 +74,34 @@ class EvalPreparationTests(unittest.TestCase):
 
             with self.assertRaisesRegex(module.EvalError, "missing prompt metadata"):
                 with patch.object(module, "verify_commit"):
-                    module.prepare_run(args)
+                    with patch.object(module, "run", return_value=subprocess.CompletedProcess([], 0, "", "")):
+                        module.prepare_run(args)
+
+    def test_prepare_run_rejects_contaminated_base_commit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            repo = tmp_path / "otaku"
+            repo.mkdir()
+            (repo / ".git").mkdir()
+            args = argparse.Namespace(
+                catalog=module.DEFAULT_CATALOG,
+                prompts=module.DEFAULT_PROMPTS,
+                fixture="free-design-otaku-staff-console",
+                repo_root=[f"otaku-odyssey={repo}"],
+                output=tmp_path / "out",
+                baseline_mode="jcode-openspec",
+            )
+
+            contaminated = subprocess.CompletedProcess(
+                [],
+                0,
+                "openspec/changes/refresh-staff-operations-console/proposal.md\n",
+                "",
+            )
+            with self.assertRaisesRegex(module.EvalError, "already contains"):
+                with patch.object(module, "verify_commit"):
+                    with patch.object(module, "run", return_value=contaminated):
+                        module.prepare_run(args)
 
     def test_validate_rubric_score_computes_average(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

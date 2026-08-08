@@ -249,12 +249,24 @@ def verify_commit(repo: Path, commit: str) -> None:
         raise EvalError(f"commit {commit} is not available in {repo}: {result.stderr.strip()}")
 
 
+def verify_change_absent_at_base(repo: Path, fixture: dict[str, Any]) -> None:
+    change_path = f"openspec/changes/{fixture['change_slug']}"
+    result = run(["git", "ls-tree", "-r", "--name-only", fixture["base_commit"], change_path], cwd=repo)
+    if result.returncode != 0:
+        raise EvalError(f"failed to inspect fixture base commit: {result.stderr.strip()}")
+    if result.stdout.strip():
+        raise EvalError(
+            f"fixture base commit already contains {change_path}; choose a commit before the proposal exists"
+        )
+
+
 def materialize(args: argparse.Namespace) -> dict[str, Any]:
     catalog = load_catalog(args.catalog)
     fixture = find_fixture(catalog, args.fixture)
     roots = parse_repo_roots(args.repo_root)
     repo = require_repo_root(fixture, roots)
     verify_commit(repo, fixture["base_commit"])
+    verify_change_absent_at_base(repo, fixture)
     output = args.output.expanduser().resolve()
     if output.exists():
         raise EvalError(f"output already exists, refusing to overwrite: {output}")
@@ -286,6 +298,7 @@ def prepare_run(args: argparse.Namespace) -> dict[str, Any]:
     repo = require_repo_root(fixture, roots)
     verify_commit(repo, fixture["base_commit"])
     verify_commit(repo, fixture["gold_proposal_commit"])
+    verify_change_absent_at_base(repo, fixture)
     output = args.output.expanduser().resolve()
     if output.exists():
         raise EvalError(f"output already exists, refusing to prepare run: {output}")
