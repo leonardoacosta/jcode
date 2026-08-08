@@ -9,8 +9,46 @@
       "base_commit": "7d1288ee60f21d1cdc7fece8db1cde797e0c986a",
       "gold_proposal_commit": "f20d93f43355e27d200c020c5b43e4883087d586",
       "change_slug": "refresh-staff-operations-console",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Large ambiguous staff-console redesign with many route surfaces, reusable patterns, and preservation constraints."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Large ambiguous staff-console redesign with many route surfaces, reusable patterns, and preservation constraints.",
+      "intent_contract": {
+        "user_intent": "Refresh the Otaku Odyssey staff console planning surface while preserving existing operational permissions and staff workflows.",
+        "scope_boundaries": {
+          "in_scope": [
+            "staff-facing console routes",
+            "shared staff navigation and layout patterns",
+            "role-aware operational states"
+          ],
+          "out_of_scope": [
+            "public customer experiences",
+            "billing/payment changes",
+            "new backend domains unrelated to staff operations"
+          ]
+        },
+        "expected_blast_radius": [
+          "routes",
+          "auth/permissions",
+          "packages",
+          "tests",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "billing/payment changes",
+          "public storefront redesign",
+          "new staff roles without explicit requirement"
+        ],
+        "ambiguity_traps": [
+          "under-scoping operations to a single route group",
+          "treating historical route-proposal count as required artifact shape",
+          "forgetting permission and tenant boundaries"
+        ],
+        "reference_notes": "Use the historical change to infer affected staff-console breadth and constraints, not to require exact route-proposal reproduction."
+      }
     },
     {
       "id": "free-design-shepherd-configurable-chrome",
@@ -20,8 +58,46 @@
       "base_commit": "9bd33861aaf9494ad57050c625e770e38a1a11ae",
       "gold_proposal_commit": "4d8e5194a53ba404113561b592ce29efaa632d8e",
       "change_slug": "surface-configurable-chrome",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Product/UX architecture choice for configurable terminal chrome, dock geometry, focus behavior, and persistence boundaries."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Product/UX architecture choice for configurable terminal chrome, dock geometry, focus behavior, and persistence boundaries.",
+      "intent_contract": {
+        "user_intent": "Plan configurable terminal chrome behavior with clear product trade-offs and persistence boundaries.",
+        "scope_boundaries": {
+          "in_scope": [
+            "chrome layout controls",
+            "dock geometry and focus behavior",
+            "user preference persistence"
+          ],
+          "out_of_scope": [
+            "terminal protocol replacement",
+            "unrelated session management",
+            "visual redesign outside chrome controls"
+          ]
+        },
+        "expected_blast_radius": [
+          "routes",
+          "packages",
+          "config/env",
+          "tests",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "replace terminal runtime",
+          "add unrelated workspace features",
+          "persist secrets in preferences"
+        ],
+        "ambiguity_traps": [
+          "over-specifying one visual choice as the only valid design",
+          "missing focus and persistence edge cases",
+          "ignoring rollback for saved preferences"
+        ],
+        "reference_notes": "Use the reference change to understand UX surfaces and persistence implications without requiring identical component boundaries."
+      }
     },
     {
       "id": "business-tavern-session-controls",
@@ -31,8 +107,46 @@
       "base_commit": "1175194b6a431544cbea82452431c02ddca8ea58",
       "gold_proposal_commit": "349346e0954eb3385544c23921fd438a830a09b4",
       "change_slug": "update-session-controls",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Domain-heavy RPG session/lobby model with DM/player roles, live states, control surfaces, and view permissions."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Domain-heavy RPG session/lobby model with DM/player roles, live states, control surfaces, and view permissions.",
+      "intent_contract": {
+        "user_intent": "Plan session control updates around DM/player roles, lobby/session states, and view permissions.",
+        "scope_boundaries": {
+          "in_scope": [
+            "session lifecycle controls",
+            "DM and player permissions",
+            "live lobby and table states"
+          ],
+          "out_of_scope": [
+            "unrelated campaign management",
+            "payments or subscriptions",
+            "new game systems unrelated to sessions"
+          ]
+        },
+        "expected_blast_radius": [
+          "routes",
+          "auth/permissions",
+          "data/schema",
+          "tests",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "payment features",
+          "campaign content authoring",
+          "new rules engine"
+        ],
+        "ambiguity_traps": [
+          "missing player-versus-DM state conflicts",
+          "collapsing lobby and active-session states",
+          "forgetting live update failure modes"
+        ],
+        "reference_notes": "Use the reference to infer domain invariants and affected session surfaces, not exact wording."
+      }
     },
     {
       "id": "business-recon-coworker-profiles",
@@ -42,8 +156,46 @@
       "base_commit": "11ad0840eb02ccf59decd6d895d9e832197eda0e",
       "gold_proposal_commit": "c45f9adf1eaf36553e99bb536d770eb808cd703c",
       "change_slug": "add-evaluative-coworker-profiles",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Complex product semantics around coworker profiles, privacy, evidence thresholds, refresh cadence, and validator controls."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Complex product semantics around coworker profiles, privacy, evidence thresholds, refresh cadence, and validator controls.",
+      "intent_contract": {
+        "user_intent": "Plan evaluative coworker profiles with privacy, evidence thresholds, refresh cadence, and validator controls.",
+        "scope_boundaries": {
+          "in_scope": [
+            "profile semantics",
+            "privacy and evidence policies",
+            "reviewer/validator controls"
+          ],
+          "out_of_scope": [
+            "public social network features",
+            "unsupported scraping expansion",
+            "unbounded automated judgments"
+          ]
+        },
+        "expected_blast_radius": [
+          "data/schema",
+          "auth/permissions",
+          "routes",
+          "tests",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "public profile publishing",
+          "secret data exposure",
+          "automated employment decisions"
+        ],
+        "ambiguity_traps": [
+          "missing privacy constraints",
+          "treating low-evidence summaries as facts",
+          "forgetting refresh and correction workflows"
+        ],
+        "reference_notes": "Use the reference for domain risk and control surfaces rather than exact evaluator taxonomy."
+      }
     },
     {
       "id": "infra-civalent-dotenvx-management",
@@ -53,8 +205,46 @@
       "base_commit": "35f778341ad7b4025271750a407a37a4a9f6779c",
       "gold_proposal_commit": "f8b226a379470b4c5e01c1aef15f16d7f6d2bf7e",
       "change_slug": "align-dotenvx-environment-management",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Runtime environment boundary, encrypted env files, Next.js instrumentation bootstrap, and deploy tracing constraints."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Runtime environment boundary, encrypted env files, Next.js instrumentation bootstrap, and deploy tracing constraints.",
+      "intent_contract": {
+        "user_intent": "Plan alignment of dotenvx environment management across local, CI, and deployed runtime boundaries.",
+        "scope_boundaries": {
+          "in_scope": [
+            "encrypted env file ownership",
+            "runtime bootstrap and instrumentation",
+            "deploy and CI loading paths"
+          ],
+          "out_of_scope": [
+            "secret rotation itself",
+            "provider migration unrelated to env loading",
+            "manual local-only hacks"
+          ]
+        },
+        "expected_blast_radius": [
+          "config/env",
+          "operations",
+          "packages",
+          "tests",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "printing secrets",
+          "changing production credentials",
+          "adopting a new hosting provider"
+        ],
+        "ambiguity_traps": [
+          "missing server/client env boundary",
+          "assuming local dotenv behavior matches deployment",
+          "forgetting startup observability"
+        ],
+        "reference_notes": "Use the reference to infer env/bootstrap/deploy surfaces and safety constraints, not exact file edits."
+      }
     },
     {
       "id": "infra-civalent-env-logging-standard",
@@ -64,8 +254,46 @@
       "base_commit": "198adbad4d38a1aa55df410e1b9383e69685495a",
       "gold_proposal_commit": "ad47980ae32c0096f38c1d561d624ad8a9dbf9a3",
       "change_slug": "enforce-civalent-environment-and-logging-standard",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Repository-wide environment and secret-safe logging standards with typed boundaries and regression contracts."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Repository-wide environment and secret-safe logging standards with typed boundaries and regression contracts.",
+      "intent_contract": {
+        "user_intent": "Plan repository-wide environment and secret-safe logging standards with typed boundaries and regression contracts.",
+        "scope_boundaries": {
+          "in_scope": [
+            "env validation standards",
+            "secret-safe logging policy",
+            "test and lint enforcement"
+          ],
+          "out_of_scope": [
+            "credential changes",
+            "unrelated telemetry vendor replacement",
+            "application feature redesign"
+          ]
+        },
+        "expected_blast_radius": [
+          "config/env",
+          "operations",
+          "tests",
+          "packages",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "logging secret values",
+          "rotating credentials",
+          "rewriting business logic"
+        ],
+        "ambiguity_traps": [
+          "missing client/server env split",
+          "confusing logging policy with observability migration",
+          "forgetting regression checks"
+        ],
+        "reference_notes": "Use the reference for policy and enforcement surfaces rather than exact rule names."
+      }
     },
     {
       "id": "e2e-otaku-fleet-standards",
@@ -75,8 +303,47 @@
       "base_commit": "113feff477b8e377a71e872ef3e0846b6789650c",
       "gold_proposal_commit": "dfc779e2b67b7ab97e93d8d58af03b45f255ed85",
       "change_slug": "align-otaku-e2e-standards",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Fleet-standard Playwright strategy with auth setup, sharding, cleanup, reporting, and gates."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Fleet-standard Playwright strategy with auth setup, sharding, cleanup, reporting, and gates.",
+      "intent_contract": {
+        "user_intent": "Plan alignment of Otaku Odyssey Playwright E2E tests with fleet standards for auth, sharding, cleanup, and reporting.",
+        "scope_boundaries": {
+          "in_scope": [
+            "auth fixtures",
+            "test data ownership",
+            "sharding and reporting",
+            "CI gates"
+          ],
+          "out_of_scope": [
+            "hiding failing tests",
+            "rewriting product features unnecessarily",
+            "manual-only QA replacement"
+          ]
+        },
+        "expected_blast_radius": [
+          "tests",
+          "auth/permissions",
+          "config/env",
+          "operations",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "skip broken tests without issue",
+          "change production auth semantics",
+          "remove coverage gates"
+        ],
+        "ambiguity_traps": [
+          "treating flakes as filters only",
+          "missing cleanup ownership",
+          "forgetting CI artifact/reporting behavior"
+        ],
+        "reference_notes": "Use the reference to infer standards and affected test infrastructure, not identical test names."
+      }
     },
     {
       "id": "e2e-tavern-failure-remediation",
@@ -86,8 +353,46 @@
       "base_commit": "9069276b3f2039b3ae05a359c443de8c62916aff",
       "gold_proposal_commit": "bba49d48e6966756bb4aedd34be1787740fa5243",
       "change_slug": "fix-remaining-e2e-failures",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Failure-remediation decomposition across API routers, web UI, mobile, and WebSocket fallbacks."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Failure-remediation decomposition across API routers, web UI, mobile, and WebSocket fallbacks.",
+      "intent_contract": {
+        "user_intent": "Plan remediation of remaining E2E failures across API, web, mobile, and real-time fallbacks.",
+        "scope_boundaries": {
+          "in_scope": [
+            "failure triage",
+            "API and UI fixes required by tests",
+            "WebSocket fallback coverage"
+          ],
+          "out_of_scope": [
+            "masking failures",
+            "new product scope unrelated to failing paths",
+            "deleting coverage without replacement"
+          ]
+        },
+        "expected_blast_radius": [
+          "tests",
+          "routes",
+          "packages",
+          "data/schema",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "blanket retries",
+          "test deletion",
+          "unrelated redesign"
+        ],
+        "ambiguity_traps": [
+          "confusing test infra defects with app defects",
+          "missing mobile/web parity",
+          "ignoring real-time fallback paths"
+        ],
+        "reference_notes": "Use the reference to infer failing-path breadth and ownership boundaries."
+      }
     },
     {
       "id": "data-mesh-recon-pkm-migration",
@@ -97,8 +402,46 @@
       "base_commit": "ce27a292e8152b2cb97aa1d26ae48f4e4b388fa2",
       "gold_proposal_commit": "e48a11c1066e16d294ab532602bd146c30b1c023",
       "change_slug": "extract-recon-pkm-repo",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Ownership migration of PKM notes/evidence/manifests/indexes with loopback API and sidecar retirement."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Ownership migration of PKM notes/evidence/manifests/indexes with loopback API and sidecar retirement.",
+      "intent_contract": {
+        "user_intent": "Plan extraction of Recon PKM data ownership with migration, indexes, sidecar retirement, and loopback API constraints.",
+        "scope_boundaries": {
+          "in_scope": [
+            "PKM notes/evidence ownership",
+            "migration and compatibility windows",
+            "loopback API and sidecar retirement"
+          ],
+          "out_of_scope": [
+            "unrelated note model redesign",
+            "data deletion without migration proof",
+            "new cloud storage provider"
+          ]
+        },
+        "expected_blast_radius": [
+          "data/schema",
+          "packages",
+          "operations",
+          "tests",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "drop existing evidence",
+          "unbounded schema redesign",
+          "secret-bearing fixture commits"
+        ],
+        "ambiguity_traps": [
+          "missing compatibility window",
+          "forgetting index rebuilds",
+          "retiring sidecar before receipt proof"
+        ],
+        "reference_notes": "Use the reference for migration surfaces and sequencing constraints rather than exact API shape."
+      }
     },
     {
       "id": "security-recon-local-synthesis-shim",
@@ -108,8 +451,46 @@
       "base_commit": "21ab755d5d030ae998998517d155b6f085223769",
       "gold_proposal_commit": "63423340c52a80f2f56a484991b0e2526c9dfebb",
       "change_slug": "add-local-synthesis-shim",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Authenticated local synthesis bridge with loopback service, provider boundaries, and daemon behavior."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Authenticated local synthesis bridge with loopback service, provider boundaries, and daemon behavior.",
+      "intent_contract": {
+        "user_intent": "Plan an authenticated local synthesis shim with loopback boundaries, provider isolation, and daemon behavior.",
+        "scope_boundaries": {
+          "in_scope": [
+            "loopback service contract",
+            "auth and provider trust boundaries",
+            "daemon startup and rollback"
+          ],
+          "out_of_scope": [
+            "remote public exposure",
+            "credential disclosure",
+            "full provider replacement"
+          ]
+        },
+        "expected_blast_radius": [
+          "auth/permissions",
+          "config/env",
+          "operations",
+          "tests",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "public network listener",
+          "printing credentials",
+          "bypassing provider auth"
+        ],
+        "ambiguity_traps": [
+          "missing fail-closed behavior",
+          "confusing local-only with unauthenticated",
+          "forgetting daemon lifecycle"
+        ],
+        "reference_notes": "Use the reference to infer security and daemon surfaces, not exact shim internals."
+      }
     },
     {
       "id": "observability-civalent-telemetry-retirement",
@@ -119,8 +500,46 @@
       "base_commit": "c5f665536079faf23c1da35fbf510fd9971ca990",
       "gold_proposal_commit": "8547d44b12d42b012943ada89c0a09805cec87c0",
       "change_slug": "retire-stale-telemetry-vendors",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Telemetry provider retirement with Loki receipt proof, credential revocation, and logging/drain constraints."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Telemetry provider retirement with Loki receipt proof, credential revocation, and logging/drain constraints.",
+      "intent_contract": {
+        "user_intent": "Plan retirement of stale telemetry vendors with replacement receipt proof, credential revocation, and logging/drain constraints.",
+        "scope_boundaries": {
+          "in_scope": [
+            "telemetry vendor inventory",
+            "receipt proof for replacements",
+            "credential revocation and drain cleanup"
+          ],
+          "out_of_scope": [
+            "removing observability entirely",
+            "rotating unrelated secrets",
+            "rewriting unrelated logging"
+          ]
+        },
+        "expected_blast_radius": [
+          "operations",
+          "config/env",
+          "packages",
+          "tests",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "delete telemetry without replacement proof",
+          "expose tokens",
+          "change product analytics semantics unnecessarily"
+        ],
+        "ambiguity_traps": [
+          "missing receipt proof",
+          "forgetting drains and env vars",
+          "treating package removal as sufficient"
+        ],
+        "reference_notes": "Use the reference to infer retirement sequencing and proof requirements."
+      }
     },
     {
       "id": "tooling-pi-31-tool-abi",
@@ -130,8 +549,46 @@
       "base_commit": "8d321f47d712c949e25c0e046014f8090d50e0b1",
       "gold_proposal_commit": "3e6c84dce87307b4db66523728a3d1e9f40d943f",
       "change_slug": "replace-pi-agent-surface-with-31-tool-abi",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Agent tool ABI replacement across 31 catalog entries with parity, memory, discovery, cutover, and rollback gates."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Agent tool ABI replacement across 31 catalog entries with parity, memory, discovery, cutover, and rollback gates.",
+      "intent_contract": {
+        "user_intent": "Plan replacement of the Pi agent surface with a 31-tool ABI while preserving parity, memory, discovery, cutover, and rollback.",
+        "scope_boundaries": {
+          "in_scope": [
+            "tool ABI catalog",
+            "parity and discovery contracts",
+            "cutover and rollback gates"
+          ],
+          "out_of_scope": [
+            "unrelated agent behavior redesign",
+            "dropping existing tool capabilities",
+            "changing memory semantics without migration"
+          ]
+        },
+        "expected_blast_radius": [
+          "packages",
+          "tests",
+          "docs/specs",
+          "operations",
+          "config/env"
+        ],
+        "non_goals": [
+          "remove tools without parity",
+          "skip rollback",
+          "couple to one local machine state"
+        ],
+        "ambiguity_traps": [
+          "missing catalog completeness",
+          "forgetting memory compatibility",
+          "underestimating cutover blast radius"
+        ],
+        "reference_notes": "Use the reference for ABI breadth and cutover risk, not exact tool ordering."
+      }
     },
     {
       "id": "refactor-otaku-residual-entropy",
@@ -141,8 +598,47 @@
       "base_commit": "2f22438eefee79666680e32a9e0f0ea5d6934cde",
       "gold_proposal_commit": "12124228f40a401efc20236de9e48066d9423f83",
       "change_slug": "prune-residual-code-entropy",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Large Fallow-driven cleanup with dependency hygiene, private type leaks, duplicates, suppressions, and public-surface exceptions."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Large Fallow-driven cleanup with dependency hygiene, private type leaks, duplicates, suppressions, and public-surface exceptions.",
+      "intent_contract": {
+        "user_intent": "Plan Fallow-driven cleanup of residual code entropy while preserving public/API entry points and framework surfaces.",
+        "scope_boundaries": {
+          "in_scope": [
+            "dead code evidence",
+            "dependency hygiene",
+            "duplicate and type-leak cleanup",
+            "exception discipline"
+          ],
+          "out_of_scope": [
+            "deleting reachable public APIs",
+            "feature redesign",
+            "unverified cleanup outside findings"
+          ]
+        },
+        "expected_blast_radius": [
+          "packages",
+          "routes",
+          "tests",
+          "docs/specs",
+          "operations"
+        ],
+        "non_goals": [
+          "delete framework entry points without trace",
+          "rewrite features",
+          "ignore baseline exceptions"
+        ],
+        "ambiguity_traps": [
+          "confusing unused export with unused runtime path",
+          "missing public API consumers",
+          "turning cleanup into broad refactor"
+        ],
+        "reference_notes": "Use the reference to infer cleanup classes and safeguards, not exact deletion list."
+      }
     },
     {
       "id": "ui-truly-three-pillar-polish",
@@ -152,8 +648,45 @@
       "base_commit": "599d9996214fd10efad776a22df17fd58c133b69",
       "gold_proposal_commit": "e02b4c1ff27f1413656bdddb63d1c0bef7c205ba",
       "change_slug": "polish-three-pillar-hover-and-hero-ornament-size",
-      "expected_artifacts": ["proposal.md", "design.md", "tasks.md", "specs/*/spec.md"],
-      "notes": "Small but subjective visual polish fixture with hover affordance, hero ornament sizing, and editorial restraint."
+      "expected_artifacts": [
+        "proposal.md",
+        "design.md",
+        "tasks.md",
+        "specs/*/spec.md"
+      ],
+      "notes": "Small but subjective visual polish fixture with hover affordance, hero ornament sizing, and editorial restraint.",
+      "intent_contract": {
+        "user_intent": "Plan restrained three-pillar hover and hero ornament polish with perceptual acceptance criteria.",
+        "scope_boundaries": {
+          "in_scope": [
+            "hover affordance",
+            "hero ornament sizing",
+            "responsive and accessibility checks"
+          ],
+          "out_of_scope": [
+            "brand redesign",
+            "new content strategy",
+            "unrelated page rebuild"
+          ]
+        },
+        "expected_blast_radius": [
+          "routes",
+          "packages",
+          "tests",
+          "docs/specs"
+        ],
+        "non_goals": [
+          "change brand system",
+          "add unrelated animations",
+          "rewrite layout architecture"
+        ],
+        "ambiguity_traps": [
+          "over-expanding small polish",
+          "missing responsive states",
+          "forgetting visual regression evidence"
+        ],
+        "reference_notes": "Use the reference to infer visual intent and restraint, not exact CSS implementation."
+      }
     }
   ]
 }

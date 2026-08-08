@@ -1,22 +1,22 @@
 # Category Rubrics
 
-Use these rubrics alongside the deterministic `score-artifacts` output. The structured rubric JSON uses five shared dimensions scored 1 to 5:
+Use these rubrics alongside deterministic support evidence from `score-artifacts` and `extract-evidence`. The structured rubric JSON uses five planning-quality dimensions scored 1 to 5:
 
-- Requirement coverage
-- Decomposition quality
-- Risk handling
-- Scope control
-- Executability
+- Fidelity
+- Scope lock
+- Blast-radius discovery
+- Risk and dependency ordering
+- Verification executability
 
-The category emphasis below explains what to look for when assigning those shared scores.
+The historical OpenSpec change is reference evidence. It is not a reproduction target, and exact artifact shape or token overlap should not dominate the semantic score.
 
 ## Shared axes
 
-- Artifact completeness: proposal, design, tasks, and delta specs exist and are internally consistent.
-- Scope fit: the plan includes the essential work without unrelated expansion.
-- Dependency ordering: tasks are sequenced so prerequisites are explicit.
-- Verification quality: acceptance checks match observable behavior and likely failure modes.
-- Risk handling: blockers, security/privacy, migration, and rollback risks are named where relevant.
+- Fidelity: the plan preserves the user request, domain intent, and fixture intent contract.
+- Scope lock: the plan includes essential work while avoiding unrelated expansion and accidental narrowing.
+- Blast-radius discovery: the plan names affected routes, packages, data, auth, config, tests, docs, and operational surfaces deeply enough for the fixture.
+- Risk and dependency ordering: tasks are sequenced so prerequisites, compatibility windows, migration risks, rollback, security/privacy concerns, and ownership boundaries are explicit.
+- Verification executability: acceptance checks match observable behavior, main workflows, edge cases, integration boundaries, and likely failure modes.
 
 ## Category emphasis
 
@@ -25,18 +25,19 @@ The category emphasis below explains what to look for when assigning those share
 - Identifies the product decision space and trade-offs.
 - Preserves hard constraints while allowing multiple viable designs.
 - Defines user-facing acceptance criteria rather than only implementation steps.
+- Names the surfaces where design choices will propagate.
 
 ### Business/domain logic
 
 - Models actors, states, permissions, and domain invariants.
 - Separates business rules from UI or infrastructure mechanics.
-- Includes edge cases and conflict states.
+- Includes edge cases, conflict states, and lifecycle transitions.
 
 ### Infra/platform/config
 
 - Names runtime boundaries, environment ownership, startup failure modes, and rollback.
 - Avoids secret exposure and avoids local-only assumptions.
-- Includes deploy or packaging verification where relevant.
+- Includes deploy, packaging, and bootstrap verification where relevant.
 
 ### Test strategy/E2E remediation
 
@@ -47,7 +48,7 @@ The category emphasis below explains what to look for when assigning those share
 ### Data/schema/migration
 
 - Names source of truth, migration sequence, compatibility windows, and integrity checks.
-- Handles backfills, dual reads/writes, or cutover gates where applicable.
+- Handles backfills, dual reads/writes, index rebuilds, or cutover gates where applicable.
 
 ### Auth/security/permissions
 

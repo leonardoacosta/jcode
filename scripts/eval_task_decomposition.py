@@ -32,12 +32,32 @@ BASELINE_MODES = (
 PROMPT_KINDS = ("original", "reconstructed")
 PROMPT_CONFIDENCE = ("high", "medium", "low")
 RUBRIC_DIMENSIONS = (
-    "requirement_coverage",
-    "decomposition_quality",
-    "risk_handling",
-    "scope_control",
-    "executability",
+    "fidelity",
+    "scope_lock",
+    "blast_radius",
+    "risk_dependency_ordering",
+    "verification_executability",
 )
+
+INTENT_CONTRACT_KEYS = {
+    "user_intent",
+    "scope_boundaries",
+    "expected_blast_radius",
+    "non_goals",
+    "ambiguity_traps",
+    "reference_notes",
+}
+
+SURFACE_KEYWORDS = {
+    "routes": ("route", "routes", "/staff", "app/", "page.tsx", "layout.tsx"),
+    "packages": ("package", "packages", "workspace", "pkg", "apps/", "packages/"),
+    "config/env": ("config", "env", "dotenv", "environment", "secret", "secrets"),
+    "data/schema": ("data", "schema", "database", "db", "migration", "drizzle"),
+    "auth/permissions": ("auth", "permission", "permissions", "rbac", "role", "roles", "session"),
+    "tests": ("test", "tests", "playwright", "vitest", "e2e", "coverage"),
+    "docs/specs": ("docs", "documentation", "openspec", "spec", "proposal", "tasks"),
+    "operations": ("deploy", "runtime", "monitoring", "telemetry", "rollback", "ops"),
+}
 
 EXPECTED_CATEGORIES = {
     "free design/product choices",
@@ -92,8 +112,10 @@ def validate_catalog(path: Path = DEFAULT_CATALOG) -> dict[str, Any]:
         "gold_proposal_commit",
         "change_slug",
         "expected_artifacts",
+        "intent_contract",
         "notes",
     }
+    contract_fixture_ids: list[str] = []
     for index, fixture in enumerate(fixtures):
         prefix = f"fixtures[{index}]"
         if not isinstance(fixture, dict):
@@ -133,6 +155,9 @@ def validate_catalog(path: Path = DEFAULT_CATALOG) -> dict[str, Any]:
                     failures.append(f"{prefix}.expected_artifacts must include {required}")
             if "specs/*/spec.md" not in artifacts:
                 failures.append(f"{prefix}.expected_artifacts must include specs/*/spec.md")
+        if validate_intent_contract(fixture.get("intent_contract"), prefix, failures):
+            if isinstance(fixture_id, str):
+                contract_fixture_ids.append(fixture_id)
 
     missing_categories = sorted(EXPECTED_CATEGORIES - set(categories))
     if missing_categories:
@@ -141,12 +166,51 @@ def validate_catalog(path: Path = DEFAULT_CATALOG) -> dict[str, Any]:
     result = {
         "catalog": str(path),
         "fixture_count": len(fixtures),
+        "contract_fixture_ids": sorted(contract_fixture_ids),
         "category_counts": dict(sorted(categories.items())),
         "failures": failures,
     }
     if failures:
         raise EvalError(json.dumps(result, indent=2))
     return result
+
+
+def non_empty_string_list(value: Any) -> bool:
+    return isinstance(value, list) and bool(value) and all(isinstance(item, str) and item for item in value)
+
+
+def validate_intent_contract(value: Any, prefix: str, failures: list[str]) -> bool:
+    contract_prefix = f"{prefix}.intent_contract"
+    if not isinstance(value, dict):
+        failures.append(f"{contract_prefix} must be an object")
+        return False
+    missing = sorted(INTENT_CONTRACT_KEYS - set(value))
+    extra = sorted(set(value) - INTENT_CONTRACT_KEYS)
+    if missing:
+        failures.append(f"{contract_prefix} missing keys: {', '.join(missing)}")
+    if extra:
+        failures.append(f"{contract_prefix} has unknown keys: {', '.join(extra)}")
+    if not isinstance(value.get("user_intent"), str) or not value.get("user_intent"):
+        failures.append(f"{contract_prefix}.user_intent must be a non-empty string")
+    scope = value.get("scope_boundaries")
+    if not isinstance(scope, dict):
+        failures.append(f"{contract_prefix}.scope_boundaries must be an object")
+    else:
+        scope_missing = sorted({"in_scope", "out_of_scope"} - set(scope))
+        scope_extra = sorted(set(scope) - {"in_scope", "out_of_scope"})
+        if scope_missing:
+            failures.append(f"{contract_prefix}.scope_boundaries missing keys: {', '.join(scope_missing)}")
+        if scope_extra:
+            failures.append(f"{contract_prefix}.scope_boundaries has unknown keys: {', '.join(scope_extra)}")
+        for key in ("in_scope", "out_of_scope"):
+            if not non_empty_string_list(scope.get(key)):
+                failures.append(f"{contract_prefix}.scope_boundaries.{key} must be a non-empty string array")
+    for key in ("expected_blast_radius", "non_goals", "ambiguity_traps"):
+        if not non_empty_string_list(value.get(key)):
+            failures.append(f"{contract_prefix}.{key} must be a non-empty string array")
+    if not isinstance(value.get("reference_notes"), str) or not value.get("reference_notes"):
+        failures.append(f"{contract_prefix}.reference_notes must be a non-empty string")
+    return not any(failure.startswith(contract_prefix) for failure in failures)
 
 
 def parse_repo_roots(values: list[str]) -> dict[str, Path]:
@@ -284,6 +348,7 @@ def materialize(args: argparse.Namespace) -> dict[str, Any]:
         "base_commit": fixture["base_commit"],
         "gold_proposal_commit": fixture["gold_proposal_commit"],
         "change_slug": fixture["change_slug"],
+        "intent_contract": fixture["intent_contract"],
     }
     (output / ".jcode-eval-fixture.json").write_text(json.dumps(metadata, indent=2) + "\n")
     return {"fixture": fixture["id"], "output": str(output), "metadata": metadata}
@@ -320,6 +385,7 @@ def prepare_run(args: argparse.Namespace) -> dict[str, Any]:
             "source": prompt["source"],
             "text": prompt["prompt"],
         },
+        "intent_contract": fixture["intent_contract"],
         "will_materialize": False,
         "will_run_model": False,
         "next_manual_steps": [
@@ -348,6 +414,32 @@ def list_gold_artifacts(repo: Path, fixture: dict[str, Any]) -> list[str]:
         if path.endswith(".md"):
             rels.append(path.removeprefix(base + "/"))
     return sorted(rels)
+
+
+def changed_paths(repo: Path, fixture: dict[str, Any]) -> list[str]:
+    result = run(["git", "diff-tree", "--no-commit-id", "--name-only", "-r", fixture["gold_proposal_commit"]], cwd=repo)
+    if result.returncode != 0:
+        raise EvalError(f"failed to list reference changed paths: {result.stderr.strip()}")
+    return sorted(path for path in result.stdout.splitlines() if path)
+
+
+def classify_path_surface(path: str) -> str:
+    lowered = path.lower()
+    if "/app/" in lowered or "/pages/" in lowered or lowered.endswith(("page.tsx", "layout.tsx", "route.ts")):
+        return "routes"
+    if lowered.startswith("packages/") or "/packages/" in lowered:
+        return "packages"
+    if any(part in lowered for part in (".env", "config", "wrangler", "vercel", "terraform", "docker")):
+        return "config/env"
+    if any(part in lowered for part in ("schema", "migration", "drizzle", "database", "/db/")):
+        return "data/schema"
+    if any(part in lowered for part in ("auth", "permission", "rbac", "session")):
+        return "auth/permissions"
+    if any(part in lowered for part in ("test", "spec", "playwright", "vitest", "e2e")):
+        return "tests"
+    if any(part in lowered for part in ("docs", "openspec", "readme")):
+        return "docs/specs"
+    return "other"
 
 
 def tokens(text: str) -> Counter[str]:
@@ -397,10 +489,69 @@ def score_artifacts(args: argparse.Namespace) -> dict[str, Any]:
         "fixture": fixture["id"],
         "category": fixture["category"],
         "candidate": str(candidate_dir),
+        "score_kind": "support_evidence",
+        "semantic_judge": False,
+        "interpretation": "Artifact presence and token overlap are deterministic support evidence; they do not by itself determine planning quality.",
         "score": total,
         "required_artifact_score": round(required_score, 4),
         "overlap_average": round(overlap_average, 4),
         "artifacts": artifact_scores,
+    }
+
+
+def read_candidate_text(candidate_dir: Path) -> str:
+    texts: list[str] = []
+    for path in sorted(candidate_dir.rglob("*.md")):
+        if path.is_file():
+            texts.append(path.read_text(errors="replace"))
+    return "\n".join(texts).lower()
+
+
+def mentioned_contract_items(items: list[str], candidate_text: str) -> tuple[list[str], list[str]]:
+    mentioned: list[str] = []
+    omitted: list[str] = []
+    stopwords = {"and", "the", "with", "without", "changes", "change", "new", "explicit", "requirement", "requirements"}
+    for item in items:
+        lower_item = item.lower()
+        surface_keywords = set(SURFACE_KEYWORDS.get(lower_item, ()))
+        item_words = [word for word in re.findall(r"[a-z0-9]+", lower_item) if word not in stopwords and len(word) > 2]
+        surface_hit = any(keyword and keyword.lower() in candidate_text for keyword in surface_keywords)
+        word_hits = sum(1 for word in set(item_words) if word in candidate_text)
+        required_word_hits = 1 if len(set(item_words)) <= 2 else 2
+        if surface_hit or (item_words and word_hits >= required_word_hits):
+            mentioned.append(item)
+        else:
+            omitted.append(item)
+    return mentioned, omitted
+
+
+def extract_evidence(args: argparse.Namespace) -> dict[str, Any]:
+    catalog = load_catalog(args.catalog)
+    fixture = find_fixture(catalog, args.fixture)
+    roots = parse_repo_roots(args.repo_root)
+    repo = require_repo_root(fixture, roots)
+    verify_commit(repo, fixture["gold_proposal_commit"])
+    candidate_dir = args.candidate.expanduser().resolve()
+    if not candidate_dir.is_dir():
+        raise EvalError(f"candidate path is not a directory: {candidate_dir}")
+    candidate_text = read_candidate_text(candidate_dir)
+    contract = fixture["intent_contract"]
+    blast_mentioned, blast_omitted = mentioned_contract_items(contract["expected_blast_radius"], candidate_text)
+    non_goal_mentioned, non_goal_omitted = mentioned_contract_items(contract["non_goals"], candidate_text)
+    traps_mentioned, traps_omitted = mentioned_contract_items(contract["ambiguity_traps"], candidate_text)
+    paths = changed_paths(repo, fixture)
+    surfaces = Counter(classify_path_surface(path) for path in paths)
+    return {
+        "fixture": fixture["id"],
+        "candidate": str(candidate_dir),
+        "score_kind": "support_evidence",
+        "semantic_judge": False,
+        "expected_blast_radius": {"mentioned": blast_mentioned, "omitted": blast_omitted},
+        "non_goals": {"mentioned": non_goal_mentioned, "omitted": non_goal_omitted},
+        "ambiguity_traps": {"mentioned": traps_mentioned, "omitted": traps_omitted},
+        "reference_surfaces": dict(sorted(surfaces.items())),
+        "reference_changed_paths": paths,
+        "interpretation": "Evidence extraction reports candidate mentions, omissions, and historical changed surfaces for reviewer judgment; it is not a semantic judge.",
     }
 
 
@@ -493,6 +644,11 @@ def main(argv: list[str]) -> int:
     score_parser.add_argument("--candidate", required=True, type=Path)
     score_parser.add_argument("--repo-root", action="append", default=[], help="project=/path/to/local/repo")
 
+    evidence_parser = sub.add_parser("extract-evidence", help="extract deterministic support evidence for a candidate plan")
+    evidence_parser.add_argument("--fixture", required=True)
+    evidence_parser.add_argument("--candidate", required=True, type=Path)
+    evidence_parser.add_argument("--repo-root", action="append", default=[], help="project=/path/to/local/repo")
+
     rubric_parser = sub.add_parser("validate-rubric-score", help="validate a human rubric score JSON file")
     rubric_parser.add_argument("--score", required=True, type=Path)
 
@@ -513,6 +669,9 @@ def main(argv: list[str]) -> int:
         elif args.command == "score-artifacts":
             validate_catalog(args.catalog)
             emit(score_artifacts(args))
+        elif args.command == "extract-evidence":
+            validate_catalog(args.catalog)
+            emit(extract_evidence(args))
         elif args.command == "validate-rubric-score":
             validate_catalog(args.catalog)
             emit(validate_rubric_score(args))

@@ -20,6 +20,7 @@
           "gold_proposal_commit",
           "change_slug",
           "expected_artifacts",
+          "intent_contract",
           "notes"
         ],
         "additionalProperties": false,
@@ -35,6 +36,54 @@
             "type": "array",
             "minItems": 3,
             "items": { "type": "string", "minLength": 1 }
+          },
+          "intent_contract": {
+            "type": "object",
+            "required": [
+              "user_intent",
+              "scope_boundaries",
+              "expected_blast_radius",
+              "non_goals",
+              "ambiguity_traps",
+              "reference_notes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "user_intent": { "type": "string", "minLength": 1 },
+              "scope_boundaries": {
+                "type": "object",
+                "required": ["in_scope", "out_of_scope"],
+                "additionalProperties": false,
+                "properties": {
+                  "in_scope": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "string", "minLength": 1 }
+                  },
+                  "out_of_scope": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": { "type": "string", "minLength": 1 }
+                  }
+                }
+              },
+              "expected_blast_radius": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "non_goals": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "ambiguity_traps": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "minLength": 1 }
+              },
+              "reference_notes": { "type": "string", "minLength": 1 }
+            }
           },
           "notes": { "type": "string" }
         }
