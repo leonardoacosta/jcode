@@ -16,13 +16,15 @@ Jcode already:
 
 ## Recommended first Herdr integration
 
-The initial upstream Herdr integration should provide **native session identity plus screen-manifest state**, matching Herdr's Claude Code and Codex model. Jcode's current hooks reliably identify session and turn boundaries, but do not yet provide a complete authoritative `blocked` lifecycle. Reporting only `working` and `idle` as lifecycle authority would suppress Herdr's screen fallback and make approval/question detection worse.
+The initial Jcode integration uses Herdr's **custom harness** path for live visibility: Jcode reports semantic state through `pane.report_agent` with `source = "custom:jcode"` and `agent = "jcode"`. This makes Jcode appear in Herdr's agent panel without requiring a Herdr binary update. Official native session restore still requires Herdr-side `jcode` support, because `pane.report_agent_session` alone stores a session reference but does not create a visible custom agent row.
 
 Jcode ships a hook adapter at `scripts/jcode-herdr-agent-state.sh` for this safe first integration. Add it as an additional hook command rather than replacing existing user hooks:
 
 ```toml
 [hooks]
 session_start = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
+turn_start = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
+turn_end = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
 session_end = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
 ```
 
@@ -32,6 +34,14 @@ When composing with existing hooks, keep every command in the array:
 [hooks]
 session_start = [
   "~/bin/my-existing-session-hook",
+  "/path/to/jcode/scripts/jcode-herdr-agent-state.sh session",
+]
+turn_start = [
+  "~/bin/my-existing-turn-start-hook",
+  "/path/to/jcode/scripts/jcode-herdr-agent-state.sh session",
+]
+turn_end = [
+  "~/bin/my-existing-turn-end-hook",
   "/path/to/jcode/scripts/jcode-herdr-agent-state.sh session",
 ]
 session_end = [
@@ -44,27 +54,25 @@ The adapter exits successfully without side effects unless it is running inside 
 
 If the inherited `HERDR_PANE_ID` is stale and Herdr replies `pane_not_found`, the adapter queries `session.snapshot` and retries only when exactly one live pane has `cwd` or `foreground_cwd` equal to `JCODE_HOOK_CWD`. This keeps moved/restored panes working without guessing when multiple panes share a directory.
 
-On Jcode `session_start`, the Herdr hook should send one newline-delimited JSON request to `HERDR_SOCKET_PATH`:
+On Jcode `session_start`, the Herdr hook sends one newline-delimited JSON request to `HERDR_SOCKET_PATH`:
 
 ```json
 {
   "id": "herdr:jcode:<unique-request-id>",
-  "method": "pane.report_agent_session",
+  "method": "pane.report_agent",
   "params": {
     "pane_id": "<HERDR_PANE_ID>",
-    "source": "herdr:jcode",
+    "source": "custom:jcode",
     "agent": "jcode",
     "seq": 1,
+    "state": "unknown",
     "agent_session_id": "<JCODE_HOOK_SESSION_ID>",
-    "session_start_source": "startup"
+    "message": "jcode session active"
   }
 }
 ```
 
-The sequence must be monotonically increasing for the source. Map Jcode hook sources as follows where possible:
-
-- `create` or `attach` to `startup`
-- `resume` to `resume`
+The sequence must be monotonically increasing for the source.
 
 Herdr should restore the session with:
 
@@ -74,16 +82,16 @@ jcode --resume <agent_session_id>
 
 Jcode session IDs are opaque strings and fit Herdr's ID-based session reference model. No transcript path is needed.
 
-On Jcode `session_end`, the adapter sends `pane.release_agent` for the same `("herdr:jcode", "jcode")` source/agent pair. This clears normal closed sessions without claiming turn-state authority.
+On Jcode `session_end`, the adapter sends `pane.release_agent` for the same `("custom:jcode", "jcode")` source/agent pair. This clears normal closed sessions.
 
 ## Hook mapping
 
 | Jcode hook | Herdr action now | Rationale |
 | --- | --- | --- |
-| `session_start` | Active: `pane.report_agent_session` with `agent_session_id = JCODE_HOOK_SESSION_ID`. | Gives Herdr stable native session identity and enables restore with `jcode --resume <id>`. |
-| `session_end` | Active: `pane.release_agent`. | Clears Herdr authority on normal close without inferring working/idle state. |
-| `turn_start` | No-op for Herdr authority. | It observes work beginning, but cannot distinguish ordinary thinking from approval/question blocking. |
-| `turn_end` | No-op for Herdr authority. | It observes a turn ending, but using it as durable `idle` could mask later blocked or interrupted states. |
+| `session_start` | Active: `pane.report_agent` with state `unknown` and `agent_session_id = JCODE_HOOK_SESSION_ID`. | Creates a visible custom Jcode harness row while carrying the native session id. |
+| `session_end` | Active: `pane.release_agent`. | Clears custom Jcode lifecycle authority on normal close. |
+| `turn_start` | Active: `pane.report_agent` with state `working`. | Shows active Jcode work in Herdr's agent panel and rollups. |
+| `turn_end` | Active: `pane.report_agent` with state `idle`. | Marks Jcode ready after a completed turn. |
 | `pre_tool` | No-op for Herdr authority. | It is a gate for tool policy, not a complete agent-state transition. |
 | `post_tool` | No-op for Herdr authority. | It observes tool completion only; text streaming, approvals, and interrupts happen outside this boundary. |
 
@@ -99,7 +107,7 @@ A first-class integration cannot be shipped only as a remote detection manifest.
 6. Keep screen-manifest detection authoritative until Jcode exposes complete blocked, approval-result, interrupt, and exit transitions.
 7. Add integration versioning, replacement-source handling, schema/UI wiring, install/uninstall tests, restore-plan tests, detection fixtures, and documentation.
 
-Herdr versions that do not include `jcode` in their built-in agent kind list may accept `pane.report_agent_session` with `{"type":"ok"}` but still omit Jcode from the agent panel. That is a Herdr-side recognition gap, not a Jcode hook delivery failure.
+Herdr versions that do not include `jcode` in their built-in agent kind list may accept `pane.report_agent_session` with `{"type":"ok"}` but still omit Jcode from the agent panel. Use the custom harness state path above for visibility until Herdr ships official Jcode recognition.
 
 Relevant upstream files as of Herdr commit `eacea2daf0b72973173b728936b27478374f2cd2`:
 

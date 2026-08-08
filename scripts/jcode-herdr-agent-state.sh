@@ -4,12 +4,13 @@
 # Intended config:
 #   [hooks]
 #   session_start = ["/path/to/jcode-herdr-agent-state.sh session"]
+#   turn_start = ["/path/to/jcode-herdr-agent-state.sh session"]
+#   turn_end = ["/path/to/jcode-herdr-agent-state.sh session"]
 #   session_end = ["/path/to/jcode-herdr-agent-state.sh session"]
 #
-# The adapter intentionally reports only durable session identity and normal
-# release. It does not claim working/idle/blocked authority from turn/tool hooks
-# because Jcode does not yet expose a complete blocked/approval/interrupt
-# lifecycle that would let Herdr avoid stale state.
+# Herdr supports custom harnesses through semantic lifecycle reports. This
+# adapter uses the custom source for visible agent-panel state while carrying
+# the native Jcode session id when available.
 
 set -eu
 
@@ -31,7 +32,7 @@ import random
 import socket
 import time
 
-SOURCE = "herdr:jcode"
+SOURCE = "custom:jcode"
 AGENT = "jcode"
 
 pane_id = os.environ.get("HERDR_PANE_ID")
@@ -40,6 +41,9 @@ event = os.environ.get("JCODE_HOOK_EVENT", "")
 session_id = os.environ.get("JCODE_HOOK_SESSION_ID") or None
 hook_source = os.environ.get("JCODE_HOOK_SOURCE") or None
 cwd = os.environ.get("JCODE_HOOK_CWD") or None
+status = os.environ.get("JCODE_HOOK_STATUS") or None
+model = os.environ.get("JCODE_HOOK_MODEL") or None
+error = os.environ.get("JCODE_HOOK_ERROR") or None
 
 if not pane_id or not socket_path:
     raise SystemExit(0)
@@ -58,6 +62,15 @@ if not session_id:
 if not hook_source:
     candidate = payload.get("source")
     hook_source = candidate if isinstance(candidate, str) and candidate else None
+if not status:
+    candidate = payload.get("status")
+    status = candidate if isinstance(candidate, str) and candidate else None
+if not model:
+    candidate = payload.get("model")
+    model = candidate if isinstance(candidate, str) and candidate else None
+if not error:
+    candidate = payload.get("error")
+    error = candidate if isinstance(candidate, str) and candidate else None
 
 seq = time.time_ns()
 request_id = f"{SOURCE}:{seq}:{random.randrange(1_000_000):06d}"
@@ -68,12 +81,19 @@ def socket_request(request):
     client.settimeout(0.5)
     client.connect(socket_path)
     client.sendall((json.dumps(request, separators=(",", ":")) + "\n").encode("utf-8"))
-    response_raw = b""
+    chunks = []
     try:
-        response_raw = client.recv(4096)
+        while True:
+            chunk = client.recv(65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            if b"\n" in chunk:
+                break
     except Exception:
         pass
     client.close()
+    response_raw = b"".join(chunks).split(b"\n", 1)[0]
     if not response_raw:
         return None
     try:
@@ -103,26 +123,34 @@ def fallback_pane_for_cwd():
     unique = sorted(set(matches))
     return unique[0] if len(unique) == 1 else None
 
-request = None
-if event == "session_start":
-    if not session_id:
-        raise SystemExit(0)
+
+def report_agent(state, message=None):
     params = {
         "pane_id": pane_id,
         "source": SOURCE,
         "agent": AGENT,
         "seq": seq,
-        "agent_session_id": session_id,
+        "state": state,
     }
-    if hook_source in {"create", "attach"}:
-        params["session_start_source"] = "startup"
-    elif hook_source == "resume":
-        params["session_start_source"] = "resume"
-    request = {
-        "id": request_id,
-        "method": "pane.report_agent_session",
-        "params": params,
-    }
+    if session_id:
+        params["agent_session_id"] = session_id
+    if message:
+        params["message"] = message[:500]
+    return {"id": request_id, "method": "pane.report_agent", "params": params}
+
+
+request = None
+if event == "session_start":
+    if not session_id:
+        raise SystemExit(0)
+    request = report_agent("unknown", "jcode session active")
+elif event == "turn_start":
+    request = report_agent("working", f"jcode {model}" if model else "jcode working")
+elif event == "turn_end":
+    message = "jcode ready"
+    if status == "error" and error:
+        message = f"jcode turn ended with error: {error}"
+    request = report_agent("idle", message)
 elif event == "session_end":
     request = {
         "id": request_id,
@@ -135,9 +163,8 @@ elif event == "session_end":
         },
     }
 else:
-    # Explicit no-op for turn_start, turn_end, pre_tool, and post_tool. Those
-    # hooks are useful for future integration, but should not claim Herdr state
-    # authority until Jcode has complete blocked/approval/interrupt events.
+    # Explicit no-op for pre_tool and post_tool. Tool boundaries are not whole
+    # agent-state transitions.
     raise SystemExit(0)
 
 try:

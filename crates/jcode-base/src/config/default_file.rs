@@ -539,11 +539,15 @@ swarm_max_concurrent_agents = 32
 # the first pre_tool. Lets integrations detect the agent is working during the
 # think/stream window before any tool call. Extra fields: JCODE_HOOK_MODEL,
 # JCODE_HOOK_SOURCE ("chat"/"resume"/"ambient").
+# Herdr custom harness working-state example:
+# turn_start = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
 # turn_start = "~/bin/jcode-turn-start"
 #
 # Runs when an agent turn completes. Extra fields: JCODE_HOOK_STATUS
 # ("ok"/"error"), JCODE_HOOK_DURATION_MS, JCODE_HOOK_MODEL,
 # JCODE_HOOK_LAST_ASSISTANT_TEXT (first 4000 chars), JCODE_HOOK_ERROR.
+# Herdr custom harness idle-state example:
+# turn_end = ["/path/to/jcode/scripts/jcode-herdr-agent-state.sh session"]
 # turn_end = "~/bin/jcode-turn-notify"
 #
 # Runs when a session becomes active. Extra: JCODE_HOOK_SOURCE
