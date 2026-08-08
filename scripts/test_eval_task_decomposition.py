@@ -227,6 +227,14 @@ class EvalPreparationTests(unittest.TestCase):
         self.assertIn("billing/payment changes", result["non_goals"]["mentioned"])
         self.assertEqual(result["reference_surfaces"]["routes"], 1)
 
+    def test_route_proposal_paths_are_documentation_not_tests(self) -> None:
+        self.assertEqual(
+            module.classify_path_surface(
+                "openspec/changes/refresh-staff-operations-console/route-proposals/001-admin.md"
+            ),
+            "docs/specs",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

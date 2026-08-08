@@ -425,6 +425,8 @@ def changed_paths(repo: Path, fixture: dict[str, Any]) -> list[str]:
 
 def classify_path_surface(path: str) -> str:
     lowered = path.lower()
+    if any(part in lowered for part in ("docs", "openspec", "readme", "route-proposals")):
+        return "docs/specs"
     if "/app/" in lowered or "/pages/" in lowered or lowered.endswith(("page.tsx", "layout.tsx", "route.ts")):
         return "routes"
     if lowered.startswith("packages/") or "/packages/" in lowered:
@@ -435,10 +437,8 @@ def classify_path_surface(path: str) -> str:
         return "data/schema"
     if any(part in lowered for part in ("auth", "permission", "rbac", "session")):
         return "auth/permissions"
-    if any(part in lowered for part in ("test", "spec", "playwright", "vitest", "e2e")):
+    if any(part in lowered for part in ("test", "playwright", "vitest", "e2e")):
         return "tests"
-    if any(part in lowered for part in ("docs", "openspec", "readme")):
-        return "docs/specs"
     return "other"
 
 
