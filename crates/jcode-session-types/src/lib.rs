@@ -1,4 +1,9 @@
 use chrono::{DateTime, Utc};
+
+pub mod context;
+pub use context::{
+    ContextConfidence, ContextProvenance, ContextRow, ContextSection, ContextSnapshot,
+};
 use jcode_message_types::{ContentBlock, Message, Role, ToolCall};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;

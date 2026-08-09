@@ -10,6 +10,7 @@ pub struct ContextSnapshot {
 
 pub mod backend;
 pub(crate) mod color_support;
+pub mod control_room;
 mod core;
 pub(crate) mod fuzzy;
 // Terminal image display + metadata helpers now live in the dependency-free
@@ -586,6 +587,12 @@ pub trait TuiState {
     fn account_picker_overlay(&self) -> Option<&std::cell::RefCell<account_picker::AccountPicker>>;
     /// Usage overlay for /usage command
     fn usage_overlay(&self) -> Option<&std::cell::RefCell<usage_overlay::UsageOverlay>>;
+    /// Context Control Room overlay for durable context inspection
+    fn control_room_overlay(
+        &self,
+    ) -> Option<&std::cell::RefCell<control_room::ControlRoomOverlay>> {
+        None
+    }
     /// Working directory for this session
     // ---- Misc ----
     fn working_dir(&self) -> Option<String>;

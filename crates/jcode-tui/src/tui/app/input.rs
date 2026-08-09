@@ -2521,6 +2521,15 @@ pub(super) fn handle_modal_key(
         return Ok(true);
     }
 
+    if app.control_room_overlay.is_some() {
+        if super::control_room::is_control_room_toggle(code, modifiers) {
+            app.toggle_control_room();
+            return Ok(true);
+        }
+        app.handle_control_room_key(code, modifiers)?;
+        return Ok(true);
+    }
+
     if app.copy_selection_mode {
         if modifiers.contains(KeyModifiers::CONTROL)
             && matches!(code, KeyCode::Char('c') | KeyCode::Char('d'))
@@ -2859,6 +2868,11 @@ impl App {
         }
 
         if handle_modal_key(self, code, modifiers)? {
+            return Ok(());
+        }
+
+        if super::control_room::is_control_room_toggle(code, modifiers) {
+            self.toggle_control_room();
             return Ok(());
         }
 

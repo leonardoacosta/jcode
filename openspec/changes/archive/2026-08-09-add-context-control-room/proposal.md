@@ -56,7 +56,7 @@ None. The repository has no existing checked-in context-control-room specificati
 - touches: `crates/jcode-session-types/src/lib.rs`
 - touches: `docs/CONTEXT_ARCHITECTURE.md (new)`
 - touches: `docs/CONTEXT_CONTROL_ROOM_EVIDENCE.md (new)`
-- base-commit: jcode@e757fcbb87700330a64e7abdd2acb46bffd61473
+- base-commit: jcode@9941e1c6d660136762d7da3c8ab50224cd0e9127
 
 ## Preconditions
 

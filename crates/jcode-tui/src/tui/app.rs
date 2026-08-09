@@ -60,6 +60,7 @@ mod commands_overnight;
 mod commands_plan;
 mod commands_remote;
 mod commands_review;
+mod control_room;
 mod conversation_state;
 mod copy_selection;
 mod debug;
@@ -1625,6 +1626,8 @@ pub struct App {
     account_picker_overlay: Option<RefCell<super::account_picker::AccountPicker>>,
     /// Usage overlay (None = not visible)
     usage_overlay: Option<RefCell<super::usage_overlay::UsageOverlay>>,
+    /// Context Control Room overlay (None = not visible)
+    control_room_overlay: Option<RefCell<super::control_room::ControlRoomOverlay>>,
     /// Whether a usage refresh request is currently in flight.
     usage_report_refreshing: bool,
     /// Whether a `/productivity` report generation is currently in flight.

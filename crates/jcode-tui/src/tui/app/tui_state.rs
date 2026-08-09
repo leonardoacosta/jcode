@@ -1902,6 +1902,12 @@ impl crate::tui::TuiState for App {
         self.usage_overlay.as_ref()
     }
 
+    fn control_room_overlay(
+        &self,
+    ) -> Option<&RefCell<crate::tui::control_room::ControlRoomOverlay>> {
+        self.control_room_overlay.as_ref()
+    }
+
     fn working_dir(&self) -> Option<String> {
         self.session.working_dir.clone()
     }
