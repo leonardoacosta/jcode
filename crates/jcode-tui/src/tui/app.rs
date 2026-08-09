@@ -1539,6 +1539,12 @@ pub struct App {
     command_suggestion_selected: usize,
     // Time when app started (for startup animations)
     app_started: Instant,
+    /// The animation-time authority (roadmap P3): all animated surfaces read
+    /// animation time from this clock via `TuiState::animation_elapsed`.
+    /// Pausable (terminal suspend), bounded, local-only.
+    pub(crate) frame_clock: crate::tui::frame_clock::FrameClock,
+    /// Recent frame render timings for the telemetry surface (roadmap P3).
+    pub(crate) frame_timings: crate::tui::frame_clock::FrameTimingRecorder,
     // Whether the client terminal currently has focus. When the terminal window
     // or tab is backgrounded (FocusLost), decorative animations and periodic
     // idle redraws are paused so a swarm of background sessions does not burn

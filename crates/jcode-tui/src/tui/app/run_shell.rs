@@ -371,9 +371,10 @@ impl StatusSpinnerRenderer {
     /// are touched, in both buffers.
     pub(super) fn draw_idle_animation_only(
         &mut self,
-        app: &App,
+        app: &mut App,
         terminal: &mut DefaultTerminal,
     ) -> Result<bool> {
+        let patch_start = Instant::now();
         let Some(previous_frame) = self.last_frame.as_ref() else {
             return Ok(false);
         };
@@ -445,6 +446,12 @@ impl StatusSpinnerRenderer {
         // second, which reads as "the cheap path never runs" and sends anyone
         // debugging redraw cost down the wrong branch.
         crate::tui::ui::note_idle_animation_partial_repaint();
+        // Roadmap P3 frame telemetry: animation patches are their own kind so
+        // the debug stats separate cheap repaints from full frames.
+        app.frame_timings.record(
+            crate::tui::frame_clock::FrameKind::AnimationPatch,
+            patch_start.elapsed(),
+        );
         Ok(true)
     }
 
@@ -485,6 +492,8 @@ impl StatusSpinnerRenderer {
             render_elapsed = render_start.elapsed();
         })?;
         let total_elapsed = draw_start.elapsed();
+        app.frame_timings
+            .record(crate::tui::frame_clock::FrameKind::Full, total_elapsed);
         let changed_cells = previous_frame
             .filter(|previous| previous.area == completed.buffer.area)
             .map(|previous| {
@@ -651,7 +660,7 @@ impl App {
                 // gating here covers every redraw source (ticks, input, bus
                 // events), not just the animation tick.
                 if status_spinner_renderer.idle_animation_only_available(&self)
-                    && status_spinner_renderer.draw_idle_animation_only(&self, &mut terminal)?
+                    && status_spinner_renderer.draw_idle_animation_only(&mut self, &mut terminal)?
                 {
                     needs_redraw = false;
                 } else {
@@ -873,7 +882,7 @@ impl App {
                         // when nothing else is due (see the local loop).
                         if status_spinner_renderer.idle_animation_only_available(&self)
                             && status_spinner_renderer
-                                .draw_idle_animation_only(&self, &mut terminal)?
+                                .draw_idle_animation_only(&mut self, &mut terminal)?
                         {
                             needs_redraw = false;
                         } else {
@@ -1352,6 +1361,44 @@ mod tests {
         assert!(
             !render_status_spinner_into_buffer(&buffer, area, "⠙"),
             "late overlays own the status cell until the next full frame"
+        );
+    }
+
+    /// Roadmap P3 no-starvation gate: after a slow frame, missed redraw ticks
+    /// are skipped rather than queued as catch-up bursts, so pending input and
+    /// agent events are served before redundant frames. With
+    /// `MissedTickBehavior::Burst` this test fails: the second tick fires
+    /// immediately to "catch up".
+    #[tokio::test]
+    async fn redraw_timer_skips_missed_ticks_instead_of_bursting() {
+        let period = Duration::from_millis(50);
+        let mut interval = redraw_timer(period);
+        // Simulate a slow frame: sleep past two ticks (deadlines at 50/100ms),
+        // landing ~30ms before the next boundary at 150ms.
+        tokio::time::sleep(Duration::from_millis(130)).await;
+        // The overdue tick is ready immediately.
+        tokio::time::timeout(Duration::from_millis(20), interval.tick())
+            .await
+            .expect("overdue tick should be ready immediately");
+        // Skip behavior: the next tick waits for the 150ms boundary (~20ms
+        // out). Burst behavior would fire it immediately to catch up.
+        let catch_up = tokio::time::timeout(Duration::from_millis(10), interval.tick()).await;
+        assert!(
+            catch_up.is_err(),
+            "a second immediate tick means Burst catch-up: input would starve behind redundant frames"
+        );
+    }
+
+    /// Same contract for the spinner tick source.
+    #[tokio::test]
+    async fn status_spinner_interval_skips_missed_ticks_instead_of_bursting() {
+        let mut interval = status_spinner_interval();
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        let _ = tokio::time::timeout(Duration::from_millis(500), interval.tick()).await;
+        let catch_up = tokio::time::timeout(Duration::from_millis(10), interval.tick()).await;
+        assert!(
+            catch_up.is_err(),
+            "spinner ticks must skip, not burst, after delays"
         );
     }
 }

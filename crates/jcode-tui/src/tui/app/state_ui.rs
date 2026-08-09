@@ -148,9 +148,14 @@ impl App {
         if focused {
             // Schedule an immediate differential frame so a newly-focused window
             // catches up and resumes animation timing from "now".
+            self.frame_clock.resume();
             self.note_client_focus(true);
             true
         } else {
+            // Roadmap P3: freeze animation time while unfocused so surfaces
+            // resume their phase on return instead of jumping (idle redraws
+            // are already suppressed while unfocused).
+            self.frame_clock.pause();
             false
         }
     }

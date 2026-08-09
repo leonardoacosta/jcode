@@ -127,6 +127,48 @@ fn idle_donut_pauses_while_unfocused() {
 }
 
 #[test]
+fn frame_clock_freezes_animation_time_while_unfocused() {
+    let mut app = create_test_app();
+    let elapsed = |app: &crate::tui::app::App| crate::tui::TuiState::animation_elapsed(app);
+
+    app.set_client_focused(false);
+    let frozen_a = elapsed(&app);
+    std::thread::sleep(std::time::Duration::from_millis(30));
+    let frozen_b = elapsed(&app);
+    assert_eq!(
+        frozen_a, frozen_b,
+        "animation time must freeze exactly while unfocused"
+    );
+    assert!(
+        app.frame_clock.is_paused(),
+        "clock reports the paused state"
+    );
+
+    // Animated surfaces derive frames from the clock, so a frozen clock means
+    // a frozen frame index across the pause.
+    let frame_a = app.frame_clock.frame_index(60);
+    let frame_b = app.frame_clock.frame_index(60);
+    assert_eq!(frame_a, frame_b);
+
+    app.set_client_focused(true);
+    let resumed_a = elapsed(&app);
+    std::thread::sleep(std::time::Duration::from_millis(10));
+    let resumed_b = elapsed(&app);
+    assert!(
+        !app.frame_clock.is_paused(),
+        "clock resumes when focus returns"
+    );
+    assert!(
+        resumed_b > resumed_a,
+        "animation time advances again after resume"
+    );
+    assert!(
+        resumed_a - frozen_a < 0.5,
+        "resume must not pay back the paused span as a phase jump"
+    );
+}
+
+#[test]
 fn unfocused_redraw_warranted_tracks_live_activity() {
     let mut app = create_test_app();
     // `unfocused_redraw_warranted` is only consulted while unfocused, and the

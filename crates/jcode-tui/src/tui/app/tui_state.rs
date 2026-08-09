@@ -977,7 +977,10 @@ impl crate::tui::TuiState for App {
     }
 
     fn animation_elapsed(&self) -> f32 {
-        self.app_started.elapsed().as_secs_f32()
+        // Roadmap P3: the frame clock is the animation-time authority. Same
+        // epoch as `app_started`, so unpaused values are byte-identical to
+        // the pre-change `app_started.elapsed()` reads.
+        self.frame_clock.elapsed_secs()
     }
 
     fn rate_limit_remaining(&self) -> Option<Duration> {
@@ -1550,7 +1553,9 @@ impl crate::tui::TuiState for App {
             Vec::new()
         };
 
-        let workspace_animation_tick = self.app_started.elapsed().as_millis() as u64 / 180;
+        // Roadmap P3: animation time comes from the frame clock (same epoch,
+        // byte-identical while unpaused).
+        let workspace_animation_tick = self.frame_clock.now().as_millis() as u64 / 180;
 
         let compaction_info = if !self.is_remote && self.provider.uses_jcode_compaction() {
             let compaction = self.registry.compaction();
@@ -1639,7 +1644,7 @@ impl crate::tui::TuiState for App {
     }
 
     fn workspace_animation_tick(&self) -> u64 {
-        self.app_started.elapsed().as_millis() as u64 / 180
+        self.frame_clock.now().as_millis() as u64 / 180
     }
 
     fn render_streaming_markdown(&self, width: usize) -> Vec<ratatui::text::Line<'static>> {

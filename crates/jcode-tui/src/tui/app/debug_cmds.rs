@@ -1133,6 +1133,21 @@ fn attach_redraw_schedule_debug(payload: &mut serde_json::Value, app: &App) {
         return;
     };
     let policy = crate::perf::tui_policy();
+    // Roadmap P3 frame telemetry: recent render timings with percentile stats,
+    // split into full frames and animation-only patches.
+    let frame_stats = app.frame_timings.stats();
+    map.insert(
+        "frame_timing".to_string(),
+        serde_json::json!({
+            "count": frame_stats.count,
+            "full_count": frame_stats.full_count,
+            "patch_count": frame_stats.patch_count,
+            "mean_ms": frame_stats.mean.as_secs_f64() * 1000.0,
+            "p50_ms": frame_stats.p50.as_secs_f64() * 1000.0,
+            "p95_ms": frame_stats.p95.as_secs_f64() * 1000.0,
+            "max_ms": frame_stats.max.as_secs_f64() * 1000.0,
+        }),
+    );
     map.insert(
         "redraw_schedule".to_string(),
         serde_json::json!({

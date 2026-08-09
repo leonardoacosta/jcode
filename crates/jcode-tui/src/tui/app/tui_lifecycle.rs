@@ -397,6 +397,7 @@ impl App {
             false,
         );
 
+        let app_started = Instant::now();
         let mut app = Self {
             provider,
             registry,
@@ -705,7 +706,9 @@ impl App {
             pending_queued_dispatch: false,
             tab_completion_state: None,
             command_suggestion_selected: 0,
-            app_started: Instant::now(),
+            app_started,
+            frame_clock: crate::tui::frame_clock::FrameClock::new(app_started),
+            frame_timings: crate::tui::frame_clock::FrameTimingRecorder::default(),
             client_focused: true,
             runtime_memory_log,
             idle_heap_release: Default::default(),
@@ -844,6 +847,7 @@ impl App {
             false,
         );
 
+        let app_started = Instant::now();
         let mut app = Self {
             provider,
             registry,
@@ -1152,7 +1156,9 @@ impl App {
             pending_queued_dispatch: false,
             tab_completion_state: None,
             command_suggestion_selected: 0,
-            app_started: Instant::now(),
+            app_started,
+            frame_clock: crate::tui::frame_clock::FrameClock::new(app_started),
+            frame_timings: crate::tui::frame_clock::FrameTimingRecorder::default(),
             client_focused: true,
             runtime_memory_log,
             idle_heap_release: Default::default(),

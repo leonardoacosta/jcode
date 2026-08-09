@@ -18,6 +18,9 @@ pub(crate) mod fuzzy;
 // so existing `crate::tui::image` / `crate::tui::image_metadata` paths keep working.
 pub use jcode_terminal_image::display as image;
 use jcode_terminal_image::metadata as image_metadata;
+pub(crate) mod composer_frame;
+pub(crate) mod footer;
+pub(crate) mod frame_clock;
 pub mod info_widget;
 mod info_widget_layout;
 mod info_widget_overview;
@@ -25,13 +28,11 @@ mod info_widget_settle;
 pub mod info_widget_stability;
 pub mod keybind;
 mod layout_utils;
-pub(crate) mod composer_frame;
-mod user_message_frame;
-pub(crate) mod footer;
 pub mod login_picker;
 pub mod markdown;
 mod memory_profile;
 pub mod mermaid;
+mod user_message_frame;
 pub mod permissions {
     pub use jcode_tui_permissions::*;
 }
