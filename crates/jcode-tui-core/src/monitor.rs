@@ -61,6 +61,17 @@ impl Monitor {
         (!self.indicators.is_empty()).then_some(self.selected)
     }
 
+    /// Returns the text a renderer should show for the focused indicator.
+    pub fn selected_content(&self) -> Option<&str> {
+        self.selected().map(|indicator| {
+            if indicator.expanded {
+                indicator.detail.as_str()
+            } else {
+                indicator.summary.as_str()
+            }
+        })
+    }
+
     /// Replace the live snapshot while retaining selection and expansion state by id.
     pub fn watch(&mut self, next: Vec<MonitorIndicator>) {
         let selected_id = self.selected().map(|indicator| indicator.id.clone());
@@ -135,6 +146,16 @@ mod tests {
         assert!(monitor.indicators()[0].expanded);
         assert!(!monitor.indicators()[1].expanded);
         assert!(!monitor.handle_key(KeyCode::Char('x'), KeyModifiers::NONE));
+    }
+
+    #[test]
+    fn selected_content_switches_between_summary_and_detail() {
+        let mut monitor = monitor();
+        monitor.watch(vec![indicator("one")]);
+        assert_eq!(monitor.selected_content(), Some("one summary"));
+
+        monitor.handle_key(KeyCode::Char('e'), KeyModifiers::NONE);
+        assert_eq!(monitor.selected_content(), Some("one detail"));
     }
 
     #[test]
