@@ -1,7 +1,7 @@
 //! `[display]` section of the config: TUI/CLI presentation settings.
 
 use crate::{
-    DiagramDisplayMode, DiffDisplayMode, FooterConfig, LatexRenderingMode, MarkdownSpacingMode,
+    ComposerConfig, DiagramDisplayMode, DiffDisplayMode, FooterConfig, LatexRenderingMode, MarkdownSpacingMode,
     NativeScrollbarConfig, OverscrollStatusMode, ReasoningDisplayMode, default_true,
 };
 use serde::{Deserialize, Serialize};
@@ -125,6 +125,11 @@ pub struct DisplayConfig {
     /// restore the pre-footer layout.
     #[serde(default)]
     pub footer: FooterConfig,
+    /// Composer frame (accent rail plus optional metadata row, default:
+    /// rail). Set `composer.style = "flat"` to restore the pre-frame
+    /// composer exactly.
+    #[serde(default)]
+    pub composer: ComposerConfig,
 }
 impl Default for DisplayConfig {
     fn default() -> Self {
@@ -164,6 +169,7 @@ impl Default for DisplayConfig {
             external_sessions: true,
             overscroll_status: OverscrollStatusMode::default(),
             footer: FooterConfig::default(),
+            composer: ComposerConfig::default(),
         }
     }
 }

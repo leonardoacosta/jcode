@@ -278,11 +278,13 @@ fn smoothness_benchmark_mid_transcript_growth_settles_quickly() {
     app.is_processing = true;
     app.status = ProcessingStatus::Streaming;
 
-    // 29 rows, not 28: the persistent status footer (display.footer) reserves
-    // one bottom row by default, consuming the slack this scenario's tuning
-    // relied on. One extra viewport row restores the pre-footer transcript
-    // headroom so the benchmark measures growth settling, not the footer.
-    let backend = ratatui::backend::TestBackend::new(100, 29);
+    // 30 rows, not 28: the persistent status footer (display.footer) reserves
+    // one bottom row by default, and the composer frame's metadata row
+    // (display.composer) reserves one more, consuming the slack this
+    // scenario's tuning relied on. Two extra viewport rows restore the
+    // pre-decoration transcript headroom so the benchmark measures growth
+    // settling, not the chrome.
+    let backend = ratatui::backend::TestBackend::new(100, 30);
     let mut terminal = ratatui::Terminal::new(backend).expect("terminal");
     let mut recorder = jcode_tui_core::anchor_stability::AnchorStabilityRecorder::new();
 

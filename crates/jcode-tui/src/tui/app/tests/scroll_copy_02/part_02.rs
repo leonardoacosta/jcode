@@ -649,10 +649,12 @@ fn test_mouse_click_in_input_moves_cursor_to_clicked_position() {
     let input_area = layout.input_area.expect("input area");
     let next_prompt = crate::tui::ui::input_ui::next_input_prompt_number(&app);
     let prompt_len = crate::tui::ui::input_ui::input_prompt_len(&app, next_prompt) as u16;
+    // The composer frame's accent rail occupies the first column.
+    let rail_width: u16 = if app.composer_config().rail() { 1 } else { 0 };
 
     let handled = app.handle_mouse_event(MouseEvent {
         kind: MouseEventKind::Down(MouseButton::Left),
-        column: input_area.x + prompt_len + 2,
+        column: input_area.x + rail_width + prompt_len + 2,
         row: input_area.y,
         modifiers: KeyModifiers::empty(),
     });
@@ -737,10 +739,12 @@ fn test_mouse_click_in_input_switches_focus_from_side_panel() {
     let input_area = layout.input_area.expect("input area");
     let next_prompt = crate::tui::ui::input_ui::next_input_prompt_number(&app);
     let prompt_len = crate::tui::ui::input_ui::input_prompt_len(&app, next_prompt) as u16;
+    // The composer frame's accent rail occupies the first column.
+    let rail_width: u16 = if app.composer_config().rail() { 1 } else { 0 };
 
     let handled = app.handle_mouse_event(MouseEvent {
         kind: MouseEventKind::Down(MouseButton::Left),
-        column: input_area.x + prompt_len + 2,
+        column: input_area.x + rail_width + prompt_len + 2,
         row: input_area.y,
         modifiers: KeyModifiers::empty(),
     });
@@ -774,17 +778,23 @@ fn test_mouse_click_in_wrapped_input_moves_cursor_to_second_visual_line() {
     let layout = crate::tui::ui::last_layout_snapshot().expect("layout snapshot");
     let input_area = layout.input_area.expect("input area");
 
+    // The composer frame's accent rail occupies the first column, and
+    // continuation lines keep the prompt indent.
+    let rail_width: u16 = if app.composer_config().rail() { 1 } else { 0 };
+    let next_prompt = crate::tui::ui::input_ui::next_input_prompt_number(&app);
+    let prompt_len = crate::tui::ui::input_ui::input_prompt_len(&app, next_prompt) as u16;
+
     app.handle_mouse_event(MouseEvent {
         kind: MouseEventKind::Down(MouseButton::Left),
-        column: input_area.x + 4,
+        column: input_area.x + rail_width + prompt_len + 1,
         row: input_area.y + 1,
         modifiers: KeyModifiers::empty(),
     });
 
-    // The idle composer no longer reserves space for the old send-mode glyph,
-    // so this 11-column input wraps after eight characters. Column four on the
-    // second visual line is one character into that segment.
-    assert_eq!(app.cursor_pos, 9);
+    // The idle composer no longer reserves space for the old send-mode glyph;
+    // with the rail, this 11-column input wraps after seven characters. One
+    // column into the second visual line is one character into that segment.
+    assert_eq!(app.cursor_pos, 8);
 }
 
 /// End-to-end: a real left-click on an inline image's label line maps the

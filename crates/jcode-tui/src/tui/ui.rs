@@ -2960,14 +2960,22 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
     let next_prompt = user_count + 1;
 
     // Calculate input height based on the same wrapping logic used for rendering
-    // (max 10 lines visible, scrolls if more).
-    let base_input_height =
-        input_ui::wrapped_input_line_count(app, chat_area.width, next_prompt).min(10) as u16;
+    // (max 10 lines visible, scrolls if more). The composer frame's rail
+    // insets the wrap width by one column when the rail style is active.
+    let composer_rail_width: u16 = if app.composer_config().rail() { 1 } else { 0 };
+    let base_input_height = input_ui::wrapped_input_line_count(
+        app,
+        chat_area.width.saturating_sub(composer_rail_width),
+        next_prompt,
+    )
+    .min(10) as u16;
     // Add 1 line for command suggestions, shell mode hints, or the Ctrl+Enter hint.
     let hint_line_height = input_ui::input_hint_line_height(app);
+    // The composer frame's metadata row reserves one bottom composer row.
+    let composer_metadata_height: u16 = if app.composer_config().metadata_row() { 1 } else { 0 };
     let inline_block_height: u16 = inline_ui_height(app);
     let inline_ui_gap_height: u16 = if inline_block_height > 0 { 1 } else { 0 };
-    let input_height = base_input_height + hint_line_height;
+    let input_height = base_input_height + hint_line_height + composer_metadata_height;
 
     if let Some(ref mut capture) = debug_capture {
         capture.render_order.push("prepare_messages".to_string());
@@ -3439,6 +3447,7 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
         chunks[7],
         user_count + pending_count + 1,
         &mut debug_capture,
+        &widget_data,
     );
 
     if overscroll_height > 0 {

@@ -144,6 +144,7 @@ struct TestState {
     inline_images_visible: bool,
     chat_overscroll_active: bool,
     footer_config: Option<crate::config::FooterConfig>,
+    composer_config: Option<crate::config::ComposerConfig>,
     cache_ttl_status: Option<crate::tui::CacheTtlInfo>,
     status_notice: Option<String>,
     time_since_user_interaction: Option<Duration>,
@@ -376,6 +377,18 @@ impl crate::tui::TuiState for TestState {
     fn footer_config(&self) -> crate::config::FooterConfig {
         self.footer_config.clone().unwrap_or_default()
     }
+    fn composer_config(&self) -> crate::config::ComposerConfig {
+        // Flat by default in the fixture harness: the entire pre-existing
+        // ui_tests golden suite then doubles as the byte-identical rollback
+        // proof for `display.composer.style = "flat"`. Composer-frame tests
+        // opt into the rail style explicitly.
+        self.composer_config.clone().unwrap_or_else(|| {
+            crate::config::ComposerConfig {
+                style: crate::config::ComposerStyle::Flat,
+                metadata: false,
+            }
+        })
+    }
     fn render_streaming_markdown(&self, _width: usize) -> Vec<Line<'static>> {
         markdown::render_markdown_with_width(&self.streaming_text, Some(_width))
     }
@@ -518,6 +531,8 @@ fn reset_prompt_viewport_state_for_test() {
 
 #[path = "basic.rs"]
 mod basic;
+
+mod composer_frame;
 #[path = "diagrams.rs"]
 mod diagrams;
 

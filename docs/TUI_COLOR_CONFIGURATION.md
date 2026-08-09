@@ -55,6 +55,21 @@ recolors the footer alongside everything else:
 | Context at/above the error threshold | `error` |
 | Cost | `success` |
 
+### Composer frame roles
+
+The composer frame (`display.composer`, see `COMPOSER_FRAME.md`) adds five
+optional keys to `[display.colors]`. Each falls back to an existing theme role
+when unset, so recoloring the base role recolors the frame alongside
+everything else:
+
+| Key | Paints | Fallback role |
+| --- | --- | --- |
+| `composerRail` | Accent rail in chat mode | `user` |
+| `composerRailShell` | Accent rail in shell mode | shell-mode color |
+| `composerRailQueued` | Accent rail while a turn is processing (queued) | `queued` |
+| `composerRailSkill` | Accent rail while a skill is active | `accent` |
+| `composerMetadata` | Metadata row text (`model · provider · effort`) | `dim` |
+
 ## How every color became configurable
 
 The TUI does not have one palette. It has ~22 named semantic roles plus roughly

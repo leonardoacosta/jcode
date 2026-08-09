@@ -15,7 +15,7 @@ use crate::tui::layout_utils;
 use crate::tui::session_facts;
 use ratatui::{prelude::*, style::Modifier, widgets::Paragraph};
 
-fn shell_mode_color() -> Color {
+pub(crate) fn shell_mode_color() -> Color {
     rgb(110, 214, 151)
 }
 
@@ -2583,9 +2583,23 @@ pub(super) fn draw_input(
     area: Rect,
     next_prompt: usize,
     debug_capture: &mut Option<FrameCaptureBuilder>,
+    widget_data: &crate::tui::info_widget::InfoWidgetData,
 ) -> Option<Position> {
     let input_text = app.input();
     let cursor_pos = app.cursor_pos();
+
+    // Composer frame (display.composer): the rail insets the text area by one
+    // column; the metadata row reserves the composer's bottom row. When the
+    // style is `flat` both are zero and every computation below is identical
+    // to the pre-frame composer.
+    let composer_cfg = app.composer_config();
+    let rail_active = composer_cfg.rail() && area.width > 1;
+    let metadata_height: u16 = if composer_cfg.metadata_row() { 1 } else { 0 };
+    let text_area = if rail_active {
+        Rect::new(area.x + 1, area.y, area.width - 1, area.height)
+    } else {
+        area
+    };
 
     let mode = composer_mode(input_text, app.is_remote_mode());
     // Command suggestions render later as an overlay pass
@@ -2597,7 +2611,7 @@ pub(super) fn draw_input(
     let num_str = format!("{}", next_prompt);
     let prompt_len = input_prompt_len(app, next_prompt);
     let reserved_width = send_mode_reserved_width(app);
-    let line_width = (area.width as usize).saturating_sub(prompt_len + reserved_width);
+    let line_width = (text_area.width as usize).saturating_sub(prompt_len + reserved_width);
 
     if line_width == 0 {
         return None;
@@ -2663,7 +2677,9 @@ pub(super) fn draw_input(
 
     let suggestions_offset = lines.len();
     let total_input_lines = all_lines.len();
-    let visible_height = area.height as usize;
+    // Text rows exclude the reserved metadata row, which is appended after
+    // the text region and never participates in text layout.
+    let visible_height = area.height.saturating_sub(metadata_height) as usize;
 
     let scroll_offset = if total_input_lines + suggestions_offset <= visible_height {
         0
@@ -2694,6 +2710,12 @@ pub(super) fn draw_input(
     if visible_input_rows > 0 {
         let (wrapped_plain, raw_plain, line_map) =
             input_copy_snapshot_parts(input_text, line_width);
+        // The registered area spans the full composer row including the rail
+        // column, with per-row left margins skipping rail + prompt decoration:
+        // hit-testing the rail clamps to the start of the typed text (the same
+        // semantics the prompt prefix always had), never selecting the rail
+        // glyph itself.
+        let rail_margin = if rail_active { 1usize } else { 0 };
         let left_margins: Vec<u16> = (0..visible_input_rows)
             .map(|rel| {
                 let abs = scroll_offset + rel;
@@ -2701,9 +2723,9 @@ pub(super) fn draw_input(
                     .get(abs)
                     .map(|text| unicode_width::UnicodeWidthStr::width(text.as_str()))
                     .unwrap_or(0);
-                let mut margin = prompt_len;
+                let mut margin = prompt_len + rail_margin;
                 if centered {
-                    margin += (area.width as usize).saturating_sub(prompt_len + text_width) / 2;
+                    margin += (text_area.width as usize).saturating_sub(prompt_len + text_width) / 2;
                 }
                 margin.min(area.width as usize) as u16
             })
@@ -2770,26 +2792,52 @@ pub(super) fn draw_input(
     } else {
         Paragraph::new(lines.clone())
     };
-    frame.render_widget(paragraph, area);
+    frame.render_widget(paragraph, text_area);
 
     let cursor_screen_line = cursor_line.saturating_sub(scroll_offset) + suggestions_offset;
-    let cursor_y = area.y + (cursor_screen_line as u16).min(area.height.saturating_sub(1));
+    let cursor_y = area.y
+        + (cursor_screen_line as u16).min(
+            area.height
+                .saturating_sub(metadata_height)
+                .saturating_sub(1),
+        );
 
     let cursor_x = if centered {
         let actual_line_width = lines
             .get(cursor_screen_line)
             .map(|l| l.width())
             .unwrap_or(prompt_len);
-        let center_offset = (area.width as usize).saturating_sub(actual_line_width) / 2;
+        let center_offset = (text_area.width as usize).saturating_sub(actual_line_width) / 2;
         let cursor_offset = prompt_len + cursor_col;
-        area.x + center_offset as u16 + cursor_offset as u16
+        text_area.x + center_offset as u16 + cursor_offset as u16
     } else {
-        area.x + prompt_len as u16 + cursor_col as u16
+        text_area.x + prompt_len as u16 + cursor_col as u16
     };
 
     let cursor = Position::new(cursor_x, cursor_y);
     frame.set_cursor_position(cursor);
-    draw_send_mode_indicator(frame, app, area);
+    draw_send_mode_indicator(frame, app, text_area);
+
+    // Composer frame chrome: rail down the full composer chunk (including
+    // the metadata row), then the metadata row itself in the text area's
+    // bottom row. The rail column and metadata row are outside the copy
+    // snapshot registered above, so they are never copied (issue #430).
+    if rail_active {
+        let ascii = matches!(
+            app.footer_config().icon_mode,
+            crate::config::FooterIconMode::Ascii
+        );
+        crate::tui::composer_frame::draw_rail(frame, app, area, ascii);
+        if metadata_height > 0 {
+            let metadata_area = Rect::new(
+                text_area.x,
+                area.y + area.height - 1,
+                text_area.width,
+                1,
+            );
+            crate::tui::composer_frame::draw_metadata(frame, widget_data, metadata_area, ascii);
+        }
+    }
     Some(cursor)
 }
 
@@ -2967,6 +3015,22 @@ pub(crate) fn input_cursor_pos_from_screen(
     if !layout_utils::point_in_rect(column, row, area) {
         return None;
     }
+
+    // The composer frame (OpenSpec `add-composer-frame`) insets the typed text
+    // by the accent rail and reserves the metadata row: map clicks through the
+    // same geometry the draw path uses.
+    let rail_width: u16 = if app.composer_config().rail() { 1 } else { 0 };
+    let metadata_height: u16 = if app.composer_config().metadata_row() {
+        1
+    } else {
+        0
+    };
+    let area = Rect {
+        x: area.x.saturating_add(rail_width),
+        width: area.width.saturating_sub(rail_width),
+        height: area.height.saturating_sub(metadata_height),
+        ..area
+    };
 
     let input_text = app.input();
     let reserved_width = send_mode_reserved_width(app);

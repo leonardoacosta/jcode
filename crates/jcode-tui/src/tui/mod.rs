@@ -25,6 +25,7 @@ mod info_widget_settle;
 pub mod info_widget_stability;
 pub mod keybind;
 mod layout_utils;
+pub(crate) mod composer_frame;
 pub(crate) mod footer;
 pub mod login_picker;
 pub mod markdown;
@@ -606,6 +607,12 @@ pub trait TuiState {
     /// unless they explicitly override it.
     fn footer_config(&self) -> crate::config::FooterConfig {
         crate::config::FooterConfig::default()
+    }
+    /// Composer frame configuration (`display.composer`). The app returns the
+    /// configured value; render fixtures default to `ComposerConfig::default()`
+    /// unless they explicitly override it.
+    fn composer_config(&self) -> crate::config::ComposerConfig {
+        crate::config::ComposerConfig::default()
     }
     /// Monotonic clock for viewport animations
     fn now_millis(&self) -> u64;

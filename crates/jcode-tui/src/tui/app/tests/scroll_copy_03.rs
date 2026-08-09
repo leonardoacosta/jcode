@@ -140,7 +140,10 @@ fn test_prompt_preview_reserves_rows_without_overwriting_visible_history() {
     app.status = ProcessingStatus::Idle;
     app.session.short_name = Some("test".to_string());
 
-    let backend = ratatui::backend::TestBackend::new(40, 8);
+    // One extra row for the composer frame's metadata row (default on): the
+    // scenario asserts the same history content stays visible below the
+    // sticky prompt preview.
+    let backend = ratatui::backend::TestBackend::new(40, 9);
     let mut terminal = ratatui::Terminal::new(backend).expect("failed to create test terminal");
 
     let text = render_and_snap(&app, &mut terminal);
@@ -1563,10 +1566,16 @@ fn overscroll_reveal_does_not_relayout_transcript() {
         // during the dwell must be a row that already existed before the
         // reveal (a re-wrap breaks lines at a different column, producing
         // brand-new row strings, which is the full-screen flicker).
+        // Tolerance is the elastic row plus at most one sticky-preview row:
+        // at the pad where the one-row slide pushes the current prompt out of
+        // view, the sticky prompt preview legitimately activates and claims a
+        // row of its own (the same row any one-row scroll past the prompt
+        // claims). The anti-flicker guard itself is the byte-identical
+        // body-row comparison below; this bound only rejects runaway growth.
         assert!(
-            max_during <= max_before + 1,
+            max_during <= max_before + 2,
             "pad={pad}: reveal moved the viewport by more than the elastic \
-             row (max {max_before} -> {max_during})"
+             row plus a sticky-preview activation (max {max_before} -> {max_during})"
         );
         let before_rows: Vec<&str> = before.lines().collect();
         let during_rows: Vec<&str> = during.lines().collect();

@@ -1920,6 +1920,10 @@ impl crate::tui::TuiState for App {
         self.footer_config.clone()
     }
 
+    fn composer_config(&self) -> crate::config::ComposerConfig {
+        self.composer_config.clone()
+    }
+
     fn now_millis(&self) -> u64 {
         self.app_started.elapsed().as_millis() as u64
     }

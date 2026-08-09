@@ -1405,3 +1405,53 @@ fn test_display_footer_ignores_unknown_keys() {
     .expect("unknown footer keys are ignored");
     assert_eq!(cfg.display.footer.style, crate::config::FooterStyle::Segments);
 }
+
+#[test]
+fn test_display_composer_defaults() {
+    let cfg: Config = toml::from_str("").expect("empty config parses");
+    assert_eq!(
+        cfg.display.composer.style,
+        crate::config::ComposerStyle::Rail
+    );
+    assert!(cfg.display.composer.metadata);
+}
+
+#[test]
+fn test_display_composer_rail_and_metadata_parse() {
+    let cfg: Config = toml::from_str(
+        "[display]\ncentered = true\n[display.composer]\nstyle = \"flat\"\nmetadata = false\n",
+    )
+    .expect("composer config parses");
+    assert_eq!(
+        cfg.display.composer.style,
+        crate::config::ComposerStyle::Flat
+    );
+    assert!(!cfg.display.composer.metadata);
+    assert!(cfg.display.centered, "unrelated settings must survive");
+    // Sibling sections keep their defaults.
+    assert_eq!(cfg.display.footer.style, crate::config::FooterStyle::Segments);
+}
+
+#[test]
+fn test_display_composer_absent_section_keeps_defaults_and_siblings() {
+    let cfg: Config = toml::from_str("[display]\ncentered = true\n")
+        .expect("config without composer section parses");
+    assert_eq!(
+        cfg.display.composer.style,
+        crate::config::ComposerStyle::Rail
+    );
+    assert!(cfg.display.composer.metadata);
+    assert!(cfg.display.centered, "unrelated settings must survive");
+}
+
+#[test]
+fn test_display_composer_ignores_unknown_keys() {
+    let cfg: Config = toml::from_str(
+        "[display.composer]\nstyle = \"rail\"\nnonsense_key = true\n",
+    )
+    .expect("unknown composer keys are ignored");
+    assert_eq!(
+        cfg.display.composer.style,
+        crate::config::ComposerStyle::Rail
+    );
+}

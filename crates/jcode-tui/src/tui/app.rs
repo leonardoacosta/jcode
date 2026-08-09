@@ -1610,6 +1610,8 @@ pub struct App {
     overscroll_status_mode: crate::config::OverscrollStatusMode,
     /// Persistent status footer configuration. From `display.footer` config.
     footer_config: crate::config::FooterConfig,
+    /// Composer frame configuration. From `display.composer` config.
+    composer_config: crate::config::ComposerConfig,
     /// Scroll offset for changelog overlay (None = not visible)
     changelog_scroll: Option<usize>,
     help_scroll: Option<usize>,

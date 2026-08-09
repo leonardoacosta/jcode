@@ -1188,6 +1188,51 @@ impl FooterConfig {
         matches!(self.style, FooterStyle::Segments)
     }
 }
+
+/// Composer frame style (`display.composer.style`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ComposerStyle {
+    /// Accent rail on every composer row plus the optional metadata row
+    /// (default).
+    #[default]
+    Rail,
+    /// Pre-frame composer: no rail column, no metadata row. Restores the
+    /// byte-identical pre-change layout.
+    Flat,
+}
+
+/// Composer frame configuration (`display.composer`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ComposerConfig {
+    /// Frame style: rail (default) or flat.
+    #[serde(deserialize_with = "crate::serde_lenient::lenient_enum")]
+    pub style: ComposerStyle,
+    /// Show the composer metadata row (`model · provider · effort`) at the
+    /// bottom of the composer (default: true). Only applies to the rail
+    /// style; `flat` always restores the exact pre-frame composer.
+    pub metadata: bool,
+}
+impl Default for ComposerConfig {
+    fn default() -> Self {
+        Self {
+            style: ComposerStyle::Rail,
+            metadata: true,
+        }
+    }
+}
+impl ComposerConfig {
+    /// Whether the composer reserves the accent rail column.
+    pub fn rail(&self) -> bool {
+        matches!(self.style, ComposerStyle::Rail)
+    }
+
+    /// Whether the composer reserves the metadata row.
+    pub fn metadata_row(&self) -> bool {
+        self.rail() && self.metadata
+    }
+}
 fn default_true() -> bool {
     true
 }
