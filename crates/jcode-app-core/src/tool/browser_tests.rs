@@ -22,6 +22,7 @@ fn snapshot_maps_to_annotated_get_content() {
         params: None,
         url: None,
         tab_id: Some(7),
+        tab_ref: None,
         window_id: None,
         frame_id: Some(3),
         all_frames: Some(true),
@@ -64,6 +65,7 @@ fn eval_maps_script_and_page_world() {
         params: None,
         url: None,
         tab_id: None,
+        tab_ref: None,
         window_id: None,
         frame_id: None,
         all_frames: None,
@@ -104,6 +106,7 @@ fn interactables_maps_to_bridge_action() {
         params: None,
         url: None,
         tab_id: Some(9),
+        tab_ref: None,
         window_id: None,
         frame_id: None,
         all_frames: None,
@@ -146,6 +149,7 @@ fn schema_exposes_advanced_browser_fields() {
     assert!(props.contains_key("browser"));
     assert!(props.contains_key("url"));
     assert!(props.contains_key("tab_id"));
+    assert!(props.contains_key("tab_ref"));
     assert!(props.contains_key("frame_id"));
     assert!(props.contains_key("selector"));
     assert!(props.contains_key("text"));
@@ -176,13 +180,14 @@ fn schema_exposes_advanced_browser_fields() {
 fn resolve_provider_accepts_auto_and_firefox() {
     assert!(resolve_provider(Some("auto")).is_ok());
     assert!(resolve_provider(Some("firefox")).is_ok());
+    assert!(resolve_provider(Some("chrome")).is_ok());
 }
 
 #[test]
 fn resolve_provider_rejects_unsupported_browser() {
-    let err = resolve_provider(Some("chrome"))
+    let err = resolve_provider(Some("safari"))
         .err()
-        .expect("chrome should not resolve yet");
+        .expect("safari should not resolve yet");
     assert!(
         err.to_string()
             .contains("not wired into the built-in browser tool")
@@ -253,4 +258,78 @@ async fn readiness_does_not_trust_a_stale_setup_marker() {
     } else {
         jcode_base::env::remove_var("JCODE_HOME");
     }
+}
+
+#[tokio::test]
+#[ignore = "requires installed agent-browser and Chrome"]
+async fn agent_browser_provider_live_smoke() {
+    if std::env::var("JCODE_AGENT_BROWSER_LIVE").as_deref() != Ok("1") {
+        eprintln!("set JCODE_AGENT_BROWSER_LIVE=1 to run the live Chrome provider smoke test");
+        return;
+    }
+
+    let tool = BrowserTool::new();
+    let session_id = "live/chrome smoke".to_string();
+    let ctx = ToolContext {
+        session_id: session_id.clone(),
+        message_id: "message".to_string(),
+        tool_call_id: "tool".to_string(),
+        working_dir: None,
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: jcode_tool_core::ToolExecutionMode::Direct,
+    };
+
+    let status = tool
+        .execute(
+            json!({"action": "status", "browser": "chrome"}),
+            ctx.clone(),
+        )
+        .await
+        .expect("chrome status should execute");
+    assert_eq!(status.metadata.as_ref().unwrap()["browser"], "chrome");
+
+    let opened = tool
+        .execute(
+            json!({"action": "open", "browser": "chrome", "url": "about:blank"}),
+            ctx.clone(),
+        )
+        .await
+        .expect("chrome open should execute");
+    assert_eq!(
+        opened.metadata.as_ref().unwrap()["backend"],
+        "agent_browser"
+    );
+
+    let title = tool
+        .execute(
+            json!({"action": "get_content", "browser": "chrome", "format": "title"}),
+            ctx,
+        )
+        .await
+        .expect("chrome get title should execute");
+    assert_eq!(title.metadata.as_ref().unwrap()["browser"], "chrome");
+
+    let screenshot = tool
+        .execute(
+            json!({"action": "screenshot", "browser": "chrome"}),
+            ToolContext {
+                session_id: session_id.clone(),
+                message_id: "message".to_string(),
+                tool_call_id: "screenshot".to_string(),
+                working_dir: None,
+                stdin_request_tx: None,
+                graceful_shutdown_signal: None,
+                execution_mode: jcode_tool_core::ToolExecutionMode::Direct,
+            },
+        )
+        .await
+        .expect("chrome screenshot should execute");
+    assert_eq!(screenshot.images.len(), 1);
+
+    let session_name = agent_browser::session_name(&session_id);
+    let _ = tokio::process::Command::new("agent-browser")
+        .args(["--session", &session_name, "--json", "close", "--all"])
+        .output()
+        .await;
 }

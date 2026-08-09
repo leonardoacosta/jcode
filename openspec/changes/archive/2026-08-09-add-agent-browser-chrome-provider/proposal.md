@@ -38,7 +38,7 @@ None. The repository has no existing checked-in browser capability specification
 - touches: `crates/jcode-app-core/src/tool/browser/agent_browser_tests.rs (new)`
 - touches: `README.md`
 - touches: `docs/BROWSER_PROVIDER_PROTOCOL.md`
-- base-commit: jcode@281cdcf49b469002ca318e1fb0dcc8319f15c7f0
+- base-commit: jcode@34ff755aad4529f80cc0cdf0e20b45a78c0d3a0d
 
 ## Preconditions
 

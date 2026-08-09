@@ -4,12 +4,20 @@ use async_trait::async_trait;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
+use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tokio::sync::Mutex;
+
+mod agent_browser;
 
 pub struct BrowserTool;
 
 static FIREFOX_PROVIDER: FirefoxBridgeProvider = FirefoxBridgeProvider;
+static AGENT_BROWSER_PROVIDER: agent_browser::AgentBrowserProvider =
+    agent_browser::AgentBrowserProvider;
+static AUTO_BROWSER_AFFINITY: OnceLock<Mutex<HashMap<String, &'static str>>> = OnceLock::new();
 
 impl BrowserTool {
     pub fn new() -> Self {
@@ -34,6 +42,8 @@ struct BrowserInput {
     url: Option<String>,
     #[serde(default)]
     tab_id: Option<i64>,
+    #[serde(default)]
+    tab_ref: Option<String>,
     #[serde(default)]
     window_id: Option<i64>,
     #[serde(default)]
@@ -213,6 +223,10 @@ impl Tool for BrowserTool {
             ("url", json!({"type": "string"})),
             ("tab_id", json!({"type": "integer"})),
             (
+                "tab_ref",
+                json!({"type": "string", "description": "Opaque provider tab reference, used by Chrome agent-browser ids such as t1."}),
+            ),
+            (
                 "window_id",
                 json!({"type": "integer", "description": "Scope the action to one browser window when multiple agents share the browser."}),
             ),
@@ -281,12 +295,22 @@ impl Tool for BrowserTool {
 
     async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput> {
         let params: BrowserInput = serde_json::from_value(input)?;
-        let provider = resolve_provider(params.browser.as_deref())?;
+        let requested_browser = params.browser.as_deref().unwrap_or("auto");
 
         match params.action.as_str() {
-            "status" => provider.status(&ctx).await,
-            "setup" => provider.setup().await,
+            "status" if requested_browser == "auto" => auto_status(&ctx).await,
+            "setup" if requested_browser == "auto" => auto_setup(&ctx).await,
+            "status" => {
+                resolve_provider(Some(requested_browser))?
+                    .status(&ctx)
+                    .await
+            }
+            "setup" => resolve_provider(Some(requested_browser))?.setup().await,
+            other if requested_browser == "auto" => {
+                execute_auto_browser(other, &params, &ctx).await
+            }
             other => {
+                let provider = resolve_provider(Some(requested_browser))?;
                 let setup_message = provider.ensure_ready().await?;
                 let output = provider.execute(other, &params, &ctx).await?;
                 Ok(match setup_message {
@@ -296,6 +320,128 @@ impl Tool for BrowserTool {
             }
         }
     }
+}
+
+async fn execute_auto_browser(
+    action: &str,
+    params: &BrowserInput,
+    ctx: &ToolContext,
+) -> Result<ToolOutput> {
+    if let Some(provider_id) = affinity_for_session(&ctx.session_id).await {
+        let provider = provider_by_id(provider_id)?;
+        match provider.ensure_ready().await {
+            Ok(setup_message) => {
+                let output = provider.execute(action, params, ctx).await?;
+                return Ok(match setup_message {
+                    Some(message) if !message.is_empty() => prepend_setup_message(output, &message),
+                    _ => output,
+                });
+            }
+            Err(err) => {
+                anyhow::bail!(
+                    "The browser provider already selected for this Jcode session ({provider_id}) is no longer ready: {err}. Jcode will not silently migrate existing tabs or refs to another provider; choose browser='firefox' or browser='chrome' explicitly to switch."
+                );
+            }
+        }
+    }
+
+    match FIREFOX_PROVIDER.ensure_ready().await {
+        Ok(setup_message) => {
+            let output = FIREFOX_PROVIDER.execute(action, params, ctx).await?;
+            set_affinity_for_session(&ctx.session_id, FIREFOX_PROVIDER.id()).await;
+            Ok(match setup_message {
+                Some(message) if !message.is_empty() => prepend_setup_message(output, &message),
+                _ => output,
+            })
+        }
+        Err(firefox_err) => match AGENT_BROWSER_PROVIDER.ensure_ready().await {
+            Ok(setup_message) => {
+                let mut output = AGENT_BROWSER_PROVIDER.execute(action, params, ctx).await?;
+                set_affinity_for_session(&ctx.session_id, AGENT_BROWSER_PROVIDER.id()).await;
+                add_metadata_field(
+                    &mut output,
+                    "fallback_reason",
+                    json!(format!("Firefox not ready: {firefox_err}")),
+                );
+                Ok(match setup_message {
+                    Some(message) if !message.is_empty() => prepend_setup_message(output, &message),
+                    _ => output,
+                })
+            }
+            Err(chrome_err) => anyhow::bail!(
+                "No browser provider is ready. Firefox: {firefox_err}. Chrome: {chrome_err}. Run browser action='status' with browser='auto' for combined diagnostics."
+            ),
+        },
+    }
+}
+
+async fn auto_status(ctx: &ToolContext) -> Result<ToolOutput> {
+    let firefox_ready = FIREFOX_PROVIDER.ensure_ready().await.is_ok();
+    let chrome_ready = AGENT_BROWSER_PROVIDER.ensure_ready().await.is_ok();
+    let affinity = affinity_for_session(&ctx.session_id).await;
+    let would_select = affinity.unwrap_or(if firefox_ready {
+        FIREFOX_PROVIDER.id()
+    } else if chrome_ready {
+        AGENT_BROWSER_PROVIDER.id()
+    } else {
+        "none"
+    });
+    Ok(ToolOutput::new(format!(
+        "Browser auto status: Firefox ready: {firefox_ready}; Chrome ready: {chrome_ready}; would select: {would_select}."
+    ))
+    .with_title("browser status")
+    .with_metadata(json!({
+        "browser": "auto",
+        "firefox": {"ready": firefox_ready, "backend": FIREFOX_PROVIDER.id()},
+        "chrome": {"ready": chrome_ready, "backend": AGENT_BROWSER_PROVIDER.id()},
+        "would_select": would_select,
+        "affinity": affinity,
+    })))
+}
+
+async fn auto_setup(ctx: &ToolContext) -> Result<ToolOutput> {
+    if FIREFOX_PROVIDER.ensure_ready().await.is_ok() {
+        return FIREFOX_PROVIDER.status(ctx).await;
+    }
+    if AGENT_BROWSER_PROVIDER.ensure_ready().await.is_ok() {
+        return AGENT_BROWSER_PROVIDER.status(ctx).await;
+    }
+    FIREFOX_PROVIDER.setup().await
+}
+
+fn provider_by_id(id: &str) -> Result<&'static dyn BrowserProvider> {
+    match id {
+        "firefox_agent_bridge" => Ok(&FIREFOX_PROVIDER),
+        "agent_browser" => Ok(&AGENT_BROWSER_PROVIDER),
+        other => anyhow::bail!("unknown browser provider affinity: {other}"),
+    }
+}
+
+async fn affinity_for_session(session_id: &str) -> Option<&'static str> {
+    let affinities = AUTO_BROWSER_AFFINITY.get_or_init(|| Mutex::new(HashMap::new()));
+    affinities.lock().await.get(session_id).copied()
+}
+
+async fn set_affinity_for_session(session_id: &str, provider: &'static str) {
+    let affinities = AUTO_BROWSER_AFFINITY.get_or_init(|| Mutex::new(HashMap::new()));
+    affinities
+        .lock()
+        .await
+        .insert(session_id.to_string(), provider);
+}
+
+fn add_metadata_field(output: &mut ToolOutput, key: &str, value: Value) {
+    let mut metadata = match output.metadata.take() {
+        Some(Value::Object(map)) => map,
+        Some(other) => {
+            let mut map = Map::new();
+            map.insert("result".into(), other);
+            map
+        }
+        None => Map::new(),
+    };
+    metadata.insert(key.to_string(), value);
+    output.metadata = Some(Value::Object(metadata));
 }
 
 fn prepend_setup_message(mut output: ToolOutput, message: &str) -> ToolOutput {
@@ -340,6 +486,9 @@ fn attach_browser_metadata(
 
 fn resolve_provider(browser: Option<&str>) -> Result<&'static dyn BrowserProvider> {
     let browser = browser.unwrap_or("auto");
+    if browser == "chrome" {
+        return Ok(&AGENT_BROWSER_PROVIDER);
+    }
     if FIREFOX_PROVIDER.supported_browsers().contains(&browser) {
         return Ok(&FIREFOX_PROVIDER);
     }
@@ -705,6 +854,10 @@ fn bridge_request(action: &str, input: &BrowserInput) -> Result<(String, Value, 
 fn apply_common_targeting(params: &mut Map<String, Value>, input: &BrowserInput) {
     if let Some(tab_id) = input.tab_id {
         params.insert("tabId".into(), json!(tab_id));
+    }
+    if input.tab_ref.is_some() {
+        // Firefox keeps its legacy integer tab_id contract. Chrome consumes
+        // tab_ref inside the agent-browser provider.
     }
     if let Some(window_id) = input.window_id {
         params.insert("windowId".into(), json!(window_id));

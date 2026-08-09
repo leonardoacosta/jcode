@@ -327,7 +327,8 @@ fn named_openai_compatible_static_profile_rejects_unlisted_model_switches() {
         .set_model("gpt-5.6-sol")
         .expect_err("unlisted model should be rejected");
     assert!(
-        err.to_string().contains("not allowed by this provider profile"),
+        err.to_string()
+            .contains("not allowed by this provider profile"),
         "unexpected error: {err:#}"
     );
 }

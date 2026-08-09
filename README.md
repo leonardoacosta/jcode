@@ -679,7 +679,7 @@ The devil is in the details. There are many undocumented optimizations and nicet
 
 Anthropic's Claude cache goes cold after 5 minutes. If you initiate Claude after these 5 minutes, you have a cache miss, potentially costing you lots of tokens. The ui warns you when the cache went cold, and notfies you if there was an unexpected cache miss. 
 
-jcode comes with instructions on how to set up Firefox Agent Bridge. Ask you agent to set it up, and then you will have browser automation in jcode as well. 
+jcode includes browser automation through the built-in `browser` tool. Firefox uses Firefox Agent Bridge. Chrome uses an optional trusted `agent-browser` executable when callers specify `browser: "chrome"`, with isolated Jcode-owned sessions, neutral config, cleared `AGENT_BROWSER_*` environment, and opaque `tab_ref` values such as `t1`. `browser: "auto"` keeps Firefox first when it is ready and can fall back to Chrome while preserving same-session provider affinity. Run `browser` with `action: "status"` before setup; Chrome setup never installs the npm package for you and only runs `agent-browser install` when an explicit Chrome setup request finds a trusted CLI but missing browser runtime.
 
 Agent grep is a grep tool I made for the jcode agent. It adds file strucuture information (ie the list of functions, their displacement, etc) to the grep return, so that the agent can infer more of what the file doesn without actually reading the file. It also implements a harness-level integration that adaptively truncates returns based on what the agent has already seen. This saves on context a lot. 
 

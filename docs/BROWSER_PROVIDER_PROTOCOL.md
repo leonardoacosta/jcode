@@ -17,6 +17,25 @@ jcode should expose a single first-class `browser` tool while remaining compatib
 
 The protocol in this document defines the **normalized contract** between jcode and a browser provider.
 
+## Wired providers
+
+jcode currently wires two built-in providers behind the same `browser` tool:
+
+- `firefox_agent_bridge` for `browser: "firefox"` and Firefox-first automatic selection.
+- `agent_browser` for explicit `browser: "chrome"`, backed by a trusted optional `agent-browser` CLI.
+
+Chrome provider rules:
+
+- The executable is discovered from absolute `JCODE_AGENT_BROWSER_BIN` or a validated `PATH` entry, version-gated to the probed `0.27.x` command surface, and fingerprinted before execution.
+- Each Jcode session uses an isolated `jcode-<readable-prefix>-<stable-hash>` agent-browser session with a Jcode-owned neutral config and working directory.
+- The child environment clears inherited `AGENT_BROWSER_*` variables and sets only Jcode-owned controls such as the provider idle timeout.
+- Chrome tab identifiers are opaque strings. Use `tab_ref` values such as `t1`; legacy integer `tab_id` remains Firefox-only.
+- Chrome snapshots expose agent-browser accessibility refs, including supported one-level iframe refs. Direct `window_id`, `frame_id`, `all_frames`, and `list_frames` targeting is rejected when it cannot be honored faithfully.
+- Chrome `provider_command` is intentionally unsupported. Raw agent-browser auth, profile, setup, dashboard, recording, cross-session close, and arbitrary CLI surfaces are not exposed through Jcode.
+- `browser: "auto"` preserves explicit-provider strictness, prefers ready Firefox for sessions without affinity, may fall back to ready Chrome, and then keeps the selected provider sticky for that Jcode session so tabs and refs are not silently migrated.
+- `doctor --json --offline` is used as a non-installing Chrome readiness probe. It may clean documented stale daemon socket, pid, and version sidecars, but setup does not install the npm package and only runs `agent-browser install` for explicit Chrome runtime setup.
+
+
 This is intentionally **not** a demand that every bridge speak exactly the same native command language. Instead:
 
 - jcode defines a **core semantic layer** it can rely on
