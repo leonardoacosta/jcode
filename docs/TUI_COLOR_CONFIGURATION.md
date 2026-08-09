@@ -70,6 +70,17 @@ everything else:
 | `composerRailSkill` | Accent rail while a skill is active | `accent` |
 | `composerMetadata` | Metadata row text (`model · provider · effort`) | `dim` |
 
+### User-message frame roles
+
+The user-message frame (`display.user_messages`, see `USER_MESSAGE_FRAMING.md`)
+adds three optional keys to `[display.colors]` with theme-role fallbacks:
+
+| Key | Paints | Fallback role |
+| --- | --- | --- |
+| `userMessageBorder` | Top/bottom border rows and corner glyphs | `user` |
+| `userMessageRail` | Per-row rail (or gutter) on user prompt rows | `user` |
+| `userMessageLabel` | The ` User ` label in labeled-style top borders | `dim` |
+
 ## How every color became configurable
 
 The TUI does not have one palette. It has ~22 named semantic roles plus roughly

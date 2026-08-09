@@ -1233,6 +1233,72 @@ impl ComposerConfig {
         self.rail() && self.metadata
     }
 }
+
+/// User-message frame style (`display.user_messages.style`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum UserMessageStyle {
+    /// Full-width top/bottom borders around each user prompt, accent rail on
+    /// every prompt row (default).
+    #[default]
+    Framed,
+    /// Borders and background band as in `framed`, but no rail glyphs: a
+    /// one-cell leading gutter keeps decoration out of the way of selection.
+    FramedCopyFriendly,
+    /// Accent rail only; no border rows, so transcript height is unchanged.
+    Compact,
+    /// Rounded box around each prompt with a fixed `User` label in the top
+    /// border.
+    Labeled,
+    /// Pre-change rendering: flat numbered band, no rail, gutter, or borders.
+    Off,
+}
+
+/// User-message frame configuration (`display.user_messages`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct UserMessagesConfig {
+    /// Frame style: framed (default), framed-copy-friendly, compact, labeled,
+    /// or off.
+    #[serde(deserialize_with = "crate::serde_lenient::lenient_enum")]
+    pub style: UserMessageStyle,
+}
+impl Default for UserMessagesConfig {
+    fn default() -> Self {
+        Self {
+            style: UserMessageStyle::Framed,
+        }
+    }
+}
+impl UserMessagesConfig {
+    /// Whether prompt rows carry border rows above and below.
+    pub fn borders(&self) -> bool {
+        matches!(
+            self.style,
+            UserMessageStyle::Framed | UserMessageStyle::FramedCopyFriendly | UserMessageStyle::Labeled
+        )
+    }
+
+    /// Whether every prompt row begins with an accent rail (versus a plain
+    /// gutter or no leading decoration).
+    pub fn rail(&self) -> bool {
+        matches!(
+            self.style,
+            UserMessageStyle::Framed | UserMessageStyle::Compact | UserMessageStyle::Labeled
+        )
+    }
+
+    /// Leading decoration width in cells for prompt rows.
+    pub fn leading_width(&self) -> usize {
+        match self.style {
+            UserMessageStyle::Framed
+            | UserMessageStyle::FramedCopyFriendly
+            | UserMessageStyle::Compact
+            | UserMessageStyle::Labeled => 1,
+            UserMessageStyle::Off => 0,
+        }
+    }
+}
 fn default_true() -> bool {
     true
 }

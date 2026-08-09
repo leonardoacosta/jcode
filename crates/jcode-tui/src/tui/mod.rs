@@ -26,6 +26,7 @@ pub mod info_widget_stability;
 pub mod keybind;
 mod layout_utils;
 pub(crate) mod composer_frame;
+mod user_message_frame;
 pub(crate) mod footer;
 pub mod login_picker;
 pub mod markdown;
@@ -613,6 +614,12 @@ pub trait TuiState {
     /// unless they explicitly override it.
     fn composer_config(&self) -> crate::config::ComposerConfig {
         crate::config::ComposerConfig::default()
+    }
+    /// User-message frame configuration (`display.user_messages`). The app
+    /// returns the configured value; render fixtures default to `Off` (the
+    /// pre-change flat band) unless they explicitly override it.
+    fn user_messages_config(&self) -> crate::config::UserMessagesConfig {
+        crate::config::UserMessagesConfig::default()
     }
     /// Monotonic clock for viewport animations
     fn now_millis(&self) -> u64;

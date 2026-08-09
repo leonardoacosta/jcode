@@ -1799,7 +1799,15 @@ fn command_palette_open_does_not_move_existing_rows() {
     // input row gaining "/", the idle footer hint shortening, palette rows
     // covering blank space) are fine; vertical motion is the regression.
     for (y, row) in before_rows.iter().enumerate() {
-        if row.trim().is_empty() {
+        let trimmed = row.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        // Skip chrome-only rows (native scrollbar track/thumb glyphs on an
+        // otherwise blank row): their position and shape legitimately follow
+        // the scroll extent, and matching them by exact string across the
+        // frame confuses same-shaped chrome rows at different y positions.
+        if trimmed.chars().all(|c| "│╷╵•".contains(c)) {
             continue;
         }
         if after_rows.get(y).copied() == Some(*row) {

@@ -1445,6 +1445,62 @@ fn test_display_composer_absent_section_keeps_defaults_and_siblings() {
 }
 
 #[test]
+fn test_display_user_messages_defaults() {
+    let cfg: Config = toml::from_str("").expect("empty config parses");
+    assert_eq!(
+        cfg.display.user_messages.style,
+        crate::config::UserMessageStyle::Framed
+    );
+}
+
+#[test]
+fn test_display_user_messages_all_styles_parse() {
+    for (toml_style, expected) in [
+        ("framed", crate::config::UserMessageStyle::Framed),
+        (
+            "framed-copy-friendly",
+            crate::config::UserMessageStyle::FramedCopyFriendly,
+        ),
+        ("compact", crate::config::UserMessageStyle::Compact),
+        ("labeled", crate::config::UserMessageStyle::Labeled),
+        ("off", crate::config::UserMessageStyle::Off),
+    ] {
+        let cfg: Config = toml::from_str(&format!(
+            "[display.user_messages]\nstyle = \"{toml_style}\"\n"
+        ))
+        .expect("user_messages style parses");
+        assert_eq!(cfg.display.user_messages.style, expected, "{toml_style}");
+    }
+}
+
+#[test]
+fn test_display_user_messages_absent_section_keeps_defaults_and_siblings() {
+    let cfg: Config = toml::from_str("[display]\ncentered = true\n")
+        .expect("config without user_messages section parses");
+    assert_eq!(
+        cfg.display.user_messages.style,
+        crate::config::UserMessageStyle::Framed
+    );
+    assert!(cfg.display.centered, "unrelated settings must survive");
+    assert_eq!(
+        cfg.display.composer.style,
+        crate::config::ComposerStyle::Rail
+    );
+}
+
+#[test]
+fn test_display_user_messages_ignores_unknown_keys() {
+    let cfg: Config = toml::from_str(
+        "[display.user_messages]\nstyle = \"compact\"\nnonsense_key = true\n",
+    )
+    .expect("unknown user_messages keys are ignored");
+    assert_eq!(
+        cfg.display.user_messages.style,
+        crate::config::UserMessageStyle::Compact
+    );
+}
+
+#[test]
 fn test_display_composer_ignores_unknown_keys() {
     let cfg: Config = toml::from_str(
         "[display.composer]\nstyle = \"rail\"\nnonsense_key = true\n",

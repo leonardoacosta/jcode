@@ -1924,6 +1924,10 @@ impl crate::tui::TuiState for App {
         self.composer_config.clone()
     }
 
+    fn user_messages_config(&self) -> crate::config::UserMessagesConfig {
+        self.user_messages_config.clone()
+    }
+
     fn now_millis(&self) -> u64 {
         self.app_started.elapsed().as_millis() as u64
     }

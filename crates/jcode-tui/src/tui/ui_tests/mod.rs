@@ -145,6 +145,7 @@ struct TestState {
     chat_overscroll_active: bool,
     footer_config: Option<crate::config::FooterConfig>,
     composer_config: Option<crate::config::ComposerConfig>,
+    user_messages_config: Option<crate::config::UserMessagesConfig>,
     cache_ttl_status: Option<crate::tui::CacheTtlInfo>,
     status_notice: Option<String>,
     time_since_user_interaction: Option<Duration>,
@@ -389,6 +390,17 @@ impl crate::tui::TuiState for TestState {
             }
         })
     }
+    fn user_messages_config(&self) -> crate::config::UserMessagesConfig {
+        // Off by default in the fixture harness: the entire pre-existing
+        // ui_tests golden suite then doubles as the byte-identical rollback
+        // proof for `display.user_messages.style = "off"`. Framing tests opt
+        // into a style explicitly.
+        self.user_messages_config.clone().unwrap_or_else(|| {
+            crate::config::UserMessagesConfig {
+                style: crate::config::UserMessageStyle::Off,
+            }
+        })
+    }
     fn render_streaming_markdown(&self, _width: usize) -> Vec<Line<'static>> {
         markdown::render_markdown_with_width(&self.streaming_text, Some(_width))
     }
@@ -533,6 +545,7 @@ fn reset_prompt_viewport_state_for_test() {
 mod basic;
 
 mod composer_frame;
+mod user_message_frame;
 #[path = "diagrams.rs"]
 mod diagrams;
 

@@ -925,6 +925,10 @@ struct BodyCacheKey {
     /// Live swarm-member data renders beneath the tool call that spawned each
     /// member, so status/todo/tool-intent updates must invalidate the body.
     swarm_members_signature: u64,
+    /// User-message frame style (`display.user_messages.style`): frames bake
+    /// into prepared rows, so a style switch rebuilds the body through the
+    /// same invalidation path as a color change.
+    user_message_style: crate::config::UserMessageStyle,
 }
 
 #[derive(Clone)]
@@ -1197,6 +1201,10 @@ struct FullPrepCacheKey {
     expanded_images_version: u64,
     /// Signature of live swarm member cards embedded beneath spawn tool calls.
     swarm_members_signature: u64,
+    /// User-message frame style (`display.user_messages.style`): frames bake
+    /// into prepared rows, so a style switch must re-render through the same
+    /// invalidation path as a color change.
+    user_message_style: crate::config::UserMessageStyle,
 }
 
 #[derive(Clone)]

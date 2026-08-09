@@ -1612,6 +1612,7 @@ pub struct App {
     footer_config: crate::config::FooterConfig,
     /// Composer frame configuration. From `display.composer` config.
     composer_config: crate::config::ComposerConfig,
+    user_messages_config: crate::config::UserMessagesConfig,
     /// Scroll offset for changelog overlay (None = not visible)
     changelog_scroll: Option<usize>,
     help_scroll: Option<usize>,

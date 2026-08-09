@@ -2,6 +2,7 @@
 
 use crate::{
     ComposerConfig, DiagramDisplayMode, DiffDisplayMode, FooterConfig, LatexRenderingMode, MarkdownSpacingMode,
+    UserMessagesConfig,
     NativeScrollbarConfig, OverscrollStatusMode, ReasoningDisplayMode, default_true,
 };
 use serde::{Deserialize, Serialize};
@@ -130,6 +131,11 @@ pub struct DisplayConfig {
     /// composer exactly.
     #[serde(default)]
     pub composer: ComposerConfig,
+    /// User-message framing (transcript prompt decoration, default:
+    /// framed). Set `user_messages.style = "off"` to restore the pre-change
+    /// flat numbered band exactly.
+    #[serde(default)]
+    pub user_messages: UserMessagesConfig,
 }
 impl Default for DisplayConfig {
     fn default() -> Self {
@@ -170,6 +176,7 @@ impl Default for DisplayConfig {
             overscroll_status: OverscrollStatusMode::default(),
             footer: FooterConfig::default(),
             composer: ComposerConfig::default(),
+            user_messages: UserMessagesConfig::default(),
         }
     }
 }

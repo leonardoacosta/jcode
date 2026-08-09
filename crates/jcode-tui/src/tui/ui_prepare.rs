@@ -642,7 +642,7 @@ fn prepare_active_batch_progress(
         super::left_pad_lines_to_block_width(&mut lines, width, block_width);
     }
 
-    wrap_lines_with_map(lines, &[], &[], &[], &[], &[], width, &[], &[], &[])
+    wrap_lines_with_map(lines, &[], &[], &[], &[], &[], width, &[], &[], &[], NO_USER_FRAME)
 }
 
 pub(super) fn prepare_messages(
@@ -687,6 +687,7 @@ pub(super) fn prepare_messages(
         inline_images_visible: app.inline_images_visible(),
         expanded_images_version: app.expanded_images_version(),
         swarm_members_signature: swarm_members_signature(&app.swarm_members_for_transcript()),
+        user_message_style: app.user_messages_config().style,
     };
 
     super::note_full_prep_request();
@@ -1126,6 +1127,7 @@ fn prepare_body_cached(app: &dyn TuiState, width: u16) -> Arc<PreparedMessages> 
         images_signature: app.side_pane_images_signature(),
         expanded_images_version: app.expanded_images_version(),
         swarm_members_signature: swarm_members_signature(&app.swarm_members_for_transcript()),
+        user_message_style: app.user_messages_config().style,
     };
     let msg_count = app.display_messages().len();
     let cache_lookup_start = Instant::now();
@@ -1314,6 +1316,10 @@ struct BodyAcc {
     line_raw_overrides: Vec<Option<WrappedLineMap>>,
     line_copy_offsets: Vec<usize>,
     user_line_indices: Vec<usize>,
+    /// Unwrapped-line span per user prompt (`first_line_idx`, `lines.len()`
+    /// after the prompt): the framing layer maps these to wrapped-row ranges
+    /// so frames enclose the whole prompt, including continuation lines.
+    user_prompt_line_spans: Vec<(usize, usize)>,
     user_prompt_texts: Vec<String>,
     edit_tool_line_ranges: Vec<(usize, String, usize, usize, bool)>,
     copy_targets: Vec<RawCopyTarget>,
@@ -1407,6 +1413,7 @@ fn render_message_into(
             let distance = ctx.total_prompts + ctx.pending_count + 1 - acc.prompt_num;
             let num_color = rainbow_prompt_color(distance);
             let displayed_prompt_num = acc.prompt_num + ctx.prompt_number_offset;
+            let user_span_start = acc.lines.len();
             push_user_prompt_lines(
                 &mut acc.lines,
                 &mut acc.raw_plain_lines,
@@ -1418,6 +1425,8 @@ fn render_message_into(
                 &msg.content,
                 align,
             );
+            acc.user_prompt_line_spans
+                .push((user_span_start, acc.lines.len()));
             if !crate::session::is_attached_image_label_text(&msg.content) {
                 let ordinal = acc.anchor_prompt_ordinal;
                 acc.anchor_prompt_ordinal += 1;
@@ -1823,6 +1832,7 @@ pub(super) fn prepare_body_incremental(
         &acc.edit_tool_line_ranges,
         &acc.copy_targets,
         &acc.segments,
+        user_frame_spec(app, &acc.user_prompt_line_spans),
     );
 
     let prepared = Arc::make_mut(&mut prev);
@@ -2145,6 +2155,7 @@ pub(super) fn prepare_body_prepended(
         &acc.edit_tool_line_ranges,
         &acc.copy_targets,
         &acc.segments,
+        user_frame_spec(app, &acc.user_prompt_line_spans),
     );
 
     // Blank-separator continuity at the seam: the suffix's first message baked
@@ -2420,6 +2431,7 @@ pub(super) fn prepare_body(
         &acc.edit_tool_line_ranges,
         &acc.copy_targets,
         &acc.segments,
+        user_frame_spec(app, &acc.user_prompt_line_spans),
     );
     stamp_mermaid_pending(&mut prepared, mermaid_epoch_before);
     prepared
@@ -2507,6 +2519,39 @@ fn wrap_lines(
     }
 }
 
+/// User-message frame inputs for the wrap stage: the configured style, the
+/// terminal glyph capability, and the unwrapped-line span of every user
+/// prompt. Frames bake into the wrapped row stream here so every downstream
+/// consumer (scroll math, copy snapshots, margins) treats them as ordinary
+/// content rows.
+pub(super) struct UserFrameSpec<'a> {
+    pub style: crate::config::UserMessageStyle,
+    pub ascii: bool,
+    pub line_spans: &'a [(usize, usize)],
+}
+
+/// Resolve the frame spec for one prepare pass from app state.
+pub(super) fn user_frame_spec<'a>(
+    app: &dyn TuiState,
+    line_spans: &'a [(usize, usize)],
+) -> UserFrameSpec<'a> {
+    UserFrameSpec {
+        style: app.user_messages_config().style,
+        ascii: matches!(
+            app.footer_config().icon_mode,
+            crate::config::FooterIconMode::Ascii
+        ),
+        line_spans,
+    }
+}
+
+/// Disabled frame spec for content that never contains user prompts.
+pub(super) const NO_USER_FRAME: UserFrameSpec<'static> = UserFrameSpec {
+    style: crate::config::UserMessageStyle::Off,
+    ascii: false,
+    line_spans: &[],
+};
+
 #[expect(
     clippy::too_many_arguments,
     reason = "Wrapped-line preparation carries explicit render state to avoid hidden coupling"
@@ -2522,6 +2567,7 @@ fn wrap_lines_with_map(
     edit_ranges: &[(usize, String, usize, usize, bool)],
     copy_ranges: &[RawCopyTarget],
     segments: &[(u64, usize, usize, usize)],
+    user_frame: UserFrameSpec<'_>,
 ) -> PreparedMessages {
     let full_width = width.saturating_sub(1) as usize;
     let user_width = width.saturating_sub(2) as usize;
@@ -2537,6 +2583,27 @@ fn wrap_lines_with_map(
             user_line_mask[idx] = true;
         }
     }
+    // Which prompt span (if any) each unwrapped line belongs to, plus the
+    // span boundaries, for user-message framing.
+    let frame_cfg = crate::config::UserMessagesConfig {
+        style: user_frame.style,
+    };
+    let frame_active = !matches!(user_frame.style, crate::config::UserMessageStyle::Off);
+    let mut line_span_idx: Vec<Option<usize>> = vec![None; lines.len()];
+    let mut span_starts: std::collections::BTreeMap<usize, usize> =
+        std::collections::BTreeMap::new();
+    let mut span_ends: std::collections::BTreeMap<usize, usize> =
+        std::collections::BTreeMap::new();
+    if frame_active {
+        for (span_idx, &(start, end)) in user_frame.line_spans.iter().enumerate() {
+            span_starts.insert(start, span_idx);
+            span_ends.insert(end.saturating_sub(1), span_idx);
+            for line_idx in start..end.min(lines.len()) {
+                line_span_idx[line_idx] = Some(span_idx);
+            }
+        }
+    }
+    let frame_colors = &crate::config::config().display.colors;
     let mut wrapped_idx = 0usize;
 
     let mut raw_to_wrapped: Vec<usize> = Vec::with_capacity(lines.len() + 1);
@@ -2553,12 +2620,64 @@ fn wrap_lines_with_map(
                 raw_plain_lines.push(raw_text);
                 (raw_line, 0usize, raw_width)
             };
+        // User-message framing: the top border row precedes the prompt's
+        // first content row but is attributed to the previous unwrapped
+        // line's output range, so message-boundary truncation never includes
+        // the border of a message that starts at the truncation point. Its
+        // copy map is zero-width at the end of the prompt's raw line, so
+        // selection can never copy border glyphs (or resolve links on them).
+        let in_prompt_span = frame_active && line_span_idx[orig_idx].is_some();
+        if frame_active && frame_cfg.borders() && span_starts.contains_key(&orig_idx) {
+            let border =
+                super::super::user_message_frame::border_top(full_width, user_frame.style, frame_colors, user_frame.ascii);
+            let border_width = border.width();
+            // Zero-width copy map at the START of the prompt's first raw
+            // line: hit-testing the top border clamps to the prompt start,
+            // so a drag beginning on the border selects the prompt from its
+            // first character and can never copy a border glyph.
+            wrapped_line_map.push(WrappedLineMap {
+                raw_line,
+                start_col: 0,
+                end_col: 0,
+            });
+            wrapped_copy_offsets.push(border_width);
+            wrapped_lines.push(border);
+            wrapped_idx += 1;
+        }
         raw_to_wrapped.push(wrapped_idx);
         let is_user_line = user_line_mask.get(orig_idx).copied().unwrap_or(false);
-        let wrap_width = if is_user_line { user_width } else { full_width };
-        let new_lines = markdown::wrap_line(line, wrap_width);
+        // Framed continuation lines wrap at the user width too so every row
+        // of the prompt keeps the same right edge. With framing off this is
+        // the pre-change behavior exactly (first line only).
+        let wrap_width = if is_user_line || in_prompt_span {
+            user_width
+        } else {
+            full_width
+        };
+        let mut new_lines = markdown::wrap_line(line, wrap_width);
         let count = new_lines.len();
         let mut remaining_copy_offset = line_copy_offsets.get(orig_idx).copied().unwrap_or(0);
+        // Prepend the rail/gutter to every prompt row and extend the copy
+        // offsets past it: the leading decoration replaces one column of the
+        // pre-change band gutter and is never part of copied text.
+        let leading_width = if in_prompt_span {
+            let leading = frame_cfg.leading_width();
+            if leading > 0 {
+                if let Some(span) = super::super::user_message_frame::leading_span(
+                    user_frame.style,
+                    frame_colors,
+                    user_frame.ascii,
+                ) {
+                    for wrapped_line in new_lines.iter_mut() {
+                        wrapped_line.spans.insert(0, span.clone());
+                    }
+                }
+            }
+            remaining_copy_offset += leading;
+            leading
+        } else {
+            0
+        };
         let mut segment_start = start_col;
 
         for wrapped_line in &new_lines {
@@ -2584,6 +2703,23 @@ fn wrap_lines_with_map(
 
         wrapped_lines.extend(new_lines);
         wrapped_idx += count;
+        let _ = leading_width;
+
+        // Bottom border row after the prompt's last content row (same
+        // zero-width copy treatment as the top border).
+        if frame_active && frame_cfg.borders() && span_ends.contains_key(&orig_idx) {
+            let border =
+                super::super::user_message_frame::border_bottom(full_width, user_frame.style, frame_colors, user_frame.ascii);
+            let border_width = border.width();
+            wrapped_line_map.push(WrappedLineMap {
+                raw_line,
+                start_col: end_col,
+                end_col,
+            });
+            wrapped_copy_offsets.push(border_width);
+            wrapped_lines.push(border);
+            wrapped_idx += 1;
+        }
     }
     raw_to_wrapped.push(wrapped_idx);
 
