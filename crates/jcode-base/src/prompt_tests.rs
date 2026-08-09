@@ -456,3 +456,352 @@ fn project_system_prompt_file_replaces_default_base_prompt() {
 
     std::fs::remove_dir_all(&dir).ok();
 }
+
+// === Roadmap P1: prompt assembly contract ===
+
+struct JcodeHomeGuard {
+    prev: Option<std::ffi::OsString>,
+}
+
+impl JcodeHomeGuard {
+    fn set(path: &std::path::Path) -> Self {
+        let prev = std::env::var_os("JCODE_HOME");
+        crate::env::set_var("JCODE_HOME", path);
+        Self { prev }
+    }
+}
+
+impl Drop for JcodeHomeGuard {
+    fn drop(&mut self) {
+        match &self.prev {
+            Some(value) => crate::env::set_var("JCODE_HOME", value),
+            None => crate::env::remove_var("JCODE_HOME"),
+        }
+    }
+}
+
+fn contract_test_project() -> (
+    std::sync::MutexGuard<'static, ()>,
+    tempfile::TempDir,
+    tempfile::TempDir,
+    JcodeHomeGuard,
+) {
+    let guard = crate::storage::lock_test_env();
+    let home = tempfile::TempDir::new().unwrap();
+    let home_guard = JcodeHomeGuard::set(home.path());
+    let project = tempfile::TempDir::new().unwrap();
+    (guard, home, project, home_guard)
+}
+
+#[test]
+fn assembly_layer_order_matches_contract() {
+    let (_guard, _home, project, _home_guard) = contract_test_project();
+    let dir = project.path();
+    std::fs::write(dir.join("AGENTS.md"), "project agents").unwrap();
+    std::fs::create_dir_all(dir.join(".jcode")).unwrap();
+    std::fs::write(dir.join(".jcode/prompt-overlay.md"), "overlay").unwrap();
+    std::fs::write(dir.join(".jcode/preferred-tools.md"), "prefer rg").unwrap();
+
+    let skills = vec![SkillInfo {
+        name: "demo".to_string(),
+        description: "demo skill".to_string(),
+    }];
+    let (assembly, info) = build_prompt_assembly_with_capabilities(
+        Some("skill prompt body"),
+        &skills,
+        false,
+        Some("memory body"),
+        Some(dir),
+        PromptCapabilities { mermaid: true },
+    );
+
+    let static_ids: Vec<&str> = assembly.static_layers.iter().map(|l| l.id).collect();
+    assert_eq!(
+        static_ids,
+        vec![
+            "base",
+            "capability:mermaid",
+            "agents-md-project",
+            "prompt-overlay-project",
+            "preferred-tools-project",
+            "skills-list",
+        ],
+        "static layer order must match the contract"
+    );
+    let dynamic_ids: Vec<&str> = assembly.dynamic_layers.iter().map(|l| l.id).collect();
+    assert_eq!(dynamic_ids, vec!["memory", "active-skill"]);
+    assert_eq!(assembly.version, PROMPT_ASSEMBLY_VERSION);
+    assert!(assembly.digest.starts_with("prompt:1:"));
+    assert_eq!(info.prompt_digest, assembly.digest);
+    assert!(!info.layer_attribution.is_empty());
+}
+
+#[test]
+fn assembly_selfdev_layer_sits_between_base_and_agents_md() {
+    let (_guard, _home, project, _home_guard) = contract_test_project();
+    let dir = project.path();
+    std::fs::write(dir.join("AGENTS.md"), "project agents").unwrap();
+
+    let (assembly, _info) = build_prompt_assembly_with_capabilities(
+        None,
+        &[],
+        true,
+        None,
+        Some(dir),
+        PromptCapabilities { mermaid: false },
+    );
+    let static_ids: Vec<&str> = assembly.static_layers.iter().map(|l| l.id).collect();
+    let base_pos = static_ids.iter().position(|id| *id == "base").unwrap();
+    let selfdev_pos = static_ids.iter().position(|id| *id == "selfdev").unwrap();
+    let agents_pos = static_ids
+        .iter()
+        .position(|id| *id == "agents-md-project")
+        .unwrap();
+    assert!(base_pos < selfdev_pos && selfdev_pos < agents_pos);
+}
+
+#[test]
+fn assembly_split_is_byte_identical_to_legacy_split() {
+    let (_guard, _home, project, _home_guard) = contract_test_project();
+    let dir = project.path();
+    std::fs::write(dir.join("AGENTS.md"), "project agents").unwrap();
+    std::fs::create_dir_all(dir.join(".jcode")).unwrap();
+    std::fs::write(dir.join(".jcode/prompt-overlay.md"), "overlay").unwrap();
+
+    let skills = vec![SkillInfo {
+        name: "demo".to_string(),
+        description: "demo skill".to_string(),
+    }];
+    for &(skill_prompt, memory, selfdev) in &[
+        (None, None, false),
+        (Some("skill body"), Some("memory body"), false),
+        (None, Some("memory body"), true),
+    ] {
+        let (assembly, _) = build_prompt_assembly_with_capabilities(
+            skill_prompt,
+            &skills,
+            selfdev,
+            memory,
+            Some(dir),
+            PromptCapabilities::current(),
+        );
+        let (legacy, _) = build_system_prompt_split_with_capabilities(
+            skill_prompt,
+            &skills,
+            selfdev,
+            memory,
+            Some(dir),
+            PromptCapabilities::current(),
+        );
+        let split = assembly.split();
+        assert_eq!(split.static_part, legacy.static_part, "static mismatch");
+        assert_eq!(split.dynamic_part, legacy.dynamic_part, "dynamic mismatch");
+    }
+}
+
+#[test]
+fn prompt_digest_is_reproducible_and_sensitive() {
+    let layer =
+        |id: &'static str, source: PromptLayerSource, mode: PromptLayerMode, content: &str| {
+            PromptLayer {
+                id,
+                source,
+                mode,
+                content: content.to_string(),
+            }
+        };
+    let base = vec![
+        layer(
+            "base",
+            PromptLayerSource::Builtin,
+            PromptLayerMode::Append,
+            "aaa",
+        ),
+        layer(
+            "agents-md-project",
+            PromptLayerSource::ProjectFile(std::path::PathBuf::from("/x/AGENTS.md")),
+            PromptLayerMode::Append,
+            "bbb",
+        ),
+    ];
+    let digest_a = prompt_digest(1, &base);
+    let digest_b = prompt_digest(1, &base);
+    assert_eq!(digest_a, digest_b, "identical inputs must reproduce");
+    assert!(digest_a.starts_with("prompt:1:"));
+    let hex_part = digest_a.trim_start_matches("prompt:1:");
+    assert_eq!(hex_part.len(), 16);
+    assert!(hex_part.chars().all(|c| c.is_ascii_hexdigit()));
+
+    // Content change changes the digest.
+    let mut changed = base.clone();
+    changed[1].content = "bbc".to_string();
+    assert_ne!(prompt_digest(1, &changed), digest_a);
+
+    // Version change changes the digest.
+    assert_ne!(prompt_digest(2, &base), digest_a);
+
+    // Source *kind* participates: builtin vs project-file with same content.
+    let as_builtin = vec![layer(
+        "base",
+        PromptLayerSource::Builtin,
+        PromptLayerMode::Append,
+        "same",
+    )];
+    let as_project = vec![layer(
+        "base",
+        PromptLayerSource::ProjectFile(std::path::PathBuf::from("/y/base.md")),
+        PromptLayerMode::Append,
+        "same",
+    )];
+    assert_ne!(prompt_digest(1, &as_builtin), prompt_digest(1, &as_project));
+
+    // Paths deliberately do not participate: same kind+content, different path.
+    let path_one = vec![layer(
+        "base",
+        PromptLayerSource::ProjectFile(std::path::PathBuf::from("/m1/AGENTS.md")),
+        PromptLayerMode::Append,
+        "same",
+    )];
+    let path_two = vec![layer(
+        "base",
+        PromptLayerSource::ProjectFile(std::path::PathBuf::from("/m2/AGENTS.md")),
+        PromptLayerMode::Append,
+        "same",
+    )];
+    assert_eq!(prompt_digest(1, &path_one), prompt_digest(1, &path_two));
+
+    // Runtime labels do not participate either (kind does).
+    let rt_one = vec![layer(
+        "memory",
+        PromptLayerSource::Runtime("memory"),
+        PromptLayerMode::Append,
+        "same",
+    )];
+    let rt_two = vec![layer(
+        "memory",
+        PromptLayerSource::Runtime("other-label"),
+        PromptLayerMode::Append,
+        "same",
+    )];
+    assert_eq!(prompt_digest(1, &rt_one), prompt_digest(1, &rt_two));
+
+    // Layer order participates.
+    let reversed: Vec<PromptLayer> = base.iter().rev().cloned().collect();
+    assert_ne!(prompt_digest(1, &reversed), digest_a);
+}
+
+#[test]
+fn assembly_digest_changes_when_project_files_change() {
+    let (_guard, _home, project, _home_guard) = contract_test_project();
+    let dir = project.path();
+    std::fs::create_dir_all(dir.join(".jcode")).unwrap();
+    std::fs::write(dir.join(".jcode/prompt-overlay.md"), "v1").unwrap();
+
+    let (first, _) = build_prompt_assembly(None, &[], false, None, Some(dir));
+    std::fs::write(dir.join(".jcode/prompt-overlay.md"), "v2-edited").unwrap();
+    let (second, _) = build_prompt_assembly(None, &[], false, None, Some(dir));
+    assert_ne!(
+        first.digest, second.digest,
+        "digest tracks static layer content"
+    );
+    assert!(second.static_text.contains("v2-edited"));
+}
+
+#[test]
+fn frozen_assembly_capture_and_reuse() {
+    let (_guard, _home, project, _home_guard) = contract_test_project();
+    let dir = project.path();
+    std::fs::create_dir_all(dir.join(".jcode")).unwrap();
+    std::fs::write(dir.join(".jcode/prompt-overlay.md"), "frozen-overlay").unwrap();
+
+    let (assembly, info) = build_prompt_assembly(None, &[], false, Some("mem"), Some(dir));
+    let frozen = FrozenPromptAssembly::capture(&assembly, &info);
+    assert_eq!(frozen.version, PROMPT_ASSEMBLY_VERSION);
+    assert_eq!(frozen.static_text, assembly.static_text);
+    assert_eq!(frozen.digest, assembly.digest);
+    assert_eq!(frozen.attribution, assembly.attribution());
+    assert_eq!(frozen.context_info.prompt_digest, assembly.digest);
+
+    // Reuse after a mid-session edit: frozen text/digest/attribution win.
+    std::fs::write(dir.join(".jcode/prompt-overlay.md"), "edited-later").unwrap();
+    let (later, _) = build_prompt_assembly(None, &[], false, Some("mem2"), Some(dir));
+    let mut split = later.split();
+    split.static_part = frozen.static_text.clone();
+    assert!(split.static_part.contains("frozen-overlay"));
+    assert!(!split.static_part.contains("edited-later"));
+    assert!(split.dynamic_part.contains("mem2"));
+    assert_eq!(frozen.digest, assembly.digest);
+    assert_ne!(later.digest, frozen.digest);
+}
+
+#[test]
+fn override_prompt_assembly_is_a_single_replace_layer() {
+    let (assembly, info) = override_prompt_assembly("OVERRIDE BODY");
+    assert_eq!(assembly.static_layers.len(), 1);
+    assert_eq!(assembly.static_layers[0].id, "override");
+    assert_eq!(assembly.static_layers[0].mode, PromptLayerMode::Replace);
+    assert!(assembly.dynamic_layers.is_empty());
+    assert_eq!(assembly.static_text, "OVERRIDE BODY");
+    assert!(assembly.digest.starts_with("prompt:1:"));
+    assert_eq!(info.system_prompt_chars, "OVERRIDE BODY".len());
+    assert_eq!(info.total_chars, "OVERRIDE BODY".len());
+    assert_eq!(info.prompt_digest, assembly.digest);
+    assert_eq!(info.layer_attribution.len(), 1);
+    assert_eq!(info.layer_attribution[0].source_label, "runtime: override");
+}
+
+#[test]
+fn assembly_attribution_records_sources_and_chars() {
+    let (_guard, _home, project, _home_guard) = contract_test_project();
+    let dir = project.path();
+    std::fs::write(dir.join("AGENTS.md"), "agents body").unwrap();
+
+    let (assembly, _) = build_prompt_assembly(None, &[], false, None, Some(dir));
+    let attribution = assembly.attribution();
+    let base = attribution.iter().find(|a| a.id == "base").unwrap();
+    assert_eq!(base.source_label, "builtin");
+    assert_eq!(base.chars, DEFAULT_SYSTEM_PROMPT.len());
+    let agents = attribution
+        .iter()
+        .find(|a| a.id == "agents-md-project")
+        .unwrap();
+    assert!(agents.source_label.starts_with("project: "));
+    let agents_layer = assembly
+        .static_layers
+        .iter()
+        .find(|l| l.id == "agents-md-project")
+        .unwrap();
+    assert!(agents_layer.content.contains("agents body"));
+    assert_eq!(agents.chars, agents_layer.content.len());
+    // Dynamic layers are excluded from attribution (turn-scoped).
+    let (with_dynamic, _) = build_prompt_assembly(None, &[], false, Some("mem"), Some(dir));
+    assert_eq!(with_dynamic.attribution().len(), attribution.len());
+}
+
+#[test]
+fn assembly_base_replacement_and_empty_fallback() {
+    let (_guard, _home, project, _home_guard) = contract_test_project();
+    let dir = project.path();
+    std::fs::create_dir_all(dir.join(".jcode")).unwrap();
+    std::fs::write(dir.join(".jcode/system-prompt.md"), "Custom base.\n").unwrap();
+
+    let (assembly, _) = build_prompt_assembly(None, &[], false, None, Some(dir));
+    let base_layer = &assembly.static_layers[0];
+    assert_eq!(base_layer.id, "base");
+    assert_eq!(base_layer.mode, PromptLayerMode::Replace);
+    assert_eq!(base_layer.content, "Custom base.");
+    assert!(matches!(
+        base_layer.source,
+        PromptLayerSource::ProjectFile(_)
+    ));
+    assert!(!assembly.static_text.contains("Jcode is open source"));
+
+    // Empty file falls back to the builtin default (Append mode, Builtin).
+    std::fs::write(dir.join(".jcode/system-prompt.md"), "   \n").unwrap();
+    let (fallback, _) = build_prompt_assembly(None, &[], false, None, Some(dir));
+    let fallback_base = &fallback.static_layers[0];
+    assert_eq!(fallback_base.mode, PromptLayerMode::Append);
+    assert!(matches!(fallback_base.source, PromptLayerSource::Builtin));
+    assert_eq!(fallback_base.content, DEFAULT_SYSTEM_PROMPT);
+    assert_ne!(assembly.digest, fallback.digest);
+}

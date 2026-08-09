@@ -2152,6 +2152,18 @@ pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
             context.tool_results_chars,
             context.tool_results_count,
         ));
+        if !context.prompt_digest.is_empty() {
+            context_report.push_str(&format!("- prompt digest: {}\n", context.prompt_digest));
+        }
+        if !context.layer_attribution.is_empty() {
+            context_report.push_str("\nPrompt Layers\n");
+            for layer in &context.layer_attribution {
+                context_report.push_str(&format!(
+                    "- {}: {} chars ({})\n",
+                    layer.id, layer.chars, layer.source_label
+                ));
+            }
+        }
         context_report.push_str("\nCompaction\n");
         context_report.push_str(&compaction_summary);
         context_report.push_str("\n\nSession State\n");

@@ -6,10 +6,16 @@ impl App {
         &mut self,
         memory_prompt: Option<&str>,
     ) -> crate::prompt::SplitSystemPrompt {
-        // Ambient mode: use the full override prompt directly
+        // Ambient mode: full-assembly replace through the same contract path,
+        // frozen for the session like the standard path.
         if let Some(ref prompt) = self.ambient_system_prompt {
+            let (assembly, context_info) = crate::prompt::override_prompt_assembly(prompt);
+            let frozen = self.prompt_snapshot.get_or_insert_with(|| {
+                crate::prompt::FrozenPromptAssembly::capture(&assembly, &context_info)
+            });
+            self.context_info = frozen.context_info.clone();
             return crate::prompt::SplitSystemPrompt {
-                static_part: prompt.clone(),
+                static_part: frozen.static_text.clone(),
                 dynamic_part: String::new(),
             };
         }
@@ -27,13 +33,27 @@ impl App {
                 description: s.description.clone(),
             })
             .collect();
-        let (mut split, context_info) = crate::prompt::build_system_prompt_split(
+        // Roadmap P1: build the assembly, then freeze the static layers into
+        // the session on first build. Later turns reuse the frozen static
+        // text/digest/attribution (new-session semantics for file changes);
+        // the dynamic part (memory etc.) is rebuilt per turn.
+        let (assembly, context_info) = crate::prompt::build_prompt_assembly(
             skill_prompt.as_deref(),
             &available_skills,
             self.session.is_canary,
             memory_prompt,
             None,
         );
+        let frozen = self.prompt_snapshot.get_or_insert_with(|| {
+            crate::prompt::FrozenPromptAssembly::capture(&assembly, &context_info)
+        });
+        let mut split = assembly.split();
+        split.static_part = frozen.static_text.clone();
+        // Static accounting comes from the frozen snapshot; per-turn dynamic
+        // fields (memory, active skill) reflect this turn's build.
+        let mut context_info = frozen.context_info.clone();
+        context_info.memory_chars = memory_prompt.map(|m| m.len()).unwrap_or(0);
+        context_info.total_chars = frozen.static_text.len() + assembly.dynamic_text.len();
         self.append_current_turn_system_reminder(&mut split);
         crate::prompt::append_swarm_effort_directive(
             &mut split,

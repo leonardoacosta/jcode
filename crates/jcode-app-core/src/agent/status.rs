@@ -195,6 +195,12 @@ impl Agent {
         }
     }
 
+    /// The session-frozen prompt assembly snapshot (roadmap P1), captured on
+    /// this session's first prompt build.
+    pub fn prompt_snapshot(&self) -> Option<&crate::prompt::FrozenPromptAssembly> {
+        self.prompt_snapshot.get()
+    }
+
     /// Get the short/friendly name for this session (e.g., "fox")
     pub fn session_short_name(&self) -> Option<&str> {
         self.session.short_name.as_deref()

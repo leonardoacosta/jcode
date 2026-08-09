@@ -6,6 +6,175 @@ use std::process::Command;
 /// Default system prompt for jcode (embedded at compile time)
 pub const DEFAULT_SYSTEM_PROMPT: &str = include_str!("prompt/system_prompt.md");
 
+// === Prompt assembly contract (roadmap P1) ===
+//
+// The system prompt is assembled from named layers with a fixed order. Each
+// layer carries its origin (source), mode (replace/append), and content, so
+// the assembly can be attributed, digested, and frozen per session.
+
+/// Version of the prompt assembly contract. Bump when the layer set, order,
+/// or mode semantics change; different versions always produce different
+/// digests even for identical text.
+pub const PROMPT_ASSEMBLY_VERSION: u32 = 1;
+
+/// Where a prompt layer's content came from.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PromptLayerSource {
+    /// Embedded at compile time (`include_str!`).
+    Builtin,
+    /// A project-scoped file (`./AGENTS.md`, `./.jcode/...`).
+    ProjectFile(PathBuf),
+    /// A user-global file (`~/AGENTS.md`, `~/.jcode/...`).
+    GlobalFile(PathBuf),
+    /// In-process runtime content (capability modules, selfdev, skills,
+    /// memory, reminders, swarm directives). The string names the kind.
+    Runtime(&'static str),
+}
+
+impl PromptLayerSource {
+    /// Digest-stable source kind: paths deliberately do not participate so
+    /// identical content on different machines correlates to the same digest.
+    pub fn kind(&self) -> &'static str {
+        match self {
+            PromptLayerSource::Builtin => "builtin",
+            PromptLayerSource::ProjectFile(_) => "project-file",
+            PromptLayerSource::GlobalFile(_) => "global-file",
+            PromptLayerSource::Runtime(_) => "runtime",
+        }
+    }
+
+    /// Human-readable origin label for `/context` and debug surfaces.
+    pub fn label(&self) -> String {
+        match self {
+            PromptLayerSource::Builtin => "builtin".to_string(),
+            PromptLayerSource::ProjectFile(path) => format!("project: {}", path.display()),
+            PromptLayerSource::GlobalFile(path) => format!("global: {}", path.display()),
+            PromptLayerSource::Runtime(kind) => format!("runtime: {kind}"),
+        }
+    }
+}
+
+/// How a layer participates in the assembly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PromptLayerMode {
+    /// Substitutes the builtin default for its slot (base layer only).
+    Replace,
+    /// Stacks after the base in the fixed contract order.
+    Append,
+}
+
+/// One named prompt layer: the unit of attribution, digest, and freezing.
+#[derive(Debug, Clone)]
+pub struct PromptLayer {
+    pub id: &'static str,
+    pub source: PromptLayerSource,
+    pub mode: PromptLayerMode,
+    pub content: String,
+}
+
+impl PromptLayer {
+    pub fn chars(&self) -> usize {
+        self.content.len()
+    }
+}
+
+/// One layer's contribution to attribution output.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PromptLayerAttribution {
+    pub id: &'static str,
+    pub source_label: String,
+    pub chars: usize,
+}
+
+/// A fully assembled prompt under the contract: ordered static and dynamic
+/// layers, their joined texts, and the session-stable digest over the static
+/// layers.
+#[derive(Debug, Clone)]
+pub struct PromptAssembly {
+    pub version: u32,
+    pub static_layers: Vec<PromptLayer>,
+    pub dynamic_layers: Vec<PromptLayer>,
+    pub static_text: String,
+    pub dynamic_text: String,
+    pub digest: String,
+}
+
+impl PromptAssembly {
+    /// Convert to the provider-caching split view (byte-identical to the
+    /// pre-contract builders).
+    pub fn split(&self) -> SplitSystemPrompt {
+        SplitSystemPrompt {
+            static_part: self.static_text.clone(),
+            dynamic_part: self.dynamic_text.clone(),
+        }
+    }
+
+    /// Per-layer attribution for `/context` and debug surfaces (static layers
+    /// only; dynamic layers are turn-scoped and excluded from the digest).
+    pub fn attribution(&self) -> Vec<PromptLayerAttribution> {
+        self.static_layers
+            .iter()
+            .map(|layer| PromptLayerAttribution {
+                id: layer.id,
+                source_label: layer.source.label(),
+                chars: layer.chars(),
+            })
+            .collect()
+    }
+}
+
+/// The portion of an assembly frozen into a session at capture time: every
+/// later turn reuses this static text and digest regardless of subsequent
+/// file edits (the documented new-session semantics).
+#[derive(Debug, Clone)]
+pub struct FrozenPromptAssembly {
+    pub version: u32,
+    pub static_text: String,
+    pub digest: String,
+    pub attribution: Vec<PromptLayerAttribution>,
+    /// Capture-time static accounting, so `/context` reflects the frozen
+    /// prompt (not the current on-disk files) on later turns.
+    pub context_info: ContextInfo,
+    pub captured_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl FrozenPromptAssembly {
+    pub fn capture(assembly: &PromptAssembly, context_info: &ContextInfo) -> Self {
+        Self {
+            version: assembly.version,
+            static_text: assembly.static_text.clone(),
+            digest: assembly.digest.clone(),
+            attribution: assembly.attribution(),
+            context_info: context_info.clone(),
+            captured_at: chrono::Utc::now(),
+        }
+    }
+}
+
+/// Compute the session-stable prompt digest: contract version + each static
+/// layer's id, source *kind* (not path), and content, hashed with SHA-256 and
+/// rendered as `prompt:<version>:<hex16>`. Identical inputs always produce
+/// identical digests; any layer content, order, or version change changes it.
+pub fn prompt_digest(version: u32, static_layers: &[PromptLayer]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(version.to_be_bytes());
+    for layer in static_layers {
+        hasher.update(layer.id.as_bytes());
+        hasher.update([0u8]);
+        hasher.update(layer.source.kind().as_bytes());
+        hasher.update([0u8]);
+        hasher.update(layer.content.as_bytes());
+        hasher.update([0u8]);
+    }
+    let hash = hasher.finalize();
+    let mut hex = String::with_capacity(16);
+    for byte in &hash[..8] {
+        hex.push_str(&format!("{byte:02x}"));
+    }
+    format!("prompt:{version}:{hex}")
+}
+
 /// Load the base system prompt, allowing the user to fully replace the built-in
 /// [`DEFAULT_SYSTEM_PROMPT`]. Precedence: project `./.jcode/system-prompt.md`,
 /// then global `~/.jcode/system-prompt.md`, then the built-in default.
@@ -13,22 +182,44 @@ pub const DEFAULT_SYSTEM_PROMPT: &str = include_str!("prompt/system_prompt.md");
 /// This is a *replacement* hook. To merely add guidance on top of the default,
 /// use `.jcode/prompt-overlay.md` instead.
 pub fn load_base_system_prompt(working_dir: Option<&Path>) -> String {
+    load_base_system_prompt_layer(working_dir).content
+}
+
+/// Layer-aware variant of [`load_base_system_prompt`]: the base layer with
+/// mode `Replace` and the winning source recorded for attribution.
+pub fn load_base_system_prompt_layer(working_dir: Option<&Path>) -> PromptLayer {
     let project_dir = working_dir.unwrap_or(Path::new("."));
     let candidates = [
-        Some(project_dir.join(".jcode").join("system-prompt.md")),
+        Some(PromptLayerSource::ProjectFile(
+            project_dir.join(".jcode").join("system-prompt.md"),
+        )),
         crate::storage::jcode_dir()
             .ok()
-            .map(|dir| dir.join("system-prompt.md")),
+            .map(|dir| PromptLayerSource::GlobalFile(dir.join("system-prompt.md"))),
     ];
-    for path in candidates.into_iter().flatten() {
-        if let Ok(content) = std::fs::read_to_string(&path) {
+    for source in candidates.into_iter().flatten() {
+        let path = match &source {
+            PromptLayerSource::ProjectFile(path) | PromptLayerSource::GlobalFile(path) => path,
+            _ => continue,
+        };
+        if let Ok(content) = std::fs::read_to_string(path) {
             let trimmed = content.trim();
             if !trimmed.is_empty() {
-                return trimmed.to_string();
+                return PromptLayer {
+                    id: "base",
+                    source,
+                    mode: PromptLayerMode::Replace,
+                    content: trimmed.to_string(),
+                };
             }
         }
     }
-    DEFAULT_SYSTEM_PROMPT.to_string()
+    PromptLayer {
+        id: "base",
+        source: PromptLayerSource::Builtin,
+        mode: PromptLayerMode::Append,
+        content: DEFAULT_SYSTEM_PROMPT.to_string(),
+    }
 }
 
 /// Prompt guidance for the optional Mermaid rendering capability.
@@ -281,6 +472,12 @@ pub struct ContextInfo {
 
     /// Total system prompt size (chars)
     pub total_chars: usize,
+
+    /// Prompt assembly digest (`prompt:<version>:<hex16>`) over the static
+    /// layers; empty when the context was not built through the assembly.
+    pub prompt_digest: String,
+    /// Per-static-layer attribution (origin label + chars) from the assembly.
+    pub layer_attribution: Vec<PromptLayerAttribution>,
 }
 
 impl ContextInfo {
@@ -503,10 +700,103 @@ pub fn build_system_prompt_split_with_capabilities(
     working_dir: Option<&Path>,
     capabilities: PromptCapabilities,
 ) -> (SplitSystemPrompt, ContextInfo) {
-    let mut static_parts = base_system_prompt_parts(capabilities, working_dir);
-    let mut dynamic_parts = Vec::new();
+    let (assembly, info) = build_prompt_assembly_with_capabilities(
+        skill_prompt,
+        available_skills,
+        is_selfdev,
+        memory_prompt,
+        working_dir,
+        capabilities,
+    );
+    (assembly.split(), info)
+}
+
+/// Assemble a full-assembly replace prompt for runtime overrides
+/// (`system_prompt_override`, e.g. ambient mode): a single `override` layer
+/// replaces everything, with its own digest and attribution through the same
+/// contract path.
+pub fn override_prompt_assembly(prompt: &str) -> (PromptAssembly, ContextInfo) {
+    let layer = PromptLayer {
+        id: "override",
+        source: PromptLayerSource::Runtime("override"),
+        mode: PromptLayerMode::Replace,
+        content: prompt.to_string(),
+    };
+    let digest = prompt_digest(PROMPT_ASSEMBLY_VERSION, std::slice::from_ref(&layer));
+    let static_text = layer.content.clone();
     let mut info = ContextInfo {
-        system_prompt_chars: static_parts.join("\n\n").len(),
+        system_prompt_chars: static_text.len(),
+        total_chars: static_text.len(),
+        prompt_digest: digest.clone(),
+        ..Default::default()
+    };
+    let assembly = PromptAssembly {
+        version: PROMPT_ASSEMBLY_VERSION,
+        static_layers: vec![layer],
+        dynamic_layers: Vec::new(),
+        static_text,
+        dynamic_text: String::new(),
+        digest,
+    };
+    info.layer_attribution = assembly.attribution();
+    (assembly, info)
+}
+
+/// Build the full prompt assembly with working-directory file loading and
+/// current harness capabilities.
+pub fn build_prompt_assembly(
+    skill_prompt: Option<&str>,
+    available_skills: &[SkillInfo],
+    is_selfdev: bool,
+    memory_prompt: Option<&str>,
+    working_dir: Option<&Path>,
+) -> (PromptAssembly, ContextInfo) {
+    build_prompt_assembly_with_capabilities(
+        skill_prompt,
+        available_skills,
+        is_selfdev,
+        memory_prompt,
+        working_dir,
+        PromptCapabilities::current(),
+    )
+}
+
+/// Build the full prompt assembly under the versioned contract (roadmap P1).
+///
+/// Static layers follow the fixed contract order: base, capability modules,
+/// selfdev, AGENTS.md (project, global), prompt overlays (project, global),
+/// preferred tools (project, global), skills list. Dynamic layers are
+/// turn-scoped: memory, then the active skill. Joining layer contents with
+/// "\n\n" reproduces the pre-contract builders byte-for-byte.
+pub fn build_prompt_assembly_with_capabilities(
+    skill_prompt: Option<&str>,
+    available_skills: &[SkillInfo],
+    is_selfdev: bool,
+    memory_prompt: Option<&str>,
+    working_dir: Option<&Path>,
+    capabilities: PromptCapabilities,
+) -> (PromptAssembly, ContextInfo) {
+    let mut static_layers: Vec<PromptLayer> = Vec::new();
+    let mut dynamic_layers: Vec<PromptLayer> = Vec::new();
+
+    // === Base + capability modules ===
+    static_layers.push(load_base_system_prompt_layer(working_dir));
+    if capabilities.mermaid {
+        static_layers.push(PromptLayer {
+            id: "capability:mermaid",
+            source: PromptLayerSource::Runtime("capability"),
+            mode: PromptLayerMode::Append,
+            content: MERMAID_PROMPT.to_string(),
+        });
+    }
+    let base_joined_len = static_layers
+        .iter()
+        .map(|layer| layer.content.as_str())
+        .collect::<Vec<_>>()
+        .join("\n\n")
+        .len();
+    let mut info = ContextInfo {
+        system_prompt_chars: base_joined_len,
         ..Default::default()
     };
 
@@ -517,33 +807,32 @@ pub fn build_system_prompt_split_with_capabilities(
     if is_selfdev {
         let selfdev_prompt = build_selfdev_prompt_static_for_working_dir(working_dir);
         info.selfdev_chars = selfdev_prompt.len();
-        static_parts.push(selfdev_prompt);
+        static_layers.push(PromptLayer {
+            id: "selfdev",
+            source: PromptLayerSource::Runtime("selfdev"),
+            mode: PromptLayerMode::Append,
+            content: selfdev_prompt,
+        });
     }
 
-    // Add AGENTS.md instructions (static per project)
-    let (md_content, md_info) = load_agents_md_files_from_dir(working_dir);
-    if let Some(content) = md_content {
-        static_parts.push(content);
-    }
+    // Add AGENTS.md instructions (static per project), one layer per file
+    let (agents_layers, md_info) = load_agents_md_layers_from_dir(working_dir);
+    static_layers.extend(agents_layers);
     info.has_project_agents_md = md_info.has_project_agents_md;
     info.project_agents_md_chars = md_info.project_agents_md_chars;
     info.has_global_agents_md = md_info.has_global_agents_md;
     info.global_agents_md_chars = md_info.global_agents_md_chars;
 
     // Add optional prompt overlays from ~/.jcode/ and ./.jcode/
-    let (overlay_content, overlay_chars) = load_prompt_overlay_files_from_dir(working_dir);
-    if let Some(content) = overlay_content {
-        info.prompt_overlay_chars = overlay_chars;
-        static_parts.push(content);
-    }
+    let (overlay_layers, overlay_chars) = load_prompt_overlay_layers_from_dir(working_dir);
+    static_layers.extend(overlay_layers);
+    info.prompt_overlay_chars = overlay_chars;
 
     // Add optional preferred-tool guidance (static per project/user)
-    let (preferred_tools_content, preferred_tools_chars) =
-        load_preferred_tools_files_from_dir(working_dir);
-    if let Some(content) = preferred_tools_content {
-        info.preferred_tools_chars = preferred_tools_chars;
-        static_parts.push(content);
-    }
+    let (preferred_tools_layers, preferred_tools_chars) =
+        load_preferred_tools_layers_from_dir(working_dir);
+    static_layers.extend(preferred_tools_layers);
+    info.preferred_tools_chars = preferred_tools_chars;
 
     // Add available skills list (fairly static)
     if !available_skills.is_empty() {
@@ -555,7 +844,12 @@ pub fn build_system_prompt_split_with_capabilities(
             "\n\nWhen a user asks about available skills or capabilities, mention these skills.",
         );
         info.skills_chars = skills_section.len();
-        static_parts.push(skills_section);
+        static_layers.push(PromptLayer {
+            id: "skills-list",
+            source: PromptLayerSource::Runtime("skills"),
+            mode: PromptLayerMode::Append,
+            content: skills_section,
+        });
     }
 
     // === TURN CONTEXT (not cached) ===
@@ -563,25 +857,49 @@ pub fn build_system_prompt_split_with_capabilities(
     // Memory prompt (changes per conversation)
     if let Some(memory) = memory_prompt {
         info.memory_chars = memory.len();
-        dynamic_parts.push(memory.to_string());
+        dynamic_layers.push(PromptLayer {
+            id: "memory",
+            source: PromptLayerSource::Runtime("memory"),
+            mode: PromptLayerMode::Append,
+            content: memory.to_string(),
+        });
     }
 
     // Active skill prompt (changes per skill invocation)
     if let Some(skill) = skill_prompt {
-        dynamic_parts.push(format!("# Active Skill\n\n{}", skill));
+        dynamic_layers.push(PromptLayer {
+            id: "active-skill",
+            source: PromptLayerSource::Runtime("skill"),
+            mode: PromptLayerMode::Append,
+            content: format!("# Active Skill\n\n{}", skill),
+        });
     }
 
-    let static_part = static_parts.join("\n\n");
-    let dynamic_part = dynamic_parts.join("\n\n");
-    info.total_chars = static_part.len() + dynamic_part.len();
+    let static_text = static_layers
+        .iter()
+        .map(|layer| layer.content.as_str())
+        .collect::<Vec<_>>()
+        .join("\n\n");
+    let dynamic_text = dynamic_layers
+        .iter()
+        .map(|layer| layer.content.as_str())
+        .collect::<Vec<_>>()
+        .join("\n\n");
+    let digest = prompt_digest(PROMPT_ASSEMBLY_VERSION, &static_layers);
+    info.total_chars = static_text.len() + dynamic_text.len();
+    info.prompt_digest = digest.clone();
 
-    (
-        SplitSystemPrompt {
-            static_part,
-            dynamic_part,
-        },
-        info,
-    )
+    let assembly = PromptAssembly {
+        version: PROMPT_ASSEMBLY_VERSION,
+        static_layers,
+        dynamic_layers,
+        static_text,
+        dynamic_text,
+        digest,
+    };
+    info.layer_attribution = assembly.attribution();
+
+    (assembly, info)
 }
 
 /// Build self-dev tools prompt section (static version without dynamic socket path)
@@ -842,7 +1160,26 @@ fn gpu_summary() -> Option<String> {
 
 /// Load AGENTS.md files from a specific working directory
 pub fn load_agents_md_files_from_dir(working_dir: Option<&Path>) -> (Option<String>, ContextInfo) {
-    let mut contents = vec![];
+    let (layers, info) = load_agents_md_layers_from_dir(working_dir);
+    if layers.is_empty() {
+        (None, info)
+    } else {
+        let joined = layers
+            .iter()
+            .map(|layer| layer.content.as_str())
+            .collect::<Vec<_>>()
+            .join("\n\n");
+        (Some(joined), info)
+    }
+}
+
+/// Layer-aware AGENTS.md loader: one `append` layer per contributing file so
+/// attribution records the project and global origins separately. Joining the
+/// layers with "\n\n" reproduces the pre-contract merge byte-for-byte.
+pub fn load_agents_md_layers_from_dir(
+    working_dir: Option<&Path>,
+) -> (Vec<PromptLayer>, ContextInfo) {
+    let mut layers = vec![];
     let mut info = ContextInfo::default();
 
     // Helper to load a file if it exists, returns (formatted_content, raw_size)
@@ -860,13 +1197,16 @@ pub fn load_agents_md_files_from_dir(working_dir: Option<&Path>) -> (Option<Stri
 
     // Project-level files (from specified working directory or current directory)
     let project_dir = working_dir.unwrap_or(Path::new("."));
-    if let Some((content, size)) = load_file(
-        &project_dir.join("AGENTS.md"),
-        "Project Instructions (AGENTS.md)",
-    ) {
+    let project_path = project_dir.join("AGENTS.md");
+    if let Some((content, size)) = load_file(&project_path, "Project Instructions (AGENTS.md)") {
         info.has_project_agents_md = true;
         info.project_agents_md_chars = size;
-        contents.push(content);
+        layers.push(PromptLayer {
+            id: "agents-md-project",
+            source: PromptLayerSource::ProjectFile(project_path),
+            mode: PromptLayerMode::Append,
+            content,
+        });
     }
 
     // Home directory files
@@ -876,19 +1216,36 @@ pub fn load_agents_md_files_from_dir(working_dir: Option<&Path>) -> (Option<Stri
     {
         info.has_global_agents_md = true;
         info.global_agents_md_chars = size;
-        contents.push(content);
+        layers.push(PromptLayer {
+            id: "agents-md-global",
+            source: PromptLayerSource::GlobalFile(global_agents_md),
+            mode: PromptLayerMode::Append,
+            content,
+        });
     }
 
-    if contents.is_empty() {
-        (None, info)
-    } else {
-        (Some(contents.join("\n\n")), info)
-    }
+    (layers, info)
 }
 
 /// Load optional prompt overlay markdown from ~/.jcode/ and ./.jcode/
 fn load_prompt_overlay_files_from_dir(working_dir: Option<&Path>) -> (Option<String>, usize) {
-    let mut contents = vec![];
+    let (layers, total_chars) = load_prompt_overlay_layers_from_dir(working_dir);
+    if layers.is_empty() {
+        (None, 0)
+    } else {
+        let joined = layers
+            .iter()
+            .map(|layer| layer.content.as_str())
+            .collect::<Vec<_>>()
+            .join("\n\n");
+        (Some(joined), total_chars)
+    }
+}
+
+/// Layer-aware prompt-overlay loader: one `append` layer per contributing
+/// file, joined with "\n\n" to reproduce the pre-contract merge.
+fn load_prompt_overlay_layers_from_dir(working_dir: Option<&Path>) -> (Vec<PromptLayer>, usize) {
+    let mut layers = vec![];
     let mut total_chars = 0usize;
 
     let load_file = |path: &Path, label: &str| -> Option<(String, usize)> {
@@ -904,12 +1261,18 @@ fn load_prompt_overlay_files_from_dir(working_dir: Option<&Path>) -> (Option<Str
     };
 
     let project_dir = working_dir.unwrap_or(Path::new("."));
+    let project_path = project_dir.join(".jcode").join("prompt-overlay.md");
     if let Some((content, size)) = load_file(
-        &project_dir.join(".jcode").join("prompt-overlay.md"),
+        &project_path,
         "Project Prompt Overlay (.jcode/prompt-overlay.md)",
     ) {
         total_chars += size;
-        contents.push(content);
+        layers.push(PromptLayer {
+            id: "prompt-overlay-project",
+            source: PromptLayerSource::ProjectFile(project_path),
+            mode: PromptLayerMode::Append,
+            content,
+        });
     }
 
     if let Ok(global_overlay) = crate::storage::jcode_dir().map(|dir| dir.join("prompt-overlay.md"))
@@ -919,19 +1282,36 @@ fn load_prompt_overlay_files_from_dir(working_dir: Option<&Path>) -> (Option<Str
         )
     {
         total_chars += size;
-        contents.push(content);
+        layers.push(PromptLayer {
+            id: "prompt-overlay-global",
+            source: PromptLayerSource::GlobalFile(global_overlay),
+            mode: PromptLayerMode::Append,
+            content,
+        });
     }
 
-    if contents.is_empty() {
-        (None, 0)
-    } else {
-        (Some(contents.join("\n\n")), total_chars)
-    }
+    (layers, total_chars)
 }
 
 /// Load optional preferred-tool guidance from ~/.jcode/ and ./.jcode/
 fn load_preferred_tools_files_from_dir(working_dir: Option<&Path>) -> (Option<String>, usize) {
-    let mut contents = vec![];
+    let (layers, total_chars) = load_preferred_tools_layers_from_dir(working_dir);
+    if layers.is_empty() {
+        (None, 0)
+    } else {
+        let joined = layers
+            .iter()
+            .map(|layer| layer.content.as_str())
+            .collect::<Vec<_>>()
+            .join("\n\n");
+        (Some(joined), total_chars)
+    }
+}
+
+/// Layer-aware preferred-tools loader: one `append` layer per contributing
+/// file, joined with "\n\n" to reproduce the pre-contract merge.
+fn load_preferred_tools_layers_from_dir(working_dir: Option<&Path>) -> (Vec<PromptLayer>, usize) {
+    let mut layers = vec![];
     let mut total_chars = 0usize;
 
     let load_file = |path: &Path, label: &str| -> Option<(String, usize)> {
@@ -947,12 +1327,18 @@ fn load_preferred_tools_files_from_dir(working_dir: Option<&Path>) -> (Option<St
     };
 
     let project_dir = working_dir.unwrap_or(Path::new("."));
+    let project_path = project_dir.join(".jcode").join("preferred-tools.md");
     if let Some((content, size)) = load_file(
-        &project_dir.join(".jcode").join("preferred-tools.md"),
+        &project_path,
         "Project Preferred Tools (.jcode/preferred-tools.md)",
     ) {
         total_chars += size;
-        contents.push(content);
+        layers.push(PromptLayer {
+            id: "preferred-tools-project",
+            source: PromptLayerSource::ProjectFile(project_path),
+            mode: PromptLayerMode::Append,
+            content,
+        });
     }
 
     if let Ok(global_preferred_tools) =
@@ -963,14 +1349,15 @@ fn load_preferred_tools_files_from_dir(working_dir: Option<&Path>) -> (Option<St
         )
     {
         total_chars += size;
-        contents.push(content);
+        layers.push(PromptLayer {
+            id: "preferred-tools-global",
+            source: PromptLayerSource::GlobalFile(global_preferred_tools),
+            mode: PromptLayerMode::Append,
+            content,
+        });
     }
 
-    if contents.is_empty() {
-        (None, 0)
-    } else {
-        (Some(contents.join("\n\n")), total_chars)
-    }
+    (layers, total_chars)
 }
 
 #[cfg(test)]

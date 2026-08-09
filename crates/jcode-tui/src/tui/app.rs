@@ -884,6 +884,10 @@ pub struct App {
     context_warning_shown: bool,
     // Context info (what's loaded in system prompt)
     context_info: crate::prompt::ContextInfo,
+    /// Session-frozen static prompt assembly (roadmap P1): captured on the
+    /// first prompt build, reused for every later turn so mid-session file
+    /// edits only affect new sessions.
+    prompt_snapshot: Option<crate::prompt::FrozenPromptAssembly>,
     // Monotonic revision for prompt/context-affecting state. Info widgets use this to avoid stale
     // cached context after compaction, prompt rebuilds, tool-definition refreshes, or message edits.
     context_revision: u64,

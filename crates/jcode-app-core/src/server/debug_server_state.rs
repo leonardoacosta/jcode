@@ -115,14 +115,31 @@ pub(super) async fn maybe_handle_server_state_command(
         for (sid, agent_arc) in &connected_agents {
             let member_info = members.get(sid);
             let member_status = member_info.map(|m| m.status.as_str());
-            let (provider, model, is_processing, working_dir_str, token_usage): (
+            let (provider, model, is_processing, working_dir_str, token_usage, prompt_debug): (
                 Option<String>,
                 Option<String>,
                 bool,
                 Option<String>,
                 Option<serde_json::Value>,
+                Option<serde_json::Value>,
             ) = if let Ok(agent) = agent_arc.try_lock() {
                 let usage = agent.last_usage();
+                let prompt_debug = agent.prompt_snapshot().map(|snapshot| {
+                    serde_json::json!({
+                        "digest": snapshot.digest,
+                        "version": snapshot.version,
+                        "captured_at": snapshot.captured_at.to_rfc3339(),
+                        "layers": snapshot
+                            .attribution
+                            .iter()
+                            .map(|layer| serde_json::json!({
+                                "id": layer.id,
+                                "source": layer.source_label,
+                                "chars": layer.chars,
+                            }))
+                            .collect::<Vec<_>>(),
+                    })
+                });
                 (
                     Some(agent.provider_name()),
                     Some(agent.provider_model()),
@@ -134,9 +151,17 @@ pub(super) async fn maybe_handle_server_state_command(
                         "cache_read": usage.cache_read_input_tokens,
                         "cache_write": usage.cache_creation_input_tokens,
                     })),
+                    prompt_debug,
                 )
             } else {
-                (None, None, member_status == Some("running"), None, None)
+                (
+                    None,
+                    None,
+                    member_status == Some("running"),
+                    None,
+                    None,
+                    None,
+                )
             };
             let final_working_dir: Option<String> = working_dir_str.or_else(|| {
                 member_info.and_then(|m| {
@@ -156,6 +181,7 @@ pub(super) async fn maybe_handle_server_state_command(
                 "status": member_info.map(|m| m.status.clone()),
                 "detail": member_info.and_then(|m| m.detail.clone()),
                 "token_usage": token_usage,
+                "prompt_assembly": prompt_debug,
                 "server_name": server_identity.name,
                 "server_icon": server_identity.icon,
             }));

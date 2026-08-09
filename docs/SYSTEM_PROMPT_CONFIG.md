@@ -12,7 +12,11 @@ files, so you can tune agent behavior without rebuilding.
 4. `AGENTS.md` — project `./AGENTS.md` and global `~/AGENTS.md`.
 5. Prompt overlay — `./.jcode/prompt-overlay.md` and `~/.jcode/prompt-overlay.md`.
 6. Preferred tools — `./.jcode/preferred-tools.md` and `~/.jcode/preferred-tools.md`.
-7. Memory and the active skill prompt (dynamic, not cached).
+7. Available skills list.
+8. Memory and the active skill prompt (dynamic, not cached).
+
+The versioned contract behind this ordering (layer ids, digest, freeze
+semantics) lives in [PROMPT_ASSEMBLY.md](PROMPT_ASSEMBLY.md).
 
 ## Adding guidance (most common)
 
@@ -39,7 +43,8 @@ This replaces only the base prompt. AGENTS.md, overlays, skills, and memory stil
 ## Notes
 
 - Changes to these files take effect for **new sessions**; a running session keeps the
-  prompt captured at start.
+  prompt captured at its first turn (enforced by the session freeze described in
+  [PROMPT_ASSEMBLY.md](PROMPT_ASSEMBLY.md)).
 - Editing the built-in `system_prompt.md` requires a rebuild (`selfdev build-reload`),
   since it is embedded with `include_str!`.
 - Swarm model-routing guidance has its own analogous file: `.jcode/swarm-prompt.md`.

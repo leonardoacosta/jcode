@@ -199,6 +199,10 @@ pub struct Agent {
     /// Transient reminder injected into provider requests for the current turn only.
     /// Not persisted to session history.
     current_turn_system_reminder: Option<String>,
+    /// Session-frozen static prompt assembly (roadmap P1): captured on the
+    /// first prompt build, reused for every later turn so mid-session file
+    /// edits only affect new sessions. OnceLock because builds take &self.
+    prompt_snapshot: std::sync::OnceLock<crate::prompt::FrozenPromptAssembly>,
     /// Tool call ids observed in the current session transcript.
     tool_call_ids: HashSet<String>,
     /// Tool result ids observed in the current session transcript.
@@ -285,6 +289,7 @@ impl Agent {
             last_status_detail: None,
             pending_alerts: Vec::new(),
             current_turn_system_reminder: None,
+            prompt_snapshot: std::sync::OnceLock::new(),
             tool_call_ids: HashSet::new(),
             tool_result_ids: HashSet::new(),
             tool_output_scan_index: 0,
