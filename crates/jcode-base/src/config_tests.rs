@@ -1334,3 +1334,74 @@ fn config_reload_generation_increments_on_cache_invalidation() {
         "invalidate_config_cache must bump the reload generation ({before} -> {after})"
     );
 }
+
+#[test]
+fn test_display_footer_defaults() {
+    let footer = Config::default().display.footer;
+    assert_eq!(footer.style, crate::config::FooterStyle::Segments);
+    assert_eq!(footer.icon_mode, crate::config::FooterIconMode::Auto);
+    assert_eq!(
+        footer.path_display,
+        crate::config::FooterPathDisplay::Basename
+    );
+    assert_eq!(footer.path_depth, 2);
+    assert_eq!(footer.context_warning, 70);
+    assert_eq!(footer.context_error, 90);
+    assert!(footer.enabled());
+    assert!(footer.segments.cwd);
+    assert!(footer.segments.mode);
+    assert!(footer.segments.git);
+    assert!(!footer.segments.session_name);
+    assert!(footer.segments.model);
+    assert!(footer.segments.provider);
+    assert!(footer.segments.effort);
+    assert!(footer.segments.context);
+    assert!(footer.segments.tokens);
+    assert!(footer.segments.cost);
+}
+
+#[test]
+fn test_display_footer_parses_style_and_options() {
+    let cfg: Config = toml::from_str(
+        "[display.footer]\n\
+         style = \"off\"\n\
+         icon_mode = \"ascii\"\n\
+         path_display = \"depth\"\n\
+         path_depth = 3\n\
+         context_warning = 60\n\
+         context_error = 80\n\
+         [display.footer.segments]\n\
+         session_name = true\n\
+         cost = false\n",
+    )
+    .expect("footer config parses");
+    let footer = cfg.display.footer;
+    assert_eq!(footer.style, crate::config::FooterStyle::Off);
+    assert!(!footer.enabled());
+    assert_eq!(footer.icon_mode, crate::config::FooterIconMode::Ascii);
+    assert_eq!(footer.path_display, crate::config::FooterPathDisplay::Depth);
+    assert_eq!(footer.path_depth, 3);
+    assert_eq!(footer.context_warning, 60);
+    assert_eq!(footer.context_error, 80);
+    assert!(footer.segments.session_name);
+    assert!(!footer.segments.cost);
+    // Untouched segments keep their defaults.
+    assert!(footer.segments.git);
+}
+
+#[test]
+fn test_display_footer_absent_section_keeps_defaults_and_siblings() {
+    let cfg: Config = toml::from_str("[display]\ncentered = true\n")
+        .expect("config without footer section parses");
+    assert_eq!(cfg.display.footer.style, crate::config::FooterStyle::Segments);
+    assert!(cfg.display.centered, "unrelated settings must survive");
+}
+
+#[test]
+fn test_display_footer_ignores_unknown_keys() {
+    let cfg: Config = toml::from_str(
+        "[display.footer]\nstyle = \"segments\"\nnonsense_key = true\n",
+    )
+    .expect("unknown footer keys are ignored");
+    assert_eq!(cfg.display.footer.style, crate::config::FooterStyle::Segments);
+}

@@ -1608,6 +1608,8 @@ pub struct App {
     /// When to show the overscroll status line: off, always on, or the elastic
     /// overscroll reveal (default). From `display.overscroll_status` config.
     overscroll_status_mode: crate::config::OverscrollStatusMode,
+    /// Persistent status footer configuration. From `display.footer` config.
+    footer_config: crate::config::FooterConfig,
     /// Scroll offset for changelog overlay (None = not visible)
     changelog_scroll: Option<usize>,
     help_scroll: Option<usize>,

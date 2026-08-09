@@ -1056,6 +1056,138 @@ impl Default for NativeScrollbarConfig {
         }
     }
 }
+
+/// Status footer style (`display.footer.style`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FooterStyle {
+    /// Persistent one-row segment footer at the bottom of the chat column (default).
+    #[default]
+    Segments,
+    /// Footer hidden; the layout matches pre-footer versions byte-for-byte.
+    Off,
+}
+
+impl FooterStyle {
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Segments => "segments",
+            Self::Off => "off",
+        }
+    }
+}
+
+/// Icon rendering mode for the status footer (`display.footer.icon_mode`).
+///
+/// All footer glyphs are standard Unicode; no private-use-area (Nerd Font)
+/// codepoints are used, so no font detection is required. `ascii` exists for
+/// terminals with broken Unicode width handling.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FooterIconMode {
+    /// Unicode glyphs where they help (default).
+    #[default]
+    Auto,
+    /// Pure-ASCII rendering.
+    Ascii,
+}
+
+/// Working-directory display mode in the status footer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FooterPathDisplay {
+    /// Last path component only (default).
+    #[default]
+    Basename,
+    /// Last `path_depth` components.
+    Depth,
+    /// Full path (`$HOME` collapses to `~`).
+    Full,
+}
+
+/// Per-segment visibility toggles for the status footer.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct FooterSegmentsConfig {
+    /// Working directory (default: true)
+    pub cwd: bool,
+    /// Execution-mode marker: local/remote (default: true)
+    pub mode: bool,
+    /// Git branch and status indicators (default: true)
+    pub git: bool,
+    /// Explicit session name (default: false)
+    pub session_name: bool,
+    /// Model label (default: true)
+    pub model: bool,
+    /// Provider label (default: true)
+    pub provider: bool,
+    /// Reasoning effort (default: true)
+    pub effort: bool,
+    /// Context usage with warning/error thresholds (default: true)
+    pub context: bool,
+    /// Session token counts (default: true)
+    pub tokens: bool,
+    /// Session cost when the provider reports priced usage (default: true)
+    pub cost: bool,
+}
+impl Default for FooterSegmentsConfig {
+    fn default() -> Self {
+        Self {
+            cwd: true,
+            mode: true,
+            git: true,
+            session_name: false,
+            model: true,
+            provider: true,
+            effort: true,
+            context: true,
+            tokens: true,
+            cost: true,
+        }
+    }
+}
+
+/// Persistent status footer configuration (`display.footer`).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct FooterConfig {
+    /// Footer style: segments (default) or off.
+    #[serde(deserialize_with = "crate::serde_lenient::lenient_enum")]
+    pub style: FooterStyle,
+    /// Per-segment visibility toggles.
+    pub segments: FooterSegmentsConfig,
+    /// Icon rendering: auto (default) or ascii.
+    #[serde(deserialize_with = "crate::serde_lenient::lenient_enum")]
+    pub icon_mode: FooterIconMode,
+    /// Working-directory display: basename (default), depth, or full.
+    #[serde(deserialize_with = "crate::serde_lenient::lenient_enum")]
+    pub path_display: FooterPathDisplay,
+    /// Number of trailing path components when path_display = depth (default: 2).
+    pub path_depth: usize,
+    /// Context usage percentage at or above which the segment renders as a warning (default: 70).
+    pub context_warning: u32,
+    /// Context usage percentage at or above which the segment renders as an error (default: 90).
+    pub context_error: u32,
+}
+impl Default for FooterConfig {
+    fn default() -> Self {
+        Self {
+            style: FooterStyle::Segments,
+            segments: FooterSegmentsConfig::default(),
+            icon_mode: FooterIconMode::Auto,
+            path_display: FooterPathDisplay::Basename,
+            path_depth: 2,
+            context_warning: 70,
+            context_error: 90,
+        }
+    }
+}
+impl FooterConfig {
+    /// Whether the footer reserves its row.
+    pub fn enabled(&self) -> bool {
+        matches!(self.style, FooterStyle::Segments)
+    }
+}
 fn default_true() -> bool {
     true
 }

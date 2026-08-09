@@ -3031,6 +3031,9 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
     // Elastic overscroll status line revealed when the user scrolls past the
     // bottom of the transcript. Rendered directly below the input line.
     let overscroll_height: u16 = if app.chat_overscroll_active() { 1 } else { 0 };
+    // Persistent status footer row (`display.footer`). Zero height when the
+    // style is "off" so the layout is byte-identical to the pre-footer layout.
+    let footer_height: u16 = if app.footer_config().enabled() { 1 } else { 0 };
     let fixed_height = 1
         + queued_height
         + swarm_strip_height
@@ -3039,7 +3042,8 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
         + inline_ui_gap_height
         + input_height
         + overscroll_height
-        + donut_height; // status + queued + swarm strip + notification + inline UI + gap + input + overscroll + donut
+        + donut_height
+        + footer_height; // status + queued + swarm strip + notification + inline UI + gap + input + overscroll + donut + footer
     let available_height = chat_area.height;
     // Overflow decisions (native scrollbar, and thus the wrap width) must not
     // depend on the transient overscroll row. Otherwise revealing the line at
@@ -3164,6 +3168,7 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
                 Constraint::Length(input_height),  // 7 Input
                 Constraint::Length(overscroll_height), // 8 Overscroll status line
                 Constraint::Length(donut_height),  // 9 Donut animation
+                Constraint::Length(footer_height), // 10 Status footer
             ]
         } else {
             vec![
@@ -3177,6 +3182,7 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
                 Constraint::Length(input_height),         // 7 Input
                 Constraint::Length(overscroll_height),    // 8 Overscroll status line
                 Constraint::Length(donut_height),         // 9 Donut animation
+                Constraint::Length(footer_height),        // 10 Status footer
             ]
         })
         .split(chat_area);
@@ -3399,6 +3405,12 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
             centered: margins.centered,
         });
     }
+    // Per-frame info snapshot, assembled once and shared by the status footer
+    // (chrome section) and the floating info-widget overlays below.
+    let widget_data_start = Instant::now();
+    let widget_data = app.info_widget_data();
+    let widget_data_elapsed = widget_data_start.elapsed();
+
     let chrome_start = Instant::now();
     if queued_height > 0 {
         if let Some(ref mut capture) = debug_capture {
@@ -3436,12 +3448,17 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
     if donut_height > 0 {
         animations::draw_idle_animation(frame, app, chunks[9]);
     }
+
+    if footer_height > 0 {
+        if let Some(ref mut capture) = debug_capture {
+            capture.render_order.push("draw_footer".to_string());
+        }
+        clear_area(frame, chunks[10]);
+        super::footer::draw_footer(frame, app, chunks[10], &widget_data);
+    }
     let chrome_elapsed = chrome_start.elapsed();
 
     // Draw info widget overlays (skip during idle animation - they look out of place)
-    let widget_data_start = Instant::now();
-    let widget_data = app.info_widget_data();
-    let widget_data_elapsed = widget_data_start.elapsed();
     let mut widget_render_ms: Option<f32> = None;
     let mut placements: Vec<info_widget::WidgetPlacement> = Vec::new();
     let widget_bounds = messages_area;

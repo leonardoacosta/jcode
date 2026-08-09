@@ -1,7 +1,7 @@
 //! `[display]` section of the config: TUI/CLI presentation settings.
 
 use crate::{
-    DiagramDisplayMode, DiffDisplayMode, LatexRenderingMode, MarkdownSpacingMode,
+    DiagramDisplayMode, DiffDisplayMode, FooterConfig, LatexRenderingMode, MarkdownSpacingMode,
     NativeScrollbarConfig, OverscrollStatusMode, ReasoningDisplayMode, default_true,
 };
 use serde::{Deserialize, Serialize};
@@ -120,6 +120,11 @@ pub struct DisplayConfig {
     /// reveal when scrolling past the bottom, "on" keeps it always visible.
     #[serde(default, deserialize_with = "crate::serde_lenient::lenient_enum")]
     pub overscroll_status: OverscrollStatusMode,
+    /// Persistent status footer (segments/off plus per-segment toggles,
+    /// default: segments). Set `footer.style = "off"` to hide the footer and
+    /// restore the pre-footer layout.
+    #[serde(default)]
+    pub footer: FooterConfig,
 }
 impl Default for DisplayConfig {
     fn default() -> Self {
@@ -158,6 +163,7 @@ impl Default for DisplayConfig {
             active_sessions_manager: false,
             external_sessions: true,
             overscroll_status: OverscrollStatusMode::default(),
+            footer: FooterConfig::default(),
         }
     }
 }

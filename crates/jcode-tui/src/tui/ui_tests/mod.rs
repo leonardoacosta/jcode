@@ -143,6 +143,7 @@ struct TestState {
     pin_images: bool,
     inline_images_visible: bool,
     chat_overscroll_active: bool,
+    footer_config: Option<crate::config::FooterConfig>,
     cache_ttl_status: Option<crate::tui::CacheTtlInfo>,
     status_notice: Option<String>,
     time_since_user_interaction: Option<Duration>,
@@ -372,6 +373,9 @@ impl crate::tui::TuiState for TestState {
     fn info_widget_data(&self) -> info_widget::InfoWidgetData {
         self.info_widget_data.clone()
     }
+    fn footer_config(&self) -> crate::config::FooterConfig {
+        self.footer_config.clone().unwrap_or_default()
+    }
     fn render_streaming_markdown(&self, _width: usize) -> Vec<Line<'static>> {
         markdown::render_markdown_with_width(&self.streaming_text, Some(_width))
     }
@@ -516,6 +520,8 @@ fn reset_prompt_viewport_state_for_test() {
 mod basic;
 #[path = "diagrams.rs"]
 mod diagrams;
+
+mod footer;
 #[path = "inline_picker.rs"]
 mod inline_picker;
 #[path = "onboarding.rs"]

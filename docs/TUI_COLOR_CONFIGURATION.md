@@ -40,6 +40,21 @@ apply immediately; no restart.
 | `/colors export` | Print the palette as config TOML |
 | `/colors reset [role]` | Reset one role, or all of them |
 
+### Status footer roles
+
+The status footer (`display.footer`, see `STATUS_FOOTER.md`) introduces no new
+color keys. Each segment paints with an existing role, so recoloring a role
+recolors the footer alongside everything else:
+
+| Footer segment | Role |
+| --- | --- |
+| Directory | `info` |
+| Mode marker, effort, provider, ahead/behind, session name, tokens | `dim` |
+| Branch (bold), model | `accent` |
+| Dirty indicators (`!2 +1 ?3`), context at/above the warning threshold | `warning` |
+| Context at/above the error threshold | `error` |
+| Cost | `success` |
+
 ## How every color became configurable
 
 The TUI does not have one palette. It has ~22 named semantic roles plus roughly

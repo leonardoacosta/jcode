@@ -25,6 +25,7 @@ mod info_widget_settle;
 pub mod info_widget_stability;
 pub mod keybind;
 mod layout_utils;
+pub(crate) mod footer;
 pub mod login_picker;
 pub mod markdown;
 mod memory_profile;
@@ -599,6 +600,12 @@ pub trait TuiState {
     /// Current git branch of the working directory, if in a repo.
     fn git_branch(&self) -> Option<String> {
         None
+    }
+    /// Status footer configuration (`display.footer`). The app returns the
+    /// configured value; render fixtures default to `FooterConfig::default()`
+    /// unless they explicitly override it.
+    fn footer_config(&self) -> crate::config::FooterConfig {
+        crate::config::FooterConfig::default()
     }
     /// Monotonic clock for viewport animations
     fn now_millis(&self) -> u64;

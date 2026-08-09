@@ -6,7 +6,8 @@
 pub use jcode_config_types::{
     AgentsConfig, AmbientConfig, AuthConfig, AutoJudgeConfig, AutoReviewConfig, CompactionConfig,
     CompactionMode, CrossProviderFailoverMode, DiagramDisplayMode, DiagramPanePosition,
-    DiffDisplayMode, DisplayConfig, FeatureConfig, GatewayConfig, HookCommands, HooksConfig,
+    DiffDisplayMode, DisplayConfig, FeatureConfig, FooterConfig, FooterIconMode, FooterPathDisplay,
+    FooterSegmentsConfig, FooterStyle, GatewayConfig, HookCommands, HooksConfig,
     KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
     MarkdownSpacingMode, NamedProviderAuth, NamedProviderConfig, NamedProviderModelConfig,
     NamedProviderType, NativeScrollbarConfig, NotificationsConfig, OverscrollStatusMode,

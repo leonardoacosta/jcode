@@ -1916,6 +1916,10 @@ impl crate::tui::TuiState for App {
         gather_git_info().map(|info| info.branch)
     }
 
+    fn footer_config(&self) -> crate::config::FooterConfig {
+        self.footer_config.clone()
+    }
+
     fn now_millis(&self) -> u64 {
         self.app_started.elapsed().as_millis() as u64
     }
