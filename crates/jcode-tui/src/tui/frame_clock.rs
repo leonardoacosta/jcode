@@ -69,12 +69,17 @@ impl FrameClock {
         }
     }
 
+    // Spec-committed surface (pause-state visibility + bounded frame math);
+    // lib callers arrive with the reduced-motion follow-up. Tests exercise all
+    // three today.
+    #[allow(dead_code)]
     pub fn is_paused(&self) -> bool {
         self.paused_since.is_some()
     }
 
     /// Bounded frame counter shared by every surface at a given fps:
     /// `(now * fps).floor()` with saturating arithmetic.
+    #[allow(dead_code)]
     pub fn frame_index(&self, fps: u32) -> u64 {
         self.now()
             .as_nanos()
@@ -84,6 +89,7 @@ impl FrameClock {
     }
 
     /// Elapsed time clamped to `max`, for effects with a hard duration.
+    #[allow(dead_code)]
     pub fn bounded_elapsed(&self, max: Duration) -> Duration {
         self.now().min(max)
     }
@@ -101,7 +107,6 @@ pub enum FrameKind {
 /// One completed frame's timing sample.
 #[derive(Debug, Clone, Copy)]
 pub struct FrameTiming {
-    pub at: Instant,
     pub kind: FrameKind,
     pub duration: Duration,
 }
@@ -142,25 +147,13 @@ impl FrameTimingRecorder {
     }
 
     pub fn record(&mut self, kind: FrameKind, duration: Duration) {
-        self.record_at(Instant::now(), kind, duration);
-    }
-
-    pub fn record_at(&mut self, at: Instant, kind: FrameKind, duration: Duration) {
         if self.capacity == 0 {
             return;
         }
         if self.ring.len() == self.capacity {
             self.ring.pop_front();
         }
-        self.ring.push_back(FrameTiming { at, kind, duration });
-    }
-
-    pub fn len(&self) -> usize {
-        self.ring.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.ring.is_empty()
+        self.ring.push_back(FrameTiming { kind, duration });
     }
 
     /// Nearest-rank percentiles over recorded durations.
@@ -317,15 +310,10 @@ mod tests {
     fn recorder_drops_oldest_at_capacity() {
         let mut recorder = FrameTimingRecorder::new(3);
         for i in 0..5 {
-            recorder.record_at(
-                Instant::now(),
-                FrameKind::Full,
-                Duration::from_millis(i as u64 + 1),
-            );
+            recorder.record(FrameKind::Full, Duration::from_millis(i as u64 + 1));
         }
-        assert_eq!(recorder.len(), 3, "ring must stay at capacity");
         let stats = recorder.stats();
-        assert_eq!(stats.count, 3);
+        assert_eq!(stats.count, 3, "ring must stay at capacity");
         // Kept samples are the last three: 3ms, 4ms, 5ms.
         assert_eq!(stats.max, Duration::from_millis(5));
         assert_eq!(stats.p50, Duration::from_millis(4));
@@ -341,7 +329,7 @@ mod tests {
             } else {
                 FrameKind::Full
             };
-            recorder.record_at(Instant::now(), kind, Duration::from_millis(i));
+            recorder.record(kind, Duration::from_millis(i));
         }
         let stats = recorder.stats();
         assert_eq!(stats.count, 20);
@@ -357,10 +345,9 @@ mod tests {
     fn empty_recorder_reports_zero_stats() {
         let recorder = FrameTimingRecorder::new(8);
         let stats = recorder.stats();
-        assert!(recorder.is_empty());
         assert_eq!(stats.count, 0);
         assert_eq!(stats.p95, Duration::ZERO);
         let zero_capacity = FrameTimingRecorder::new(0);
-        assert!(zero_capacity.is_empty());
+        assert_eq!(zero_capacity.stats().count, 0);
     }
 }
