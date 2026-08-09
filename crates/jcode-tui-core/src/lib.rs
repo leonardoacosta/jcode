@@ -7,12 +7,14 @@ pub use graph_topology::{GraphEdge, GraphNode, build_graph_topology, graph_node_
 
 pub mod anchor_stability;
 pub mod keybind;
+pub mod monitor;
 pub mod stream_buffer;
 
 pub use anchor_stability::{
     AnchorDiff, AnchorFrame, AnchorStabilityRecorder, AnchorStabilityReport, BLANK_ROW_HASH,
     JarringEvent, JarringKind,
 };
+pub use monitor::{Monitor, MonitorIndicator};
 pub use stream_buffer::{
     SeriesStats, StreamBuffer, StreamBufferMemoryProfile, StreamJitterProfile, StreamKind, StreamOp,
 };
