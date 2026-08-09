@@ -150,10 +150,24 @@ fn frame_clock_freezes_animation_time_while_unfocused() {
     let frame_b = app.frame_clock.frame_index(60);
     assert_eq!(frame_a, frame_b);
 
+    // The viewport animation clock (prompt-entry animation) rides the same
+    // authority, so it freezes exactly across the pause as well.
+    let now_a = crate::tui::TuiState::now_millis(&app);
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    let now_b = crate::tui::TuiState::now_millis(&app);
+    assert_eq!(
+        now_a, now_b,
+        "viewport animation clock must freeze exactly while unfocused"
+    );
+
     app.set_client_focused(true);
     let resumed_a = elapsed(&app);
     std::thread::sleep(std::time::Duration::from_millis(10));
     let resumed_b = elapsed(&app);
+    assert!(
+        crate::tui::TuiState::now_millis(&app) >= now_a,
+        "viewport animation clock resumes without rewinding"
+    );
     assert!(
         !app.frame_clock.is_paused(),
         "clock resumes when focus returns"

@@ -22,7 +22,9 @@ from `app_started.elapsed()` — raw, unpausable, unbounded wall clock.
 surface (spinner frames, info widgets, swarm gallery, memory render, workspace
 animation ticks, idle donut shaders) reads animation time through
 `TuiState::animation_elapsed()`, which returns `frame_clock.elapsed_secs()`.
-Zero call-site churn: the existing funnel is the adoption path.
+The viewport prompt-entry animation reads `TuiState::now_millis()`, which
+returns `frame_clock.now()` in milliseconds. Zero call-site churn: the
+existing funnels are the adoption path.
 
 Guarantees:
 

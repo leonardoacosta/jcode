@@ -1934,7 +1934,7 @@ impl crate::tui::TuiState for App {
     }
 
     fn now_millis(&self) -> u64 {
-        self.app_started.elapsed().as_millis() as u64
+        self.frame_clock.now().as_millis() as u64
     }
 
     fn copy_badge_ui(&self) -> crate::tui::CopyBadgeUiState {
