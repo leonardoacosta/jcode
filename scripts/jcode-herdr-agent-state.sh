@@ -54,6 +54,17 @@ try:
 except Exception:
     payload = {}
 
+def count_field(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value is None:
+            value = payload.get(name.lower())
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            continue
+    return 0
+
 if not event:
     event = str(payload.get("event") or "")
 if not session_id:
@@ -71,6 +82,29 @@ if not model:
 if not error:
     candidate = payload.get("error")
     error = candidate if isinstance(candidate, str) and candidate else None
+
+working_subagents = count_field("JCODE_HOOK_SUBAGENTS_WORKING", "subagents_working")
+blocking_subagents = count_field(
+    "JCODE_HOOK_SUBAGENTS_BLOCKING", "subagents_working_blocking", "subagents_blocking"
+)
+nonblocking_subagents = count_field(
+    "JCODE_HOOK_SUBAGENTS_NON_BLOCKING",
+    "JCODE_HOOK_SUBAGENTS_WORKING_NON_BLOCKING",
+    "subagents_working_non_blocking",
+    "subagents_non_blocking",
+)
+if working_subagents == 0:
+    working_subagents = blocking_subagents + nonblocking_subagents
+
+def working_message():
+    if working_subagents <= 0:
+        return f"jcode {model}" if model else "jcode working"
+    parts = [f"{working_subagents} subagent{'s' if working_subagents != 1 else ''} working"]
+    if blocking_subagents:
+        parts.append(f"{blocking_subagents} blocking")
+    if nonblocking_subagents:
+        parts.append(f"{nonblocking_subagents} non-blocking")
+    return "jcode " + " · ".join(parts)
 
 seq = time.time_ns()
 request_id = f"{SOURCE}:{seq}:{random.randrange(1_000_000):06d}"
@@ -145,7 +179,7 @@ if event == "session_start":
         raise SystemExit(0)
     request = report_agent("unknown", "jcode session active")
 elif event == "turn_start":
-    request = report_agent("working", f"jcode {model}" if model else "jcode working")
+    request = report_agent("working", working_message())
 elif event == "turn_end":
     message = "jcode ready"
     if status == "error" and error:

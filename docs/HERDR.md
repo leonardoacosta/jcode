@@ -90,7 +90,7 @@ On Jcode `session_end`, the adapter sends `pane.release_agent` for the same `("c
 | --- | --- | --- |
 | `session_start` | Active: `pane.report_agent` with state `unknown` and `agent_session_id = JCODE_HOOK_SESSION_ID`. | Creates a visible custom Jcode harness row while carrying the native session id. |
 | `session_end` | Active: `pane.release_agent`. | Clears custom Jcode lifecycle authority on normal close. |
-| `turn_start` | Active: `pane.report_agent` with state `working`. | Shows active Jcode work in Herdr's agent panel and rollups. |
+| `turn_start` | Active: `pane.report_agent` with state `working`. | Shows active Jcode work in Herdr's agent panel and rollups. When subagent count metadata is available, the message is summarized as `jcode 3 subagents working · 1 blocking · 2 non-blocking`. |
 | `turn_end` | Active: `pane.report_agent` with state `idle`. | Marks Jcode ready after a completed turn. |
 | `pre_tool` | No-op for Herdr authority. | It is a gate for tool policy, not a complete agent-state transition. |
 | `post_tool` | No-op for Herdr authority. | It observes tool completion only; text streaming, approvals, and interrupts happen outside this boundary. |
@@ -121,6 +121,16 @@ Relevant upstream files as of Herdr commit `eacea2daf0b72973173b728936b27478374f
 ## Future full lifecycle authority
 
 A later Jcode/Herdr protocol can report `working`, `idle`, `blocked`, and `unknown` through `pane.report_agent`, then call `pane.release_agent` on process exit. Do not enable this authority from turn hooks alone. It needs explicit Jcode events for permission/question blocking, approval resolution, cancellation/interrupt, reconnect/reload transfer, and abnormal termination so Herdr never displays a stale working or idle state.
+
+### Working subagent summary metadata
+
+The adapter accepts optional hook metadata for aggregate child-agent visibility:
+
+- `JCODE_HOOK_SUBAGENTS_WORKING`
+- `JCODE_HOOK_SUBAGENTS_BLOCKING`
+- `JCODE_HOOK_SUBAGENTS_NON_BLOCKING`
+
+The equivalent lowercase keys are also accepted in `JCODE_HOOK_PAYLOAD`. If the total is omitted, it is derived from the blocking and non-blocking counts. The Herdr machine state remains `working`; the counts are carried in the human-readable message so older Herdr versions continue to work unchanged.
 
 Official references:
 
