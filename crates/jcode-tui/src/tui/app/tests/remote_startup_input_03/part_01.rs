@@ -611,6 +611,7 @@ fn test_server_reload_waits_for_active_turn_then_reloads_client() {
 
     app.is_processing = false;
     assert!(app.maybe_finish_background_client_reload());
+    assert!(app.pending_background_client_reload.is_none());
     assert_eq!(app.reload_requested.as_deref(), Some(session_id.as_str()));
     assert!(app.should_quit);
 
