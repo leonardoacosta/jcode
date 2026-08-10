@@ -20,6 +20,14 @@ if ! git diff-tree --root --no-commit-id --name-only -r "$head" \
     exit 0
 fi
 
+# Git exports repository-local variables to hooks (notably GIT_INDEX_FILE on
+# some runners). They are valid for the triggering command but poison later
+# `git -C ... worktree add` calls in the detached background worker: a relative
+# `.git/index` is then resolved against the wrong worktree. We already captured
+# the source repo and commit, so clear only repository-local routing variables.
+unset GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_DIR GIT_INDEX_FILE
+unset GIT_OBJECT_DIRECTORY GIT_PREFIX GIT_WORK_TREE
+
 state_dir="$repo_root/target/commit-deploy"
 lock="$state_dir/lock"
 request="$state_dir/requested-head"

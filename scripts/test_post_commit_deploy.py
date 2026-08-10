@@ -51,6 +51,9 @@ class PostCommitDeployTests(unittest.TestCase):
         env = os.environ.copy()
         env["JCODE_DEPLOY_TEST_LOG"] = str(self.install_log)
         env["JCODE_DEPLOY_TEST_SLEEP"] = str(sleep)
+        # Real Git hooks may export a repo-relative index path. The deploy
+        # worker must clear it before creating a detached worktree.
+        env["GIT_INDEX_FILE"] = ".git/index"
         subprocess.run(
             ["bash", "scripts/post_commit_deploy.sh"],
             cwd=self.repo,
