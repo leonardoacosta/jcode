@@ -67,10 +67,12 @@
   - touches: `openspec/changes/harden-config-auth-safety/`
   - depends on: 4.2
   - Verify with `jcode auth doctor openai --validate --json`, `jcode auth doctor claude --validate --json`, and `openspec validate harden-config-auth-safety --strict --no-interactive`; the expected result is successful live validation for OpenAI and Claude and a zero-exit strict OpenSpec validation. Archive follows only after the terminal Copilot gate also passes.
+  - Blocked evidence (2026-08-10): OpenAI passed its full provider-and-tool validation, Claude credential load and token refresh passed, and Anthropic OAuth preflight passed. The live Claude request still returns HTTP 429 `rate_limit_error` from Anthropic, most recently at 16:41 CDT. Keep this task open and do not archive until that external account limit clears and the exact doctor command passes.
 
 ## User Gate
 
-- [ ] 5.1 [user:post] Complete the normal Copilot browser or device-code login if no valid local approval evidence can restore it.
+- [x] 5.1 [user:post] Complete the normal Copilot browser or device-code login if no valid local approval evidence can restore it.
   - touches: provider-managed credential state only
   - depends on: 4.2
-  - Run `jcode auth login copilot` and complete the provider prompt; the expected result is that `jcode auth doctor copilot --validate --json` reports the provider configured and the live request valid without adding unverified trust.
+  - Run `jcode login copilot` and complete the provider prompt; the expected result is that `jcode auth doctor copilot --validate --json` reports the provider configured and the live request valid without adding unverified trust.
+  - Completed evidence (2026-08-10): the normal GitHub device flow saved the provider-managed credential, and `jcode -C /tmp auth doctor copilot --validate --json` passed both the provider and real-tool smoke checks.
