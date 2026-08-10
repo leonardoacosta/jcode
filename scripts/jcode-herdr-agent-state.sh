@@ -41,6 +41,7 @@ event = os.environ.get("JCODE_HOOK_EVENT", "")
 session_id = os.environ.get("JCODE_HOOK_SESSION_ID") or None
 hook_source = os.environ.get("JCODE_HOOK_SOURCE") or None
 cwd = os.environ.get("JCODE_HOOK_CWD") or None
+session_name = os.environ.get("JCODE_HOOK_SESSION_NAME") or None
 status = os.environ.get("JCODE_HOOK_STATUS") or None
 model = os.environ.get("JCODE_HOOK_MODEL") or None
 error = os.environ.get("JCODE_HOOK_ERROR") or None
@@ -82,6 +83,20 @@ if not model:
 if not error:
     candidate = payload.get("error")
     error = candidate if isinstance(candidate, str) and candidate else None
+if not session_name:
+    candidate = payload.get("session_name")
+    session_name = candidate if isinstance(candidate, str) and candidate else None
+
+def project_name():
+    if not cwd:
+        return "jcode"
+    name = os.path.basename(os.path.normpath(cwd))
+    return name or "jcode"
+
+def row_message(indicator):
+    project = project_name()
+    custom_name = session_name or session_id or "jcode session"
+    return f"{indicator} {project}\n  {custom_name}"
 
 working_subagents = count_field("JCODE_HOOK_SUBAGENTS_WORKING", "subagents_working")
 blocking_subagents = count_field(
@@ -95,16 +110,6 @@ nonblocking_subagents = count_field(
 )
 if working_subagents == 0:
     working_subagents = blocking_subagents + nonblocking_subagents
-
-def working_message():
-    if working_subagents <= 0:
-        return f"jcode {model}" if model else "jcode working"
-    parts = [f"{working_subagents} subagent{'s' if working_subagents != 1 else ''} working"]
-    if blocking_subagents:
-        parts.append(f"{blocking_subagents} blocking")
-    if nonblocking_subagents:
-        parts.append(f"{nonblocking_subagents} non-blocking")
-    return "jcode " + " · ".join(parts)
 
 seq = time.time_ns()
 request_id = f"{SOURCE}:{seq}:{random.randrange(1_000_000):06d}"
@@ -177,14 +182,14 @@ request = None
 if event == "session_start":
     if not session_id:
         raise SystemExit(0)
-    request = report_agent("unknown", "jcode session active")
+    request = report_agent("unknown", row_message("○"))
 elif event == "turn_start":
-    request = report_agent("working", working_message())
+    request = report_agent("working", row_message("●"))
 elif event == "turn_end":
     message = "jcode ready"
     if status == "error" and error:
         message = f"jcode turn ended with error: {error}"
-    request = report_agent("idle", message)
+    request = report_agent("idle", row_message("○"))
 elif event == "session_end":
     request = {
         "id": request_id,

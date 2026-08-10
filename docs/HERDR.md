@@ -88,9 +88,9 @@ On Jcode `session_end`, the adapter sends `pane.release_agent` for the same `("c
 
 | Jcode hook | Herdr action now | Rationale |
 | --- | --- | --- |
-| `session_start` | Active: `pane.report_agent` with state `unknown` and `agent_session_id = JCODE_HOOK_SESSION_ID`. | Creates a visible custom Jcode harness row while carrying the native session id. |
+| `session_start` | Active: `pane.report_agent` with state `unknown` and `agent_session_id = JCODE_HOOK_SESSION_ID`. | Creates a visible custom Jcode harness row while carrying the native session id. The message uses the two-line agent layout. |
 | `session_end` | Active: `pane.release_agent`. | Clears custom Jcode lifecycle authority on normal close. |
-| `turn_start` | Active: `pane.report_agent` with state `working`. | Shows active Jcode work in Herdr's agent panel and rollups. When subagent count metadata is available, the message is summarized as `jcode 3 subagents working · 1 blocking · 2 non-blocking`. |
+| `turn_start` | Active: `pane.report_agent` with state `working`. | Shows active Jcode work in Herdr's agent panel and rollups. The message uses `[status] [project]` on row 1 and the custom session name on row 2. |
 | `turn_end` | Active: `pane.report_agent` with state `idle`. | Marks Jcode ready after a completed turn. |
 | `pre_tool` | No-op for Herdr authority. | It is a gate for tool policy, not a complete agent-state transition. |
 | `post_tool` | No-op for Herdr authority. | It observes tool completion only; text streaming, approvals, and interrupts happen outside this boundary. |
@@ -131,6 +131,17 @@ The adapter accepts optional hook metadata for aggregate child-agent visibility:
 - `JCODE_HOOK_SUBAGENTS_NON_BLOCKING`
 
 The equivalent lowercase keys are also accepted in `JCODE_HOOK_PAYLOAD`. If the total is omitted, it is derived from the blocking and non-blocking counts. The Herdr machine state remains `working`; the counts are carried in the human-readable message so older Herdr versions continue to work unchanged.
+
+### Agent row layout
+
+The custom agent message is rendered as two lines:
+
+```text
+● <project name>
+  <custom session name>
+```
+
+The project name is the basename of `JCODE_HOOK_CWD`. The session label comes from `JCODE_HOOK_SESSION_NAME`, which Jcode derives from the custom/generated session title and falls back to the session id. The status remains machine-readable in `pane.report_agent.params.state`.
 
 Official references:
 
