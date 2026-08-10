@@ -909,6 +909,7 @@ impl Agent {
         }
         let mut event = crate::hooks::HookEvent::new(event_name)
             .session_id(self.session.id.clone())
+            .field("SESSION_NAME", self.session.display_title_or_name())
             .field("SOURCE", source)
             .field("MODEL", self.provider_model());
         if let Some(cwd) = self.working_dir() {

@@ -148,6 +148,7 @@ impl Agent {
         }
         let mut event = crate::hooks::HookEvent::new("turn_start")
             .session_id(self.session.id.clone())
+            .field("SESSION_NAME", self.session.display_title_or_name())
             .field("MODEL", self.provider_model())
             .field("SOURCE", source.to_string());
         if let Some(cwd) = self.working_dir() {
@@ -170,6 +171,7 @@ impl Agent {
         let status = if result.is_ok() { "ok" } else { "error" };
         let mut event = crate::hooks::HookEvent::new("turn_end")
             .session_id(self.session.id.clone())
+            .field("SESSION_NAME", self.session.display_title_or_name())
             .field("STATUS", status)
             .field("DURATION_MS", started_at.elapsed().as_millis().to_string())
             .field("MODEL", self.provider_model());
