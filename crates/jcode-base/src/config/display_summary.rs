@@ -47,6 +47,7 @@ impl Config {
 - Diff line wrap: {}
 - Queue mode: {}
 - Auto server reload: {}
+- Auto client reload: {}
 - Mouse capture: {}
 - Debug socket: {}
 - Emoji: {}
@@ -167,6 +168,7 @@ impl Config {
             self.display.diff_line_wrap,
             self.display.queue_mode,
             self.display.auto_server_reload,
+            self.display.auto_client_reload,
             self.display.mouse_capture,
             self.display.debug_socket,
             self.display.emoji,

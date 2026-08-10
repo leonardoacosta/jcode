@@ -625,6 +625,364 @@ fn global_config_cache_reloads_after_manual_file_edit() {
 }
 
 #[test]
+fn malformed_config_mutation_preserves_source() {
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+
+    let path = Config::path().expect("config path");
+    std::fs::write(
+        &path,
+        "[display]\ncentered = false\n\n[auth]\ntrusted_external_sources = [\"keep\"]\n",
+    )
+    .expect("write valid config");
+    assert_eq!(
+        crate::config::config().auth.trusted_external_sources,
+        vec!["keep"]
+    );
+
+    let malformed = b"[display]\ncentered = false\ncentered = true\n";
+    std::fs::write(&path, malformed).expect("write malformed config");
+
+    let error =
+        Config::set_display_centered(true).expect_err("a setter must reject malformed source TOML");
+    assert!(
+        error.to_string().contains("Failed to parse config file"),
+        "setter should return the source parse error: {error:#}"
+    );
+    assert_eq!(
+        std::fs::read(&path).expect("read config after rejected mutation"),
+        malformed,
+        "a rejected mutation must preserve the source bytes"
+    );
+    assert!(
+        !path.with_extension("bak").exists(),
+        "a rejected mutation must not create a backup from invalid bytes"
+    );
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[test]
+fn invalid_hot_reload_keeps_last_known_good() {
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+
+    let path = Config::path().expect("config path");
+    std::fs::write(
+        &path,
+        "[display]\ncentered = false\n\n[auth]\ntrusted_external_sources = [\"keep\"]\n",
+    )
+    .expect("write valid config");
+    assert_eq!(
+        crate::config::config().auth.trusted_external_sources,
+        vec!["keep"]
+    );
+    let generation = crate::config::config_reload_generation();
+
+    std::fs::write(
+        &path,
+        "[display]\ncentered = true\ncentered = false\n\n[auth]\ntrusted_external_sources = []\n",
+    )
+    .expect("write malformed config");
+    assert_eq!(
+        crate::config::config().auth.trusted_external_sources,
+        vec!["keep"],
+        "invalid bytes must not replace the last known-good auth config"
+    );
+    assert_eq!(
+        crate::config::config_reload_generation(),
+        generation,
+        "a rejected file must not notify config consumers"
+    );
+
+    // An unchanged rejected fingerprint must remain quiet.
+    let _ = crate::config::config();
+    assert_eq!(crate::config::config_reload_generation(), generation);
+
+    std::fs::write(
+        &path,
+        "[display]\ncentered = true\n# corrected\n\n[auth]\ntrusted_external_sources = [\"keep\"]\n",
+    )
+    .expect("write corrected config");
+    assert!(crate::config::config().display.centered);
+    assert_eq!(crate::config::config_reload_generation(), generation + 1);
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[test]
+fn config_update_keeps_valid_backup() {
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+
+    let path = Config::path().expect("config path");
+    let previous =
+        b"[display]\ncentered = false\n\n[auth]\ntrusted_external_sources = [\"keep\"]\n";
+    std::fs::write(&path, previous).expect("write initial config");
+
+    Config::set_display_centered(true).expect("update config");
+
+    let backup = path.with_extension("bak");
+    assert_eq!(
+        std::fs::read(&backup).expect("read config backup"),
+        previous,
+        "the backup must contain the complete previous valid file"
+    );
+    Config::load_strict().expect("updated primary must parse");
+    let backup_config: Config =
+        toml::from_str(&std::fs::read_to_string(&backup).expect("read backup as text"))
+            .expect("backup must parse");
+    assert!(!backup_config.display.centered);
+    assert!(
+        Config::load_strict()
+            .expect("load updated config")
+            .display
+            .centered
+    );
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            std::fs::metadata(&path)
+                .expect("primary metadata")
+                .permissions()
+                .mode()
+                & 0o777,
+            0o600
+        );
+        assert_eq!(
+            std::fs::metadata(&backup)
+                .expect("backup metadata")
+                .permissions()
+                .mode()
+                & 0o777,
+            0o600
+        );
+    }
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[cfg(unix)]
+#[test]
+fn config_update_waits_for_cross_process_lock() {
+    use std::os::fd::AsRawFd;
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+
+    let path = Config::path().expect("config path");
+    std::fs::write(&path, "[display]\ncentered = false\n").expect("write config");
+    let lock_path = path.with_file_name("config.lock");
+    let lock_file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(false)
+        .open(&lock_path)
+        .expect("open config lock");
+    assert_eq!(
+        unsafe { libc::flock(lock_file.as_raw_fd(), libc::LOCK_EX) },
+        0,
+        "hold external config lock"
+    );
+
+    let (sender, receiver) = mpsc::channel();
+    let writer = std::thread::spawn(move || {
+        sender
+            .send(Config::set_display_centered(true))
+            .expect("report writer result");
+    });
+    assert!(
+        receiver.recv_timeout(Duration::from_millis(100)).is_err(),
+        "a config writer must wait while another process owns config.lock"
+    );
+
+    assert_eq!(
+        unsafe { libc::flock(lock_file.as_raw_fd(), libc::LOCK_UN) },
+        0,
+        "release external config lock"
+    );
+    receiver
+        .recv_timeout(Duration::from_secs(2))
+        .expect("writer should resume after lock release")
+        .expect("writer should succeed");
+    writer.join().expect("join config writer");
+    assert!(Config::load_strict().expect("load config").display.centered);
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[test]
+fn config_setters_do_not_use_permissive_load_before_save() {
+    let source = include_str!("config/config_file.rs");
+    assert!(
+        !source.contains("let mut cfg = Self::load();"),
+        "config setters must use the strict locked update transaction"
+    );
+    assert!(
+        !source.contains("let cfg = Self::load();\n        Self::set_default_model"),
+        "partial default-model setters must not read outside the write lock"
+    );
+}
+
+#[test]
+fn auto_client_reload_setter_is_idempotent() {
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+
+    let path = Config::path().expect("config path");
+    std::fs::write(
+        &path,
+        "[display]\ncentered = true\nauto_client_reload = false\n",
+    )
+    .expect("write config");
+
+    Config::set_auto_client_reload(true).expect("enable auto client reload");
+    let once = std::fs::read(&path).expect("read config after first update");
+    let cfg = Config::load_strict().expect("load updated config");
+    assert!(cfg.display.auto_client_reload);
+    assert!(
+        cfg.display.centered,
+        "the setter must preserve unrelated config"
+    );
+
+    Config::set_auto_client_reload(true).expect("repeat enable");
+    assert_eq!(
+        std::fs::read(&path).expect("read config after second update"),
+        once,
+        "a second enable must be byte-identical"
+    );
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[test]
+fn missing_config_setter_uses_defaults() {
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+
+    Config::set_pin_todos(true).expect("create config through typed setter");
+    let cfg = Config::load_strict().expect("created config must parse");
+    assert!(cfg.display.pin_todos);
+    assert_eq!(
+        cfg.provider.openai_reasoning_effort.as_deref(),
+        Some("low"),
+        "missing config must start from schema defaults"
+    );
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[test]
+fn concurrent_config_updates_preserve_both_changes() {
+    use std::sync::{Arc, Barrier};
+
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+    std::fs::write(
+        Config::path().expect("config path"),
+        "[display]\ncentered = false\npin_todos = false\n",
+    )
+    .expect("write config");
+
+    let barrier = Arc::new(Barrier::new(3));
+    let centered_barrier = Arc::clone(&barrier);
+    let centered = std::thread::spawn(move || {
+        centered_barrier.wait();
+        Config::set_display_centered(true)
+    });
+    let pin_barrier = Arc::clone(&barrier);
+    let pin = std::thread::spawn(move || {
+        pin_barrier.wait();
+        Config::set_pin_todos(true)
+    });
+    barrier.wait();
+    centered
+        .join()
+        .expect("join centered writer")
+        .expect("set centered");
+    pin.join().expect("join pin writer").expect("set pin todos");
+
+    let cfg = Config::load_strict().expect("load final config");
+    assert!(cfg.display.centered);
+    assert!(cfg.display.pin_todos);
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[test]
+fn config_lock_releases_after_process_exit() {
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+
+    let path = Config::path().expect("config path");
+    std::fs::write(&path, "[display]\ncentered = false\n").expect("write config");
+    std::fs::write(path.with_file_name("config.lock"), "stale lock file\n")
+        .expect("write stale lock file");
+    Config::set_display_centered(true).expect("stale file must not retain lock ownership");
+    assert!(Config::load_strict().expect("load config").display.centered);
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[test]
+fn config_write_failure_preserves_complete_primary() {
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+
+    let path = Config::path().expect("config path");
+    let previous = b"[display]\ncentered = false\n";
+    std::fs::write(&path, previous).expect("write config");
+    std::fs::create_dir(path.with_file_name("config.lock"))
+        .expect("make lock path unusable as a file");
+
+    Config::set_display_centered(true).expect_err("lock acquisition must fail closed");
+    assert_eq!(std::fs::read(&path).expect("read primary"), previous);
+    assert!(!path.with_extension("bak").exists());
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[test]
 fn config_save_invalidates_global_config_cache() {
     let _guard = crate::storage::lock_test_env();
     let prev_home = std::env::var_os("JCODE_HOME");
@@ -1167,6 +1525,26 @@ fn migrate_legacy_swarm_spawn_mode_noops_without_visible_value() {
 }
 
 #[test]
+fn config_text_migration_rejects_malformed_source() {
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    Config::invalidate_cache();
+
+    let path = Config::path().expect("config path");
+    let malformed = b"[agents]\nswarm_spawn_mode = \"visible\"\n\n[display]\ncentered = false\ncentered = true\n";
+    std::fs::write(&path, malformed).expect("write malformed config");
+
+    assert!(!Config::migrate_legacy_swarm_spawn_mode_once());
+    assert_eq!(std::fs::read(&path).expect("read config"), malformed);
+    assert!(!path.with_extension("bak").exists());
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
+}
+
+#[test]
 fn migrate_idle_animation_off_flips_true_to_false_once() {
     let _guard = crate::storage::lock_test_env();
     let prev_home = std::env::var_os("JCODE_HOME");
@@ -1325,14 +1703,31 @@ fn default_sponsors_section_is_not_written_back() {
 }
 
 #[test]
-fn config_reload_generation_increments_on_cache_invalidation() {
-    let before = crate::config::config_reload_generation();
+fn cache_invalidation_notifies_only_after_successful_reload() {
+    let _guard = crate::storage::lock_test_env();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    std::fs::write(
+        Config::path().expect("config path"),
+        "[display]\ncentered = true\n",
+    )
+    .expect("write config");
     crate::config::invalidate_config_cache();
-    let after = crate::config::config_reload_generation();
-    assert!(
-        after > before,
-        "invalidate_config_cache must bump the reload generation ({before} -> {after})"
+    let _ = crate::config::config();
+    let before = crate::config::config_reload_generation();
+
+    crate::config::invalidate_config_cache();
+    assert_eq!(
+        crate::config::config_reload_generation(),
+        before,
+        "marking the cache stale must not report a successful reload"
     );
+    let _ = crate::config::config();
+    assert_eq!(crate::config::config_reload_generation(), before + 1);
+
+    restore_env_var("JCODE_HOME", prev_home);
+    Config::invalidate_cache();
 }
 
 #[test]
@@ -1393,17 +1788,22 @@ fn test_display_footer_parses_style_and_options() {
 fn test_display_footer_absent_section_keeps_defaults_and_siblings() {
     let cfg: Config = toml::from_str("[display]\ncentered = true\n")
         .expect("config without footer section parses");
-    assert_eq!(cfg.display.footer.style, crate::config::FooterStyle::Segments);
+    assert_eq!(
+        cfg.display.footer.style,
+        crate::config::FooterStyle::Segments
+    );
     assert!(cfg.display.centered, "unrelated settings must survive");
 }
 
 #[test]
 fn test_display_footer_ignores_unknown_keys() {
-    let cfg: Config = toml::from_str(
-        "[display.footer]\nstyle = \"segments\"\nnonsense_key = true\n",
-    )
-    .expect("unknown footer keys are ignored");
-    assert_eq!(cfg.display.footer.style, crate::config::FooterStyle::Segments);
+    let cfg: Config =
+        toml::from_str("[display.footer]\nstyle = \"segments\"\nnonsense_key = true\n")
+            .expect("unknown footer keys are ignored");
+    assert_eq!(
+        cfg.display.footer.style,
+        crate::config::FooterStyle::Segments
+    );
 }
 
 #[test]
@@ -1429,7 +1829,10 @@ fn test_display_composer_rail_and_metadata_parse() {
     assert!(!cfg.display.composer.metadata);
     assert!(cfg.display.centered, "unrelated settings must survive");
     // Sibling sections keep their defaults.
-    assert_eq!(cfg.display.footer.style, crate::config::FooterStyle::Segments);
+    assert_eq!(
+        cfg.display.footer.style,
+        crate::config::FooterStyle::Segments
+    );
 }
 
 #[test]
@@ -1490,10 +1893,9 @@ fn test_display_user_messages_absent_section_keeps_defaults_and_siblings() {
 
 #[test]
 fn test_display_user_messages_ignores_unknown_keys() {
-    let cfg: Config = toml::from_str(
-        "[display.user_messages]\nstyle = \"compact\"\nnonsense_key = true\n",
-    )
-    .expect("unknown user_messages keys are ignored");
+    let cfg: Config =
+        toml::from_str("[display.user_messages]\nstyle = \"compact\"\nnonsense_key = true\n")
+            .expect("unknown user_messages keys are ignored");
     assert_eq!(
         cfg.display.user_messages.style,
         crate::config::UserMessageStyle::Compact
@@ -1502,10 +1904,8 @@ fn test_display_user_messages_ignores_unknown_keys() {
 
 #[test]
 fn test_display_composer_ignores_unknown_keys() {
-    let cfg: Config = toml::from_str(
-        "[display.composer]\nstyle = \"rail\"\nnonsense_key = true\n",
-    )
-    .expect("unknown composer keys are ignored");
+    let cfg: Config = toml::from_str("[display.composer]\nstyle = \"rail\"\nnonsense_key = true\n")
+        .expect("unknown composer keys are ignored");
     assert_eq!(
         cfg.display.composer.style,
         crate::config::ComposerStyle::Rail

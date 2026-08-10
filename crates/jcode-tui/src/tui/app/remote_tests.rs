@@ -76,6 +76,54 @@ fn ensure_test_jcode_home_if_unset() {
 }
 
 #[test]
+fn auto_client_reload_gate_requires_remote_and_opt_in() {
+    let _guard = crate::storage::lock_test_env();
+    let prev = std::env::var("JCODE_AUTO_CLIENT_RELOAD").ok();
+    struct EnvRestore(Option<String>);
+    impl Drop for EnvRestore {
+        fn drop(&mut self) {
+            match &self.0 {
+                Some(v) => crate::env::set_var("JCODE_AUTO_CLIENT_RELOAD", v),
+                None => crate::env::remove_var("JCODE_AUTO_CLIENT_RELOAD"),
+            }
+            crate::config::invalidate_config_cache();
+        }
+    }
+    let _restore = EnvRestore(prev);
+
+    // Non-remote (local) sessions never auto re-exec, even with the toggle on.
+    crate::env::set_var("JCODE_AUTO_CLIENT_RELOAD", "1");
+    crate::config::invalidate_config_cache();
+    let mut app = create_test_app();
+    assert!(
+        !app.client_auto_reload_enabled(),
+        "local sessions never auto-reload the client"
+    );
+
+    // Remote, non-canary, toggle on -> allowed.
+    app.is_remote = true;
+    assert!(
+        app.client_auto_reload_enabled(),
+        "remote session with display.auto_client_reload=true opts in"
+    );
+
+    // Remote, non-canary, toggle off -> blocked (pre-change default).
+    crate::env::set_var("JCODE_AUTO_CLIENT_RELOAD", "0");
+    crate::config::invalidate_config_cache();
+    assert!(
+        !app.client_auto_reload_enabled(),
+        "default config keeps non-selfdev sessions on manual /reload"
+    );
+
+    // Self-dev (canary) sessions always reload regardless of the toggle.
+    app.remote_is_canary = Some(true);
+    assert!(
+        app.client_auto_reload_enabled(),
+        "canary sessions always auto-reload"
+    );
+}
+
+#[test]
 fn reload_handoff_active_when_server_flag_is_set() {
     let state = RemoteRunState {
         server_reload_in_progress: true,

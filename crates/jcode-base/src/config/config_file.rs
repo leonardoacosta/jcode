@@ -1,6 +1,95 @@
 use super::*;
 use crate::storage::jcode_dir;
+use std::fs::File;
 use std::path::PathBuf;
+
+struct ConfigWriteLock {
+    file: File,
+}
+
+impl ConfigWriteLock {
+    fn acquire(config_path: &std::path::Path) -> anyhow::Result<Self> {
+        let lock_path = config_path.with_file_name("config.lock");
+        if let Some(parent) = lock_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+
+        #[cfg(unix)]
+        {
+            use std::os::fd::AsRawFd;
+
+            let file = std::fs::OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .truncate(false)
+                .open(&lock_path)
+                .map_err(|err| {
+                    anyhow::anyhow!("Failed to open config lock {}: {err}", lock_path.display())
+                })?;
+            jcode_core::fs::set_permissions_owner_only(&lock_path)?;
+            loop {
+                if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX) } == 0 {
+                    return Ok(Self { file });
+                }
+                let err = std::io::Error::last_os_error();
+                if err.kind() != std::io::ErrorKind::Interrupted {
+                    return Err(anyhow::anyhow!(
+                        "Failed to acquire config lock {}: {err}",
+                        lock_path.display()
+                    ));
+                }
+            }
+        }
+
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+
+            const MAX_ATTEMPTS: usize = 100;
+            for attempt in 0..MAX_ATTEMPTS {
+                match std::fs::OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .create(true)
+                    .truncate(false)
+                    .share_mode(0)
+                    .open(&lock_path)
+                {
+                    Ok(file) => {
+                        jcode_core::fs::set_permissions_owner_only(&lock_path)?;
+                        return Ok(Self { file });
+                    }
+                    Err(err)
+                        if attempt + 1 < MAX_ATTEMPTS
+                            && (matches!(
+                                err.kind(),
+                                std::io::ErrorKind::PermissionDenied
+                                    | std::io::ErrorKind::WouldBlock
+                            ) || matches!(err.raw_os_error(), Some(32 | 33))) =>
+                    {
+                        std::thread::sleep(std::time::Duration::from_millis(25));
+                    }
+                    Err(err) => {
+                        return Err(anyhow::anyhow!(
+                            "Failed to acquire config lock {}: {err}",
+                            lock_path.display()
+                        ));
+                    }
+                }
+            }
+            unreachable!("bounded config lock loop must return")
+        }
+    }
+}
+
+#[cfg(unix)]
+impl Drop for ConfigWriteLock {
+    fn drop(&mut self) {
+        use std::os::fd::AsRawFd;
+        let _ = unsafe { libc::flock(self.file.as_raw_fd(), libc::LOCK_UN) };
+    }
+}
 
 impl Config {
     /// Get the config file path
@@ -97,16 +186,96 @@ impl Config {
     /// Save config to file
     pub fn save(&self) -> anyhow::Result<()> {
         let path = Self::path().ok_or_else(|| anyhow::anyhow!("No config path"))?;
-
-        // Ensure parent directory exists
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
 
-        let content = toml::to_string_pretty(self)?;
-        std::fs::write(&path, content)?;
+        let _lock = ConfigWriteLock::acquire(&path)?;
+        self.persist_to(&path)?;
         Self::invalidate_cache();
         Ok(())
+    }
+
+    fn persist_to(&self, path: &std::path::Path) -> anyhow::Result<()> {
+        let content = toml::to_string_pretty(self)?;
+        toml::from_str::<Self>(&content)
+            .map_err(|err| anyhow::anyhow!("Refusing to write invalid config candidate: {err}"))?;
+
+        // A backup is useful only when it is known to be valid. Do not turn a
+        // malformed source file into the recovery copy for a new write.
+        if path.exists() {
+            let current = std::fs::read_to_string(&path).map_err(|err| {
+                anyhow::anyhow!("Failed to read config file {}: {err}", path.display())
+            })?;
+            toml::from_str::<Self>(&current).map_err(|err| {
+                anyhow::anyhow!("Failed to parse config file {}: {err}", path.display())
+            })?;
+            jcode_core::fs::set_permissions_owner_only(&path)?;
+        }
+
+        jcode_storage::write_text_secret(&path, &content)?;
+        jcode_core::fs::set_permissions_owner_only(&path)?;
+        let backup = path.with_extension("bak");
+        if backup.exists() {
+            jcode_core::fs::set_permissions_owner_only(&backup)?;
+        }
+        Ok(())
+    }
+
+    /// Strictly load, mutate, and save the current configuration.
+    ///
+    /// A malformed source file is an error. It must never become an in-memory
+    /// default that an unrelated setter can write back over the source bytes.
+    fn update<T>(mutate: impl FnOnce(&mut Self) -> T) -> anyhow::Result<T> {
+        Self::update_if(|cfg| (mutate(cfg), true))
+    }
+
+    fn update_if<T>(mutate: impl FnOnce(&mut Self) -> (T, bool)) -> anyhow::Result<T> {
+        let path = Self::path().ok_or_else(|| anyhow::anyhow!("No config path"))?;
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let _lock = ConfigWriteLock::acquire(&path)?;
+        let mut cfg = Self::load_strict()?;
+        let (result, changed) = mutate(&mut cfg);
+        if changed {
+            cfg.persist_to(&path)?;
+            Self::invalidate_cache();
+        }
+        Ok(result)
+    }
+
+    fn update_source_text(mutate: impl FnOnce(&str) -> Option<String>) -> anyhow::Result<bool> {
+        let path = Self::path().ok_or_else(|| anyhow::anyhow!("No config path"))?;
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        let _lock = ConfigWriteLock::acquire(&path)?;
+        if !path.exists() {
+            return Ok(false);
+        }
+
+        let source = std::fs::read_to_string(&path).map_err(|err| {
+            anyhow::anyhow!("Failed to read config file {}: {err}", path.display())
+        })?;
+        toml::from_str::<Self>(&source).map_err(|err| {
+            anyhow::anyhow!("Failed to parse config file {}: {err}", path.display())
+        })?;
+        let Some(candidate) = mutate(&source) else {
+            return Ok(false);
+        };
+        toml::from_str::<Self>(&candidate)
+            .map_err(|err| anyhow::anyhow!("Refusing to write invalid config candidate: {err}"))?;
+
+        jcode_core::fs::set_permissions_owner_only(&path)?;
+        jcode_storage::write_text_secret(&path, &candidate)?;
+        jcode_core::fs::set_permissions_owner_only(&path)?;
+        let backup = path.with_extension("bak");
+        if backup.exists() {
+            jcode_core::fs::set_permissions_owner_only(&backup)?;
+        }
+        Self::invalidate_cache();
+        Ok(true)
     }
 
     /// Mark the process-cached config as stale and notify dependent caches.
@@ -117,9 +286,7 @@ impl Config {
     /// Update the copilot premium mode in the config file.
     /// Reloads, patches, and saves so it doesn't clobber other fields.
     pub fn set_copilot_premium(mode: Option<&str>) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.provider.copilot_premium = mode.map(|s| s.to_string());
-        cfg.save()?;
+        Self::update(|cfg| cfg.provider.copilot_premium = mode.map(str::to_string))?;
         crate::logging::info(&format!(
             "Saved copilot_premium to config: {}",
             mode.unwrap_or("(none)")
@@ -130,10 +297,10 @@ impl Config {
     /// Update just the default model and provider in the config file.
     /// This reloads, patches, and saves so it doesn't clobber other fields.
     pub fn set_default_model(model: Option<&str>, provider: Option<&str>) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.provider.default_model = model.map(|s| s.to_string());
-        cfg.provider.default_provider = provider.map(|s| s.to_string());
-        cfg.save()?;
+        Self::update(|cfg| {
+            cfg.provider.default_model = model.map(str::to_string);
+            cfg.provider.default_provider = provider.map(str::to_string);
+        })?;
         crate::logging::info(&format!(
             "Saved default model: {}, provider: {}",
             model.unwrap_or("(none)"),
@@ -144,21 +311,17 @@ impl Config {
 
     /// Update just the default provider in the config file.
     pub fn set_default_provider(provider: Option<&str>) -> anyhow::Result<()> {
-        let cfg = Self::load();
-        Self::set_default_model(cfg.provider.default_model.as_deref(), provider)
+        Self::update(|cfg| cfg.provider.default_provider = provider.map(str::to_string))
     }
 
     /// Update just the default model in the config file.
     pub fn set_default_model_only(model: Option<&str>) -> anyhow::Result<()> {
-        let cfg = Self::load();
-        Self::set_default_model(model, cfg.provider.default_provider.as_deref())
+        Self::update(|cfg| cfg.provider.default_model = model.map(str::to_string))
     }
 
     /// Update the persisted OpenAI reasoning effort preference.
     pub fn set_openai_reasoning_effort(value: Option<&str>) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.provider.openai_reasoning_effort = value.map(|s| s.to_string());
-        cfg.save()?;
+        Self::update(|cfg| cfg.provider.openai_reasoning_effort = value.map(str::to_string))?;
         crate::logging::info(&format!(
             "Saved openai_reasoning_effort to config: {}",
             value.unwrap_or("(none)")
@@ -168,9 +331,7 @@ impl Config {
 
     /// Update the persisted Anthropic reasoning effort preference.
     pub fn set_anthropic_reasoning_effort(value: Option<&str>) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.provider.anthropic_reasoning_effort = value.map(|s| s.to_string());
-        cfg.save()?;
+        Self::update(|cfg| cfg.provider.anthropic_reasoning_effort = value.map(str::to_string))?;
         crate::logging::info(&format!(
             "Saved anthropic_reasoning_effort to config: {}",
             value.unwrap_or("(none)")
@@ -180,9 +341,7 @@ impl Config {
 
     /// Update the persisted OpenAI transport preference.
     pub fn set_openai_transport(value: Option<&str>) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.provider.openai_transport = value.map(|s| s.to_string());
-        cfg.save()?;
+        Self::update(|cfg| cfg.provider.openai_transport = value.map(str::to_string))?;
         crate::logging::info(&format!(
             "Saved openai_transport to config: {}",
             value.unwrap_or("(none)")
@@ -192,9 +351,7 @@ impl Config {
 
     /// Update the persisted OpenAI service tier preference.
     pub fn set_openai_service_tier(value: Option<&str>) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.provider.openai_service_tier = value.map(|s| s.to_string());
-        cfg.save()?;
+        Self::update(|cfg| cfg.provider.openai_service_tier = value.map(str::to_string))?;
         crate::logging::info(&format!(
             "Saved openai_service_tier to config: {}",
             value.unwrap_or("(none)")
@@ -204,18 +361,27 @@ impl Config {
 
     /// Update the persisted default alignment preference.
     pub fn set_display_centered(centered: bool) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.display.centered = centered;
-        cfg.save()?;
+        Self::update(|cfg| cfg.display.centered = centered)?;
         crate::logging::info(&format!("Saved display.centered to config: {}", centered));
+        Ok(())
+    }
+
+    /// Update automatic client reload without rewriting an unchanged config.
+    pub fn set_auto_client_reload(enabled: bool) -> anyhow::Result<()> {
+        Self::update_if(|cfg| {
+            let changed = cfg.display.auto_client_reload != enabled;
+            cfg.display.auto_client_reload = enabled;
+            ((), changed)
+        })?;
+        crate::logging::info(&format!(
+            "Saved display.auto_client_reload to config: {enabled}"
+        ));
         Ok(())
     }
 
     /// Update the persisted reasoning display mode preference.
     pub fn set_reasoning_display(mode: ReasoningDisplayMode) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.display.set_reasoning_display(mode);
-        cfg.save()?;
+        Self::update(|cfg| cfg.display.set_reasoning_display(mode))?;
         crate::logging::info(&format!(
             "Saved display.reasoning_display to config: {}",
             mode.label()
@@ -225,9 +391,7 @@ impl Config {
 
     /// Update the persisted compact-notifications preference.
     pub fn set_compact_notifications(compact: bool) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.display.compact_notifications = compact;
-        cfg.save()?;
+        Self::update(|cfg| cfg.display.compact_notifications = compact)?;
         crate::logging::info(&format!(
             "Saved display.compact_notifications to config: {}",
             compact
@@ -237,18 +401,14 @@ impl Config {
 
     /// Update the persisted pinned-todos preference.
     pub fn set_pin_todos(pin: bool) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.display.pin_todos = pin;
-        cfg.save()?;
+        Self::update(|cfg| cfg.display.pin_todos = pin)?;
         crate::logging::info(&format!("Saved display.pin_todos to config: {}", pin));
         Ok(())
     }
 
     /// Update the persisted show-agentgrep-output preference.
     pub fn set_show_agentgrep_output(show: bool) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.display.show_agentgrep_output = show;
-        cfg.save()?;
+        Self::update(|cfg| cfg.display.show_agentgrep_output = show)?;
         crate::logging::info(&format!(
             "Saved display.show_agentgrep_output to config: {}",
             show
@@ -258,9 +418,7 @@ impl Config {
 
     /// Update the persisted tool-call-details preference.
     pub fn set_tool_call_details(show: bool) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.display.tool_call_details = show;
-        cfg.save()?;
+        Self::update(|cfg| cfg.display.tool_call_details = show)?;
         crate::logging::info(&format!(
             "Saved display.tool_call_details to config: {}",
             show
@@ -277,14 +435,15 @@ impl Config {
         entries: Vec<jcode_config_types::LaunchHotkeyEntry>,
         enabled: bool,
     ) -> anyhow::Result<()> {
-        let mut cfg = Self::load();
-        cfg.launch_hotkeys.entries = entries;
-        cfg.launch_hotkeys.enabled = Some(enabled);
-        cfg.launch_hotkeys.imported = true;
-        cfg.save()?;
+        let entry_count = Self::update(|cfg| {
+            cfg.launch_hotkeys.entries = entries;
+            cfg.launch_hotkeys.enabled = Some(enabled);
+            cfg.launch_hotkeys.imported = true;
+            cfg.launch_hotkeys.entries.len()
+        })?;
         crate::logging::info(&format!(
             "Saved {} launch hotkey(s) to config (enabled={enabled})",
-            cfg.launch_hotkeys.entries.len()
+            entry_count
         ));
         Ok(())
     }
@@ -429,55 +588,48 @@ impl Config {
             );
         };
 
-        let path = dir.join("config.toml");
-        let Ok(content) = std::fs::read_to_string(&path) else {
-            // No config file (fresh install): nothing to migrate.
-            write_marker();
-            return false;
-        };
-
-        let mut changed = false;
-        let migrated: Vec<String> = content
-            .lines()
-            .map(|line| {
-                if changed {
-                    return line.to_string();
-                }
-                let trimmed = line.trim_start();
-                let Some(rest) = trimmed.strip_prefix("swarm_spawn_mode") else {
-                    return line.to_string();
-                };
-                let Some(value) = rest.trim_start().strip_prefix('=') else {
-                    return line.to_string();
-                };
-                let value = value.trim().trim_matches(|c| c == '"' || c == '\'');
-                if matches!(value, "visible" | "headed") {
-                    changed = true;
-                    let indent = &line[..line.len() - trimmed.len()];
-                    format!("{indent}swarm_spawn_mode = \"inline\"")
-                } else {
-                    line.to_string()
-                }
-            })
-            .collect();
-
-        if !changed {
-            write_marker();
-            return false;
-        }
-
-        let mut new_content = migrated.join("\n");
-        if content.ends_with('\n') {
-            new_content.push('\n');
-        }
-        match std::fs::write(&path, new_content) {
-            Ok(()) => {
-                Self::invalidate_cache();
+        match Self::update_source_text(|content| {
+            let mut changed = false;
+            let migrated: Vec<String> = content
+                .lines()
+                .map(|line| {
+                    if changed {
+                        return line.to_string();
+                    }
+                    let trimmed = line.trim_start();
+                    let Some(rest) = trimmed.strip_prefix("swarm_spawn_mode") else {
+                        return line.to_string();
+                    };
+                    let Some(value) = rest.trim_start().strip_prefix('=') else {
+                        return line.to_string();
+                    };
+                    let value = value.trim().trim_matches(|c| c == '"' || c == '\'');
+                    if matches!(value, "visible" | "headed") {
+                        changed = true;
+                        let indent = &line[..line.len() - trimmed.len()];
+                        format!("{indent}swarm_spawn_mode = \"inline\"")
+                    } else {
+                        line.to_string()
+                    }
+                })
+                .collect();
+            if !changed {
+                return None;
+            }
+            let mut candidate = migrated.join("\n");
+            if content.ends_with('\n') {
+                candidate.push('\n');
+            }
+            Some(candidate)
+        }) {
+            Ok(changed) => {
                 write_marker();
-                crate::logging::info(
-                    "Migrated legacy swarm_spawn_mode \"visible\" to \"inline\" in config.toml",
-                );
-                true
+                if changed {
+                    crate::logging::info(
+                        "Migrated legacy swarm_spawn_mode \"visible\" to \"inline\" in config.toml",
+                    );
+                }
+                changed
             }
             Err(err) => {
                 crate::logging::warn(&format!(
@@ -514,55 +666,48 @@ impl Config {
             let _ = std::fs::write(&marker, "idle_animation forced migration: true -> false\n");
         };
 
-        let path = dir.join("config.toml");
-        let Ok(content) = std::fs::read_to_string(&path) else {
-            // No config file (fresh install): nothing to migrate.
-            write_marker();
-            return false;
-        };
-
-        let mut changed = false;
-        let migrated: Vec<String> = content
-            .lines()
-            .map(|line| {
-                if changed {
-                    return line.to_string();
-                }
-                let trimmed = line.trim_start();
-                let Some(rest) = trimmed.strip_prefix("idle_animation") else {
-                    return line.to_string();
-                };
-                let Some(value) = rest.trim_start().strip_prefix('=') else {
-                    return line.to_string();
-                };
-                let value = value.split('#').next().unwrap_or("");
-                if value.trim() == "true" {
-                    changed = true;
-                    let indent = &line[..line.len() - trimmed.len()];
-                    format!("{indent}idle_animation = false")
-                } else {
-                    line.to_string()
-                }
-            })
-            .collect();
-
-        if !changed {
-            write_marker();
-            return false;
-        }
-
-        let mut new_content = migrated.join("\n");
-        if content.ends_with('\n') {
-            new_content.push('\n');
-        }
-        match std::fs::write(&path, new_content) {
-            Ok(()) => {
-                Self::invalidate_cache();
+        match Self::update_source_text(|content| {
+            let mut changed = false;
+            let migrated: Vec<String> = content
+                .lines()
+                .map(|line| {
+                    if changed {
+                        return line.to_string();
+                    }
+                    let trimmed = line.trim_start();
+                    let Some(rest) = trimmed.strip_prefix("idle_animation") else {
+                        return line.to_string();
+                    };
+                    let Some(value) = rest.trim_start().strip_prefix('=') else {
+                        return line.to_string();
+                    };
+                    let value = value.split('#').next().unwrap_or("");
+                    if value.trim() == "true" {
+                        changed = true;
+                        let indent = &line[..line.len() - trimmed.len()];
+                        format!("{indent}idle_animation = false")
+                    } else {
+                        line.to_string()
+                    }
+                })
+                .collect();
+            if !changed {
+                return None;
+            }
+            let mut candidate = migrated.join("\n");
+            if content.ends_with('\n') {
+                candidate.push('\n');
+            }
+            Some(candidate)
+        }) {
+            Ok(changed) => {
                 write_marker();
-                crate::logging::info(
-                    "Migrated idle_animation \"true\" to \"false\" in config.toml",
-                );
-                true
+                if changed {
+                    crate::logging::info(
+                        "Migrated idle_animation \"true\" to \"false\" in config.toml",
+                    );
+                }
+                changed
             }
             Err(err) => {
                 crate::logging::warn(&format!(
@@ -655,18 +800,19 @@ impl Config {
             anyhow::bail!("External auth source id cannot be empty");
         }
 
-        let mut cfg = Self::load();
-        if !cfg
-            .auth
-            .trusted_external_sources
-            .iter()
-            .any(|value| value.trim().eq_ignore_ascii_case(&source_id))
-        {
-            cfg.auth.trusted_external_sources.push(source_id.clone());
-            cfg.auth.trusted_external_sources.sort();
-            cfg.auth.trusted_external_sources.dedup();
-            cfg.save()?;
-        }
+        Self::update_if(|cfg| {
+            let changed = !cfg
+                .auth
+                .trusted_external_sources
+                .iter()
+                .any(|value| value.trim().eq_ignore_ascii_case(&source_id));
+            if changed {
+                cfg.auth.trusted_external_sources.push(source_id.clone());
+                cfg.auth.trusted_external_sources.sort();
+                cfg.auth.trusted_external_sources.dedup();
+            }
+            ((), changed)
+        })?;
 
         crate::logging::info(&format!(
             "Saved trusted external auth source to config: {}",
@@ -680,18 +826,19 @@ impl Config {
         path: &std::path::Path,
     ) -> anyhow::Result<()> {
         let entry = Self::trusted_external_auth_path_entry(source_id, path)?;
-        let mut cfg = Self::load();
-        if !cfg
-            .auth
-            .trusted_external_source_paths
-            .iter()
-            .any(|value| value.trim().eq_ignore_ascii_case(&entry))
-        {
-            cfg.auth.trusted_external_source_paths.push(entry.clone());
-            cfg.auth.trusted_external_source_paths.sort();
-            cfg.auth.trusted_external_source_paths.dedup();
-            cfg.save()?;
-        }
+        Self::update_if(|cfg| {
+            let changed = !cfg
+                .auth
+                .trusted_external_source_paths
+                .iter()
+                .any(|value| value.trim().eq_ignore_ascii_case(&entry));
+            if changed {
+                cfg.auth.trusted_external_source_paths.push(entry.clone());
+                cfg.auth.trusted_external_source_paths.sort();
+                cfg.auth.trusted_external_source_paths.dedup();
+            }
+            ((), changed)
+        })?;
         crate::logging::info(&format!(
             "Saved trusted external auth source path: {}",
             entry
@@ -704,13 +851,15 @@ impl Config {
         path: &std::path::Path,
     ) -> anyhow::Result<()> {
         let entry = Self::trusted_external_auth_path_entry(source_id, path)?;
-        let mut cfg = Self::load();
-        let before = cfg.auth.trusted_external_source_paths.len();
-        cfg.auth
-            .trusted_external_source_paths
-            .retain(|value| !value.trim().eq_ignore_ascii_case(&entry));
-        if cfg.auth.trusted_external_source_paths.len() != before {
-            cfg.save()?;
+        let changed = Self::update_if(|cfg| {
+            let before = cfg.auth.trusted_external_source_paths.len();
+            cfg.auth
+                .trusted_external_source_paths
+                .retain(|value| !value.trim().eq_ignore_ascii_case(&entry));
+            let changed = cfg.auth.trusted_external_source_paths.len() != before;
+            (changed, changed)
+        })?;
+        if changed {
             crate::logging::info(&format!(
                 "Removed trusted external auth source path: {}",
                 entry
@@ -726,13 +875,15 @@ impl Config {
         if source_id.is_empty() {
             return Ok(());
         }
-        let mut cfg = Self::load();
-        let before = cfg.auth.trusted_external_sources.len();
-        cfg.auth
-            .trusted_external_sources
-            .retain(|value| !value.trim().eq_ignore_ascii_case(&source_id));
-        if cfg.auth.trusted_external_sources.len() != before {
-            cfg.save()?;
+        let changed = Self::update_if(|cfg| {
+            let before = cfg.auth.trusted_external_sources.len();
+            cfg.auth
+                .trusted_external_sources
+                .retain(|value| !value.trim().eq_ignore_ascii_case(&source_id));
+            let changed = cfg.auth.trusted_external_sources.len() != before;
+            (changed, changed)
+        })?;
+        if changed {
             crate::logging::info(&format!(
                 "Removed trusted external auth source: {}",
                 source_id

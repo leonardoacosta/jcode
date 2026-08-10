@@ -1,9 +1,9 @@
 //! `[display]` section of the config: TUI/CLI presentation settings.
 
 use crate::{
-    ComposerConfig, DiagramDisplayMode, DiffDisplayMode, FooterConfig, LatexRenderingMode, MarkdownSpacingMode,
-    UserMessagesConfig,
-    NativeScrollbarConfig, OverscrollStatusMode, ReasoningDisplayMode, default_true,
+    ComposerConfig, DiagramDisplayMode, DiffDisplayMode, FooterConfig, LatexRenderingMode,
+    MarkdownSpacingMode, NativeScrollbarConfig, OverscrollStatusMode, ReasoningDisplayMode,
+    UserMessagesConfig, default_true,
 };
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +21,11 @@ pub struct DisplayConfig {
     pub queue_mode: bool,
     /// Automatically reload the remote server when a newer server binary is detected (default: true)
     pub auto_server_reload: bool,
+    /// Automatically re-exec this client onto a newer installed binary after a
+    /// server reload, when idle (default: false). Self-dev (canary) sessions
+    /// always do this; this toggle extends it to regular sessions. In-flight
+    /// turns are never interrupted.
+    pub auto_client_reload: bool,
     /// Capture mouse events (default: true). Enables scroll wheel but disables terminal selection.
     pub mouse_capture: bool,
     /// Enable debug socket for external control (default: false)
@@ -146,6 +151,7 @@ impl Default for DisplayConfig {
             pin_todos: true,
             queue_mode: false,
             auto_server_reload: true,
+            auto_client_reload: false,
             mouse_capture: true,
             debug_socket: false,
             emoji: true,

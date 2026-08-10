@@ -5,16 +5,15 @@
 
 pub use jcode_config_types::{
     AgentsConfig, AmbientConfig, AuthConfig, AutoJudgeConfig, AutoReviewConfig, CompactionConfig,
-    CompactionMode, ComposerConfig, ComposerStyle, CrossProviderFailoverMode, DiagramDisplayMode, DiagramPanePosition,
-    UserMessagesConfig, UserMessageStyle,
-    DiffDisplayMode, DisplayConfig, FeatureConfig, FooterConfig, FooterIconMode, FooterPathDisplay,
-    FooterSegmentsConfig, FooterStyle, GatewayConfig, HookCommands, HooksConfig,
-    KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
-    MarkdownSpacingMode, NamedProviderAuth, NamedProviderConfig, NamedProviderModelConfig,
-    NamedProviderType, NativeScrollbarConfig, NotificationsConfig, OverscrollStatusMode,
-    PowerConfig, ProviderConfig, ReasoningDisplayMode, SafetyConfig, SessionPickerResumeAction,
-    SponsorsConfig, SwarmSpawnMode, SwarmStripLayout, TerminalConfig, UpdateChannel,
-    WebSearchConfig, WebSearchEngine,
+    CompactionMode, ComposerConfig, ComposerStyle, CrossProviderFailoverMode, DiagramDisplayMode,
+    DiagramPanePosition, DiffDisplayMode, DisplayConfig, FeatureConfig, FooterConfig,
+    FooterIconMode, FooterPathDisplay, FooterSegmentsConfig, FooterStyle, GatewayConfig,
+    HookCommands, HooksConfig, KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry,
+    LaunchHotkeysConfig, MarkdownSpacingMode, NamedProviderAuth, NamedProviderConfig,
+    NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig, NotificationsConfig,
+    OverscrollStatusMode, PowerConfig, ProviderConfig, ReasoningDisplayMode, SafetyConfig,
+    SessionPickerResumeAction, SponsorsConfig, SwarmSpawnMode, SwarmStripLayout, TerminalConfig,
+    UpdateChannel, UserMessageStyle, UserMessagesConfig, WebSearchConfig, WebSearchEngine,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -49,6 +48,7 @@ const CONFIG_ENV_KEYS: &[&str] = &[
     "JCODE_AUTOREVIEW_ENABLED",
     "JCODE_AUTOREVIEW_MODEL",
     "JCODE_AUTO_POKE",
+    "JCODE_AUTO_CLIENT_RELOAD",
     "JCODE_AUTO_SERVER_RELOAD",
     "JCODE_BING_API_KEY",
     "JCODE_BING_API_KEY_ENV",
@@ -280,17 +280,28 @@ pub fn config() -> &'static Config {
         let fingerprint = ConfigCacheFingerprint::current();
         cache.last_checked = now;
         if cache.force_reload || cache.fingerprint != fingerprint {
-            reload_reason = Some(describe_config_reload(
-                cache.force_reload,
-                &cache.fingerprint,
-                &fingerprint,
-            ));
-            cache.config = leak_config(Config::load());
-            // Loading applies env overrides that can themselves set env vars
-            // (e.g. copilot_premium propagates config -> JCODE_COPILOT_PREMIUM).
-            // Re-fingerprint after the load so those self-inflicted env changes
-            // don't trigger a guaranteed second reload on the next check.
-            cache.fingerprint = ConfigCacheFingerprint::current();
+            let reason =
+                describe_config_reload(cache.force_reload, &cache.fingerprint, &fingerprint);
+            match Config::load_strict() {
+                Ok(loaded) => {
+                    cache.config = leak_config(loaded);
+                    // Loading applies env overrides that can themselves set env vars
+                    // (e.g. copilot_premium propagates config -> JCODE_COPILOT_PREMIUM).
+                    // Re-fingerprint after the load so those self-inflicted env changes
+                    // don't trigger a guaranteed second reload on the next check.
+                    cache.fingerprint = ConfigCacheFingerprint::current();
+                    reload_reason = Some(reason);
+                }
+                Err(err) => {
+                    // Remember these rejected bytes. Repeated reads stay on the
+                    // last known-good value without retrying or logging until the
+                    // file changes again (or a caller forces a reload).
+                    cache.fingerprint = fingerprint;
+                    crate::logging::error(&format!(
+                        "CONFIG_RELOAD_REJECTED {reason} error={err:#}"
+                    ));
+                }
+            }
             cache.force_reload = false;
         }
         cache.config
@@ -406,8 +417,6 @@ pub fn invalidate_config_cache() {
         .write()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     cache.force_reload = true;
-    drop(cache);
-    notify_config_reloaded();
 }
 
 fn notify_config_reloaded() {

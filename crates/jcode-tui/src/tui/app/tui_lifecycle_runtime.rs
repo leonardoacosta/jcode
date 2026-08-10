@@ -203,15 +203,25 @@ impl App {
     /// After an in-process server reload (e.g. `self-dev build-reload`), the
     /// server PID is unchanged and connected clients never disconnect, so they
     /// keep running their old binary and client-side changes never take effect.
-    /// When this is a self-dev session, a newer client binary is on disk, and the
-    /// client is idle, re-exec onto the new binary so TUI-side changes apply too.
-    /// Returns true when a client reload was requested.
-    pub(super) fn maybe_self_reload_after_server_reload(&mut self) -> bool {
+    /// When this is a self-dev session (or the user opted in via
+    /// `display.auto_client_reload`), a newer client binary is on disk, and the
+    /// client is idle, re-exec onto the new binary so TUI-side changes apply
+    /// too. Returns true when a client reload was requested.
+    /// Whether this client re-execs onto a newer binary after a server
+    /// reload: remote sessions only, and only self-dev (canary) sessions or
+    /// sessions opted in via `display.auto_client_reload`. Config hot-reloads
+    /// on file change, so flipping the toggle applies to running clients
+    /// without a restart.
+    pub(super) fn client_auto_reload_enabled(&self) -> bool {
         if !self.is_remote {
             return false;
         }
         let is_selfdev_session = self.remote_is_canary.unwrap_or(self.session.is_canary);
-        if !is_selfdev_session {
+        is_selfdev_session || crate::config::config().display.auto_client_reload
+    }
+
+    pub(super) fn maybe_self_reload_after_server_reload(&mut self) -> bool {
+        if !self.client_auto_reload_enabled() {
             return false;
         }
         // Never interrupt an in-flight turn; the reconnect path will catch it later.

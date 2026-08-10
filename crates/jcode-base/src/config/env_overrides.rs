@@ -187,6 +187,11 @@ impl Config {
                 self.display.auto_server_reload = parsed;
             }
         }
+        if let Ok(v) = std::env::var("JCODE_AUTO_CLIENT_RELOAD") {
+            if let Some(parsed) = parse_env_bool(&v) {
+                self.display.auto_client_reload = parsed;
+            }
+        }
         if let Ok(v) = std::env::var("JCODE_MOUSE_CAPTURE") {
             if let Some(parsed) = parse_env_bool(&v) {
                 self.display.mouse_capture = parsed;

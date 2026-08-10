@@ -144,6 +144,10 @@ queue_mode = false
 # Automatically reload the remote server when a newer server binary is detected (default: true)
 auto_server_reload = true
 
+# Automatically re-exec this client onto a newer installed binary after a
+# server reload, when idle (default: false; self-dev sessions always reload)
+auto_client_reload = false
+
 # Capture mouse events (enables scroll wheel; disables terminal text selection)
 mouse_capture = true
 
