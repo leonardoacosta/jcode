@@ -1,49 +1,87 @@
 #!/usr/bin/env bash
-# Post-commit deploy hook (issue-driven dev loop): when a commit touches
-# buildable code, rebuild + install the release in the background and reload
-# the shared server. Clients that opted in (`display.auto_client_reload = true`
-# or self-dev canary sessions) then re-exec onto the new binary when idle.
+# Post-commit deploy hook: when a commit touches buildable code, rebuild that
+# exact commit in a detached worktree, install it, reload the shared server,
+# and let opted-in clients re-exec when idle.
 #
-# Installed as .git/hooks/post-commit (see scripts/install_deploy_hook.sh).
+# Installed as .git/hooks/post-commit by scripts/install_deploy_hook.sh.
 # Escape hatch: JCODE_NO_DEPLOY=1 git commit ...
 set -euo pipefail
 
-# Escape hatch for commits that touch buildable code but should not deploy
-# (WIP snapshots, experimental branches).
 if [ "${JCODE_NO_DEPLOY:-}" = "1" ]; then
     exit 0
 fi
 
 repo_root="$(git rev-parse --show-toplevel)"
+head="$(git rev-parse HEAD)"
 
-# Only rebuild when the commit touches buildable code.
-if ! git diff-tree --no-commit-id --name-only -r HEAD \
-    | grep -Eq '^(crates/|Cargo\.(toml|lock)|rust-toolchain|\.cargo/)'; then
+# Docs, tests fixtures, and workflow metadata do not change the executable.
+if ! git diff-tree --root --no-commit-id --name-only -r "$head" \
+    | grep -Eq '^(crates/|src/|build\.rs$|Cargo\.(toml|lock)$|rust-toolchain|\.cargo/)'; then
     exit 0
 fi
 
-# Never block the committer on a build, and never stack overlapping builds
-# (rapid commit sequences): one deploy at a time, extra commits are picked up
-# because the build always compiles the worktree HEAD at start time... which
-# may be newer than the commit that triggered it. That is fine: the install
-# hash is derived from the repo state at install time.
-mkdir -p "$repo_root/target"
-lock="$repo_root/target/.deploy.lock"
+state_dir="$repo_root/target/commit-deploy"
+lock="$state_dir/lock"
+request="$state_dir/requested-head"
+worktree="$state_dir/worktree"
+target_dir="$repo_root/target/commit-deploy-cargo"
 log="$repo_root/target/deploy.log"
+mkdir -p "$state_dir"
 
+# Always publish the newest requested commit, even if another deploy is active.
+# Atomic rename prevents the worker from reading a partial SHA.
+printf '%s\n' "$head" > "$request.$$"
+mv "$request.$$" "$request"
+
+# One worker drains the request slot. Later commits only replace the slot and
+# return immediately; the active worker loops and deploys the newest request.
 if ! mkdir "$lock" 2>/dev/null; then
-    echo "$(date -Is) deploy already running, skipping (HEAD=$(git rev-parse --short HEAD))" >> "$log"
+    echo "$(date -Is) deploy queued (HEAD=${head:0:12})" >> "$log"
     exit 0
 fi
 
 (
-    trap 'rmdir "$lock"' EXIT
-    echo "$(date -Is) deploy started (HEAD=$(git rev-parse --short HEAD))" >> "$log"
-    if "$repo_root/scripts/install_release.sh" --fast >> "$log" 2>&1; then
-        echo "$(date -Is) deploy finished" >> "$log"
-    else
-        echo "$(date -Is) deploy FAILED (see output above)" >> "$log"
-    fi
+    cleanup() {
+        git -C "$repo_root" worktree remove --force "$worktree" >/dev/null 2>&1 || true
+        rmdir "$lock" >/dev/null 2>&1 || true
+    }
+    trap cleanup EXIT
+
+    while true; do
+        if [ ! -f "$request" ]; then
+            # Release ownership, then close the handoff race: a hook may have
+            # queued work between the absence check and rmdir. Reacquire if so;
+            # otherwise that hook owns the next worker.
+            rmdir "$lock"
+            if [ -f "$request" ] && mkdir "$lock" 2>/dev/null; then
+                continue
+            fi
+            trap - EXIT
+            exit 0
+        fi
+
+        deploy_head="$(cat "$request")"
+        rm -f "$request"
+        short="${deploy_head:0:12}"
+        echo "$(date -Is) deploy started (HEAD=$short)" >> "$log"
+
+        git -C "$repo_root" worktree remove --force "$worktree" >/dev/null 2>&1 || true
+        if ! git -C "$repo_root" worktree add --detach --force "$worktree" "$deploy_head" \
+            >> "$log" 2>&1; then
+            echo "$(date -Is) deploy FAILED: could not create worktree for $short" >> "$log"
+            continue
+        fi
+
+        if (
+            cd "$worktree"
+            CARGO_TARGET_DIR="$target_dir" ./scripts/install_release.sh --fast
+        ) >> "$log" 2>&1; then
+            echo "$(date -Is) deploy finished (HEAD=$short)" >> "$log"
+        else
+            echo "$(date -Is) deploy FAILED (HEAD=$short; see output above)" >> "$log"
+        fi
+        git -C "$repo_root" worktree remove --force "$worktree" >/dev/null 2>&1 || true
+    done
 ) </dev/null >>"$log" 2>&1 &
 
 exit 0

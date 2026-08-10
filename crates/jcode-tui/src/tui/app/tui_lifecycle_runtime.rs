@@ -224,14 +224,21 @@ impl App {
         if !self.client_auto_reload_enabled() {
             return false;
         }
-        // Never interrupt an in-flight turn; the reconnect path will catch it later.
-        if self.is_processing {
-            return false;
-        }
         if !self.has_newer_binary() {
             return false;
         }
         let session_id = self.reload_handoff_session_id();
+        // Never interrupt an in-flight turn. Use the same deferred-reload path
+        // as `/rebuild`: `process_remote_followups` consumes it as soon as the
+        // turn becomes idle. This matters for in-process server reloads, which
+        // do not disconnect clients and therefore have no later reconnect event
+        // to catch a reload skipped here.
+        if self.is_processing {
+            self.pending_background_client_reload =
+                Some((session_id, crate::bus::ClientMaintenanceAction::Rebuild));
+            self.set_status_notice("New client ready - will reload after the current turn");
+            return false;
+        }
         self.append_reload_message(
             "Server reloaded onto a newer build; reloading client binary to match...",
         );

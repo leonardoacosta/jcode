@@ -582,6 +582,44 @@ fn test_reload_requests_exit_when_newer_binary() {
 }
 
 #[test]
+fn test_server_reload_waits_for_active_turn_then_reloads_client() {
+    use std::time::SystemTime;
+
+    let mut app = create_test_app();
+    let exe = crate::build::launcher_binary_path().unwrap();
+    let mut created = false;
+    if !exe.exists() {
+        if let Some(parent) = exe.parent() {
+            std::fs::create_dir_all(parent).unwrap();
+        }
+        std::fs::write(&exe, "test").unwrap();
+        created = true;
+    }
+
+    app.is_remote = true;
+    app.remote_is_canary = Some(true);
+    app.is_processing = true;
+    app.client_binary_mtime = Some(SystemTime::UNIX_EPOCH);
+    assert!(!app.maybe_self_reload_after_server_reload());
+    assert!(app.reload_requested.is_none());
+    assert!(!app.should_quit, "an active turn must never be interrupted");
+    let (session_id, action) = app
+        .pending_background_client_reload
+        .clone()
+        .expect("the reload remains queued instead of being lost");
+    assert_eq!(action, ClientMaintenanceAction::Rebuild);
+
+    app.is_processing = false;
+    assert!(app.maybe_finish_background_client_reload());
+    assert_eq!(app.reload_requested.as_deref(), Some(session_id.as_str()));
+    assert!(app.should_quit);
+
+    if created {
+        let _ = std::fs::remove_file(&exe);
+    }
+}
+
+#[test]
 fn test_background_update_ready_reloads_immediately_when_idle() {
     let mut app = create_test_app();
     let session_id = app.session.id.clone();

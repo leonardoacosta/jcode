@@ -64,7 +64,12 @@ if [[ -n "$git_hash" ]]; then
 else
   cargo build --profile "$profile" --manifest-path "$repo_root/Cargo.toml"
 fi
-bin="$repo_root/target/$profile/jcode"
+# Commit-deploy builds run from a detached worktree but share the main repo's
+# Cargo cache. Honor an absolute CARGO_TARGET_DIR so the installer finds the
+# binary where Cargo actually wrote it; ordinary invocations retain the
+# historical repo-local target directory.
+target_dir="${CARGO_TARGET_DIR:-$repo_root/target}"
+bin="$target_dir/$profile/jcode"
 
 if [[ ! -x "$bin" ]]; then
   echo "Release binary not found: $bin" >&2
