@@ -57,5 +57,12 @@ commit:
 JCODE_NO_DEPLOY=1 git commit ...
 ```
 
+To deploy the current committed SHA regardless of which paths its commit
+touched (or to retry after a failed hook run):
+
+```bash
+JCODE_DEPLOY_FORCE=1 scripts/post_commit_deploy.sh
+```
+
 Self-dev/canary clients always auto-reload. Regular clients preserve the prior
 manual `/reload` behavior unless `display.auto_client_reload` is enabled.

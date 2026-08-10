@@ -15,9 +15,13 @@ repo_root="$(git rev-parse --show-toplevel)"
 head="$(git rev-parse HEAD)"
 
 # Docs, tests fixtures, and workflow metadata do not change the executable.
-if ! git diff-tree --root --no-commit-id --name-only -r "$head" \
-    | grep -Eq '^(crates/|src/|build\.rs$|Cargo\.(toml|lock)$|rust-toolchain|\.cargo/)'; then
-    exit 0
+# JCODE_DEPLOY_FORCE=1 is the explicit recovery/manual-deploy path (useful if a
+# previous hook run failed after its request was consumed).
+if [ "${JCODE_DEPLOY_FORCE:-}" != "1" ]; then
+    if ! git diff-tree --root --no-commit-id --name-only -r "$head" \
+        | grep -Eq '^(crates/|src/|build\.rs$|Cargo\.(toml|lock)$|rust-toolchain|\.cargo/)'; then
+        exit 0
+    fi
 fi
 
 # Git exports repository-local variables to hooks (notably GIT_INDEX_FILE on

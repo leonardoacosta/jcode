@@ -47,13 +47,15 @@ class PostCommitDeployTests(unittest.TestCase):
             ["git", "-C", str(self.repo), "rev-parse", "HEAD"], text=True
         ).strip()
 
-    def invoke(self, *, sleep: float = 0) -> None:
+    def invoke(self, *, sleep: float = 0, force: bool = False) -> None:
         env = os.environ.copy()
         env["JCODE_DEPLOY_TEST_LOG"] = str(self.install_log)
         env["JCODE_DEPLOY_TEST_SLEEP"] = str(sleep)
         # Real Git hooks may export a repo-relative index path. The deploy
         # worker must clear it before creating a detached worktree.
         env["GIT_INDEX_FILE"] = ".git/index"
+        if force:
+            env["JCODE_DEPLOY_FORCE"] = "1"
         subprocess.run(
             ["bash", "scripts/post_commit_deploy.sh"],
             cwd=self.repo,
@@ -87,6 +89,11 @@ class PostCommitDeployTests(unittest.TestCase):
         self.invoke()
         time.sleep(0.15)
         self.assertFalse(self.install_log.exists())
+
+    def test_force_deploys_docs_only_commit_for_recovery(self) -> None:
+        head = self.commit("README.md", "force this SHA\n")
+        self.invoke(force=True)
+        self.assertEqual(self.wait(1), [f"{head} 0"])
 
     def test_commit_during_build_is_coalesced_and_deployed(self) -> None:
         first = self.commit("crates/demo/lib.rs", "pub fn one() {}\n")
