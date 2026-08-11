@@ -61,3 +61,22 @@ A Mac-attached session must still:
 4. Verify approved mutation, lease use and revocation, hard denial, cleanup, and no remaining lease or process.
 
 Until those steps pass, the repository and installed Mac broker provide a live, secure read-only managed Chrome fleet plus a verified foundation for explicitly approved automation. They are not yet a completed unrestricted browser-steering product.
+
+## Runtime deployment findings (2026-08-11)
+
+Deploying the extension-bridge build to the real Mac exposed four defects that the deterministic suites could not see, because each only manifests against a real macOS kernel, a real sshd, or a real launchd lifecycle. Each was fixed test-first, with a regression test that fails against the old behavior.
+
+| Defect | Symptom on the Mac | Fix |
+| --- | --- | --- |
+| Socket path over the `sun_path` limit | Broker exited with `could not bind authority socket` while every installed file looked correct | Sockets moved to `~/.jcode/mac-fleet/`; `rendered_socket_paths_stay_within_the_unix_domain_socket_limit` pins the 103-byte budget |
+| `~` in the `RemoteForward` listen path | Every reverse tunnel failed with `remote port forwarding failed for listen path` | Render an absolute `/home/<user>/...` path; `ssh_include_forwards_to_an_absolute_remote_socket_path` forbids tilde paths |
+| Stale native-host defaults | Chrome launches the host with no arguments, so it silently targeted the old socket and secret | Shared `default_broker_socket_path` and `default_native_secret_path` helpers; `native_host_defaults_match_the_installed_broker_socket_layout` keeps both crates aligned |
+| Unsupervised reverse tunnel | A manual `ssh -N` died on sleep, network loss, or session reload, leaving a stale socket and a dead bridge | `dev.jcode.mac-browser-fleet-tunnel` LaunchAgent with `KeepAlive`; `tunnel_launch_agent_keeps_the_reverse_forward_alive` pins the supervision flags |
+
+Observed after the fixes, through Jcode's public interface:
+
+- `browser list_tabs browser=mac` returned 10 live managed Chrome targets.
+- Killing the broker: launchd relaunched it and discovery recovered.
+- Killing the tunnel: the forwarded socket was rebound automatically within 15 seconds and discovery recovered.
+
+Operator note: `jcode-mac-browser-setup install` writes the SSH include file but deliberately does not edit `~/.ssh/config`. The `Include ~/.ssh/jcode-mac-browser-fleet.conf` line must be present in that config, and an unrelated rewrite of the file will silently drop the tunnel.
