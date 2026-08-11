@@ -1911,3 +1911,56 @@ fn test_display_composer_ignores_unknown_keys() {
         crate::config::ComposerStyle::Rail
     );
 }
+
+#[test]
+fn tool_shell_program_resolves_default_native_and_explicit() {
+    let _guard = crate::storage::lock_test_env();
+    let previous_shell = std::env::var_os("SHELL");
+    crate::env::set_var("SHELL", "/usr/bin/zsh");
+
+    let mut tools = crate::config::ToolConfig::default();
+    // Default (empty) and explicit "bash" stay bash.
+    assert_eq!(tools.shell_program(), "bash");
+    tools.shell = "bash".into();
+    assert_eq!(tools.shell_program(), "bash");
+    // "native" (and aliases) resolve the login shell from $SHELL.
+    for alias in ["native", "login", "user", "$SHELL"] {
+        tools.shell = alias.into();
+        assert_eq!(tools.shell_program(), "/usr/bin/zsh", "alias {alias}");
+    }
+    // Whitespace is trimmed; explicit values pass through untouched.
+    tools.shell = "  native  ".into();
+    assert_eq!(tools.shell_program(), "/usr/bin/zsh");
+    tools.shell = "fish".into();
+    assert_eq!(tools.shell_program(), "fish");
+    tools.shell = "/opt/weird/sh".into();
+    assert_eq!(tools.shell_program(), "/opt/weird/sh");
+
+    // "native" with no usable $SHELL falls back to bash.
+    crate::env::set_var("SHELL", "");
+    tools.shell = "native".into();
+    assert_eq!(tools.shell_program(), "bash");
+    crate::env::remove_var("SHELL");
+    assert_eq!(tools.shell_program(), "bash");
+
+    match previous_shell {
+        Some(value) => crate::env::set_var("SHELL", value),
+        None => crate::env::remove_var("SHELL"),
+    }
+}
+
+#[test]
+fn tool_shell_env_override_sets_shell() {
+    let _guard = crate::storage::lock_test_env();
+    let previous = std::env::var_os("JCODE_SHELL");
+    crate::env::set_var("JCODE_SHELL", " native ");
+
+    let mut cfg = Config::default();
+    cfg.apply_env_overrides();
+    assert_eq!(cfg.tools.shell, "native");
+
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_SHELL", value),
+        None => crate::env::remove_var("JCODE_SHELL"),
+    }
+}
