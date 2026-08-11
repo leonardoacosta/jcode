@@ -262,6 +262,7 @@ async fn managed_cdp_source_discovers_loopback_targets_and_rejects_remote_hosts(
             body
         );
         stream.write_all(response.as_bytes()).await.unwrap();
+        tokio::time::sleep(Duration::from_secs(1)).await;
     });
 
     let source = ManagedCdpSource::new(
@@ -271,7 +272,10 @@ async fn managed_cdp_source_discovers_loopback_targets_and_rejects_remote_hosts(
         64 * 1024,
     )
     .unwrap();
-    let update = source.discover().await.unwrap();
+    let update = tokio::time::timeout(Duration::from_millis(250), source.discover())
+        .await
+        .expect("discovery must respect Content-Length without waiting for connection close")
+        .unwrap();
     assert_eq!(update.targets().len(), 1);
     assert_eq!(update.targets()[0].tab_id, "page-1");
     server.await.unwrap();

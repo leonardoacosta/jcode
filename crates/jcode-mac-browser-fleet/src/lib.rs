@@ -587,42 +587,64 @@ impl ManagedCdpSource {
         stream.write_all(request.as_bytes()).await.map_err(|_| {
             FleetError::new(FleetErrorKind::Io, "could not query managed CDP endpoint")
         })?;
-        let mut response = Vec::new();
-        stream
-            .take((self.max_response_bytes + 1) as u64)
-            .read_to_end(&mut response)
-            .await
-            .map_err(|_| {
+        let mut reader = BufReader::new(stream);
+        let mut headers = Vec::new();
+        loop {
+            if headers.len() >= 16 * 1024 {
+                return Err(FleetError::new(
+                    FleetErrorKind::Oversized,
+                    "managed CDP response headers exceeded size limit",
+                ));
+            }
+            let read = reader.read_until(b'\n', &mut headers).await.map_err(|_| {
                 FleetError::new(FleetErrorKind::Io, "could not read managed CDP inventory")
             })?;
-        if response.len() > self.max_response_bytes {
-            return Err(FleetError::new(
-                FleetErrorKind::Oversized,
-                "managed CDP inventory exceeded size limit",
-            ));
+            if read == 0 || headers.ends_with(b"\r\n\r\n") {
+                break;
+            }
         }
-        let separator = response
-            .windows(4)
-            .position(|window| window == b"\r\n\r\n")
-            .ok_or_else(|| {
-                FleetError::new(
-                    FleetErrorKind::Malformed,
-                    "managed CDP response was malformed",
-                )
-            })?;
-        if !response.starts_with(b"HTTP/1.1 200") && !response.starts_with(b"HTTP/1.0 200") {
+        if !headers.starts_with(b"HTTP/1.1 200") && !headers.starts_with(b"HTTP/1.0 200") {
             return Err(FleetError::new(
                 FleetErrorKind::Io,
                 "managed CDP endpoint returned an error",
             ));
         }
-        let targets: Vec<CdpHttpTarget> = serde_json::from_slice(&response[separator + 4..])
-            .map_err(|_| {
+        let header_text = std::str::from_utf8(&headers).map_err(|_| {
+            FleetError::new(
+                FleetErrorKind::Malformed,
+                "managed CDP response headers were malformed",
+            )
+        })?;
+        let content_length = header_text
+            .lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                name.eq_ignore_ascii_case("content-length")
+                    .then(|| value.trim().parse::<usize>().ok())
+                    .flatten()
+            })
+            .ok_or_else(|| {
                 FleetError::new(
                     FleetErrorKind::Malformed,
-                    "managed CDP inventory was malformed",
+                    "managed CDP response omitted Content-Length",
                 )
             })?;
+        if content_length > self.max_response_bytes {
+            return Err(FleetError::new(
+                FleetErrorKind::Oversized,
+                "managed CDP inventory exceeded size limit",
+            ));
+        }
+        let mut body = vec![0; content_length];
+        reader.read_exact(&mut body).await.map_err(|_| {
+            FleetError::new(FleetErrorKind::Io, "could not read managed CDP inventory")
+        })?;
+        let targets: Vec<CdpHttpTarget> = serde_json::from_slice(&body).map_err(|_| {
+            FleetError::new(
+                FleetErrorKind::Malformed,
+                "managed CDP inventory was malformed",
+            )
+        })?;
         let browser_id = match self.browser {
             BrowserKind::Chrome => "managed-chrome",
             BrowserKind::Edge => "managed-edge",
