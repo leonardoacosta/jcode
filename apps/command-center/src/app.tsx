@@ -1,4 +1,4 @@
-import { Router, Route } from "@solidjs/router";
+import { Router, Route, useLocation } from "@solidjs/router";
 import { createEffect, createResource, createSignal, on, onCleanup, Show, untrack } from "solid-js";
 import { AppShell, InitiativeList, SplitWorkspace, StateCard } from "./components/CommandCenter";
 import { createProjectionStore } from "./stores/projection";
@@ -36,14 +36,15 @@ export function loadFailureState(error: unknown) {
 }
 
 function WorkspaceRoute() {
-  const path = typeof location === "undefined" ? "/initiatives" : location.pathname;
+  const location = useLocation();
+  const path = () => location.pathname;
   const [failure, setFailure] = createSignal<string>();
   const [loadError, setLoadError] = createSignal<unknown>();
   const [pending, setPending] = createSignal(false);
   const store = createProjectionStore();
-  const [snapshot] = createResource(async () => {
+  const [snapshot] = createResource(path, async (currentPath) => {
     try {
-      const next = await transport.loadSnapshot(path);
+      const next = await transport.loadSnapshot(currentPath);
       store.installSnapshot(next);
       setLoadError(undefined);
       return next;
@@ -109,7 +110,7 @@ function WorkspaceRoute() {
           (event) => {
             const result = store.applyEvent(event);
             if (result === "snapshot_required") {
-              void transport.loadSnapshot(path).then((next) => store.installSnapshot(next));
+              void transport.loadSnapshot(path()).then((next) => store.installSnapshot(next));
             }
           },
           (state) => {

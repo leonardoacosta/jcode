@@ -43,9 +43,19 @@ async function installFixture(
       },
     }),
   );
-  await page.route("**/api/command-center/initiatives**", async (route) =>
-    route.fulfill({ json: current }),
-  );
+  await page.route("**/api/command-center/initiatives**", async (route) => {
+    const requestPath = new URL(route.request().url()).pathname;
+    const response =
+      requestPath === "/api/command-center/initiatives" && current.selectedInitiative
+        ? {
+            ...current,
+            initiatives: [current.selectedInitiative],
+            selectedInitiative: undefined,
+            selectedRun: undefined,
+          }
+        : current;
+    await route.fulfill({ json: response });
+  });
   let eventDelivered = false;
   await page.route("**/api/command-center/replay**", async (route) => {
     const events = eventDelivered ? [] : [nextEvent];
@@ -121,6 +131,17 @@ test("discovery route lists accessible initiatives @fixture-only", async ({ page
   ).toBeVisible();
   await expect(
     page.getByText("Supervise durable initiatives beside live execution."),
+  ).toBeVisible();
+});
+
+test("discovery navigation renders the selected initiative workspace @fixture-only", async ({
+  page,
+}) => {
+  await page.goto("/initiatives");
+  await page.locator("a.initiative-card").click();
+  await expect(page).toHaveURL(/\/initiatives\/init-command-center$/);
+  await expect(
+    page.getByRole("region", { name: "Split initiative and execution workspace" }),
   ).toBeVisible();
 });
 
