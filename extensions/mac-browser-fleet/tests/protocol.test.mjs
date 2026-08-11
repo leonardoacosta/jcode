@@ -182,3 +182,30 @@ test("rejects unknown fields and unsafe numeric identifiers", () => {
     }),
   );
 });
+
+test("service worker sources never use top-level await", async () => {
+  // MV3 rejects a service worker containing top-level await with
+  // "Service worker registration failed. Status code: 3", which disables the
+  // whole extension. Parsing each module as a classic (non-async) module body
+  // fails loudly if a top-level await sneaks back in.
+  const { readFile, readdir } = await import("node:fs/promises");
+  const dir = new URL("../src/", import.meta.url);
+  const files = (await readdir(dir)).filter((f) => f.endsWith(".mjs"));
+  assert.ok(files.length > 0, "expected extension sources to scan");
+
+  for (const file of files) {
+    const source = await readFile(new URL(file, dir), "utf8");
+    // Strip strings/comments cheaply, then look for await outside any function.
+    let depth = 0;
+    for (const raw of source.split("\n")) {
+      const line = raw.replace(/\/\/.*$/, "").trim();
+      if (/^\s*(\/\*|\*)/.test(line)) continue;
+      if (depth === 0 && /(^|[^.\w])await\s/.test(line)) {
+        assert.fail(`${file} uses top-level await: ${line}`);
+      }
+      depth += (line.match(/\{/g) ?? []).length;
+      depth -= (line.match(/\}/g) ?? []).length;
+      if (depth < 0) depth = 0;
+    }
+  }
+});

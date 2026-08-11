@@ -306,19 +306,26 @@ export function connectActionNativeHost(browserApi, hostName = NATIVE_HOST_NAME)
 
 if (globalThis.chrome?.runtime?.connectNative) {
   const api = globalThis.chrome;
-  // Resolve a per-profile label first: two profiles of the same browser must
-  // not share one fleet source key, or they evict each other.
-  const identityEmail = await new Promise((resolve) => {
-    try {
-      api.identity?.getProfileUserInfo?.((info) => resolve(info?.email));
-      if (!api.identity?.getProfileUserInfo) resolve(undefined);
-    } catch {
-      resolve(undefined);
-    }
-  });
-  const profileLabel = await resolveProfileLabel({
-    storage: api.storage,
-    identityEmail,
-  });
-  installMacBrowserFleetBridge(api, { profileLabel });
+  // MV3 service workers forbid top-level await, so the async profile-label
+  // lookup has to run inside a function. Bridge installation is deferred by
+  // exactly one microtask-driven promise, which the broker tolerates because
+  // the first snapshot is posted after connect() anyway.
+  void (async () => {
+    const identityEmail = await new Promise((resolve) => {
+      try {
+        if (typeof api.identity?.getProfileUserInfo !== "function") {
+          resolve(undefined);
+          return;
+        }
+        api.identity.getProfileUserInfo((info) => resolve(info?.email));
+      } catch {
+        resolve(undefined);
+      }
+    });
+    const profileLabel = await resolveProfileLabel({
+      storage: api.storage,
+      identityEmail,
+    });
+    installMacBrowserFleetBridge(api, { profileLabel });
+  })();
 }
