@@ -66,6 +66,14 @@ The broker continuously maintains a bounded inventory and emits generation-tagge
 
 Add an explicit setup command that installs or refreshes the broker executable, launch-agent plist, native-host manifests for Chrome and Edge, extension assets/instructions, policy defaults, and SSH-forwarding guidance. Setup is idempotent and backs up replaced operator-edited files. Uninstall disables the launch agent and removes Jcode-owned artifacts without touching browser profiles.
 
+### 8. Bridge ordinary profiles through an explicit native-host mode
+
+The broker executable exposes a dedicated `native-host` command for Chrome and Edge native messaging. That command implements Chromium's length-prefixed stdio framing, connects only to the existing Mac-local broker Unix socket, and forwards versioned extension inventory and action messages without exposing the peer secret to the extension. The extension publishes an initial inventory snapshot after connecting, emits bounded generation-tagged updates for browser tab/window events, and executes only broker-approved action requests.
+
+Chrome and Edge receive separate allowed extension IDs because unpacked installations may derive different IDs. Setup renders each browser's native-host manifest independently and never replaces one browser's allowed origin with the other browser's ID.
+
+**Rejected alternatives:** pointing the native-host manifest at broker mode cannot work because Chrome supplies no broker arguments and uses native-messaging framing rather than newline JSON. A separate proxy executable would add a packaging and lifecycle surface without improving the security boundary.
+
 ## Risks / Trade-offs
 
 - **Extension installation requires user/browser approval** → setup reports exact incomplete steps and fleet status remains truthful until both browsers connect.
@@ -75,6 +83,7 @@ Add an explicit setup command that installs or refreshes the broker executable, 
 - **A compromised extension could broaden access** → minimal permissions, explicit host grants, native-host allowlist, signed messages, and broker-side policy enforcement.
 - **Approval fatigue** → scoped one-action approvals and short leases while hard denies remain immutable.
 - **Edge may not be installed** → report `not_installed` without degrading Chrome operation.
+- **Native host and extension can reconnect independently** → publish a fresh full snapshot on every native connection, clear only that browser source on disconnect, and reject stale generations.
 
 ## Migration Plan
 
