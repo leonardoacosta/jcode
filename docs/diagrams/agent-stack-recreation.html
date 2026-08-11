@@ -162,6 +162,12 @@ body:before{
 .memory-flow{grid-template-columns:minmax(72px,.75fr) minmax(108px,1.05fr) minmax(84px,.9fr)}
 .memory-boundary{overflow:visible}
 .memory-panel{align-content:center}
+/* Keep motion readable at every viewport: opacity, pulse, line, glow, and
+   layer transitions remain, while merge/resource translations cannot cross text. */
+.orchestration-card .orch-plan,
+.orchestration-card .orch-task,
+.runtime-card .runtime-resource,
+.runtime-card .blocked{transform:none!important}
 @media (max-width:1100px){
   .layer{grid-template-columns:180px minmax(0,1fr);gap:14px}
   .model-flow{grid-template-columns:92px minmax(0,1fr)}
