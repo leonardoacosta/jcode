@@ -1,9 +1,9 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
@@ -243,6 +243,137 @@ pub struct NativeHostBridgeConfig {
     pub max_payload_bytes: usize,
 }
 
+#[derive(Default)]
+struct NativeHostSession {
+    browser_kind: Option<BrowserKind>,
+    profile_label: Option<String>,
+    session_id: Option<String>,
+    next_request: u64,
+}
+
+impl NativeHostSession {
+    fn source_payload(&self) -> serde_json::Value {
+        serde_json::json!({
+            "browserKind": self.browser_kind.unwrap_or(BrowserKind::Chrome),
+            "profileLabel": self.profile_label.clone().unwrap_or_else(default_profile_label),
+        })
+    }
+
+    fn next_id(&mut self, prefix: &str) -> String {
+        self.next_request = self.next_request.saturating_add(1);
+        format!(
+            "native-{prefix}-{}-{}",
+            self.session_id.as_deref().unwrap_or("unknown"),
+            self.next_request
+        )
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
+enum InternalWireAction {
+    ExtensionInventorySnapshot,
+    ExtensionDisconnect,
+    ExtensionActionPoll,
+    ExtensionActionResult,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+struct InternalEnvelope {
+    version: u16,
+    auth: String,
+    id: String,
+    action: InternalWireAction,
+    #[serde(default)]
+    payload: serde_json::Value,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExtensionSnapshotPayload {
+    snapshot: ExtensionSnapshot,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExtensionSourcePayload {
+    browser_kind: BrowserKind,
+    #[serde(default = "default_profile_label")]
+    profile_label: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExtensionActionResultPayload {
+    request_id: String,
+    ok: bool,
+    #[serde(default)]
+    result: serde_json::Value,
+    #[serde(default)]
+    error: Option<serde_json::Value>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExtensionSnapshot {
+    browser_kind: BrowserKind,
+    #[serde(default = "default_profile_label")]
+    profile_label: String,
+    generation: u64,
+    windows: Vec<ExtensionWindow>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExtensionWindow {
+    window_ref: String,
+    native_window_id: u64,
+    #[serde(default)]
+    tabs: Vec<ExtensionTab>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExtensionTab {
+    tab_ref: String,
+    #[serde(default)]
+    window_ref: Option<String>,
+    #[serde(default)]
+    native_window_id: Option<u64>,
+    native_tab_id: u64,
+    #[serde(default)]
+    url: Option<String>,
+}
+
+struct PendingExtensionAction {
+    source_key: String,
+    expires_at: Instant,
+    message: serde_json::Value,
+}
+
+fn default_profile_label() -> String {
+    "Default".to_string()
+}
+
+fn ordinary_browser_id(browser: BrowserKind) -> &'static str {
+    match browser {
+        BrowserKind::Chrome => "ordinary-chrome",
+        BrowserKind::Edge => "ordinary-edge",
+    }
+}
+
+fn extension_inventory_profile(profile_label: &str) -> String {
+    format!("ordinary:{profile_label}")
+}
+
+fn extension_source_key(browser: BrowserKind, profile_label: &str) -> String {
+    format!(
+        "{:?}:{}",
+        browser,
+        extension_inventory_profile(profile_label)
+    )
+}
+
 pub async fn read_native_message<R>(
     reader: &mut R,
     max_payload_bytes: usize,
@@ -374,6 +505,214 @@ pub async fn forward_native_payload(
     Ok(response)
 }
 
+async fn forward_internal_request(
+    config: &NativeHostBridgeConfig,
+    id: String,
+    action: &str,
+    payload: serde_json::Value,
+) -> Result<serde_json::Value> {
+    let mut broker_payload = serde_json::to_vec(&serde_json::json!({
+        "version": 1,
+        "auth": config.secret,
+        "id": id,
+        "action": action,
+        "payload": payload,
+    }))
+    .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not encode native broker request"))?;
+    if broker_payload.len() > config.max_payload_bytes {
+        return Err(FleetError::new(
+            FleetErrorKind::Oversized,
+            "native broker request exceeded size limit",
+        ));
+    }
+    broker_payload.push(b'\n');
+
+    let mut stream = UnixStream::connect(&config.socket_path)
+        .await
+        .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not connect to fleet broker"))?;
+    stream
+        .write_all(&broker_payload)
+        .await
+        .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not write broker request"))?;
+    let mut reader = BufReader::new(stream).take((config.max_payload_bytes + 1) as u64);
+    let mut response = Vec::new();
+    reader
+        .read_until(b'\n', &mut response)
+        .await
+        .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not read broker response"))?;
+    if response.len() > config.max_payload_bytes {
+        return Err(FleetError::new(
+            FleetErrorKind::Oversized,
+            "broker response exceeded size limit",
+        ));
+    }
+    let value: serde_json::Value = serde_json::from_slice(&response)
+        .map_err(|_| FleetError::new(FleetErrorKind::Malformed, "broker response was malformed"))?;
+    if value.get("ok").and_then(serde_json::Value::as_bool) == Some(true) {
+        Ok(value
+            .get("result")
+            .cloned()
+            .unwrap_or(serde_json::Value::Null))
+    } else {
+        Err(FleetError::new(
+            FleetErrorKind::Io,
+            "fleet broker rejected native request",
+        ))
+    }
+}
+
+fn native_error_payload(error: FleetError) -> Result<Vec<u8>> {
+    serde_json::to_vec(&serde_json::json!({
+        "ok": false,
+        "error": {"kind": error_kind_name(error.kind()), "message": error.to_string()}
+    }))
+    .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not encode native error"))
+}
+
+async fn handle_extension_payload(
+    config: &NativeHostBridgeConfig,
+    session: &mut NativeHostSession,
+    payload: &[u8],
+) -> Result<Option<Vec<u8>>> {
+    let message: serde_json::Value = serde_json::from_slice(payload)
+        .map_err(|_| FleetError::new(FleetErrorKind::Malformed, "native request was malformed"))?;
+    let Some(message_type) = message.get("type").and_then(serde_json::Value::as_str) else {
+        return forward_native_payload(config, payload).await.map(Some);
+    };
+
+    match message_type {
+        "hello" => {
+            let protocol_version = message
+                .get("protocolVersion")
+                .and_then(serde_json::Value::as_u64)
+                .ok_or_else(|| {
+                    FleetError::new(FleetErrorKind::Malformed, "hello version is required")
+                })?;
+            if protocol_version != 1 {
+                return Err(FleetError::new(
+                    FleetErrorKind::UnsupportedVersion,
+                    "unsupported native host protocol version",
+                ));
+            }
+            let browser_kind: BrowserKind =
+                serde_json::from_value(message.get("browserKind").cloned().ok_or_else(|| {
+                    FleetError::new(FleetErrorKind::Malformed, "browser kind is required")
+                })?)
+                .map_err(|_| {
+                    FleetError::new(FleetErrorKind::Malformed, "browser kind is invalid")
+                })?;
+            let session_id = message
+                .get("sessionId")
+                .and_then(serde_json::Value::as_str)
+                .filter(|value| !value.trim().is_empty())
+                .ok_or_else(|| {
+                    FleetError::new(FleetErrorKind::Malformed, "session id is required")
+                })?
+                .to_string();
+            session.browser_kind = Some(browser_kind);
+            session.profile_label = message
+                .get("profileLabel")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_string);
+            session.session_id = Some(session_id.clone());
+            serde_json::to_vec(&serde_json::json!({
+                "type": "hello_ack",
+                "protocolVersion": 1,
+                "sessionId": session_id,
+            }))
+            .map(Some)
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not encode hello ack"))
+        }
+        "inventory_snapshot" => {
+            let snapshot = message.get("snapshot").cloned().ok_or_else(|| {
+                FleetError::new(FleetErrorKind::Malformed, "inventory snapshot is required")
+            })?;
+            if let Ok(parsed) = serde_json::from_value::<ExtensionSnapshot>(snapshot.clone()) {
+                session.browser_kind = Some(parsed.browser_kind);
+                session.profile_label = Some(parsed.profile_label);
+            }
+            let id = session.next_id("snapshot");
+            let _ = forward_internal_request(
+                config,
+                id,
+                "extensionInventorySnapshot",
+                serde_json::json!({"snapshot": snapshot}),
+            )
+            .await?;
+            Ok(None)
+        }
+        "inventory_delta" => {
+            let request_id = session.next_id("inventory-refresh");
+            serde_json::to_vec(&serde_json::json!({
+                "type": "inventory_request",
+                "requestId": request_id,
+            }))
+            .map(Some)
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not encode inventory request"))
+        }
+        "action_poll" => {
+            let id = message
+                .get("requestId")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_string)
+                .unwrap_or_else(|| session.next_id("poll"));
+            let result = forward_internal_request(
+                config,
+                id,
+                "extensionActionPoll",
+                session.source_payload(),
+            )
+            .await?;
+            serde_json::to_vec(&result)
+                .map(Some)
+                .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not encode poll response"))
+        }
+        "action_response" => {
+            let request_id = message
+                .get("requestId")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("unknown");
+            let _ = forward_internal_request(
+                config,
+                session.next_id("action-result"),
+                "extensionActionResult",
+                serde_json::json!({
+                    "requestId": request_id,
+                    "ok": message.get("ok").and_then(serde_json::Value::as_bool).unwrap_or(false),
+                    "result": message.get("result").cloned().unwrap_or_else(|| serde_json::json!({})),
+                    "error": message.get("error").cloned(),
+                }),
+            )
+            .await?;
+            Ok(None)
+        }
+        _ => Err(FleetError::new(
+            FleetErrorKind::Malformed,
+            "native message type is not supported",
+        )),
+    }
+}
+
+async fn disconnect_extension_session(
+    config: &NativeHostBridgeConfig,
+    session: &mut NativeHostSession,
+) {
+    let Some(browser_kind) = session.browser_kind else {
+        return;
+    };
+    let profile_label = session
+        .profile_label
+        .clone()
+        .unwrap_or_else(default_profile_label);
+    let _ = forward_internal_request(
+        config,
+        session.next_id("disconnect"),
+        "extensionDisconnect",
+        serde_json::json!({"browserKind": browser_kind, "profileLabel": profile_label}),
+    )
+    .await;
+}
+
 pub async fn serve_native_host<R, W>(
     config: NativeHostBridgeConfig,
     reader: &mut R,
@@ -383,17 +722,17 @@ where
     R: AsyncReadExt + Unpin,
     W: AsyncWriteExt + Unpin,
 {
+    let mut session = NativeHostSession::default();
     while let Some(payload) = read_native_message(reader, config.max_payload_bytes).await? {
-        let response = match forward_native_payload(&config, &payload).await {
+        let response = match handle_extension_payload(&config, &mut session, &payload).await {
             Ok(response) => response,
-            Err(error) => serde_json::to_vec(&serde_json::json!({
-                "ok": false,
-                "error": {"kind": error_kind_name(error.kind()), "message": error.to_string()}
-            }))
-            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not encode native error"))?,
+            Err(error) => Some(native_error_payload(error)?),
         };
-        write_native_message(writer, &response, config.max_payload_bytes).await?;
+        if let Some(response) = response {
+            write_native_message(writer, &response, config.max_payload_bytes).await?;
+        }
     }
+    disconnect_extension_session(&config, &mut session).await;
     Ok(())
 }
 
@@ -427,6 +766,7 @@ pub struct BrokerConfig {
     pub socket_path: PathBuf,
     pub authority_socket_path: Option<PathBuf>,
     pub secret: String,
+    pub native_secret: Option<String>,
     pub max_payload_bytes: usize,
     pub max_in_flight: usize,
 }
@@ -540,6 +880,10 @@ pub struct InventoryUpdate {
 pub struct ManagedTarget {
     reference: TargetRef,
     websocket_url: Option<String>,
+    extension_source_key: Option<String>,
+    native_window_id: Option<u64>,
+    native_tab_id: Option<u64>,
+    extension_generation: Option<u64>,
     origin: String,
     context: Context,
 }
@@ -563,6 +907,10 @@ impl ManagedTarget {
         Self {
             reference,
             websocket_url: None,
+            extension_source_key: None,
+            native_window_id: None,
+            native_tab_id: None,
+            extension_generation: None,
             origin: "local://unmanaged".to_string(),
             context: Context::Ordinary,
         }
@@ -576,6 +924,30 @@ impl ManagedTarget {
         Self {
             reference,
             websocket_url,
+            extension_source_key: None,
+            native_window_id: None,
+            native_tab_id: None,
+            extension_generation: None,
+            origin: origin_for_url(&url),
+            context: context_for_url(&url),
+        }
+    }
+
+    fn extension(
+        reference: TargetRef,
+        source_key: String,
+        native_window_id: u64,
+        native_tab_id: u64,
+        extension_generation: u64,
+        url: String,
+    ) -> Self {
+        Self {
+            reference,
+            websocket_url: None,
+            extension_source_key: Some(source_key),
+            native_window_id: Some(native_window_id),
+            native_tab_id: Some(native_tab_id),
+            extension_generation: Some(extension_generation),
             origin: origin_for_url(&url),
             context: context_for_url(&url),
         }
@@ -662,6 +1034,7 @@ pub struct Broker {
     replay_guard: MutationReplayGuard,
     policy: PolicyEngine,
     lease_counter: u64,
+    pending_extension_actions: VecDeque<PendingExtensionAction>,
 }
 
 impl Broker {
@@ -714,6 +1087,7 @@ impl Broker {
             replay_guard: MutationReplayGuard::default(),
             policy: PolicyEngine::new(),
             lease_counter: 0,
+            pending_extension_actions: VecDeque::new(),
         })
     }
 
@@ -737,6 +1111,224 @@ impl Broker {
             target.reference.generation = self.generation;
         }
         Ok(())
+    }
+
+    fn apply_extension_snapshot(
+        &mut self,
+        snapshot: ExtensionSnapshot,
+    ) -> Result<serde_json::Value> {
+        let source_key = extension_source_key(snapshot.browser_kind, &snapshot.profile_label);
+        let browser_id = ordinary_browser_id(snapshot.browser_kind).to_string();
+        let mut targets = Vec::new();
+        for window in snapshot.windows {
+            for tab in window.tabs {
+                let window_ref = tab.window_ref.unwrap_or_else(|| window.window_ref.clone());
+                let native_window_id = tab.native_window_id.unwrap_or(window.native_window_id);
+                let url = tab.url.unwrap_or_else(|| "about:blank".to_string());
+                targets.push(ManagedTarget::extension(
+                    TargetRef {
+                        browser_id: browser_id.clone(),
+                        window_id: window_ref,
+                        tab_id: tab.tab_ref,
+                        generation: 0,
+                    },
+                    source_key.clone(),
+                    native_window_id,
+                    tab.native_tab_id,
+                    snapshot.generation,
+                    url,
+                ));
+            }
+        }
+        self.apply_inventory(InventoryUpdate::managed(
+            snapshot.browser_kind,
+            extension_inventory_profile(&snapshot.profile_label),
+            targets,
+        ))?;
+        Ok(serde_json::json!({
+            "generation": self.generation,
+            "connectedTargets": self.targets.len(),
+        }))
+    }
+
+    fn disconnect_extension_source(&mut self, source: ExtensionSourcePayload) -> serde_json::Value {
+        let source_key = extension_source_key(source.browser_kind, &source.profile_label);
+        let before = self.targets.len();
+        self.targets
+            .retain(|_, target| target.extension_source_key.as_deref() != Some(&source_key));
+        self.pending_extension_actions
+            .retain(|action| action.source_key != source_key);
+        let removed = before.saturating_sub(self.targets.len());
+        if removed > 0 {
+            self.generation = self.generation.saturating_add(1);
+            for target in self.targets.values_mut() {
+                target.reference.generation = self.generation;
+            }
+        }
+        serde_json::json!({"removedTargets": removed, "generation": self.generation})
+    }
+
+    fn handle_internal_bytes(&mut self, bytes: &[u8]) -> Result<serde_json::Value> {
+        if bytes.len() > self.config.max_payload_bytes {
+            return Err(FleetError::new(
+                FleetErrorKind::Oversized,
+                "internal request exceeded size limit",
+            ));
+        }
+        let request: InternalEnvelope = serde_json::from_slice(bytes).map_err(|_| {
+            FleetError::new(FleetErrorKind::Malformed, "internal request was malformed")
+        })?;
+        if request.version != 1 {
+            return Err(FleetError::new(
+                FleetErrorKind::UnsupportedVersion,
+                "unsupported internal protocol version",
+            ));
+        }
+        let Some(native_secret) = self.config.native_secret.as_deref() else {
+            return Err(FleetError::new(
+                FleetErrorKind::Unauthenticated,
+                "internal authentication failed",
+            ));
+        };
+        if request.auth != native_secret {
+            return Err(FleetError::new(
+                FleetErrorKind::Unauthenticated,
+                "internal authentication failed",
+            ));
+        }
+        if request.id.trim().is_empty() {
+            return Err(FleetError::new(
+                FleetErrorKind::Malformed,
+                "internal request id is required",
+            ));
+        }
+        match request.action {
+            InternalWireAction::ExtensionInventorySnapshot => {
+                let payload: ExtensionSnapshotPayload = serde_json::from_value(request.payload)
+                    .map_err(|_| {
+                        FleetError::new(
+                            FleetErrorKind::Malformed,
+                            "extension inventory snapshot was malformed",
+                        )
+                    })?;
+                self.apply_extension_snapshot(payload.snapshot)
+            }
+            InternalWireAction::ExtensionDisconnect => {
+                let payload: ExtensionSourcePayload = serde_json::from_value(request.payload)
+                    .map_err(|_| {
+                        FleetError::new(FleetErrorKind::Malformed, "extension source was malformed")
+                    })?;
+                Ok(self.disconnect_extension_source(payload))
+            }
+            InternalWireAction::ExtensionActionPoll => {
+                let payload: ExtensionSourcePayload = serde_json::from_value(request.payload)
+                    .map_err(|_| {
+                        FleetError::new(FleetErrorKind::Malformed, "extension source was malformed")
+                    })?;
+                Ok(self.poll_extension_action(payload))
+            }
+            InternalWireAction::ExtensionActionResult => {
+                let payload: ExtensionActionResultPayload = serde_json::from_value(request.payload)
+                    .map_err(|_| {
+                        FleetError::new(
+                            FleetErrorKind::Malformed,
+                            "extension action result was malformed",
+                        )
+                    })?;
+                Ok(serde_json::json!({
+                    "requestId": payload.request_id,
+                    "ok": payload.ok,
+                    "received": true,
+                    "hasResult": !payload.result.is_null(),
+                    "hasError": payload.error.is_some(),
+                }))
+            }
+        }
+    }
+
+    fn prune_expired_extension_actions(&mut self) {
+        let now = Instant::now();
+        self.pending_extension_actions
+            .retain(|action| action.expires_at > now);
+    }
+
+    fn queue_extension_action(
+        &mut self,
+        request_id: &str,
+        target: ManagedTarget,
+        action: Action,
+        deadline: Duration,
+        payload: &serde_json::Value,
+    ) -> Result<FleetResponse> {
+        self.prune_expired_extension_actions();
+        if self.pending_extension_actions.len() >= self.config.max_in_flight {
+            return Err(FleetError::new(
+                FleetErrorKind::DeadlineExceeded,
+                "too many extension actions are pending",
+            ));
+        }
+        let source_key = target.extension_source_key.clone().ok_or_else(|| {
+            FleetError::new(
+                FleetErrorKind::UnsupportedCapability,
+                "target is not connected through an ordinary extension",
+            )
+        })?;
+        let native_window_id = target.native_window_id.ok_or_else(|| {
+            FleetError::new(
+                FleetErrorKind::UnsupportedCapability,
+                "target has no native window id",
+            )
+        })?;
+        let native_tab_id = target.native_tab_id.ok_or_else(|| {
+            FleetError::new(
+                FleetErrorKind::UnsupportedCapability,
+                "target has no native tab id",
+            )
+        })?;
+        let extension_action = match action {
+            Action::Navigate => "navigate",
+            _ => {
+                return Err(FleetError::new(
+                    FleetErrorKind::UnsupportedCapability,
+                    "action is not supported by ordinary extension tabs",
+                ));
+            }
+        };
+        let mut extension_payload = serde_json::Map::new();
+        if let Some(url) = payload.get("url").cloned() {
+            extension_payload.insert("url".to_string(), url);
+        }
+        let message = serde_json::json!({
+            "type": "action_request",
+            "requestId": request_id,
+            "generation": target.extension_generation.unwrap_or(target.reference.generation),
+            "action": extension_action,
+            "target": {"windowId": native_window_id, "tabId": native_tab_id},
+            "payload": extension_payload,
+        });
+        self.pending_extension_actions
+            .push_back(PendingExtensionAction {
+                source_key,
+                expires_at: Instant::now() + deadline,
+                message,
+            });
+        Ok(FleetResponse::Accepted)
+    }
+
+    fn poll_extension_action(&mut self, source: ExtensionSourcePayload) -> serde_json::Value {
+        self.prune_expired_extension_actions();
+        let source_key = extension_source_key(source.browser_kind, &source.profile_label);
+        let Some(index) = self
+            .pending_extension_actions
+            .iter()
+            .position(|action| action.source_key == source_key)
+        else {
+            return serde_json::json!({"type": "action_idle"});
+        };
+        self.pending_extension_actions
+            .remove(index)
+            .map(|action| action.message)
+            .unwrap_or_else(|| serde_json::json!({"type": "action_idle"}))
     }
 
     pub async fn handle(&mut self, request: FleetRequest) -> Result<FleetResponse> {
@@ -775,6 +1367,7 @@ impl Broker {
             FleetRequest::Action {
                 target,
                 action,
+                deadline,
                 payload,
                 ..
             } => {
@@ -796,7 +1389,19 @@ impl Broker {
                     .policy
                     .authorize(request.id(), *action, &policy_target, now_seconds())
                 {
-                    Decision::Allow => self.execute_cdp_action(state, *action, payload).await,
+                    Decision::Allow => {
+                        if state.websocket_url.is_some() {
+                            self.execute_cdp_action(state, *action, payload).await
+                        } else {
+                            self.queue_extension_action(
+                                request.id(),
+                                state,
+                                *action,
+                                *deadline,
+                                payload,
+                            )
+                        }
+                    }
                     Decision::RequireLocalApproval => Err(FleetError::new(
                         FleetErrorKind::ApprovalRequired,
                         "local approval is required",
@@ -1048,14 +1653,31 @@ impl Broker {
             ));
         }
 
-        let codec = ProtocolCodec::new(
-            vec![1],
-            self.config.max_payload_bytes,
-            self.config.secret.clone(),
-        );
-        let result = match codec.decode_request(&line).and_then(envelope_to_request) {
-            Ok(request) => self.handle(request).await,
-            Err(error) => Err(error),
+        let is_internal_request = serde_json::from_slice::<serde_json::Value>(&line)
+            .ok()
+            .and_then(|value| {
+                value
+                    .get("action")
+                    .and_then(serde_json::Value::as_str)
+                    .map(str::to_string)
+            })
+            .is_some_and(|action| action.starts_with("extension"));
+        let result: Result<serde_json::Value> = if is_internal_request {
+            self.handle_internal_bytes(&line)
+        } else {
+            let codec = ProtocolCodec::new(
+                vec![1],
+                self.config.max_payload_bytes,
+                self.config.secret.clone(),
+            );
+            match codec.decode_request(&line).and_then(envelope_to_request) {
+                Ok(request) => self.handle(request).await.and_then(|response| {
+                    serde_json::to_value(response).map_err(|_| {
+                        FleetError::new(FleetErrorKind::Io, "could not encode fleet response")
+                    })
+                }),
+                Err(error) => Err(error),
+            }
         };
         let response = match result {
             Ok(result) => serde_json::json!({"ok": true, "result": result}),

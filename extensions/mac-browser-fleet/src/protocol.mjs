@@ -5,6 +5,7 @@ export const EXTENSION_MESSAGE_TYPES = Object.freeze([
   "hello",
   "inventory_snapshot",
   "inventory_delta",
+  "action_poll",
   "action_response",
 ]);
 
@@ -12,6 +13,7 @@ export const NATIVE_HOST_MESSAGE_TYPES = Object.freeze([
   "hello_ack",
   "inventory_request",
   "action_request",
+  "action_idle",
 ]);
 
 export const MESSAGE_SCHEMAS = Object.freeze({
@@ -24,6 +26,8 @@ export const MESSAGE_SCHEMAS = Object.freeze({
     optional: [],
   }),
   inventory_request: Object.freeze({ required: ["type", "requestId"], optional: [] }),
+  action_poll: Object.freeze({ required: ["type", "requestId"], optional: [] }),
+  action_idle: Object.freeze({ required: ["type"], optional: [] }),
   inventory_snapshot: Object.freeze({ required: ["type", "snapshot"], optional: [] }),
   inventory_delta: Object.freeze({
     required: [
@@ -52,10 +56,11 @@ export const MESSAGE_SCHEMAS = Object.freeze({
  * @typedef {"chrome" | "edge"} BrowserKind
  * @typedef {{type:"hello", protocolVersion:number, browserKind:BrowserKind, extensionVersion:string, sessionId:string, profileLabel?:string}} ExtensionHello
  * @typedef {{type:"inventory_request", requestId:string}} InventoryRequest
+ * @typedef {{type:"action_poll", requestId:string}} ActionPoll
  * @typedef {{type:"action_request", requestId:string, generation:number, action:string, target:{windowId?:number, tabId?:number}, payload:Record<string, unknown>}} ActionRequest
  * @typedef {{type:"action_response", requestId:string, ok:boolean, result?:Record<string, unknown>, error?:{code:string, message:string}}} ActionResponse
- * @typedef {ExtensionHello | ActionResponse | ({type:"inventory_snapshot", snapshot:Record<string, unknown>}) | ({type:"inventory_delta"} & Record<string, unknown>)} ExtensionMessage
- * @typedef {InventoryRequest | ActionRequest | {type:"hello_ack", protocolVersion:number, sessionId:string}} NativeHostMessage
+ * @typedef {ExtensionHello | ActionPoll | ActionResponse | ({type:"inventory_snapshot", snapshot:Record<string, unknown>}) | ({type:"inventory_delta"} & Record<string, unknown>)} ExtensionMessage
+ * @typedef {InventoryRequest | ActionRequest | {type:"action_idle"} | {type:"hello_ack", protocolVersion:number, sessionId:string}} NativeHostMessage
  */
 
 export class ProtocolError extends Error {
@@ -139,6 +144,7 @@ function assertTab(tab) {
   if (!isObject(tab) || !isString(tab.tabRef) || !isString(tab.windowRef)) {
     fail("invalid_message", "tab metadata is invalid");
   }
+  if (!isId(tab.nativeTabId) || !isId(tab.nativeWindowId)) fail("invalid_message", "native tab metadata is invalid");
   if (typeof tab.active !== "boolean" || typeof tab.controllable !== "boolean") {
     fail("invalid_message", "tab state is invalid");
   }
@@ -155,7 +161,7 @@ function assertSnapshot(snapshot) {
   assertStringArray(snapshot.capabilities);
   if (!Array.isArray(snapshot.windows)) fail("invalid_message", "inventory windows are invalid");
   for (const window of snapshot.windows) {
-    if (!isObject(window) || !isString(window.windowRef) || typeof window.focused !== "boolean" || !Array.isArray(window.tabs)) {
+    if (!isObject(window) || !isString(window.windowRef) || !isId(window.nativeWindowId) || typeof window.focused !== "boolean" || !Array.isArray(window.tabs)) {
       fail("invalid_message", "inventory window is invalid");
     }
     for (const tab of window.tabs) assertTab(tab);
@@ -199,6 +205,9 @@ export function parseExtensionMessage(message) {
         fail("invalid_message", "failed action response is invalid");
       }
       break;
+    case "action_poll":
+      if (!isString(message.requestId)) fail("invalid_message", "request ID is invalid");
+      break;
   }
   return message;
 }
@@ -221,6 +230,8 @@ export function parseNativeHostMessage(message, { expectedGeneration } = {}) {
       if (message.target.tabId !== undefined && !isId(message.target.tabId)) fail("invalid_message", "tab ID is invalid");
       if (message.target.windowId !== undefined && !isId(message.target.windowId)) fail("invalid_message", "window ID is invalid");
       if (message.target.tabId === undefined && message.target.windowId === undefined) fail("invalid_message", "action target is required");
+      break;
+    case "action_idle":
       break;
   }
   return message;

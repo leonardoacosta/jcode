@@ -39,14 +39,17 @@ function safeUrl(rawUrl, policy) {
   return policy.hidePath ? rendered.replace(/\/$/, "") : rendered;
 }
 
-function publicTab(browserIdentity, windowRef, tab, policy) {
+function publicTab(browserIdentity, windowRef, nativeWindowIdFallback, tab, policy) {
   const tabRef = opaqueRef("tab", [browserIdentity, String(tab.id)]);
   const url = safeUrl(tab.url, policy);
   const controllable = url !== undefined;
+  const nativeWindowId = Number.isSafeInteger(tab.windowId) ? tab.windowId : nativeWindowIdFallback;
 
   return {
     tabRef,
     windowRef,
+    ...(nativeWindowId === undefined ? {} : { nativeWindowId }),
+    nativeTabId: tab.id,
     active: tab.active === true,
     controllable,
     capabilities: controllable ? [...ORDINARY_TAB_CAPABILITIES] : [],
@@ -84,10 +87,11 @@ export function buildInventorySnapshot({
       const windowRef = opaqueRef("win", [browserIdentity, String(window.id)]);
       return {
         windowRef,
+        nativeWindowId: window.id,
         focused: window.focused === true,
         tabs: Array.isArray(window.tabs)
           ? window.tabs.map((tab) =>
-              publicTab(browserIdentity, windowRef, tab, policy),
+              publicTab(browserIdentity, windowRef, window.id, tab, policy),
             )
           : [],
       };

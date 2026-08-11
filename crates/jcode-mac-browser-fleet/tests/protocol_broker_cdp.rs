@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::time::Duration;
 
 use jcode_mac_browser_fleet::{
@@ -13,8 +14,13 @@ use tempfile::tempdir;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 
 fn secret() -> String {
-    "test-secret-with-enough-entropy".to_string()
+    "test-peer-secret-with-enough-entropy".to_string()
 }
+
+fn native_secret() -> String {
+    "test-native-secret-with-enough-entropy".to_string()
+}
+
 fn target(generation: u64) -> TargetRef {
     TargetRef {
         browser_id: "chrome:stable".into(),
@@ -22,6 +28,77 @@ fn target(generation: u64) -> TargetRef {
         tab_id: "tab-1".into(),
         generation,
     }
+}
+
+async fn broker_line(socket: &Path, request: serde_json::Value) -> serde_json::Value {
+    let mut stream = tokio::net::UnixStream::connect(socket).await.unwrap();
+    let mut encoded = serde_json::to_vec(&request).unwrap();
+    encoded.push(b'\n');
+    stream.write_all(&encoded).await.unwrap();
+    stream.flush().await.unwrap();
+    let mut reader = BufReader::new(stream);
+    let mut line = Vec::new();
+    reader.read_until(b'\n', &mut line).await.unwrap();
+    serde_json::from_slice(&line).unwrap()
+}
+
+async fn peer_list(socket: &Path, auth: String, generation: u64) -> serde_json::Value {
+    broker_line(
+        socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": auth,
+            "id": format!("list-{generation}"),
+            "deadline_ms": 1000,
+            "target_generation": generation,
+            "action": "listBrowsers",
+            "payload": {}
+        }),
+    )
+    .await
+}
+
+async fn internal_snapshot(
+    socket: &Path,
+    browser: &str,
+    profile: &str,
+    native_tab: u64,
+) -> serde_json::Value {
+    broker_line(
+        socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": native_secret(),
+            "id": format!("snapshot-{browser}-{native_tab}"),
+            "action": "extensionInventorySnapshot",
+            "payload": {
+                "snapshot": {
+                    "browserKind": browser,
+                    "displayName": if browser == "edge" { "Microsoft Edge" } else { "Google Chrome" },
+                    "profileLabel": profile,
+                    "generation": 1,
+                    "capabilities": ["navigate"],
+                    "windows": [{
+                        "windowRef": format!("win-{browser}"),
+                        "nativeWindowId": native_tab + 1000,
+                        "focused": true,
+                        "tabs": [{
+                            "tabRef": format!("tab-{browser}"),
+                            "windowRef": format!("win-{browser}"),
+                            "nativeWindowId": native_tab + 1000,
+                            "nativeTabId": native_tab,
+                            "active": true,
+                            "controllable": true,
+                            "capabilities": ["navigate"],
+                            "title": "Example",
+                            "url": "https://example.test/path"
+                        }]
+                    }]
+                }
+            }
+        }),
+    )
+    .await
 }
 
 #[test]
@@ -32,7 +109,7 @@ fn protocol_fails_closed_for_bad_inputs_without_leaking_secret() {
         .unwrap_err();
     assert_eq!(err.kind(), FleetErrorKind::Oversized);
     assert!(!err.to_string().contains("test-secret"));
-    let unsupported = serde_json::json!({"version":99,"auth":"test-secret-with-enough-entropy","id":"r1","deadline_ms":1000,"target_generation":1,"action":"fleetHealth","payload":{}});
+    let unsupported = serde_json::json!({"version":99,"auth": secret(),"id":"r1","deadline_ms":1000,"target_generation":1,"action":"fleetHealth","payload":{}});
     assert_eq!(
         codec
             .decode_request(unsupported.to_string().as_bytes())
@@ -53,7 +130,7 @@ fn protocol_fails_closed_for_bad_inputs_without_leaking_secret() {
         FleetErrorKind::Malformed
     );
 
-    let valid = serde_json::json!({"version":1,"auth":"test-secret-with-enough-entropy","id":"dup","deadline_ms":1000,"target_generation":1,"action":"fleetHealth","payload":{}});
+    let valid = serde_json::json!({"version":1,"auth": secret(),"id":"dup","deadline_ms":1000,"target_generation":1,"action":"fleetHealth","payload":{}});
     let mut session = ProtocolSession::new(codec);
     session
         .decode_unique_request(valid.to_string().as_bytes())
@@ -75,6 +152,7 @@ async fn broker_uses_0600_socket_auth_generations_deadlines_and_no_mutation_repl
         socket_path: socket.clone(),
         authority_socket_path: None,
         secret: secret(),
+        native_secret: None,
         max_payload_bytes: 4096,
         max_in_flight: 1,
     })
@@ -300,6 +378,7 @@ async fn broker_merges_multiple_browser_sources_and_reports_current_generation()
         socket_path: socket,
         authority_socket_path: None,
         secret: secret(),
+        native_secret: None,
         max_payload_bytes: 4096,
         max_in_flight: 4,
     })
@@ -406,6 +485,7 @@ async fn broker_requires_mac_local_authority_and_enforces_lease_scope_revocation
         socket_path: peer_socket.clone(),
         authority_socket_path: Some(authority_socket.clone()),
         secret: secret(),
+        native_secret: None,
         max_payload_bytes: 4096,
         max_in_flight: 4,
     })
@@ -602,6 +682,7 @@ async fn hard_denies_survive_local_leases_and_cdp_websocket_urls_stay_loopback_i
         socket_path: dir.path().join("peer.sock"),
         authority_socket_path: None,
         secret: secret(),
+        native_secret: None,
         max_payload_bytes: 4096,
         max_in_flight: 4,
     })
@@ -748,6 +829,7 @@ async fn approved_managed_cdp_mutation_executes_against_fake_loopback_websocket(
         socket_path: dir.path().join("peer.sock"),
         authority_socket_path: None,
         secret: secret(),
+        native_secret: None,
         max_payload_bytes: 4096,
         max_in_flight: 4,
     })
@@ -823,6 +905,7 @@ async fn native_host_forwards_inventory_requests_to_broker_with_internal_secret(
         socket_path: socket.clone(),
         authority_socket_path: None,
         secret: secret(),
+        native_secret: None,
         max_payload_bytes: 4096,
         max_in_flight: 4,
     })
@@ -884,4 +967,325 @@ async fn native_host_stream_returns_bounded_secret_safe_errors_when_broker_is_ab
     assert_eq!(response["error"]["kind"], "io");
     assert!(!response.to_string().contains("test-secret"));
     host.await.unwrap();
+}
+
+#[tokio::test]
+async fn native_host_accepts_the_extension_hello_shape_and_returns_hello_ack() {
+    let dir = tempdir().unwrap();
+    let (mut extension, mut host_input) = tokio::io::duplex(8192);
+    let (mut host_output, mut extension_reader) = tokio::io::duplex(8192);
+    let config = NativeHostBridgeConfig {
+        socket_path: dir.path().join("missing.sock"),
+        secret: secret(),
+        max_payload_bytes: 4096,
+    };
+    let host = tokio::spawn(async move {
+        serve_native_host(config, &mut host_input, &mut host_output)
+            .await
+            .unwrap();
+    });
+    let hello = serde_json::to_vec(&serde_json::json!({
+        "type": "hello",
+        "protocolVersion": 1,
+        "browserKind": "chrome",
+        "extensionVersion": "0.1.0",
+        "sessionId": "extension-session"
+    }))
+    .unwrap();
+    write_native_message(&mut extension, &hello, 4096)
+        .await
+        .unwrap();
+    drop(extension);
+
+    let response = read_native_message(&mut extension_reader, 4096)
+        .await
+        .unwrap()
+        .unwrap();
+    let response: serde_json::Value = serde_json::from_slice(&response).unwrap();
+    assert_eq!(
+        response,
+        serde_json::json!({
+            "type": "hello_ack",
+            "protocolVersion": 1,
+            "sessionId": "extension-session"
+        })
+    );
+    host.await.unwrap();
+}
+
+#[tokio::test]
+async fn extension_snapshot_creates_ordinary_targets_and_public_output_strips_host_only_fields() {
+    let dir = tempdir().unwrap();
+    let socket = dir.path().join("fleet.sock");
+    let broker = Broker::bind(BrokerConfig {
+        socket_path: socket.clone(),
+        authority_socket_path: None,
+        secret: secret(),
+        native_secret: Some(native_secret()),
+        max_payload_bytes: 8192,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    let server = tokio::spawn(async move { broker.serve().await });
+
+    let synced = internal_snapshot(&socket, "chrome", "Default", 424242).await;
+    assert_eq!(synced["ok"], true);
+
+    let listed = peer_list(&socket, secret(), 0).await;
+    assert_eq!(listed["ok"], true);
+    let targets = listed["result"]["targets"].as_array().unwrap();
+    assert_eq!(targets.len(), 1);
+    assert_eq!(targets[0]["browser_id"], "ordinary-chrome");
+    assert_ne!(targets[0]["browser_id"], "managed-chrome");
+    assert_eq!(targets[0]["window_id"], "win-chrome");
+    assert_eq!(targets[0]["tab_id"], "tab-chrome");
+
+    let public = listed.to_string();
+    assert!(!public.contains("nativeWindowId"));
+    assert!(!public.contains("nativeTabId"));
+    assert!(!public.contains("424242"));
+    assert!(!public.contains("test-peer-secret"));
+    assert!(!public.contains("test-native-secret"));
+    server.abort();
+}
+
+#[tokio::test]
+async fn extension_sources_stay_separated_and_disconnect_cleans_only_that_browser() {
+    let dir = tempdir().unwrap();
+    let socket = dir.path().join("fleet.sock");
+    let broker = Broker::bind(BrokerConfig {
+        socket_path: socket.clone(),
+        authority_socket_path: None,
+        secret: secret(),
+        native_secret: Some(native_secret()),
+        max_payload_bytes: 8192,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    let server = tokio::spawn(async move { broker.serve().await });
+
+    assert_eq!(
+        internal_snapshot(&socket, "chrome", "Default", 111).await["ok"],
+        true
+    );
+    assert_eq!(
+        internal_snapshot(&socket, "edge", "Default", 222).await["ok"],
+        true
+    );
+
+    let listed = peer_list(&socket, secret(), 0).await;
+    let mut browser_refs = listed["result"]["targets"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|target| target["browser_id"].as_str().unwrap().to_string())
+        .collect::<Vec<_>>();
+    browser_refs.sort();
+    assert_eq!(browser_refs, vec!["ordinary-chrome", "ordinary-edge"]);
+
+    let disconnected = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": native_secret(),
+            "id": "disconnect-chrome",
+            "action": "extensionDisconnect",
+            "payload": {"browserKind": "chrome", "profileLabel": "Default"}
+        }),
+    )
+    .await;
+    assert_eq!(disconnected["ok"], true);
+
+    let listed = peer_list(&socket, secret(), 0).await;
+    let targets = listed["result"]["targets"].as_array().unwrap();
+    assert_eq!(targets.len(), 1);
+    assert_eq!(targets[0]["browser_id"], "ordinary-edge");
+    server.abort();
+}
+
+#[tokio::test]
+async fn approved_extension_navigate_round_trips_through_poll_and_response_without_replay() {
+    let dir = tempdir().unwrap();
+    let socket = dir.path().join("fleet.sock");
+    let authority_socket = dir.path().join("authority.sock");
+    let broker = Broker::bind(BrokerConfig {
+        socket_path: socket.clone(),
+        authority_socket_path: Some(authority_socket.clone()),
+        secret: secret(),
+        native_secret: Some(native_secret()),
+        max_payload_bytes: 8192,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    let server = tokio::spawn(async move { broker.serve().await });
+
+    assert_eq!(
+        internal_snapshot(&socket, "chrome", "Default", 333333).await["ok"],
+        true
+    );
+    let listed = peer_list(&socket, secret(), 0).await;
+    let target: TargetRef = serde_json::from_value(listed["result"]["targets"][0].clone()).unwrap();
+
+    let denied = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": secret(),
+            "id": "extension-nav-denied",
+            "deadline_ms": 1000,
+            "target_generation": target.generation,
+            "action": "navigate",
+            "payload": {"target": target, "url": "https://denied.test"}
+        }),
+    )
+    .await;
+    assert_eq!(denied["ok"], false);
+    assert_eq!(denied["error"]["kind"], "approvalRequired");
+
+    let grant = broker_line(
+        &authority_socket,
+        serde_json::json!({
+            "version": 1,
+            "action": "grantLease",
+            "target": target,
+            "capabilities": ["navigate"],
+            "durationSeconds": 60
+        }),
+    )
+    .await;
+    assert_eq!(grant["ok"], true);
+
+    let accepted = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": secret(),
+            "id": "extension-nav-approved",
+            "deadline_ms": 5000,
+            "target_generation": target.generation,
+            "action": "navigate",
+            "payload": {"target": target, "url": "https://approved.test/path"}
+        }),
+    )
+    .await;
+    assert_eq!(accepted["ok"], true);
+    assert_eq!(accepted["result"]["kind"], "accepted");
+
+    let duplicate = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": secret(),
+            "id": "extension-nav-approved",
+            "deadline_ms": 5000,
+            "target_generation": target.generation,
+            "action": "navigate",
+            "payload": {"target": target, "url": "https://approved.test/path"}
+        }),
+    )
+    .await;
+    assert_eq!(duplicate["ok"], false);
+    assert_eq!(duplicate["error"]["kind"], "duplicateMutation");
+
+    let polled = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": native_secret(),
+            "id": "poll-1",
+            "action": "extensionActionPoll",
+            "payload": {"browserKind": "chrome", "profileLabel": "Default"}
+        }),
+    )
+    .await;
+    assert_eq!(polled["ok"], true);
+    assert_eq!(polled["result"]["type"], "action_request");
+    assert_eq!(polled["result"]["requestId"], "extension-nav-approved");
+    assert_eq!(polled["result"]["action"], "navigate");
+    assert_eq!(polled["result"]["target"]["tabId"], 333333);
+    assert_eq!(polled["result"]["target"]["windowId"], 334333);
+
+    let result = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": native_secret(),
+            "id": "result-1",
+            "action": "extensionActionResult",
+            "payload": {"requestId": "extension-nav-approved", "ok": true, "result": {}}
+        }),
+    )
+    .await;
+    assert_eq!(result["ok"], true);
+
+    let second_poll = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": native_secret(),
+            "id": "poll-2",
+            "action": "extensionActionPoll",
+            "payload": {"browserKind": "chrome", "profileLabel": "Default"}
+        }),
+    )
+    .await;
+    assert_eq!(second_poll["ok"], true);
+    assert_eq!(
+        second_poll["result"],
+        serde_json::json!({"type": "action_idle"})
+    );
+    server.abort();
+}
+
+#[tokio::test]
+async fn peer_and_native_secrets_are_not_interchangeable_between_wire_surfaces() {
+    let dir = tempdir().unwrap();
+    let socket = dir.path().join("fleet.sock");
+    let broker = Broker::bind(BrokerConfig {
+        socket_path: socket.clone(),
+        authority_socket_path: None,
+        secret: secret(),
+        native_secret: Some(native_secret()),
+        max_payload_bytes: 8192,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    let server = tokio::spawn(async move { broker.serve().await });
+
+    let native_as_peer = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": native_secret(),
+            "id": "native-as-peer-action",
+            "deadline_ms": 1000,
+            "target_generation": 0,
+            "action": "navigate",
+            "payload": {"target": {"browser_id":"ordinary-chrome","window_id":"win","tab_id":"tab","generation":0}, "url":"https://example.test"}
+        }),
+    )
+    .await;
+    assert_eq!(native_as_peer["ok"], false);
+    assert_eq!(native_as_peer["error"]["kind"], "unauthenticated");
+
+    let peer_as_internal = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": secret(),
+            "id": "peer-as-internal",
+            "action": "extensionActionPoll",
+            "payload": {"browserKind": "chrome", "profileLabel": "Default"}
+        }),
+    )
+    .await;
+    assert_eq!(peer_as_internal["ok"], false);
+    assert_eq!(peer_as_internal["error"]["kind"], "unauthenticated");
+    assert!(!native_as_peer.to_string().contains("test-native-secret"));
+    assert!(!peer_as_internal.to_string().contains("test-peer-secret"));
+    server.abort();
 }

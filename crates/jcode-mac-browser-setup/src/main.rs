@@ -74,13 +74,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         "status" => {
             let status = status(&opts)?;
             println!(
-                "launch_agent={} chrome_host={} edge_host={} policy={} ssh_include={} peer_secret_mode={:?} tcp_listener_configured={}",
+                "launch_agent={} chrome_host={} edge_host={} policy={} ssh_include={} peer_secret_mode={:?} native_secret_mode={:?} tcp_listener_configured={}",
                 status.launch_agent.installed,
                 status.chrome_native_host.installed,
                 status.edge_native_host.installed,
                 status.policy.installed,
                 status.ssh_include.installed,
                 status.peer_secret_mode,
+                status.native_secret_mode,
                 status.tcp_listener_configured
             );
             println!(

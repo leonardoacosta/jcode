@@ -32,13 +32,14 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     if command != std::ffi::OsStr::new("broker") {
         return Err(
-            "usage: jcode-mac-browser-fleet [native-host --socket PATH --peer-secret PATH] | broker --socket PATH --authority-socket PATH --peer-secret PATH --policy PATH | authority grant|revoke|emergency-stop|release-emergency-stop|status"
+            "usage: jcode-mac-browser-fleet [native-host --socket PATH --native-secret PATH] | broker --socket PATH --authority-socket PATH --peer-secret PATH --native-secret PATH --policy PATH | authority grant|revoke|emergency-stop|release-emergency-stop|status"
                 .into(),
         );
     }
 
     let mut socket = None;
     let mut peer_secret = None;
+    let mut native_secret = None;
     let mut authority_socket = None;
     let mut policy = None;
     let mut managed_cdp = Vec::new();
@@ -48,6 +49,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
             "--socket" => socket = Some(PathBuf::from(value)),
             "--authority-socket" => authority_socket = Some(PathBuf::from(value)),
             "--peer-secret" => peer_secret = Some(PathBuf::from(value)),
+            "--native-secret" => native_secret = Some(PathBuf::from(value)),
             "--policy" => policy = Some(PathBuf::from(value)),
             "--managed-cdp-chrome" => managed_cdp.push((BrowserKind::Chrome, value)),
             "--managed-cdp-edge" => managed_cdp.push((BrowserKind::Edge, value)),
@@ -58,10 +60,15 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let socket_path = socket.ok_or("--socket is required")?;
     let authority_socket_path = authority_socket;
     let secret_path = peer_secret.ok_or("--peer-secret is required")?;
+    let native_secret_path = native_secret.ok_or("--native-secret is required")?;
     let policy_path = policy.ok_or("--policy is required")?;
     let secret = fs::read_to_string(secret_path)?.trim().to_string();
+    let native_secret = fs::read_to_string(native_secret_path)?.trim().to_string();
     if secret.is_empty() {
         return Err("peer secret is empty".into());
+    }
+    if native_secret.is_empty() || native_secret == secret {
+        return Err("native secret must be non-empty and distinct from peer secret".into());
     }
     fs::metadata(policy_path)?;
 
@@ -69,6 +76,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         socket_path,
         authority_socket_path,
         secret,
+        native_secret: Some(native_secret),
         max_payload_bytes: DEFAULT_MAX_PAYLOAD_BYTES,
         max_in_flight: DEFAULT_MAX_IN_FLIGHT,
     })
@@ -84,7 +92,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn run_native_host(args: Vec<std::ffi::OsString>) -> Result<(), Box<dyn std::error::Error>> {
     let mut socket = None;
-    let mut peer_secret = None;
+    let mut native_secret = None;
     let mut max_payload_bytes = DEFAULT_MAX_PAYLOAD_BYTES;
     let mut args = args.into_iter();
     while let Some(flag) = args.next() {
@@ -93,7 +101,7 @@ async fn run_native_host(args: Vec<std::ffi::OsString>) -> Result<(), Box<dyn st
             .ok_or("missing value for native-host argument")?;
         match flag.to_string_lossy().as_ref() {
             "--socket" => socket = Some(PathBuf::from(value)),
-            "--peer-secret" => peer_secret = Some(PathBuf::from(value)),
+            "--native-secret" | "--peer-secret" => native_secret = Some(PathBuf::from(value)),
             "--max-payload-bytes" => {
                 max_payload_bytes = value.to_string_lossy().parse::<usize>()?
             }
@@ -109,12 +117,12 @@ async fn run_native_host(args: Vec<std::ffi::OsString>) -> Result<(), Box<dyn st
     let socket_path = socket.unwrap_or_else(|| {
         home.join("Library/Application Support/Jcode/MacBrowserFleet/jcode-mac-browser-fleet.sock")
     });
-    let secret_path = peer_secret.unwrap_or_else(|| {
-        home.join("Library/Application Support/Jcode/MacBrowserFleet/peer.secret")
+    let secret_path = native_secret.unwrap_or_else(|| {
+        home.join("Library/Application Support/Jcode/MacBrowserFleet/native.secret")
     });
     let secret = fs::read_to_string(secret_path)?.trim().to_string();
     if secret.is_empty() {
-        return Err("peer secret is empty".into());
+        return Err("native secret is empty".into());
     }
     let config = NativeHostBridgeConfig {
         socket_path,

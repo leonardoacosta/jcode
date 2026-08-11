@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::{self, ErrorKind};
+use std::io::{self, ErrorKind, Read};
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -54,6 +54,11 @@ impl InstallOptions {
             .join("Library/Application Support/Jcode/MacBrowserFleet/peer.secret")
     }
 
+    pub fn native_secret_path(&self) -> PathBuf {
+        self.home
+            .join("Library/Application Support/Jcode/MacBrowserFleet/native.secret")
+    }
+
     pub fn policy_path(&self) -> PathBuf {
         self.home
             .join("Library/Application Support/Jcode/MacBrowserFleet/policy.toml")
@@ -85,6 +90,7 @@ pub enum ArtifactKind {
     ChromeNativeHost,
     EdgeNativeHost,
     PeerSecret,
+    NativeSecret,
     Policy,
     SshInclude,
 }
@@ -121,6 +127,7 @@ pub struct SetupStatus {
     pub policy: ArtifactStatus,
     pub ssh_include: ArtifactStatus,
     pub peer_secret_mode: Option<u32>,
+    pub native_secret_mode: Option<u32>,
     pub extension_state: ExtensionStatus,
     pub tcp_listener_configured: bool,
 }
@@ -152,7 +159,18 @@ pub fn install(opts: &InstallOptions) -> io::Result<InstallReport> {
             &mut report,
         )?;
     }
-    write_secret(opts.peer_secret_path(), &mut report)?;
+    write_secret(
+        opts.peer_secret_path(),
+        ArtifactKind::PeerSecret,
+        "peer",
+        &mut report,
+    )?;
+    write_secret(
+        opts.native_secret_path(),
+        ArtifactKind::NativeSecret,
+        "native",
+        &mut report,
+    )?;
     write_artifact(
         opts.policy_path(),
         render_policy(),
@@ -181,6 +199,11 @@ pub fn status(opts: &InstallOptions) -> io::Result<SetupStatus> {
         Err(err) if err.kind() == ErrorKind::NotFound => None,
         Err(err) => return Err(err),
     };
+    let native_mode = match fs::metadata(opts.native_secret_path()) {
+        Ok(meta) => Some(meta.permissions().mode() & 0o777),
+        Err(err) if err.kind() == ErrorKind::NotFound => None,
+        Err(err) => return Err(err),
+    };
     Ok(SetupStatus {
         launch_agent: ArtifactStatus {
             installed: opts.launch_agent_path().exists(),
@@ -198,6 +221,7 @@ pub fn status(opts: &InstallOptions) -> io::Result<SetupStatus> {
             installed: opts.ssh_include_path().exists(),
         },
         peer_secret_mode: mode,
+        native_secret_mode: native_mode,
         extension_state: ExtensionStatus {
             chrome: ExtensionState::NeedsUserInstall,
             edge: ExtensionState::NeedsUserInstall,
@@ -215,6 +239,7 @@ pub fn remove(opts: &InstallOptions) -> io::Result<()> {
         opts.chrome_native_host_path(),
         opts.edge_native_host_path(),
         opts.peer_secret_path(),
+        opts.native_secret_path(),
         opts.policy_path(),
         opts.ssh_include_path(),
     ] {
@@ -227,14 +252,19 @@ pub fn remove(opts: &InstallOptions) -> io::Result<()> {
     Ok(())
 }
 
-fn write_secret(path: PathBuf, report: &mut InstallReport) -> io::Result<()> {
+fn write_secret(
+    path: PathBuf,
+    kind: ArtifactKind,
+    label: &str,
+    report: &mut InstallReport,
+) -> io::Result<()> {
     if !path.exists() {
-        let secret = format!("jcode-mac-browser-fleet-{}\n", nonce());
+        let secret = format!("jcode-mac-browser-fleet-{label}-{}\n", secure_token());
         write_new(path, secret, 0o600)?;
-        report.installed.push(ArtifactKind::PeerSecret);
+        report.installed.push(kind);
     } else {
         fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
-        report.refreshed.push(ArtifactKind::PeerSecret);
+        report.refreshed.push(kind);
     }
     Ok(())
 }
@@ -289,6 +319,18 @@ fn nonce() -> u128 {
         .as_nanos()
 }
 
+fn secure_token() -> String {
+    let mut bytes = [0_u8; 32];
+    if fs::File::open("/dev/urandom")
+        .and_then(|mut file| file.read_exact(&mut bytes))
+        .is_ok()
+    {
+        bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+    } else {
+        format!("{}{}", nonce(), nonce())
+    }
+}
+
 fn read_optional(path: &Path) -> io::Result<Option<String>> {
     match fs::read_to_string(path) {
         Ok(text) => Ok(Some(text)),
@@ -328,6 +370,8 @@ pub fn render_launch_agent(opts: &InstallOptions) -> String {
 	    <string>{}</string>
 	    <string>--peer-secret</string>
 	    <string>{}</string>
+	    <string>--native-secret</string>
+	    <string>{}</string>
     <string>--policy</string>
     <string>{}</string>
 {}
@@ -343,6 +387,7 @@ pub fn render_launch_agent(opts: &InstallOptions) -> String {
         xml(&opts.socket_path()),
         xml(&opts.authority_socket_path()),
         xml(&opts.peer_secret_path()),
+        xml(&opts.native_secret_path()),
         xml(&opts.policy_path()),
         managed_cdp_arguments
     )
@@ -485,12 +530,15 @@ mod tests {
             ExtensionState::NeedsUserInstall
         );
         assert_eq!(status.peer_secret_mode, Some(0o600));
+        assert_eq!(status.native_secret_mode, Some(0o600));
         assert!(!status.tcp_listener_configured);
 
         let plist = fs::read_to_string(opts.launch_agent_path()).unwrap();
         assert!(!plist.contains("<key>Sockets</key>"));
         assert!(plist.contains("<string>--socket</string>"));
         assert!(plist.contains("jcode-mac-browser-fleet.sock"));
+        assert!(plist.contains("<string>--native-secret</string>"));
+        assert!(plist.contains("native.secret"));
         if Command::new("plutil")
             .arg("-lint")
             .arg(opts.launch_agent_path())
@@ -516,6 +564,7 @@ mod tests {
         assert!(!opts.chrome_native_host_path().exists());
         assert!(!opts.edge_native_host_path().exists());
         assert!(!opts.peer_secret_path().exists());
+        assert!(!opts.native_secret_path().exists());
     }
 
     #[test]
@@ -557,6 +606,18 @@ mod tests {
                 .mode()
                 & 0o777,
             0o600
+        );
+        assert_eq!(
+            fs::metadata(opts.native_secret_path())
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o600
+        );
+        assert_ne!(
+            fs::read_to_string(opts.peer_secret_path()).unwrap(),
+            fs::read_to_string(opts.native_secret_path()).unwrap()
         );
     }
 
@@ -613,6 +674,7 @@ mod tests {
         assert!(chrome.contains("\"path\": \"/Users/test/.local/bin/jcode-mac-browser-fleet\""));
         assert!(!chrome.contains("native-host"));
         assert!(!chrome.contains("--socket"));
+        assert!(!chrome.contains("native.secret"));
     }
 
     #[test]
@@ -628,5 +690,20 @@ mod tests {
         assert!(!opts.edge_native_host_path().exists());
         assert!(report.installed.contains(&ArtifactKind::ChromeNativeHost));
         assert!(!report.installed.contains(&ArtifactKind::EdgeNativeHost));
+    }
+
+    #[test]
+    fn install_can_configure_edge_without_a_chrome_extension_id() {
+        let root = tmp_root("edge-only");
+        let mut opts =
+            InstallOptions::fixture(root.clone(), root.join("bin/jcode-mac-browser-fleet"));
+        opts.edge_extension_id = "cccccccccccccccccccccccccccccccc".to_string();
+
+        let report = install(&opts).unwrap();
+
+        assert!(!opts.chrome_native_host_path().exists());
+        assert!(opts.edge_native_host_path().is_file());
+        assert!(!report.installed.contains(&ArtifactKind::ChromeNativeHost));
+        assert!(report.installed.contains(&ArtifactKind::EdgeNativeHost));
     }
 }

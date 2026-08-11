@@ -57,6 +57,11 @@ test("builds generation-tagged stable opaque window and tab references", () => {
   assert.equal(first.generation, 7);
   assert.match(first.windows[0].windowRef, /^win_[a-z0-9_-]+$/);
   assert.match(first.windows[0].tabs[0].tabRef, /^tab_[a-z0-9_-]+$/);
+  assert.equal(first.windows[0].nativeWindowId, 4);
+  assert.equal(first.windows[0].tabs[0].nativeWindowId, 4);
+  assert.equal(first.windows[0].tabs[0].nativeTabId, 9);
+  assert.equal(first.windows[0].windowRef.includes("4"), false);
+  assert.equal(first.windows[0].tabs[0].tabRef.includes("9"), false);
   assert.equal(first.windows[0].windowRef, second.windows[0].windowRef);
   assert.equal(
     first.windows[0].tabs[0].tabRef,

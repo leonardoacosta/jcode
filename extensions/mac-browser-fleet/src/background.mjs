@@ -100,6 +100,7 @@ export function installMacBrowserFleetBridge(browserApi, options = {}) {
   const profileLabel = options.profileLabel;
   const policy = options.policy ?? {};
   const maxChanges = options.maxChanges;
+  const actionPollIntervalMs = options.actionPollIntervalMs ?? 1000;
   const handleAction = createExtensionActionHandler(browserApi);
 
   let port;
@@ -108,6 +109,8 @@ export function installMacBrowserFleetBridge(browserApi, options = {}) {
   let connected = false;
   let reconnectQueued = false;
   let inventoryQueued = false;
+  let actionPollTimer;
+  let actionPollCounter = 0;
   const removers = [];
   let validator = createProtocolValidator();
 
@@ -147,12 +150,31 @@ export function installMacBrowserFleetBridge(browserApi, options = {}) {
     }
   };
 
+  const pollForAction = () => {
+    if (!connected || !port) return;
+    actionPollCounter += 1;
+    safePost(port, { type: "action_poll", requestId: `poll-${sessionId}-${actionPollCounter}` });
+  };
+
+  const startActionPolling = () => {
+    if (!(actionPollIntervalMs > 0)) return;
+    clearInterval(actionPollTimer);
+    actionPollTimer = setInterval(pollForAction, actionPollIntervalMs);
+    actionPollTimer.unref?.();
+  };
+
+  const stopActionPolling = () => {
+    clearInterval(actionPollTimer);
+    actionPollTimer = undefined;
+  };
+
   const cleanupConnection = () => {
     connected = false;
     port = undefined;
     currentSnapshot = undefined;
     generation = 0;
     inventoryQueued = false;
+    stopActionPolling();
     removeListeners(removers);
   };
 
@@ -162,6 +184,7 @@ export function installMacBrowserFleetBridge(browserApi, options = {}) {
     connected = true;
     reconnectQueued = false;
     installInventoryListeners();
+    startActionPolling();
 
     safePost(port, {
       type: "hello",
@@ -194,6 +217,7 @@ export function installMacBrowserFleetBridge(browserApi, options = {}) {
       if (parsed.type === ACTION_MESSAGE_TYPES.REQUEST) {
         const response = await handleAction(parsed);
         if (connected && port) safePost(port, { type: ACTION_MESSAGE_TYPES.RESPONSE, ...response });
+        return;
       }
     });
 

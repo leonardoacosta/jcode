@@ -100,6 +100,10 @@ function flushAsyncWork() {
   return new Promise((resolve) => setImmediate(resolve));
 }
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 test("detects Edge identity from the extension runtime user agent", () => {
   assert.equal(detectBrowserKind("Mozilla/5.0 Chrome/151.0 Edg/151.0"), "edge");
   assert.equal(detectBrowserKind("Mozilla/5.0 Chrome/151.0"), "chrome");
@@ -249,4 +253,42 @@ test("disconnect cleanup makes late events safe while preserving action handling
   assert.equal(port.posted.filter((message) => message.type === "inventory_delta").length, 0);
   assert.equal(browserApi.tabs.onCreated.listeners.size, 0);
   assert.doesNotThrow(() => bridge.disconnect());
+});
+
+test("periodically polls native host and executes action requests with host-only numeric IDs", async () => {
+  const browserApi = fakeBrowserApi({ windows: [ordinaryWindow(7)] });
+
+  const bridge = installMacBrowserFleetBridge(browserApi, {
+    browserKind: "chrome",
+    sessionId: "sess-poll",
+    actionPollIntervalMs: 5,
+    reconnect: false,
+  });
+  await flushAsyncWork();
+  await delay(12);
+
+  const port = browserApi.ports[0];
+  assert.ok(port.posted.some((message) => message.type === "action_poll"));
+  assert.equal(port.posted[1].snapshot.windows[0].nativeWindowId, 7);
+  assert.equal(port.posted[1].snapshot.windows[0].tabs[0].nativeTabId, 10);
+  assert.equal(port.posted[1].snapshot.windows[0].tabs[0].tabRef.includes("10"), false);
+
+  await port.receive({ type: "action_idle" });
+  await port.receive({
+    type: "action_request",
+    requestId: "act-poll-1",
+    generation: 1,
+    action: ACTIONS.NAVIGATE,
+    target: { windowId: 7, tabId: 10 },
+    payload: { url: "https://polled-action.test" },
+  });
+
+  assert.deepEqual(browserApi.calls.filter(([name]) => name === "tabs.update"), [
+    ["tabs.update", 10, { url: "https://polled-action.test" }],
+  ]);
+  assert.equal(port.posted.at(-1).type, "action_response");
+  const postedBeforeDisconnect = port.posted.length;
+  bridge.disconnect();
+  await delay(12);
+  assert.equal(port.posted.length, postedBeforeDisconnect);
 });

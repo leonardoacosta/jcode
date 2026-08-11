@@ -20,7 +20,7 @@
 - [x] 2.3 Add explicitly managed CDP target discovery and control without relaunching or attaching to ordinary daily profiles.
   - depends on: 2.1
   - Done when fake CDP tests prove endpoint trust, capability advertisement, target generation changes, richer inspection, bounded output, and policy enforcement.
-- [ ] 2.5 Complete the ordinary-profile native bridge with Chromium stdio framing, broker-socket forwarding, initial and event-driven inventory synchronization, disconnect cleanup, approved action routing, and separate Chrome/Edge extension IDs.
+- [x] 2.5 Complete the ordinary-profile native bridge with Chromium stdio framing, broker-socket forwarding, initial and event-driven inventory synchronization, disconnect cleanup, approved action routing, and separate Chrome/Edge extension IDs.
   - depends on: 2.1, 2.2
   - Done when native-host framing and reconnect tests pass, extension tests prove initial snapshots and bounded deltas, setup renders independent browser allowlists, and real Chrome ordinary-profile tabs appear through Jcode with a non-CDP browser reference.
 - [ ] 2.4 Add the Mac-local approval and status surface, including single-action approval, scoped lease issuance, lease listing/revocation, emergency stop, connection health, and browser extension state.

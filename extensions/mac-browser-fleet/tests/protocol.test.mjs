@@ -19,11 +19,14 @@ const snapshot = {
   windows: [
     {
       windowRef: "win_a1",
+      nativeWindowId: 3,
       focused: true,
       tabs: [
         {
           tabRef: "tab_b2",
           windowRef: "win_a1",
+          nativeWindowId: 3,
+          nativeTabId: 9,
           active: true,
           controllable: true,
           capabilities: ["activate_tab", "navigate"],
@@ -57,6 +60,7 @@ test("accepts every extension-to-native-host message shape", () => {
       truncated: false,
     },
     { type: "action_response", requestId: "req-1", ok: true, result: {} },
+    { type: "action_poll", requestId: "poll-1" },
     {
       type: "action_response",
       requestId: "req-2",
@@ -82,6 +86,7 @@ test("accepts every native-host-to-extension message shape", () => {
       payload: { url: "https://example.com" },
     },
     { type: "inventory_request", requestId: "req-2" },
+    { type: "action_idle" },
   ];
 
   for (const message of messages) {

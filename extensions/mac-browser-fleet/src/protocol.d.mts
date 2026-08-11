@@ -11,6 +11,8 @@ export type ExtensionAction =
 export interface PublicTab {
   tabRef: string;
   windowRef: string;
+  nativeWindowId: number;
+  nativeTabId: number;
   active: boolean;
   controllable: boolean;
   capabilities: string[];
@@ -20,6 +22,7 @@ export interface PublicTab {
 
 export interface PublicWindow {
   windowRef: string;
+  nativeWindowId: number;
   focused: boolean;
   tabs: PublicTab[];
 }
@@ -58,6 +61,11 @@ export interface InventoryDeltaMessage {
   truncated: boolean;
 }
 
+export interface ActionPoll {
+  type: "action_poll";
+  requestId: string;
+}
+
 export type ActionResponse =
   | {
       type: "action_response";
@@ -83,6 +91,10 @@ export interface InventoryRequest {
   requestId: string;
 }
 
+export interface ActionIdle {
+  type: "action_idle";
+}
+
 export interface ActionRequest {
   type: "action_request";
   requestId: string;
@@ -96,9 +108,10 @@ export type ExtensionMessage =
   | ExtensionHello
   | InventorySnapshotMessage
   | InventoryDeltaMessage
+  | ActionPoll
   | ActionResponse;
 
-export type NativeHostMessage = HelloAck | InventoryRequest | ActionRequest;
+export type NativeHostMessage = HelloAck | InventoryRequest | ActionRequest | ActionIdle;
 
 export declare const PROTOCOL_VERSION: 1;
 export declare const MAX_NATIVE_MESSAGE_BYTES: number;
