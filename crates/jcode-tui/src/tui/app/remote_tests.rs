@@ -1251,3 +1251,83 @@ fn remote_submit_input_never_strands_a_local_pending_turn() {
         "the prompt should be queued for the remote tick loop"
     );
 }
+
+/// Typing `/model` opens the command preview before Enter reaches the normal
+/// slash-command dispatcher. Activating that preview must still request the
+/// remote catalog; otherwise a freshly attached client only shows its
+/// names-only fallback routes forever.
+#[test]
+fn remote_model_preview_enter_requests_detailed_catalog() {
+    use tokio::io::AsyncBufReadExt;
+
+    let mut app = create_test_app();
+    app.is_remote = true;
+    app.runtime_mode = crate::tui::app::AppRuntimeMode::RemoteClient;
+    app.remote_provider_name = Some("OpenAI".to_string());
+    app.remote_provider_model = Some("gpt-5.6-sol".to_string());
+    app.remote_available_entries = vec!["gpt-5.6-sol".to_string()];
+
+    let rt = tokio::runtime::Runtime::new().expect("runtime");
+    let requests = rt.block_on(async {
+        let mut remote = crate::tui::backend::RemoteConnection::dummy();
+        let peer = remote
+            .take_dummy_peer()
+            .expect("dummy remote should retain peer stream");
+        let (reader, _writer) = peer.into_split();
+        let mut reader = tokio::io::BufReader::new(reader);
+
+        for character in "/model".chars() {
+            app.handle_remote_key(
+                crossterm::event::KeyCode::Char(character),
+                crossterm::event::KeyModifiers::NONE,
+                &mut remote,
+            )
+            .await
+            .expect("typing the model command should succeed");
+        }
+        assert!(
+            app.inline_interactive_state
+                .as_ref()
+                .is_some_and(|picker| picker.preview),
+            "typing /model should open the preview picker"
+        );
+
+        app.handle_remote_key(
+            crossterm::event::KeyCode::Enter,
+            crossterm::event::KeyModifiers::NONE,
+            &mut remote,
+        )
+        .await
+        .expect("activating the model preview should succeed");
+
+        let mut requests = Vec::new();
+        for _ in 0..2 {
+            let mut line = String::new();
+            tokio::time::timeout(
+                std::time::Duration::from_millis(100),
+                reader.read_line(&mut line),
+            )
+            .await
+            .expect("model preview activation should send both catalog requests")
+            .expect("catalog request should be readable by peer");
+            requests.push(
+                serde_json::from_str::<crate::protocol::Request>(&line)
+                    .expect("catalog request should deserialize"),
+            );
+        }
+        requests
+    });
+
+    assert!(
+        requests
+            .iter()
+            .any(|request| matches!(request, crate::protocol::Request::RefreshModels { .. })),
+        "model preview activation must refresh provider model names"
+    );
+    assert!(
+        requests
+            .iter()
+            .any(|request| matches!(request, crate::protocol::Request::GetModelCatalog { .. })),
+        "model preview activation must request detailed route expansion"
+    );
+}

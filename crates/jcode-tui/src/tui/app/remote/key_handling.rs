@@ -45,6 +45,15 @@ pub(in crate::tui::app) async fn handle_remote_update_command(
     Ok(())
 }
 
+async fn request_remote_model_catalog_for_picker(app: &mut App, remote: &mut RemoteConnection) {
+    let _ = remote.refresh_models().await;
+    // `refresh_models` may downgrade an oversized catalog broadcast to model
+    // names only. Request the detailed route snapshot as well so provider-
+    // specific deployments remain visible in the picker.
+    let _ = remote.request_model_catalog().await;
+    app.set_status_notice("Refreshing model catalog...");
+}
+
 pub(in crate::tui::app) async fn reload_stale_remote_server_before_update(
     app: &mut App,
     remote: &mut RemoteConnection,
@@ -322,6 +331,15 @@ async fn handle_remote_key_internal(
         && !picker.preview
     {
         return app.handle_inline_interactive_key(code, modifiers);
+    }
+
+    let activating_model_preview = code == KeyCode::Enter
+        && app
+            .inline_interactive_state
+            .as_ref()
+            .is_some_and(|picker| picker.preview && picker.kind == crate::tui::PickerKind::Model);
+    if activating_model_preview {
+        request_remote_model_catalog_for_picker(app, remote).await;
     }
 
     if app.handle_inline_interactive_preview_key(&code, modifiers)? {
@@ -1043,16 +1061,7 @@ async fn handle_remote_key_internal(
                 }
 
                 if trimmed == "/model" || trimmed == "/models" {
-                    let _ = remote.refresh_models().await;
-                    // `refresh_models` re-queries providers and pushes the
-                    // result over the bus, where oversized frames get
-                    // downgraded to names-only. Also request the catalog
-                    // directly so the picker gets real route expansion even
-                    // when the bus push is downgraded and no usable local
-                    // catalog cache exists (otherwise every row is a
-                    // placeholder "remote-catalog" entry).
-                    let _ = remote.request_model_catalog().await;
-                    app.set_status_notice("Refreshing model catalog...");
+                    request_remote_model_catalog_for_picker(app, remote).await;
                     app.open_model_picker();
                     return Ok(());
                 }
