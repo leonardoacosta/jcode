@@ -4,7 +4,8 @@ use crate::agent::Agent;
 use crate::bus::Bus;
 use crate::message::{ContentBlock, Role};
 use crate::protocol::{
-    HistoryMessage, ServerEvent, SessionActivitySnapshot, TokenUsageTotals, encode_event,
+    HistoryMessage, RemoteSessionPresence, ServerEvent, SessionActivitySnapshot, TokenUsageTotals,
+    encode_event,
 };
 use crate::provider::Provider;
 use crate::session::{Session, SessionStatus};
@@ -96,6 +97,18 @@ pub(super) async fn handle_get_state(
         },
     )
     .await
+}
+
+pub(super) async fn handle_get_presence(id: u64, writer: &Arc<Mutex<WriteHalf>>) -> Result<()> {
+    let sessions = crate::session::user_session_presence()
+        .into_iter()
+        .map(|session| RemoteSessionPresence {
+            session_id: session.session_id,
+            streaming: session.streaming,
+        })
+        .collect();
+
+    write_event(writer, &ServerEvent::Presence { id, sessions }).await
 }
 
 #[expect(

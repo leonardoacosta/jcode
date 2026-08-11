@@ -460,9 +460,7 @@ fn test_provider_guardrail_event_roundtrip() -> Result<()> {
     assert_eq!(message, "Provider guardrail stopped the response");
 
     // stop_reason is optional on the wire.
-    let decoded = parse_event_json(
-        r#"{"type":"provider_guardrail","message":"blocked"}"#,
-    )?;
+    let decoded = parse_event_json(r#"{"type":"provider_guardrail","message":"blocked"}"#)?;
     let ServerEvent::ProviderGuardrail { stop_reason, .. } = decoded else {
         return Err(anyhow!("expected ProviderGuardrail event"));
     };
@@ -498,5 +496,31 @@ fn test_message_end_carries_provider_stop_reason() -> Result<()> {
     // A reasonless end-of-turn must not add noise to the wire.
     let json = encode_event(&ServerEvent::MessageEnd { stop_reason: None });
     assert!(!json.contains("stop_reason"), "unexpected field: {json}");
+    Ok(())
+}
+
+#[test]
+fn test_remote_presence_roundtrip() -> Result<()> {
+    let request = Request::GetPresence { id: 41 };
+    let request_json = serde_json::to_string(&request)?;
+    assert_eq!(request_json, r#"{"type":"presence","id":41}"#);
+    assert_eq!(parse_request_json(&request_json)?.id(), 41);
+
+    let event = ServerEvent::Presence {
+        id: 41,
+        sessions: vec![RemoteSessionPresence {
+            session_id: "session_fox_123".to_string(),
+            streaming: true,
+        }],
+    };
+    let event_json = encode_event(&event);
+    assert!(event_json.contains("\"type\":\"presence\""));
+    let decoded = parse_event_json(event_json.trim())?;
+    let ServerEvent::Presence { id, sessions } = decoded else {
+        return Err(anyhow!("expected Presence event"));
+    };
+    assert_eq!(id, 41);
+    assert_eq!(sessions[0].session_id, "session_fox_123");
+    assert!(sessions[0].streaming);
     Ok(())
 }

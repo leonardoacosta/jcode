@@ -28,7 +28,7 @@ flowchart LR
 
     MC --> MS --> ST --> HU --> HS
     HS --> HR
-    MB -. "not remote-aware by default" .-> MS
+    MB --> MS
     HS -. "requires explicit browser bridge" .-> BC
     HA --> HS
 ```
@@ -228,37 +228,23 @@ For permanent operation, use a dedicated macOS LaunchAgent rather than an untrac
 
 Mac TUI clients can open and close while the secure path to the homelab remains available.
 
-## Feature 6: Add a remote jcode wrapper
+## Feature 6: Use the normal `jcode` command for remote clients
 
 ### Goal
 
-Create one Mac command that always opens a client against the homelab.
+The normal Mac `jcode` command now owns the connection setup. No separate
+`jcode-homelab` command is required.
 
 ### Commands on the Mac
 
 ```bash
-mkdir -p ~/.local/bin
-
-cat > ~/.local/bin/jcode-homelab <<'EOF'
-#!/bin/sh
-exec jcode \
-  --socket "$HOME/.jcode/homelab.sock" \
-  -C "$HOME" \
-  --remote-working-dir /home/nyaptor/dev/project
-EOF
-
-chmod +x ~/.local/bin/jcode-homelab
-```
-
-Run it:
-
-```bash
-~/.local/bin/jcode-homelab
+jcode
 ```
 
 ### Result
 
-Launchers, hotkeys, and terminal aliases can target one stable command instead of duplicating connection arguments.
+Launchers, hotkeys, and terminal aliases can target the same stable `jcode`
+command. It checks or creates the private forward before starting the client.
 
 ## Feature 7: Configure the launcher
 
@@ -272,17 +258,10 @@ Make jcode available from the Mac application launcher.
 jcode setup-launcher
 ```
 
-### Limitation
-
-The default launcher starts local jcode. It does not automatically select `~/.jcode/homelab.sock` or a homelab working directory. A remote-specific launcher should invoke:
-
-```bash
-~/.local/bin/jcode-homelab
-```
-
 ### Result
 
-A custom launcher can open a Mac TUI attached to the homelab server.
+The launcher starts the normal `jcode` command, which opens a Mac TUI attached
+to the homelab server after the tunnel preflight.
 
 ## Feature 8: Configure the global hotkey
 
@@ -296,21 +275,12 @@ Open jcode through a global keyboard shortcut on the Mac.
 jcode setup-hotkey
 ```
 
-### Limitation
-
-The default hotkey starts local jcode. Remote operation requires configuring the hotkey integration to invoke:
-
-```bash
-~/.local/bin/jcode-homelab
-```
-
-The SSH tunnel must already be running, or the wrapper must be extended to establish it safely.
-
 ### Result
 
-A global shortcut can open a Mac client attached to the homelab runtime.
+A global shortcut can open a Mac client attached to the homelab runtime. The
+same `jcode` preflight creates or recovers the forward.
 
-## Feature 9: Understand the built-in menubar
+## Feature 9: Use the homelab-backed built-in menubar
 
 ### Goal
 
@@ -324,19 +294,25 @@ jcode menubar --once
 jcode menubar --json
 ```
 
-### Current limitation
+### Behavior
 
-The built-in menubar reads Mac-local runtime state such as `~/.jcode/active_pids`. It does not currently query the forwarded homelab server through `--socket`, even though inherited global options can appear in its help output.
+The normal Mac client owns the private tunnel recovery path. A default
+`jcode`, `jcode connect`, or `jcode menubar` invocation checks
+`~/.jcode/homelab.sock`, creates the SSH LocalForward when it is absent or
+stale, and exits with a warning rather than silently starting a local server.
+Set `JCODE_LOCAL_ONLY=1` for an intentional local recovery session.
 
-Therefore, this is not an authoritative remote monitor:
+`jcode menubar` queries the homelab through that same forwarded socket:
 
 ```bash
-jcode menubar --socket ~/.jcode/homelab.sock
+jcode menubar --json
 ```
 
-### Result
-
-The built-in menubar monitors local Mac jcode state. A remote-aware menubar requires a server-backed data source.
+JSON reports `status: connected` with authoritative counts, or
+`status: unavailable` with a diagnostic message. The native macOS status item
+shows the remote rows and clears them when the homelab becomes unavailable.
+Override the defaults with `JCODE_HOMELAB_SSH_HOST`,
+`JCODE_HOMELAB_REMOTE_SOCKET`, and `JCODE_HOMELAB_REMOTE_WORKING_DIR`.
 
 ## Feature 10: Build a remote-aware menubar with `api-bridge`
 
@@ -367,7 +343,9 @@ The API supports server-backed capabilities including session listing. A custom 
 
 ### Result
 
-A remote-aware menu bar could show homelab session names, counts, state, and server identity. `api-bridge` supplies the API but does not render a menu bar itself.
+This feature is now implemented directly over the existing forwarded Jcode
+socket. `api-bridge` remains available for SDK clients, but it is not required
+for the built-in menubar.
 
 ## Feature 11: Run browser automation on the homelab
 
@@ -440,7 +418,7 @@ The agent can interact with a visible Mac browser while retaining homelab execut
 | `jcode --socket ... --remote-working-dir ...` | Mac | Run the Mac TUI against the homelab runtime |
 | `jcode setup-launcher` | Mac | Install local launcher integration |
 | `jcode setup-hotkey` | Mac | Install local global-hotkey integration |
-| `jcode menubar` | Mac | Show Mac-local jcode counts |
+| `jcode menubar` | Mac | Show homelab-backed jcode counts and session rows |
 | `jcode api-bridge` | Homelab | Expose a stable API for a custom remote-aware client |
 | `jcode browser setup` | Homelab | Configure browser automation beside the remote server |
 | `jcode browser setup` | Mac | Configure automation for a Mac-local browser workflow |
@@ -448,15 +426,12 @@ The agent can interact with a visible Mac browser while retaining homelab execut
 ## Recommended rollout
 
 1. Start the jcode server on the homelab.
-2. Establish the Unix-socket SSH tunnel from the Mac.
-3. Connect the Mac TUI with `--socket` and `--remote-working-dir`.
-4. Add the `jcode-homelab` wrapper.
-5. Make the SSH tunnel persistent with a macOS LaunchAgent.
-6. Point launcher and hotkey integrations at the wrapper.
-7. Keep the built-in menubar local initially.
-8. Build an `api-bridge` client only if authoritative remote status is needed.
-9. Use homelab browser automation by default.
-10. Add a Mac browser MCP or CDP bridge only when visible Mac browser control is required.
+2. Configure the Mac SSH alias `jcode-homelab` or set `JCODE_HOMELAB_SSH_HOST`.
+3. Run the normal `jcode` command. It creates or reuses `~/.jcode/homelab.sock`.
+4. Use `jcode menubar` for authoritative homelab-backed status.
+5. Keep `JCODE_LOCAL_ONLY=1` as the explicit local recovery escape hatch.
+6. Use homelab browser automation by default.
+7. Add a Mac browser MCP or CDP bridge only when visible Mac browser control is required.
 
 ## Security boundaries
 

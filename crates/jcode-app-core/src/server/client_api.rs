@@ -147,6 +147,22 @@ impl Client {
         Ok(event)
     }
 
+    pub async fn get_presence(&mut self) -> Result<ServerEvent> {
+        let id = self.next_id;
+        self.next_id += 1;
+
+        let request = Request::GetPresence { id };
+        let json = serde_json::to_string(&request)? + "\n";
+        self.writer.write_all(json.as_bytes()).await?;
+
+        let mut line = String::new();
+        let n = self.reader.read_line(&mut line).await?;
+        if n == 0 {
+            anyhow::bail!("Server disconnected");
+        }
+        Ok(serde_json::from_str(&line)?)
+    }
+
     pub async fn clear(&mut self) -> Result<()> {
         let id = self.next_id;
         self.next_id += 1;

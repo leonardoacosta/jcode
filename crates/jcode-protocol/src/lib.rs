@@ -175,7 +175,7 @@ pub type ReloadRecoverySnapshot = jcode_selfdev_types::ReloadRecoveryDirective;
 
 mod wire;
 pub use wire::TaskGraphNodeSpec;
-pub use wire::{Request, ServerEvent};
+pub use wire::{RemoteSessionPresence, Request, ServerEvent};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolCallSummary {
@@ -573,6 +573,7 @@ impl Request {
             Request::RewindUndo { id } => *id,
             Request::Ping { id } => *id,
             Request::GetState { id } => *id,
+            Request::GetPresence { id } => *id,
             Request::DebugCommand { id, .. } => *id,
             Request::ClientDebugCommand { id, .. } => *id,
             Request::ClientDebugResponse { id, .. } => *id,

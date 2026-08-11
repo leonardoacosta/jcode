@@ -32,6 +32,13 @@ fn is_false(value: &bool) -> bool {
     !*value
 }
 
+/// Minimal user-facing session state exposed to remote presence clients.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RemoteSessionPresence {
+    pub session_id: String,
+    pub streaming: bool,
+}
+
 /// Client request to server
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -94,6 +101,10 @@ pub enum Request {
     /// Get current state (debug)
     #[serde(rename = "state")]
     GetState { id: u64 },
+
+    /// Get user-facing session presence for remote status surfaces.
+    #[serde(rename = "presence")]
+    GetPresence { id: u64 },
 
     /// Execute a debug command (debug socket only)
     #[serde(rename = "debug_command")]
@@ -1035,6 +1046,13 @@ pub enum ServerEvent {
         session_id: String,
         message_count: usize,
         is_processing: bool,
+    },
+
+    /// User-facing session presence snapshot for remote status surfaces.
+    #[serde(rename = "presence")]
+    Presence {
+        id: u64,
+        sessions: Vec<RemoteSessionPresence>,
     },
 
     /// Response for debug command

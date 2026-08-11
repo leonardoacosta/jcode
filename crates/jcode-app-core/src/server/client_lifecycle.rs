@@ -22,7 +22,8 @@ use super::client_session::{
     handle_clear_session, handle_reload, handle_resume_session, handle_subscribe,
 };
 use super::client_state::{
-    handle_get_compacted_history, handle_get_history, handle_get_model_catalog, handle_get_state,
+    handle_get_compacted_history, handle_get_history, handle_get_model_catalog,
+    handle_get_presence, handle_get_state,
 };
 use super::client_writer::write_direct_event;
 use super::comm_await::{CommAwaitMembersContext, handle_comm_await_members};
@@ -1396,6 +1397,12 @@ pub(super) async fn handle_client(
                 .await
                 .is_err()
                 {
+                    break;
+                }
+            }
+
+            Request::GetPresence { id } => {
+                if handle_get_presence(id, &writer).await.is_err() {
                     break;
                 }
             }

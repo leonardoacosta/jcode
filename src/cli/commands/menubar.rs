@@ -11,6 +11,36 @@ use serde::Serialize;
 
 use crate::session::{self, SessionCounts, SessionPresence};
 
+#[cfg_attr(not(any(test, target_os = "macos")), allow(dead_code))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum RemoteCountsState {
+    Connected { total: usize, streaming: usize },
+    Unavailable { message: String },
+}
+
+#[cfg_attr(not(any(test, target_os = "macos")), allow(dead_code))]
+#[derive(Debug, Serialize)]
+#[serde(tag = "status", rename_all = "lowercase")]
+pub(crate) enum RemoteCountsReport {
+    Connected { total: usize, streaming: usize },
+    Unavailable { message: String },
+}
+
+#[cfg_attr(not(any(test, target_os = "macos")), allow(dead_code))]
+pub(crate) fn remote_counts_report(state: RemoteCountsState) -> RemoteCountsReport {
+    match state {
+        RemoteCountsState::Connected { total, streaming } => {
+            RemoteCountsReport::Connected { total, streaming }
+        }
+        RemoteCountsState::Unavailable { message } => RemoteCountsReport::Unavailable { message },
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn remote_presence() -> Result<Vec<SessionPresence>> {
+    crate::cli::remote::fetch_remote_presence_blocking()
+}
+
 #[derive(Debug, Serialize)]
 struct CountsReport {
     total: usize,
@@ -102,13 +132,46 @@ fn format_session_menu_item_title_with_display(
 }
 
 pub fn run_menubar_command(once: bool, json: bool) -> Result<()> {
+    #[cfg(target_os = "macos")]
+    let remote = remote_presence();
+
     if json {
+        #[cfg(target_os = "macos")]
+        {
+            let state = match remote {
+                Ok(ref sessions) => {
+                    let counts = counts_for_presence(sessions);
+                    RemoteCountsState::Connected {
+                        total: counts.total,
+                        streaming: counts.streaming,
+                    }
+                }
+                Err(error) => RemoteCountsState::Unavailable {
+                    message: error.to_string(),
+                },
+            };
+            println!("{}", serde_json::to_string(&remote_counts_report(state))?);
+            return Ok(());
+        }
+        #[cfg(not(target_os = "macos"))]
         let report = CountsReport::from(counts_for_presence(&user_root_session_presence()));
+        #[cfg(not(target_os = "macos"))]
         println!("{}", serde_json::to_string(&report)?);
         return Ok(());
     }
 
     if once {
+        #[cfg(target_os = "macos")]
+        {
+            match remote {
+                Ok(sessions) => {
+                    println!("{}", format_menubar_summary(counts_for_presence(&sessions)))
+                }
+                Err(error) => println!("homelab unavailable: {error}"),
+            }
+            return Ok(());
+        }
+        #[cfg(not(target_os = "macos"))]
         println!(
             "{}",
             format_menubar_summary(counts_for_presence(&user_root_session_presence()))
@@ -282,13 +345,12 @@ fn is_menubar_sandbox(
 mod macos {
     use super::{
         counts_for_presence, format_menubar_summary, format_menubar_title,
-        format_session_menu_item_title, load_user_root_session,
+        format_session_menu_item_title,
     };
     use crate::session::{self, SessionPresence};
 
     use std::cell::RefCell;
     use std::cmp::Reverse;
-    use std::collections::{HashMap, HashSet};
 
     use objc2::rc::Retained;
     use objc2::runtime::AnyObject;
@@ -555,10 +617,6 @@ mod macos {
         status_item.setMenu(Some(&menu));
 
         let last_sessions: RefCell<Vec<SessionPresence>> = RefCell::new(Vec::new());
-        // Classification does not change for a session ID. Cache it so a large
-        // population of internal workers costs one metadata read each rather
-        // than one read per worker every second.
-        let root_visibility: RefCell<HashMap<String, bool>> = RefCell::new(HashMap::new());
         let app_for_refresh = app.clone();
         let refresh = move || {
             // Re-sync the Light/Dark appearance each tick so toggling the
@@ -566,27 +624,25 @@ mod macos {
             // process won't auto-adopt the change on its own).
             sync_app_appearance(&app_for_refresh);
 
-            let mut sessions = session::user_session_presence();
-            let active_ids: HashSet<String> = sessions
-                .iter()
-                .map(|presence| presence.session_id.clone())
-                .collect();
-            root_visibility
-                .borrow_mut()
-                .retain(|session_id, _| active_ids.contains(session_id));
-            sessions.retain(|presence| {
-                if let Some(visible) = root_visibility.borrow().get(&presence.session_id).copied() {
-                    return visible;
+            let mut sessions = match super::remote_presence() {
+                Ok(sessions) => sessions,
+                Err(error) => {
+                    if let Some(button) = status_item.button(mtm) {
+                        let attributed = attributed_title("!", &title_font, false);
+                        button.setAttributedTitle(&attributed);
+                        button.setContentTintColor(None);
+                    }
+                    summary_item.setTitle(&NSString::from_str(&format!(
+                        "Homelab unavailable · {}",
+                        error
+                    )));
+                    if !last_sessions.borrow().is_empty() {
+                        rebuild_session_items(&menu, &handler, mtm, &[]);
+                        last_sessions.borrow_mut().clear();
+                    }
+                    return;
                 }
-                let Some(visible) = load_user_root_session(&presence.session_id) else {
-                    // The marker may race the first session save. Retry next tick.
-                    return true;
-                };
-                root_visibility
-                    .borrow_mut()
-                    .insert(presence.session_id.clone(), visible);
-                visible
-            });
+            };
             sessions.sort_by_key(|s| (Reverse(s.streaming), s.session_id.clone()));
 
             let counts = counts_for_presence(&sessions);
@@ -945,6 +1001,26 @@ mod tests {
         });
         let json = serde_json::to_string(&report).unwrap();
         assert_eq!(json, r#"{"total":4,"streaming":2}"#);
+    }
+
+    #[test]
+    fn remote_menubar_report_exposes_connection_state_without_falling_back() {
+        let report = remote_counts_report(RemoteCountsState::Connected {
+            total: 4,
+            streaming: 2,
+        });
+        assert_eq!(
+            serde_json::to_string(&report).unwrap(),
+            r#"{"status":"connected","total":4,"streaming":2}"#
+        );
+
+        let unavailable = remote_counts_report(RemoteCountsState::Unavailable {
+            message: "homelab socket unavailable".to_string(),
+        });
+        assert_eq!(
+            serde_json::to_string(&unavailable).unwrap(),
+            r#"{"status":"unavailable","message":"homelab socket unavailable"}"#
+        );
     }
 
     #[cfg(target_os = "macos")]

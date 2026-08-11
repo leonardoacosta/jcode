@@ -220,8 +220,10 @@ pub fn register_external_provider_runtimes() {
 }
 
 fn parse_and_prepare_args() -> Result<Args> {
-    let args = Args::parse();
+    let mut args = Args::parse();
     startup_profile::mark("args_parse");
+
+    crate::cli::remote::prepare_default_args(&mut args)?;
 
     if let Some(chord) = args.spawn_hotkey.as_deref() {
         setup_hints::record_launch_hotkey_use(chord);
@@ -448,6 +450,32 @@ mod tests {
             error
                 .to_string()
                 .contains("--remote-working-dir must be an absolute path")
+        );
+    }
+
+    #[test]
+    fn homelab_ssh_command_uses_a_private_local_socket_forward() {
+        let args = crate::cli::remote::homelab_ssh_args(
+            "jcode-homelab",
+            std::path::Path::new("/Users/test/.jcode/homelab.sock"),
+            "/run/user/1000/jcode.sock",
+        );
+        assert_eq!(
+            args,
+            vec![
+                "-fNT",
+                "-o",
+                "ExitOnForwardFailure=yes",
+                "-o",
+                "ServerAliveInterval=30",
+                "-o",
+                "ServerAliveCountMax=3",
+                "-o",
+                "StreamLocalBindUnlink=yes",
+                "-L",
+                "/Users/test/.jcode/homelab.sock:/run/user/1000/jcode.sock",
+                "jcode-homelab",
+            ]
         );
     }
 
