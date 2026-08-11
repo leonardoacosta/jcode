@@ -768,6 +768,7 @@ impl App {
                     tool_use_id: id.clone(),
                     content: TOOL_OUTPUT_MISSING_TEXT.to_string(),
                     is_error: Some(true),
+                    artifact: None,
                 };
                 let inserted_message = Message {
                     role: Role::User,
@@ -878,6 +879,7 @@ impl App {
                 duration_secs: None,
                 title: None,
                 tool_data: None,
+                artifact: None,
             });
             let _ = self.session.add_message(role, kept_blocks);
         }

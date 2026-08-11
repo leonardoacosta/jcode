@@ -642,7 +642,19 @@ fn prepare_active_batch_progress(
         super::left_pad_lines_to_block_width(&mut lines, width, block_width);
     }
 
-    wrap_lines_with_map(lines, &[], &[], &[], &[], &[], width, &[], &[], &[], NO_USER_FRAME)
+    wrap_lines_with_map(
+        lines,
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        width,
+        &[],
+        &[],
+        &[],
+        NO_USER_FRAME,
+    )
 }
 
 pub(super) fn prepare_messages(
@@ -1363,6 +1375,54 @@ impl BodyAcc {
         self.line_copy_offsets.push(0);
     }
 
+    /// Push a card border row as display-only chrome. Its zero-width raw entry
+    /// keeps selection bookkeeping contiguous without copying the border.
+    fn push_card_chrome(&mut self, line: Line<'static>) {
+        let raw_line = self.raw_plain_lines.len();
+        self.raw_plain_lines.push(String::new());
+        self.lines.push(line);
+        self.line_raw_overrides.push(Some(WrappedLineMap {
+            raw_line,
+            start_col: 0,
+            end_col: 0,
+        }));
+        self.line_copy_offsets.push(0);
+    }
+
+    /// Push an interior rounded-card row while mapping selection to the body
+    /// between the vertical rails. Card gutters and the trailing rail are chrome.
+    fn push_artifact_body(&mut self, line: Line<'static>) {
+        let plain = ui::line_plain_text(&line);
+        let Some(left) = plain.find('│') else {
+            self.push_auto(line);
+            return;
+        };
+        let Some(right) = plain.rfind('│').filter(|right| *right > left) else {
+            self.push_auto(line);
+            return;
+        };
+        let mut body_start = left + '│'.len_utf8();
+        if plain[body_start..right].starts_with(' ') {
+            body_start += 1;
+        }
+        let mut body_end = right;
+        if plain[body_start..body_end].ends_with(' ') {
+            body_end -= 1;
+        }
+        let semantic = plain[body_start..body_end].to_string();
+        let raw_width = unicode_width::UnicodeWidthStr::width(semantic.as_str());
+        let prefix_width = unicode_width::UnicodeWidthStr::width(&plain[..body_start]);
+        let raw_line = self.raw_plain_lines.len();
+        self.raw_plain_lines.push(semantic);
+        self.lines.push(line);
+        self.line_raw_overrides.push(Some(WrappedLineMap {
+            raw_line,
+            start_col: 0,
+            end_col: raw_width,
+        }));
+        self.line_copy_offsets.push(prefix_width);
+    }
+
     /// Push a blank separator line. Routed through `push_auto` so it seeds a
     /// (empty) raw and keeps the raw array contiguous.
     fn push_blank(&mut self) {
@@ -1524,6 +1584,41 @@ fn render_message_into(
         "tool" => {
             let tool_start_line = acc.lines.len();
             let cached = get_cached_message_lines(msg, width, app.diff_mode(), render_tool_message);
+            if let Some(artifact) = msg.artifact.as_ref() {
+                if matches!(
+                    artifact.kind,
+                    jcode_tui_messages::RenderedArtifactKind::Code
+                ) {
+                    acc.copy_targets.push(offset_copy_target(
+                        RawCopyTarget {
+                            kind: CopyTargetKind::CodeBlock {
+                                language: artifact.language.clone(),
+                            },
+                            content: msg.content.clone(),
+                            start_raw_line: 0,
+                            end_raw_line: cached.len(),
+                            badge_raw_line: 0,
+                        },
+                        tool_start_line,
+                    ));
+                }
+                let last = cached.len().saturating_sub(1);
+                for (idx, line) in cached.into_iter().enumerate() {
+                    let line = align_if_unset(line, align);
+                    if idx == 0 || idx == last {
+                        acc.push_card_chrome(line);
+                    } else {
+                        acc.push_artifact_body(line);
+                    }
+                }
+                acc.segments.push((
+                    msg.stable_cache_hash(),
+                    acc.lines.len(),
+                    acc.raw_plain_lines.len(),
+                    acc.user_prompt_texts.len(),
+                ));
+                return;
+            }
             if let Some(target) = tool_message_copy_target(msg, cached.len()) {
                 acc.copy_targets
                     .push(offset_copy_target(target, tool_start_line));
@@ -2592,8 +2687,7 @@ fn wrap_lines_with_map(
     let mut line_span_idx: Vec<Option<usize>> = vec![None; lines.len()];
     let mut span_starts: std::collections::BTreeMap<usize, usize> =
         std::collections::BTreeMap::new();
-    let mut span_ends: std::collections::BTreeMap<usize, usize> =
-        std::collections::BTreeMap::new();
+    let mut span_ends: std::collections::BTreeMap<usize, usize> = std::collections::BTreeMap::new();
     if frame_active {
         for (span_idx, &(start, end)) in user_frame.line_spans.iter().enumerate() {
             span_starts.insert(start, span_idx);
@@ -2628,8 +2722,12 @@ fn wrap_lines_with_map(
         // selection can never copy border glyphs (or resolve links on them).
         let in_prompt_span = frame_active && line_span_idx[orig_idx].is_some();
         if frame_active && frame_cfg.borders() && span_starts.contains_key(&orig_idx) {
-            let border =
-                super::super::user_message_frame::border_top(full_width, user_frame.style, frame_colors, user_frame.ascii);
+            let border = super::super::user_message_frame::border_top(
+                full_width,
+                user_frame.style,
+                frame_colors,
+                user_frame.ascii,
+            );
             let border_width = border.width();
             // Zero-width copy map at the START of the prompt's first raw
             // line: hit-testing the top border clamps to the prompt start,
@@ -2708,8 +2806,12 @@ fn wrap_lines_with_map(
         // Bottom border row after the prompt's last content row (same
         // zero-width copy treatment as the top border).
         if frame_active && frame_cfg.borders() && span_ends.contains_key(&orig_idx) {
-            let border =
-                super::super::user_message_frame::border_bottom(full_width, user_frame.style, frame_colors, user_frame.ascii);
+            let border = super::super::user_message_frame::border_bottom(
+                full_width,
+                user_frame.style,
+                frame_colors,
+                user_frame.ascii,
+            );
             let border_width = border.width();
             wrapped_line_map.push(WrappedLineMap {
                 raw_line,

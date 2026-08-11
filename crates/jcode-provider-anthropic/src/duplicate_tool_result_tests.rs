@@ -46,6 +46,7 @@ fn tool_result(id: &str, content: &str, is_error: Option<bool>) -> Message {
             tool_use_id: id.to_string(),
             content: content.to_string(),
             is_error,
+            artifact: None,
         }],
         timestamp: None,
         tool_duration_ms: None,

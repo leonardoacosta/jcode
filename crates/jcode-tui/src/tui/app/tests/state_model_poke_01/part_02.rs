@@ -184,6 +184,7 @@ fn test_pinned_content_uses_left_splitter_instead_of_rounded_box() {
                 "content": "fn demo() {}\n"
             }),
             intent: None, thought_signature: None, }),
+    artifact: None,
     }];
     app.bump_display_messages_version();
 
@@ -227,6 +228,7 @@ fn test_file_diff_uses_left_splitter_instead_of_rounded_box() {
                 "content": "fn demo() {\n    println!(\"hi\");\n}\n"
             }),
             intent: None, thought_signature: None, }),
+    artifact: None,
     }];
     app.bump_display_messages_version();
 

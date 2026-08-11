@@ -876,6 +876,7 @@ fn render_todo_tool_result_uses_borderless_card_with_goal_scores() {
             intent: Some("Track todo card work".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let plain = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Off)
@@ -963,6 +964,7 @@ fn render_todo_quality_gate_retry_shows_only_changed_goal_fields() {
             intent: Some("Refine the todo feedback loop".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let plain = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Off)
@@ -1080,6 +1082,7 @@ fn render_todo_plan_update_card_shows_only_changed_intent_fields() {
             intent: Some("Reassess the user's intent".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let plain = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Off)
@@ -1179,6 +1182,7 @@ fn unbiased_visual_prompt_retry_renders_complete_feedback_change() {
             duration_secs: None,
             title: Some("1 todos".to_string()),
             tool_data,
+            artifact: None,
         };
         render_tool_message(&msg, 72, crate::config::DiffDisplayMode::Off)
             .iter()
@@ -1303,6 +1307,7 @@ fn visually_appealing_prompt_batched_retry_renders_complete_todo_card() {
             ),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let rendered = render_tool_message(&msg, 84, crate::config::DiffDisplayMode::Off)
@@ -1374,6 +1379,7 @@ fn render_ownership_gated_todo_result_keeps_the_full_card() {
             intent: Some("Complete the full user outcome".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let plain = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Off)
@@ -1457,6 +1463,7 @@ fn render_tool_message_uses_scheduled_card() {
                 "target": "resume"
             }),
             intent: None, thought_signature: None, }),
+    artifact: None,
     };
 
     let lines = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Off);
@@ -1574,6 +1581,7 @@ fn render_assistant_message_truncates_tool_calls_to_single_line() {
         duration_secs: None,
         title: None,
         tool_data: None,
+        artifact: None,
     };
 
     let lines = render_assistant_message(&msg, 20, crate::config::DiffDisplayMode::Off);
@@ -1620,6 +1628,7 @@ fn render_assistant_message_centers_single_line_tool_summary() {
         duration_secs: None,
         title: None,
         tool_data: None,
+        artifact: None,
     };
 
     let lines = render_assistant_message(&msg, 28, crate::config::DiffDisplayMode::Off);
@@ -1666,6 +1675,7 @@ fn render_assistant_message_without_body_does_not_add_extra_blank_line_before_to
         duration_secs: None,
         title: None,
         tool_data: None,
+        artifact: None,
     };
 
     let lines = render_assistant_message(&msg, 28, crate::config::DiffDisplayMode::Off);
@@ -1914,6 +1924,7 @@ fn render_tool_message_prefers_subagent_title_with_model() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 80, crate::config::DiffDisplayMode::Off);
@@ -1945,6 +1956,7 @@ fn render_tool_message_shows_intent_and_technical_preview_on_one_line() {
             intent: Some("Verify compact progress card".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -1980,6 +1992,7 @@ fn render_tool_message_hides_technical_preview_by_default() {
             intent: Some("Verify compact progress card".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -2016,6 +2029,7 @@ fn render_tool_message_keeps_error_summary_when_details_hidden() {
             intent: Some("Run the test suite".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -2042,6 +2056,7 @@ fn render_tool_message_shows_token_badge() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -2068,6 +2083,7 @@ fn gmail_draft_message(content: &str, input: serde_json::Value) -> DisplayMessag
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     }
 }
 
@@ -2227,6 +2243,7 @@ fn render_batch_tool_message_shows_nested_gmail_draft_card() {
             intent: None,
             thought_signature: None,
         }),
+    artifact: None,
     };
 
     let lines = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Off);
@@ -2274,6 +2291,7 @@ fn render_batch_tool_message_shows_flat_and_nested_subcall_intents() {
             intent: None,
             thought_signature: None,
         }),
+    artifact: None,
     };
 
     let plain = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off)
@@ -2309,6 +2327,7 @@ fn discovery_message(content: &str, input: serde_json::Value) -> DisplayMessage 
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     }
 }
 
@@ -2397,6 +2416,7 @@ fn batched_discovery_renders_without_disclosure_notice() {
             intent: None,
             thought_signature: None,
         }),
+    artifact: None,
     };
 
     let lines = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Off);
@@ -2580,6 +2600,7 @@ fn render_tool_message_colors_high_token_badge() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -2611,6 +2632,7 @@ fn render_tool_message_shows_inline_diff_for_pascal_case_multiedit() {
                 ]
             }),
             intent: None, thought_signature: None, }),
+    artifact: None,
     };
 
     let lines = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Inline);
@@ -2641,6 +2663,7 @@ fn render_tool_message_shows_numbered_write_result_diff_after_input_compaction()
             intent: Some("Create an honest data-driven benchmark comparison page".to_string()),
             thought_signature: None,
         }),
+    artifact: None,
     };
 
     let lines = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Inline);
@@ -2684,6 +2707,7 @@ fn render_tool_message_never_draws_an_empty_edit_diff_frame() {
                 intent: None,
                 thought_signature: None,
             }),
+            artifact: None,
         };
 
         let lines = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Inline);
@@ -2715,6 +2739,7 @@ fn render_tool_message_marks_failed_apply_patch_without_empty_diff() {
             intent: Some("Replace the benchmark placeholder".to_string()),
             thought_signature: None,
         }),
+    artifact: None,
     };
 
     let lines = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Inline);
@@ -2757,6 +2782,7 @@ fn render_tool_message_inline_mode_truncates_large_diffs() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 40, crate::config::DiffDisplayMode::Inline);
@@ -2801,6 +2827,7 @@ fn render_tool_message_full_inline_mode_shows_full_diff() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 40, crate::config::DiffDisplayMode::FullInline);
@@ -2843,6 +2870,7 @@ fn render_tool_message_memory_recall_centered_mode_left_aligns_with_padding() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -2897,6 +2925,7 @@ fn render_tool_message_memory_store_centered_mode_left_aligns_with_padding() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -2942,6 +2971,7 @@ fn render_tool_message_shows_swarm_spawn_prompt_summary() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -2982,6 +3012,7 @@ fn render_tool_message_batch_subcall_shows_swarm_dm_details() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -3085,6 +3116,89 @@ fn render_assistant_message_plan_card_wraps_instead_of_truncating() {
 }
 
 #[test]
+fn explicit_rendered_artifacts_have_distinct_card_identities_and_colors() {
+    use jcode_tui_messages::{RenderedArtifact, RenderedArtifactKind};
+
+    let cases = [
+        (
+            RenderedArtifact::new(RenderedArtifactKind::Markdown),
+            "# Release notes\n\n- shipped",
+            "▤ Markdown",
+            Color::Rgb(94, 163, 255),
+        ),
+        (
+            RenderedArtifact::new(RenderedArtifactKind::Message).with_title("For the team"),
+            "**Heads up:** deploy complete.",
+            "● Message · For the team",
+            Color::Rgb(214, 174, 126),
+        ),
+        (
+            RenderedArtifact::new(RenderedArtifactKind::Code).with_language("rust"),
+            "fn main() { println!(\"hi\"); }",
+            "<> Code · rust",
+            Color::Rgb(101, 210, 145),
+        ),
+    ];
+
+    for (artifact, content, title, color) in cases {
+        let msg = DisplayMessage::tool_text(content).with_artifact(artifact);
+        let lines = render_tool_message(&msg, 80, crate::config::DiffDisplayMode::Off);
+        let rendered = lines
+            .iter()
+            .map(extract_line_text)
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(rendered.contains(title), "missing card title in {rendered}");
+        assert!(lines.iter().all(|line| line.width() <= 78));
+        assert!(
+            lines[0]
+                .spans
+                .iter()
+                .any(|span| span.style.fg == Some(color)),
+            "missing distinct border color in {rendered}"
+        );
+    }
+}
+
+#[test]
+fn artifact_cards_are_explicit_only_and_narrow_width_safe() {
+    use jcode_tui_messages::{RenderedArtifact, RenderedArtifactKind};
+
+    let ordinary = DisplayMessage::tool_text("# not an artifact");
+    let ordinary_text = render_tool_message(&ordinary, 32, crate::config::DiffDisplayMode::Off)
+        .iter()
+        .map(extract_line_text)
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(!ordinary_text.contains("▤ Markdown"));
+
+    let ordinary_future = DisplayMessage::tool_text("future artifact body");
+    let ordinary_future_lines =
+        render_tool_message(&ordinary_future, 32, crate::config::DiffDisplayMode::Off);
+    let unsupported = DisplayMessage::tool_text("future artifact body")
+        .with_artifact(RenderedArtifact::new(RenderedArtifactKind::Unsupported));
+    let unsupported_lines =
+        render_tool_message(&unsupported, 32, crate::config::DiffDisplayMode::Off);
+    assert_eq!(unsupported_lines, ordinary_future_lines);
+    let unsupported_text = unsupported_lines
+        .iter()
+        .map(extract_line_text)
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(!unsupported_text.contains("Markdown"));
+    assert!(!unsupported_text.contains("Message"));
+    assert!(!unsupported_text.contains("Code"));
+
+    let artifact = DisplayMessage::tool_text(
+        "A deliberately long human-facing message that must stay within the card width.",
+    )
+    .with_artifact(RenderedArtifact::new(RenderedArtifactKind::Message));
+    let lines = render_tool_message(&artifact, 24, crate::config::DiffDisplayMode::Off);
+    assert!(lines.iter().all(|line| line.width() <= 22));
+    assert!(lines.len() > 3, "narrow prose should wrap inside the card");
+}
+
+#[test]
 fn render_swarm_message_preserves_inline_image_placeholder_lines() {
     let saved = crate::tui::markdown::center_code_blocks();
     crate::tui::markdown::set_center_code_blocks(false);
@@ -3138,6 +3252,7 @@ fn render_empty_todo_tool_result_collapses_to_compact_line() {
             intent: Some("Read the todo list".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let plain = render_tool_message(&msg, 100, crate::config::DiffDisplayMode::Off)

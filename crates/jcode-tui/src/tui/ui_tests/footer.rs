@@ -88,6 +88,7 @@ fn msg(role: &str, content: &str) -> DisplayMessage {
         duration_secs: None,
         title: None,
         tool_data: None,
+        artifact: None,
     }
 }
 
@@ -113,7 +114,10 @@ fn footer_renders_below_input_in_packed_layout() {
     let footer = row_text(&buffer, footer_row);
     assert!(footer.contains("jcode"), "cwd on footer row: {footer:?}");
     assert!(footer.contains("main"), "branch on footer row: {footer:?}");
-    assert!(footer.contains("anthropic"), "provider on footer row: {footer:?}");
+    assert!(
+        footer.contains("anthropic"),
+        "provider on footer row: {footer:?}"
+    );
     assert!(footer.contains("40%"), "context on footer row: {footer:?}");
     // Packed layout: the footer hugs the chrome stack, directly below the
     // input prompt row ("2>").
@@ -209,7 +213,10 @@ fn footer_off_layout_matches_on_layout_minus_row() {
     let off_buffer = render(&off_state, 100, 30);
     let on_buffer = render(&on_state, 100, 30);
     let footer_row = row_text(&on_buffer, 29);
-    assert!(footer_row.contains("fable"), "on footer row: {footer_row:?}");
+    assert!(
+        footer_row.contains("fable"),
+        "on footer row: {footer_row:?}"
+    );
     assert!(
         !buffer_text(&off_buffer).contains("fable"),
         "off render has no footer"

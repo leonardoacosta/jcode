@@ -180,6 +180,7 @@ pub fn build_responses_input_with_logger(
                             tool_use_id,
                             content,
                             is_error,
+                            ..
                         } => {
                             if !content_parts.is_empty() {
                                 items.push(serde_json::json!({

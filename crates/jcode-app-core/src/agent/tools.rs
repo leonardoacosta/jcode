@@ -82,6 +82,7 @@ pub(super) fn tool_output_to_content_blocks(
         tool_use_id,
         content: output.output,
         is_error: None,
+        artifact: output.artifact,
     }];
     for img in output.images {
         blocks.push(ContentBlock::Image {
@@ -138,6 +139,29 @@ pub(super) fn print_tool_summary(tool: &ToolCall) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::message::{RenderedArtifact, RenderedArtifactKind};
+
+    #[test]
+    fn tool_output_to_content_blocks_preserves_rendered_artifact() {
+        let blocks = tool_output_to_content_blocks(
+            "call-1".to_string(),
+            ToolOutput::new("fn main() {}").with_artifact(
+                RenderedArtifact::new(RenderedArtifactKind::Code).with_language("rust"),
+            ),
+        );
+        match &blocks[0] {
+            ContentBlock::ToolResult {
+                artifact: Some(artifact),
+                content,
+                ..
+            } => {
+                assert_eq!(artifact.kind, RenderedArtifactKind::Code);
+                assert_eq!(artifact.language.as_deref(), Some("rust"));
+                assert_eq!(content, "fn main() {}");
+            }
+            other => panic!("expected artifact tool result, got {other:?}"),
+        }
+    }
 
     #[test]
     fn cap_tool_output_leaves_small_output_unchanged() {

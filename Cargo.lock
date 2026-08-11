@@ -4292,6 +4292,7 @@ dependencies = [
 name = "jcode-tool-types"
 version = "0.1.0"
 dependencies = [
+ "jcode-message-types",
  "serde_json",
 ]
 

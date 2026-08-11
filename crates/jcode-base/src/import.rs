@@ -417,6 +417,7 @@ fn convert_content_blocks(content: &ClaudeCodeContent) -> Vec<ContentBlock> {
                     tool_use_id: tool_use_id.clone(),
                     content: content.clone(),
                     is_error: *is_error,
+                    artifact: None,
                 }),
                 ClaudeCodeContentBlock::Unknown => None,
             })
@@ -474,6 +475,7 @@ fn imported_message_text(blocks: &[ContentBlock], truncate_blocks: bool) -> (Str
                 tool_use_id,
                 content,
                 is_error,
+                ..
             } => {
                 changed = true;
                 let outcome = if *is_error == Some(true) {

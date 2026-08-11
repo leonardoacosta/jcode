@@ -286,4 +286,5 @@ pub struct HistoryMessage {
     /// "user" | "assistant" | "tool".
     pub role: String,
     pub content: String,
+    artifact: None,
 }

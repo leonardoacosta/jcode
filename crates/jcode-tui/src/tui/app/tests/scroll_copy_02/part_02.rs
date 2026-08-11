@@ -1042,6 +1042,7 @@ fn test_real_draw_click_on_body_anchored_image_label_cycles_level() {
                 tool_use_id: TOOL_ID.to_string(),
                 content: "read image".to_string(),
                 is_error: None,
+            artifact: None,
             },
             ContentBlock::Image {
                 media_type: "image/png".to_string(),
@@ -1196,6 +1197,7 @@ fn test_real_draw_never_emits_inline_image_marker_text() {
                 tool_use_id: TOOL_ID.to_string(),
                 content: "read image".to_string(),
                 is_error: None,
+            artifact: None,
             },
             ContentBlock::Image {
                 media_type: "image/png".to_string(),

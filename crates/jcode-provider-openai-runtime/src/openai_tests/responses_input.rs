@@ -145,6 +145,7 @@ fn test_build_responses_input_keeps_image_context_after_tool_output() {
                     content: "Image: screenshot.png\nImage sent to model for vision analysis."
                         .to_string(),
                     is_error: None,
+                artifact: None,
                 },
                 ContentBlock::Image {
                     media_type: "image/png".to_string(),

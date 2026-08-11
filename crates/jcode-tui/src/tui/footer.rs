@@ -35,7 +35,12 @@ static HOME_DIR: LazyLock<Option<String>> = LazyLock::new(|| {
 ///
 /// Reads the footer config and remote mode from `app` and everything else from
 /// the already-assembled per-frame `data` snapshot.
-pub(crate) fn draw_footer(frame: &mut Frame, app: &dyn TuiState, area: Rect, data: &InfoWidgetData) {
+pub(crate) fn draw_footer(
+    frame: &mut Frame,
+    app: &dyn TuiState,
+    area: Rect,
+    data: &InfoWidgetData,
+) {
     if area.width == 0 || area.height == 0 {
         return;
     }
@@ -43,7 +48,13 @@ pub(crate) fn draw_footer(frame: &mut Frame, app: &dyn TuiState, area: Rect, dat
     if !cfg.enabled() {
         return;
     }
-    let spans = footer_line(data, app.is_remote_mode(), &cfg, area.width, HOME_DIR.as_deref());
+    let spans = footer_line(
+        data,
+        app.is_remote_mode(),
+        &cfg,
+        area.width,
+        HOME_DIR.as_deref(),
+    );
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
@@ -219,13 +230,18 @@ fn build_fields(
             .as_ref()
             .map(|info| info.total_chars == 0)
             .unwrap_or(true);
-        let used = data.observed_context_tokens.map(|t| t as usize).or_else(|| {
-            if empty_info {
-                None
-            } else {
-                data.context_info.as_ref().map(|info| info.estimated_tokens())
-            }
-        });
+        let used = data
+            .observed_context_tokens
+            .map(|t| t as usize)
+            .or_else(|| {
+                if empty_info {
+                    None
+                } else {
+                    data.context_info
+                        .as_ref()
+                        .map(|info| info.estimated_tokens())
+                }
+            });
         if let Some(used) = used {
             let limit = data.context_limit.unwrap_or(DEFAULT_CONTEXT_LIMIT).max(1);
             let percent = ((used as u64) * 100 / (limit as u64)).min(999) as u32;
@@ -288,7 +304,9 @@ fn render_zones(fields: &FooterFields, ascii: bool) -> (Vec<Span<'static>>, Vec<
     if let Some(branch) = &fields.branch {
         push_left(
             branch,
-            Style::default().fg(accent_color()).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(accent_color())
+                .add_modifier(Modifier::BOLD),
             &mut left,
         );
     }
@@ -362,7 +380,10 @@ fn join_zones(
 }
 
 fn spans_width(spans: &[Span<'static>]) -> usize {
-    spans.iter().map(|span| UnicodeWidthStr::width(span.content.as_ref())).sum()
+    spans
+        .iter()
+        .map(|span| UnicodeWidthStr::width(span.content.as_ref()))
+        .sum()
 }
 
 /// Truncate a span list to a display-width budget, appending an ellipsis.
@@ -466,7 +487,11 @@ fn last_components(path: &str, depth: usize) -> String {
     }
     if parts.len() <= depth {
         let joined = parts.join("/");
-        return if is_rooted { format!("/{joined}") } else { joined };
+        return if is_rooted {
+            format!("/{joined}")
+        } else {
+            joined
+        };
     }
     let tail: Vec<&str> = parts[parts.len() - depth..].to_vec();
     if depth == 1 {
@@ -625,21 +650,42 @@ mod tests {
         let mut cfg_with_name = cfg();
         cfg_with_name.segments.session_name = true;
 
-        let wide = line_text(&footer_line(&data, false, &cfg_with_name, 200, Some("/home/user")));
+        let wide = line_text(&footer_line(
+            &data,
+            false,
+            &cfg_with_name,
+            200,
+            Some("/home/user"),
+        ));
         assert!(wide.contains("fox"), "name at wide width: {wide}");
         assert!(wide.contains("$1.23"), "cost at wide width: {wide}");
 
         // Progressively narrower widths must shed name before cost, cost
         // before tokens, tokens before effort. Width 84 forces the name and
         // cost drops; 56 additionally sheds tokens and effort.
-        let narrower = line_text(&footer_line(&data, false, &cfg_with_name, 84, Some("/home/user")));
+        let narrower = line_text(&footer_line(
+            &data,
+            false,
+            &cfg_with_name,
+            84,
+            Some("/home/user"),
+        ));
         assert!(!narrower.contains("fox"), "name drops first: {narrower}");
         assert!(!narrower.contains("$1.23"), "cost drops second: {narrower}");
         assert!(narrower.contains("tok"), "tokens survive at 84: {narrower}");
-        assert!(narrower.contains("high"), "effort survives at 84: {narrower}");
+        assert!(
+            narrower.contains("high"),
+            "effort survives at 84: {narrower}"
+        );
         assert!(narrower.contains("main"), "branch survives: {narrower}");
 
-        let tight = line_text(&footer_line(&data, false, &cfg_with_name, 56, Some("/home/user")));
+        let tight = line_text(&footer_line(
+            &data,
+            false,
+            &cfg_with_name,
+            56,
+            Some("/home/user"),
+        ));
         assert!(!tight.contains("tok"), "tokens drop before effort: {tight}");
         assert!(!tight.contains("high"), "effort drops fourth: {tight}");
         assert!(tight.contains("main"), "branch kept at 56: {tight}");

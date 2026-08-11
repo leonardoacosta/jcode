@@ -16,7 +16,7 @@ pub use comm_format::*;
 pub use notifications::{FeatureToggle, NotificationType};
 
 use jcode_batch_types::BatchProgress;
-use jcode_message_types::{InputShellResult, ToolCall};
+use jcode_message_types::{InputShellResult, RenderedArtifact, ToolCall};
 use jcode_plan::{PlanItem, VersionedPlan, next_runnable_item_ids, summarize_plan_graph};
 use jcode_side_panel_types::{SidePanelSnapshot, snapshot_is_empty};
 use std::collections::BTreeMap;
@@ -56,6 +56,8 @@ pub struct HistoryMessage {
     pub tool_calls: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_data: Option<ToolCall>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub artifact: Option<RenderedArtifact>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

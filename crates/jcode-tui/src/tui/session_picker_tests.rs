@@ -43,6 +43,7 @@ fn make_session_with_flags(
             tool_calls: Vec::new(),
             tool_data: None,
             timestamp: None,
+            artifact: None,
         },
         PreviewMessage {
             role: "assistant".to_string(),
@@ -50,6 +51,7 @@ fn make_session_with_flags(
             tool_calls: Vec::new(),
             tool_data: None,
             timestamp: None,
+            artifact: None,
         },
     ];
     let search_index = build_search_index(
@@ -693,6 +695,7 @@ fn benchmark_resume_search_reports_incremental_timings() {
                 tool_calls: Vec::new(),
                 tool_data: None,
                 timestamp: None,
+                artifact: None,
             }];
             session.search_index = build_search_index(
                 &session.id,
@@ -1438,6 +1441,7 @@ fn make_session_with_many_turns(id: &str, turns: usize) -> SessionInfo {
             tool_calls: Vec::new(),
             tool_data: None,
             timestamp: None,
+            artifact: None,
         });
         preview.push(PreviewMessage {
             role: "assistant".to_string(),
@@ -1445,6 +1449,7 @@ fn make_session_with_many_turns(id: &str, turns: usize) -> SessionInfo {
             tool_calls: Vec::new(),
             tool_data: None,
             timestamp: None,
+            artifact: None,
         });
     }
     session.first_user_prompt = preview.first().map(|m| m.content.clone());
@@ -1489,6 +1494,7 @@ fn bench_preview_messages(turns: usize, assistant_paragraphs: usize) -> Vec<Prev
             tool_calls: Vec::new(),
             tool_data: None,
             timestamp: None,
+            artifact: None,
         });
 
         let mut body = String::new();
@@ -1510,6 +1516,7 @@ fn bench_preview_messages(turns: usize, assistant_paragraphs: usize) -> Vec<Prev
             tool_calls: Vec::new(),
             tool_data: None,
             timestamp: None,
+            artifact: None,
         });
     }
     preview

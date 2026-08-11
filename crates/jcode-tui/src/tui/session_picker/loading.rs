@@ -736,6 +736,7 @@ fn push_preview_message(preview: &mut Vec<PreviewMessage>, role: &str, content: 
         content: content.to_string(),
         tool_calls: Vec::new(),
         tool_data: None,
+        artifact: None,
         timestamp: None,
     });
     if preview.len() > 20 {
@@ -1567,6 +1568,7 @@ pub(super) fn build_messages_preview(session: &Session) -> Vec<PreviewMessage> {
             content: msg.content,
             tool_calls: msg.tool_calls,
             tool_data: msg.tool_data,
+            artifact: msg.artifact,
             timestamp: None,
         })
         .collect()

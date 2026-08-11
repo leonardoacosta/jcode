@@ -361,6 +361,7 @@ pub fn build_contents_with_signature_policy(
                         tool_use_id,
                         content,
                         is_error,
+                        ..
                     } => {
                         if policy == SignaturePolicy::DowngradeToolCallsToText {
                             // A `functionResponse` with no matching signed

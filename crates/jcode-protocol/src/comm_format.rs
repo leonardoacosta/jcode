@@ -685,6 +685,7 @@ mod truncation_tests {
             content,
             tool_calls: None,
             tool_data: None,
+            artifact: None,
         }];
         let out = format_comm_context_history("worker", &messages);
         assert!(out.contains("[user]"));

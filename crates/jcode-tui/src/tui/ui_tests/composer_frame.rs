@@ -136,7 +136,10 @@ fn rail_color_follows_composer_mode() {
         crate::tui::ui::input_ui::shell_mode_color(),
         "shell rail color"
     );
-    assert!(row_text(&buffer, y).starts_with("│1$ "), "shell prompt keeps glyph");
+    assert!(
+        row_text(&buffer, y).starts_with("│1$ "),
+        "shell prompt keeps glyph"
+    );
 
     // Queued/processing mode.
     let processing = TestState {
@@ -319,6 +322,7 @@ fn packed_and_scrolling_are_byte_identical_across_renders() {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         });
         messages.push(DisplayMessage {
             role: "assistant".into(),
@@ -327,6 +331,7 @@ fn packed_and_scrolling_are_byte_identical_across_renders() {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         });
     }
     let scrolling = TestState {

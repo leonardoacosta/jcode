@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use jcode_message_types::ToolCall;
+use jcode_message_types::{RenderedArtifact, ToolCall};
 use jcode_session_types::SessionStatus;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -169,6 +169,7 @@ pub struct PreviewMessage {
     pub content: String,
     pub tool_calls: Vec<String>,
     pub tool_data: Option<ToolCall>,
+    pub artifact: Option<RenderedArtifact>,
     pub timestamp: Option<DateTime<Utc>>,
 }
 

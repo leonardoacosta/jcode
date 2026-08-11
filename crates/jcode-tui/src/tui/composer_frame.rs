@@ -21,8 +21,8 @@ use unicode_width::UnicodeWidthStr;
 
 use super::TuiState;
 use super::info_widget::{InfoWidgetData, model::shorten_model_name};
-use jcode_tui_style::palette::parse_hex;
 use super::ui::input_ui::shell_mode_color;
+use jcode_tui_style::palette::parse_hex;
 use jcode_tui_style::theme::{accent_color, dim_color, queued_color, user_color};
 
 /// Composer mode for rail coloring. Mirrors the precedence of
@@ -48,7 +48,10 @@ pub(crate) fn rail_mode(app: &dyn TuiState) -> RailMode {
 }
 
 /// A color override from `[display.colors]`, if the key parses as `#rrggbb`.
-fn configured_color(colors: &std::collections::BTreeMap<String, String>, key: &str) -> Option<Color> {
+fn configured_color(
+    colors: &std::collections::BTreeMap<String, String>,
+    key: &str,
+) -> Option<Color> {
     colors
         .get(key)
         .and_then(|text| parse_hex(text))
@@ -193,16 +196,16 @@ pub(crate) fn metadata_spans(
 
 /// Draw the metadata row into `area` (a single-row rect at the bottom of the
 /// composer, already inset for the rail).
-pub(crate) fn draw_metadata(
-    frame: &mut Frame,
-    data: &InfoWidgetData,
-    area: Rect,
-    ascii: bool,
-) {
+pub(crate) fn draw_metadata(frame: &mut Frame, data: &InfoWidgetData, area: Rect, ascii: bool) {
     if area.width == 0 || area.height == 0 {
         return;
     }
-    let spans = metadata_spans(data, &crate::config::config().display.colors, ascii, area.width);
+    let spans = metadata_spans(
+        data,
+        &crate::config::config().display.colors,
+        ascii,
+        area.width,
+    );
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
@@ -300,7 +303,10 @@ mod tests {
     fn rail_colors_fall_back_to_mode_colors() {
         let colors = no_colors();
         assert_eq!(rail_color_with(RailMode::Chat, &colors), user_color());
-        assert_eq!(rail_color_with(RailMode::Shell, &colors), shell_mode_color());
+        assert_eq!(
+            rail_color_with(RailMode::Shell, &colors),
+            shell_mode_color()
+        );
         assert_eq!(rail_color_with(RailMode::Queued, &colors), queued_color());
         assert_eq!(rail_color_with(RailMode::Skill, &colors), accent_color());
     }
@@ -321,10 +327,7 @@ mod tests {
     fn metadata_color_honors_override() {
         let mut colors = no_colors();
         colors.insert("composerMetadata".to_string(), "#a0b0c0".to_string());
-        assert_eq!(
-            metadata_color_with(&colors),
-            Color::Rgb(0xa0, 0xb0, 0xc0)
-        );
+        assert_eq!(metadata_color_with(&colors), Color::Rgb(0xa0, 0xb0, 0xc0));
         assert_eq!(metadata_color_with(&no_colors()), dim_color());
     }
 

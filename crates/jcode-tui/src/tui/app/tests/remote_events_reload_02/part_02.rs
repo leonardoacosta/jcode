@@ -80,6 +80,7 @@ fn test_replace_latest_tool_display_message_updates_latest_match_and_bumps_versi
         duration_secs: None,
         title: Some("old title".to_string()),
         tool_data: Some(tool_call.clone()),
+    artifact: None,
     });
     app.push_display_message(DisplayMessage {
         role: "tool".to_string(),
@@ -88,6 +89,7 @@ fn test_replace_latest_tool_display_message_updates_latest_match_and_bumps_versi
         duration_secs: None,
         title: None,
         tool_data: Some(tool_call),
+    artifact: None,
     });
     let before = app.display_messages_version;
 
@@ -193,6 +195,7 @@ fn test_incremental_display_message_counts_match_full_recompute() {
                     intent: None,
                     thought_signature: None,
                 }),
+            artifact: None,
             });
         }
     }

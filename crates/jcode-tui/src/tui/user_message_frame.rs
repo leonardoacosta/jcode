@@ -100,7 +100,10 @@ fn straight_top(g: FrameGlyphs) -> (&'static str, &'static str) {
 /// with the rail color. The band background stays on the prompt's own spans;
 /// the rail deliberately stands on the default background like the composer
 /// rail.
-pub(crate) fn rail_span(colors: &std::collections::BTreeMap<String, String>, ascii: bool) -> Span<'static> {
+pub(crate) fn rail_span(
+    colors: &std::collections::BTreeMap<String, String>,
+    ascii: bool,
+) -> Span<'static> {
     Span::styled(
         glyphs(ascii).vertical,
         Style::default().fg(rail_color_with(colors)),
@@ -157,10 +160,7 @@ fn border_line(
     let label_width = UnicodeWidthStr::width(label_text.as_str());
     let fill = width.saturating_sub(2 + label_width);
     if width < 2 {
-        return Line::from(Span::styled(
-            left.repeat(width),
-            border_style,
-        ));
+        return Line::from(Span::styled(left.repeat(width), border_style));
     }
     let mut spans = vec![
         Span::styled(left, border_style),
@@ -224,7 +224,10 @@ mod tests {
     }
 
     fn line_text(line: &Line) -> String {
-        line.spans.iter().map(|span| span.content.as_ref()).collect()
+        line.spans
+            .iter()
+            .map(|span| span.content.as_ref())
+            .collect()
     }
 
     #[test]
@@ -283,13 +286,11 @@ mod tests {
     fn leading_span_matches_style() {
         let colors = no_colors();
         assert_eq!(
-            leading_span(UserMessageStyle::Framed, &colors, false)
-                .map(|s| s.content.to_string()),
+            leading_span(UserMessageStyle::Framed, &colors, false).map(|s| s.content.to_string()),
             Some("│".to_string())
         );
         assert_eq!(
-            leading_span(UserMessageStyle::Compact, &colors, true)
-                .map(|s| s.content.to_string()),
+            leading_span(UserMessageStyle::Compact, &colors, true).map(|s| s.content.to_string()),
             Some("|".to_string())
         );
         assert_eq!(

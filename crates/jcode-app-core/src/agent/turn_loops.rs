@@ -938,6 +938,7 @@ impl Agent {
                             tool_use_id: tc.id,
                             content: error_msg,
                             is_error: Some(true),
+                            artifact: None,
                         }],
                     );
                     tool_results_dirty = true;
@@ -996,6 +997,7 @@ impl Agent {
                                 tool_use_id: tc.id,
                                 content: sdk_content,
                                 is_error: if sdk_is_error { Some(true) } else { None },
+                                artifact: None,
                             }],
                         );
                         tool_results_dirty = true;
@@ -1116,6 +1118,7 @@ impl Agent {
                                 tool_use_id: tc.id,
                                 content: error_msg,
                                 is_error: Some(true),
+                                artifact: None,
                             }],
                             Some(tool_elapsed.as_millis() as u64),
                         );
@@ -1197,6 +1200,7 @@ mod tests {
                 tool_use_id: id.to_string(),
                 content: content.to_string(),
                 is_error: None,
+                artifact: None,
             }],
             timestamp: None,
             tool_duration_ms: Some(1),

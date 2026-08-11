@@ -3823,6 +3823,15 @@ pub(crate) fn render_tool_message(
     width: u16,
     diff_mode: crate::config::DiffDisplayMode,
 ) -> Vec<Line<'static>> {
+    if msg.artifact.as_ref().is_some_and(|artifact| {
+        !matches!(
+            artifact.kind,
+            jcode_tui_messages::RenderedArtifactKind::Unsupported
+        )
+    }) {
+        return render_artifact_message(msg, width);
+    }
+
     if let Some(lines) = render_scheduled_tool_message(msg, width) {
         return lines;
     }
@@ -4391,6 +4400,96 @@ pub(crate) fn render_tool_message(
         super::left_pad_lines_to_block_width(&mut lines, width, block_width);
     }
 
+    lines
+}
+
+/// Render an explicitly tagged tool artifact as a visually distinct card.
+/// Untagged tool output never enters this path.
+pub(crate) fn render_artifact_message(msg: &DisplayMessage, width: u16) -> Vec<Line<'static>> {
+    use jcode_tui_messages::RenderedArtifactKind;
+
+    let Some(artifact) = msg.artifact.as_ref() else {
+        return Vec::new();
+    };
+    let centered = markdown::center_code_blocks();
+    let max_box_width = if centered {
+        (width.saturating_sub(4) as usize).min(96)
+    } else {
+        (width.saturating_sub(2) as usize).min(96)
+    }
+    .max(8);
+    let inner_width = max_box_width.saturating_sub(4).max(1);
+
+    let custom_title = artifact
+        .title
+        .as_deref()
+        .map(str::trim)
+        .filter(|title| !title.is_empty());
+    let (identity, border_color, source) = match artifact.kind {
+        RenderedArtifactKind::Markdown => ("▤ Markdown", rgb(94, 163, 255), msg.content.clone()),
+        RenderedArtifactKind::Message => ("● Message", rgb(214, 174, 126), msg.content.clone()),
+        RenderedArtifactKind::Code => {
+            let language = artifact
+                .language
+                .as_deref()
+                .map(str::trim)
+                .filter(|language| !language.is_empty());
+            let longest_run = msg
+                .content
+                .split(|ch| ch != '`')
+                .map(str::len)
+                .max()
+                .unwrap_or(0);
+            let fence = "`".repeat(longest_run.max(2) + 1);
+            let language_suffix = language.unwrap_or_default();
+            (
+                "<> Code",
+                rgb(101, 210, 145),
+                format!("{fence}{language_suffix}\n{}\n{fence}", msg.content),
+            )
+        }
+        RenderedArtifactKind::Unsupported => return Vec::new(),
+    };
+    let mut title = identity.to_string();
+    if let Some(custom_title) = custom_title {
+        title.push_str(" · ");
+        title.push_str(custom_title);
+    }
+    if matches!(artifact.kind, RenderedArtifactKind::Code)
+        && let Some(language) = artifact
+            .language
+            .as_deref()
+            .map(str::trim)
+            .filter(|language| !language.is_empty())
+    {
+        title.push_str(" · ");
+        title.push_str(language);
+    }
+
+    let rendered = markdown::render_markdown_with_width(&source, Some(inner_width));
+    let mut content = markdown::wrap_lines(rendered, inner_width);
+    while content.first().is_some_and(|line| line.width() == 0) {
+        content.remove(0);
+    }
+    while content.last().is_some_and(|line| line.width() == 0) {
+        content.pop();
+    }
+    if content.is_empty() {
+        content.push(Line::from(Span::styled(
+            "(empty artifact)",
+            Style::default().fg(dim_color()),
+        )));
+    }
+
+    let mut lines = render_rounded_box(
+        &title,
+        content,
+        max_box_width,
+        Style::default().fg(border_color),
+    );
+    if centered {
+        left_pad_lines_for_centered_mode(&mut lines, width);
+    }
     lines
 }
 

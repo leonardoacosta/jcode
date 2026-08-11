@@ -1108,6 +1108,7 @@ pub async fn run_live_claude_native_tool_smoke(
             content: "TOOL_RESULT_TOKEN=42. Report this token back to confirm you read it."
                 .to_string(),
             is_error: Some(false),
+            artifact: None,
         }],
         timestamp: None,
         tool_duration_ms: None,
@@ -1980,6 +1981,7 @@ fn tool_result_then_text(tool_use_id: &str, result: &str) -> Message {
             tool_use_id: tool_use_id.to_string(),
             content: result.to_string(),
             is_error: Some(false),
+            artifact: None,
         }],
         timestamp: None,
         tool_duration_ms: None,
@@ -2020,6 +2022,7 @@ fn parallel_tool_results(calls: &[NativeClaudeToolCall]) -> Message {
             tool_use_id: call.id.clone(),
             content: format!("Contents of file {}: token_{index}.", index + 1),
             is_error: Some(false),
+            artifact: None,
         })
         .collect();
     Message {

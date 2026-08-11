@@ -2725,7 +2725,8 @@ pub(super) fn draw_input(
                     .unwrap_or(0);
                 let mut margin = prompt_len + rail_margin;
                 if centered {
-                    margin += (text_area.width as usize).saturating_sub(prompt_len + text_width) / 2;
+                    margin +=
+                        (text_area.width as usize).saturating_sub(prompt_len + text_width) / 2;
                 }
                 margin.min(area.width as usize) as u16
             })
@@ -2829,12 +2830,8 @@ pub(super) fn draw_input(
         );
         crate::tui::composer_frame::draw_rail(frame, app, area, ascii);
         if metadata_height > 0 {
-            let metadata_area = Rect::new(
-                text_area.x,
-                area.y + area.height - 1,
-                text_area.width,
-                1,
-            );
+            let metadata_area =
+                Rect::new(text_area.x, area.y + area.height - 1, text_area.width, 1);
             crate::tui::composer_frame::draw_metadata(frame, widget_data, metadata_area, ascii);
         }
     }

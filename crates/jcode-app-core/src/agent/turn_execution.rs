@@ -578,6 +578,7 @@ impl Agent {
                 tool_use_id: tool_call_id,
                 content: error,
                 is_error: Some(true),
+                artifact: None,
             }],
             Some(duration_ms),
         );
@@ -729,6 +730,7 @@ impl Agent {
                     Some(msg.tool_calls)
                 },
                 tool_data: msg.tool_data,
+                artifact: msg.artifact,
             })
             .collect()
     }
@@ -748,6 +750,7 @@ impl Agent {
                     Some(msg.tool_calls)
                 },
                 tool_data: msg.tool_data,
+                artifact: msg.artifact,
             })
             .collect();
         (history, images)
@@ -777,6 +780,7 @@ impl Agent {
                     Some(msg.tool_calls)
                 },
                 tool_data: msg.tool_data,
+                artifact: msg.artifact,
             })
             .collect();
         (history, images, compacted_info)

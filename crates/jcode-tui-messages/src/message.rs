@@ -1,4 +1,4 @@
-use jcode_message_types::ToolCall;
+pub use jcode_message_types::{RenderedArtifact, RenderedArtifactKind, ToolCall};
 use jcode_session_types::RenderedMessage;
 use serde_json::Value;
 use std::collections::hash_map::DefaultHasher;
@@ -14,6 +14,7 @@ pub struct DisplayMessage {
     pub title: Option<String>,
     /// Full tool call data for role="tool" messages.
     pub tool_data: Option<ToolCall>,
+    pub artifact: Option<RenderedArtifact>,
 }
 
 impl DisplayMessage {
@@ -26,6 +27,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -38,6 +40,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -50,6 +53,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -63,6 +67,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: Some("Usage".to_string()),
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -76,6 +81,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: Some("Overnight".to_string()),
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -91,6 +97,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: Some("Todos".to_string()),
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -103,6 +110,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: Some(title.into()),
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -115,6 +123,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: Some(title.into()),
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -127,6 +136,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -139,6 +149,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -151,6 +162,7 @@ impl DisplayMessage {
             duration_secs: Some(duration_secs),
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -163,6 +175,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: Some(tool_data),
+            artifact: None,
         }
     }
 
@@ -175,6 +188,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -187,6 +201,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -202,6 +217,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -216,6 +232,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         }
     }
 
@@ -228,6 +245,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: None,
             tool_data: item.tool_data,
+            artifact: item.artifact,
         }
     }
 
@@ -244,6 +262,7 @@ impl DisplayMessage {
             duration_secs: None,
             title: Some(title.into()),
             tool_data: Some(tool_data),
+            artifact: None,
         }
     }
 
@@ -259,12 +278,18 @@ impl DisplayMessage {
         self
     }
 
+    pub fn with_artifact(mut self, artifact: RenderedArtifact) -> Self {
+        self.artifact = Some(artifact);
+        self
+    }
+
     pub fn stable_cache_hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.role.hash(&mut hasher);
         self.content.hash(&mut hasher);
         self.tool_calls.hash(&mut hasher);
         self.title.hash(&mut hasher);
+        self.artifact.hash(&mut hasher);
         if let Some(tool) = &self.tool_data {
             tool.id.hash(&mut hasher);
             tool.name.hash(&mut hasher);
@@ -427,6 +452,7 @@ mod tests {
                 intent: None,
                 thought_signature: None,
             }),
+            artifact: None,
         }
     }
 
@@ -453,6 +479,7 @@ mod tests {
             content: "done".to_string(),
             tool_calls: vec!["read".to_string()],
             tool_data: None,
+            artifact: None,
             stored_index: None,
         };
 

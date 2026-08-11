@@ -1,3 +1,45 @@
+/// Display-only semantic identity for an explicit tool-rendered artifact.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RenderedArtifactKind {
+    Markdown,
+    Message,
+    Code,
+    #[serde(other)]
+    Unsupported,
+}
+
+/// Optional presentation metadata attached to a tool result.
+/// The tool result content remains the single source of truth for the body.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+pub struct RenderedArtifact {
+    pub kind: RenderedArtifactKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
+}
+
+impl RenderedArtifact {
+    pub fn new(kind: RenderedArtifactKind) -> Self {
+        Self {
+            kind,
+            title: None,
+            language: None,
+        }
+    }
+
+    pub fn with_title(mut self, title: impl Into<String>) -> Self {
+        self.title = Some(title.into());
+        self
+    }
+
+    pub fn with_language(mut self, language: impl Into<String>) -> Self {
+        self.language = Some(language.into());
+        self
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct ToolCall {
     #[serde(default)]
@@ -163,6 +205,8 @@ pub enum ContentBlock {
         content: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         is_error: Option<bool>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        artifact: Option<RenderedArtifact>,
     },
     Image {
         media_type: String,
@@ -233,6 +277,7 @@ impl Message {
                 tool_use_id: tool_use_id.to_string(),
                 content: content.to_string(),
                 is_error: if is_error { Some(true) } else { None },
+                artifact: None,
             }],
             timestamp: Some(chrono::Utc::now()),
             tool_duration_ms,
@@ -892,5 +937,45 @@ mod tests {
             cache_relevant_message_hashes(&[edited]),
             "real content edits must still change the hash"
         );
+    }
+
+    #[test]
+    fn rendered_artifact_descriptor_round_trips() {
+        let artifact = RenderedArtifact::new(RenderedArtifactKind::Code)
+            .with_title("Example")
+            .with_language("rust");
+        let json = serde_json::to_string(&artifact).unwrap();
+        assert_eq!(
+            serde_json::from_str::<RenderedArtifact>(&json).unwrap(),
+            artifact
+        );
+    }
+
+    #[test]
+    fn legacy_tool_result_without_artifact_still_deserializes() {
+        let block: ContentBlock =
+            serde_json::from_str(r#"{"type":"tool_result","tool_use_id":"call-1","content":"ok"}"#)
+                .unwrap();
+        match block {
+            ContentBlock::ToolResult { artifact, .. } => assert!(artifact.is_none()),
+            other => panic!("expected tool result, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn unknown_artifact_kind_deserializes_for_generic_fallback() {
+        let block: ContentBlock = serde_json::from_str(
+            r#"{"type":"tool_result","tool_use_id":"call-1","content":"kept","artifact":{"kind":"future_widget"}}"#,
+        )
+        .unwrap();
+        match block {
+            ContentBlock::ToolResult {
+                content, artifact, ..
+            } => {
+                assert_eq!(content, "kept");
+                assert_eq!(artifact.unwrap().kind, RenderedArtifactKind::Unsupported);
+            }
+            other => panic!("expected tool result, got {other:?}"),
+        }
     }
 }

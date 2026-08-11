@@ -367,6 +367,7 @@ impl App {
                         duration_secs: None,
                         title: None,
                         tool_data: None,
+                        artifact: None,
                     });
                 } else {
                     restored_model = true;
@@ -414,6 +415,7 @@ impl App {
                     duration_secs: None,
                     title: None,
                     tool_data: None,
+                    artifact: None,
                 });
             }
 
@@ -484,6 +486,7 @@ impl App {
                     duration_secs: None,
                     title: None,
                     tool_data: None,
+                artifact: None,
                 });
             }
         }
@@ -631,6 +634,7 @@ pub(super) fn handle_dev_command(app: &mut App, trimmed: &str) -> bool {
                 duration_secs: None,
                 title: None,
                 tool_data: None,
+            artifact: None,
             });
             return true;
         }
@@ -641,6 +645,7 @@ pub(super) fn handle_dev_command(app: &mut App, trimmed: &str) -> bool {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         });
         app.session.provider_session_id = app.provider_session_id.clone();
         app.session
@@ -660,6 +665,7 @@ pub(super) fn handle_dev_command(app: &mut App, trimmed: &str) -> bool {
             duration_secs: None,
             title: None,
             tool_data: None,
+            artifact: None,
         });
         app.session.provider_session_id = app.provider_session_id.clone();
         app.session

@@ -34,6 +34,7 @@ fn user_msg(content: &str) -> DisplayMessage {
         duration_secs: None,
         title: None,
         tool_data: None,
+        artifact: None,
     }
 }
 
@@ -45,6 +46,7 @@ fn assistant_msg(content: &str) -> DisplayMessage {
         duration_secs: None,
         title: None,
         tool_data: None,
+        artifact: None,
     }
 }
 
@@ -102,10 +104,16 @@ fn framed_surrounds_prompt_with_borders_and_rail() {
     let bottoms = rows_starting_with(&buffer, '└');
     assert_eq!(tops.len(), 1, "one top border: {text}");
     assert_eq!(bottoms.len(), 1, "one bottom border: {text}");
-    assert_eq!(tops[0] + 2, bottoms[0], "borders enclose exactly the prompt row");
+    assert_eq!(
+        tops[0] + 2,
+        bottoms[0],
+        "borders enclose exactly the prompt row"
+    );
     let prompt_row = row_text(&buffer, tops[0] + 1);
     assert!(
-        prompt_row.trim_start().starts_with("│1› Fix the flaky login test"),
+        prompt_row
+            .trim_start()
+            .starts_with("│1› Fix the flaky login test"),
         "rail, numbering, and text inside the frame: {prompt_row:?}"
     );
     // Border spans the chat column width.
@@ -149,11 +157,7 @@ fn compact_adds_no_rows() {
         80,
         20,
     );
-    let off = render(
-        &base_state(crate::config::UserMessageStyle::Off),
-        80,
-        20,
-    );
+    let off = render(&base_state(crate::config::UserMessageStyle::Off), 80, 20);
     let compact_text = buffer_text(&compact);
     assert!(
         !compact_text.contains('┌') && !compact_text.contains('└'),
@@ -197,11 +201,7 @@ fn labeled_draws_rounded_box_with_user_label() {
 
 #[test]
 fn off_is_byte_identical_to_fixture_default() {
-    let explicit_off = render(
-        &base_state(crate::config::UserMessageStyle::Off),
-        80,
-        20,
-    );
+    let explicit_off = render(&base_state(crate::config::UserMessageStyle::Off), 80, 20);
     let default_fixture = TestState {
         display_messages: vec![
             user_msg("Fix the flaky login test"),
@@ -223,7 +223,8 @@ fn off_is_byte_identical_to_fixture_default() {
 #[test]
 fn multi_line_prompt_frames_every_wrapped_row() {
     let mut state = base_state(crate::config::UserMessageStyle::Framed);
-    state.display_messages[0] = user_msg("First line of the ask\nsecond line of the ask\nthird line");
+    state.display_messages[0] =
+        user_msg("First line of the ask\nsecond line of the ask\nthird line");
     let buffer = render(&state, 60, 20);
     let tops = rows_starting_with(&buffer, '┌');
     let bottoms = rows_starting_with(&buffer, '└');
@@ -295,13 +296,18 @@ fn ascii_mode_draws_plain_borders_and_label() {
     assert!(!tops.is_empty(), "ascii corners: {text}");
     assert!(text.contains(" User "), "plain label: {text}");
     assert!(text.contains('-'), "ascii fill: {text}");
-    assert!(!text.contains('╭') && !text.contains('┌'), "no unicode corners");
+    assert!(
+        !text.contains('╭') && !text.contains('┌'),
+        "no unicode corners"
+    );
     let prompt_rows: Vec<u16> = (0..buffer.area.height)
         .filter(|row| row_text(&buffer, *row).contains("1›"))
         .collect();
     assert_eq!(prompt_rows.len(), 1);
     assert!(
-        row_text(&buffer, prompt_rows[0]).trim_start().starts_with('|'),
+        row_text(&buffer, prompt_rows[0])
+            .trim_start()
+            .starts_with('|'),
         "ascii rail on the prompt row"
     );
 }

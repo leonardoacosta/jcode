@@ -959,6 +959,7 @@ pub(super) fn handle_disconnect(
                 duration_secs: None,
                 title: None,
                 tool_data: None,
+                artifact: None,
             });
         }
     }
@@ -989,6 +990,7 @@ pub(super) fn handle_disconnect(
         duration_secs: None,
         title: Some(CONNECTION_MESSAGE_TITLE.to_string()),
         tool_data: None,
+        artifact: None,
     });
     state.disconnect_msg_idx = Some(app.display_messages.len() - 1);
     state.reconnect_attempts = 1;
@@ -1470,6 +1472,7 @@ pub(super) async fn process_remote_followups(app: &mut App, remote: &mut RemoteC
                 duration_secs: None,
                 title: None,
                 tool_data: None,
+                artifact: None,
             });
             if let Err(e) = begin_remote_send(
                 app,
@@ -1693,6 +1696,7 @@ async fn detect_and_cancel_stall(app: &mut App, remote: &mut RemoteConnection) {
                         duration_secs: None,
                         title: None,
                         tool_data: None,
+                        artifact: None,
                     });
                 }
             }

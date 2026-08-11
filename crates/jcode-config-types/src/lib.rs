@@ -1275,7 +1275,9 @@ impl UserMessagesConfig {
     pub fn borders(&self) -> bool {
         matches!(
             self.style,
-            UserMessageStyle::Framed | UserMessageStyle::FramedCopyFriendly | UserMessageStyle::Labeled
+            UserMessageStyle::Framed
+                | UserMessageStyle::FramedCopyFriendly
+                | UserMessageStyle::Labeled
         )
     }
 

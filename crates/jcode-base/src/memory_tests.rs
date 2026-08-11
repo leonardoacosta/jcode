@@ -274,6 +274,7 @@ fn format_context_includes_roles_and_tools() {
                 tool_use_id: "tool-2".to_string(),
                 content: "boom".to_string(),
                 is_error: Some(true),
+                artifact: None,
             }],
             timestamp: None,
             tool_duration_ms: None,

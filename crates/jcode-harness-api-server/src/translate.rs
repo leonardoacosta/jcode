@@ -870,6 +870,7 @@ impl BridgeState {
                             .map(|m| HistoryMessage {
                                 role: m["role"].as_str().unwrap_or("").to_string(),
                                 content: m["content"].as_str().unwrap_or("").to_string(),
+                                artifact: None,
                             })
                             .collect()
                     })
@@ -1806,6 +1807,7 @@ impl BridgeState {
                 (!content.trim().is_empty()).then(|| HistoryMessage {
                     role: role.to_string(),
                     content,
+                    artifact: None,
                 })
             })
             .take(limit)

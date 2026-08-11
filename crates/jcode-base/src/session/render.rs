@@ -399,6 +399,7 @@ pub fn render_messages_and_images_with_compacted_history(
             content,
             tool_calls: Vec::new(),
             tool_data: None,
+            artifact: None,
             stored_index: None,
         });
     }
@@ -427,6 +428,7 @@ pub fn render_messages_and_images_with_compacted_history(
                 content: summary.to_string(),
                 tool_calls: Vec::new(),
                 tool_data: None,
+                artifact: None,
                 stored_index: Some(stored_index),
             });
             continue;
@@ -487,6 +489,7 @@ pub fn render_messages_and_images_with_compacted_history(
                 ContentBlock::ToolResult {
                     tool_use_id,
                     content,
+                    artifact,
                     ..
                 } => {
                     let combined = format!("{}{}", reasoning, text);
@@ -501,6 +504,7 @@ pub fn render_messages_and_images_with_compacted_history(
                             content: combined,
                             tool_calls: tool_calls.clone(),
                             tool_data: None,
+                            artifact: None,
                             stored_index: Some(stored_index),
                         });
                     }
@@ -521,6 +525,7 @@ pub fn render_messages_and_images_with_compacted_history(
                         content: content.clone(),
                         tool_calls: Vec::new(),
                         tool_data,
+                        artifact: artifact.clone(),
                         stored_index: Some(stored_index),
                     });
                 }
@@ -563,6 +568,7 @@ pub fn render_messages_and_images_with_compacted_history(
                 content: combined,
                 tool_calls,
                 tool_data: None,
+                artifact: None,
                 stored_index: Some(stored_index),
             });
         } else if !pending_prompt_image_indices.is_empty() {

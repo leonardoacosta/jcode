@@ -103,6 +103,7 @@ pub fn build_messages(system: &str, messages: &[ChatMessage]) -> Vec<Value> {
                             tool_use_id,
                             content,
                             is_error,
+                            ..
                         } => {
                             if used_tool_results.contains(tool_use_id) {
                                 continue;

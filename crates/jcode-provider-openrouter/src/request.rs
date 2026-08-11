@@ -120,6 +120,7 @@ pub fn build_chat_messages(
                             tool_use_id,
                             content,
                             is_error,
+                            ..
                         } => {
                             if let Some(content) =
                                 content_from_parts(std::mem::take(&mut pending_user_parts))

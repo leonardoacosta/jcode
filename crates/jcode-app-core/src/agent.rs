@@ -839,6 +839,7 @@ impl Agent {
                     tool_use_id: id.clone(),
                     content: TOOL_OUTPUT_MISSING_TEXT.to_string(),
                     is_error: Some(true),
+                    artifact: None,
                 };
                 let stored_message = StoredMessage {
                     id: id::new_id("message"),

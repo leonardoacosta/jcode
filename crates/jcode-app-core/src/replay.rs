@@ -188,6 +188,7 @@ pub fn export_timeline(session: &Session) -> Vec<TimelineEvent> {
                         tool_use_id,
                         content,
                         is_error,
+                        ..
                     } = block
                     {
                         has_tool_result = true;

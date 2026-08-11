@@ -226,6 +226,7 @@ fn build_messages_pairs_tool_use_with_tool_result() {
                 tool_use_id: "call_1".into(),
                 content: "hi\n".into(),
                 is_error: None,
+                artifact: None,
             }],
         ),
     ];
@@ -314,16 +315,19 @@ fn build_messages_handles_batch_multiple_tool_calls() {
                     tool_use_id: "call_a".into(),
                     content: "result_a".into(),
                     is_error: None,
+                    artifact: None,
                 },
                 ContentBlock::ToolResult {
                     tool_use_id: "call_b".into(),
                     content: "result_b".into(),
                     is_error: None,
+                    artifact: None,
                 },
                 ContentBlock::ToolResult {
                     tool_use_id: "call_c".into(),
                     content: "result_c".into(),
                     is_error: None,
+                    artifact: None,
                 },
             ],
         ),
@@ -365,6 +369,7 @@ fn build_messages_skips_empty_user_text() {
                 tool_use_id: "call_1".into(),
                 content: "file content".into(),
                 is_error: None,
+                artifact: None,
             }],
         ),
     ];
@@ -420,6 +425,7 @@ fn is_user_initiated_tool_result_is_agent() {
                 tool_use_id: "call_1".into(),
                 content: "file content".into(),
                 is_error: None,
+                artifact: None,
             }],
         ),
     ];
@@ -472,6 +478,7 @@ fn is_user_initiated_tool_result_with_memory_injection() {
                 tool_use_id: "call_1".into(),
                 content: "output".into(),
                 is_error: None,
+                artifact: None,
             }],
         ),
         make_msg(
@@ -510,6 +517,7 @@ fn is_user_initiated_user_text_after_tool_result_without_system_reminder() {
                 tool_use_id: "call_1".into(),
                 content: "output".into(),
                 is_error: None,
+                artifact: None,
             }],
         ),
         make_msg(
@@ -541,6 +549,7 @@ fn is_user_initiated_multiple_memory_injections_after_tool_result() {
                 tool_use_id: "call_1".into(),
                 content: "output".into(),
                 is_error: None,
+                artifact: None,
             }],
         ),
         make_msg(
@@ -586,6 +595,7 @@ fn build_messages_sanitizes_tool_ids_with_dots() {
                 tool_use_id: "chatcmpl-BF2xX.tool_call.0".into(),
                 content: "hi\n".into(),
                 is_error: None,
+                artifact: None,
             }],
         ),
     ];
@@ -622,6 +632,7 @@ fn build_messages_sanitizes_anthropic_style_ids() {
                 tool_use_id: "toolu_01XFDUDYJgAACzvnptvVer6u".into(),
                 content: "file content".into(),
                 is_error: None,
+                artifact: None,
             }],
         ),
     ];

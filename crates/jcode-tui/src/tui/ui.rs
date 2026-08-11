@@ -2980,7 +2980,11 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
     // Add 1 line for command suggestions, shell mode hints, or the Ctrl+Enter hint.
     let hint_line_height = input_ui::input_hint_line_height(app);
     // The composer frame's metadata row reserves one bottom composer row.
-    let composer_metadata_height: u16 = if app.composer_config().metadata_row() { 1 } else { 0 };
+    let composer_metadata_height: u16 = if app.composer_config().metadata_row() {
+        1
+    } else {
+        0
+    };
     let inline_block_height: u16 = inline_ui_height(app);
     let inline_ui_gap_height: u16 = if inline_block_height > 0 { 1 } else { 0 };
     let input_height = base_input_height + hint_line_height + composer_metadata_height;

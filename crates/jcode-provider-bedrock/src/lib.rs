@@ -569,6 +569,7 @@ impl BedrockProvider {
                             tool_use_id,
                             content: text,
                             is_error,
+                            ..
                         } => {
                             let status = if is_error.unwrap_or(false) {
                                 aws_sdk_bedrockruntime::types::ToolResultStatus::Error

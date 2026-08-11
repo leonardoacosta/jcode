@@ -3,6 +3,7 @@ pub struct ToolOutput {
     pub output: String,
     pub title: Option<String>,
     pub metadata: Option<serde_json::Value>,
+    pub artifact: Option<jcode_message_types::RenderedArtifact>,
     pub images: Vec<ToolImage>,
 }
 
@@ -19,6 +20,7 @@ impl ToolOutput {
             output: output.into(),
             title: None,
             metadata: None,
+            artifact: None,
             images: Vec::new(),
         }
     }
@@ -30,6 +32,11 @@ impl ToolOutput {
 
     pub fn with_metadata(mut self, metadata: serde_json::Value) -> Self {
         self.metadata = Some(metadata);
+        self
+    }
+
+    pub fn with_artifact(mut self, artifact: jcode_message_types::RenderedArtifact) -> Self {
+        self.artifact = Some(artifact);
         self
     }
 
@@ -113,7 +120,19 @@ pub fn resolve_tool_name(name: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::resolve_tool_name;
+    use super::{ToolOutput, resolve_tool_name};
+    use jcode_message_types::{RenderedArtifact, RenderedArtifactKind};
+
+    #[test]
+    fn tool_output_artifacts_are_explicit_only() {
+        assert!(ToolOutput::new("plain").artifact.is_none());
+        let output = ToolOutput::new("# document").with_artifact(
+            RenderedArtifact::new(RenderedArtifactKind::Markdown).with_title("Notes"),
+        );
+        let artifact = output.artifact.expect("artifact");
+        assert_eq!(artifact.kind, RenderedArtifactKind::Markdown);
+        assert_eq!(artifact.title.as_deref(), Some("Notes"));
+    }
 
     #[test]
     fn resolve_tool_name_strips_function_namespace_before_alias_resolution() {

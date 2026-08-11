@@ -227,6 +227,7 @@ fn tool_output_to_content_blocks_preserves_labeled_images() {
             tool_use_id,
             content,
             is_error,
+            ..
         } => {
             assert_eq!(tool_use_id, "call_1");
             assert_eq!(content, "Image ready");

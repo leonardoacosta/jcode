@@ -136,6 +136,7 @@ fn test_debug_memory_profile_reports_messages_and_provider_cache() {
                 tool_use_id: "tool_1".to_string(),
                 content: "hi".to_string(),
                 is_error: None,
+                artifact: None,
             },
         ],
     );
@@ -718,6 +719,7 @@ fn test_save_persists_full_session_content() -> Result<()> {
             tool_use_id: "tool_1".to_string(),
             content: "OPENROUTER_API_KEY=sk-or-v1-abcdefghijklmnopqrstuvwxyz0123456789".to_string(),
             is_error: None,
+            artifact: None,
         }],
     );
 
@@ -1123,6 +1125,7 @@ fn test_redacted_for_export_redacts_tool_result_and_tool_input() -> Result<()> {
             tool_use_id: "tool_1".to_string(),
             content: "OPENROUTER_API_KEY=sk-or-v1-abcdefghijklmnopqrstuvwxyz0123456789".to_string(),
             is_error: None,
+            artifact: None,
         }],
     );
 
@@ -1304,6 +1307,45 @@ fn legacy_scheduled_task_message_renders_as_system() {
     assert_eq!(rendered.len(), 1);
     assert_eq!(rendered[0].role, "system");
     assert_eq!(session.visible_conversation_message_count(), 0);
+}
+
+#[test]
+fn test_render_messages_preserves_explicit_artifact_metadata() {
+    use crate::message::{RenderedArtifact, RenderedArtifactKind};
+
+    let mut session = Session::create_with_id(
+        "session_rendered_artifact_test".to_string(),
+        None,
+        Some("rendered artifact test".to_string()),
+    );
+    session.add_message(
+        Role::Assistant,
+        vec![ContentBlock::ToolUse {
+            id: "call-artifact".to_string(),
+            name: "render".to_string(),
+            input: serde_json::json!({"kind": "code"}),
+            thought_signature: None,
+        }],
+    );
+    session.add_message(
+        Role::User,
+        vec![ContentBlock::ToolResult {
+            tool_use_id: "call-artifact".to_string(),
+            content: "fn main() {}".to_string(),
+            is_error: None,
+            artifact: Some(RenderedArtifact::new(RenderedArtifactKind::Code).with_language("rust")),
+        }],
+    );
+
+    let rendered = render_messages(&session);
+    let tool = rendered
+        .iter()
+        .find(|message| message.role == "tool")
+        .expect("tool message");
+    let artifact = tool.artifact.as_ref().expect("artifact metadata");
+    assert_eq!(artifact.kind, RenderedArtifactKind::Code);
+    assert_eq!(artifact.language.as_deref(), Some("rust"));
+    assert_eq!(tool.content, "fn main() {}");
 }
 
 #[test]
@@ -1978,6 +2020,7 @@ fn test_render_messages_and_images_share_tool_resolution_and_labels() {
                 tool_use_id: "tool_img_1".to_string(),
                 content: "rendered image".to_string(),
                 is_error: None,
+                artifact: None,
             },
             ContentBlock::Image {
                 media_type: "image/png".to_string(),
@@ -2120,6 +2163,7 @@ fn test_render_images_anchors_tool_and_user_images() {
                 tool_use_id: "tool-call-1".to_string(),
                 content: "read image".to_string(),
                 is_error: None,
+                artifact: None,
             },
             ContentBlock::Image {
                 media_type: "image/png".to_string(),
@@ -2170,6 +2214,7 @@ fn test_render_images_attached_label_message_does_not_shift_prompt_ordinals() {
                 tool_use_id: "tool-call-2".to_string(),
                 content: "read image".to_string(),
                 is_error: None,
+                artifact: None,
             },
             ContentBlock::Image {
                 media_type: "image/png".to_string(),
@@ -2323,6 +2368,7 @@ fn test_rewind_targets_match_rendered_transcript_numbering() {
             tool_use_id: "tool_1".to_string(),
             content: "file-a file-b".to_string(),
             is_error: None,
+            artifact: None,
         }],
     );
     session.add_message(

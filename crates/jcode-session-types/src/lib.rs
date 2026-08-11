@@ -4,7 +4,7 @@ pub mod context;
 pub use context::{
     ContextConfidence, ContextProvenance, ContextRow, ContextSection, ContextSnapshot,
 };
-use jcode_message_types::{ContentBlock, Message, Role, ToolCall};
+use jcode_message_types::{ContentBlock, Message, RenderedArtifact, Role, ToolCall};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
@@ -57,6 +57,8 @@ pub struct RenderedMessage {
     pub content: String,
     pub tool_calls: Vec<String>,
     pub tool_data: Option<ToolCall>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub artifact: Option<RenderedArtifact>,
     /// Index of the stored session message this rendered message came from.
     /// `None` for synthetic UI-only messages (e.g. the compacted-history
     /// notice). Used to map user-facing rewind targets back to the stored

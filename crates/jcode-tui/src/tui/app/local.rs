@@ -365,6 +365,7 @@ fn handle_manual_tool_completed(app: &mut App, result: ManualToolCompleted) {
             tool_use_id: result.tool_call.id.clone(),
             content: result.output.clone(),
             is_error: if result.is_error { Some(true) } else { None },
+            artifact: None,
         }],
         Some(result.duration_ms),
     );

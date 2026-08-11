@@ -357,6 +357,7 @@ impl App {
                                                     duration_secs: self.display_turn_duration_secs(),
                                                     title: None,
                                                     tool_data: None,
+                                                artifact: None,
                                                 });
                                                 }
                                             }
@@ -421,6 +422,7 @@ impl App {
                                                     duration_secs: None,
                                                     title: None,
                                                     tool_data: None,
+                                                artifact: None,
                                                 });
                                                 }
                                             }
@@ -434,6 +436,7 @@ impl App {
                                             duration_secs: None,
                                             title: None,
                                             tool_data: None,
+                                        artifact: None,
                                         });
                                         // Clear streaming state and continue with new turn
                                         self.clear_streaming_render_state();
@@ -593,6 +596,7 @@ impl App {
                                                 duration_secs: None,
                                                 title: None,
                                                 tool_data: Some(tool.clone()),
+                                            artifact: None,
                                             });
 
                                             tool_calls.push(tool);
@@ -936,6 +940,7 @@ impl App {
                                             duration_secs: None,
                                             title: Some("Generated image".to_string()),
                                             tool_data: Some(tool_call),
+                                        artifact: None,
                                         });
                                         if let Some(image) = crate::message::generated_image_rendered_image(
                                             &id,
@@ -1136,6 +1141,7 @@ impl App {
                         duration_secs: duration,
                         title: None,
                         tool_data: None,
+                        artifact: None,
                     });
                     self.push_turn_footer(duration);
                 }
@@ -1153,6 +1159,7 @@ impl App {
                             duration_secs: duration,
                             title: None,
                             tool_data: None,
+                            artifact: None,
                         });
                     }
                 }
@@ -1238,6 +1245,7 @@ impl App {
                             tool_use_id: tc.id.clone(),
                             content: sdk_content,
                             is_error: if sdk_is_error { Some(true) } else { None },
+                            artifact: None,
                         }],
                         timestamp: Some(chrono::Utc::now()),
                         tool_duration_ms: None,
@@ -1248,6 +1256,7 @@ impl App {
                             tool_use_id: tc.id.clone(),
                             content: String::new(), // Already added to messages above
                             is_error: if sdk_is_error { Some(true) } else { None },
+                            artifact: None,
                         }],
                     );
                     self.session.save()?;
@@ -1322,6 +1331,7 @@ impl App {
                                                     duration_secs: self.display_turn_duration_secs(),
                                                     title: None,
                                                     tool_data: None,
+                                                artifact: None,
                                                 });
                                                 }
                                             }
@@ -1455,6 +1465,7 @@ impl App {
                         tool_use_id: tc.id.clone(),
                         content: output.clone(),
                         is_error: if is_error { Some(true) } else { None },
+                        artifact: None,
                     }],
                     Some(tool_duration_ms),
                 );

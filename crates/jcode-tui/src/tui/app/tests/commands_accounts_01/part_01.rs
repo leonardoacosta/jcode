@@ -372,6 +372,7 @@ fn session_picker_preview_wheel_uses_shared_scroll_momentum() {
             tool_calls: Vec::new(),
             tool_data: None,
             timestamp: None,
+        artifact: None,
         });
         messages.push(PreviewMessage {
             role: "assistant".to_string(),
@@ -379,6 +380,7 @@ fn session_picker_preview_wheel_uses_shared_scroll_momentum() {
             tool_calls: Vec::new(),
             tool_data: None,
             timestamp: None,
+        artifact: None,
         });
     }
     let session = SessionInfo {

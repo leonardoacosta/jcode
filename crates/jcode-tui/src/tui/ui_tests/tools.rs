@@ -139,6 +139,7 @@ fn test_render_tool_message_batch_flat_subcall_params_include_read_details() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -183,6 +184,7 @@ fn test_render_tool_message_batch_subcalls_show_individual_token_badges() {
                     ]
                 }),
                 intent: None, thought_signature: None, }),
+        artifact: None,
         };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -222,6 +224,7 @@ fn test_render_tool_message_batch_first_subcall_token_badge_with_timing_prefix()
                 ]
             }),
             intent: None, thought_signature: None, }),
+    artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -258,6 +261,7 @@ fn test_render_tool_message_batch_last_subcall_keeps_token_badge_without_trailin
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -305,6 +309,7 @@ Completed: 2 succeeded, 1 failed"
             intent: Some("Inspect schemas".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -354,6 +359,7 @@ fn test_render_tool_message_batch_all_failed_marks_all_children_failed() {
                 ]
             }),
             intent: None, thought_signature: None, }),
+    artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -585,6 +591,7 @@ fn test_render_tool_message_batch_includes_start_end_read_details() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 120, crate::config::DiffDisplayMode::Off);
@@ -1098,6 +1105,7 @@ fn test_render_tool_message_batch_rows_do_not_soft_wrap_on_narrow_width() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 32, crate::config::DiffDisplayMode::Off);
@@ -1132,6 +1140,7 @@ fn test_render_tool_message_keeps_token_badge_when_intent_is_truncated() {
             ),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 48, crate::config::DiffDisplayMode::Off);
@@ -1163,6 +1172,7 @@ fn test_render_tool_message_with_intent_never_adds_second_command_line() {
             intent: Some("Launch exactly one paid Opus canary".to_string()),
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 60, crate::config::DiffDisplayMode::Off);
@@ -1197,6 +1207,7 @@ fn test_render_tool_message_keeps_bash_command_visible_when_row_is_narrow() {
             intent: None,
             thought_signature: None,
         }),
+        artifact: None,
     };
 
     let lines = render_tool_message(&msg, 18, crate::config::DiffDisplayMode::Off);

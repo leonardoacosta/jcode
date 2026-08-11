@@ -527,6 +527,7 @@ fn user_history_message(content: &str) -> crate::protocol::HistoryMessage {
         tool_calls: None,
         tool_data: None,
     }
+artifact: None,
 }
 
 fn history_event_for_session(session_id: &str) -> crate::protocol::ServerEvent {
