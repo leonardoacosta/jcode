@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub const LABEL: &str = "dev.jcode.mac-browser-fleet";
+pub const TUNNEL_LABEL: &str = "dev.jcode.mac-browser-fleet-tunnel";
 pub const NATIVE_HOST_NAME: &str = "dev.jcode.mac_browser_fleet";
 
 #[derive(Clone, Debug)]
@@ -37,6 +38,12 @@ impl InstallOptions {
         self.home
             .join("Library/LaunchAgents")
             .join(format!("{LABEL}.plist"))
+    }
+
+    pub fn tunnel_launch_agent_path(&self) -> PathBuf {
+        self.home
+            .join("Library/LaunchAgents")
+            .join(format!("{TUNNEL_LABEL}.plist"))
     }
 
     pub fn chrome_native_host_path(&self) -> PathBuf {
@@ -96,6 +103,7 @@ impl InstallOptions {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ArtifactKind {
     LaunchAgent,
+    TunnelLaunchAgent,
     ChromeNativeHost,
     EdgeNativeHost,
     PeerSecret,
@@ -147,6 +155,13 @@ pub fn install(opts: &InstallOptions) -> io::Result<InstallReport> {
         opts.launch_agent_path(),
         render_launch_agent(opts),
         ArtifactKind::LaunchAgent,
+        0o644,
+        &mut report,
+    )?;
+    write_artifact(
+        opts.tunnel_launch_agent_path(),
+        render_tunnel_launch_agent(opts),
+        ArtifactKind::TunnelLaunchAgent,
         0o644,
         &mut report,
     )?;
@@ -245,6 +260,7 @@ pub fn status(opts: &InstallOptions) -> io::Result<SetupStatus> {
 pub fn remove(opts: &InstallOptions) -> io::Result<()> {
     for path in [
         opts.launch_agent_path(),
+        opts.tunnel_launch_agent_path(),
         opts.chrome_native_host_path(),
         opts.edge_native_host_path(),
         opts.peer_secret_path(),
@@ -399,6 +415,43 @@ pub fn render_launch_agent(opts: &InstallOptions) -> String {
         xml(&opts.native_secret_path()),
         xml(&opts.policy_path()),
         managed_cdp_arguments
+    )
+}
+
+pub fn render_tunnel_launch_agent(opts: &InstallOptions) -> String {
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>{TUNNEL_LABEL}</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/ssh</string>
+    <string>-N</string>
+    <string>-o</string>
+    <string>ControlPath=none</string>
+    <string>-o</string>
+    <string>ExitOnForwardFailure=yes</string>
+    <string>-o</string>
+    <string>ServerAliveInterval=20</string>
+    <string>-o</string>
+    <string>ServerAliveCountMax=3</string>
+    <string>-o</string>
+    <string>StreamLocalBindUnlink=yes</string>
+    <string>{}</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+</dict>
+</plist>
+"#,
+        xml_text(&opts.homelab_host)
     )
 }
 
@@ -764,5 +817,28 @@ mod tests {
             "remote listen path {listen_path} must be absolute"
         );
         assert!(listen_path.contains("nyaptor"));
+    }
+
+    #[test]
+    fn tunnel_launch_agent_keeps_the_reverse_forward_alive() {
+        // The reverse tunnel is the only path from the homelab to the Mac
+        // broker. A manually started `ssh -N` dies silently on sleep/network
+        // loss, so it must be supervised and restarted like the broker.
+        let opts = InstallOptions::fixture(
+            PathBuf::from("/Users/test"),
+            "/Users/test/.local/bin/jcode-mac-browser-fleet",
+        );
+
+        let plist = render_tunnel_launch_agent(&opts);
+
+        assert!(plist.contains(TUNNEL_LABEL));
+        assert!(plist.contains("<key>KeepAlive</key>"));
+        assert!(plist.contains("<key>RunAtLoad</key>"));
+        assert!(plist.contains("ExitOnForwardFailure=yes"));
+        assert!(plist.contains("ServerAliveInterval=20"));
+        assert!(plist.contains(&opts.homelab_host));
+        // Without disabling multiplexing the forward silently attaches to an
+        // existing control master and never binds the remote socket.
+        assert!(plist.contains("ControlPath=none"));
     }
 }
