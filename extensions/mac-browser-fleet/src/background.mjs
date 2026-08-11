@@ -27,6 +27,10 @@ const INVENTORY_EVENTS = Object.freeze([
   ["windows", "onRemoved"],
 ]);
 
+export function detectBrowserKind(userAgent = globalThis.navigator?.userAgent ?? "") {
+  return /\bEdg\//.test(userAgent) ? "edge" : "chrome";
+}
+
 function safePost(port, message) {
   parseExtensionMessage(message);
   port.postMessage(message);
@@ -88,7 +92,7 @@ export function installMacBrowserFleetBridge(browserApi, options = {}) {
     throw new TypeError("native messaging runtime API is required");
   }
 
-  const browserKind = options.browserKind ?? DEFAULT_BROWSER_KIND;
+  const browserKind = options.browserKind ?? detectBrowserKind();
   const displayName = options.displayName ?? DEFAULT_DISPLAY_NAMES[browserKind];
   const hostName = options.hostName ?? NATIVE_HOST_NAME;
   const reconnect = options.reconnect !== false;

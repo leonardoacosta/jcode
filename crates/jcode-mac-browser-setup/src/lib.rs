@@ -134,20 +134,24 @@ pub fn install(opts: &InstallOptions) -> io::Result<InstallReport> {
         0o644,
         &mut report,
     )?;
-    write_artifact(
-        opts.chrome_native_host_path(),
-        render_native_host(opts, "chrome"),
-        ArtifactKind::ChromeNativeHost,
-        0o644,
-        &mut report,
-    )?;
-    write_artifact(
-        opts.edge_native_host_path(),
-        render_native_host(opts, "edge"),
-        ArtifactKind::EdgeNativeHost,
-        0o644,
-        &mut report,
-    )?;
+    if extension_id_is_configured(&opts.chrome_extension_id) {
+        write_artifact(
+            opts.chrome_native_host_path(),
+            render_native_host(opts, "chrome"),
+            ArtifactKind::ChromeNativeHost,
+            0o644,
+            &mut report,
+        )?;
+    }
+    if extension_id_is_configured(&opts.edge_extension_id) {
+        write_artifact(
+            opts.edge_native_host_path(),
+            render_native_host(opts, "edge"),
+            ArtifactKind::EdgeNativeHost,
+            0o644,
+            &mut report,
+        )?;
+    }
     write_secret(opts.peer_secret_path(), &mut report)?;
     write_artifact(
         opts.policy_path(),
@@ -164,6 +168,10 @@ pub fn install(opts: &InstallOptions) -> io::Result<InstallReport> {
         &mut report,
     )?;
     Ok(report)
+}
+
+fn extension_id_is_configured(extension_id: &str) -> bool {
+    extension_id != "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 }
 
 pub fn status(opts: &InstallOptions) -> io::Result<SetupStatus> {
@@ -438,6 +446,11 @@ mod tests {
         root
     }
 
+    fn configure_fixture_extensions(opts: &mut InstallOptions) {
+        opts.chrome_extension_id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string();
+        opts.edge_extension_id = "cccccccccccccccccccccccccccccccc".to_string();
+    }
+
     #[test]
     fn install_status_remove_preserves_profiles_and_unrelated_ssh_config() {
         let root = tmp_root("lifecycle");
@@ -448,7 +461,9 @@ mod tests {
         fs::create_dir_all(ssh_config.parent().unwrap()).unwrap();
         fs::write(&ssh_config, "Host github.com\n  User git\n").unwrap();
 
-        let opts = InstallOptions::fixture(root.clone(), "/opt/jcode/bin/jcode-mac-browser-broker");
+        let mut opts =
+            InstallOptions::fixture(root.clone(), "/opt/jcode/bin/jcode-mac-browser-broker");
+        configure_fixture_extensions(&mut opts);
         let report = install(&opts).unwrap();
         assert!(report.installed.contains(&ArtifactKind::LaunchAgent));
         assert!(report.installed.contains(&ArtifactKind::ChromeNativeHost));
@@ -520,7 +535,8 @@ mod tests {
     #[test]
     fn refresh_backs_up_operator_edited_files_and_keeps_secret_mode_0600() {
         let root = tmp_root("refresh");
-        let opts = InstallOptions::fixture(root, "/opt/jcode/bin/jcode-mac-browser-broker");
+        let mut opts = InstallOptions::fixture(root, "/opt/jcode/bin/jcode-mac-browser-broker");
+        configure_fixture_extensions(&mut opts);
         install(&opts).unwrap();
         fs::write(opts.policy_path(), "# operator edit\n").unwrap();
         fs::write(opts.launch_agent_path(), "operator plist edit").unwrap();
@@ -547,7 +563,8 @@ mod tests {
     #[test]
     fn rendered_manifests_and_ssh_include_are_safe_and_reverse_stream_local_only() {
         let root = tmp_root("render");
-        let opts = InstallOptions::fixture(root, "/opt/jcode/bin/jcode-mac-browser-broker");
+        let mut opts = InstallOptions::fixture(root, "/opt/jcode/bin/jcode-mac-browser-broker");
+        configure_fixture_extensions(&mut opts);
         install(&opts).unwrap();
 
         let chrome = fs::read_to_string(opts.chrome_native_host_path()).unwrap();
@@ -596,5 +613,20 @@ mod tests {
         assert!(chrome.contains("\"path\": \"/Users/test/.local/bin/jcode-mac-browser-fleet\""));
         assert!(!chrome.contains("native-host"));
         assert!(!chrome.contains("--socket"));
+    }
+
+    #[test]
+    fn install_can_configure_chrome_without_an_edge_extension_id() {
+        let root = tmp_root("chrome-only");
+        let mut opts =
+            InstallOptions::fixture(root.clone(), root.join("bin/jcode-mac-browser-fleet"));
+        opts.chrome_extension_id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string();
+
+        let report = install(&opts).unwrap();
+
+        assert!(opts.chrome_native_host_path().is_file());
+        assert!(!opts.edge_native_host_path().exists());
+        assert!(report.installed.contains(&ArtifactKind::ChromeNativeHost));
+        assert!(!report.installed.contains(&ArtifactKind::EdgeNativeHost));
     }
 }

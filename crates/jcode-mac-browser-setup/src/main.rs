@@ -46,14 +46,23 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     match command.as_str() {
         "install" => {
-            validate_extension_id(
-                "JCODE_MAC_BROWSER_FLEET_CHROME_EXTENSION_ID",
-                &opts.chrome_extension_id,
-            )?;
-            validate_extension_id(
-                "JCODE_MAC_BROWSER_FLEET_EDGE_EXTENSION_ID",
-                &opts.edge_extension_id,
-            )?;
+            let chrome_configured = extension_id_is_configured(&opts.chrome_extension_id);
+            let edge_configured = extension_id_is_configured(&opts.edge_extension_id);
+            if !chrome_configured && !edge_configured {
+                return Err("set at least one browser-specific extension ID, or backward-compatible JCODE_MAC_BROWSER_FLEET_EXTENSION_ID, before install".into());
+            }
+            if chrome_configured {
+                validate_extension_id(
+                    "JCODE_MAC_BROWSER_FLEET_CHROME_EXTENSION_ID",
+                    &opts.chrome_extension_id,
+                )?;
+            }
+            if edge_configured {
+                validate_extension_id(
+                    "JCODE_MAC_BROWSER_FLEET_EDGE_EXTENSION_ID",
+                    &opts.edge_extension_id,
+                )?;
+            }
             let report = install(&opts)?;
             println!(
                 "installed={:?} refreshed={:?} backups={}",
@@ -94,6 +103,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 fn non_empty_env(name: &str) -> Option<String> {
     env::var(name).ok().filter(|value| !value.trim().is_empty())
+}
+
+fn extension_id_is_configured(extension_id: &str) -> bool {
+    extension_id != "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 }
 
 fn validate_extension_id(name: &str, extension_id: &str) -> Result<(), Box<dyn std::error::Error>> {

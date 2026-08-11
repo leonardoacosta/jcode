@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   ACTION_MESSAGE_TYPES,
+  detectBrowserKind,
   installActionMessageHandler,
   installMacBrowserFleetBridge,
 } from "../src/background.mjs";
@@ -98,6 +99,11 @@ function ordinaryWindow(id, tabs = [{ id: 10, active: true, url: "https://exampl
 function flushAsyncWork() {
   return new Promise((resolve) => setImmediate(resolve));
 }
+
+test("detects Edge identity from the extension runtime user agent", () => {
+  assert.equal(detectBrowserKind("Mozilla/5.0 Chrome/151.0 Edg/151.0"), "edge");
+  assert.equal(detectBrowserKind("Mozilla/5.0 Chrome/151.0"), "chrome");
+});
 
 test("dispatches native action requests and posts a typed response", async () => {
   const port = fakePort();
