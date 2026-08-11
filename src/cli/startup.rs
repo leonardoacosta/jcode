@@ -456,7 +456,7 @@ mod tests {
     #[test]
     fn homelab_ssh_command_uses_a_private_local_socket_forward() {
         let args = crate::cli::remote::homelab_ssh_args(
-            "jcode-homelab",
+            "homelab",
             std::path::Path::new("/Users/test/.jcode/homelab.sock"),
             "/run/user/1000/jcode.sock",
         );
@@ -474,7 +474,7 @@ mod tests {
                 "StreamLocalBindUnlink=yes",
                 "-L",
                 "/Users/test/.jcode/homelab.sock:/run/user/1000/jcode.sock",
-                "jcode-homelab",
+                "homelab",
             ]
         );
     }

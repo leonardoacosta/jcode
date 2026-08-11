@@ -27,7 +27,7 @@ impl InstallOptions {
         Self {
             home,
             broker_path: broker_path.into(),
-            homelab_host: "jcode-homelab".to_string(),
+            homelab_host: "homelab".to_string(),
             homelab_user: "jcode".to_string(),
             chrome_extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
             edge_extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),

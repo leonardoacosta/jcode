@@ -169,7 +169,7 @@ Store the forwarding and connection-health settings in the Mac's SSH configurati
 Add this to `~/.ssh/config`:
 
 ```sshconfig
-Host jcode-homelab
+Host homelab
     HostName <homelab-host-or-tailscale-name>
     User nyaptor
     ExitOnForwardFailure yes
@@ -182,7 +182,7 @@ Host jcode-homelab
 Start the tunnel:
 
 ```bash
-ssh -NT jcode-homelab
+ssh -NT homelab
 ```
 
 Connect the TUI:
@@ -206,14 +206,14 @@ Keep the forwarded socket available without occupying a terminal.
 ### Commands on the Mac
 
 ```bash
-ssh -fNT jcode-homelab
+ssh -fNT homelab
 ls -l ~/.jcode/homelab.sock
 ```
 
 Inspect the background tunnel before stopping it:
 
 ```bash
-pgrep -af 'ssh.*jcode-homelab'
+pgrep -af 'ssh.*homelab'
 ```
 
 Terminate only the identified tunnel process:
@@ -426,7 +426,7 @@ The agent can interact with a visible Mac browser while retaining homelab execut
 ## Recommended rollout
 
 1. Start the jcode server on the homelab.
-2. Configure the Mac SSH alias `jcode-homelab` or set `JCODE_HOMELAB_SSH_HOST`.
+2. Configure the Mac SSH alias `homelab` or set `JCODE_HOMELAB_SSH_HOST`.
 3. Run the normal `jcode` command. It creates or reuses `~/.jcode/homelab.sock`.
 4. Use `jcode menubar` for authoritative homelab-backed status.
 5. Keep `JCODE_LOCAL_ONLY=1` as the explicit local recovery escape hatch.

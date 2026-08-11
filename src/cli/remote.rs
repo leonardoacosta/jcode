@@ -18,7 +18,7 @@ use super::args::Args;
 use super::args::Command as CliCommand;
 
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
-pub(crate) const DEFAULT_SSH_HOST: &str = "jcode-homelab";
+pub(crate) const DEFAULT_SSH_HOST: &str = "homelab";
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
 pub(crate) const DEFAULT_REMOTE_SOCKET: &str = "/run/user/1000/jcode.sock";
 #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
