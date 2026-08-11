@@ -20,22 +20,27 @@ async fn main() {
 }
 
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let mut args = std::env::args_os().skip(1);
-    let Some(command) = args.next() else {
-        return run_native_host(Vec::new()).await;
-    };
-    if command == std::ffi::OsStr::new("authority") {
-        return run_authority(args.collect()).await;
+    let argv: Vec<std::ffi::OsString> = std::env::args_os().skip(1).collect();
+    match jcode_mac_browser_fleet::classify_invocation(argv.iter()) {
+        jcode_mac_browser_fleet::Invocation::Authority => {
+            return run_authority(argv.into_iter().skip(1).collect()).await;
+        }
+        jcode_mac_browser_fleet::Invocation::NativeHost => {
+            // Chrome and Edge launch the host with the manifest path and the
+            // calling origin, which must not be parsed as host arguments.
+            let explicit = argv
+                .first()
+                .is_some_and(|first| first == std::ffi::OsStr::new("native-host"));
+            let host_args = if explicit {
+                argv.into_iter().skip(1).collect()
+            } else {
+                Vec::new()
+            };
+            return run_native_host(host_args).await;
+        }
+        jcode_mac_browser_fleet::Invocation::Broker => {}
     }
-    if command == std::ffi::OsStr::new("native-host") {
-        return run_native_host(args.collect()).await;
-    }
-    if command != std::ffi::OsStr::new("broker") {
-        return Err(
-            "usage: jcode-mac-browser-fleet [native-host --socket PATH --native-secret PATH] | broker --socket PATH --authority-socket PATH --peer-secret PATH --native-secret PATH --policy PATH | authority grant|revoke|emergency-stop|release-emergency-stop|status"
-                .into(),
-        );
-    }
+    let mut args = argv.into_iter().skip(1);
 
     let mut socket = None;
     let mut peer_secret = None;

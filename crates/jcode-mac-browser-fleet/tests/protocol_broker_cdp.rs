@@ -1312,3 +1312,26 @@ fn native_host_defaults_match_the_installed_broker_socket_layout() {
         )
     );
 }
+
+#[test]
+fn chrome_style_native_host_launch_is_not_a_usage_error() {
+    use jcode_mac_browser_fleet::{Invocation, classify_invocation};
+
+    // Chrome/Edge launch the host as:
+    //   <binary> /path/to/host-manifest.json chrome-extension://<id>/
+    // Treating that as an unknown subcommand makes the host exit immediately,
+    // so ordinary profiles can never attach even though every file is installed.
+    assert_eq!(
+        classify_invocation([
+            "/Users/test/Library/Application Support/Google/Chrome/NativeMessagingHosts/dev.jcode.mac_browser_fleet.json",
+            "chrome-extension://mlgjaoahakdijgckgjpmpkafccgffpgd/",
+        ]),
+        Invocation::NativeHost
+    );
+
+    let empty: [&str; 0] = [];
+    assert_eq!(classify_invocation(empty), Invocation::NativeHost);
+    assert_eq!(classify_invocation(["native-host"]), Invocation::NativeHost);
+    assert_eq!(classify_invocation(["broker"]), Invocation::Broker);
+    assert_eq!(classify_invocation(["authority"]), Invocation::Authority);
+}

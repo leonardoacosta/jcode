@@ -261,6 +261,39 @@ pub fn default_native_secret_path(home: &Path) -> PathBuf {
     home.join("Library/Application Support/Jcode/MacBrowserFleet/native.secret")
 }
 
+/// How the binary was invoked, after inspecting `argv[1..]`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Invocation {
+    /// Run the broker with the remaining arguments.
+    Broker,
+    /// Run the Mac-local authority CLI.
+    Authority,
+    /// Serve native messaging over stdio.
+    ///
+    /// Chrome and Edge launch native hosts with the manifest path as the first
+    /// argument and the calling origin as the second, so anything that is not
+    /// an explicit subcommand must be treated as a browser-initiated launch
+    /// rather than a usage error.
+    NativeHost,
+}
+
+/// Classify a native-messaging launch without consuming the argument list.
+pub fn classify_invocation<I, S>(args: I) -> Invocation
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<std::ffi::OsStr>,
+{
+    match args.into_iter().next() {
+        None => Invocation::NativeHost,
+        Some(first) => match first.as_ref().to_string_lossy().as_ref() {
+            "broker" => Invocation::Broker,
+            "authority" => Invocation::Authority,
+            "native-host" => Invocation::NativeHost,
+            _ => Invocation::NativeHost,
+        },
+    }
+}
+
 #[derive(Default)]
 struct NativeHostSession {
     browser_kind: Option<BrowserKind>,
