@@ -10,6 +10,9 @@ import { startMockHarness } from "./mock-harness.ts";
 import os from "node:os";
 import path from "node:path";
 import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
 
 async function waitFor(predicate: () => boolean, timeoutMs = 1_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -127,6 +130,34 @@ test("run() collects a full turn and auto-approves permissions", async () => {
     { callId: "c1", name: "bash", output: "ok", error: undefined },
   ]);
   assert.deepEqual(turn.usage, { input: 10, output: 4, cacheReadInput: undefined });
+  client.close();
+  await server.close();
+});
+
+test("run() consumes the Rust dynamic tool response fixture", async () => {
+  const fixture = JSON.parse(
+    fs.readFileSync(path.join(here, "fixtures/rust-tool-done.jsonl"), "utf8"),
+  );
+  const server = await startMockHarness({
+    onRequest(request, send) {
+      if (request.req === "send_message") {
+        send({ v: 1, reply_to: request.id, ev: "ok" });
+        send({ v: 1, ev: "message_accepted", session_id: "s1" });
+        send(fixture);
+        send({ v: 1, ev: "turn_done", session_id: "s1" });
+      }
+    },
+  });
+  const client = await JcodeClient.connect({ socketPath: server.socketPath });
+  const turn = await client.run("s1", "use the dynamic tool");
+  assert.deepEqual(turn.toolCalls, [
+    {
+      callId: "dynamic-7",
+      name: "mcp__catalog__lookup",
+      output: '{"items":[{"id":42,"label":"alpha"}],"next":null}',
+      error: "remote tool returned partial data",
+    },
+  ]);
   client.close();
   await server.close();
 });

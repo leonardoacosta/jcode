@@ -1,0 +1,1 @@
+{"v":1,"ev":"tool_done","session_id":"s1","call_id":"dynamic-7","name":"mcp__catalog__lookup","output":"{\"items\":[{\"id\":42,\"label\":\"alpha\"}],\"next\":null}","error":"remote tool returned partial data"}

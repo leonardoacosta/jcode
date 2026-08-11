@@ -68,6 +68,23 @@ fn server_frame_wire_shape() {
 }
 
 #[test]
+fn dynamic_tool_done_matches_typescript_sdk_fixture() {
+    let frame = ServerFrame::event(ApiEvent::ToolDone {
+        session_id: "s1".into(),
+        call_id: "dynamic-7".into(),
+        name: "mcp__catalog__lookup".into(),
+        output: r#"{"items":[{"id":42,"label":"alpha"}],"next":null}"#.into(),
+        error: Some("remote tool returned partial data".into()),
+    });
+    let actual = serde_json::to_string(&frame).unwrap();
+    let fixture = include_str!(
+        "../../../../sdk/typescript/test/fixtures/rust-tool-done.jsonl"
+    )
+    .trim_end();
+    assert_eq!(actual, fixture);
+}
+
+#[test]
 fn unknown_event_kind_is_skippable() {
     let json = r#"{"v":1,"ev":"some_future_event","payload":123}"#;
     let frame: ServerFrame = serde_json::from_str(json).unwrap();
