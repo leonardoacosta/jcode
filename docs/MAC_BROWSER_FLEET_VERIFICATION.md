@@ -38,11 +38,15 @@ Observed protocol results:
 - Correct secret and `listBrowsers`: `ok: true`, health generation `1`, 15 filtered managed Chrome page targets.
 - Jcode `browser: "mac"`, `list_tabs`: returned those 15 targets with normalized `browser_ref`, `window_ref`, `tab_ref`, and `generation` fields.
 - Jcode navigation against a current target: rejected with `Mac browser fleet approval required on the Mac`.
+- A separate Mac-local authority socket was installed with mode `600`; it is not part of the SSH-forwarded peer socket.
+- A two-minute `navigate` lease was granted locally for a dedicated ordinary-origin target. Jcode navigation through the public `browser: "mac"` path returned `accepted` and changed that target through CDP.
+- Revoking the lease immediately restored `approval required` for the same target.
+- Emergency stop overrode a newly granted lease. Releasing emergency stop left no active elevated authority.
 - Incorrect secret: `ok: false`, error kind `unauthenticated`, diagnostic `fleet authentication failed`.
 - The rejected response contained no peer secret.
 - The bound Unix socket mode was `600`.
 
-This proves the executable, argument parser, filesystem boundary, authentication boundary, response encoding, real arm64 launchd lifecycle, Unix-socket SSH forwarding, public Jcode provider routing, live managed Chrome target discovery, normalization, approval-required behavior, stale-generation behavior, and read-only recovery after broker restart. It does not prove extension attachment, approved mutation execution, lease UX, or Edge target routing.
+This proves the executable, argument parser, filesystem boundary, authentication boundary, response encoding, real arm64 launchd lifecycle, Unix-socket SSH forwarding, public Jcode provider routing, live managed Chrome target discovery, normalization, approved navigation, immediate lease revocation, emergency-stop precedence, approval-required behavior, stale-generation behavior, and read-only recovery after broker restart. It does not prove ordinary-profile extension attachment, selector-based interactions, or Edge target routing.
 
 ## Remaining acceptance handoff
 
