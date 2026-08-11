@@ -971,7 +971,14 @@ impl OpenRouterProvider {
     /// reasoning models, and only when no explicit config override or
     /// DeepSeek-style support already applies.
     pub(crate) fn supports_openai_reasoning_effort(&self) -> bool {
-        if self.reasoning_effort_support == Some(false) {
+        if let Some(explicit) = self.reasoning_effort_support {
+            return explicit;
+        }
+        // Azure OpenAI's `/v1/chat/completions` rejects `reasoning_effort`
+        // whenever function tools are present ("not supported with this
+        // model/tool combination; use /v1/responses"). jcode always sends
+        // tools, so never send the field on the Azure runtime.
+        if self.is_azure_openai_runtime() {
             return false;
         }
         !Self::profile_supports_unified_reasoning(
