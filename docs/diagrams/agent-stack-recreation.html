@@ -219,6 +219,35 @@ body:before{
   .context-layer .ctx-segment strong{font-size:8px!important;letter-spacing:0}
   .context-layer .ctx-segment{padding-inline:2px}
 }
+
+/* ── Card 1 and 2 visual corrections ──────────────────────────────────────
+   .check is the rail's PASS/BLOCKED class; the fan-out chip reuses the name
+   and was inheriting uppercase + wide tracking, so it read as a different
+   kind of thing from its siblings. */
+.orchestration-card .orch-task.check{
+  text-transform:none!important;letter-spacing:.012em!important;font-size:12px!important;
+}
+/* Card 2 stages need real separation; they were sitting flush at 0px. */
+.orchestration-card .orch-flow{column-gap:14px}
+.orchestration-card .orch-arrow{min-width:26px}
+.orchestration-card .orch-answer{margin-left:0}
+/* The small agent chips repeat read/write/check verbatim next to the real
+   fan-out, which reads as duplication rather than as the merged set. */
+.orchestration-card .orch-agents{display:none}
+/* Card 1: centre the entry stack in its panel (was 25px top vs 15px bottom). */
+.surface-layer .surface-panel{padding-top:20px!important;padding-bottom:20px!important}
+.surface-flow{align-content:center}
+
+/* The top-right label strip adds 24px of top padding that was never balanced,
+   so every card's content sat low. Centre content in the area below the label. */
+.layer > .panel{
+  display:grid;align-content:center;
+  padding-top:26px!important;padding-bottom:26px!important;
+}
+
+/* Cards 6 and 7 set their own vertical padding elsewhere; normalise them. */
+.runtime-card .runtime-panel{padding-top:26px!important;padding-bottom:26px!important}
+.memory-card .panel{padding-top:26px!important;padding-bottom:26px!important}
 /* Card 1 funnel: geometry is measured from real element boxes in JS. */
 .surface-funnel{
   position:absolute!important;inset:0!important;width:100%;height:100%;
@@ -596,6 +625,70 @@ body:before{
   padding:2px 6px;font-size:7px;line-height:1.1;color:var(--ink);
   border-color:color-mix(in srgb,var(--c) 50%,rgba(255,240,199,.24));background:rgba(2,5,10,.82);
 }
+
+/* Last word on vertical rhythm: these must beat the earlier per-card rules. */
+.layer > .panel,
+.runtime-card .runtime-panel,
+.memory-card .panel,
+.tools-layer .panel{padding-top:26px!important;padding-bottom:26px!important}
+
+/* Card 6's sandbox box was narrower than its panel, so the centring grid
+   pushed it ~86px right of the shared content edge every other card uses. */
+.runtime-card .sandbox-boundary{width:100%;justify-self:stretch}
+.runtime-card .runtime-lane .node{white-space:nowrap}
+
+/* Making .panel a grid for vertical centring introduced an auto-sized column
+   narrower than the panel, so card content was centred instead of starting on
+   the shared left edge. Force a single full-width column. */
+.layer > .panel{grid-template-columns:minmax(0,1fr)!important;justify-items:stretch!important}
+.layer > .panel > *{justify-self:stretch;min-width:0}
+.model-card .model-flow{width:100%}
+.memory-card .memory-panel{width:100%}
+/* Card 5's bus and card 6's boundary should share that same full width. */
+.tools-layer .tool-board,.tools-layer .tool-bus{width:100%}
+.runtime-card .sandbox-boundary{width:100%}
+/* Uniform panel inset so every card starts at the same x. */
+.layer > .panel{padding-left:18px!important;padding-right:18px!important}
+
+/* Card 7: give the boundary marker its own column so it cannot touch session B. */
+.memory-card .memory-flow{grid-template-columns:78px minmax(96px,1fr) 78px!important;column-gap:14px!important}
+.memory-card .memory-boundary{overflow:visible}
+
+/* Card 7: the memory panel's three groups need real column separation. */
+.memory-card .memory-panel{grid-template-columns:minmax(280px,1.05fr) minmax(0,1.25fr) 92px!important;column-gap:20px!important}
+.memory-card .memory-flow{grid-template-columns:74px minmax(80px,1fr) 74px!important;column-gap:10px!important}
+
+/* Below the desktop breakpoint the same centring problem applies: make every
+   card's main container fill its panel so they share one left edge. */
+@media (max-width:1279px){
+  .surface-inputs,.orch-flow,.context-stack,.model-flow,
+  .tool-board,.tool-bus,.sandbox-boundary,.memory-panel{width:100%;justify-self:stretch}
+  .memory-card .memory-panel{grid-template-columns:minmax(0,1fr)!important;column-gap:0!important}
+}
+/* Card 6 blocked chips must not clip their labels at any width. */
+.runtime-card .runtime-lane.denied .node{white-space:nowrap;overflow:visible;text-overflow:clip}
+.runtime-card .runtime-lane.denied{flex-wrap:wrap;gap:6px}
+
+/* Card 2's wrapped grid used justify-content:center, so it floated away from
+   the shared left edge at intermediate widths. Anchor it left instead. */
+@media (max-width:1180px){
+  .orchestration-card .orch-flow{justify-content:start!important;width:100%}
+  .orchestration-card .orch-fanout{justify-content:flex-start!important}
+  .orchestration-card .orch-answer{justify-self:start!important}
+}
+
+/* The base .orch-flow still carried max-width:260px + margin:0 auto, which
+   centred card 2 at intermediate widths regardless of justify-content. */
+@media (max-width:1180px){
+  .orchestration-card .orch-flow{max-width:none!important;margin-left:0!important;margin-right:0!important}
+}
+/* Card 6 blocked lane: let it wrap instead of clipping 'prod secrets'. */
+.runtime-card .runtime-lane.denied{display:flex;flex-wrap:wrap;align-content:start}
+.runtime-card .runtime-lane.denied .node{flex:0 1 auto;width:auto}
+
+/* The duplicate mini agent chips must stay hidden at every width, including
+   the wrapped intermediate layouts that re-declare .orch-agents. */
+.orchestration-card .orch-agents{display:none!important}
 </style>
 </head>
 <body>
