@@ -1196,6 +1196,12 @@ impl OpenRouterProvider {
             if std::env::var("JCODE_RUNTIME_PROVIDER")
                 .ok()
                 .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
+                || std::env::var("JCODE_OPENROUTER_CACHE_NAMESPACE")
+                    .ok()
+                    .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
+                || std::env::var("JCODE_OPENROUTER_API_KEY_NAME")
+                    .ok()
+                    .is_some_and(|value| value.trim().eq_ignore_ascii_case("AZURE_OPENAI_API_KEY"))
             {
                 return "Azure OpenAI".to_string();
             }
@@ -1216,6 +1222,23 @@ impl OpenRouterProvider {
             return Some((
                 jcode_base::subscription_catalog::JCODE_PROVIDER_DISPLAY_NAME.to_string(),
                 jcode_base::subscription_catalog::JCODE_ROUTE_API_METHOD.to_string(),
+                self.api_base.clone(),
+            ));
+        }
+
+        if std::env::var("JCODE_RUNTIME_PROVIDER")
+            .ok()
+            .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
+            || std::env::var("JCODE_OPENROUTER_CACHE_NAMESPACE")
+                .ok()
+                .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
+            || std::env::var("JCODE_OPENROUTER_API_KEY_NAME")
+                .ok()
+                .is_some_and(|value| value.trim().eq_ignore_ascii_case("AZURE_OPENAI_API_KEY"))
+        {
+            return Some((
+                "Azure OpenAI".to_string(),
+                "openrouter".to_string(),
                 self.api_base.clone(),
             ));
         }

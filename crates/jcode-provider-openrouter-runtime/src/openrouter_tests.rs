@@ -2552,6 +2552,45 @@ fn non_subscription_runtimes_keep_existing_display_and_route_identity() {
 }
 
 #[test]
+fn azure_openai_runtime_has_explicit_display_and_openrouter_route_identity() {
+    let _lock = ENV_LOCK.lock();
+    let temp = TempDir::new().expect("create temp home");
+    let jcode_home = temp.path().join("jcode-home");
+    let _jcode_home = EnvVarGuard::set("JCODE_HOME", &jcode_home);
+    let _home = EnvVarGuard::set("HOME", temp.path());
+    let _appdata = EnvVarGuard::set("APPDATA", temp.path().join("AppData").join("Roaming"));
+    let _env = isolate_openrouter_autodetect_env();
+    let _cache_namespace = EnvVarGuard::set("JCODE_OPENROUTER_CACHE_NAMESPACE", "azure-openai");
+    let _base = EnvVarGuard::set(
+        "JCODE_OPENROUTER_API_BASE",
+        "https://example.openai.azure.com/openai/v1",
+    );
+    let _key_name = EnvVarGuard::set("JCODE_OPENROUTER_API_KEY_NAME", "AZURE_OPENAI_API_KEY");
+    let _provider_features = EnvVarGuard::set("JCODE_OPENROUTER_PROVIDER_FEATURES", "0");
+    let _transport = EnvVarGuard::set("JCODE_OPENROUTER_TRANSPORT_STATE", "direct-api-key");
+    let _catalog = EnvVarGuard::set("JCODE_OPENROUTER_MODEL_CATALOG", "0");
+    let _model = EnvVarGuard::set("JCODE_OPENROUTER_MODEL", "azure-deployment");
+    let _key = EnvVarGuard::set("AZURE_OPENAI_API_KEY", "azure-test-key");
+
+    let provider = OpenRouterProvider::new().expect("build Azure OpenAI runtime");
+    assert_eq!(provider.runtime_display_name(), "Azure OpenAI");
+    assert_eq!(Provider::display_name(&provider), "Azure OpenAI");
+    assert_eq!(
+        provider.direct_openai_compatible_route_parts(),
+        Some((
+            "Azure OpenAI".to_string(),
+            "openrouter".to_string(),
+            "https://example.openai.azure.com/openai/v1".to_string(),
+        ))
+    );
+    let routes = provider.model_routes();
+    assert_eq!(routes.len(), 1);
+    assert_eq!(routes[0].provider, "Azure OpenAI");
+    assert_eq!(routes[0].api_method, "openrouter");
+    assert_eq!(routes[0].model, "azure-deployment");
+}
+
+#[test]
 fn custom_endpoint_using_jcode_key_name_is_not_a_subscription_runtime() {
     let _lock = ENV_LOCK.lock();
     let temp = TempDir::new().expect("create temp home");
