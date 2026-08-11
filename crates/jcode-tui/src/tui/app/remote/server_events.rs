@@ -1724,6 +1724,13 @@ pub(in crate::tui::app) fn handle_server_event(
             }
             if catalog_outcome.catalog_changed {
                 app.persist_remote_model_catalog_cache();
+                // `GetModelCatalog` returns a metadata-only History event. The
+                // picker is opened immediately after that request, so it may be
+                // showing the previous cached routes when this detailed snapshot
+                // arrives. Rebuild it in place just like AvailableModelsUpdated
+                // does, otherwise newly discovered provider routes stay hidden
+                // until the user closes and reopens `/model`.
+                app.refresh_open_model_picker_after_catalog_update();
             }
             app.remote_skills = skills;
             app.invalidate_command_candidates_cache();

@@ -219,7 +219,7 @@ fn test_prepare_review_spawned_session_uses_visible_transcript_for_judge_session
                     tool_use_id: tool_id.clone(),
                     content: "SECRET_TOOL_OUTPUT_SHOULD_NOT_APPEAR".to_string(),
                     is_error: None,
-                artifact: None,
+                    artifact: None,
                 }],
             );
             parent.add_message(
@@ -802,6 +802,102 @@ fn test_available_models_updated_event_surfaces_authed_provider_in_remote_model_
     assert!(copilot_entry.options.iter().any(|route| {
         route.provider == "Copilot" && route.api_method == "copilot" && route.available
     }));
+}
+
+#[test]
+fn test_detailed_history_catalog_refreshes_open_remote_model_picker_in_place() {
+    with_temp_jcode_home(|| {
+        let mut app = create_test_app();
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _guard = rt.enter();
+        let mut remote = crate::tui::backend::RemoteConnection::dummy();
+        let session_id = app.session.id.clone();
+
+        app.is_remote = true;
+        app.remote_session_id = Some(session_id.clone());
+        app.remote_provider_name = Some("OpenAI".to_string());
+        app.remote_provider_model = Some("FW-Kimi-K3".to_string());
+        app.remote_available_entries = vec!["FW-Kimi-K3".to_string()];
+        app.remote_model_options = vec![crate::provider::ModelRoute {
+            model: "FW-Kimi-K3".to_string(),
+            provider: "Copilot".to_string(),
+            api_method: "copilot".to_string(),
+            available: true,
+            detail: String::new(),
+            cheapness: None,
+        }];
+        app.open_model_picker();
+
+        let initial_picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("stale picker should be open");
+        assert_eq!(
+            initial_picker.entries[0].active_option().unwrap().provider,
+            "Copilot"
+        );
+
+        app.handle_server_event(
+            crate::protocol::ServerEvent::History {
+                id: 42,
+                session_id,
+                messages: vec![],
+                images: vec![],
+                provider_name: Some("OpenAI".to_string()),
+                provider_model: Some("FW-Kimi-K3".to_string()),
+                subagent_model: None,
+                autoreview_enabled: None,
+                autojudge_enabled: None,
+                available_models: vec!["FW-Kimi-K3".to_string()],
+                available_model_routes: vec![crate::provider::ModelRoute {
+                    model: "FW-Kimi-K3".to_string(),
+                    provider: "Azure OpenAI".to_string(),
+                    api_method: "openai-compatible:azure-openai".to_string(),
+                    available: true,
+                    detail: "Azure AI Foundry deployment".to_string(),
+                    cheapness: None,
+                }],
+                mcp_servers: vec![],
+                skills: vec![],
+                total_tokens: None,
+                token_usage_totals: None,
+                all_sessions: vec![],
+                client_count: Some(1),
+                is_canary: Some(true),
+                server_version: None,
+                server_name: None,
+                server_icon: None,
+                server_has_update: None,
+                was_interrupted: None,
+                reload_recovery: None,
+                connection_type: Some("unix".to_string()),
+                status_detail: None,
+                upstream_provider: None,
+                resolved_credential: None,
+                reasoning_effort: None,
+                service_tier: None,
+                compaction_mode: crate::config::CompactionMode::Reactive,
+                activity: None,
+                side_panel: crate::side_panel::SidePanelSnapshot::default(),
+            },
+            &mut remote,
+        );
+
+        let refreshed_picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("detailed catalog should keep the picker open");
+        let kimi = refreshed_picker
+            .entries
+            .iter()
+            .find(|entry| entry.name == "FW-Kimi-K3")
+            .expect("Azure deployment should remain visible");
+        assert_eq!(
+            kimi.active_option().unwrap().provider,
+            "Azure OpenAI",
+            "the open picker must repaint when GetModelCatalog returns detailed routes"
+        );
+    });
 }
 
 #[test]
