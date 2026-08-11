@@ -164,6 +164,9 @@ pub fn register_external_provider_runtimes() {
             OpenRouterRuntimeSpec::OpenRouterApiKey => {
                 std::sync::Arc::new(OpenRouterProvider::new_openrouter_api_key_runtime()?)
             }
+            OpenRouterRuntimeSpec::AzureOpenAi => {
+                std::sync::Arc::new(OpenRouterProvider::new_azure_openai_runtime()?)
+            }
             OpenRouterRuntimeSpec::CompatibleProfile(profile) => std::sync::Arc::new(
                 OpenRouterProvider::new_openai_compatible_profile_runtime(profile)?,
             ),

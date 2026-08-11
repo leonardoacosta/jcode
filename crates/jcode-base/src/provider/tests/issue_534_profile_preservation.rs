@@ -34,6 +34,9 @@ input = ["text"]
                     ))
                 }
                 OpenRouterRuntimeSpec::Default => Arc::new(OpenRouterProvider::new()?),
+                OpenRouterRuntimeSpec::AzureOpenAi => {
+                    Arc::new(OpenRouterProvider::new_azure_openai_runtime()?)
+                }
                 OpenRouterRuntimeSpec::CompatibleProfile(profile) => Arc::new(
                     OpenRouterProvider::new_openai_compatible_profile_runtime(profile)?,
                 ),

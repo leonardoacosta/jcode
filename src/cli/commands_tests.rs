@@ -615,6 +615,11 @@ fn cli_provider_choice_filter_uses_typed_api_methods() {
         test_route("gpt-5.5", "OpenAI", "openai-api-key"),
         test_route("gpt-5.6-pro[web]", "OpenAI", "chatgpt-web"),
         test_route("deepseek/deepseek-v4-pro", "auto", "openrouter"),
+        test_route(
+            "FW-Kimi-K3",
+            "Azure OpenAI",
+            "openai-compatible:azure-openai",
+        ),
         test_route("grok-code-fast-1", "Copilot", "copilot"),
     ];
 
@@ -643,6 +648,18 @@ fn cli_provider_choice_filter_uses_typed_api_methods() {
         claude
             .iter()
             .all(|route| route.api_method_kind().is_anthropic_credential_route())
+    );
+
+    let azure = filter_cli_model_routes_for_choice(
+        &super::super::provider_init::ProviderChoice::Azure,
+        &routes,
+    );
+    assert_eq!(azure.len(), 1);
+    assert_eq!(azure[0].provider, "Azure OpenAI");
+    assert!(
+        azure[0]
+            .api_method_kind()
+            .matches_openai_compatible_profile("azure-openai")
     );
 }
 

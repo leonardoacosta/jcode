@@ -232,8 +232,9 @@ pub(super) fn multiprovider_model_routes(provider: &MultiProvider) -> Vec<ModelR
 
     append_anthropic_routes(provider, &mut routes, has_oauth, has_api_key);
     append_openai_routes(provider, &mut routes, &openai_auth);
-    let added_direct_openai_compatible_routes =
-        append_openai_compatible_profile_routes(provider, &mut routes);
+    let added_profile_routes = append_openai_compatible_profile_routes(provider, &mut routes);
+    let added_azure_routes = append_azure_openai_routes(provider, &mut routes);
+    let added_direct_openai_compatible_routes = added_profile_routes || added_azure_routes;
     append_copilot_routes(provider, &mut routes);
     append_gemini_routes(provider, &mut routes);
     append_antigravity_routes(provider, &mut routes);
@@ -484,6 +485,53 @@ fn append_openai_compatible_profile_routes(
         routes.extend(named_routes);
     }
     added_any
+}
+
+/// Saved Azure OpenAI deployments are a first-class direct-compatible route
+/// family. They must appear after a fresh process start even when Azure is not
+/// the initial provider, so `/model` can switch to them on demand.
+fn append_azure_openai_routes(provider: &MultiProvider, routes: &mut Vec<ModelRoute>) -> bool {
+    if !crate::auth::azure::has_configuration() {
+        return false;
+    }
+
+    let api_method = format!("openai-compatible:{}", crate::auth::azure::PROFILE_ID);
+    if provider
+        .openrouter_provider()
+        .and_then(|runtime| runtime.direct_openai_compatible_route_parts())
+        .is_some_and(|(_, active_method, _)| active_method == api_method)
+    {
+        // The explicitly selected Azure runtime contributes its live routes via
+        // the shared OpenRouter transport later in this catalog build.
+        return false;
+    }
+
+    let Some(endpoint) = crate::auth::azure::load_endpoint() else {
+        return false;
+    };
+    let detail = format!("{}; {}", endpoint, crate::auth::azure::method_detail());
+    let mut added = false;
+    for model in crate::auth::azure::load_models() {
+        if !is_listable_model_name(&model)
+            || routes.iter().any(|route| {
+                route.model == model
+                    && route.provider == crate::auth::azure::DISPLAY_NAME
+                    && route.api_method == api_method
+            })
+        {
+            continue;
+        }
+        routes.push(ModelRoute {
+            model,
+            provider: crate::auth::azure::DISPLAY_NAME.to_string(),
+            api_method: api_method.clone(),
+            available: true,
+            detail: detail.clone(),
+            cheapness: None,
+        });
+        added = true;
+    }
+    added
 }
 
 /// Picker routes for one user-defined named provider profile from config.

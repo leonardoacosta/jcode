@@ -2552,7 +2552,7 @@ fn non_subscription_runtimes_keep_existing_display_and_route_identity() {
 }
 
 #[test]
-fn azure_openai_runtime_has_explicit_display_and_openrouter_route_identity() {
+fn azure_openai_runtime_has_explicit_display_and_profile_route_identity() {
     let _lock = ENV_LOCK.lock();
     let temp = TempDir::new().expect("create temp home");
     let jcode_home = temp.path().join("jcode-home");
@@ -2579,14 +2579,14 @@ fn azure_openai_runtime_has_explicit_display_and_openrouter_route_identity() {
         provider.direct_openai_compatible_route_parts(),
         Some((
             "Azure OpenAI".to_string(),
-            "openrouter".to_string(),
+            "openai-compatible:azure-openai".to_string(),
             "https://example.openai.azure.com/openai/v1".to_string(),
         ))
     );
     let routes = provider.model_routes();
     assert_eq!(routes.len(), 1);
     assert_eq!(routes[0].provider, "Azure OpenAI");
-    assert_eq!(routes[0].api_method, "openrouter");
+    assert_eq!(routes[0].api_method, "openai-compatible:azure-openai");
     assert_eq!(routes[0].model, "azure-deployment");
 }
 

@@ -908,6 +908,21 @@ pub struct OpenRouterProvider {
 }
 
 impl OpenRouterProvider {
+    fn is_azure_openai_runtime(&self) -> bool {
+        self.profile_id
+            .as_deref()
+            .is_some_and(|id| id.eq_ignore_ascii_case(jcode_base::auth::azure::PROFILE_ID))
+            || std::env::var("JCODE_RUNTIME_PROVIDER")
+                .ok()
+                .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
+            || std::env::var("JCODE_OPENROUTER_CACHE_NAMESPACE")
+                .ok()
+                .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
+            || std::env::var("JCODE_OPENROUTER_API_KEY_NAME")
+                .ok()
+                .is_some_and(|value| value.trim().eq_ignore_ascii_case("AZURE_OPENAI_API_KEY"))
+    }
+
     fn profile_supports_reasoning_effort(profile_id: Option<&str>) -> bool {
         matches!(profile_id, Some(id) if id.eq_ignore_ascii_case("deepseek"))
     }
@@ -1172,6 +1187,9 @@ impl OpenRouterProvider {
         if self.is_jcode_subscription_runtime() {
             return jcode_base::subscription_catalog::JCODE_PROVIDER_DISPLAY_NAME.to_string();
         }
+        if !self.supports_provider_features && self.is_azure_openai_runtime() {
+            return jcode_base::auth::azure::DISPLAY_NAME.to_string();
+        }
 
         // Direct OpenAI-compatible profile (NVIDIA NIM, DeepSeek, Z.AI, ...).
         if let Some(profile_id) = self.profile_id.as_deref() {
@@ -1192,18 +1210,6 @@ impl OpenRouterProvider {
                 && let Some(profile) = openai_compatible_profile_by_id(profile_id)
             {
                 return profile.display_name.to_string();
-            }
-            if std::env::var("JCODE_RUNTIME_PROVIDER")
-                .ok()
-                .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
-                || std::env::var("JCODE_OPENROUTER_CACHE_NAMESPACE")
-                    .ok()
-                    .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
-                || std::env::var("JCODE_OPENROUTER_API_KEY_NAME")
-                    .ok()
-                    .is_some_and(|value| value.trim().eq_ignore_ascii_case("AZURE_OPENAI_API_KEY"))
-            {
-                return "Azure OpenAI".to_string();
             }
             if !self.api_base.contains("openrouter.ai") {
                 return "OpenAI-compatible".to_string();
@@ -1226,19 +1232,10 @@ impl OpenRouterProvider {
             ));
         }
 
-        if std::env::var("JCODE_RUNTIME_PROVIDER")
-            .ok()
-            .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
-            || std::env::var("JCODE_OPENROUTER_CACHE_NAMESPACE")
-                .ok()
-                .is_some_and(|value| value.trim().eq_ignore_ascii_case("azure-openai"))
-            || std::env::var("JCODE_OPENROUTER_API_KEY_NAME")
-                .ok()
-                .is_some_and(|value| value.trim().eq_ignore_ascii_case("AZURE_OPENAI_API_KEY"))
-        {
+        if self.is_azure_openai_runtime() {
             return Some((
-                "Azure OpenAI".to_string(),
-                "openrouter".to_string(),
+                jcode_base::auth::azure::DISPLAY_NAME.to_string(),
+                format!("openai-compatible:{}", jcode_base::auth::azure::PROFILE_ID),
                 self.api_base.clone(),
             ));
         }
@@ -1440,6 +1437,7 @@ impl OpenRouterProvider {
             .as_deref()
             .is_some_and(|id| id.eq_ignore_ascii_case(prefix))
             || openai_compatible_profile_by_id(prefix).is_some()
+            || prefix.eq_ignore_ascii_case(jcode_base::auth::azure::PROFILE_ID)
             // A user-defined named provider profile (`[providers.<name>]` in
             // config.toml) is also a valid session-routing prefix. The shared
             // server may boot via the deferred-auth path without binding this
@@ -1511,7 +1509,11 @@ impl OpenRouterProvider {
             .ok()
             .map(|value| value.trim().to_ascii_lowercase())
             .filter(|value| !value.is_empty())
-            .and_then(|id| openai_compatible_profile_by_id(&id).map(|_| id))
+            .and_then(|id| {
+                (id.eq_ignore_ascii_case(jcode_base::auth::azure::PROFILE_ID)
+                    || openai_compatible_profile_by_id(&id).is_some())
+                .then_some(id)
+            })
             .or_else(|| {
                 autodetected_profile
                     .as_ref()
@@ -1631,6 +1633,75 @@ impl OpenRouterProvider {
             models_cache: Arc::new(RwLock::new(ModelsCache::default())),
             model_catalog_refresh: Arc::new(Mutex::new(ModelCatalogRefreshState::default())),
             provider_routing: Arc::new(RwLock::new(Self::parse_provider_routing())),
+            provider_pin: Arc::new(Mutex::new(None)),
+            endpoints_cache: Arc::new(RwLock::new(HashMap::new())),
+            endpoint_refresh: Arc::new(Mutex::new(EndpointRefreshTracker::default())),
+        })
+    }
+
+    pub fn new_azure_openai_runtime() -> Result<Self> {
+        let api_base = jcode_base::auth::azure::load_endpoint().ok_or_else(|| {
+            anyhow::anyhow!(
+                "{} not found in environment or ~/.config/jcode/{}",
+                jcode_base::auth::azure::ENDPOINT_ENV,
+                jcode_base::auth::azure::ENV_FILE,
+            )
+        })?;
+        let static_models = jcode_base::auth::azure::load_models();
+        let model = jcode_base::auth::azure::load_model()
+            .or_else(|| static_models.first().cloned())
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "{} not found in environment or ~/.config/jcode/{}",
+                    jcode_base::auth::azure::MODEL_ENV,
+                    jcode_base::auth::azure::ENV_FILE,
+                )
+            })?;
+        let auth = if jcode_base::auth::azure::uses_entra_id() {
+            ProviderAuth::AzureEntra {
+                label: "Azure OpenAI Entra ID".to_string(),
+            }
+        } else {
+            let api_key = load_api_key_from_env_or_config(
+                jcode_base::auth::azure::API_KEY_ENV,
+                jcode_base::auth::azure::ENV_FILE,
+            )
+            .ok_or_else(|| {
+                anyhow::anyhow!(
+                    "{} not found in environment or ~/.config/jcode/{}",
+                    jcode_base::auth::azure::API_KEY_ENV,
+                    jcode_base::auth::azure::ENV_FILE,
+                )
+            })?;
+            ProviderAuth::HeaderValue {
+                header_name: HeaderName::from_static("api-key"),
+                value: api_key,
+                label: jcode_base::auth::azure::API_KEY_ENV.to_string(),
+            }
+        };
+
+        Ok(Self {
+            client: jcode_provider_core::shared_http_client(),
+            model: Arc::new(RwLock::new(model)),
+            reasoning_effort: Arc::new(RwLock::new(Self::initial_reasoning_effort(
+                None,
+                Some(jcode_base::auth::azure::PROFILE_ID),
+            ))),
+            api_base,
+            auth,
+            supports_provider_features: false,
+            supports_model_catalog: false,
+            profile_id: Some(jcode_base::auth::azure::PROFILE_ID.to_string()),
+            reasoning_effort_support: None,
+            max_tokens: Self::configured_max_tokens(Some(jcode_base::auth::azure::PROFILE_ID)),
+            extra_body: Self::resolve_extra_body(None, jcode_base::auth::azure::ENV_FILE),
+            static_models,
+            static_context_limits: HashMap::new(),
+            static_image_input_support: HashMap::new(),
+            send_openrouter_headers: false,
+            models_cache: Arc::new(RwLock::new(ModelsCache::default())),
+            model_catalog_refresh: Arc::new(Mutex::new(ModelCatalogRefreshState::default())),
+            provider_routing: Arc::new(RwLock::new(ProviderRouting::default())),
             provider_pin: Arc::new(Mutex::new(None)),
             endpoints_cache: Arc::new(RwLock::new(HashMap::new())),
             endpoint_refresh: Arc::new(Mutex::new(EndpointRefreshTracker::default())),

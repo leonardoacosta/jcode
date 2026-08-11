@@ -3356,8 +3356,15 @@ fn filter_cli_model_routes_for_choice(
             route.api_method_kind(),
             crate::provider::ModelRouteApiMethod::OpenAIApiKey
         ),
-        ProviderChoice::Openrouter | ProviderChoice::Azure => {
-            route.api_method_kind().is_openrouter()
+        ProviderChoice::Openrouter => route.api_method_kind().is_openrouter(),
+        ProviderChoice::Azure => {
+            let method = route.api_method_kind();
+            method.matches_openai_compatible_profile(crate::auth::azure::PROFILE_ID)
+                || (method.is_openrouter()
+                    && crate::provider::model_route_provider_labels_match(
+                        &route.provider,
+                        crate::auth::azure::DISPLAY_NAME,
+                    ))
         }
         ProviderChoice::Copilot => route.api_method_kind().is_copilot(),
         _ => true,

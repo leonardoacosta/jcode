@@ -51,6 +51,8 @@ pub enum OpenRouterRuntimeSpec {
     Default,
     /// Real OpenRouter aggregator pinned to the OPENROUTER_API_KEY route.
     OpenRouterApiKey,
+    /// Azure OpenAI endpoint loaded from the saved `azure-openai.env` config.
+    AzureOpenAi,
     /// Direct OpenAI-compatible profile endpoint (DeepSeek, NVIDIA NIM, ...).
     CompatibleProfile(crate::provider_catalog::OpenAiCompatibleProfile),
     /// User-defined named OpenAI-compatible provider from config

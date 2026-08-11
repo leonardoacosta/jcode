@@ -41,6 +41,11 @@ fn with_clean_provider_test_env<T>(f: impl FnOnce() -> T) -> T {
         "JCODE_NAMED_PROVIDER_PROFILE",
         "JCODE_PROVIDER_PROFILE_ACTIVE",
         "JCODE_PROVIDER_PROFILE_NAME",
+        crate::auth::azure::ENDPOINT_ENV,
+        crate::auth::azure::API_KEY_ENV,
+        crate::auth::azure::MODEL_ENV,
+        crate::auth::azure::MODELS_ENV,
+        crate::auth::azure::USE_ENTRA_ENV,
     ];
     for profile in crate::provider_catalog::openai_compatible_profiles() {
         if !profile_env_keys.contains(&profile.api_key_env) {
@@ -151,6 +156,29 @@ fn save_test_openai_compatible_login_config(default_model: &str) {
         Some(default_model),
     )
     .expect("save default model");
+}
+
+fn save_test_azure_openai_login_config() {
+    for (key, value) in [
+        (
+            crate::auth::azure::ENDPOINT_ENV,
+            "https://example.openai.azure.com/openai/v1",
+        ),
+        (crate::auth::azure::API_KEY_ENV, "azure-test-key"),
+        (crate::auth::azure::MODEL_ENV, "FW-Kimi-K3"),
+        (
+            crate::auth::azure::MODELS_ENV,
+            "FW-Kimi-K3,gpt-5.5,claude-sonnet-5",
+        ),
+        (crate::auth::azure::USE_ENTRA_ENV, "0"),
+    ] {
+        crate::provider_catalog::save_env_value_to_env_file(
+            key,
+            crate::auth::azure::ENV_FILE,
+            Some(value),
+        )
+        .expect("save Azure OpenAI test config");
+    }
 }
 
 fn save_test_openrouter_model_cache(namespace: &str, source_api_base: &str, model_ids: &[&str]) {
@@ -658,6 +686,70 @@ fn openai_compatible_api_key_setup_survives_process_restart_without_relogin() {
 }
 
 #[test]
+fn azure_openai_deployments_are_visible_and_selectable_after_process_restart() {
+    with_clean_provider_test_env(|| {
+        save_test_azure_openai_login_config();
+
+        // Simulate a fresh process after `jcode login --provider azure`: only
+        // the saved Azure config remains, with no Azure runtime env projection.
+        for key in [
+            "JCODE_RUNTIME_PROVIDER",
+            "JCODE_ACTIVE_PROVIDER",
+            "JCODE_INITIAL_PROVIDER_EXPLICIT",
+            "JCODE_OPENROUTER_API_BASE",
+            "JCODE_OPENROUTER_API_KEY_NAME",
+            "JCODE_OPENROUTER_ENV_FILE",
+            "JCODE_OPENROUTER_CACHE_NAMESPACE",
+            "JCODE_OPENROUTER_PROVIDER_FEATURES",
+            "JCODE_OPENROUTER_TRANSPORT_STATE",
+            "JCODE_OPENROUTER_MODEL_CATALOG",
+            "JCODE_OPENROUTER_MODEL",
+            "JCODE_OPENROUTER_STATIC_MODELS",
+        ] {
+            crate::env::remove_var(key);
+        }
+
+        let provider = MultiProvider::new_fast();
+        let routes = provider.model_routes();
+        let azure_routes = routes
+            .iter()
+            .filter(|route| route.provider == "Azure OpenAI")
+            .collect::<Vec<_>>();
+
+        assert_eq!(
+            azure_routes
+                .iter()
+                .map(|route| route.model.as_str())
+                .collect::<Vec<_>>(),
+            vec!["FW-Kimi-K3", "gpt-5.5", "claude-sonnet-5"],
+            "saved Azure deployments should appear in the global model picker; routes: {routes:?}",
+        );
+        assert!(azure_routes.iter().all(|route| {
+            route.api_method == "openai-compatible:azure-openai" && route.available
+        }));
+
+        let selection = RouteSelection::from_model_route(
+            azure_routes
+                .iter()
+                .find(|route| route.model == "gpt-5.5")
+                .expect("gpt-5.5 Azure route"),
+        );
+        provider
+            .set_route_selection(&selection)
+            .expect("select saved Azure deployment from global picker");
+
+        assert_eq!(provider.model(), "gpt-5.5");
+        assert_eq!(provider.display_name(), "Azure OpenAI");
+        assert_eq!(
+            ProviderRegistry::new(&provider)
+                .active_compatible_profile_id()
+                .as_deref(),
+            Some("azure-openai")
+        );
+    });
+}
+
+#[test]
 fn configured_openai_compatible_profile_routes_use_live_cache_when_not_active_provider() {
     with_clean_provider_test_env(|| {
         crate::provider_catalog::save_env_value_to_env_file(
@@ -984,6 +1076,9 @@ fn register_test_external_runtimes() {
             OpenRouterRuntimeSpec::Default => Arc::new(OpenRouterProvider::new()?),
             OpenRouterRuntimeSpec::OpenRouterApiKey => {
                 Arc::new(OpenRouterProvider::new_openrouter_api_key_runtime()?)
+            }
+            OpenRouterRuntimeSpec::AzureOpenAi => {
+                Arc::new(OpenRouterProvider::new_azure_openai_runtime()?)
             }
             OpenRouterRuntimeSpec::CompatibleProfile(profile) => Arc::new(
                 OpenRouterProvider::new_openai_compatible_profile_runtime(profile)?,

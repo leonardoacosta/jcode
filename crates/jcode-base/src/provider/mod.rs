@@ -866,6 +866,16 @@ impl MultiProvider {
         Some((profile, rest))
     }
 
+    fn azure_openai_model_prefix(model: &str) -> Option<&str> {
+        let (prefix, rest) = model.split_once(':')?;
+        let rest = rest.trim();
+        (prefix
+            .trim()
+            .eq_ignore_ascii_case(crate::auth::azure::PROFILE_ID)
+            && !rest.is_empty())
+        .then_some(rest)
+    }
+
     /// Find the configured OpenAI-compatible profile that serves a bare model
     /// id, using the live route catalog as the source of truth.
     ///
@@ -1261,6 +1271,41 @@ impl MultiProvider {
         };
         provider.set_model(model)?;
         registry.set_active_compatible_profile(profile_id);
+        self.set_active_provider(ActiveProvider::OpenRouter);
+        Ok(())
+    }
+
+    fn set_model_on_azure_openai(&self, model: &str) -> Result<()> {
+        let model = model.trim();
+        if model.is_empty() {
+            anyhow::bail!("Model cannot be empty");
+        }
+        if !crate::auth::azure::has_configuration() {
+            anyhow::bail!(
+                "Azure OpenAI credentials not available. Run `jcode login --provider azure` first."
+            );
+        }
+
+        let registry = ProviderRegistry::new(self);
+        let api_method = format!("openai-compatible:{}", crate::auth::azure::PROFILE_ID);
+        let provider = if let Some(existing) = registry
+            .compatible_profile(crate::auth::azure::PROFILE_ID)
+            .filter(|provider| {
+                provider
+                    .direct_openai_compatible_route_parts()
+                    .is_some_and(|(_, method, _)| method == api_method)
+            }) {
+            existing
+        } else {
+            let provider = external::instantiate_openrouter_runtime(
+                external::OpenRouterRuntimeSpec::AzureOpenAi,
+            )?;
+            registry
+                .install_compatible_profile(crate::auth::azure::PROFILE_ID, Arc::clone(&provider));
+            provider
+        };
+        provider.set_model(model)?;
+        registry.set_active_compatible_profile(crate::auth::azure::PROFILE_ID);
         self.set_active_provider(ActiveProvider::OpenRouter);
         Ok(())
     }
@@ -1908,6 +1953,10 @@ impl Provider for MultiProvider {
         let requested_model = model.trim();
         if requested_model.is_empty() {
             anyhow::bail!("Model cannot be empty");
+        }
+
+        if let Some(target_model) = Self::azure_openai_model_prefix(requested_model) {
+            return self.set_model_on_azure_openai(target_model);
         }
 
         if let Some((profile, target_model)) = Self::openai_compatible_model_prefix(requested_model)

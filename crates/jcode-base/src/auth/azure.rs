@@ -5,6 +5,8 @@ use crate::provider_catalog::{
 };
 
 pub const ENV_FILE: &str = "azure-openai.env";
+pub const PROFILE_ID: &str = "azure-openai";
+pub const DISPLAY_NAME: &str = "Azure OpenAI";
 pub const ENDPOINT_ENV: &str = "AZURE_OPENAI_ENDPOINT";
 pub const API_KEY_ENV: &str = "AZURE_OPENAI_API_KEY";
 pub const MODEL_ENV: &str = "AZURE_OPENAI_MODEL";
