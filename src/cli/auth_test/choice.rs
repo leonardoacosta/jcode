@@ -338,6 +338,7 @@ fn validate_auth_test_tool_smoke_transcript(
                     tool_use_id,
                     content,
                     is_error,
+                    ..
                 } => {
                     tool_results.push((tool_use_id.as_str(), content.as_str(), *is_error));
                 }
