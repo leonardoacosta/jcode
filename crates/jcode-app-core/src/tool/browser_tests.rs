@@ -344,6 +344,14 @@ fn mac_fleet_errors_preserve_policy_meaning() {
     .unwrap_err()
     .to_string();
     assert!(stale.contains("stale generation"));
+
+    let emergency_stop = mac_fleet::tool_error_from_wire(json!({
+        "ok": false,
+        "error": {"kind": "emergencyStop", "message": "emergency stop is active"}
+    }))
+    .unwrap_err()
+    .to_string();
+    assert!(emergency_stop.contains("emergency stop is active"));
 }
 
 #[cfg(unix)]

@@ -105,6 +105,7 @@ pub fn tool_error_from_wire(value: Value) -> Result<Value> {
         "approvalRequired" => anyhow::bail!("Mac browser fleet approval required on the Mac"),
         "staleGeneration" => anyhow::bail!("Mac browser fleet stale generation; refresh inventory"),
         "hardDenied" => anyhow::bail!("Mac browser fleet action is blocked by Mac policy"),
+        "emergencyStop" => anyhow::bail!("Mac browser fleet emergency stop is active"),
         _ => anyhow::bail!("Mac browser fleet request failed"),
     }
 }
