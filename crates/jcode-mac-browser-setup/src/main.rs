@@ -1,4 +1,4 @@
-use jcode_mac_browser_setup::{install, remove, status, InstallOptions};
+use jcode_mac_browser_setup::{InstallOptions, install, remove, status};
 use std::env;
 use std::path::PathBuf;
 
