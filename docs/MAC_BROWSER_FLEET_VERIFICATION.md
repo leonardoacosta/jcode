@@ -108,3 +108,31 @@ Run end to end against the operator's real Chrome profile, through the broker's 
 After removing the temporary diagnostic shim and reinstalling with `jcode-mac-browser-setup install`, both native-host manifests point directly at `~/.local/bin/jcode-mac-browser-fleet`, and `browser list_tabs browser=mac` still returns ordinary-profile targets. The verified path uses no debug wrapper.
 
 Operator note: `jcode-mac-browser-setup install` writes the SSH include file but deliberately does not edit `~/.ssh/config`. The `Include ~/.ssh/jcode-mac-browser-fleet.conf` line must be present in that config, and an unrelated rewrite of the file will silently drop the tunnel.
+
+## Security boundary re-verification (2026-08-11)
+
+Run against the live Mac through the forwarded peer socket after all fixes:
+
+| Check | Result |
+| --- | --- |
+| Wrong secret | `unauthenticated`, no secret echoed in the error |
+| Native secret replayed on the peer wire | `unauthenticated` (the two secrets are not interchangeable) |
+| `grantLease` attempted through the forwarded peer socket | rejected; leases are mintable only on the Mac-local authority socket |
+| Stale generation | `staleGeneration` |
+| Navigate to `chrome://settings/`, `chrome://extensions/`, `about:config` under an active lease | `hardDenied` |
+| Navigate to `https://example.com/` under an active lease | `accepted` on three ordinary tabs |
+| Tab already sitting on a privileged URL | `hardDenied` regardless of destination |
+
+### Hard-deny gap found and fixed
+
+`Context::hard_deny` classified only the tab a request targeted, never the
+navigation *destination*. `context_for_url` existed but had no callers, so with
+a valid navigate lease an ordinary tab could be driven into `chrome://settings`
+or `chrome://extensions`. This was observed live before the fix: all three
+privileged destinations returned `accepted`.
+
+`navigation_hard_deny` now classifies the destination and the broker refuses it
+before consulting leases, because a lease authorizes acting on a target and
+never authorizes navigating that target somewhere privileged. Pinned by
+`navigation_destination_is_hard_denied_even_under_an_active_lease`.
+
