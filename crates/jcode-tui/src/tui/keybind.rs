@@ -384,6 +384,7 @@ pub struct ToggleKeys {
     pub info_widget: ToggleBinding,
     pub todo_card: ToggleBinding,
     pub swarm_panel_focus: ToggleBinding,
+    pub artifact_action_palette: ToggleBinding,
 }
 
 pub fn load_toggle_keys() -> ToggleKeys {
@@ -400,6 +401,10 @@ pub fn load_toggle_keys() -> ToggleKeys {
             &cfg.keybindings.swarm_panel_focus,
             swarm_panel_focus_default(),
         ),
+        artifact_action_palette: ToggleBinding::load_with_default(
+            &cfg.keybindings.artifact_action_palette,
+            artifact_action_palette_default(),
+        ),
     }
 }
 
@@ -414,6 +419,14 @@ fn swarm_panel_focus_default() -> KeyBinding {
     KeyBinding {
         code: KeyCode::Char('n'),
         modifiers: KeyModifiers::ALT,
+    }
+}
+
+/// The default artifact action palette chord: Alt+Ctrl+A.
+fn artifact_action_palette_default() -> KeyBinding {
+    KeyBinding {
+        code: KeyCode::Char('a'),
+        modifiers: KeyModifiers::ALT | KeyModifiers::CONTROL,
     }
 }
 

@@ -978,6 +978,8 @@ pub struct KeybindingsConfig {
     /// prompt, esc exits). Active only when `agents.swarm_spawn_mode = "inline"`
     /// and the session manages swarm agents.
     pub swarm_panel_focus: String,
+    /// Open the artifact action palette (default: "alt+ctrl+a").
+    pub artifact_action_palette: String,
     /// Spawn a fresh jcode session in a new terminal window (default: unbound).
     /// Example: "alt+enter".
     pub new_terminal: String,
@@ -1026,6 +1028,7 @@ impl Default for KeybindingsConfig {
             info_widget_toggle: get("info_widget_toggle", "alt+i"),
             todo_card_toggle: get("todo_card_toggle", "alt+x"),
             swarm_panel_focus: get("swarm_panel_focus", "alt+n"),
+            artifact_action_palette: get("artifact_action_palette", "alt+ctrl+a"),
             new_terminal: get("new_terminal", ""),
             open_resume: get(
                 "open_resume",

@@ -182,6 +182,11 @@ pub fn jcode_bindings(cfg: &KeybindingsConfig) -> Vec<JcodeBinding> {
             cfg.info_widget_toggle.as_str(),
         ),
         (
+            "artifact_action_palette",
+            "Open artifact action palette",
+            cfg.artifact_action_palette.as_str(),
+        ),
+        (
             "new_terminal",
             "Spawn new terminal session",
             cfg.new_terminal.as_str(),

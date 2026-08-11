@@ -156,6 +156,11 @@ pub(super) fn build_registry(inputs: &RegistryInputs<'_>) -> Vec<KnownHotkey> {
         "focus the swarm panel",
     );
     push(
+        inputs.toggles.artifact_action_palette.binding().cloned(),
+        "artifact_action_palette",
+        "open the artifact action palette",
+    );
+    push(
         inputs.dictation.binding.clone(),
         "dictation",
         "start or stop dictation",
@@ -1050,6 +1055,10 @@ mod tests {
             ("workspace_down", Some(&["workspace_down"])),
             ("workspace_up", Some(&["workspace_up"])),
             ("workspace_right", Some(&["workspace_right"])),
+            (
+                "artifact_action_palette",
+                Some(&["artifact_action_palette"]),
+            ),
             ("new_terminal", Some(&["new_terminal"])),
             ("open_resume", Some(&["open_resume"])),
         ];

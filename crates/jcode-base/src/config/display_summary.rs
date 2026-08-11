@@ -31,6 +31,7 @@ impl Config {
 - Workspace down: `{}`
 - Workspace up: `{}`
 - Workspace right: `{}`
+- Artifact action palette: `{}`
 
 **Dictation:**
 - Command: `{}`
@@ -147,6 +148,7 @@ impl Config {
             self.keybindings.workspace_down,
             self.keybindings.workspace_up,
             self.keybindings.workspace_right,
+            self.keybindings.artifact_action_palette,
             if self.dictation.command.trim().is_empty() {
                 "(disabled)"
             } else {

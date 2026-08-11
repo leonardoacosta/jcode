@@ -81,6 +81,9 @@ info_widget_toggle = "alt+i"
 # Active only with agents.swarm_spawn_mode = "inline".
 swarm_panel_focus = "alt+n"
 
+# Open the artifact action palette.
+artifact_action_palette = "alt+ctrl+a"
+
 # Spawn a fresh jcode session in a new terminal window, reusing the current
 # session's working directory. Companion to the system-wide launch hotkeys.
 # `jcode setup-hotkey` installs these three global launch hotkeys on macOS,

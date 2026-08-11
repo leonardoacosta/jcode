@@ -315,6 +315,12 @@ pub const KEYBINDING_DEFAULTS: &[KeybindingDefault] = &[
         other: PlatformDefault::dev("alt+l"),
     },
     KeybindingDefault {
+        id: "artifact_action_palette",
+        description: "Open the artifact action palette",
+        macos: PlatformDefault::dev("alt+ctrl+a"),
+        other: PlatformDefault::dev("alt+ctrl+a"),
+    },
+    KeybindingDefault {
         id: "new_terminal",
         description: "Spawn a fresh jcode session in a new terminal window",
         // Companion to the system-wide launch hotkey (Cmd+; / Alt+;): the

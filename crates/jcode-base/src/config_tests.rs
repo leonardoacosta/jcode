@@ -51,6 +51,28 @@ fn swarm_max_concurrent_agents_defaults_to_safe_live_worker_budget() {
 }
 
 #[test]
+fn artifact_action_palette_key_default_parses_and_env_overrides() {
+    assert_eq!(
+        Config::default().keybindings.artifact_action_palette,
+        "alt+ctrl+a"
+    );
+
+    let cfg: Config = toml::from_str("[keybindings]\nartifact_action_palette = \"ctrl+shift+a\"\n")
+        .expect("artifact_action_palette should parse");
+    assert_eq!(cfg.keybindings.artifact_action_palette, "ctrl+shift+a");
+
+    let _guard = crate::storage::lock_test_env();
+    let previous = std::env::var_os("JCODE_ARTIFACT_ACTION_PALETTE_KEY");
+    crate::env::set_var("JCODE_ARTIFACT_ACTION_PALETTE_KEY", "alt+p");
+
+    let mut cfg = Config::default();
+    cfg.apply_env_overrides();
+    assert_eq!(cfg.keybindings.artifact_action_palette, "alt+p");
+
+    restore_env_var("JCODE_ARTIFACT_ACTION_PALETTE_KEY", previous);
+}
+
+#[test]
 fn mermaid_feature_defaults_on_and_parses_false() {
     assert!(Config::default().features.mermaid);
 

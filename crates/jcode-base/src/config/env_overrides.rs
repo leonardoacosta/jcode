@@ -80,6 +80,9 @@ impl Config {
         if let Ok(v) = std::env::var("JCODE_INFO_WIDGET_TOGGLE_KEY") {
             self.keybindings.info_widget_toggle = v;
         }
+        if let Ok(v) = std::env::var("JCODE_ARTIFACT_ACTION_PALETTE_KEY") {
+            self.keybindings.artifact_action_palette = v;
+        }
         if let Ok(v) = std::env::var("JCODE_NEW_TERMINAL_KEY") {
             self.keybindings.new_terminal = v;
         }
