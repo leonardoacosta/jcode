@@ -1,6 +1,0 @@
-interface:
-  display_name: "Open Work"
-  short_description: "Inspect and act on open tracked work"
-  default_prompt: "Use $open-work in interactive mode to show the current repository's open work and offer only supported, explicitly confirmed actions. Use report mode when a read-only inventory is requested."
-policy:
-  allow_implicit_invocation: true

@@ -88,3 +88,12 @@ vercel-prod-env-check
 Thumbs.db
 *.swp
 *.tmp
+
+# Skills now live in the jcode fork (source/jcode/skills), exposed here as a
+# tracked symlink so $JCODE_HOME/skills keeps resolving. See leonardoacosta/jcode@dev.
+
+# Stray runtime artifacts
+ambient/
+command-center/
+reload-info
+--full-page

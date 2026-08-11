@@ -1,4 +1,0 @@
-interface:
-  display_name: "Codex Apply"
-  short_description: "Implement and finalize one feature"
-  default_prompt: "Implement and finalize one OpenSpec feature, using native delegation only for proven-independent work and preserving verification and closeout."

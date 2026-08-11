@@ -1,4 +1,0 @@
-interface:
-  display_name: "Codex Feature"
-  short_description: "Author refined, final-state-verified OpenSpec features"
-  default_prompt: "Create or update a refined OpenSpec feature, verify its final artifact state, and bind the reviewed bytes to their containing commit."

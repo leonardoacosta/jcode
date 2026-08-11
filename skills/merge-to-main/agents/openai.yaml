@@ -1,4 +1,0 @@
-interface:
-  display_name: "Merge to Main"
-  short_description: "Safely review and merge a branch to main"
-  default_prompt: "Use $merge-to-main to locally validate, review, and merge the delivery branch into main."

@@ -1,6 +1,0 @@
-{
-  "total_tokens": 52302,
-  "duration_ms": 28612,
-  "tool_uses": 2,
-  "summary": "Applied number-pop-in pattern: stacked digit cells, spring on incoming, ease-in-out on outgoing, translateY + blur cross-fade with per-digit stagger via --i, reduced-motion guard collapses to instant swap."
-}

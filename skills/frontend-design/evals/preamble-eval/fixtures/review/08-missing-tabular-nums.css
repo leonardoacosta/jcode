@@ -1,9 +1,0 @@
-/* Fixture 08 — planted defect: a live-updating price/stat counter with no
-   `tabular-nums`, so digit width jitters as the value changes.
-   Rule under test: Mechanics Deslop #6 — MUST use `tabular-nums` on any
-   UI showing changing numeric values. */
-.price-counter {
-  font-size: 32px;
-  font-weight: 700;
-  font-variant-numeric: normal;
-}

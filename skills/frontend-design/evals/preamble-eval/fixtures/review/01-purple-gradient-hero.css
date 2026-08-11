@@ -1,8 +1,0 @@
-/* Fixture 01 — planted defect: purple-gradient hero background.
-   Rule under test: Canon of Slop #1 — Purple gradient hero
-   (`#7c3aed -> #2563eb` on white). */
-.hero {
-  background: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
-  color: white;
-  padding: 96px 24px;
-}
