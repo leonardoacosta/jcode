@@ -320,6 +320,12 @@ profile = "full"
 # disabled = ["browser", "gmail", "swarm"]
 # Disable all built-in tools unless enabled is set.
 disable_base_tools = false
+# Shell used by the bash tool and `!` input commands on Unix (ignored on
+# Windows). "bash" (default) runs plain `bash -c`. "native" uses your login
+# shell from $SHELL (zsh, fish, ...) so aliases/functions from its rc files
+# and its syntax are available. Any other value names an explicit shell
+# program, e.g. "zsh" or "/usr/bin/fish". Env override: JCODE_SHELL.
+shell = "bash"
 
 [acp]
 # Agent Client Protocol adapter compatibility profile: standard, extended, or full.

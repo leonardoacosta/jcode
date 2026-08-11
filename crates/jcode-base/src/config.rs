@@ -154,6 +154,7 @@ const CONFIG_ENV_KEYS: &[&str] = &[
     "JCODE_SCROLL_UP_FALLBACK_KEY",
     "JCODE_SCROLL_UP_KEY",
     "JCODE_SEARXNG_URL",
+    "JCODE_SHELL",
     "JCODE_SHOW_AGENTGREP_OUTPUT",
     "JCODE_SHOW_DIFFS",
     "JCODE_SHOW_THINKING",
@@ -583,6 +584,29 @@ pub struct ToolConfig {
     pub disabled: Vec<String>,
     /// Disable all built-in tools unless `enabled` is provided.
     pub disable_base_tools: bool,
+    /// Shell used by the bash tool and `!` input commands on Unix.
+    /// "" or "bash" (default): plain `bash -c`.
+    /// "native": the user's login shell from `$SHELL` (fallback: bash),
+    /// invoked as `<shell> -c`.
+    /// Any other value: treated as an explicit shell program path/name.
+    pub shell: String,
+}
+
+impl ToolConfig {
+    /// Resolve the shell program for tool/`!` command execution on Unix.
+    /// Returns the program to exec with `-c <command>`.
+    pub fn shell_program(&self) -> String {
+        let configured = self.shell.trim();
+        match configured {
+            "" | "bash" => "bash".to_string(),
+            "native" | "login" | "user" | "$SHELL" => std::env::var("SHELL")
+                .ok()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(|| "bash".to_string()),
+            other => other.to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]

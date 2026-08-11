@@ -548,7 +548,7 @@ fn build_shell_command(cmd_str: &str) -> TokioCommand {
     }
     #[cfg(not(windows))]
     {
-        let mut cmd = TokioCommand::new("bash");
+        let mut cmd = TokioCommand::new(crate::config::config().tools.shell_program());
         cmd.arg("-c").arg(cmd_str);
         configure_tool_scratch(&mut cmd);
         cmd
@@ -557,7 +557,7 @@ fn build_shell_command(cmd_str: &str) -> TokioCommand {
 
 #[cfg(unix)]
 fn build_detached_shell_wrapper(command: &str) -> StdCommand {
-    let mut cmd = StdCommand::new("bash");
+    let mut cmd = StdCommand::new(crate::config::config().tools.shell_program());
     cmd.arg("-lc")
         .arg(
             r#"eval "$JCODE_RELOAD_DETACH_COMMAND"; status=$?; printf '\n--- Command finished with exit code: %s ---\n' "$status"; exit "$status""#,

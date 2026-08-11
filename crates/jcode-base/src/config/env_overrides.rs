@@ -120,6 +120,9 @@ impl Config {
         {
             self.tools.disable_base_tools = parsed;
         }
+        if let Ok(v) = std::env::var("JCODE_SHELL") {
+            self.tools.shell = v.trim().to_string();
+        }
 
         // ACP adapter
         if let Ok(v) = std::env::var("JCODE_ACP_PROFILE") {

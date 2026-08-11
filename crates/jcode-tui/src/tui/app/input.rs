@@ -96,7 +96,8 @@ fn build_input_shell_command(command: &str) -> std::process::Command {
 
     #[cfg(not(windows))]
     {
-        let mut cmd = std::process::Command::new("bash");
+        let mut cmd =
+            std::process::Command::new(crate::config::config().tools.shell_program());
         cmd.arg("-c").arg(command);
         cmd
     }
