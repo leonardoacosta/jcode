@@ -1,0 +1,54 @@
+{
+  "skill_name": "motion-and-transitions",
+  "evals": [
+    {
+      "id": 1,
+      "name": "panel-reveal-from-left",
+      "prompt": "I have a button that toggles a sidebar from the left edge of the screen. Write the CSS to make the sidebar slide in smoothly when it opens and slide out when it closes. Output ONLY the CSS — no explanation, no HTML, no JS.",
+      "expected": "Should adopt or compose from panel-reveal.css (slide pattern, out-quint, reduced-motion guard)",
+      "assertions": [
+        {"id": "uses-canonical-curve", "check": "contains 'cubic-bezier(0.22, 1, 0.36, 1)'"},
+        {"id": "has-reduced-motion-guard", "check": "contains '@media (prefers-reduced-motion: reduce)'"},
+        {"id": "uses-t-namespace", "check": "regex '\\.t-[a-z][a-z-]*'"},
+        {"id": "duration-under-500ms", "check": "no duration token > 500ms in declarations"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "counter-increment-flip",
+      "prompt": "Write the CSS for an animated counter where digits flip up with a subtle blur when the number changes. Output ONLY the CSS.",
+      "expected": "Should adopt number-pop-in.css (translateY + blur stagger, spring easing)",
+      "assertions": [
+        {"id": "has-reduced-motion-guard", "check": "contains '@media (prefers-reduced-motion: reduce)'"},
+        {"id": "uses-t-namespace", "check": "regex '\\.t-[a-z][a-z-]*'"},
+        {"id": "uses-blur-and-translate", "check": "contains 'blur(' AND ('translateY' OR 'translate(')"},
+        {"id": "uses-named-curve", "check": "contains 'cubic-bezier'"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "menu-dropdown-origin-aware",
+      "prompt": "Write the CSS for a dropdown menu that opens from a trigger button positioned in the top-right corner of the screen. The menu should scale up from the corner closest to its trigger, not from its own center. Output ONLY the CSS plus a one-line example HTML showing how to apply it.",
+      "expected": "Should adopt menu-dropdown.css AND set transform-origin / data-origin correctly for top-right anchoring",
+      "assertions": [
+        {"id": "uses-canonical-curve", "check": "contains 'cubic-bezier(0.22, 1, 0.36, 1)'"},
+        {"id": "has-reduced-motion-guard", "check": "contains '@media (prefers-reduced-motion: reduce)'"},
+        {"id": "uses-t-namespace", "check": "regex '\\.t-[a-z][a-z-]*'"},
+        {"id": "origin-aware", "check": "contains 'transform-origin' AND ('top right' OR 'data-origin')"},
+        {"id": "scale-pattern", "check": "contains 'scale(' OR 'transform: scale'"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "toast-pop-in-extension",
+      "prompt": "Write the CSS for a 'success!' toast that pops in from the top-right corner of the viewport, then auto-dismisses. The motion should feel polished and responsive. Output ONLY the CSS.",
+      "expected": "Pattern not in 9 — should compose using motion vocabulary: out-quint or spring, sub-500ms duration, reduced-motion guard, t-* namespace",
+      "assertions": [
+        {"id": "has-reduced-motion-guard", "check": "contains '@media (prefers-reduced-motion: reduce)'"},
+        {"id": "uses-named-curve", "check": "contains 'cubic-bezier'"},
+        {"id": "uses-t-namespace", "check": "regex '\\.t-[a-z][a-z-]*'"},
+        {"id": "no-overlong-duration", "check": "no duration > 700ms"}
+      ]
+    }
+  ]
+}

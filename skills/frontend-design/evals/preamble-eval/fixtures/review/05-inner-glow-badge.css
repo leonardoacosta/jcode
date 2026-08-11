@@ -1,0 +1,10 @@
+/* Fixture 05 — planted defect: inner-glow ring on a status badge.
+   Rule under test: Canon of Slop #20 — Inner-glow badge
+   (`box-shadow: inset 0 0 Npx` glow ring on pill/badge components). */
+.badge-live {
+  background: #16a34a;
+  color: white;
+  border-radius: 999px;
+  padding: 4px 10px;
+  box-shadow: inset 0 0 6px rgba(255, 255, 255, 0.6);
+}

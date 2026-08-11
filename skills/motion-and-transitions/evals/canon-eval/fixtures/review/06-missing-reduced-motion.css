@@ -1,0 +1,19 @@
+/* Fixture 06 — planted defect: missing prefers-reduced-motion guard.
+   Defect class: Accessibility.
+   Expected finding: movement with no `prefers-reduced-motion` handling. A snippet without
+   this guard is a bug — required, not optional. */
+
+.t-drawer {
+  transform: translateY(24px);
+  opacity: 0;
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.t-drawer.is-open {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* NOTE: no @media (prefers-reduced-motion: reduce) block below — this is the defect. */

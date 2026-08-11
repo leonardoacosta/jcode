@@ -1,0 +1,67 @@
+{
+  "skill": "vercel-sandbox",
+  "path": "/home/nyaptor/.local/share/mise/installs/npm-agent-browser/0.27.3/lib/node_modules/agent-browser/skill-data/vercel-sandbox/SKILL.md",
+  "rubric": "skill-judge 8-dimension, 120 points",
+  "before": {
+    "score": 76,
+    "percent": 63.3,
+    "grade": "D",
+    "pattern": "Tool/Process hybrid",
+    "knowledge_ratio": { "expert": 65, "activation": 25, "redundant": 10 },
+    "dimensions": {
+      "D1_knowledge_delta": 13,
+      "D2_mindset_procedures": 8,
+      "D3_anti_patterns": 2,
+      "D4_specification": 15,
+      "D5_progressive_disclosure": 12,
+      "D6_freedom_calibration": 9,
+      "D7_pattern_recognition": 7,
+      "D8_practical_usability": 10
+    },
+    "main_weaknesses": [
+      "No expert NEVER list or security boundary guidance",
+      "Setup occurred before try/finally, so installation failure could skip Sandbox cleanup",
+      "Multi-step example hard-coded an unverified element ref",
+      "No decision tree, failure triage, SSRF warning, endpoint protection guidance, or artifact-lifetime warning",
+      "Repeated examples diluted the core lifecycle and omitted production version-drift guidance"
+    ]
+  },
+  "after": {
+    "score": 109,
+    "percent": 90.8,
+    "grade": "A",
+    "pattern": "Tool/Process hybrid",
+    "knowledge_ratio": { "expert": 82, "activation": 15, "redundant": 3 },
+    "dimensions": {
+      "D1_knowledge_delta": 17,
+      "D2_mindset_procedures": 13,
+      "D3_anti_patterns": 14,
+      "D4_specification": 15,
+      "D5_progressive_disclosure": 13,
+      "D6_freedom_calibration": 14,
+      "D7_pattern_recognition": 9,
+      "D8_practical_usability": 14
+    },
+    "improvements": [
+      "Added execution-path decision table and preflight questions",
+      "Moved runtime setup inside try/finally and applied cleanup to snapshot creation",
+      "Replaced hard-coded refs with caller-supplied refs and explained ref invalidation",
+      "Added SSRF, server-only, credential, cron protection, artifact lifetime, timeout, and version-drift guidance",
+      "Added expert-grade NEVER list and symptom-to-check failure triage",
+      "Kept the WHAT/WHEN/KEYWORDS description comprehensive and under specification limits"
+    ]
+  },
+  "validation": {
+    "frontmatter": "passed: exact name/description fields; lowercase hyphenated name; description includes WHAT, WHEN, and trigger keywords",
+    "structure": "passed: 274 lines, below 500-line body guidance; fenced blocks balanced; JSON example parsed",
+    "agent_browser_commands": "passed against installed 0.27.3 help: open, snapshot, screenshot, fill, click, wait, install, skills",
+    "api_crosscheck": "passed against bundled README for Sandbox.create runtime node24, runCommand usage, stop, and wait --load networkidle",
+    "typescript_examples": "syntax parse passed with tsc; expected unresolved snippet-external modules/symbols were excluded from the syntax verdict",
+    "runtime_sandbox_execution": "not run because it requires Vercel credentials and creates billable external infrastructure"
+  },
+  "files_modified": [
+    "/home/nyaptor/.local/share/mise/installs/npm-agent-browser/0.27.3/lib/node_modules/agent-browser/skill-data/vercel-sandbox/SKILL.md",
+    "/home/nyaptor/.cache/jcode/skill-refinement/reports/vercel-sandbox.json"
+  ],
+  "blockers": []
+}

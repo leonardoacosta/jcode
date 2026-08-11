@@ -1,0 +1,10 @@
+[
+  {"id":"live-open","title":"agent ready","status":"open","priority":1,"issue_type":"task","labels":[],"dependencies":[]},
+  {"id":"live-blocked","title":"blocked task","status":"in_progress","priority":2,"issue_type":"task","labels":["human-only"],"dependencies":[{"type":"blocks","depends_on_id":"blocker"}]},
+  {"id":"blocker","title":"blocking task","status":"open","priority":2,"issue_type":"task","labels":[],"dependencies":[]},
+  {"id":"live-human","title":"requires MFA enrollment","status":"open","priority":2,"issue_type":"task","labels":[],"dependencies":[]},
+  {"id":"live-progress","title":"currently running","status":"in_progress","priority":2,"issue_type":"task","labels":[],"dependencies":[]},
+  {"id":"live-answered","title":"previous human gate","status":"open","priority":2,"issue_type":"task","labels":["human-only","hitl:answered"],"comments":[{"text":"HITL answered: proceed with the portable implementation","created_at":"2026-08-02T12:00:00Z"}],"dependencies":[]},
+  {"id":"container","title":"[CAPABILITY] durable container","status":"open","priority":2,"issue_type":"epic","labels":[],"dependencies":[]},
+  {"id":"proposal-child","title":"represented by proposal","status":"open","priority":1,"issue_type":"task","spec_id":"live-proposal","labels":[],"dependencies":[]}
+]

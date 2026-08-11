@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Apply All"
+  short_description: "Execute ready features safely in queue"
+  default_prompt: "Execute the ready OpenSpec queue in dependency order, using native concurrency only for proven-independent work and fully finalizing every feature."

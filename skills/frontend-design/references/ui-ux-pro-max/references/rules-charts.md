@@ -1,0 +1,33 @@
+
+# Charts & Data Rules (LOW) - 30 rules
+
+- `chart-type` - Match chart type to data type (trend -> line, comparison -> bar, proportion -> pie/donut)
+- `color-guidance` - Use accessible color palettes; avoid red/green only pairs for colorblind users (WCAG, MD)
+- `data-table` - Provide table alternative for accessibility; charts alone are not screen-reader friendly (WCAG)
+- `pattern-texture` - Supplement color with patterns, textures, or shapes so data is distinguishable without color (WCAG, MD)
+- `legend-visible` - Always show legend; position near the chart, not detached below a scroll fold (MD)
+- `tooltip-on-interact` - Provide tooltips/data labels on hover (Web) or tap (mobile) showing exact values (HIG, MD)
+- `axis-labels` - Label axes with units and readable scale; avoid truncated or rotated labels on mobile
+- `responsive-chart` - Charts must reflow or simplify on small screens (e.g. horizontal bar instead of vertical, fewer ticks)
+- `empty-data-state` - Show meaningful empty state when no data exists ("No data yet" + guidance), not a blank chart (MD)
+- `loading-chart` - Use skeleton or shimmer placeholder while chart data loads; don't show an empty axis frame
+- `animation-optional` - Chart entrance animations must respect prefers-reduced-motion; data should be readable immediately (HIG)
+- `large-dataset` - For 1000+ data points, aggregate or sample; provide drill-down for detail instead of rendering all (MD)
+- `number-formatting` - Use locale-aware formatting for numbers, dates, currencies on axes and labels (HIG, MD)
+- `touch-target-chart` - Interactive chart elements (points, segments) must have >=44pt tap area or expand on touch (Apple HIG)
+- `no-pie-overuse` - Avoid pie/donut for >5 categories; switch to bar chart for clarity
+- `contrast-data` - Data lines/bars vs background >=3:1; data text labels >=4.5:1 (WCAG)
+- `legend-interactive` - Legends should be clickable to toggle series visibility (MD)
+- `direct-labeling` - For small datasets, label values directly on the chart to reduce eye travel
+- `tooltip-keyboard` - Tooltip content must be keyboard-reachable and not rely on hover alone (WCAG)
+- `sortable-table` - Data tables must support sorting with aria-sort indicating current sort state (WCAG)
+- `axis-readability` - Axis ticks must not be cramped; maintain readable spacing, auto-skip on small screens
+- `data-density` - Limit information density per chart to avoid cognitive overload; split into multiple charts if needed
+- `trend-emphasis` - Emphasize data trends over decoration; avoid heavy gradients/shadows that obscure the data
+- `gridline-subtle` - Grid lines should be low-contrast (e.g. gray-200) so they don't compete with data
+- `focusable-elements` - Interactive chart elements (points, bars, slices) must be keyboard-navigable (WCAG)
+- `screen-reader-summary` - Provide a text summary or aria-label describing the chart's key insight for screen readers (WCAG)
+- `error-state-chart` - Data load failure must show error message with retry action, not a broken/empty chart
+- `export-option` - For data-heavy products, offer CSV/image export of chart data
+- `drill-down-consistency` - Drill-down interactions must maintain a clear back-path and hierarchy breadcrumb
+- `time-scale-clarity` - Time series charts must clearly label time granularity (day/week/month) and allow switching

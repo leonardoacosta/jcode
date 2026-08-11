@@ -1,0 +1,4 @@
+# Raw upstream caches are machine-local and large.
+# Only state/last-checked.json should be committed.
+*
+!.gitignore

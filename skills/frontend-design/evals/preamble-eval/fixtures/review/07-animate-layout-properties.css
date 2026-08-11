@@ -1,0 +1,13 @@
+/* Fixture 07 — planted defect: animating a layout-triggering property
+   (`left`) for a slide-in panel instead of `transform`.
+   Rule under test: Mechanics Deslop #12 — NEVER animate
+   width/height/top/left/margin; animate transform/opacity only. */
+.panel {
+  position: fixed;
+  left: -320px;
+  width: 320px;
+  transition: left 300ms ease-out;
+}
+.panel.open {
+  left: 0;
+}

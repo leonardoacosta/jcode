@@ -1,0 +1,728 @@
+#!/usr/bin/env python3
+# triage-list-drafts — Scan openspec/changes/<slug>/proposal.md and emit JSON list
+# of candidate proposals in topological order by canonical scheduling sidecars.
+#
+# Convention: scripts-as-data-producers:
+#   * --json on stdout is the only contract.
+#   * Exit 0 on all failures — emit {"error": "..."} instead of non-zero exit.
+#   * No info-level stderr (warnings via `warnings` key in JSON, or per-row flags).
+#   * Warm runtime <200ms (no network, git plumbing only) EXCEPT when bd is invoked
+#     to resolve feature-bead status (retire-status-frontmatter-lifecycle) -- that
+#     adds one batched, timeout-bounded `bd list --id ...` call.
+#
+# Spec: openspec/changes/add-triage-command/specs/triage-workflow/spec.md
+# (approval mechanism updated by retire-status-frontmatter-lifecycle, 2026-07-16 --
+# `status:` proposal frontmatter is retired; approval lives on the feature bead.)
+#
+# Output shape:
+#   {
+#     "drafts": [
+#       {
+#         "slug": "add-triage-command",
+#         "path": "openspec/changes/add-triage-command/proposal.md",
+#         "status": "in_progress",      # bd feature-bead status when it's "in_progress"
+#                                        # (i.e. approved); null otherwise (candidate) --
+#                                        # NOT proposal frontmatter (that field is retired)
+#         "bead": "bd-feature",           # feature bead id if resolved; null if the tasks.md
+#                                        # marker is missing OR bd was unavailable
+#         "bead_unknown": false,        # true = permissive-fallback row (bd unavailable or
+#                                        # no feature marker) -- the in-JSON warning flag,
+#                                        # never a silent drop
+#         "capability": "triage-workflow",
+#         "depends_on": ["..."],
+#         "summary_first_para": "...",
+#         "loc_estimate": 27,           # tasks.md checkbox count
+#         "files_touched": 5,           # spec deltas + tasks.md (rough)
+#         "beads_epic": "bd-epic",
+#         "beads_feature": "bd-feature",
+#         "beads_tasks": ["bd-task", ...],
+#         "after": "other-slug",           # or null -- authored `after:` frontmatter hint
+#         "after_reason": "one-line why",  # or null
+#         "order": "0715a",                # or null -- authored `order:` frontmatter (MMDD+letter,
+#                                           # add-plan-promotion-and-order-codes) -- display label
+#                                           # only, never a ranking input
+#         "age_days": 12,                  # first-commit age of proposal.md (git, mtime fallback)
+#         "rank": 1,                       # 1-based position in the computed queue order
+#         "priority": 2,                   # from --priority-file, default 2 if absent
+#         "blocked_by": ["dep-slug"],      # raw depends_on entries still present as open specs
+#         "reason": "blocks 2 proposal(s)" # strongest factor driving this rank
+#       }
+#     ],
+#     "warnings": ["cycle detected, fell back to alphabetical"],
+#     "ordering": "topological"        # or "priority_topological" / "alphabetical_cycle_fallback"
+#   }
+#
+# --include-approved and --priority-file (advisor-plans/029, proposal-queue-linearity):
+# broadens the scan to candidate+in_progress (still skips archive/ and closed feature beads)
+# and layers a priority+age-aware ranking on top of the same depends_on/after graph -- used by
+# `openspec-status --queue` to render the full execution queue, not just the candidate list.
+# Default invocation (no new flags) is unchanged: candidate-only (bead NOT in_progress/closed),
+# plain topological order.
+#
+# Candidate rule (retire-status-frontmatter-lifecycle): a proposal is a candidate iff its
+# feature bead (resolved from its OWN tasks.md `<!-- beads:feature:bd-xxxx -->` marker) is
+# NOT in_progress/closed. When bd is unavailable OR the marker is missing, the proposal is
+# included anyway (permissive fallback -- never silently dropped) with `"bead": null` and
+# `"bead_unknown": true`.
+
+import argparse
+import datetime
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+
+
+DEFAULT_PRIORITY = 2
+FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+DEPENDS_RE = re.compile(r"^\s*[-*]?\s*depends on:\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
+SUMMARY_RE = re.compile(r"^##\s+Summary\s*\n+(.+?)(?:\n\s*\n|\Z)", re.DOTALL | re.MULTILINE)
+CONTEXT_RE = re.compile(r"^##\s+Context\s*\n+(.+?)(?:\n##\s|\Z)", re.DOTALL | re.MULTILINE)
+# Canonical bead-ID grammar — duplicated (per the repo's lockstep-constant
+# convention) from scripts/bin/spec-sync's `BEADS_ID_RE`. Other copies:
+# scripts/lib/beads-helpers.sh (bash original), scripts/bin/openspec-status
+# (sources beads-helpers.sh), scripts/bin/{deferred-specs,wave-plan-build,
+# apply-resume-detect,wave-extend-scan}. See
+# openspec/changes/shared-bead-id-marker-parser/.
+BEADS_ID_RE = r"[A-Za-z0-9][A-Za-z0-9._-]*"
+BEADS_EPIC_RE = re.compile(r"<!--\s*beads:epic:(" + BEADS_ID_RE + r")\s*-->")
+BEADS_FEATURE_RE = re.compile(r"<!--\s*beads:feature:(" + BEADS_ID_RE + r")\s*-->")
+BEADS_TASK_RE = re.compile(r"\[beads:(" + BEADS_ID_RE + r")\]")
+CHECKBOX_RE = re.compile(r"^\s*-\s*\[[ xX]\]", re.MULTILINE)
+ORDER_SUFFIX_RE = re.compile(r"^[a-z]+$")
+
+BD_TIMEOUT_SECONDS = 8  # matches openspec-status's `timeout 8 bd show` bound (bd-timeout)
+
+
+def bd_available():
+    """True iff a `bd` binary is on PATH. Cheap, no subprocess spawned."""
+    return shutil.which("bd") is not None
+
+
+def fetch_bead_statuses(feature_ids):
+    """Batched bd status lookup for a set of feature-bead ids. Returns
+    (status_map, ok) where status_map is {id: status_string} for every id bd
+    actually resolved (missing ids are simply absent from the map -- treat as
+    unknown), and ok is False if bd is unavailable or the call failed/timed
+    out (caller must then fall back to the permissive "bead unknown" path for
+    every id, not just gaps in the map)."""
+    ids = sorted({i for i in feature_ids if i})
+    if not ids:
+        return {}, True
+    if not bd_available():
+        return {}, False
+    try:
+        result = subprocess.run(
+            ["bd", "list", "--id", ",".join(ids), "--all", "--json", "--limit", "0"],
+            capture_output=True, text=True, timeout=BD_TIMEOUT_SECONDS,
+        )
+    except Exception:
+        return {}, False
+    if result.returncode != 0 or not result.stdout.strip():
+        return {}, False
+    try:
+        rows = json.loads(result.stdout)
+    except (json.JSONDecodeError, ValueError):
+        return {}, False
+    if not isinstance(rows, list):
+        return {}, False
+    return {r.get("id"): r.get("status") for r in rows if isinstance(r, dict) and r.get("id")}, True
+
+
+def parse_frontmatter(text):
+    """Return the frontmatter dict, or None when the block is absent. Minimal
+    YAML-ish parser sufficient for `key: value` lines (no nested structures)."""
+    m = FRONTMATTER_RE.match(text)
+    if not m:
+        return None
+    block = m.group(1)
+    fm = {}
+    for line in block.split("\n"):
+        line = line.rstrip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" not in line:
+            continue
+        key, _, value = line.partition(":")
+        fm[key.strip()] = value.strip()
+    return fm
+
+
+def extract_depends(context_text):
+    """Extract slugs from any line matching `depends on: a, b, c` in Context.
+    Case-insensitive. Two-pass strategy:
+      1. Prefer slugs found inside backticks on the depends-on line (the
+         OpenSpec convention: `add-oss-cli-structure`).
+      2. If no backticked slugs are present, fall back to splitting on commas
+         AND the word "and", taking the first token from each chunk.
+    This avoids false positives from prose like "envelope schema, and append
+    semantics" inside parenthetical commentary."""
+    if not context_text:
+        return []
+    deps = []
+    seen = set()
+    BACKTICK = re.compile(r"`([a-z0-9][a-z0-9-]+)`")
+    for match in DEPENDS_RE.finditer(context_text):
+        raw = match.group(1)
+        ticked = BACKTICK.findall(raw)
+        if ticked:
+            tokens = ticked
+        else:
+            # Split on comma OR " and " (case-insensitive). Take leading
+            # word-token from each chunk.
+            tokens = []
+            for chunk in re.split(r",|\s+and\s+", raw, flags=re.IGNORECASE):
+                chunk = chunk.strip().strip("`'\"")
+                if not chunk:
+                    continue
+                # Take the first whitespace-separated token, strip trailing punct.
+                first = re.split(r"\s+", chunk, maxsplit=1)[0]
+                first = first.strip("`'\".,():")
+                tokens.append(first)
+        for slug in tokens:
+            if not slug or slug in seen:
+                continue
+            # Slug must look like an openspec change slug: lowercase, contains
+            # at least one hyphen (filters out conjunctions like "and").
+            if re.match(r"^[a-z][a-z0-9]*-[a-z0-9-]+$", slug):
+                deps.append(slug)
+                seen.add(slug)
+    return deps
+
+
+def parse_after(fm):
+    """Parse the optional `after: <slug> -- <reason>` frontmatter field. Accepts an
+    em-dash or a space-padded double-hyphen as the slug/reason separator (not a bare
+    "-", which would false-match inside the slug itself). Returns (slug_or_None,
+    reason_or_None)."""
+    raw = (fm or {}).get("after")
+    if not raw:
+        return None, None
+    for sep in ("—", " -- "):
+        if sep in raw:
+            slug, _, reason = raw.partition(sep)
+            slug = slug.strip().strip("`")
+            reason = reason.strip()
+            return (slug or None), (reason or None)
+    slug = raw.strip().strip("`")
+    return (slug or None), None
+
+
+def _increment_suffix(suffix):
+    """Spreadsheet-column-style base-26 increment: a->b, ..., z->aa, az->ba, zz->aaa."""
+    chars = list(suffix)
+    i = len(chars) - 1
+    while i >= 0:
+        if chars[i] != "z":
+            chars[i] = chr(ord(chars[i]) + 1)
+            return "".join(chars)
+        chars[i] = "a"
+        i -= 1
+    return "a" * (len(chars) + 1)
+
+
+def next_order_code(changes_dir, today_mmdd):
+    """Scan non-archived proposal.md files for `order:` values stamped with today's
+    MMDD prefix, and return the next free MMDD+letter code (openspec-frontmatter-
+    conventions, add-plan-promotion-and-order-codes). Archived proposals are out of
+    scope by design (same archive/ exclusion collect_drafts already applies) -- a
+    code issued earlier today and since archived does not block reuse; see the
+    'Allocator scope matches existing draft-scanning convention' scenario."""
+    used = set()
+    if os.path.isdir(changes_dir):
+        for entry in sorted(os.listdir(changes_dir)):
+            if entry == "archive":
+                continue
+            proposal_path = os.path.join(changes_dir, entry, "proposal.md")
+            if not os.path.isfile(proposal_path):
+                continue
+            try:
+                with open(proposal_path) as f:
+                    text = f.read()
+            except OSError:
+                continue
+            fm = parse_frontmatter(text)
+            order = (fm or {}).get("order")
+            if not order or not order.startswith(today_mmdd):
+                continue
+            suffix = order[len(today_mmdd):]
+            if suffix and ORDER_SUFFIX_RE.match(suffix):
+                used.add(suffix)
+    candidate = "a"
+    while candidate in used:
+        candidate = _increment_suffix(candidate)
+    return today_mmdd + candidate
+
+
+def age_days_for(path):
+    """Age in days since the proposal's first commit (git log, oldest entry).
+    Falls back to file mtime when git is unavailable or the file is untracked."""
+    try:
+        out = subprocess.run(
+            ["git", "log", "--diff-filter=A", "--format=%ct", "--follow", "--", path],
+            capture_output=True, text=True, timeout=3,
+        )
+        lines = [ln for ln in out.stdout.strip().splitlines() if ln.strip()]
+        if lines:
+            first_ts = int(lines[-1])
+            return max(0, int((time.time() - first_ts) // 86400))
+    except Exception:
+        pass
+    try:
+        return max(0, int((time.time() - os.path.getmtime(path)) // 86400))
+    except OSError:
+        return 0
+
+
+def first_paragraph(text):
+    """Return the first non-empty paragraph from text, single-spaced."""
+    if not text:
+        return ""
+    paras = re.split(r"\n\s*\n", text.strip())
+    if not paras:
+        return ""
+    return re.sub(r"\s+", " ", paras[0]).strip()
+
+
+def detect_capability(slug_dir):
+    """Return the capability name from specs/<capability>/spec.md, or None."""
+    specs_dir = os.path.join(slug_dir, "specs")
+    if not os.path.isdir(specs_dir):
+        return None
+    for name in sorted(os.listdir(specs_dir)):
+        if os.path.isdir(os.path.join(specs_dir, name)):
+            return name
+    return None
+
+
+def count_tasks_and_beads(tasks_path):
+    """Return (loc_estimate, beads_epic, beads_feature, beads_tasks)."""
+    if not os.path.isfile(tasks_path):
+        return 0, None, None, []
+    try:
+        with open(tasks_path) as f:
+            text = f.read()
+    except OSError:
+        return 0, None, None, []
+    loc = len(CHECKBOX_RE.findall(text))
+    epic_m = BEADS_EPIC_RE.search(text)
+    feature_m = BEADS_FEATURE_RE.search(text)
+    tasks = BEADS_TASK_RE.findall(text)
+    return (
+        loc,
+        epic_m.group(1) if epic_m else None,
+        feature_m.group(1) if feature_m else None,
+        tasks,
+    )
+
+
+def count_files_touched(slug_dir):
+    """Rough count: tasks.md + each spec.md under specs/."""
+    n = 0
+    if os.path.isfile(os.path.join(slug_dir, "tasks.md")):
+        n += 1
+    if os.path.isfile(os.path.join(slug_dir, "design.md")):
+        n += 1
+    specs_dir = os.path.join(slug_dir, "specs")
+    if os.path.isdir(specs_dir):
+        for root, _dirs, files in os.walk(specs_dir):
+            for f in files:
+                if f.endswith(".md"):
+                    n += 1
+    return n
+
+
+def collect_drafts(changes_dir):
+    """Walk openspec/changes/<slug>/proposal.md and collect every non-archived
+    proposal. No status-based filtering happens here (retire-status-frontmatter-
+    lifecycle) -- `status:` frontmatter is retired, and the approval gate is a
+    feature-bead lookup applied by `apply_bead_gate` afterward. `order:`/`after:`
+    frontmatter parsing is untouched."""
+    drafts = []
+    if not os.path.isdir(changes_dir):
+        return drafts
+    for entry in sorted(os.listdir(changes_dir)):
+        if entry == "archive":
+            continue
+        slug_dir = os.path.join(changes_dir, entry)
+        if not os.path.isdir(slug_dir):
+            continue
+        proposal_path = os.path.join(slug_dir, "proposal.md")
+        if not os.path.isfile(proposal_path):
+            continue
+        try:
+            with open(proposal_path) as f:
+                text = f.read()
+        except OSError:
+            continue
+        fm = parse_frontmatter(text)
+        sidecar_path = os.path.join(slug_dir, ".apply-schedule.json")
+        try:
+            with open(sidecar_path, encoding="utf-8") as sidecar_file:
+                schedule = json.load(sidecar_file)
+        except FileNotFoundError as exc:
+            raise ValueError(f"{entry}: canonical scheduling sidecar is missing; run /feature --continue {entry}") from exc
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError(f"{entry}: invalid canonical scheduling sidecar: {exc}") from exc
+        required = {"schema_version", "sources", "requires", "inputs", "writes", "preferences", "projection", "extensions"}
+        unknown = set(schedule) - required
+        if schedule.get("schema_version") != 1 or not required.issubset(schedule) or unknown:
+            raise ValueError(f"{entry}: unsupported or noncanonical scheduling sidecar")
+        deps = []
+        for requirement in schedule.get("requires", []):
+            change = requirement.get("change") if isinstance(requirement, dict) else None
+            if not isinstance(change, str):
+                raise ValueError(f"{entry}: invalid requires entry in canonical scheduling sidecar")
+            deps.append(change)
+        after_slug, after_reason = parse_after(fm)
+        sum_match = SUMMARY_RE.search(text)
+        summary = first_paragraph(sum_match.group(1) if sum_match else "")
+        loc, epic, feature, tasks = count_tasks_and_beads(
+            os.path.join(slug_dir, "tasks.md")
+        )
+        drafts.append(
+            {
+                "slug": entry,
+                "path": os.path.relpath(proposal_path),
+                "status": None,  # filled in by apply_bead_gate ("in_progress" or null)
+                "bead": None,  # filled in by apply_bead_gate
+                "bead_unknown": False,  # filled in by apply_bead_gate
+                "capability": detect_capability(slug_dir),
+                "depends_on": deps,
+                "after": after_slug,
+                "after_reason": after_reason,
+                "order": (fm or {}).get("order"),
+                "age_days": age_days_for(proposal_path),
+                "summary_first_para": summary,
+                "loc_estimate": loc,
+                "files_touched": count_files_touched(slug_dir),
+                "beads_epic": epic,
+                "beads_feature": feature,
+                "beads_tasks": tasks,
+            }
+        )
+    return drafts
+
+
+def apply_bead_gate(drafts, include_approved=False):
+    """Resolve each proposal's feature-bead status and apply the candidate gate.
+
+    Candidate rule: keep iff feature bead status is NOT in_progress/closed.
+    `include_approved` widens the kept set to ALSO include in_progress (still
+    excludes closed) -- this is the "candidate + already-approved" scan
+    `openspec-status --queue` uses to render the whole funnel.
+
+    Permissive fallback (never a silent drop): when bd is unavailable, OR a
+    proposal has no `beads_feature` marker, OR bd could not resolve that id,
+    the proposal is KEPT regardless of include_approved, with `bead=None` and
+    `bead_unknown=True` -- the in-JSON warning flag (no stderr).
+
+    Returns (filtered_drafts, warnings)."""
+    warnings = []
+    feature_ids = [d.get("beads_feature") for d in drafts if d.get("beads_feature")]
+    status_map, ok = fetch_bead_statuses(feature_ids)
+    if not ok and feature_ids:
+        warnings.append(
+            "bd unavailable or unreachable — showing all candidates unfiltered by bead status"
+        )
+
+    out = []
+    for d in drafts:
+        feature = d.get("beads_feature")
+        if not feature or not ok:
+            d["bead"] = None
+            d["bead_unknown"] = True
+            d["status"] = None
+            out.append(d)
+            continue
+        bead_status = status_map.get(feature)
+        if bead_status is None:
+            # Marker present but bd couldn't resolve it (deleted/unknown id).
+            d["bead"] = None
+            d["bead_unknown"] = True
+            d["status"] = None
+            out.append(d)
+            continue
+        d["bead"] = feature
+        d["bead_unknown"] = False
+        if bead_status == "closed":
+            continue  # never a candidate, regardless of include_approved
+        if bead_status == "in_progress":
+            if not include_approved:
+                continue  # approved already; not a plain candidate
+            d["status"] = "in_progress"
+            out.append(d)
+            continue
+        d["status"] = None
+        out.append(d)
+    return out, warnings
+
+
+def topo_sort(drafts):
+    """Kahn's algorithm. Returns (ordered_slugs, ordering_kind, warnings).
+    Edge direction: dep -> dependent (foundational first)."""
+    warnings = []
+    slugs = sorted(d["slug"] for d in drafts)
+    slug_set = set(slugs)
+    by_slug = {d["slug"]: d for d in drafts}
+
+    # Build in-degree and adjacency. Only count edges where the dep is also
+    # a draft slug — external/non-draft deps are advisory and ignored.
+    indeg = {s: 0 for s in slugs}
+    adj = {s: [] for s in slugs}
+    for d in drafts:
+        for dep in d["depends_on"]:
+            if dep in slug_set and dep != d["slug"]:
+                adj[dep].append(d["slug"])
+                indeg[d["slug"]] += 1
+
+    # Kahn: pick alphabetically among zero-indeg to keep determinism.
+    ready = sorted([s for s in slugs if indeg[s] == 0])
+    out = []
+    while ready:
+        n = ready.pop(0)
+        out.append(n)
+        for m in sorted(adj[n]):
+            indeg[m] -= 1
+            if indeg[m] == 0:
+                ready.append(m)
+        ready.sort()
+
+    if len(out) != len(slugs):
+        # Cycle: fall back to alphabetical with a warning.
+        warnings.append(
+            "cycle detected in depends-on graph; falling back to alphabetical"
+        )
+        return slugs, "alphabetical_cycle_fallback", warnings
+
+    return out, "topological", warnings
+
+
+def priority_aware_order(drafts, priority_map):
+    """Kahn's algorithm, priority/age-aware. `depends_on` (hard) and `after` (authored
+    ordering hint) are both real graph edges -- an authored hint is meaningless unless
+    it's actually honored the same way a dependency is. What differs is only the
+    `reason` label attached at output time (edge_source), and `blocked_by` on the
+    output row only surfaces the hard `depends_on` edges (the authored hint isn't a
+    correctness blocker, it's a courtesy).
+
+    Tie-break among the ready set at each step, in order: bd feature/epic priority
+    (ascending -- 0 is most urgent), then age_days descending (oldest first), then
+    slug (determinism). This directly implements advisor-plans/029 Step 1's ordering:
+    "dependency topology first, then bd feature priority, then authored order hint,
+    then age."
+
+    Returns (ordered_slugs, ordering_kind, warnings, adj, blocked_by, edge_source)."""
+    warnings = []
+    slugs = sorted(d["slug"] for d in drafts)
+    slug_set = set(slugs)
+    by_slug = {d["slug"]: d for d in drafts}
+
+    indeg = {s: 0 for s in slugs}
+    adj = {s: [] for s in slugs}
+    blocked_by = {s: [] for s in slugs}
+    edge_source = {s: {} for s in slugs}
+
+    for d in drafts:
+        s = d["slug"]
+        for dep in d["depends_on"]:
+            if dep in slug_set and dep != s:
+                adj[dep].append(s)
+                indeg[s] += 1
+                blocked_by[s].append(dep)
+                edge_source[s][dep] = "depends"
+        after = d.get("after")
+        if after and after in slug_set and after != s and after not in edge_source[s]:
+            adj[after].append(s)
+            indeg[s] += 1
+            edge_source[s][after] = "after"
+
+    def sort_key(s):
+        priority = priority_map.get(s, DEFAULT_PRIORITY)
+        return (priority, -by_slug[s].get("age_days", 0), s)
+
+    ready = sorted([s for s in slugs if indeg[s] == 0], key=sort_key)
+    out = []
+    while ready:
+        n = ready.pop(0)
+        out.append(n)
+        newly_ready = []
+        for m in adj[n]:
+            indeg[m] -= 1
+            if indeg[m] == 0:
+                newly_ready.append(m)
+        ready.extend(newly_ready)
+        ready.sort(key=sort_key)
+
+    if len(out) != len(slugs):
+        warnings.append(
+            "cycle detected in depends-on/after graph; falling back to alphabetical"
+        )
+        return sorted(slugs), "alphabetical_cycle_fallback", warnings, adj, blocked_by, edge_source
+
+    return out, "priority_topological", warnings, adj, blocked_by, edge_source
+
+
+def compose_reason(slug, by_slug, adj, priority_map, edge_source):
+    """Strongest-factor reason string. Order matches advisor-plans/029's own
+    examples: blocking > critical priority > authored hint > age."""
+    d = by_slug[slug]
+    blocks_n = len(adj.get(slug, []))
+    priority = priority_map.get(slug, DEFAULT_PRIORITY)
+    if blocks_n > 0:
+        return f"blocks {blocks_n} proposal(s)"
+    if priority <= 1:
+        return f"P{priority}"
+    after = d.get("after")
+    if after and edge_source.get(slug, {}).get(after) == "after":
+        reason = d.get("after_reason") or "no reason given"
+        return f"authored: after {after} — {reason}"
+    status_label = d.get("status") or "candidate"
+    return f"oldest {status_label}, {d.get('age_days', 0)}d"
+
+
+def find_changes_dir(start):
+    """Walk up from start looking for openspec/changes/."""
+    cur = os.path.abspath(start)
+    while True:
+        candidate = os.path.join(cur, "openspec", "changes")
+        if os.path.isdir(candidate):
+            return candidate
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            return None
+        cur = parent
+
+
+def main(argv):
+    parser = argparse.ArgumentParser(prog="triage-list-drafts")
+    parser.add_argument("--json", action="store_true", help="Emit JSON on stdout")
+    parser.add_argument(
+        "--changes-dir",
+        default=None,
+        help="Path to openspec/changes/ (auto-discovered from CWD if omitted)",
+    )
+    parser.add_argument(
+        "--include-approved",
+        action="store_true",
+        help="Also include proposals whose feature bead is in_progress (default: "
+        "candidate-only, excludes in_progress/closed). Used by openspec-status "
+        "--queue for the full execution queue.",
+    )
+    parser.add_argument(
+        "--priority-file",
+        default=None,
+        help="Path to a JSON object {slug: priority_int} for priority-aware "
+        "ranking (default priority %d when a slug is absent). Without this flag, "
+        "ranking is plain topological (unchanged default behavior)." % DEFAULT_PRIORITY,
+    )
+    parser.add_argument(
+        "--next-order-code",
+        action="store_true",
+        help="Emit {\"order_code\": \"MMDDx\"} -- the next free order code for today "
+        "(add-plan-promotion-and-order-codes), scanning non-archived proposal.md "
+        "frontmatter for already-issued codes. Independent of --json; always emits JSON.",
+    )
+    args = parser.parse_args(argv)
+
+    if args.next_order_code:
+        try:
+            changes_dir = args.changes_dir or find_changes_dir(os.getcwd())
+            if not changes_dir or not os.path.isdir(changes_dir):
+                print(json.dumps({"error": "openspec/changes directory not found"}))
+                return 0
+            today_mmdd = datetime.date.today().strftime("%m%d")
+            code = next_order_code(changes_dir, today_mmdd)
+            print(json.dumps({"order_code": code, "changes_dir": changes_dir}))
+            return 0
+        except Exception as exc:  # pragma: no cover — last-resort safety net
+            print(json.dumps({"error": f"unexpected: {exc!r}"}))
+            return 0
+
+    if not args.json:
+        # The script's contract is JSON-only. Be friendly about it.
+        print(
+            json.dumps({"error": "use --json (only output mode)"}),
+            flush=True,
+        )
+        return 0
+
+    try:
+        changes_dir = args.changes_dir or find_changes_dir(os.getcwd())
+        if not changes_dir or not os.path.isdir(changes_dir):
+            print(
+                json.dumps(
+                    {
+                        "drafts": [],
+                        "warnings": [],
+                        "ordering": "empty",
+                        "error": "openspec/changes directory not found",
+                    }
+                )
+            )
+            return 0
+        # Priority-aware path only activates when a new flag is passed -- the plain
+        # default invocation (no --include-approved, no --priority-file) keeps its
+        # exact original behavior/ordering for existing consumers (feature.md's
+        # parser-visibility check, tests/triage/).
+        use_priority_path = args.include_approved or bool(args.priority_file)
+
+        if not use_priority_path:
+            drafts, gate_warnings = apply_bead_gate(collect_drafts(changes_dir))
+            ordered, ordering, warnings = topo_sort(drafts)
+            warnings = gate_warnings + warnings
+            by_slug = {d["slug"]: d for d in drafts}
+            ordered_drafts = [by_slug[s] for s in ordered if s in by_slug]
+            out = {
+                "drafts": ordered_drafts,
+                "warnings": warnings,
+                "ordering": ordering,
+                "changes_dir": changes_dir,
+            }
+            print(json.dumps(out, indent=2))
+            return 0
+
+        priority_map = {}
+        if args.priority_file:
+            try:
+                with open(args.priority_file) as f:
+                    priority_map = {k: int(v) for k, v in json.load(f).items()}
+            except Exception:
+                priority_map = {}
+
+        drafts, gate_warnings = apply_bead_gate(
+            collect_drafts(changes_dir), include_approved=args.include_approved
+        )
+        ordered, ordering, warnings, adj, blocked_by, edge_source = priority_aware_order(
+            drafts, priority_map
+        )
+        warnings = gate_warnings + warnings
+        by_slug = {d["slug"]: d for d in drafts}
+        ordered_drafts = []
+        for i, s in enumerate(ordered):
+            if s not in by_slug:
+                continue
+            row = dict(by_slug[s])
+            row["rank"] = i + 1
+            row["priority"] = priority_map.get(s, DEFAULT_PRIORITY)
+            row["blocked_by"] = blocked_by.get(s, [])
+            row["reason"] = compose_reason(s, by_slug, adj, priority_map, edge_source)
+            ordered_drafts.append(row)
+        out = {
+            "drafts": ordered_drafts,
+            "warnings": warnings,
+            "ordering": ordering,
+            "changes_dir": changes_dir,
+        }
+        print(json.dumps(out, indent=2))
+        return 0
+    except Exception as exc:  # pragma: no cover — last-resort safety net
+        print(json.dumps({"error": f"unexpected: {exc!r}", "drafts": []}))
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,15 @@
+{
+  "last_checked": "2026-08-07T03:36:14-05:00",
+  "docs_hash": "sha256:60c4e4c8f21e9cac7ba0874dfd332342069ab30a8c0323effca9c7137d1fde00",
+  "github_latest": "v2.1.224",
+  "npm_latest": "2.1.224",
+  "npm_stable": "2.1.220",
+  "beads_latest": "v1.1.2",
+  "openspec_latest": "v1.8.0",
+  "env_vars_hash": "sha256:0c21f842863656091979a87d40ee9decae5a3ba4bf18d70cedf34af40d55772c",
+  "tools_hash": "sha256:0b911848d098b1f4025d0f8f48d6ff091d78ea76f7b3608330b8f366e293929f",
+  "hooks_hash": "sha256:7823a5867393672cd8e65f1ceadd47c464a357ddeb2421e7cc6e508cf25528cd",
+  "plugins_hash": "sha256:3292d5655e417b69297e51881ca36e4f9bb558b55495d150f8fbc2ac715163cc",
+  "channels_hash": "sha256:13d8b13a41d5c48783ff915696eeaa7414d76fe16ca9f64c2709804b1e74a7ed",
+  "last_change_detected": "2026-08-07T03:36:14-05:00"
+}

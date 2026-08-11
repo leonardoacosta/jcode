@@ -22,3 +22,8 @@ captures/
 /*.avif
 /*.mp4
 /*.png
+
+# --- JCODE_HOME config tree (skills/, vendor/) ---
+# This repo also carries the operator's skills and vendored skill bundles,
+# consumed via a symlink at $JCODE_HOME/skills. Runtime state, credentials,
+# and session data live in $JCODE_HOME itself and are never tracked here.

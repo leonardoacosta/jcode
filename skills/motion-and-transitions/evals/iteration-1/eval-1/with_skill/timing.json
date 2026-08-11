@@ -1,0 +1,6 @@
+{
+  "total_tokens": 52157,
+  "duration_ms": 16259,
+  "tool_uses": 3,
+  "summary": "Applied panel-reveal pattern adapted for left-edge sidebar with out-quint easing, data-open toggle, asymmetric open/close durations, blur layering, and prefers-reduced-motion guard."
+}

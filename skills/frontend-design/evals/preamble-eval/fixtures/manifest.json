@@ -1,0 +1,77 @@
+{
+  "harness": "preamble-eval",
+  "purpose": "Binding A/B eval of the commitment-preamble document format (pols.dev novelty record 'Agent-binding design-law document format') vs the incumbent corpus's incumbent imperative-table house style — per adopt-anti-slop-design-law design.md § 2 (Preamble-format eval mirrors the emil canon-eval shape).",
+  "arms": {
+    "A": {
+      "label": "incumbent",
+      "artifact": "arms/arm-a-incumbent.md",
+      "description": "8 rules pulled verbatim from skills/frontend-design/references/anti-slop-canon.md, presented in the incumbent corpus's imperative-table house style with no framing preamble."
+    },
+    "B": {
+      "label": "preamble",
+      "artifact": "arms/arm-b-preamble.md",
+      "description": "Byte-identical rule table to Arm A, fronted by a first-person compliance commitment + user-override precedence clause, per the pols.dev format (docs/recon/pols-dev-slop.md § Novel Patterns → Agent-binding design-law document format)."
+    }
+  },
+  "metric": "compliance (violations caught / rules honored) -- NOT aesthetic preference",
+  "review_fixtures": [
+    {
+      "id": "01-purple-gradient-hero",
+      "file": "fixtures/review/01-purple-gradient-hero.css",
+      "planted_defect": "purple-gradient hero background (#7c3aed -> #2563eb)",
+      "rule": "Canon of Slop #1 -- Purple gradient hero",
+      "pass_condition": "arm's review output flags the gradient as the purple-gradient-hero pattern and cites a real-color-theory alternative"
+    },
+    {
+      "id": "02-rounded-everything",
+      "file": "fixtures/review/02-rounded-everything.css",
+      "planted_defect": "uniform 28px border-radius on every surface",
+      "rule": "Canon of Slop #3 -- Rounded everything",
+      "pass_condition": "arm's review output flags the shared 24px+ radius across unrelated components and recommends varying radius by role"
+    },
+    {
+      "id": "03-font-rotation",
+      "file": "fixtures/review/03-font-rotation.css",
+      "planted_defect": "Space Grotesk as the sole display/body face, framed as a fresh swap off a prior default",
+      "rule": "Canon of Slop #4 + Hard rule 1 (stop cycling Google Fonts)",
+      "pass_condition": "arm's review output flags Space Grotesk as still inside the default-rotation shelf and names the cycling anti-pattern, not just the specific font"
+    },
+    {
+      "id": "04-hover-boop-uniform",
+      "file": "fixtures/review/04-hover-boop-uniform.css",
+      "planted_defect": "translateY(-2px) + shadow-bump hover feedback applied uniformly to btn/card/link/badge/nav-item",
+      "rule": "Canon of Slop #17 -- Hover boop applied uniformly",
+      "pass_condition": "arm's review output flags the uniform application across element roles, not merely the lift itself"
+    },
+    {
+      "id": "05-inner-glow-badge",
+      "file": "fixtures/review/05-inner-glow-badge.css",
+      "planted_defect": "inset box-shadow glow ring on a status badge",
+      "rule": "Canon of Slop #20 -- Inner-glow badge",
+      "pass_condition": "arm's review output flags the inset glow and recommends a flat badge with real color contrast"
+    },
+    {
+      "id": "06-fill-outline-pair",
+      "file": "fixtures/review/06-fill-outline-pair.css",
+      "planted_defect": "filled-primary + outline-secondary buttons, identical shape/size, side by side",
+      "rule": "Canon of Slop #31 -- Fill-plus-outline button pair",
+      "pass_condition": "arm's review output flags the pairing pattern itself, not just individual button styling"
+    },
+    {
+      "id": "07-animate-layout-properties",
+      "file": "fixtures/review/07-animate-layout-properties.css",
+      "planted_defect": "transition: left 300ms on a slide-in panel",
+      "rule": "Mechanics Deslop #12 -- NEVER animate width/height/top/left/margin",
+      "pass_condition": "arm's review output flags `left` as a layout-triggering property and recommends a transform-based alternative"
+    },
+    {
+      "id": "08-missing-tabular-nums",
+      "file": "fixtures/review/08-missing-tabular-nums.css",
+      "planted_defect": "a live-updating price counter with font-variant-numeric: normal",
+      "rule": "Mechanics Deslop #6 -- MUST use tabular-nums on changing numeric values",
+      "pass_condition": "arm's review output flags the missing tabular-nums and the digit-jitter consequence"
+    }
+  ],
+  "scoring_rule": "Tie or <10% delta: incumbent (Arm A) stays canonical (design.md § 2 threshold, same bar as the emil canon-eval). A clear Arm B win applies the preamble to the frontend-design SKILL.md header only.",
+  "provenance": "Rule content sourced verbatim from skills/frontend-design/references/anti-slop-canon.md (already-shipped canon, this change's own task 1.4). Preamble wording adapted from docs/recon/pols-dev-slop.md's captured pols.dev phrasing, no verbatim reuse, no SPDX."
+}

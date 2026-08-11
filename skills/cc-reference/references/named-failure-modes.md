@@ -1,0 +1,36 @@
+# Named Failure Modes
+
+> Moved from global `CLAUDE.md` § 3 by the CLAUDE.md-split pattern (`rules/TOOLING.md` §
+> CLAUDE.md-Split Pattern) — a 23-row lookup table paid every turn for content only relevant when
+> one of these specific incident classes is actually in play. `CLAUDE.md` keeps a one-line pointer.
+
+Each row is a documented incident class, not a hypothetical. The Rule column is binding.
+
+| # | Failure | Rule that prevents it |
+| --- | --- | --- |
+| 1 | **Completion cosplay** — reads source, sees matching code, reports "verified" (bugs lived 3 deploys, oo-36i84x) | Paste fresh runtime stdout or you have not verified. Banned phrases: "already correct", "should work", "verify-only closed". `rules/CORE.md` § Iron Laws |
+| 2 | **Checkbox deferral** — marks `[ ] [DEFERRED]`/`[SKIP]` and calls the wave done | Deferral = beads escalation + STOP-and-ask, never a checkbox dialect. Enforced by `deferred-dialect` ratchet |
+| 3 | **Scope self-shrink** — "pragmatic approach: skip the actual X", "narrow safe version" | Same anti-pattern as scope creep. File a bead documenting real scope, escalate. Engineers never redefine the wave boundary |
+| 4 | **`git add .` / stash in shared tree** | Targeted paths only; ad-hoc staging via `cc_scoped_stage` (`scripts/lib/scoped-stage.sh`) — it refuses `.`/`-A`/bare dirs |
+| 5 | **`cd` into `.worktrees/` from orchestrator** — cwd persists across Bash calls; session drifts off base branch (28 measured) | `git -C <path>` or `( cd ... && ... )` subshell. Enforced by gate.sh + `worktree-cd-ban` ratchet |
+| 6 | **Per-task `git push` during /apply** | Push exactly once, Phase 4. Per-task commits OK, pushes forbidden |
+| 7 | **HEREDOC chained with `&&` through RTK** — mangles commit messages | Write message via `Write` to `/tmp/commit-msg-$$.txt`, `git commit -F`, push as separate Bash call |
+| 8 | **Command token in quoted prose arg** (`az `/`pnpm `/`bd ` inside `--notes "..."`) — RTK mangles; symptom is a Windows error on Linux | Rephrase prose (no bare command tokens) or pass text via file/`--stdin` |
+| 9 | **Bare `set -euo pipefail` in a sourced lib** — leaks, aborts /apply mid-run | `scripts/lib/*.sh` MUST use `(return 0 2>/dev/null) \|\| set -euo pipefail` |
+| 10 | ~~New `scripts/bin/` script ships dark~~ — **FIXED 2026-07-12**: `.gitignore` no longer blanket-ignores `scripts/bin/`, only `scripts/bin/__pycache__/` and `scripts/bin/*.pyc` (cowork-audit-remediation Move 2). New scripts surface as plain untracked files — no `git add -f` needed | Stage normally. Row kept as a tombstone; `git add -f` is now only relevant for files matching an ignore pattern |
+| 11 | **Detection script exits non-zero on failure** — aborts the whole command render | ` ```! `-consumed scripts: `--json`, exit 0 always, `error` key in JSON, <200ms warm, no stderr info |
+| 12 | **Closes a capability epic** because "children are done" — spawns duplicate epics, breaks `bd ready` | Close the FEATURE. Capability epics close only on decommission. `rules/BEADS.md` |
+| 13 | **Freeform tasks.md headers/deps** — `wave-plan-build` classifies zero tasks; spec silently archives "complete" | Literal strings only: `## DB Batch`/`## API Batch`/`## UI Batch`/`## E2E Batch`, `- depends on:`, `- touches:` |
+| 14 | **`db:push` on a fleet repo** — skips journal, silent column drops (nx-vtzmd) | Never `db:push`; migration-only: edit schema -> `db:generate` -> commit migration -> deploy `db:migrate` |
+| 15 | **Rebuilds what exists** — new util/type/component without a search | Cite the reuse search before any new artifact. `extend-before-create` |
+| 16 | **Ceremonial pauses in autonomous runs** — "stopping for a clean break" | Pause only on real gate failure (deploy ERROR, retries exhausted, push fail 3x). State files are crash recovery, not gates |
+| 17 | **Ships an improvement with no ratchet row** — silently regresses later (`continueOnBlock` 0d1d524d) | Ledger-closure rule: same change adds a Tier 3 `POLICY_CHECKS` row or `# requires-settings:` header |
+| 18 | **Invents agent names** (`codebase-health-analyst` — 73 ghost dispatches) | Dispatch only names in `agents/**` or known CC built-ins. When unsure, `ls agents/` |
+| 19 | **Archives/edits openspec entries it did not author this session** | Ask before `archive_spec` or modifying others' proposals |
+| 20 | **Trusts stale memory or `rtk discover`** — pre-rewrite artifact reads as fake 0% adoption | Re-verify any recalled claim >30 days old against the repo; usage truth lives in transcripts/telemetry (`session-forensics` skill) |
+| 21 | **Adds reference tables to CLAUDE.md** — every byte is paid every turn | Rules/foot-guns inline; reference tables go to a skill with a pointer. § CLAUDE.md-split, `rules/TOOLING.md` |
+| 22 | **Backward-compat "just in case"** — `@deprecated`, shim layers, unasked migrations | Default is clean replacement; the compat-vs-replace call is Leo's. STOP and ask |
+| 23 | **Loads `t3-code-patterns` in `xx`** — paradigm-divergent (Bun + Effect) | Check `cc-tooling` skill § Project Registry before loading stack skills |
+| 24 | **Bash-ism assumed under zsh** — the Bash tool's shell is zsh, and the failure never names the shell: `for x in $VAR` does not word-split (7+ recurrences across 3 sessions, including after a memory documenting it already existed), a bare `===TOKEN` separator dies with "== not found", a local named `path` silently destroys `$PATH`, and `BASH_SOURCE` is empty so relative sourcing breaks (`wt_merge_back`, `nx-send.sh`) | Wrap bash-specific constructs in `bash -c '...'`. Quote any leading-`=` word; never name a variable `path`. If a call reports "command not found" for a tool `which` resolves, suspect an RTK rewrite mangling a multi-line construct before debugging `$PATH` |
+| 25 | **Treats the git index as yours alone** — since `retire-session-worktrees` every session shares one working tree and one index, so `git commit` ships the WHOLE index (23-path commit incl. an 18-path revert, 58be7192), a concurrent commit/reset can wipe your staged paths between `add` and `commit`, and a path that refuses to stage may already be in HEAD via another session's commit | `git diff --cached --stat` before every commit, then `git commit -F <msg> -- <explicit paths>` — the pathspec form commits only the named paths from the working tree and is race-immune, where unstage-the-strays is a race you can lose |
+| 26 | **Searches one command root and concludes "no callers"** — cc has TWO: `commands/` (plugin-exported to leo-core) and `.claude/commands/` (cc-only: advise, bootstrap, opsx, workflow, workspace), both real directories, each with its own `workflow/`. `c2352e34` deleted `scripts/lib/scope-guard.sh` citing "zero external callers" while 3 `.claude/commands/bootstrap/*.md` files sourced it — they died at the source line for months. The same gap sends a `Read` lifted from CLAUDE.md prose to the wrong root (4 recurrences), and a memory correcting it was not enough | Never conclude "unused" or retry a prefix variation from one root. `ls commands/<x> .claude/commands/<x>` or `git ls-files '*<name>*'` once and read the answer. Dead-code sweeps MUST scan both roots; the `command-lib-source-resolves` Tier 3 row now fails if a still-sourced lib is deleted |
