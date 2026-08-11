@@ -96,8 +96,7 @@ fn build_input_shell_command(command: &str) -> std::process::Command {
 
     #[cfg(not(windows))]
     {
-        let mut cmd =
-            std::process::Command::new(crate::config::config().tools.shell_program());
+        let mut cmd = std::process::Command::new(crate::config::config().tools.shell_program());
         cmd.arg("-c").arg(command);
         cmd
     }
@@ -2245,10 +2244,13 @@ pub(super) fn handle_pre_control_shortcuts(
         return true;
     }
 
+    let artifact_palette_fallback =
+        code == KeyCode::Char('a') && modifiers == KeyModifiers::ALT;
     if app
         .toggle_keys
         .artifact_action_palette
         .matches(code, modifiers)
+        || artifact_palette_fallback
     {
         app.open_artifact_action_palette();
         return true;
