@@ -61,7 +61,7 @@
   - Run `pnpm --dir apps/command-center test:e2e -- --project orca-unavailable`; expected result is exit 0 with initiative update/checkpoint/resume passing, the execution pane marked unavailable with last-observed evidence, and every unsafe runtime command absent or rejected.
   - touches: `apps/command-center/e2e/` and isolated Orca-unavailable fixtures (new)
   - depends on: 7.1, 7.2
-- [ ] 7.4 Verify the authenticated bridge behavior with a repository-local deterministic loopback/tunnel fixture.
+- [x] 7.4 Verify the authenticated bridge behavior with a repository-local deterministic loopback/tunnel fixture.
   - Run `bash scripts/test-command-center-tunnel-fixture.sh`; expected result is exit 0 with the simulated remote client unable to reach a non-loopback listener directly, able to authenticate through the forwarded endpoint, unable to reuse another stream cursor, and unable to observe provider secrets or host-local execution paths.
   - touches: `scripts/test-command-center-tunnel-fixture.sh` and deterministic bridge fixtures (new)
   - depends on: 3.6, 7.2

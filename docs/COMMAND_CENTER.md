@@ -92,6 +92,11 @@ The following matrix records the observed result for each changed public boundar
 | Managed Mac/homelab topology | `bash scripts/test-command-center-tunnel-fixture.sh --fixture-only` and `bash scripts/test-command-center-mac-smoke.sh --mac-host mac --jcode-host homelab` | Deterministic stream/path isolation passed. The systemd-managed homelab listener served only on `127.0.0.1:43118`; a real headless Google Chrome process on the Mac rendered the initiative route through an SSH local forward, observed durable initiative content, and exposed no provider-secret markers. |
 | Full rollout gate | OpenSpec task 8.4 | Blocked, not passed. The approved Orca mutation contract, managed-hardware P95/resource measurements, and a stable repository-wide fmt/clippy window remain required. |
 
+The deployed listener was also exercised directly by the managed security gate,
+repository-local Playwright bootstrap, Orca-unavailable browser project, and default
+tunnel gate. Security passed with the expected rejected 401/422 probes; both real
+browser projects passed; the tunnel gate returned exit 0.
+
 ## Managed Mac/homelab terminal post gate
 
 The managed topology gate is intentionally separate from repository-local gates because it depends on external hosts, SSH aliases, and a managed command-center listener.
