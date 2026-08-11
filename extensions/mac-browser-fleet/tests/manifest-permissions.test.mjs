@@ -8,7 +8,7 @@ async function readJson(path) {
   return JSON.parse(await readFile(new URL(path, root), "utf8"));
 }
 
-const expectedPermissions = ["nativeMessaging", "scripting", "tabs"];
+const expectedPermissions = ["alarms", "nativeMessaging", "scripting", "tabs"];
 const expectedHostPermissions = ["http://*/*", "https://*/*"];
 const forbiddenPermissions = [
   "bookmarks",

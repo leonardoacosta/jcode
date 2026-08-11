@@ -292,3 +292,41 @@ test("periodically polls native host and executes action requests with host-only
   await delay(12);
   assert.equal(port.posted.length, postedBeforeDisconnect);
 });
+
+test("registers an alarm so a suspended service worker reconnects", () => {
+  // MV3 suspends the service worker when idle. An open native port keeps it
+  // alive, but once the browser tears the worker down nothing restarts it, and
+  // that browser silently vanishes from the fleet until someone reloads the
+  // extension. A periodic alarm is the supported way to wake it back up.
+  const alarmCalls = [];
+  const alarmEvent = event();
+  const browserApi = fakeBrowserApi();
+  browserApi.alarms = {
+    create(name, info) {
+      alarmCalls.push([name, info]);
+    },
+    onAlarm: alarmEvent,
+  };
+
+  installMacBrowserFleetBridge(browserApi, {
+    browserKind: "chrome",
+    sessionId: "sess-alarm",
+  });
+
+  assert.equal(alarmCalls.length, 1, "expected a keepalive alarm to be created");
+  const [name, info] = alarmCalls[0];
+  assert.ok(typeof name === "string" && name.length > 0);
+  assert.ok(
+    info.periodInMinutes > 0 && info.periodInMinutes <= 1,
+    "keepalive alarm must fire at least once a minute",
+  );
+
+  // Losing the port must not be terminal: an alarm tick reconnects.
+  const before = browserApi.ports.length;
+  browserApi.ports.at(-1).disconnect();
+  alarmEvent.emit({ name });
+  assert.ok(
+    browserApi.ports.length > before,
+    "alarm tick should re-establish the native connection",
+  );
+});

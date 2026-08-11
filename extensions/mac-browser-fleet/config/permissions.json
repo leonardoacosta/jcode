@@ -1,5 +1,6 @@
 {
   "permissions": [
+    "alarms",
     "nativeMessaging",
     "scripting",
     "tabs"
@@ -11,7 +12,8 @@
   "rationale": {
     "nativeMessaging": "Connect only to the separately allowlisted Jcode native messaging host.",
     "scripting": "Execute broker-approved ordinary-tab actions without debugger access.",
-    "tabs": "Maintain bounded window and tab inventory and perform broker-approved tab actions."
+    "tabs": "Maintain bounded window and tab inventory and perform broker-approved tab actions.",
+    "alarms": "Wake the suspended MV3 service worker so the browser does not silently drop out of the fleet."
   },
   "denied_permissions": [
     "bookmarks",

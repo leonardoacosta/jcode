@@ -16,6 +16,10 @@ export const ACTION_MESSAGE_TYPES = Object.freeze({
 
 export const NATIVE_HOST_NAME = "dev.jcode.mac_browser_fleet";
 
+/// Alarm that wakes a suspended MV3 service worker back into the fleet.
+export const KEEPALIVE_ALARM_NAME = "jcode-mac-browser-fleet-keepalive";
+const KEEPALIVE_PERIOD_MINUTES = 1;
+
 const DEFAULT_BROWSER_KIND = "chrome";
 const DEFAULT_DISPLAY_NAMES = Object.freeze({ chrome: "Google Chrome", edge: "Microsoft Edge" });
 const INVENTORY_EVENTS = Object.freeze([
@@ -234,9 +238,32 @@ export function installMacBrowserFleetBridge(browserApi, options = {}) {
 
   connect();
 
+  // MV3 tears the service worker down when it goes idle. An open native port
+  // keeps it alive, but once the browser suspends the worker nothing restarts
+  // it and this browser silently disappears from the fleet. A periodic alarm is
+  // the supported wakeup, and each tick re-establishes a dropped connection.
+  let alarmListener;
+  if (typeof browserApi?.alarms?.create === "function") {
+    browserApi.alarms.create(KEEPALIVE_ALARM_NAME, {
+      periodInMinutes: KEEPALIVE_PERIOD_MINUTES,
+    });
+    alarmListener = (alarm) => {
+      if (alarm?.name !== KEEPALIVE_ALARM_NAME) return;
+      if (!connected || !port) {
+        reconnectQueued = false;
+        connect();
+      }
+    };
+    browserApi.alarms.onAlarm?.addListener?.(alarmListener);
+  }
+
   return {
     disconnect() {
       reconnectQueued = false;
+      if (alarmListener) {
+        browserApi.alarms?.onAlarm?.removeListener?.(alarmListener);
+        browserApi.alarms?.clear?.(KEEPALIVE_ALARM_NAME);
+      }
       cleanupConnection();
     },
     get port() {
