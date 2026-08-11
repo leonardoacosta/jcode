@@ -68,15 +68,18 @@ impl InstallOptions {
         self.home.join(".ssh/jcode-mac-browser-fleet.conf")
     }
 
+    pub fn socket_dir(&self) -> PathBuf {
+        // Kept deliberately short: macOS `sockaddr_un.sun_path` allows only 104
+        // bytes, and the Application Support directory alone consumes most of it.
+        self.home.join(".jcode/mac-fleet")
+    }
+
     pub fn socket_path(&self) -> PathBuf {
-        self.home
-            .join("Library/Application Support/Jcode/MacBrowserFleet/jcode-mac-browser-fleet.sock")
+        self.socket_dir().join("broker.sock")
     }
 
     pub fn authority_socket_path(&self) -> PathBuf {
-        self.home.join(
-            "Library/Application Support/Jcode/MacBrowserFleet/jcode-mac-browser-fleet-authority.sock",
-        )
+        self.socket_dir().join("authority.sock")
     }
 
     pub fn forwarded_socket_path(&self) -> PathBuf {
@@ -536,7 +539,7 @@ mod tests {
         let plist = fs::read_to_string(opts.launch_agent_path()).unwrap();
         assert!(!plist.contains("<key>Sockets</key>"));
         assert!(plist.contains("<string>--socket</string>"));
-        assert!(plist.contains("jcode-mac-browser-fleet.sock"));
+        assert!(plist.contains("broker.sock"));
         assert!(plist.contains("<string>--native-secret</string>"));
         assert!(plist.contains("native.secret"));
         if Command::new("plutil")
@@ -705,5 +708,26 @@ mod tests {
         assert!(opts.edge_native_host_path().is_file());
         assert!(!report.installed.contains(&ArtifactKind::ChromeNativeHost));
         assert!(report.installed.contains(&ArtifactKind::EdgeNativeHost));
+    }
+
+    #[test]
+    fn rendered_socket_paths_stay_within_the_unix_domain_socket_limit() {
+        // macOS `sockaddr_un.sun_path` holds at most 104 bytes including the
+        // trailing NUL, so any rendered socket path must stay below that or the
+        // broker fails to bind at runtime even though every file is installed.
+        const MAX_UNIX_SOCKET_PATH_BYTES: usize = 103;
+        let opts = InstallOptions::fixture(
+            PathBuf::from("/Users/a-fairly-long-account-name"),
+            "/Users/a-fairly-long-account-name/.local/bin/jcode-mac-browser-fleet",
+        );
+
+        for path in [opts.socket_path(), opts.authority_socket_path()] {
+            let rendered = path.to_string_lossy();
+            assert!(
+                rendered.len() <= MAX_UNIX_SOCKET_PATH_BYTES,
+                "socket path {rendered} is {} bytes, over the {MAX_UNIX_SOCKET_PATH_BYTES}-byte limit",
+                rendered.len()
+            );
+        }
     }
 }
