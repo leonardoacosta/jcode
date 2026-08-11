@@ -90,6 +90,7 @@ jcode-base = { path = "../jcode-base", default-features = false }
 jcode-command-risk = { path = "../jcode-command-risk" }
 jcode-core = { path = "../jcode-core" }
 jcode-message-types = { path = "../jcode-message-types" }
+jcode-mac-browser-fleet = { path = "../jcode-mac-browser-fleet" }
 jcode-overnight-core = { path = "../jcode-overnight-core" }
 jcode-plan = { path = "../jcode-plan" }
 jcode-swarm-core = { path = "../jcode-swarm-core" }

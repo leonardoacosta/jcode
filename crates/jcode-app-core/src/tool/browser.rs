@@ -11,12 +11,16 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::Mutex;
 
 mod agent_browser;
+#[cfg(unix)]
+mod mac_fleet;
 
 pub struct BrowserTool;
 
 static FIREFOX_PROVIDER: FirefoxBridgeProvider = FirefoxBridgeProvider;
 static AGENT_BROWSER_PROVIDER: agent_browser::AgentBrowserProvider =
     agent_browser::AgentBrowserProvider;
+#[cfg(unix)]
+static MAC_FLEET_PROVIDER: mac_fleet::MacFleetProvider = mac_fleet::MacFleetProvider;
 static AUTO_BROWSER_AFFINITY: OnceLock<Mutex<HashMap<String, &'static str>>> = OnceLock::new();
 
 impl BrowserTool {
@@ -46,6 +50,12 @@ struct BrowserInput {
     tab_id: Option<i64>,
     #[serde(default)]
     tab_ref: Option<String>,
+    #[serde(default)]
+    browser_ref: Option<String>,
+    #[serde(default)]
+    window_ref: Option<String>,
+    #[serde(default)]
+    generation: Option<u64>,
     #[serde(default)]
     window_id: Option<i64>,
     #[serde(default)]
@@ -203,7 +213,7 @@ impl Tool for BrowserTool {
             "browser".into(),
             json!({
                 "type": "string",
-                "enum": ["auto", "firefox", "chrome", "safari", "edge"],
+                "enum": ["auto", "firefox", "chrome", "mac", "safari", "edge"],
                 "description": "Browser."
             }),
         );
@@ -234,6 +244,18 @@ impl Tool for BrowserTool {
             (
                 "tab_ref",
                 json!({"type": "string", "description": "Opaque provider tab reference, used by Chrome agent-browser ids such as t1."}),
+            ),
+            (
+                "browser_ref",
+                json!({"type": "string", "description": "Opaque Mac fleet browser reference."}),
+            ),
+            (
+                "window_ref",
+                json!({"type": "string", "description": "Opaque Mac fleet window reference."}),
+            ),
+            (
+                "generation",
+                json!({"type": "integer", "minimum": 0, "description": "Mac fleet target generation."}),
             ),
             (
                 "window_id",
@@ -507,6 +529,10 @@ fn resolve_provider(browser: Option<&str>) -> Result<&'static dyn BrowserProvide
     let browser = browser.unwrap_or("auto");
     if browser == "chrome" {
         return Ok(&AGENT_BROWSER_PROVIDER);
+    }
+    #[cfg(unix)]
+    if browser == "mac" {
+        return Ok(&MAC_FLEET_PROVIDER);
     }
     if FIREFOX_PROVIDER.supported_browsers().contains(&browser) {
         return Ok(&FIREFOX_PROVIDER);

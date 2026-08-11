@@ -63,7 +63,7 @@ impl InstallOptions {
     }
 
     pub fn forwarded_socket_path(&self) -> PathBuf {
-        PathBuf::from("~/.cache/jcode/mac-browser-fleet/jcode-mac-browser-fleet.forward.sock")
+        PathBuf::from("~/.jcode/browser/mac-fleet.sock")
     }
 }
 
@@ -300,24 +300,13 @@ pub fn render_launch_agent(opts: &InstallOptions) -> String {
   <true/>
   <key>KeepAlive</key>
   <true/>
-  <key>Sockets</key>
-  <dict>
-    <key>BrokerSocket</key>
-    <dict>
-      <key>SockPathName</key>
-      <string>{}</string>
-      <key>SockPathMode</key>
-      <integer>384</integer>
-    </dict>
-  </dict>
 </dict>
 </plist>
 "#,
         xml(&opts.broker_path),
         xml(&opts.socket_path()),
         xml(&opts.peer_secret_path()),
-        xml(&opts.policy_path()),
-        xml(&opts.socket_path())
+        xml(&opts.policy_path())
     )
 }
 
@@ -450,7 +439,8 @@ mod tests {
         assert!(!status.tcp_listener_configured);
 
         let plist = fs::read_to_string(opts.launch_agent_path()).unwrap();
-        assert!(plist.contains("<key>SockPathName</key>"));
+        assert!(!plist.contains("<key>Sockets</key>"));
+        assert!(plist.contains("<string>--socket</string>"));
         assert!(plist.contains("jcode-mac-browser-fleet.sock"));
         if Command::new("plutil")
             .arg("-lint")
@@ -520,7 +510,7 @@ mod tests {
         let ssh = fs::read_to_string(opts.ssh_include_path()).unwrap();
         assert!(ssh.contains("StreamLocalBindUnlink yes"));
         assert!(ssh.contains("RemoteForward"));
-        assert!(ssh.contains("jcode-mac-browser-fleet.forward.sock"));
+        assert!(ssh.contains("~/.jcode/browser/mac-fleet.sock"));
         assert!(!ssh.contains("LocalForward"));
         assert!(!ssh.contains("0.0.0.0"));
         assert!(!ssh.contains(":9222"));

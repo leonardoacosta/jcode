@@ -3455,6 +3455,7 @@ dependencies = [
  "jcode-command-risk",
  "jcode-core",
  "jcode-import-core",
+ "jcode-mac-browser-fleet",
  "jcode-message-types",
  "jcode-notify-email",
  "jcode-overnight-core",
@@ -3761,8 +3762,29 @@ dependencies = [
  "tokio",
 ]
 
+[[package]]
+name = "jcode-mac-browser-fleet"
+version = "0.1.0"
+dependencies = [
+ "jcode-mac-browser-policy",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+ "url",
+]
 
+[[package]]
+name = "jcode-mac-browser-policy"
+version = "0.1.0"
+dependencies = [
+ "url",
+]
 
+[[package]]
+name = "jcode-mac-browser-setup"
+version = "0.1.0"
 
 [[package]]
 name = "jcode-math"

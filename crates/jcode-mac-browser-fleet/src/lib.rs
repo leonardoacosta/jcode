@@ -6,7 +6,8 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use tokio::net::UnixListener;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::net::{UnixListener, UnixStream};
 use url::Url;
 
 pub use jcode_mac_browser_policy::Action;
@@ -276,7 +277,8 @@ impl FleetRequest {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase", tag = "kind")]
 pub enum FleetResponse {
     Health {
         generation: u64,
@@ -339,7 +341,7 @@ fn is_read_only(action: Action) -> bool {
 
 pub struct Broker {
     config: BrokerConfig,
-    _listener: UnixListener,
+    listener: UnixListener,
     generation: u64,
     targets: BTreeMap<String, TargetRef>,
     replay_guard: MutationReplayGuard,
@@ -365,7 +367,7 @@ impl Broker {
         )?;
         Ok(Self {
             config,
-            _listener: listener,
+            listener,
             generation: 0,
             targets: BTreeMap::new(),
             replay_guard: MutationReplayGuard::default(),
@@ -430,6 +432,113 @@ impl Broker {
                 ))
             }
         }
+    }
+
+    pub async fn serve(mut self) -> Result<()> {
+        loop {
+            let (stream, _) = self.listener.accept().await.map_err(|_| {
+                FleetError::new(FleetErrorKind::Io, "could not accept fleet connection")
+            })?;
+            self.serve_connection(stream).await?;
+        }
+    }
+
+    pub async fn serve_connection(&mut self, stream: UnixStream) -> Result<()> {
+        let (read_half, mut write_half) = stream.into_split();
+        let mut reader = BufReader::new(read_half).take((self.config.max_payload_bytes + 1) as u64);
+        let mut line = Vec::new();
+        reader
+            .read_until(b'\n', &mut line)
+            .await
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not read fleet request"))?;
+        if line.is_empty() {
+            return Err(FleetError::new(
+                FleetErrorKind::Malformed,
+                "fleet request was empty",
+            ));
+        }
+        if line.len() > self.config.max_payload_bytes {
+            return Err(FleetError::new(
+                FleetErrorKind::Oversized,
+                "fleet request exceeded size limit",
+            ));
+        }
+
+        let codec = ProtocolCodec::new(
+            vec![1],
+            self.config.max_payload_bytes,
+            self.config.secret.clone(),
+        );
+        let result = match codec.decode_request(&line).and_then(envelope_to_request) {
+            Ok(request) => self.handle(request).await,
+            Err(error) => Err(error),
+        };
+        let response = match result {
+            Ok(result) => serde_json::json!({"ok": true, "result": result}),
+            Err(error) => serde_json::json!({
+                "ok": false,
+                "error": {
+                    "kind": error_kind_name(error.kind()),
+                    "message": error.to_string(),
+                }
+            }),
+        };
+        let mut encoded = serde_json::to_vec(&response)
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not encode fleet response"))?;
+        encoded.push(b'\n');
+        write_half
+            .write_all(&encoded)
+            .await
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not write fleet response"))?;
+        Ok(())
+    }
+}
+
+fn envelope_to_request(envelope: FleetEnvelope) -> Result<FleetRequest> {
+    let deadline = Duration::from_millis(envelope.deadline_ms);
+    match envelope.action {
+        WireAction::FleetHealth | WireAction::ListBrowsers => Ok(FleetRequest::health(
+            envelope.id,
+            envelope.auth,
+            envelope.target_generation,
+            deadline,
+        )),
+        WireAction::Navigate | WireAction::Click => {
+            let target =
+                serde_json::from_value(envelope.payload.get("target").cloned().ok_or_else(
+                    || FleetError::new(FleetErrorKind::Malformed, "target is required"),
+                )?)
+                .map_err(|_| FleetError::new(FleetErrorKind::Malformed, "target was malformed"))?;
+            let action = match envelope.action {
+                WireAction::Navigate => Action::Navigate,
+                WireAction::Click => Action::Click,
+                _ => unreachable!(),
+            };
+            Ok(FleetRequest::action(
+                envelope.id,
+                envelope.auth,
+                target,
+                action,
+                deadline,
+            ))
+        }
+    }
+}
+
+fn error_kind_name(kind: FleetErrorKind) -> &'static str {
+    match kind {
+        FleetErrorKind::Malformed => "malformed",
+        FleetErrorKind::Oversized => "oversized",
+        FleetErrorKind::Unauthenticated => "unauthenticated",
+        FleetErrorKind::UnsupportedVersion => "unsupportedVersion",
+        FleetErrorKind::DuplicateId => "duplicateId",
+        FleetErrorKind::DuplicateMutation => "duplicateMutation",
+        FleetErrorKind::StaleGeneration => "staleGeneration",
+        FleetErrorKind::DeadlineExceeded => "deadlineExceeded",
+        FleetErrorKind::ApprovalRequired => "approvalRequired",
+        FleetErrorKind::UnsupportedCapability => "unsupportedCapability",
+        FleetErrorKind::UntrustedEndpoint => "untrustedEndpoint",
+        FleetErrorKind::Io => "io",
     }
 }
 

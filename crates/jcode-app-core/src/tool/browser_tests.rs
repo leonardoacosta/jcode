@@ -24,6 +24,9 @@ fn snapshot_maps_to_annotated_get_content() {
         url: None,
         tab_id: Some(7),
         tab_ref: None,
+        browser_ref: None,
+        window_ref: None,
+        generation: None,
         window_id: None,
         frame_id: Some(3),
         all_frames: Some(true),
@@ -68,6 +71,9 @@ fn eval_maps_script_and_page_world() {
         url: None,
         tab_id: None,
         tab_ref: None,
+        browser_ref: None,
+        window_ref: None,
+        generation: None,
         window_id: None,
         frame_id: None,
         all_frames: None,
@@ -110,6 +116,9 @@ fn interactables_maps_to_bridge_action() {
         url: None,
         tab_id: Some(9),
         tab_ref: None,
+        browser_ref: None,
+        window_ref: None,
+        generation: None,
         window_id: None,
         frame_id: None,
         all_frames: None,
@@ -178,13 +187,22 @@ fn schema_exposes_advanced_browser_fields() {
     assert!(props.contains_key("position"));
     assert!(props.contains_key("behavior"));
     assert!(props.contains_key("scroll_to"));
+    assert!(props.contains_key("browser_ref"));
+    assert!(props.contains_key("window_ref"));
+    assert!(props.contains_key("generation"));
+
+    let browser_enum = props["browser"]["enum"]
+        .as_array()
+        .expect("browser enum should be an array");
+    assert!(browser_enum.iter().any(|value| value == "mac"));
 }
 
 #[test]
-fn resolve_provider_accepts_auto_and_firefox() {
+fn resolve_provider_accepts_auto_firefox_chrome_and_mac() {
     assert!(resolve_provider(Some("auto")).is_ok());
     assert!(resolve_provider(Some("firefox")).is_ok());
     assert!(resolve_provider(Some("chrome")).is_ok());
+    assert!(resolve_provider(Some("mac")).is_ok());
 }
 
 #[test]
@@ -203,7 +221,91 @@ fn profile_selection_requires_explicit_chrome() {
     assert!(validate_profile_route(Some("social"), "chrome").is_ok());
     assert!(validate_profile_route(Some("social"), "auto").is_err());
     assert!(validate_profile_route(Some("social"), "firefox").is_err());
+    assert!(validate_profile_route(Some("social"), "mac").is_err());
     assert!(validate_profile_route(None, "auto").is_ok());
+}
+
+#[cfg(unix)]
+#[test]
+fn mac_fleet_config_uses_safe_env_and_default_paths() {
+    let _guard = jcode_base::storage::lock_test_env();
+    let temp = tempfile::TempDir::new().expect("create temp dir");
+    jcode_base::env::set_var("JCODE_HOME", temp.path());
+    jcode_base::env::set_var("JCODE_MAC_BROWSER_FLEET_SECRET", "env-secret");
+    jcode_base::env::set_var(
+        "JCODE_MAC_BROWSER_FLEET_SOCKET",
+        temp.path().join("custom.sock"),
+    );
+
+    let config = mac_fleet::MacFleetConfig::from_env().expect("config should load");
+    assert_eq!(config.secret, "env-secret");
+    assert_eq!(config.socket_path, temp.path().join("custom.sock"));
+
+    jcode_base::env::remove_var("JCODE_MAC_BROWSER_FLEET_SECRET");
+    jcode_base::env::remove_var("JCODE_MAC_BROWSER_FLEET_SOCKET");
+    std::fs::create_dir_all(temp.path().join("browser")).expect("create browser config dir");
+    std::fs::write(
+        temp.path().join("browser/mac-fleet.secret"),
+        "file-secret\n",
+    )
+    .expect("write peer secret");
+    let config = mac_fleet::MacFleetConfig::from_env().expect("default config should load");
+    assert_eq!(
+        config.socket_path,
+        temp.path().join("browser/mac-fleet.sock")
+    );
+    assert_eq!(config.secret, "file-secret");
+}
+
+#[cfg(unix)]
+#[test]
+fn mac_fleet_maps_tool_actions_to_bounded_wire_requests() {
+    let input: BrowserInput = serde_json::from_value(json!({
+        "action": "open",
+        "browser": "mac",
+        "browser_ref": "chrome:stable",
+        "window_ref": "win-1",
+        "tab_ref": "tab-1",
+        "generation": 7,
+        "url": "https://example.com",
+        "timeout_ms": 2500
+    }))
+    .unwrap();
+
+    let request = mac_fleet::build_request("req-1", "secret".into(), "open", &input).unwrap();
+    assert_eq!(
+        request.action,
+        jcode_mac_browser_fleet::WireAction::Navigate
+    );
+    assert_eq!(request.target_generation, 7);
+    assert_eq!(request.payload["target"]["browser_id"], "chrome:stable");
+    assert_eq!(request.payload["target"]["window_id"], "win-1");
+    assert_eq!(request.payload["target"]["tab_id"], "tab-1");
+    assert_eq!(request.payload["url"], "https://example.com");
+
+    let encoded = mac_fleet::encode_request_line(&request).unwrap();
+    assert!(encoded.ends_with(b"\n"));
+    assert!(encoded.len() <= mac_fleet::MAX_REQUEST_BYTES + 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn mac_fleet_errors_preserve_policy_meaning() {
+    let approval = mac_fleet::tool_error_from_wire(json!({
+        "ok": false,
+        "error": {"kind": "approvalRequired", "message": "local approval is required"}
+    }))
+    .unwrap_err()
+    .to_string();
+    assert!(approval.contains("approval required"));
+
+    let stale = mac_fleet::tool_error_from_wire(json!({
+        "ok": false,
+        "error": {"kind": "staleGeneration", "message": "target generation is stale"}
+    }))
+    .unwrap_err()
+    .to_string();
+    assert!(stale.contains("stale generation"));
 }
 
 #[test]

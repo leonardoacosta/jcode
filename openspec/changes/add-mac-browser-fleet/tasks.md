@@ -2,10 +2,10 @@
 
 ## 1. Protocol and policy foundations
 
-- [ ] 1.1 Define versioned bounded fleet protocol types for authentication, inventory, target generations, capabilities, actions, approvals, leases, errors, and audit metadata.
+- [x] 1.1 Define versioned bounded fleet protocol types for authentication, inventory, target generations, capabilities, actions, approvals, leases, errors, and audit metadata.
   - touches: new shared fleet protocol module or crate and deterministic protocol tests
   - Done when malformed, oversized, unauthenticated, unsupported-version, duplicate-ID, and stale-generation messages fail closed with secret-safe errors.
-- [ ] 1.2 Implement the Mac-owned policy engine with action classification, metadata redaction, immutable hard denies, emergency stop, one-action approvals, and scoped monotonic-time leases.
+- [x] 1.2 Implement the Mac-owned policy engine with action classification, metadata redaction, immutable hard denies, emergency stop, one-action approvals, and scoped monotonic-time leases.
   - depends on: 1.1
   - Done when table-driven tests cover every read-only, mutation, hard-deny, lease-match, expiry, restart, policy-reload, target-change, and emergency-stop branch.
 
@@ -14,10 +14,10 @@
 - [ ] 2.1 Add the Mac browser fleet broker with a mode-0600 Unix socket, authenticated handshake, bounded concurrency, request deadlines, idempotent read-only handling, non-replayed mutations, inventory generations, and local audit events.
   - depends on: 1.1, 1.2
   - Done when fake peers prove connection, disconnect, reconnect, backpressure, timeout, cancellation, duplicate request, and target churn behavior.
-- [ ] 2.2 Add Manifest V3 extension and native-messaging host assets shared by Chrome and Edge, with minimal permissions, explicit host grants, browser/window/tab inventory, capability reporting, and ordinary-tab actions.
+- [x] 2.2 Add Manifest V3 extension and native-messaging host assets shared by Chrome and Edge, with minimal permissions, explicit host grants, browser/window/tab inventory, capability reporting, and ordinary-tab actions.
   - depends on: 2.1
   - Done when extension tests and a fake native host prove Chrome/Edge identity, inventory deltas, policy-filtered metadata, disconnect cleanup, and supported/unsupported actions.
-- [ ] 2.3 Add explicitly managed CDP target discovery and control without relaunching or attaching to ordinary daily profiles.
+- [x] 2.3 Add explicitly managed CDP target discovery and control without relaunching or attaching to ordinary daily profiles.
   - depends on: 2.1
   - Done when fake CDP tests prove endpoint trust, capability advertisement, target generation changes, richer inspection, bounded output, and policy enforcement.
 - [ ] 2.4 Add the Mac-local approval and status surface, including single-action approval, scoped lease issuance, lease listing/revocation, emergency stop, connection health, and browser extension state.
@@ -32,19 +32,19 @@
 - [ ] 3.2 Add an explicit Mac fleet browser provider to Jcode with browser/window/tab references, target generations, capability-aware action mapping, normalized metadata, timeout handling, and secret-safe errors.
   - depends on: 1.1, 3.1
   - Done when provider tests cover status, listing, content inspection, every supported mutation, unsupported capabilities, stale refs, approval-required responses, denial, lease use, broker absence, and protocol mismatch.
-- [ ] 3.3 Preserve strict local-provider semantics and schema compatibility.
+- [x] 3.3 Preserve strict local-provider semantics and schema compatibility.
   - depends on: 3.2
   - Done when existing Firefox and `browser: "chrome"` profile tests pass unchanged, `auto` never silently selects the Mac fleet, and transformed provider schemas retain all local and remote targeting fields.
 
 ## 4. Setup, operations, and safety
 
-- [ ] 4.1 Add idempotent setup/status/removal commands for the Mac broker binary, launch-agent plist, native-host manifests, extension installation state, peer secret, policy defaults, and SSH-forwarding guidance.
+- [x] 4.1 Add idempotent setup/status/removal commands for the Mac broker binary, launch-agent plist, native-host manifests, extension installation state, peer secret, policy defaults, and SSH-forwarding guidance.
   - depends on: 2.1, 2.2, 3.1
   - Done when fixture-based macOS tests prove install, refresh, operator-file backup, partial setup reporting, launch-agent reload, status, removal, and preservation of browser profiles and unrelated SSH configuration.
 - [ ] 4.2 Add runtime observability with bounded metadata-only logs and diagnostics for broker, extension, SSH, policy, approval, lease, and provider states.
   - depends on: 2.1, 3.2
   - Done when tests prove URLs, typed values, credentials, page content, approval details, and peer secrets never enter logs or rendered diagnostics.
-- [ ] 4.3 Document topology, setup, approval behavior, temporary autonomy, emergency stop, Chrome/Edge differences, capability limits, troubleshooting, rollback, and recovery.
+- [x] 4.3 Document topology, setup, approval behavior, temporary autonomy, emergency stop, Chrome/Edge differences, capability limits, troubleshooting, rollback, and recovery.
   - touches: `docs/MAC_HOMELAB_SSH_TOPOLOGY.md`, `docs/BROWSER_PROVIDER_PROTOCOL.md`, README or dedicated fleet guide
   - depends on: 4.1
   - Done when every public command and socket location matches implemented help output and no unsupported capability is claimed.
