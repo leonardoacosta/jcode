@@ -1335,3 +1335,33 @@ fn chrome_style_native_host_launch_is_not_a_usage_error() {
     assert_eq!(classify_invocation(["broker"]), Invocation::Broker);
     assert_eq!(classify_invocation(["authority"]), Invocation::Authority);
 }
+
+#[test]
+fn navigation_destination_is_hard_denied_even_under_an_active_lease() {
+    use jcode_mac_browser_fleet::navigation_hard_deny;
+
+    // Hard-deny classifies the tab's *current* context. A navigate also has a
+    // destination, and privileged destinations must be refused even when a
+    // valid Mac-issued lease covers the target: otherwise an approved lease on
+    // an ordinary tab becomes a way to drive the browser into chrome://settings
+    // or chrome://extensions.
+    for denied in [
+        "chrome://settings/",
+        "chrome://extensions/",
+        "edge://settings/profiles",
+        "about:config",
+        "https://myaccount.google.com/security/passwords",
+    ] {
+        assert!(
+            navigation_hard_deny(denied).is_some(),
+            "expected {denied} to be hard denied as a navigation destination"
+        );
+    }
+
+    for allowed in ["https://example.com/", "https://docs.rs/serde"] {
+        assert!(
+            navigation_hard_deny(allowed).is_none(),
+            "expected {allowed} to remain navigable"
+        );
+    }
+}

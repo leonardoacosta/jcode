@@ -1436,6 +1436,17 @@ impl Broker {
                     FleetError::new(FleetErrorKind::StaleGeneration, "target is not connected")
                 })?;
                 let policy_target = policy_target_for(&state);
+                if matches!(action, Action::Navigate)
+                    && let Some(url) = payload.get("url").and_then(serde_json::Value::as_str)
+                    && let Some(category) = navigation_hard_deny(url)
+                {
+                    // A lease authorizes acting on a target, never navigating
+                    // that target into a privileged destination.
+                    return Err(FleetError::new(
+                        FleetErrorKind::HardDenied,
+                        format!("navigation destination is hard denied: {category}"),
+                    ));
+                }
                 match self
                     .policy
                     .authorize(request.id(), *action, &policy_target, now_seconds())
@@ -1956,6 +1967,31 @@ fn origin_for_url(raw: &str) -> String {
     Url::parse(raw)
         .map(|url| url.origin().ascii_serialization())
         .unwrap_or_else(|_| raw.split('/').next().unwrap_or("about:blank").to_string())
+}
+
+/// Hard-deny category for a navigation *destination*, if any.
+///
+/// [`Context::hard_deny`] classifies the tab a request targets. A navigate also
+/// carries a destination, and a privileged destination must be refused even
+/// when a valid Mac-issued lease covers the target tab. Without this an
+/// approved lease on an ordinary tab could be used to drive the browser into
+/// `chrome://settings` or `chrome://extensions`.
+pub fn navigation_hard_deny(raw: &str) -> Option<&'static str> {
+    match context_for_url(raw) {
+        Context::Ordinary => None,
+        Context::PrivilegedBrowserUrl => Some("privileged browser url"),
+        Context::PasswordManager => Some("password manager"),
+        Context::BrowserSettings => Some("browser settings"),
+        Context::ExtensionManagement => Some("extension management"),
+        Context::Incognito => Some("incognito"),
+        Context::PaymentConfirmation | Context::BankingConfirmation => {
+            Some("payment or banking confirmation")
+        }
+        Context::AccountSecurity => Some("account security"),
+        Context::AuthenticationSettings | Context::RecoverySettings => {
+            Some("authentication or recovery")
+        }
+    }
 }
 
 fn context_for_url(raw: &str) -> Context {
