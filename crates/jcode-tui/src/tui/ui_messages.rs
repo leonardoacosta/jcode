@@ -4428,6 +4428,9 @@ pub(crate) fn render_artifact_message(msg: &DisplayMessage, width: u16) -> Vec<L
     let (identity, border_color, source) = match artifact.kind {
         RenderedArtifactKind::Markdown => ("▤ Markdown", rgb(94, 163, 255), msg.content.clone()),
         RenderedArtifactKind::Message => ("● Message", rgb(214, 174, 126), msg.content.clone()),
+        RenderedArtifactKind::DecisionBrief => {
+            ("◆ Decision Brief", rgb(180, 140, 255), msg.content.clone())
+        }
         RenderedArtifactKind::Code => {
             let language = artifact
                 .language

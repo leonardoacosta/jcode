@@ -5,6 +5,7 @@ pub enum RenderedArtifactKind {
     Markdown,
     Message,
     Code,
+    DecisionBrief,
     #[serde(other)]
     Unsupported,
 }

@@ -120,6 +120,29 @@ pub(crate) fn extract_input_shell_command(input: &str) -> Option<&str> {
     self::input::extract_input_shell_command(input)
 }
 
+fn artifact_action_command(destination: &str, target: &str) -> Option<std::process::Command> {
+    if !matches!(destination, "mopen" | "ropen" | "iopen")
+        || target.trim().is_empty()
+        || target.trim_start().starts_with('-')
+    {
+        return None;
+    }
+
+    let mut command = std::process::Command::new(destination);
+    command.arg(target);
+    Some(command)
+}
+
+fn brief_aloud_command(prose: &str) -> Option<std::process::Command> {
+    if prose.trim().is_empty() {
+        return None;
+    }
+
+    let mut command = std::process::Command::new("say_brief");
+    command.arg(prose);
+    Some(command)
+}
+
 pub(crate) const COMMAND_SUGGESTION_VISIBLE_LIMIT: usize = 8;
 
 fn active_runtime_provider_key() -> Option<String> {
