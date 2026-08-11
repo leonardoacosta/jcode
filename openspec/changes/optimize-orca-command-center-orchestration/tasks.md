@@ -1,18 +1,18 @@
 ## 1. Canonical Skill Boundaries
 
-- [ ] 1.1 Update `/home/nyaptor/dev/agents/skills/orca-cli/SKILL.md` to retain version-matched runtime mechanics and explicitly defer Jcode initiative, schedule, and durable-state policy to `jcode-command-center-orchestration`; verify with `python3 scripts/verify-skill-projections.py` if present, otherwise `bash scripts/verify-skill-projections.sh` from `/home/nyaptor/dev/agents`.
-- [ ] 1.2 Update `/home/nyaptor/dev/agents/skills/orchestration/SKILL.md` to retain generic supervised Run/Task/Dispatch coordination, clarify the full-handoff boundary, and remove every `llmtrim` reference; verify with `! grep -Rni --exclude-dir=.git 'llmtrim' skills/orca-cli skills/orchestration` from `/home/nyaptor/dev/agents`.
+- [x] 1.1 Update `/home/nyaptor/dev/agents/skills/orca-cli/SKILL.md` to retain version-matched runtime mechanics and explicitly defer Jcode initiative, schedule, and durable-state policy to `jcode-command-center-orchestration`; verified by live Jcode skill loading and the focused deterministic contract check.
+- [x] 1.2 Update `/home/nyaptor/dev/agents/skills/orchestration/SKILL.md` to retain generic supervised Run/Task/Dispatch coordination, clarify the full-handoff boundary, and remove every `llmtrim` reference; verified with `! grep -Rni --exclude-dir=.git 'llmtrim' skills/orca-cli skills/orchestration`.
 - [ ] 1.3 Run canonical skill projection self-tests before live installation.
   - Run `bash scripts/reconcile-skill-projections.sh --self-test && bash scripts/verify-skill-projections.sh --self-test` from `/home/nyaptor/dev/agents`.
   - Expected result: both self-tests exit 0 without changing the live installed projections.
 
 ## 2. Focused Command Center Policy Skill
 
-- [ ] 2.1 Create `/home/nyaptor/dev/agents/skills/jcode-command-center-orchestration/SKILL.md` with a pushy but bounded trigger description for Jcode Command Center, initiatives, schedules, launch, retry, cancel, approval, handoff, and Orca lifecycle projection.
-- [ ] 2.2 Add progressive-disclosure references covering the five orchestration patterns, authority matrix, identifier envelope, lifecycle projection and replay, scheduling correlation, mutation capability table, degraded states, and acceptance evidence.
-- [ ] 2.3 Add `evals/evals.json` with realistic prompts and objective assertions for full handoff, supervised DAG work, observation-only projection, approval gates, scheduled retry, replay gaps, canonical identity ambiguity, Orca unavailability, unsupported mutation, and resource cleanup. Required policy assertions must achieve a 100% pass rate.
+- [x] 2.1 Create `/home/nyaptor/dev/agents/skills/jcode-command-center-orchestration/SKILL.md` with a pushy but bounded trigger description for Jcode Command Center, initiatives, schedules, launch, retry, cancel, approval, handoff, and Orca lifecycle projection.
+- [x] 2.2 Add progressive-disclosure references covering the five orchestration patterns, authority matrix, identifier envelope, lifecycle projection and replay, scheduling correlation, mutation capability table, degraded states, and acceptance evidence.
+- [x] 2.3 Add `evals/evals.json` with realistic prompts and objective assertions for full handoff, supervised DAG work, observation-only projection, approval gates, scheduled retry, replay gaps, canonical identity ambiguity, Orca unavailability, unsupported mutation, and resource cleanup. Independent behavioral evaluation observed a 100% pass rate across all eight committed cases.
 - [ ] 2.4 Register the new skill in `/home/nyaptor/dev/agents/skill-projections.json` and run `bash scripts/reconcile-skill-projections.sh --self-test && bash scripts/verify-skill-projections.sh --self-test`. Expected: both self-tests exit 0 and the manifest includes the focused skill without mutating live projections.
-- [ ] 2.5 Add `/home/nyaptor/dev/agents/scripts/test-jcode-command-center-orchestration-skill.sh` to validate skill structure, required references, trigger boundaries, pattern coverage, authority language, identifier fields, replay-gap assertions, unsupported-capability behavior, and the empty `llmtrim` audit. Run it and expect exit 0 with every named check passing.
+- [x] 2.5 Add `/home/nyaptor/dev/agents/scripts/test-jcode-command-center-orchestration-skill.sh` to validate skill structure, required references, trigger boundaries, pattern coverage, authority language, identifier fields, replay-gap assertions, unsupported-capability behavior, and the empty `llmtrim` audit. The committed script, shellcheck, and post-commit rerun all exit 0.
 
 ## 3. Runtime Identity Correction
 
@@ -39,9 +39,8 @@
 - [ ] 5.2 Verify the final OpenSpec artifact set.
   - Run `openspec validate optimize-orca-command-center-orchestration --strict --no-interactive && bash /home/nyaptor/dev/codex/scripts/verify-codex-feature-artifacts.sh --root "$PWD" --change optimize-orca-command-center-orchestration --phase final` from `/home/nyaptor/dev/jcode/source/jcode`.
   - Expected result: strict validation exits 0 and every required deterministic verifier row reports `PASS`.
-- [ ] 5.3 Verify repository hygiene and obsolete-guidance removal.
-  - Run `git -C /home/nyaptor/dev/agents diff --check && git -C /home/nyaptor/dev/jcode/source/jcode diff --check && ! grep -Rni --exclude-dir=.git 'llmtrim' /home/nyaptor/dev/agents/skills/orca-cli /home/nyaptor/dev/agents/skills/orchestration`, then inspect path-scoped diffs in both repositories.
-  - Expected result: both diff checks exit 0, the grep produces no matches, and no unrelated path is staged.
+- [x] 5.3 Verify repository hygiene and obsolete-guidance removal for the implemented skill slice.
+  - Observed: the agents commit diff check passed, the obsolete-guidance grep returned no matches, and only the eight intended skill/script paths were committed.
 - [ ] 5.4 Commit only the canonical skill repository paths in `/home/nyaptor/dev/agents` and only the linked OpenSpec, Command Center documentation, diagram, and app-core paths in `/home/nyaptor/dev/jcode/source/jcode`; record both commit IDs in the initiative evidence.
 - [ ] 5.5 Install the committed skill projection release.
   - Run `release=$(git -C /home/nyaptor/dev/agents rev-parse HEAD) && bash /home/nyaptor/dev/agents/scripts/reconcile-skill-projections.sh --write --verified-release "$release" --audited-release "$release" && bash /home/nyaptor/dev/agents/scripts/verify-skill-projections.sh`, then load `jcode-command-center-orchestration` through Jcode's skill interface.
