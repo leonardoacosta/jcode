@@ -1,6 +1,8 @@
 # Jcode Desktop Architecture Direction
 
 > Historical: this document describes the removed legacy `crates/jcode-desktop` app. The current desktop app is `crates/jcode-desktop2`.
+>
+> Command Center update: the blanket no-WebView stance is partially superseded only for a future dedicated `CommandCenter` surface that may host the approved daemon-hosted SolidStart route application. Native custom rendering remains the direction for the rest of desktop2. See [`COMMAND_CENTER_MIGRATION_LEDGER.md`](./COMMAND_CENTER_MIGRATION_LEDGER.md).
 
 Status: Proposed
 Updated: 2026-04-25

@@ -1,5 +1,7 @@
 # Context architecture
 
+> Command Center update: OpenSpec change `add-solidstart-command-center-vertical-slice` retains this semantic/execution hierarchy and provenance model. The terminal Control Room remains a lightweight inspector; the daemon-hosted SolidStart Command Center is the canonical interactive initiative supervision surface. See [`COMMAND_CENTER.md`](./COMMAND_CENTER.md) and [`COMMAND_CENTER_MIGRATION_LEDGER.md`](./COMMAND_CENTER_MIGRATION_LEDGER.md).
+
 Jcode's durable context model separates semantic identity from local execution details. The homelab Jcode daemon is the source of truth for durable identity, while Herdr is treated as the local terminal and agent execution substrate.
 
 ## Hierarchy

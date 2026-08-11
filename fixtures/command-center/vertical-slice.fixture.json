@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "description": "Deterministic command-center vertical-slice fixture contract used by repository-local gates. It is not a browser acceptance substitute.",
+  "initiative": {
+    "id": "fixture-initiative-command-center",
+    "title": "Command center fixture initiative",
+    "revision": 7,
+    "status": "active",
+    "currentMilestone": "m1",
+    "steps": [
+      { "id": "s1", "state": "completed" },
+      { "id": "s2", "state": "in_progress" }
+    ],
+    "blockers": [],
+    "nextActions": ["checkpoint-progress"]
+  },
+  "linkedSchedule": {
+    "id": "fixture-schedule-command-center",
+    "cadence": "manual fixture",
+    "timezone": "UTC",
+    "nextFire": "2026-08-11T06:00:00Z",
+    "lastResult": "succeeded"
+  },
+  "linkedRun": {
+    "jcodeRunId": "fixture-jcode-run-1",
+    "orcaProjectId": "orca-project-fixture-1",
+    "orcaRunId": "orca-run-fixture-1",
+    "status": "running",
+    "lastObservedAt": "2026-08-11T05:30:00Z"
+  },
+  "events": [
+    { "streamId": "stream-fixture-a", "sequence": 1, "type": "snapshot_loaded" },
+    { "streamId": "stream-fixture-a", "sequence": 2, "type": "initiative_checkpointed" },
+    { "streamId": "stream-fixture-a", "sequence": 3, "type": "orca_run_observed" }
+  ],
+  "allowedRuntimeCommands": ["start_initiative_run", "retry_linked_run", "cancel_linked_run"],
+  "forbiddenRuntimeCommands": ["approve_gate_directly", "write_terminal", "mutate_worktree", "schedule_mutation"]
+}

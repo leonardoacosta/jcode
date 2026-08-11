@@ -13,6 +13,7 @@ members = [
     "crates/jcode-base",
     "crates/jcode-tui",
     "crates/jcode-build-meta",
+    "crates/jcode-command-center",
     "crates/jcode-ambient-types",
     "crates/jcode-auth-types",
     "crates/jcode-embedding",

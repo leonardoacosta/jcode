@@ -3,6 +3,8 @@
 Status: Research captured; architecture recommendation pending explicit product approval.
 Updated: 2026-08-11
 
+> Command Center ledger: OpenSpec change `add-solidstart-command-center-vertical-slice` supersedes the earlier HTMX/control-room UI recommendation for the flagship interactive surface. The canonical vertical-slice UI is daemon-hosted SolidStart, while this roadmap remains a retained source for inbox, schedule, approval, handoff, snapshot, event, and attention semantics. See [`COMMAND_CENTER.md`](./COMMAND_CENTER.md) and [`COMMAND_CENTER_MIGRATION_LEDGER.md`](./COMMAND_CENTER_MIGRATION_LEDGER.md).
+
 This roadmap records the research into jcode's ambient inbox, scheduling, approvals, handoffs, and the control-room UI. It also records the architecture options evaluated before implementation begins.
 
 ## Product direction

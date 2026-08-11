@@ -3,6 +3,8 @@
 Status: Proposed
 Updated: 2026-04-25
 
+> Command Center update: a later desktop milestone may add a `CommandCenter` surface that hosts the same daemon-hosted SolidStart routes and generated client contract. This extends the surface registry direction without making the whole desktop a web-app shell. See [`COMMAND_CENTER_MIGRATION_LEDGER.md`](./COMMAND_CENTER_MIGRATION_LEDGER.md).
+
 This document refines the Jcode Desktop product direction from a single chat-like app into a **Niri-like agent workspace superapp**.
 
 The app should eventually host multiple kinds of surfaces:

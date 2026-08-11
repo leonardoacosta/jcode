@@ -1,5 +1,7 @@
 # Mac-to-Homelab Jcode SSH Topology
 
+> Command Center update: remote browser access for the command center must use an explicit authenticated tunnel or bridge. The homelab daemon remains the authority for repositories, tools, provider credentials, and live runtime evidence; no unauthenticated command-center listener should be exposed to LAN, tailnet, or internet. See [`COMMAND_CENTER.md`](./COMMAND_CENTER.md).
+
 This guide builds the recommended setup one feature at a time. The Mac initiates every SSH connection, so the homelab never needs to SSH back into the Mac.
 
 ## Topology
