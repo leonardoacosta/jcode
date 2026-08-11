@@ -16,6 +16,8 @@ pub struct InstallOptions {
     pub homelab_user: String,
     pub chrome_extension_id: String,
     pub edge_extension_id: String,
+    pub chrome_user_data_dirs: Vec<PathBuf>,
+    pub edge_user_data_dirs: Vec<PathBuf>,
     pub managed_cdp_chrome: Option<String>,
     pub managed_cdp_edge: Option<String>,
 }
@@ -29,6 +31,8 @@ impl InstallOptions {
             homelab_user: "jcode".to_string(),
             chrome_extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
             edge_extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            chrome_user_data_dirs: Vec::new(),
+            edge_user_data_dirs: Vec::new(),
             managed_cdp_chrome: None,
             managed_cdp_edge: None,
         }
@@ -50,6 +54,37 @@ impl InstallOptions {
         self.home
             .join("Library/Application Support/Google/Chrome/NativeMessagingHosts")
             .join(format!("{NATIVE_HOST_NAME}.json"))
+    }
+
+    /// Every Chrome native-host manifest path, including extra user-data-dirs.
+    ///
+    /// Chrome only reads manifests from the user-data-dir it was launched
+    /// with, so an extension loaded in a secondary profile needs its own copy.
+    pub fn chrome_native_host_paths(&self) -> Vec<PathBuf> {
+        let mut paths = vec![self.chrome_native_host_path()];
+        for dir in &self.chrome_user_data_dirs {
+            let path = dir
+                .join("NativeMessagingHosts")
+                .join(format!("{NATIVE_HOST_NAME}.json"));
+            if !paths.contains(&path) {
+                paths.push(path);
+            }
+        }
+        paths
+    }
+
+    /// Every Edge native-host manifest path, including extra user-data-dirs.
+    pub fn edge_native_host_paths(&self) -> Vec<PathBuf> {
+        let mut paths = vec![self.edge_native_host_path()];
+        for dir in &self.edge_user_data_dirs {
+            let path = dir
+                .join("NativeMessagingHosts")
+                .join(format!("{NATIVE_HOST_NAME}.json"));
+            if !paths.contains(&path) {
+                paths.push(path);
+            }
+        }
+        paths
     }
 
     pub fn edge_native_host_path(&self) -> PathBuf {
@@ -166,22 +201,26 @@ pub fn install(opts: &InstallOptions) -> io::Result<InstallReport> {
         &mut report,
     )?;
     if extension_id_is_configured(&opts.chrome_extension_id) {
-        write_artifact(
-            opts.chrome_native_host_path(),
-            render_native_host(opts, "chrome"),
-            ArtifactKind::ChromeNativeHost,
-            0o644,
-            &mut report,
-        )?;
+        for path in opts.chrome_native_host_paths() {
+            write_artifact(
+                path,
+                render_native_host(opts, "chrome"),
+                ArtifactKind::ChromeNativeHost,
+                0o644,
+                &mut report,
+            )?;
+        }
     }
     if extension_id_is_configured(&opts.edge_extension_id) {
-        write_artifact(
-            opts.edge_native_host_path(),
-            render_native_host(opts, "edge"),
-            ArtifactKind::EdgeNativeHost,
-            0o644,
-            &mut report,
-        )?;
+        for path in opts.edge_native_host_paths() {
+            write_artifact(
+                path,
+                render_native_host(opts, "edge"),
+                ArtifactKind::EdgeNativeHost,
+                0o644,
+                &mut report,
+            )?;
+        }
     }
     write_secret(
         opts.peer_secret_path(),
@@ -258,16 +297,17 @@ pub fn status(opts: &InstallOptions) -> io::Result<SetupStatus> {
 }
 
 pub fn remove(opts: &InstallOptions) -> io::Result<()> {
-    for path in [
+    let mut targets = vec![
         opts.launch_agent_path(),
         opts.tunnel_launch_agent_path(),
-        opts.chrome_native_host_path(),
-        opts.edge_native_host_path(),
         opts.peer_secret_path(),
         opts.native_secret_path(),
         opts.policy_path(),
         opts.ssh_include_path(),
-    ] {
+    ];
+    targets.extend(opts.chrome_native_host_paths());
+    targets.extend(opts.edge_native_host_paths());
+    for path in targets {
         match fs::remove_file(path) {
             Ok(()) => {}
             Err(err) if err.kind() == ErrorKind::NotFound => {}
@@ -840,5 +880,34 @@ mod tests {
         // Without disabling multiplexing the forward silently attaches to an
         // existing control master and never binds the remote socket.
         assert!(plist.contains("ControlPath=none"));
+    }
+
+    #[test]
+    fn native_host_manifests_reach_alternate_user_data_dirs() {
+        // Chrome resolves native-messaging manifests from the running
+        // user-data-dir, not just the default one. An extension loaded in a
+        // secondary profile (for example a debug user-data-dir) silently fails
+        // to connect when the manifest only exists under the default dir.
+        let root = tmp_root("alt-user-data-dir");
+        let mut opts =
+            InstallOptions::fixture(root.clone(), root.join("bin/jcode-mac-browser-fleet"));
+        opts.chrome_extension_id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string();
+        opts.chrome_user_data_dirs = vec![
+            root.join("Library/Application Support/Google/Chrome"),
+            root.join("Library/Application Support/Google/Chrome-AgentDebug"),
+        ];
+
+        install(&opts).unwrap();
+
+        for dir in &opts.chrome_user_data_dirs {
+            let manifest = dir
+                .join("NativeMessagingHosts")
+                .join(format!("{NATIVE_HOST_NAME}.json"));
+            assert!(
+                manifest.is_file(),
+                "missing native host manifest for user-data-dir {}",
+                dir.display()
+            );
+        }
     }
 }

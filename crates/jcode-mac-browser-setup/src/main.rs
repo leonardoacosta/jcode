@@ -1,6 +1,6 @@
 use jcode_mac_browser_setup::{install, remove, status, InstallOptions};
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 fn main() {
     if let Err(err) = run() {
@@ -46,6 +46,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             opts.edge_extension_id = extension_id;
         }
     }
+    opts.chrome_user_data_dirs = user_data_dirs(
+        "JCODE_MAC_BROWSER_FLEET_CHROME_USER_DATA_DIRS",
+        &opts.home,
+        "Google",
+    );
+    opts.edge_user_data_dirs = user_data_dirs(
+        "JCODE_MAC_BROWSER_FLEET_EDGE_USER_DATA_DIRS",
+        &opts.home,
+        "Microsoft Edge",
+    );
     opts.managed_cdp_chrome = non_empty_env("JCODE_MAC_BROWSER_FLEET_MANAGED_CDP_CHROME");
     opts.managed_cdp_edge = non_empty_env("JCODE_MAC_BROWSER_FLEET_MANAGED_CDP_EDGE");
 
@@ -126,4 +136,37 @@ fn validate_extension_id(name: &str, extension_id: &str) -> Result<(), Box<dyn s
         return Err(format!("{name} must be 32 lowercase letters from a through p").into());
     }
     Ok(())
+}
+
+/// Extra browser user-data-dirs that should also receive a native-host manifest.
+///
+/// Chrome and Edge only read manifests from the user-data-dir they were
+/// launched with, so a secondary profile directory (for example one created by
+/// `--user-data-dir`) needs its own copy or its extensions silently fail to
+/// connect. Explicit configuration wins; otherwise sibling directories next to
+/// the default install are discovered automatically.
+fn user_data_dirs(env_name: &str, home: &Path, vendor: &str) -> Vec<PathBuf> {
+    if let Ok(raw) = env::var(env_name) {
+        let configured: Vec<PathBuf> = raw
+            .split(':')
+            .map(str::trim)
+            .filter(|entry| !entry.is_empty())
+            .map(PathBuf::from)
+            .collect();
+        if !configured.is_empty() {
+            return configured;
+        }
+    }
+
+    let support = home.join("Library/Application Support").join(vendor);
+    let Ok(entries) = std::fs::read_dir(&support) else {
+        return Vec::new();
+    };
+    let mut discovered: Vec<PathBuf> = entries
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.join("Local State").is_file())
+        .collect();
+    discovered.sort();
+    discovered
 }
