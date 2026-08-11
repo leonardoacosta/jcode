@@ -1365,3 +1365,61 @@ fn navigation_destination_is_hard_denied_even_under_an_active_lease() {
         );
     }
 }
+
+#[tokio::test]
+async fn one_bad_connection_does_not_terminate_the_broker() {
+    // A single malformed or oversized request must not take the whole broker
+    // down: it is shared by every browser, and launchd restarting it drops
+    // every extension connection at once. Observed live before this fix, a
+    // 3 MiB request killed the process.
+    let dir = tempdir().unwrap();
+    let socket = dir.path().join("resilient.sock");
+    let broker = Broker::bind(BrokerConfig {
+        socket_path: socket.clone(),
+        authority_socket_path: None,
+        secret: secret(),
+        native_secret: None,
+        max_payload_bytes: 4096,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    let handle = tokio::spawn(async move { broker.serve().await });
+
+    // Oversized, never newline-framed request, then an abrupt disconnect.
+    {
+        let mut stream = tokio::net::UnixStream::connect(&socket).await.unwrap();
+        let flood = vec![b'x'; 64 * 1024];
+        let _ = stream.write_all(&flood).await;
+        drop(stream);
+    }
+    tokio::time::sleep(Duration::from_millis(50)).await;
+
+    // The broker must still answer a well-formed request afterwards.
+    let mut stream = tokio::net::UnixStream::connect(&socket)
+        .await
+        .expect("broker must still be listening after a bad connection");
+    let request = serde_json::json!({
+        "version": 1,
+        "auth": secret(),
+        "id": "after-flood",
+        "deadline_ms": 5_000,
+        "target_generation": 0,
+        "action": "listBrowsers",
+        "payload": {},
+    });
+    let mut line = serde_json::to_vec(&request).unwrap();
+    line.push(b'\n');
+    stream.write_all(&line).await.unwrap();
+    let mut reader = BufReader::new(stream);
+    let mut response = Vec::new();
+    reader.read_until(b'\n', &mut response).await.unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&response).unwrap();
+    assert_eq!(
+        value.get("ok").and_then(serde_json::Value::as_bool),
+        Some(true),
+        "broker should keep serving after a bad connection: {value}"
+    );
+
+    handle.abort();
+}

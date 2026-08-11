@@ -1588,9 +1588,17 @@ impl Broker {
                 })?;
                 Accepted::Peer(stream)
             };
+            // A single bad connection must never terminate the broker: it is
+            // shared by every browser, so tearing it down disconnects the whole
+            // fleet and forces launchd to restart it. Per-connection failures
+            // are already reported to that peer in-band.
             match accepted {
-                Accepted::Peer(stream) => self.serve_connection(stream).await?,
-                Accepted::Authority(stream) => self.serve_authority_connection(stream).await?,
+                Accepted::Peer(stream) => {
+                    let _ = self.serve_connection(stream).await;
+                }
+                Accepted::Authority(stream) => {
+                    let _ = self.serve_authority_connection(stream).await;
+                }
             }
         }
     }
