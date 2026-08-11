@@ -31,7 +31,7 @@ if [[ -z "$mac_host" || -z "$jcode_host" ]]; then
 fi
 
 if [[ -z "$remote_command" ]]; then
-  remote_command='command -v jcode >/dev/null && jcode debug server:info >/dev/null'
+  remote_command='command -v jcode >/dev/null && jcode server start --json >/dev/null'
 fi
 
 ssh -o BatchMode=yes -o ConnectTimeout=10 "$jcode_host" "$remote_command"
