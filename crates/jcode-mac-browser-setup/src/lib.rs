@@ -13,6 +13,8 @@ pub struct InstallOptions {
     pub broker_path: PathBuf,
     pub homelab_host: String,
     pub extension_id: String,
+    pub managed_cdp_chrome: Option<String>,
+    pub managed_cdp_edge: Option<String>,
 }
 
 impl InstallOptions {
@@ -22,6 +24,8 @@ impl InstallOptions {
             broker_path: broker_path.into(),
             homelab_host: "jcode-homelab".to_string(),
             extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            managed_cdp_chrome: None,
+            managed_cdp_edge: None,
         }
     }
 
@@ -278,6 +282,19 @@ fn read_optional(path: &Path) -> io::Result<Option<String>> {
 }
 
 pub fn render_launch_agent(opts: &InstallOptions) -> String {
+    let mut managed_cdp_arguments = String::new();
+    if let Some(endpoint) = &opts.managed_cdp_chrome {
+        managed_cdp_arguments.push_str(&format!(
+            "    <string>--managed-cdp-chrome</string>\n    <string>{}</string>\n",
+            xml_text(endpoint)
+        ));
+    }
+    if let Some(endpoint) = &opts.managed_cdp_edge {
+        managed_cdp_arguments.push_str(&format!(
+            "    <string>--managed-cdp-edge</string>\n    <string>{}</string>\n",
+            xml_text(endpoint)
+        ));
+    }
     format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -295,6 +312,7 @@ pub fn render_launch_agent(opts: &InstallOptions) -> String {
     <string>{}</string>
     <string>--policy</string>
     <string>{}</string>
+{}
   </array>
   <key>RunAtLoad</key>
   <true/>
@@ -306,7 +324,8 @@ pub fn render_launch_agent(opts: &InstallOptions) -> String {
         xml(&opts.broker_path),
         xml(&opts.socket_path()),
         xml(&opts.peer_secret_path()),
-        xml(&opts.policy_path())
+        xml(&opts.policy_path()),
+        managed_cdp_arguments
     )
 }
 
@@ -371,7 +390,11 @@ Host {}
 }
 
 fn xml(path: &Path) -> String {
-    path.to_string_lossy()
+    xml_text(&path.to_string_lossy())
+}
+
+fn xml_text(value: &str) -> String {
+    value
         .replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
@@ -448,12 +471,14 @@ mod tests {
             .status()
             .is_ok()
         {
-            assert!(Command::new("plutil")
-                .arg("-lint")
-                .arg(opts.launch_agent_path())
-                .status()
-                .unwrap()
-                .success());
+            assert!(
+                Command::new("plutil")
+                    .arg("-lint")
+                    .arg(opts.launch_agent_path())
+                    .status()
+                    .unwrap()
+                    .success()
+            );
         }
 
         remove(&opts).unwrap();
@@ -470,6 +495,20 @@ mod tests {
     }
 
     #[test]
+    fn launch_agent_includes_only_configured_loopback_cdp_sources() {
+        let mut opts = InstallOptions::fixture(
+            PathBuf::from("/Users/test"),
+            "/Users/test/.local/bin/jcode-mac-browser-fleet",
+        );
+        opts.managed_cdp_chrome = Some("http://127.0.0.1:9222?x=1&y=2".to_string());
+
+        let plist = render_launch_agent(&opts);
+        assert!(plist.contains("<string>--managed-cdp-chrome</string>"));
+        assert!(plist.contains("http://127.0.0.1:9222?x=1&amp;y=2"));
+        assert!(!plist.contains("--managed-cdp-edge"));
+    }
+
+    #[test]
     fn refresh_backs_up_operator_edited_files_and_keeps_secret_mode_0600() {
         let root = tmp_root("refresh");
         let opts = InstallOptions::fixture(root, "/opt/jcode/bin/jcode-mac-browser-broker");
@@ -478,13 +517,16 @@ mod tests {
         fs::write(opts.launch_agent_path(), "operator plist edit").unwrap();
 
         let report = install(&opts).unwrap();
-        assert!(report
-            .backups
-            .iter()
-            .any(|p| p.to_string_lossy().contains("policy.toml.bak")));
-        assert!(report.backups.iter().any(|p| p
-            .to_string_lossy()
-            .contains("dev.jcode.mac-browser-fleet.plist.bak")));
+        assert!(
+            report
+                .backups
+                .iter()
+                .any(|p| p.to_string_lossy().contains("policy.toml.bak"))
+        );
+        assert!(report.backups.iter().any(|p| {
+            p.to_string_lossy()
+                .contains("dev.jcode.mac-browser-fleet.plist.bak")
+        }));
         assert_eq!(
             fs::metadata(opts.peer_secret_path())
                 .unwrap()

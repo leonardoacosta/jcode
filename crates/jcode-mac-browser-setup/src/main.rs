@@ -1,4 +1,4 @@
-use jcode_mac_browser_setup::{install, remove, status, InstallOptions};
+use jcode_mac_browser_setup::{InstallOptions, install, remove, status};
 use std::env;
 use std::path::PathBuf;
 
@@ -30,6 +30,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             opts.extension_id = extension_id;
         }
     }
+    opts.managed_cdp_chrome = non_empty_env("JCODE_MAC_BROWSER_FLEET_MANAGED_CDP_CHROME");
+    opts.managed_cdp_edge = non_empty_env("JCODE_MAC_BROWSER_FLEET_MANAGED_CDP_EDGE");
 
     match command.as_str() {
         "install" => {
@@ -54,14 +56,16 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         }
         "status" => {
             let status = status(&opts)?;
-            println!("launch_agent={} chrome_host={} edge_host={} policy={} ssh_include={} peer_secret_mode={:?} tcp_listener_configured={}",
+            println!(
+                "launch_agent={} chrome_host={} edge_host={} policy={} ssh_include={} peer_secret_mode={:?} tcp_listener_configured={}",
                 status.launch_agent.installed,
                 status.chrome_native_host.installed,
                 status.edge_native_host.installed,
                 status.policy.installed,
                 status.ssh_include.installed,
                 status.peer_secret_mode,
-                status.tcp_listener_configured);
+                status.tcp_listener_configured
+            );
             println!(
                 "extension_chrome={:?} extension_edge={:?}",
                 status.extension_state.chrome, status.extension_state.edge
@@ -74,8 +78,12 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
         _ => {
             return Err(
                 format!("unknown command {command:?}; use install, status, or remove").into(),
-            )
+            );
         }
     }
     Ok(())
+}
+
+fn non_empty_env(name: &str) -> Option<String> {
+    env::var(name).ok().filter(|value| !value.trim().is_empty())
 }
