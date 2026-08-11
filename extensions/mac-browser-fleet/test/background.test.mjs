@@ -4,21 +4,31 @@ import test from "node:test";
 import {
   ACTION_MESSAGE_TYPES,
   installActionMessageHandler,
+  installMacBrowserFleetBridge,
 } from "../src/background.mjs";
 import { ACTIONS, ERROR_CODES } from "../src/action-handler.mjs";
 
 function fakePort() {
-  let listener;
+  let messageListener;
+  let disconnectListener;
   const posted = [];
   return {
     posted,
     onMessage: {
       addListener(next) {
-        listener = next;
+        messageListener = next;
+      },
+    },
+    onDisconnect: {
+      addListener(next) {
+        disconnectListener = next;
       },
     },
     receive(message) {
-      return listener(message);
+      return messageListener(message);
+    },
+    disconnect() {
+      return disconnectListener?.();
     },
     postMessage(message) {
       posted.push(message);
@@ -26,17 +36,67 @@ function fakePort() {
   };
 }
 
-function fakeBrowserApi() {
-  const calls = [];
+function event() {
+  const listeners = new Set();
   return {
+    listeners,
+    addListener(listener) {
+      listeners.add(listener);
+    },
+    removeListener(listener) {
+      listeners.delete(listener);
+    },
+    emit(...args) {
+      for (const listener of [...listeners]) listener(...args);
+    },
+  };
+}
+
+function fakeBrowserApi({ windows = [] } = {}) {
+  const calls = [];
+  const ports = [];
+  const api = {
     calls,
-    tabs: {
-      async update(tabId, properties) {
-        calls.push(["tabs.update", tabId, properties]);
+    ports,
+    runtime: {
+      connectNative(hostName) {
+        calls.push(["runtime.connectNative", hostName]);
+        const port = fakePort();
+        ports.push(port);
+        return port;
+      },
+      getManifest() {
+        return { version: "1.2.3" };
       },
     },
-    windows: {},
+    tabs: {
+      onCreated: event(),
+      onUpdated: event(),
+      onRemoved: event(),
+      onActivated: event(),
+      async update(tabId, properties) {
+        calls.push(["tabs.update", tabId, properties]);
+        return { id: tabId };
+      },
+    },
+    windows: {
+      onFocusChanged: event(),
+      onRemoved: event(),
+      async getAll(options) {
+        calls.push(["windows.getAll", options]);
+        return structuredClone(windows);
+      },
+    },
   };
+  return api;
+}
+
+function ordinaryWindow(id, tabs = [{ id: 10, active: true, url: "https://example.test/path?secret=1", title: "Example" }]) {
+  return { id, focused: true, incognito: false, tabs };
+}
+
+function flushAsyncWork() {
+  return new Promise((resolve) => setImmediate(resolve));
 }
 
 test("dispatches native action requests and posts a typed response", async () => {
@@ -52,7 +112,7 @@ test("dispatches native action requests and posts a typed response", async () =>
     payload: { url: "https://example.test" },
   });
 
-  assert.deepEqual(browserApi.calls, [
+  assert.deepEqual(browserApi.calls.filter(([name]) => name === "tabs.update"), [
     ["tabs.update", 3, { url: "https://example.test" }],
   ]);
   assert.deepEqual(port.posted, [
@@ -93,4 +153,94 @@ test("posts a bounded failure for malformed action requests", async () => {
   assert.equal(port.posted[0].error.code, ERROR_CODES.INVALID_REQUEST);
   assert.equal(JSON.stringify(port.posted).includes("password"), false);
   assert.equal(JSON.stringify(port.posted).includes("token"), false);
+});
+
+test("posts hello and initial browser inventory snapshot after native connection", async () => {
+  const browserApi = fakeBrowserApi({ windows: [ordinaryWindow(1)] });
+
+  installMacBrowserFleetBridge(browserApi, { browserKind: "chrome", sessionId: "sess-1" });
+  await flushAsyncWork();
+
+  const port = browserApi.ports[0];
+  assert.deepEqual(port.posted[0], {
+    type: "hello",
+    protocolVersion: 1,
+    browserKind: "chrome",
+    extensionVersion: "1.2.3",
+    sessionId: "sess-1",
+  });
+  assert.equal(port.posted[1].type, "inventory_snapshot");
+  assert.equal(port.posted[1].snapshot.browserKind, "chrome");
+  assert.equal(port.posted[1].snapshot.generation, 1);
+  assert.equal(port.posted[1].snapshot.windows.length, 1);
+  assert.equal(port.posted[1].snapshot.windows[0].tabs[0].url, "https://example.test/path");
+});
+
+test("event-driven inventory updates are generation tagged and bounded", async () => {
+  const windows = [ordinaryWindow(1, [{ id: 10, active: true, url: "https://a.test", title: "A" }])];
+  const browserApi = fakeBrowserApi({ windows });
+
+  installMacBrowserFleetBridge(browserApi, { browserKind: "chrome", sessionId: "sess-2", maxChanges: 1 });
+  await flushAsyncWork();
+  windows[0].tabs = [
+    { id: 10, active: false, url: "https://b.test", title: "B" },
+    { id: 11, active: true, url: "https://c.test", title: "C" },
+  ];
+  browserApi.tabs.onUpdated.emit(10, { url: "https://b.test" }, windows[0].tabs[0]);
+  await flushAsyncWork();
+
+  const port = browserApi.ports[0];
+  const delta = port.posted.at(-1);
+  assert.equal(delta.type, "inventory_delta");
+  assert.equal(delta.browserKind, "chrome");
+  assert.equal(delta.fromGeneration, 1);
+  assert.equal(delta.toGeneration, 2);
+  assert.equal(delta.addedTabs.length + delta.updatedTabs.length + delta.removedTabRefs.length, 1);
+  assert.equal(delta.truncated, true);
+});
+
+test("reconnect resets request tracking and publishes a fresh initial snapshot", async () => {
+  const browserApi = fakeBrowserApi({ windows: [ordinaryWindow(1)] });
+
+  installMacBrowserFleetBridge(browserApi, { browserKind: "edge", sessionId: "sess-3" });
+  await flushAsyncWork();
+  const firstPort = browserApi.ports[0];
+  await firstPort.receive({ type: "inventory_request", requestId: "same-id" });
+  firstPort.disconnect();
+  await flushAsyncWork();
+
+  assert.equal(browserApi.ports.length, 2);
+  const secondPort = browserApi.ports[1];
+  assert.equal(secondPort.posted[1].type, "inventory_snapshot");
+  assert.equal(secondPort.posted[1].snapshot.generation, 1);
+  await secondPort.receive({ type: "inventory_request", requestId: "same-id" });
+  assert.equal(secondPort.posted.at(-1).type, "inventory_snapshot");
+});
+
+test("disconnect cleanup makes late events safe while preserving action handling before disconnect", async () => {
+  const browserApi = fakeBrowserApi({ windows: [ordinaryWindow(1)] });
+
+  const bridge = installMacBrowserFleetBridge(browserApi, { browserKind: "chrome", sessionId: "sess-4", reconnect: false });
+  await flushAsyncWork();
+  const port = browserApi.ports[0];
+  await port.receive({
+    type: "action_request",
+    requestId: "act-1",
+    generation: 1,
+    action: ACTIONS.NAVIGATE,
+    target: { tabId: 10 },
+    payload: { url: "https://after-action.test" },
+  });
+  assert.equal(port.posted.at(-1).type, "action_response");
+  assert.deepEqual(browserApi.calls.filter(([name]) => name === "tabs.update"), [
+    ["tabs.update", 10, { url: "https://after-action.test" }],
+  ]);
+
+  port.disconnect();
+  browserApi.tabs.onCreated.emit({ id: 12, active: false, url: "https://late.test", title: "Late" });
+  await flushAsyncWork();
+
+  assert.equal(port.posted.filter((message) => message.type === "inventory_delta").length, 0);
+  assert.equal(browserApi.tabs.onCreated.listeners.size, 0);
+  assert.doesNotThrow(() => bridge.disconnect());
 });
