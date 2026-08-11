@@ -143,6 +143,16 @@ fn brief_aloud_command(prose: &str) -> Option<std::process::Command> {
     Some(command)
 }
 
+fn spawn_artifact_action(mut command: std::process::Command) -> bool {
+    let Ok(mut child) = command.spawn() else {
+        return false;
+    };
+    std::thread::spawn(move || {
+        let _ = child.wait();
+    });
+    true
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum ArtifactActionTarget {
     Url(String),

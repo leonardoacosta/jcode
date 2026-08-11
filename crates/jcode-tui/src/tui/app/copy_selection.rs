@@ -140,8 +140,8 @@ impl App {
                     .spoken_prose
                     .as_deref()
                     .and_then(super::brief_aloud_command)
-                    .and_then(|mut command| command.spawn().ok());
-                self.set_status_notice(if result.is_some() {
+                    .is_some_and(super::spawn_artifact_action);
+                self.set_status_notice(if result {
                     "Herald briefing launched"
                 } else {
                     "Herald briefing unavailable"
@@ -155,8 +155,7 @@ impl App {
                     _ => unreachable!(),
                 };
                 let launched = super::artifact_action_command(program, palette.target_value())
-                    .and_then(|mut command| command.spawn().ok())
-                    .is_some();
+                    .is_some_and(super::spawn_artifact_action);
                 self.set_status_notice(if launched { "Artifact action launched" } else { "Artifact action unavailable" });
             }
         }
