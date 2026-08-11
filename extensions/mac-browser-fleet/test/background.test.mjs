@@ -53,6 +53,22 @@ function event() {
   };
 }
 
+function fakeStorage() {
+  const data = {};
+  return {
+    local: {
+      async get(keys) {
+        const out = {};
+        for (const k of [].concat(keys)) if (k in data) out[k] = data[k];
+        return out;
+      },
+      async set(entries) {
+        Object.assign(data, entries);
+      },
+    },
+  };
+}
+
 function fakeBrowserApi({ windows = [] } = {}) {
   const calls = [];
   const ports = [];
@@ -329,4 +345,30 @@ test("registers an alarm so a suspended service worker reconnects", () => {
     browserApi.ports.length > before,
     "alarm tick should re-establish the native connection",
   );
+});
+
+test("derives a distinct profile label per browser profile", async () => {
+  // Chromium runs one extension instance per profile, and the broker keys
+  // extension sources by (browserKind, profileLabel). Without a per-profile
+  // label every profile of a browser collapses onto one source key, so a second
+  // profile evicts the first instead of joining the fleet alongside it.
+  const { resolveProfileLabel } = await import("../src/background.mjs");
+
+  const a = await resolveProfileLabel({
+    storage: fakeStorage(),
+    identityEmail: "BBAdminLAcosta@bbins.com",
+  });
+  const b = await resolveProfileLabel({
+    storage: fakeStorage(),
+    identityEmail: "leonardo.acosta@bridgespecialty.com",
+  });
+
+  assert.ok(a && b, "expected a label for each profile");
+  assert.notEqual(a, b, "distinct accounts must not share a profile label");
+
+  // Stable across restarts for the same profile.
+  const shared = fakeStorage();
+  const first = await resolveProfileLabel({ storage: shared });
+  const second = await resolveProfileLabel({ storage: shared });
+  assert.equal(first, second, "profile label must persist for the same profile");
 });

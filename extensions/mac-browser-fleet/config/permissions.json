@@ -3,6 +3,7 @@
     "alarms",
     "nativeMessaging",
     "scripting",
+    "storage",
     "tabs"
   ],
   "host_permissions": [
@@ -13,7 +14,8 @@
     "nativeMessaging": "Connect only to the separately allowlisted Jcode native messaging host.",
     "scripting": "Execute broker-approved ordinary-tab actions without debugger access.",
     "tabs": "Maintain bounded window and tab inventory and perform broker-approved tab actions.",
-    "alarms": "Wake the suspended MV3 service worker so the browser does not silently drop out of the fleet."
+    "alarms": "Wake the suspended MV3 service worker so the browser does not silently drop out of the fleet.",
+    "storage": "Persist a stable per-profile label so each browser profile is a distinct fleet source."
   },
   "denied_permissions": [
     "bookmarks",

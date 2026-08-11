@@ -272,6 +272,28 @@ export function installMacBrowserFleetBridge(browserApi, options = {}) {
   };
 }
 
+const PROFILE_LABEL_STORAGE_KEY = "jcodeMacBrowserFleetProfileLabel";
+
+/// Stable per-profile label used to key this browser profile in the fleet.
+///
+/// Chromium runs one extension instance per profile, and the broker keys
+/// extension sources by (browserKind, profileLabel). Without a distinct label
+/// every profile of a browser collapses onto one source key and the profiles
+/// evict each other instead of joining the fleet side by side.
+export async function resolveProfileLabel({ storage, identityEmail } = {}) {
+  if (typeof identityEmail === "string" && identityEmail.trim().length > 0) {
+    return identityEmail.trim();
+  }
+  const local = storage?.local;
+  if (!local) return undefined;
+  const existing = await local.get(PROFILE_LABEL_STORAGE_KEY);
+  const stored = existing?.[PROFILE_LABEL_STORAGE_KEY];
+  if (typeof stored === "string" && stored.length > 0) return stored;
+  const generated = `profile-${crypto.randomUUID().slice(0, 8)}`;
+  await local.set({ [PROFILE_LABEL_STORAGE_KEY]: generated });
+  return generated;
+}
+
 export function connectActionNativeHost(browserApi, hostName = NATIVE_HOST_NAME) {
   if (typeof browserApi?.runtime?.connectNative !== "function") {
     throw new TypeError("native messaging runtime API is required");
@@ -283,5 +305,20 @@ export function connectActionNativeHost(browserApi, hostName = NATIVE_HOST_NAME)
 }
 
 if (globalThis.chrome?.runtime?.connectNative) {
-  installMacBrowserFleetBridge(globalThis.chrome);
+  const api = globalThis.chrome;
+  // Resolve a per-profile label first: two profiles of the same browser must
+  // not share one fleet source key, or they evict each other.
+  const identityEmail = await new Promise((resolve) => {
+    try {
+      api.identity?.getProfileUserInfo?.((info) => resolve(info?.email));
+      if (!api.identity?.getProfileUserInfo) resolve(undefined);
+    } catch {
+      resolve(undefined);
+    }
+  });
+  const profileLabel = await resolveProfileLabel({
+    storage: api.storage,
+    identityEmail,
+  });
+  installMacBrowserFleetBridge(api, { profileLabel });
 }
