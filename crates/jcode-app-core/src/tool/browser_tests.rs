@@ -290,6 +290,44 @@ fn mac_fleet_maps_tool_actions_to_bounded_wire_requests() {
 
 #[cfg(unix)]
 #[test]
+fn mac_fleet_preserves_keyboard_mutation_wire_actions() {
+    let type_input: BrowserInput = serde_json::from_value(json!({
+        "action": "type",
+        "browser": "mac",
+        "browser_ref": "managed-chrome",
+        "window_ref": "managed-cdp",
+        "tab_ref": "page-1",
+        "generation": 9,
+        "text": "hello"
+    }))
+    .unwrap();
+    let press_input: BrowserInput = serde_json::from_value(json!({
+        "action": "press",
+        "browser": "mac",
+        "browser_ref": "managed-chrome",
+        "window_ref": "managed-cdp",
+        "tab_ref": "page-1",
+        "generation": 9,
+        "key": "Enter"
+    }))
+    .unwrap();
+
+    assert_eq!(
+        mac_fleet::build_request("type-1", "secret".into(), "type", &type_input)
+            .unwrap()
+            .action,
+        jcode_mac_browser_fleet::WireAction::Type
+    );
+    assert_eq!(
+        mac_fleet::build_request("press-1", "secret".into(), "press", &press_input)
+            .unwrap()
+            .action,
+        jcode_mac_browser_fleet::WireAction::Press
+    );
+}
+
+#[cfg(unix)]
+#[test]
 fn mac_fleet_errors_preserve_policy_meaning() {
     let approval = mac_fleet::tool_error_from_wire(json!({
         "ok": false,
@@ -306,6 +344,33 @@ fn mac_fleet_errors_preserve_policy_meaning() {
     .unwrap_err()
     .to_string();
     assert!(stale.contains("stale generation"));
+}
+
+#[cfg(unix)]
+#[test]
+fn mac_fleet_list_tabs_normalizes_broker_targets_for_jcode() {
+    let normalized = mac_fleet::normalize_fleet_result(
+        "list_tabs",
+        json!({
+            "ok": true,
+            "result": {
+                "kind": "health",
+                "generation": 3,
+                "connectedTargets": 1,
+                "targets": [{
+                    "browser_id": "managed-chrome",
+                    "window_id": "managed-cdp",
+                    "tab_id": "page-1",
+                    "generation": 3
+                }]
+            }
+        }),
+    );
+
+    assert_eq!(normalized[0]["browser_ref"], "managed-chrome");
+    assert_eq!(normalized[0]["window_ref"], "managed-cdp");
+    assert_eq!(normalized[0]["tab_ref"], "page-1");
+    assert_eq!(normalized[0]["generation"], 3);
 }
 
 #[test]

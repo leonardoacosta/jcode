@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
-use tokio::net::{UnixListener, UnixStream};
+use tokio::net::{TcpStream, UnixListener, UnixStream};
 use url::Url;
 
 pub use jcode_mac_browser_policy::Action;
@@ -101,6 +101,8 @@ pub enum WireAction {
     ListBrowsers,
     Navigate,
     Click,
+    Type,
+    Press,
 }
 
 #[derive(Debug)]
@@ -283,6 +285,7 @@ pub enum FleetResponse {
     Health {
         generation: u64,
         connected_targets: usize,
+        targets: Vec<TargetRef>,
     },
     Accepted,
 }
@@ -305,6 +308,10 @@ impl InventoryUpdate {
             profile: profile.into(),
             targets,
         }
+    }
+
+    pub fn targets(&self) -> &[TargetRef] {
+        &self.targets
     }
 }
 
@@ -376,13 +383,19 @@ impl Broker {
 
     pub fn apply_inventory(&mut self, update: InventoryUpdate) -> Result<()> {
         self.generation = self.generation.saturating_add(1);
-        self.targets.clear();
         let prefix = format!("{:?}:{}", update.browser, update.profile);
-        for target in update.targets {
+        let prefix_with_separator = format!("{prefix}:");
+        self.targets
+            .retain(|key, _| !key.starts_with(&prefix_with_separator));
+        for mut target in update.targets {
+            target.generation = self.generation;
             self.targets.insert(
                 format!("{}:{}:{}", prefix, target.window_id, target.tab_id),
                 target,
             );
+        }
+        for target in self.targets.values_mut() {
+            target.generation = self.generation;
         }
         Ok(())
     }
@@ -413,6 +426,7 @@ impl Broker {
                 Ok(FleetResponse::Health {
                     generation: self.generation,
                     connected_targets: self.targets.len(),
+                    targets: self.targets.values().cloned().collect(),
                 })
             }
             FleetRequest::Action { target, action, .. } => {
@@ -494,6 +508,158 @@ impl Broker {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct ManagedCdpSource {
+    endpoint: Url,
+    browser: BrowserKind,
+    max_targets: usize,
+    max_response_bytes: usize,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CdpHttpTarget {
+    id: String,
+    #[serde(rename = "type")]
+    target_type: String,
+    web_socket_debugger_url: Option<String>,
+}
+
+impl ManagedCdpSource {
+    pub fn new(
+        endpoint: impl AsRef<str>,
+        browser: BrowserKind,
+        max_targets: usize,
+        max_response_bytes: usize,
+    ) -> Result<Self> {
+        let endpoint = Url::parse(endpoint.as_ref()).map_err(|_| {
+            FleetError::new(
+                FleetErrorKind::UntrustedEndpoint,
+                "CDP endpoint URL is invalid",
+            )
+        })?;
+        if endpoint.scheme() != "http"
+            || !matches!(endpoint.host_str(), Some("127.0.0.1" | "::1"))
+            || endpoint.port_or_known_default().is_none()
+        {
+            return Err(FleetError::new(
+                FleetErrorKind::UntrustedEndpoint,
+                "managed CDP discovery endpoint must use loopback HTTP",
+            ));
+        }
+        if max_targets == 0 || max_response_bytes == 0 {
+            return Err(FleetError::new(
+                FleetErrorKind::Malformed,
+                "managed CDP bounds must be non-zero",
+            ));
+        }
+        Ok(Self {
+            endpoint,
+            browser,
+            max_targets,
+            max_response_bytes,
+        })
+    }
+
+    pub async fn discover(&self) -> Result<InventoryUpdate> {
+        let host = self.endpoint.host_str().expect("validated host");
+        let port = self
+            .endpoint
+            .port_or_known_default()
+            .expect("validated port");
+        let mut stream = TcpStream::connect((host, port)).await.map_err(|_| {
+            FleetError::new(FleetErrorKind::Io, "managed CDP endpoint is unavailable")
+        })?;
+        let base = self.endpoint.path().trim_end_matches('/');
+        let path = if base.is_empty() {
+            "/json/list".to_string()
+        } else {
+            format!("{base}/json/list")
+        };
+        let authority = if host.contains(':') {
+            format!("[{host}]:{port}")
+        } else {
+            format!("{host}:{port}")
+        };
+        let request = format!(
+            "GET {path} HTTP/1.1\r\nHost: {authority}\r\nAccept: application/json\r\nConnection: close\r\n\r\n"
+        );
+        stream.write_all(request.as_bytes()).await.map_err(|_| {
+            FleetError::new(FleetErrorKind::Io, "could not query managed CDP endpoint")
+        })?;
+        let mut response = Vec::new();
+        stream
+            .take((self.max_response_bytes + 1) as u64)
+            .read_to_end(&mut response)
+            .await
+            .map_err(|_| {
+                FleetError::new(FleetErrorKind::Io, "could not read managed CDP inventory")
+            })?;
+        if response.len() > self.max_response_bytes {
+            return Err(FleetError::new(
+                FleetErrorKind::Oversized,
+                "managed CDP inventory exceeded size limit",
+            ));
+        }
+        let separator = response
+            .windows(4)
+            .position(|window| window == b"\r\n\r\n")
+            .ok_or_else(|| {
+                FleetError::new(
+                    FleetErrorKind::Malformed,
+                    "managed CDP response was malformed",
+                )
+            })?;
+        if !response.starts_with(b"HTTP/1.1 200") && !response.starts_with(b"HTTP/1.0 200") {
+            return Err(FleetError::new(
+                FleetErrorKind::Io,
+                "managed CDP endpoint returned an error",
+            ));
+        }
+        let targets: Vec<CdpHttpTarget> = serde_json::from_slice(&response[separator + 4..])
+            .map_err(|_| {
+                FleetError::new(
+                    FleetErrorKind::Malformed,
+                    "managed CDP inventory was malformed",
+                )
+            })?;
+        let browser_id = match self.browser {
+            BrowserKind::Chrome => "managed-chrome",
+            BrowserKind::Edge => "managed-edge",
+        };
+        let targets = targets
+            .into_iter()
+            .filter(|target| {
+                target.target_type == "page"
+                    && target
+                        .web_socket_debugger_url
+                        .as_deref()
+                        .is_some_and(is_loopback_websocket_url)
+            })
+            .take(self.max_targets)
+            .map(|target| TargetRef {
+                browser_id: browser_id.to_string(),
+                window_id: "managed-cdp".to_string(),
+                tab_id: target.id,
+                generation: 0,
+            })
+            .collect();
+        Ok(InventoryUpdate::connected(
+            self.browser,
+            "managed-cdp",
+            targets,
+        ))
+    }
+}
+
+fn is_loopback_websocket_url(raw: &str) -> bool {
+    Url::parse(raw).is_ok_and(|url| {
+        matches!(url.scheme(), "ws" | "wss")
+            && matches!(url.host_str(), Some("127.0.0.1" | "::1"))
+            && url.port_or_known_default().is_some()
+    })
+}
+
 fn envelope_to_request(envelope: FleetEnvelope) -> Result<FleetRequest> {
     let deadline = Duration::from_millis(envelope.deadline_ms);
     match envelope.action {
@@ -503,7 +669,7 @@ fn envelope_to_request(envelope: FleetEnvelope) -> Result<FleetRequest> {
             envelope.target_generation,
             deadline,
         )),
-        WireAction::Navigate | WireAction::Click => {
+        WireAction::Navigate | WireAction::Click | WireAction::Type | WireAction::Press => {
             let target =
                 serde_json::from_value(envelope.payload.get("target").cloned().ok_or_else(
                     || FleetError::new(FleetErrorKind::Malformed, "target is required"),
@@ -512,6 +678,7 @@ fn envelope_to_request(envelope: FleetEnvelope) -> Result<FleetRequest> {
             let action = match envelope.action {
                 WireAction::Navigate => Action::Navigate,
                 WireAction::Click => Action::Click,
+                WireAction::Type | WireAction::Press => Action::Type,
                 _ => unreachable!(),
             };
             Ok(FleetRequest::action(

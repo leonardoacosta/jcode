@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use jcode_mac_browser_fleet::{
     Action, Broker, BrokerConfig, BrowserKind, Capability, CdpAdapter, CdpEndpoint, FleetErrorKind,
-    FleetRequest, FleetResponse, InventoryUpdate, MutationReplayGuard, ProtocolCodec,
-    ProtocolSession, TargetRef,
+    FleetRequest, FleetResponse, InventoryUpdate, ManagedCdpSource, MutationReplayGuard,
+    ProtocolCodec, ProtocolSession, TargetRef,
 };
 use tempfile::tempdir;
 
@@ -224,5 +224,128 @@ async fn cdp_adapter_trusts_only_managed_endpoints_and_bounds_output() {
     assert_eq!(
         CdpAdapter::new(vec![untrusted], 32).unwrap_err().kind(),
         FleetErrorKind::UntrustedEndpoint
+    );
+}
+
+#[tokio::test]
+async fn managed_cdp_source_discovers_loopback_targets_and_rejects_remote_hosts() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move {
+        let (mut stream, _) = listener.accept().await.unwrap();
+        let mut request = [0_u8; 1024];
+        let _ = stream.read(&mut request).await.unwrap();
+        let body = serde_json::json!([
+            {
+                "id": "page-1",
+                "type": "page",
+                "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/page-1"
+            },
+            {
+                "id": "remote-page",
+                "type": "page",
+                "webSocketDebuggerUrl": "ws://192.0.2.10:9222/devtools/page/remote-page"
+            },
+            {
+                "id": "worker-1",
+                "type": "service_worker",
+                "webSocketDebuggerUrl": "ws://127.0.0.1:9222/devtools/page/worker-1"
+            }
+        ])
+        .to_string();
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\nConnection: close\r\n\r\n{}",
+            body.len(),
+            body
+        );
+        stream.write_all(response.as_bytes()).await.unwrap();
+    });
+
+    let source = ManagedCdpSource::new(
+        format!("http://{address}"),
+        BrowserKind::Chrome,
+        16,
+        64 * 1024,
+    )
+    .unwrap();
+    let update = source.discover().await.unwrap();
+    assert_eq!(update.targets().len(), 1);
+    assert_eq!(update.targets()[0].tab_id, "page-1");
+    server.await.unwrap();
+
+    assert_eq!(
+        ManagedCdpSource::new("http://192.0.2.10:9222", BrowserKind::Chrome, 16, 64 * 1024,)
+            .unwrap_err()
+            .kind(),
+        FleetErrorKind::UntrustedEndpoint
+    );
+}
+
+#[tokio::test]
+async fn broker_merges_multiple_browser_sources_and_reports_current_generation() {
+    let dir = tempdir().unwrap();
+    let socket = dir.path().join("fleet.sock");
+    let mut broker = Broker::bind(BrokerConfig {
+        socket_path: socket,
+        secret: secret(),
+        max_payload_bytes: 4096,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+
+    broker
+        .apply_inventory(InventoryUpdate::connected(
+            BrowserKind::Chrome,
+            "managed-cdp",
+            vec![TargetRef {
+                browser_id: "managed-chrome".into(),
+                window_id: "managed-cdp".into(),
+                tab_id: "chrome-page".into(),
+                generation: 0,
+            }],
+        ))
+        .unwrap();
+    broker
+        .apply_inventory(InventoryUpdate::connected(
+            BrowserKind::Edge,
+            "managed-cdp",
+            vec![TargetRef {
+                browser_id: "managed-edge".into(),
+                window_id: "managed-cdp".into(),
+                tab_id: "edge-page".into(),
+                generation: 0,
+            }],
+        ))
+        .unwrap();
+
+    let FleetResponse::Health {
+        generation,
+        connected_targets,
+        targets,
+    } = broker
+        .handle(FleetRequest::health(
+            "merged-health",
+            secret(),
+            0,
+            Duration::from_secs(1),
+        ))
+        .await
+        .unwrap()
+    else {
+        panic!("health request should return inventory");
+    };
+
+    assert_eq!(generation, 2);
+    assert_eq!(connected_targets, 2);
+    assert_eq!(targets.len(), 2);
+    assert!(targets.iter().any(|target| target.tab_id == "chrome-page"));
+    assert!(targets.iter().any(|target| target.tab_id == "edge-page"));
+    assert!(
+        targets.iter().all(|target| target.generation == generation),
+        "all advertised targets must carry the current broker generation: {targets:?}"
     );
 }

@@ -53,9 +53,9 @@ pub fn build_request(
     let wire_action = match action {
         "status" | "list_tabs" | "get_active_tab" => WireAction::ListBrowsers,
         "open" | "new_tab" => WireAction::Navigate,
-        "click" | "type" | "fill_form" | "select" | "press" | "upload" | "scroll" => {
-            WireAction::Click
-        }
+        "type" | "fill_form" | "select" => WireAction::Type,
+        "press" => WireAction::Press,
+        "click" | "upload" | "scroll" => WireAction::Click,
         other => anyhow::bail!("Mac browser fleet does not support action '{other}' yet"),
     };
     let generation = input.generation.unwrap_or(0);
@@ -107,6 +107,66 @@ pub fn tool_error_from_wire(value: Value) -> Result<Value> {
     }
 }
 
+pub fn normalize_fleet_result(action: &str, value: Value) -> Value {
+    let value = unwrap_fleet_result(value);
+    match action {
+        "list_tabs" | "new_tab" => normalize_targets(value),
+        "get_active_tab" => normalize_active_target(value),
+        _ => value,
+    }
+}
+
+fn unwrap_fleet_result(mut value: Value) -> Value {
+    if value.get("ok").and_then(Value::as_bool) == Some(true)
+        && let Some(result) = value.get_mut("result")
+    {
+        return result.take();
+    }
+    value
+}
+
+fn normalize_targets(value: Value) -> Value {
+    let targets = value
+        .get("targets")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_else(|| match value {
+            Value::Array(items) => items,
+            _ => Vec::new(),
+        });
+
+    Value::Array(
+        targets
+            .into_iter()
+            .filter_map(|target| {
+                let browser_ref = target
+                    .get("browser_id")
+                    .or_else(|| target.get("browserId"))?;
+                let window_ref = target.get("window_id").or_else(|| target.get("windowId"))?;
+                let tab_ref = target.get("tab_id").or_else(|| target.get("tabId"))?;
+                let generation = target.get("generation").cloned().unwrap_or(json!(0));
+                Some(json!({
+                    "id": tab_ref,
+                    "browser": "mac",
+                    "browser_ref": browser_ref,
+                    "window_ref": window_ref,
+                    "tab_ref": tab_ref,
+                    "generation": generation,
+                }))
+            })
+            .collect(),
+    )
+}
+
+fn normalize_active_target(value: Value) -> Value {
+    let targets = normalize_targets(value);
+    targets
+        .as_array()
+        .and_then(|items| items.first())
+        .cloned()
+        .unwrap_or(targets)
+}
+
 async fn request(action: &str, input: &BrowserInput) -> Result<Value> {
     let config = MacFleetConfig::from_env()?;
     if config.secret.is_empty() {
@@ -144,7 +204,7 @@ async fn request(action: &str, input: &BrowserInput) -> Result<Value> {
         }
         let value: Value = serde_json::from_slice(&response)
             .context("Mac browser fleet returned malformed JSON")?;
-        tool_error_from_wire(value)
+        tool_error_from_wire(value).map(|value| normalize_fleet_result(action, value))
     })
     .await
     .context("Mac browser fleet request timed out")?
