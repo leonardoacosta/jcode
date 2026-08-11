@@ -325,6 +325,8 @@ disable_base_tools = false
 # shell from $SHELL (zsh, fish, ...) so aliases/functions from its rc files
 # and its syntax are available. Any other value names an explicit shell
 # program, e.g. "zsh" or "/usr/bin/fish". Env override: JCODE_SHELL.
+# Caution: agents author bash-syntax commands; POSIX-compatible shells (zsh)
+# run them fine, but fish's incompatible syntax will break many of them.
 shell = "bash"
 
 [acp]
