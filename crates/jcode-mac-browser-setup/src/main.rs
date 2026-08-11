@@ -19,10 +19,31 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let broker = env::var_os("JCODE_MAC_BROWSER_FLEET_BROKER")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("/usr/local/bin/jcode-mac-browser-broker"));
-    let opts = InstallOptions::fixture(home, broker);
+    let mut opts = InstallOptions::fixture(home, broker);
+    if let Ok(host) = env::var("JCODE_MAC_BROWSER_FLEET_HOMELAB_HOST") {
+        if !host.trim().is_empty() {
+            opts.homelab_host = host;
+        }
+    }
+    if let Ok(extension_id) = env::var("JCODE_MAC_BROWSER_FLEET_EXTENSION_ID") {
+        if !extension_id.trim().is_empty() {
+            opts.extension_id = extension_id;
+        }
+    }
 
     match command.as_str() {
         "install" => {
+            if opts.extension_id == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" {
+                return Err("set JCODE_MAC_BROWSER_FLEET_EXTENSION_ID to the 32-character Chrome or Edge extension ID before install".into());
+            }
+            if opts.extension_id.len() != 32
+                || !opts
+                    .extension_id
+                    .bytes()
+                    .all(|byte| matches!(byte, b'a'..=b'p'))
+            {
+                return Err("JCODE_MAC_BROWSER_FLEET_EXTENSION_ID must be 32 lowercase letters from a through p".into());
+            }
             let report = install(&opts)?;
             println!(
                 "installed={:?} refreshed={:?} backups={}",

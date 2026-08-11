@@ -73,8 +73,12 @@ Set the broker path when it differs from `/usr/local/bin/jcode-mac-browser-broke
 
 ```bash
 export JCODE_MAC_BROWSER_FLEET_BROKER="$HOME/.local/bin/jcode-mac-browser-fleet"
+export JCODE_MAC_BROWSER_FLEET_EXTENSION_ID="<32-character ID shown by chrome://extensions or edge://extensions>"
+export JCODE_MAC_BROWSER_FLEET_HOMELAB_HOST="<SSH host alias used by the Mac>"
 cargo run --manifest-path crates/jcode-mac-browser-setup/Cargo.toml -- install
 ```
+
+Load the unpacked extension first, copy its browser-assigned ID, and then run setup. Setup rejects its fixture placeholder so it cannot silently install a native-host manifest that no real extension may use.
 
 Setup creates only Jcode-owned artifacts:
 
