@@ -1,0 +1,520 @@
+use std::collections::{BTreeMap, BTreeSet};
+use std::fmt;
+use std::fs;
+use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
+use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
+use tokio::net::UnixListener;
+use url::Url;
+
+pub use jcode_mac_browser_policy::Action;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FleetErrorKind {
+    Malformed,
+    Oversized,
+    Unauthenticated,
+    UnsupportedVersion,
+    DuplicateId,
+    DuplicateMutation,
+    StaleGeneration,
+    DeadlineExceeded,
+    ApprovalRequired,
+    UnsupportedCapability,
+    UntrustedEndpoint,
+    Io,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FleetError {
+    kind: FleetErrorKind,
+    message: String,
+}
+
+impl FleetError {
+    pub fn new(kind: FleetErrorKind, message: impl Into<String>) -> Self {
+        Self {
+            kind,
+            message: message.into(),
+        }
+    }
+
+    pub fn kind(&self) -> FleetErrorKind {
+        self.kind
+    }
+}
+
+impl fmt::Display for FleetError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl std::error::Error for FleetError {}
+
+type Result<T> = std::result::Result<T, FleetError>;
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum BrowserKind {
+    Chrome,
+    Edge,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Capability {
+    Inventory,
+    Navigate,
+    Click,
+    RichInspection,
+    Evaluate,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct TargetRef {
+    pub browser_id: String,
+    pub window_id: String,
+    pub tab_id: String,
+    pub generation: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct FleetEnvelope {
+    pub version: u16,
+    pub auth: String,
+    pub id: String,
+    pub deadline_ms: u64,
+    pub target_generation: u64,
+    pub action: WireAction,
+    #[serde(default)]
+    pub payload: serde_json::Value,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WireAction {
+    FleetHealth,
+    ListBrowsers,
+    Navigate,
+    Click,
+}
+
+#[derive(Debug)]
+pub struct ProtocolCodec {
+    versions: Vec<u16>,
+    max_payload_bytes: usize,
+    secret: String,
+}
+
+impl ProtocolCodec {
+    pub fn new(versions: Vec<u16>, max_payload_bytes: usize, secret: String) -> Self {
+        Self {
+            versions,
+            max_payload_bytes,
+            secret,
+        }
+    }
+
+    pub fn decode_request(&self, bytes: &[u8]) -> Result<FleetEnvelope> {
+        if bytes.len() > self.max_payload_bytes {
+            return Err(FleetError::new(
+                FleetErrorKind::Oversized,
+                "fleet request exceeded size limit",
+            ));
+        }
+        let env: FleetEnvelope = serde_json::from_slice(bytes).map_err(|_| {
+            FleetError::new(FleetErrorKind::Malformed, "fleet request was malformed")
+        })?;
+        if !self.versions.contains(&env.version) {
+            return Err(FleetError::new(
+                FleetErrorKind::UnsupportedVersion,
+                "unsupported fleet protocol version",
+            ));
+        }
+        if env.auth != self.secret {
+            return Err(FleetError::new(
+                FleetErrorKind::Unauthenticated,
+                "fleet authentication failed",
+            ));
+        }
+        if env.id.trim().is_empty() {
+            return Err(FleetError::new(
+                FleetErrorKind::Malformed,
+                "fleet request id is required",
+            ));
+        }
+        Ok(env)
+    }
+}
+
+#[derive(Debug)]
+pub struct ProtocolSession {
+    codec: ProtocolCodec,
+    seen_ids: BTreeSet<String>,
+}
+
+impl ProtocolSession {
+    pub fn new(codec: ProtocolCodec) -> Self {
+        Self {
+            codec,
+            seen_ids: BTreeSet::new(),
+        }
+    }
+
+    pub fn decode_unique_request(&mut self, bytes: &[u8]) -> Result<FleetEnvelope> {
+        let env = self.codec.decode_request(bytes)?;
+        if !self.seen_ids.insert(env.id.clone()) {
+            return Err(FleetError::new(
+                FleetErrorKind::DuplicateId,
+                "duplicate fleet request id rejected",
+            ));
+        }
+        Ok(env)
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct CapabilityLease {
+    pub lease_id: String,
+    pub target: TargetRef,
+    pub capabilities: BTreeSet<Capability>,
+    pub expires_at_monotonic_ms: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct ApprovalRequest {
+    pub request_id: String,
+    pub target: TargetRef,
+    pub action: WireAction,
+    pub declared_sensitivity: String,
+    pub deadline_ms: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct AuditMetadata {
+    pub request_id: String,
+    pub action: WireAction,
+    pub target_generation: u64,
+    pub decision: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct BrokerConfig {
+    pub socket_path: PathBuf,
+    pub secret: String,
+    pub max_payload_bytes: usize,
+    pub max_in_flight: usize,
+}
+
+#[derive(Clone, Debug)]
+pub enum FleetRequest {
+    Health {
+        id: String,
+        auth: String,
+        target_generation: u64,
+        deadline: Duration,
+    },
+    Action {
+        id: String,
+        auth: String,
+        target: TargetRef,
+        action: Action,
+        deadline: Duration,
+    },
+}
+
+impl FleetRequest {
+    pub fn health(
+        id: impl Into<String>,
+        auth: String,
+        target_generation: u64,
+        deadline: Duration,
+    ) -> Self {
+        Self::Health {
+            id: id.into(),
+            auth,
+            target_generation,
+            deadline,
+        }
+    }
+
+    pub fn action(
+        id: impl Into<String>,
+        auth: String,
+        target: TargetRef,
+        action: Action,
+        deadline: Duration,
+    ) -> Self {
+        Self::Action {
+            id: id.into(),
+            auth,
+            target,
+            action,
+            deadline,
+        }
+    }
+
+    fn id(&self) -> &str {
+        match self {
+            Self::Health { id, .. } | Self::Action { id, .. } => id,
+        }
+    }
+
+    fn auth(&self) -> &str {
+        match self {
+            Self::Health { auth, .. } | Self::Action { auth, .. } => auth,
+        }
+    }
+
+    fn deadline(&self) -> Duration {
+        match self {
+            Self::Health { deadline, .. } | Self::Action { deadline, .. } => *deadline,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum FleetResponse {
+    Health {
+        generation: u64,
+        connected_targets: usize,
+    },
+    Accepted,
+}
+
+#[derive(Clone, Debug)]
+pub struct InventoryUpdate {
+    browser: BrowserKind,
+    profile: String,
+    targets: Vec<TargetRef>,
+}
+
+impl InventoryUpdate {
+    pub fn connected(
+        browser: BrowserKind,
+        profile: impl Into<String>,
+        targets: Vec<TargetRef>,
+    ) -> Self {
+        Self {
+            browser,
+            profile: profile.into(),
+            targets,
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct MutationReplayGuard {
+    mutations: BTreeSet<String>,
+}
+
+impl MutationReplayGuard {
+    pub fn observe(&mut self, id: &str, action: Action) -> Result<()> {
+        if is_read_only(action) {
+            return Ok(());
+        }
+        if !self.mutations.insert(id.to_string()) {
+            return Err(FleetError::new(
+                FleetErrorKind::DuplicateMutation,
+                "duplicate mutation request rejected",
+            ));
+        }
+        Ok(())
+    }
+}
+
+fn is_read_only(action: Action) -> bool {
+    matches!(
+        action,
+        Action::FleetHealth
+            | Action::PolicyStatus
+            | Action::ListBrowsers
+            | Action::ListWindows
+            | Action::ListTabs
+    )
+}
+
+pub struct Broker {
+    config: BrokerConfig,
+    _listener: UnixListener,
+    generation: u64,
+    targets: BTreeMap<String, TargetRef>,
+    replay_guard: MutationReplayGuard,
+}
+
+impl Broker {
+    pub async fn bind(config: BrokerConfig) -> Result<Self> {
+        if let Some(parent) = config.socket_path.parent() {
+            fs::create_dir_all(parent).map_err(|_| {
+                FleetError::new(FleetErrorKind::Io, "could not create socket directory")
+            })?;
+        }
+        let _ = fs::remove_file(&config.socket_path);
+        let listener = UnixListener::bind(&config.socket_path)
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not bind fleet socket"))?;
+        fs::set_permissions(&config.socket_path, fs::Permissions::from_mode(0o600)).map_err(
+            |_| {
+                FleetError::new(
+                    FleetErrorKind::Io,
+                    "could not restrict fleet socket permissions",
+                )
+            },
+        )?;
+        Ok(Self {
+            config,
+            _listener: listener,
+            generation: 0,
+            targets: BTreeMap::new(),
+            replay_guard: MutationReplayGuard::default(),
+        })
+    }
+
+    pub fn apply_inventory(&mut self, update: InventoryUpdate) -> Result<()> {
+        self.generation = self.generation.saturating_add(1);
+        self.targets.clear();
+        let prefix = format!("{:?}:{}", update.browser, update.profile);
+        for target in update.targets {
+            self.targets.insert(
+                format!("{}:{}:{}", prefix, target.window_id, target.tab_id),
+                target,
+            );
+        }
+        Ok(())
+    }
+
+    pub async fn handle(&mut self, request: FleetRequest) -> Result<FleetResponse> {
+        if request.auth() != self.config.secret {
+            return Err(FleetError::new(
+                FleetErrorKind::Unauthenticated,
+                "fleet authentication failed",
+            ));
+        }
+        if request.deadline().is_zero() {
+            return Err(FleetError::new(
+                FleetErrorKind::DeadlineExceeded,
+                "fleet request deadline elapsed",
+            ));
+        }
+        match &request {
+            FleetRequest::Health {
+                target_generation, ..
+            } => {
+                if *target_generation > self.generation {
+                    return Err(FleetError::new(
+                        FleetErrorKind::StaleGeneration,
+                        "requested generation is not available",
+                    ));
+                }
+                Ok(FleetResponse::Health {
+                    generation: self.generation,
+                    connected_targets: self.targets.len(),
+                })
+            }
+            FleetRequest::Action { target, action, .. } => {
+                self.replay_guard.observe(request.id(), *action)?;
+                if target.generation != self.generation {
+                    return Err(FleetError::new(
+                        FleetErrorKind::StaleGeneration,
+                        "target generation is stale",
+                    ));
+                }
+                if is_read_only(*action) {
+                    return Ok(FleetResponse::Accepted);
+                }
+                Err(FleetError::new(
+                    FleetErrorKind::ApprovalRequired,
+                    "local approval is required",
+                ))
+            }
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct CdpEndpoint {
+    pub id: String,
+    pub browser: BrowserKind,
+    pub websocket_url: String,
+    pub capabilities: BTreeSet<Capability>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CdpTarget {
+    pub id: String,
+    pub browser: BrowserKind,
+    pub capabilities: BTreeSet<Capability>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CdpInventory {
+    pub generation: u64,
+    pub targets: Vec<CdpTarget>,
+}
+
+#[derive(Debug)]
+pub struct CdpAdapter {
+    endpoints: Vec<CdpEndpoint>,
+    max_output_bytes: usize,
+}
+
+impl CdpAdapter {
+    pub fn new(endpoints: Vec<CdpEndpoint>, max_output_bytes: usize) -> Result<Self> {
+        for endpoint in &endpoints {
+            validate_managed_endpoint(endpoint)?;
+        }
+        Ok(Self {
+            endpoints,
+            max_output_bytes,
+        })
+    }
+
+    pub async fn discover(&self) -> Result<CdpInventory> {
+        Ok(CdpInventory {
+            generation: 1,
+            targets: self
+                .endpoints
+                .iter()
+                .map(|endpoint| CdpTarget {
+                    id: endpoint.id.clone(),
+                    browser: endpoint.browser,
+                    capabilities: endpoint.capabilities.clone(),
+                })
+                .collect(),
+        })
+    }
+
+    pub async fn inspect(&self, id: &str, content: &str) -> Result<String> {
+        if !self.endpoints.iter().any(|endpoint| endpoint.id == id) {
+            return Err(FleetError::new(
+                FleetErrorKind::UntrustedEndpoint,
+                "unknown managed CDP endpoint",
+            ));
+        }
+        Ok(content.chars().take(self.max_output_bytes).collect())
+    }
+}
+
+fn validate_managed_endpoint(endpoint: &CdpEndpoint) -> Result<()> {
+    if !endpoint.id.starts_with("managed-") {
+        return Err(FleetError::new(
+            FleetErrorKind::UntrustedEndpoint,
+            "CDP endpoint is not explicitly managed",
+        ));
+    }
+    let url = Url::parse(&endpoint.websocket_url).map_err(|_| {
+        FleetError::new(
+            FleetErrorKind::UntrustedEndpoint,
+            "CDP endpoint URL is invalid",
+        )
+    })?;
+    match (url.scheme(), url.host_str()) {
+        ("ws" | "wss", Some("127.0.0.1" | "::1")) => Ok(()),
+        _ => Err(FleetError::new(
+            FleetErrorKind::UntrustedEndpoint,
+            "CDP endpoint must be loopback and managed",
+        )),
+    }
+}
