@@ -842,6 +842,7 @@ fn direct_compatible_deepseek_tool_call_replays_reasoning_content() {
                 tool_use_id: "call_1".to_string(),
                 content: "a.txt\nb.txt".to_string(),
                 is_error: None,
+                artifact: None,
             }],
             timestamp: None,
             tool_duration_ms: None,

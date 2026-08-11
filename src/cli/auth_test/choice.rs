@@ -596,6 +596,7 @@ mod auth_tool_smoke_tests {
                     tool_use_id: "call_1".to_string(),
                     content: format!("{}\n", AUTH_TEST_TOOL_OUTPUT_MARKER),
                     is_error: None,
+                    artifact: None,
                 }],
             ),
         ]
