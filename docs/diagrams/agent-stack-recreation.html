@@ -117,9 +117,9 @@ body:before{
   background:color-mix(in srgb,var(--c) 10%,rgba(2,5,10,.82))!important;
   box-shadow:none!important;
 }
-.node{font-size:11px!important;line-height:1.2}
+.node{font-size:12px!important;line-height:1.2}
 .node.active,.task-object,.orch-merge.active,.final.active{box-shadow:0 0 18px color-mix(in srgb,var(--c) 20%,transparent)!important}
-.surface-input,.task-object{font-size:11px!important}.task-object small{color:rgba(255,244,213,.68);font-size:9px}
+.surface-input,.task-object{font-size:12px!important}.task-object small{color:rgba(255,244,213,.68);font-size:9px}
 .model-route-label,.model-path small,.badge,.context-note,.memory-boundary,.memory-pill,.memory-score{font-size:9px!important}
 .memory-pill small{font-size:7px!important;color:rgba(255,244,213,.5)!important}
 .spark{filter:drop-shadow(0 0 5px var(--c))}
@@ -138,6 +138,39 @@ body:before{
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
 
+
+/* ── Composition fidelity + collision repair ───────────────────────────── */
+.layer{
+  grid-template-columns:205px minmax(0,1fr);
+  gap:20px;
+}
+.layer > div:first-child{position:relative;z-index:2;align-self:center;min-width:0}
+.layer > .panel{position:relative;z-index:1;min-width:0;overflow:hidden}
+.surface-flow{grid-template-columns:minmax(0,1fr) minmax(132px,.34fr)}
+.surface-task-wrap{min-height:58px}
+.orchestration-panel{padding-block:12px!important}
+.orch-flow{
+  max-width:320px;
+  grid-template-rows:18px 4px 18px 25px 4px 18px 4px 18px;
+  overflow:visible;
+}
+.model-flow{grid-template-columns:104px minmax(0,1fr);gap:12px}
+.model-route{width:100%;align-content:center}
+.model-route-label{white-space:normal!important;line-height:1.2;text-wrap:balance}
+.model-path{grid-template-columns:minmax(72px,.8fr) auto minmax(68px,.75fr)}
+.tool-cell{min-height:46px;overflow:visible}
+.memory-flow{grid-template-columns:minmax(72px,.75fr) minmax(108px,1.05fr) minmax(84px,.9fr)}
+.memory-boundary{overflow:visible}
+.memory-panel{align-content:center}
+@media (max-width:1100px){
+  .layer{grid-template-columns:180px minmax(0,1fr);gap:14px}
+  .model-flow{grid-template-columns:92px minmax(0,1fr)}
+}
+@media (max-width:780px){
+  .layer{grid-template-columns:1fr;gap:12px}
+  .layer > .panel{overflow:auto}
+  .model-flow{grid-template-columns:88px minmax(0,1fr)}
+}
 </style>
 </head>
 <body>
