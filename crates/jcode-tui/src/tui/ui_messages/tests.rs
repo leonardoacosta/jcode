@@ -3161,6 +3161,33 @@ fn explicit_rendered_artifacts_have_distinct_card_identities_and_colors() {
 }
 
 #[test]
+fn decision_brief_artifact_round_trips_and_renders_markdown_with_its_own_identity() {
+    use jcode_tui_messages::RenderedArtifact;
+
+    let artifact: RenderedArtifact =
+        serde_json::from_str(r#"{"kind":"decision_brief"}"#).unwrap();
+    let serialized = serde_json::to_string(&artifact).unwrap();
+    let msg = DisplayMessage::tool_text(
+        "## Recommendation\n\nChoose **SQLite**.\n\n- Lower ops cost",
+    )
+    .with_artifact(artifact);
+    let rendered = render_tool_message(&msg, 80, crate::config::DiffDisplayMode::Off)
+        .iter()
+        .map(extract_line_text)
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    assert!(
+        serialized.contains(r#""kind":"decision_brief""#)
+            && rendered.contains("Decision Brief")
+            && rendered.contains("Recommendation")
+            && rendered.contains("Choose SQLite.")
+            && rendered.contains("Lower ops cost"),
+        "serialized={serialized}\nrendered={rendered}"
+    );
+}
+
+#[test]
 fn artifact_cards_are_explicit_only_and_narrow_width_safe() {
     use jcode_tui_messages::{RenderedArtifact, RenderedArtifactKind};
 
