@@ -126,6 +126,31 @@ pub struct FleetEnvelope {
     pub payload: serde_json::Value,
 }
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct NativeHostEnvelope {
+    pub version: u16,
+    pub id: String,
+    pub deadline_ms: u64,
+    pub target_generation: u64,
+    pub action: WireAction,
+    #[serde(default)]
+    pub payload: serde_json::Value,
+}
+
+impl NativeHostEnvelope {
+    fn into_fleet(self, auth: String) -> FleetEnvelope {
+        FleetEnvelope {
+            version: self.version,
+            auth,
+            id: self.id,
+            deadline_ms: self.deadline_ms,
+            target_generation: self.target_generation,
+            action: self.action,
+            payload: self.payload,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum WireAction {
@@ -209,6 +234,167 @@ impl ProtocolSession {
         }
         Ok(env)
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct NativeHostBridgeConfig {
+    pub socket_path: PathBuf,
+    pub secret: String,
+    pub max_payload_bytes: usize,
+}
+
+pub async fn read_native_message<R>(
+    reader: &mut R,
+    max_payload_bytes: usize,
+) -> Result<Option<Vec<u8>>>
+where
+    R: AsyncReadExt + Unpin,
+{
+    let mut length = [0_u8; 4];
+    let mut read = 0;
+    while read < length.len() {
+        let n = reader.read(&mut length[read..]).await.map_err(|_| {
+            FleetError::new(FleetErrorKind::Io, "could not read native message length")
+        })?;
+        if n == 0 {
+            if read == 0 {
+                return Ok(None);
+            }
+            return Err(FleetError::new(
+                FleetErrorKind::Malformed,
+                "native message length prefix was truncated",
+            ));
+        }
+        read += n;
+    }
+    let length = u32::from_le_bytes(length) as usize;
+    if length > max_payload_bytes {
+        return Err(FleetError::new(
+            FleetErrorKind::Oversized,
+            "native message exceeded size limit",
+        ));
+    }
+    let mut payload = vec![0_u8; length];
+    reader.read_exact(&mut payload).await.map_err(|_| {
+        FleetError::new(
+            FleetErrorKind::Malformed,
+            "native message payload was truncated",
+        )
+    })?;
+    Ok(Some(payload))
+}
+
+pub async fn write_native_message<W>(
+    writer: &mut W,
+    payload: &[u8],
+    max_payload_bytes: usize,
+) -> Result<()>
+where
+    W: AsyncWriteExt + Unpin,
+{
+    if payload.len() > max_payload_bytes || payload.len() > u32::MAX as usize {
+        return Err(FleetError::new(
+            FleetErrorKind::Oversized,
+            "native response exceeded size limit",
+        ));
+    }
+    writer
+        .write_all(&(payload.len() as u32).to_le_bytes())
+        .await
+        .map_err(|_| {
+            FleetError::new(FleetErrorKind::Io, "could not write native message length")
+        })?;
+    writer.write_all(payload).await.map_err(|_| {
+        FleetError::new(FleetErrorKind::Io, "could not write native message payload")
+    })?;
+    writer
+        .flush()
+        .await
+        .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not flush native message"))?;
+    Ok(())
+}
+
+pub async fn forward_native_payload(
+    config: &NativeHostBridgeConfig,
+    payload: &[u8],
+) -> Result<Vec<u8>> {
+    if payload.len() > config.max_payload_bytes {
+        return Err(FleetError::new(
+            FleetErrorKind::Oversized,
+            "native request exceeded size limit",
+        ));
+    }
+    let request: NativeHostEnvelope = serde_json::from_slice(payload)
+        .map_err(|_| FleetError::new(FleetErrorKind::Malformed, "native request was malformed"))?;
+    if request.version != 1 {
+        return Err(FleetError::new(
+            FleetErrorKind::UnsupportedVersion,
+            "unsupported native host protocol version",
+        ));
+    }
+    if request.id.trim().is_empty() {
+        return Err(FleetError::new(
+            FleetErrorKind::Malformed,
+            "native request id is required",
+        ));
+    }
+
+    let mut broker_payload = serde_json::to_vec(&request.into_fleet(config.secret.clone()))
+        .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not encode broker request"))?;
+    if broker_payload.len() > config.max_payload_bytes {
+        return Err(FleetError::new(
+            FleetErrorKind::Oversized,
+            "broker request exceeded size limit",
+        ));
+    }
+    broker_payload.push(b'\n');
+
+    let mut stream = UnixStream::connect(&config.socket_path)
+        .await
+        .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not connect to fleet broker"))?;
+    stream
+        .write_all(&broker_payload)
+        .await
+        .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not write broker request"))?;
+    let mut reader = BufReader::new(stream).take((config.max_payload_bytes + 1) as u64);
+    let mut response = Vec::new();
+    reader
+        .read_until(b'\n', &mut response)
+        .await
+        .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not read broker response"))?;
+    if response.len() > config.max_payload_bytes {
+        return Err(FleetError::new(
+            FleetErrorKind::Oversized,
+            "broker response exceeded size limit",
+        ));
+    }
+    if response.ends_with(b"\n") {
+        response.pop();
+    }
+    Ok(response)
+}
+
+pub async fn serve_native_host<R, W>(
+    config: NativeHostBridgeConfig,
+    reader: &mut R,
+    writer: &mut W,
+) -> Result<()>
+where
+    R: AsyncReadExt + Unpin,
+    W: AsyncWriteExt + Unpin,
+{
+    while let Some(payload) = read_native_message(reader, config.max_payload_bytes).await? {
+        let response = match forward_native_payload(&config, &payload).await {
+            Ok(response) => response,
+            Err(error) => serde_json::to_vec(&serde_json::json!({
+                "ok": false,
+                "error": {"kind": error_kind_name(error.kind()), "message": error.to_string()}
+            }))
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not encode native error"))?,
+        };
+        write_native_message(writer, &response, config.max_payload_bytes).await?;
+    }
+    Ok(())
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use jcode_mac_browser_fleet::{
     AuthorityAction, AuthorityEnvelope, Broker, BrokerConfig, BrowserKind, Capability,
-    ManagedCdpSource, TargetRef,
+    ManagedCdpSource, NativeHostBridgeConfig, TargetRef, serve_native_host,
 };
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
@@ -21,15 +21,18 @@ async fn main() {
 
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args_os().skip(1);
-    let command = args
-        .next()
-        .ok_or("usage: jcode-mac-browser-fleet broker|authority ...")?;
+    let Some(command) = args.next() else {
+        return run_native_host(Vec::new()).await;
+    };
     if command == std::ffi::OsStr::new("authority") {
         return run_authority(args.collect()).await;
     }
+    if command == std::ffi::OsStr::new("native-host") {
+        return run_native_host(args.collect()).await;
+    }
     if command != std::ffi::OsStr::new("broker") {
         return Err(
-            "usage: jcode-mac-browser-fleet broker --socket PATH --authority-socket PATH --peer-secret PATH --policy PATH; or authority grant|revoke|emergency-stop|release-emergency-stop|status"
+            "usage: jcode-mac-browser-fleet [native-host --socket PATH --peer-secret PATH] | broker --socket PATH --authority-socket PATH --peer-secret PATH --policy PATH | authority grant|revoke|emergency-stop|release-emergency-stop|status"
                 .into(),
         );
     }
@@ -76,6 +79,51 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         broker.apply_inventory(source.discover().await?)?;
     }
     broker.serve().await?;
+    Ok(())
+}
+
+async fn run_native_host(args: Vec<std::ffi::OsString>) -> Result<(), Box<dyn std::error::Error>> {
+    let mut socket = None;
+    let mut peer_secret = None;
+    let mut max_payload_bytes = DEFAULT_MAX_PAYLOAD_BYTES;
+    let mut args = args.into_iter();
+    while let Some(flag) = args.next() {
+        let value = args
+            .next()
+            .ok_or("missing value for native-host argument")?;
+        match flag.to_string_lossy().as_ref() {
+            "--socket" => socket = Some(PathBuf::from(value)),
+            "--peer-secret" => peer_secret = Some(PathBuf::from(value)),
+            "--max-payload-bytes" => {
+                max_payload_bytes = value.to_string_lossy().parse::<usize>()?
+            }
+            _ => {
+                return Err(
+                    format!("unknown native-host argument: {}", flag.to_string_lossy()).into(),
+                );
+            }
+        }
+    }
+    let home = std::env::var_os("HOME").ok_or("HOME is required for native-host defaults")?;
+    let home = PathBuf::from(home);
+    let socket_path = socket.unwrap_or_else(|| {
+        home.join("Library/Application Support/Jcode/MacBrowserFleet/jcode-mac-browser-fleet.sock")
+    });
+    let secret_path = peer_secret.unwrap_or_else(|| {
+        home.join("Library/Application Support/Jcode/MacBrowserFleet/peer.secret")
+    });
+    let secret = fs::read_to_string(secret_path)?.trim().to_string();
+    if secret.is_empty() {
+        return Err("peer secret is empty".into());
+    }
+    let config = NativeHostBridgeConfig {
+        socket_path,
+        secret,
+        max_payload_bytes,
+    };
+    let mut stdin = tokio::io::stdin();
+    let mut stdout = tokio::io::stdout();
+    serve_native_host(config, &mut stdin, &mut stdout).await?;
     Ok(())
 }
 

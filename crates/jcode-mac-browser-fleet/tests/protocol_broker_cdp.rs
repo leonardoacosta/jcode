@@ -5,8 +5,9 @@ use std::time::Duration;
 use jcode_mac_browser_fleet::{
     Action, AuthorityAction, AuthorityEnvelope, Broker, BrokerConfig, BrowserKind, Capability,
     CdpAdapter, CdpEndpoint, FleetErrorKind, FleetRequest, FleetResponse, InventoryUpdate,
-    ManagedCdpSource, ManagedTarget, MutationReplayGuard, ProtocolCodec, ProtocolSession,
-    TargetRef,
+    ManagedCdpSource, ManagedTarget, MutationReplayGuard, NativeHostBridgeConfig, ProtocolCodec,
+    ProtocolSession, TargetRef, forward_native_payload, read_native_message, serve_native_host,
+    write_native_message,
 };
 use tempfile::tempdir;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
@@ -788,4 +789,99 @@ async fn approved_managed_cdp_mutation_executes_against_fake_loopback_websocket(
         server.await.unwrap(),
         vec!["Page.enable", "Page.navigate", "Page.disable"]
     );
+}
+
+#[tokio::test]
+async fn native_host_uses_chromium_framing_bounds_payloads_and_hides_secret() {
+    let request = serde_json::json!({"version":1,"id":"native-health","deadline_ms":1000,"target_generation":0,"action":"fleetHealth","payload":{}});
+    let payload = serde_json::to_vec(&request).unwrap();
+    let (mut client, mut host) = tokio::io::duplex(4096);
+    write_native_message(&mut client, &payload, 4096)
+        .await
+        .unwrap();
+    let decoded = read_native_message(&mut host, 4096).await.unwrap().unwrap();
+    assert_eq!(decoded, payload);
+    assert!(!String::from_utf8(decoded).unwrap().contains("test-secret"));
+
+    let oversized = (4097_u32).to_le_bytes();
+    let (mut client, mut host) = tokio::io::duplex(8);
+    client.write_all(&oversized).await.unwrap();
+    assert_eq!(
+        read_native_message(&mut host, 4096)
+            .await
+            .unwrap_err()
+            .kind(),
+        FleetErrorKind::Oversized
+    );
+}
+
+#[tokio::test]
+async fn native_host_forwards_inventory_requests_to_broker_with_internal_secret() {
+    let dir = tempdir().unwrap();
+    let socket = dir.path().join("fleet.sock");
+    let mut broker = Broker::bind(BrokerConfig {
+        socket_path: socket.clone(),
+        authority_socket_path: None,
+        secret: secret(),
+        max_payload_bytes: 4096,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    broker
+        .apply_inventory(InventoryUpdate::connected(
+            BrowserKind::Chrome,
+            "ordinary",
+            vec![target(1)],
+        ))
+        .unwrap();
+    let server = tokio::spawn(async move { broker.serve().await });
+
+    let request = serde_json::to_vec(&serde_json::json!({"version":1,"id":"native-list","deadline_ms":1000,"target_generation":1,"action":"listBrowsers","payload":{}})).unwrap();
+    let response = forward_native_payload(
+        &NativeHostBridgeConfig {
+            socket_path: socket,
+            secret: secret(),
+            max_payload_bytes: 4096,
+        },
+        &request,
+    )
+    .await
+    .unwrap();
+    let response: serde_json::Value = serde_json::from_slice(&response).unwrap();
+    assert_eq!(response["ok"], true);
+    assert_eq!(response["result"]["connected_targets"], 1);
+    assert!(!String::from_utf8(request).unwrap().contains("test-secret"));
+    server.abort();
+}
+
+#[tokio::test]
+async fn native_host_stream_returns_bounded_secret_safe_errors_when_broker_is_absent() {
+    let dir = tempdir().unwrap();
+    let (mut extension, mut host_input) = tokio::io::duplex(8192);
+    let (mut host_output, mut extension_reader) = tokio::io::duplex(8192);
+    let config = NativeHostBridgeConfig {
+        socket_path: dir.path().join("missing.sock"),
+        secret: secret(),
+        max_payload_bytes: 4096,
+    };
+    let host = tokio::spawn(async move {
+        serve_native_host(config, &mut host_input, &mut host_output)
+            .await
+            .unwrap();
+    });
+    let request = serde_json::to_vec(&serde_json::json!({"version":1,"id":"native-missing-broker","deadline_ms":1000,"target_generation":0,"action":"fleetHealth","payload":{}})).unwrap();
+    write_native_message(&mut extension, &request, 4096)
+        .await
+        .unwrap();
+    drop(extension);
+    let response = read_native_message(&mut extension_reader, 4096)
+        .await
+        .unwrap()
+        .unwrap();
+    let response: serde_json::Value = serde_json::from_slice(&response).unwrap();
+    assert_eq!(response["ok"], false);
+    assert_eq!(response["error"]["kind"], "io");
+    assert!(!response.to_string().contains("test-secret"));
+    host.await.unwrap();
 }
