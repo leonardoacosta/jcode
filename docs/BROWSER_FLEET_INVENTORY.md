@@ -73,18 +73,22 @@ differs, re-run `jcode-mac-browser-setup install` with
 Each profile reports its own `profileLabel`, so leases stay scoped per profile
 even though both share one user-data-dir and one manifest.
 
-#### Known limitation: MV3 service-worker suspension
+#### MV3 service-worker suspension
 
-The bridge is only connected while the extension's MV3 service worker is alive.
-An open native-messaging port keeps it alive, but once the browser suspends the
-worker (observed on Edge within minutes of idling, and on Chrome after a browser
-restart), nothing wakes it again, and that browser silently disappears from the
-fleet until the extension is reloaded or a page in that profile is touched.
+The bridge only runs while the extension's MV3 service worker is alive. An open
+native-messaging port keeps it alive, but once the browser suspends the worker
+(observed on Edge within minutes of idling) nothing restarted it, and that
+browser silently disappeared from the fleet until the extension was reloaded.
 
-This is why a source can be listed as connected in one `list_tabs` call and be
-missing from the next. It is a real gap rather than a transient: a periodic
-`chrome.alarms` wakeup in the extension is the standard remedy and is not yet
-implemented.
+The extension now registers a persistent one-minute `chrome.alarms` keepalive
+(`jcode-mac-browser-fleet-keepalive`). Each tick wakes the worker and
+re-establishes the native connection if it was lost, so a browser rejoins the
+fleet on its own. This costs one extra permission, `alarms`, recorded with its
+rationale in `config/permissions.json`.
+
+A browser can still be missing from a single `list_tabs` call taken during the
+gap between suspension and the next tick.
+
 
 
 
