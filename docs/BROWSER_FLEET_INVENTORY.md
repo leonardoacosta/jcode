@@ -50,9 +50,15 @@ authorizes exactly that origin.
 | Directory | Display name | Account | Last used | Access |
 | --- | --- | --- | --- | --- |
 | `Profile 1` | Profile 2 | BBAdminLAcosta@bbins.com (bbadmin) | 2026-08-11 | `approval-gated`, bridged as `ordinary-edge` |
-| `Default` | Profile 1 | leonardo.acosta@bridgespecialty.com (o365) | 2026-08-06 | `unconfigured`, extension not loaded in this profile |
+| `Default` | Profile 1 | leonardo.acosta@bridgespecialty.com (o365) | 2026-08-11 | `approval-gated`, bridged as `ordinary-edge` |
 | `Profile 2` | Profile 4 | none | 2026-06-23 | not targeted |
 | `Profile 4` | Profile 3 | none | 2026-08-04 | not targeted |
+
+Both work profiles are enrolled and were verified live: each appears as its own
+window under `ordinary-edge`, and each independently returned
+`approvalRequired` before a lease, `accepted` under a lease, `hardDenied` for
+`edge://settings/`, and `approvalRequired` again after revocation.
+
 
 Beta, Dev, and Canary user-data-dirs exist but hold no profiles and are ignored.
 
@@ -61,11 +67,11 @@ Beta, Dev, and Canary user-data-dirs exist but hold no profiles and are ignored.
 Chromium loads *unpacked* extensions per profile, not per user-data-dir. The
 native-host manifest is shared across every profile in the user-data-dir, so it
 only has to be installed once, but each profile that should be steerable must
-load the unpacked extension itself. `bbadmin` is loaded; `o365` is not.
+load the unpacked extension itself. Both `bbadmin` and `o365` are loaded.
 
-To enroll `o365`: open Edge on that profile, go to `edge://extensions`, enable
-Developer mode, choose "Load unpacked", and select
-`~/.jcode/mac-browser-fleet-extension-edge`.
+To enroll another profile: open the browser on that profile, go to
+`edge://extensions` (or `chrome://extensions`), enable Developer mode, choose
+"Load unpacked", and select `~/.jcode/mac-browser-fleet-extension-edge`.
 
 No reinstall is needed afterwards. Chromium derives an unpacked extension's ID
 from the absolute directory path, so loading the same directory in a second
