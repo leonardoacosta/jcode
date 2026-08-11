@@ -1,0 +1,36 @@
+{
+  "permissions": [
+    "nativeMessaging",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "rationale": {
+    "nativeMessaging": "Connect only to the separately allowlisted Jcode native messaging host.",
+    "scripting": "Execute broker-approved ordinary-tab actions without debugger access.",
+    "tabs": "Maintain bounded window and tab inventory and perform broker-approved tab actions."
+  },
+  "denied_permissions": [
+    "bookmarks",
+    "browsingData",
+    "clipboardRead",
+    "clipboardWrite",
+    "contentSettings",
+    "cookies",
+    "debugger",
+    "downloads",
+    "geolocation",
+    "history",
+    "management",
+    "privacy",
+    "proxy",
+    "sessions",
+    "topSites",
+    "webRequest"
+  ],
+  "incognito_allowed": false,
+  "restricted_schemes_allowed": false
+}
