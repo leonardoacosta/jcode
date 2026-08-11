@@ -395,6 +395,25 @@ pub(super) fn copy_to_clipboard(text: &str) -> bool {
 
     #[cfg(not(test))]
     {
+        // Dual-write policy: a native clipboard success is not sufficient when
+        // the process runs on a different machine than the viewer (herdr/mosh/
+        // SSH-attached sessions). The process-local env still shows a live
+        // Wayland/X11 display, so the native path "succeeds" — on the wrong
+        // machine's clipboard — and the OSC 52 fallback never ran, leaving the
+        // remote viewer's clipboard untouched. OSC 52 travels through the
+        // attached terminal (shepherd forwards it, mosh 1.4+ and modern
+        // emulators honor it), so we now ALWAYS emit it in addition to the
+        // native copy: native covers local viewers, OSC 52 covers remote ones.
+        // Terminals that ignore OSC 52 discard the sequence harmlessly.
+        #[allow(unused_macros)]
+        macro_rules! finish_with_osc52 {
+            ($native_ok:expr) => {{
+                let native_ok = $native_ok;
+                let osc52_ok = copy_to_clipboard_osc52(text);
+                return native_ok || osc52_ok;
+            }};
+        }
+
         // On Windows, the native clipboard API must run before OSC 52. Writing an
         // OSC 52 sequence to stdout "succeeds" even when the console (conhost,
         // older Windows Terminal) silently ignores it, which reported "Copied"
@@ -402,13 +421,10 @@ pub(super) fn copy_to_clipboard(text: &str) -> bool {
         // Win32 clipboard directly and is authoritative there.
         #[cfg(windows)]
         {
-            if arboard::Clipboard::new()
+            let native_ok = arboard::Clipboard::new()
                 .and_then(|mut cb| cb.set_text(text.to_string()))
-                .is_ok()
-            {
-                return true;
-            }
-            return copy_to_clipboard_osc52(text);
+                .is_ok();
+            finish_with_osc52!(native_ok);
         }
 
         // Same class of bug on macOS: Apple Terminal (Terminal.app) silently
@@ -418,29 +434,25 @@ pub(super) fn copy_to_clipboard(text: &str) -> bool {
         // for local sessions; OSC 52 remains as the final remote-session fallback.
         #[cfg(target_os = "macos")]
         {
-            if arboard::Clipboard::new()
+            let mut native_ok = arboard::Clipboard::new()
                 .and_then(|mut cb| cb.set_text(text.to_string()))
-                .is_ok()
-            {
-                return true;
-            }
-            if let Ok(mut child) = std::process::Command::new("pbcopy")
-                .stdin(std::process::Stdio::piped())
-                .stdout(std::process::Stdio::null())
-                .stderr(std::process::Stdio::null())
-                .spawn()
+                .is_ok();
+            if !native_ok
+                && let Ok(mut child) = std::process::Command::new("pbcopy")
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn()
             {
                 use std::io::Write;
                 if let Some(stdin) = child.stdin.as_mut()
                     && stdin.write_all(text.as_bytes()).is_ok()
                 {
                     drop(child.stdin.take());
-                    if child.wait().map(|s| s.success()).unwrap_or(false) {
-                        return true;
-                    }
+                    native_ok = child.wait().map(|s| s.success()).unwrap_or(false);
                 }
             }
-            return copy_to_clipboard_osc52(text);
+            finish_with_osc52!(native_ok);
         }
 
         // Linux has the same failure class (issue #504, Kali/X11): wl-copy fails
@@ -453,36 +465,27 @@ pub(super) fn copy_to_clipboard(text: &str) -> bool {
         // fail fast for lack of a display server.
         #[cfg(not(any(windows, target_os = "macos")))]
         {
-            if clipboard_helper::copy_via_clipboard_helper("wl-copy", &[], text) {
-                return true;
-            }
-            // X11: prefer xclip/xsel over arboard. arboard's X11 backend sets the
-            // selection on a connection it owns and then closes it when the
-            // `Clipboard` is dropped, so the selection owner disappears and the
-            // clipboard silently reverts (issue #684) even though `set_text`
-            // returned Ok. xclip and xsel fork a background process that keeps
-            // owning the selection until a paste, which is what users expect.
-            if clipboard_helper::copy_via_clipboard_helper(
-                "xclip",
-                &["-selection", "clipboard"],
-                text,
-            ) {
-                return true;
-            }
-            if clipboard_helper::copy_via_clipboard_helper(
-                "xsel",
-                &["--clipboard", "--input"],
-                text,
-            ) {
-                return true;
-            }
-            if arboard::Clipboard::new()
-                .and_then(|mut cb| cb.set_text(text.to_string()))
-                .is_ok()
-            {
-                return true;
-            }
-            copy_to_clipboard_osc52(text)
+            let native_ok = clipboard_helper::copy_via_clipboard_helper("wl-copy", &[], text)
+                // X11: prefer xclip/xsel over arboard. arboard's X11 backend sets the
+                // selection on a connection it owns and then closes it when the
+                // `Clipboard` is dropped, so the selection owner disappears and the
+                // clipboard silently reverts (issue #684) even though `set_text`
+                // returned Ok. xclip and xsel fork a background process that keeps
+                // owning the selection until a paste, which is what users expect.
+                || clipboard_helper::copy_via_clipboard_helper(
+                    "xclip",
+                    &["-selection", "clipboard"],
+                    text,
+                )
+                || clipboard_helper::copy_via_clipboard_helper(
+                    "xsel",
+                    &["--clipboard", "--input"],
+                    text,
+                )
+                || arboard::Clipboard::new()
+                    .and_then(|mut cb| cb.set_text(text.to_string()))
+                    .is_ok();
+            finish_with_osc52!(native_ok);
         }
     }
 }

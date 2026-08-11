@@ -249,9 +249,27 @@ impl App {
             return true;
         }
 
+        // A local `xdg-open`/`open` succeeds on the machine the process runs
+        // on — which is the wrong machine when the viewer is attached over
+        // herdr/mosh/SSH. Always copy the URL too (the clipboard path emits
+        // OSC 52, which does reach remote viewers), so the link is usable
+        // even when the browser opened somewhere the user can't see.
         match super::helpers::open_path_or_url_detached(&target) {
-            Ok(()) => self.set_status_notice(format!("Opened link: {}", target)),
-            Err(e) => self.set_status_notice(format!("Failed to open link: {}", e)),
+            Ok(()) => {
+                let copied = super::helpers::copy_to_clipboard(&target);
+                self.set_status_notice(if copied {
+                    format!("Opened link (and copied): {}", target)
+                } else {
+                    format!("Opened link: {}", target)
+                });
+            }
+            Err(e) => {
+                if super::helpers::copy_to_clipboard(&target) {
+                    self.set_status_notice(format!("Copied link (open failed: {})", e));
+                } else {
+                    self.set_status_notice(format!("Failed to open link: {}", e));
+                }
+            }
         }
         true
     }
