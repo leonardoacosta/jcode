@@ -170,6 +170,55 @@ body:before{
   .orchestration-card .orch-flow{row-gap:12px}
   .orchestration-card .orch-fanout{gap:8px}
 }
+
+/* ── Shared interior alignment grid ────────────────────────────────────────
+   Every card's content starts on the same x. Card 1 keeps its entry column
+   proportional to the panel so the funnel spans a sensible distance instead
+   of leaving a dead gap before the task node. */
+.layer > .panel{padding-left:18px!important;padding-right:18px!important}
+.tools-layer .tool-bus{padding-left:0;padding-right:0}
+.tools-layer .tool-board{padding-inline:0}
+.runtime-card .sandbox-boundary{margin-inline:0}
+.surface-flow{grid-template-columns:minmax(120px,20%) minmax(0,1fr)}
+.surface-task-wrap{justify-self:center;margin-right:0;min-width:0}
+@media (min-width:1181px){
+  .surface-flow{grid-template-columns:minmax(140px,16%) minmax(0,1fr);gap:0}
+}
+
+/* Cards 5-7: pull their inner wrappers onto the same content edge as 1-4. */
+.tools-layer .tool-bus{padding-left:12px}
+.tools-layer .tool-cell:first-child{justify-items:start}
+.tools-layer .tool-cell:first-child .tool-node{text-align:center}
+.runtime-card .sandbox-boundary{padding-left:8px}
+.runtime-card .runtime-lane{padding-left:6px}
+.memory-card .memory-flow{justify-items:start}
+.memory-card .memory-session:first-child{margin-left:6px}
+
+/* Cards 5 and 6 nest an extra bordered container; zero its inline padding so
+   the first node lands on the same content edge as every other card. */
+.tools-layer .tool-bus{padding-left:0!important;padding-right:0!important}
+.tools-layer .tool-bus-label{left:0}
+.runtime-card .sandbox-boundary{padding-left:0!important;padding-right:0!important}
+.runtime-card .runtime-label{left:0}
+.runtime-card .runtime-lane{padding-left:0!important}
+.runtime-card .runtime-wall{padding-left:0}
+
+/* Final nudge: measure to the text edge, not the lane's border box. */
+.runtime-card .runtime-lane.allowed,
+.runtime-card .runtime-lane.denied{margin-left:4px}
+.tools-layer .tool-cell:first-child .tool-node{margin-left:-1px}
+
+/* Narrow: the wrapped card 2 rows need vertical clearance at every size. */
+@media (max-width:780px){
+  .orchestration-card .orch-flow{row-gap:12px!important}
+  .orchestration-card .orch-answer{margin-top:6px}
+  .orchestration-card .orch-fanout{padding-block:2px}
+}
+
+@media (max-width:400px){
+  .context-layer .ctx-segment strong{font-size:8px!important;letter-spacing:0}
+  .context-layer .ctx-segment{padding-inline:2px}
+}
 /* Card 1 funnel: geometry is measured from real element boxes in JS. */
 .surface-funnel{
   position:absolute!important;inset:0!important;width:100%;height:100%;
@@ -293,7 +342,10 @@ body:before{
 
 @keyframes connector-breathe{0%,100%{opacity:.35;filter:drop-shadow(0 0 0 transparent)}50%{opacity:.92;filter:drop-shadow(0 0 7px var(--c))}}
 @keyframes loop-ring{to{transform:rotate(1turn)}}
-.surface-funnel path,.model-flow::before,.model-paths::before,.tool-bus-flow,.memory-beam{animation:connector-breathe 2.8s ease-in-out infinite}
+.model-flow::before,.model-paths::before,.tool-bus-flow,.memory-beam{animation:connector-breathe 2.8s ease-in-out infinite}
+/* funnel glow must not touch opacity: the JS draw owns that */
+@keyframes funnel-glow{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 6px var(--accent))}}
+.surface-funnel path{animation:funnel-glow 2.8s ease-in-out infinite}
 .orch-arrow{transform:scaleX(1)!important;opacity:.72!important;animation:connector-breathe 2.8s ease-in-out infinite}
 .orch-ring{animation:loop-ring 2.8s linear infinite!important}
 
