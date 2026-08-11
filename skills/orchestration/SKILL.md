@@ -78,6 +78,33 @@ When the user specifies a model/provider/effort, or when Orca's built-in agent l
 
 This avoids a needless coordinator delegation hop while preserving isolated worktrees, model fidelity, dependency gates, verification evidence, and merge decisions. Treat the direct Jcode instance as the worker and the main thread as the supervisor, not as an intermediate prompt relay.
 
+## Herdr agent state is not a liveness signal for non-interactive workers
+
+`herdr agent get <pane> --json` reports `agent_status` from lifecycle hooks the harness fires,
+not from process observation. A worker can be mid-turn and burning tokens while the pane still
+reads `unknown`. Do not treat a non-`working` status as evidence that a worker is idle, stalled,
+or finished, and never cancel or reassign on that basis alone.
+
+Two independent things must both hold before pane status means anything:
+
+1. The lifecycle hooks are configured (`[hooks] turn_start`/`turn_end` in `~/.jcode/config.toml`
+   pointing at the herdr adapter). Config round-trips after a parse failure can silently drop
+   these, so a previously working setup is not proof.
+2. The worker's execution path actually fires them. Jcode fired turn hooks only on the streaming
+   TUI path until `254f781`; `jcode run`, ambient, and swarm workers ran completely silent. On an
+   older binary those workers will never report state no matter how the config reads.
+
+Confirm status is trustworthy for the specific worker shape you are about to supervise, with the
+worker running:
+
+```text
+herdr agent get <pane> --json      # expect working during a known-live turn
+```
+
+If it reads `unknown` while the pane is visibly producing output, fall back to output-based
+supervision (`herdr pane read`, `herdr pane wait-output`) or the Orca task graph, and report the
+missing signal instead of inferring worker state from silence.
+
 ## Headless runtime recovery
 
 On Linux without a usable desktop window, use Orca's supported headless server instead of repeatedly retrying `open`:

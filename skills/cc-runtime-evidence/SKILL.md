@@ -34,3 +34,26 @@ mapped one-to-one to the exact probe command for each.
 | systemd timer / cron | `systemctl --user list-timers <name>`, then output-file mtime after next window (or `systemctl --user start` the service once and paste the result-file diff) |
 
 Recipes with exact payloads and marker paths: [references/probe-recipes.md](references/probe-recipes.md).
+
+## Jcode turn hooks: probe the path you actually ship
+
+`[hooks] turn_start`/`turn_end` in `~/.jcode/config.toml` are dispatched per call site, so
+firing in the TUI proves nothing about the path automation uses. Jcode fired them only from the
+streaming path until `254f781`; `jcode run`, ambient, and swarm workers were silent while the
+config read as correct. Probe the shape you ship:
+
+```text
+# add a throwaway second command on the same event, then run ONE turn
+turn_start = ["<real adapter> session", "/bin/sh -c 'echo ev=$JCODE_HOOK_EVENT >> /tmp/probe.log'"]
+
+jcode run -p <provider> -m <model> "say ok"    # the non-interactive path
+cat /tmp/probe.log                             # rung 2 evidence
+```
+
+For the herdr adapter specifically, rung 3 is the pane transitioning during a live turn:
+
+```text
+herdr agent get <pane> --json   # working mid-turn, idle after turn_end
+```
+
+Remove the probe command and delete the marker file once answered.
