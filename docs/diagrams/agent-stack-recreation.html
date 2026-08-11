@@ -298,6 +298,164 @@ body:before{
   .memory-card .memory-score{grid-column:1;grid-row:3;display:flex;border-left:0;border-top:1px solid rgba(255,240,199,.18)}
   .memory-card .memory-score span{display:inline}
 }
+
+/* ── Visual defect repair (screenshot-driven) ──────────────────────────── */
+/* 1 surface: the five entry rows must fit inside the panel, not spill past it. */
+.surface-layer .surface-panel{min-height:0;padding:26px 14px 14px;display:block}
+.surface-flow{height:auto;min-height:150px;align-items:center;grid-template-columns:132px minmax(0,1fr);justify-content:start}
+.surface-inputs{align-self:center;grid-template-rows:repeat(5,26px);gap:6px;justify-self:start}
+.surface-flow{position:relative}
+.surface-funnel{left:146px;right:132px;top:26px;bottom:20px}
+.surface-task-wrap{justify-self:end;margin-right:14px;min-width:126px}
+
+/* 3 context: segment fill must show its real proportion again. */
+.context-layer .ctx-segment{overflow:hidden}
+.context-layer .ctx-segment i{
+  width:var(--w);background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 62%,transparent),color-mix(in srgb,var(--gold) 26%,transparent));
+  opacity:1;border-right:1px solid color-mix(in srgb,var(--accent) 65%,transparent);
+}
+
+/* 5 tools: compact centred cells, connector between cells, badge above the node. */
+.tools-layer .tool-bus{grid-template-columns:repeat(4,minmax(0,1fr));gap:26px;padding:24px 16px 12px}
+.tools-layer .tool-cell{grid-template-columns:minmax(0,1fr);justify-items:center;gap:6px;overflow:visible}
+.tools-layer .tool-node{width:auto;min-width:86px;padding-inline:12px}
+.tools-layer .tool-cell .tool-dot{left:50%;top:-7px;transform:translateX(-50%)}
+.tools-layer .tool-cell:not(:last-child)::after{left:calc(100% + 4px);width:18px;top:20px}
+.tools-layer .tool-cell.muted::before{
+  right:auto;left:50%;top:-14px;transform:translateX(-50%);
+  padding:2px 5px;background:#02050a;color:var(--red);font-size:6px;letter-spacing:.08em;white-space:nowrap;
+}
+.tools-layer .tool-node{white-space:nowrap;min-height:0;padding-block:6px}
+.tools-layer .tool-cell .tool-dot{top:-8px}
+
+/* 6 runtime: the sandbox tag belongs on the boundary edge. */
+.runtime-card .runtime-panel{padding:26px 12px 12px!important}
+.runtime-card .sandbox-boundary{overflow:visible}
+.runtime-card .runtime-label{top:-10px;left:16px;background:#02050a;border-color:color-mix(in srgb,var(--red) 60%,transparent);color:var(--red)}
+
+/* 7 memory: dark-theme the boundary marker and keep its container visible. */
+.memory-card .memory-boundary{opacity:1!important;color:var(--muted)}
+.memory-card .memory-boundary:before,
+.memory-card .memory-boundary:after{border-color:color-mix(in srgb,var(--accent) 42%,transparent)}
+.memory-card .memory-boundary span{
+  background:#02050a;border-color:color-mix(in srgb,var(--accent) 45%,transparent);
+  color:var(--accent);font-size:8px;letter-spacing:.08em;
+}
+.memory-card .memory-panel{grid-template-columns:280px minmax(0,1fr) 86px}
+.memory-card .memory-flow{grid-template-columns:78px minmax(0,1fr) 78px;gap:8px}
+.memory-card .memory-session{white-space:nowrap;padding-inline:8px;font-size:10px!important}
+/* card 5: the muted tool keeps one clear stop marker, not a stray dot. */
+.tools-layer .tool-cell.muted .tool-dot{display:none}
+.tools-layer .tool-cell{grid-template-columns:auto;justify-items:center;row-gap:7px}
+.tools-layer .schema-ok{position:relative;z-index:1;margin-top:2px}
+.tools-layer .tool-bus{
+  background:rgba(255,239,199,.05);border:1px solid rgba(255,240,199,.16);border-radius:8px;
+}
+.tools-layer .tool-bus-label{color:var(--blue);background:transparent}
+.tools-layer .schema-ok{
+  border:1px solid color-mix(in srgb,var(--blue) 40%,rgba(255,240,199,.2));
+  background:rgba(2,5,10,.72);color:rgba(255,244,213,.78);border-radius:999px;padding:2px 6px;
+}
+.tools-layer .schema-ok.muted{border-color:color-mix(in srgb,var(--red) 45%,transparent);color:var(--red)}
+.tools-layer .tool-state{background:rgba(255,239,199,.05);border:1px solid rgba(255,240,199,.16);border-radius:8px}
+.tools-layer .tool-board{column-gap:16px;grid-template-columns:minmax(0,1fr) 78px}
+.tools-layer .tool-bus{padding:24px 12px 14px;overflow:hidden;gap:10px;grid-template-columns:repeat(4,minmax(0,1fr));align-items:start}
+.tools-layer .tool-cell{
+  display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:min-content;
+  justify-items:center;row-gap:6px;
+}
+.tools-layer .tool-node{width:100%;min-width:0;text-align:center;white-space:nowrap;padding-inline:4px;font-size:11px!important}
+.tools-layer .schema-ok{white-space:nowrap;max-width:none;justify-self:center}
+.tools-layer .tool-cell{min-width:0}
+.tools-layer .schema-ok{max-width:100%;overflow:visible;text-overflow:clip}
+.tools-layer .tool-state b{color:var(--blue)}
+.tools-layer .tool-state small{color:rgba(255,244,213,.6)}
+
+@media (max-width:780px){
+  .surface-flow{grid-template-columns:112px minmax(0,1fr);gap:10px;min-width:0}
+  .surface-inputs{width:112px;grid-template-rows:repeat(5,26px)}
+  .surface-funnel{left:118px;right:104px;top:20px;bottom:16px}
+  .surface-task-wrap{justify-self:end;margin-right:0;min-width:98px}
+  .memory-card .memory-panel{grid-template-columns:1fr}
+  .memory-card .memory-flow{grid-template-columns:78px minmax(0,1fr) 78px}
+}
+
+/* Mobile: each card fits its own panel; no content sliced by the edge. */
+@media (max-width:780px){
+  /* 4 model: route column and paths shrink to the phone width. */
+  .model-card .model-flow{grid-template-columns:74px minmax(0,1fr);gap:8px}
+  .model-card .model-path{grid-template-columns:auto auto!important;justify-content:start;align-items:center;row-gap:2px;column-gap:8px}
+  .model-card .model-path .node{width:auto;white-space:nowrap}
+  .model-card .badge{position:static;margin:0}
+  .model-card .model-path .path-line{display:none}
+  .model-card .model-path small{grid-column:1/-1;padding-left:0}
+  .model-card .model-paths::before,.model-card .model-flow::before{display:none}
+  .model-card .model-paths{margin-left:0}
+
+  /* 5 tools: two rows of two instead of one sliced row. */
+  .tools-layer .tool-board{min-width:0;grid-template-columns:minmax(0,1fr);gap:10px}
+  .tools-layer .tool-bus{grid-template-columns:1fr;gap:8px;padding:22px 10px 12px}
+  .tools-layer .tool-bus-flow{display:none}
+  .tools-layer .tool-cell:not(:last-child)::after{display:none}
+  .tools-layer .tool-cell{
+    grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:stretch;
+    column-gap:8px;row-gap:0;text-align:left;
+  }
+  .tools-layer .tool-node{
+    min-width:0;width:100%;white-space:nowrap;overflow:visible;text-overflow:clip;
+    padding-inline:10px;font-size:11px!important;text-align:left;
+  }
+  .tools-layer .schema-ok{justify-self:end;margin-top:0;white-space:nowrap}
+  .tools-layer .tool-cell.muted::before{left:auto;right:0;top:-12px;transform:none}
+  .tools-layer .tool-state{display:flex;align-items:baseline;justify-content:center;gap:6px;padding:8px}
+
+  /* 6 runtime: allowed and denied lanes stack. */
+  .runtime-card .sandbox-boundary{min-width:0;grid-template-columns:1fr;grid-template-rows:auto auto auto}
+  .runtime-card .runtime-lane.allowed{grid-column:1;grid-row:2}
+  .runtime-card .runtime-lane.denied{grid-column:1;grid-row:3}
+
+  /* 7 memory: no forced width wider than the phone panel. */
+  .memory-card .memory-panel{min-width:0}
+  .memory-card .memory-restored{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+  /* 2 orchestration: keep the linear graph, but scale it to the panel. */
+  .orchestration-panel{overflow-x:hidden!important}
+  .orch-flow{
+    display:grid!important;min-width:0;width:100%;height:auto;
+    grid-template-columns:auto 14px auto 14px auto!important;
+    grid-template-rows:auto auto auto!important;
+    justify-content:center;align-items:center;gap:8px 6px;
+  }
+  .orchestration-panel{height:auto;min-height:0}
+  .orchestration-card .panel{display:grid;align-content:center}
+  .orchestration-card .orch-loop{grid-column:1;grid-row:1}
+  .orchestration-card .orch-a1{grid-column:2;grid-row:1}
+  .orchestration-card .orch-plan{grid-column:3;grid-row:1}
+  .orchestration-card .orch-a2{grid-column:4;grid-row:1}
+  .orchestration-card .orch-merge-row{grid-column:5;grid-row:1}
+  .orchestration-card .orch-fanout{
+    grid-column:1/-1;grid-row:2;display:flex;flex-direction:row;align-items:center;
+    justify-content:center;gap:6px;width:100%;
+  }
+  .orchestration-card .orch-a3{display:none}
+  .orchestration-card .orch-answer{grid-column:1/-1;grid-row:3;justify-self:center;display:flex;align-items:center;gap:6px}
+  .orchestration-card .orch-agents{display:flex;gap:3px;min-width:0}
+  .orchestration-card .node{font-size:10px!important;padding-inline:8px;white-space:nowrap}
+  .orchestration-card .orch-task{width:auto;min-width:0;text-align:center}
+  .orchestration-card .orch-arrow{min-width:12px}
+}
+
+/* 4 model: badges are chips, not full-width bars; label sits beside its path. */
+.model-card .model-path{grid-template-columns:minmax(72px,.8fr) auto auto minmax(0,1fr);justify-items:start}
+.model-card .badge{justify-self:start;width:auto;flex:none}
+.model-card .model-path small{justify-self:start;padding-left:6px}
+
+/* 2 orchestration: the merged agent chips must read as labelled chips. */
+.orchestration-card .orch-agents{min-width:0;gap:5px}
+.orchestration-card .orch-agents i{
+  padding:2px 6px;font-size:7px;line-height:1.1;color:var(--ink);
+  border-color:color-mix(in srgb,var(--c) 50%,rgba(255,240,199,.24));background:rgba(2,5,10,.82);
+}
 </style>
 </head>
 <body>
