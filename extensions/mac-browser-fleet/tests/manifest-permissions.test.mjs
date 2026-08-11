@@ -36,7 +36,7 @@ for (const browser of ["chrome", "edge"]) {
     assert.equal(manifest.manifest_version, 3);
     assert.equal(manifest.version, "0.1.0");
     assert.match(manifest.name, /Jcode Mac Browser Fleet/);
-    assert.equal(manifest.background.service_worker, "background.js");
+    assert.equal(manifest.background.service_worker, "src/background.mjs");
     assert.equal(manifest.background.type, "module");
     assert.equal(manifest.incognito, "not_allowed");
     assert.deepEqual(manifest.permissions, expectedPermissions);
