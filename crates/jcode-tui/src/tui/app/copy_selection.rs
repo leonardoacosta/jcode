@@ -80,19 +80,13 @@ impl App {
         {
             (super::ArtifactActionTarget::Path(value), None)
         } else {
-            let words = value.split_whitespace().count();
-            let natural = (60..=150).contains(&words)
-                && !value.contains(['#', '`'])
-                && !value.lines().any(|line| line.trim_start().starts_with(['-', '*']));
-            if !natural {
-                self.set_status_notice(
-                    "Artifact actions unavailable: select a URL, path, or 60-150 word spoken brief",
-                );
+            let Some((_, spoken)) = super::compose_decision_brief(&value) else {
+                self.set_status_notice("Artifact actions unavailable: selected artifact is empty");
                 return;
-            }
+            };
             (
                 super::ArtifactActionTarget::DecisionBrief(value.clone()),
-                Some(value),
+                Some(spoken),
             )
         };
 
@@ -136,9 +130,52 @@ impl App {
                 self.set_status_notice(if copied { "Artifact target copied" } else { "Artifact target copy failed" });
             }
             super::ArtifactAction::BriefAloud => {
+                let source = palette.target_value();
+                let Some((markdown, spoken)) = super::compose_decision_brief(source) else {
+                    self.set_status_notice("Decision Brief could not be composed");
+                    return;
+                };
+                let artifact = jcode_tui_messages::RenderedArtifact::new(
+                    jcode_tui_messages::RenderedArtifactKind::DecisionBrief,
+                )
+                .with_title("Decision Brief");
+                if !self.is_remote {
+                    let tool_use_id = crate::id::new_id("decision-brief");
+                    let tool_use = crate::message::Message {
+                        role: crate::message::Role::Assistant,
+                        content: vec![crate::message::ContentBlock::ToolUse {
+                            id: tool_use_id.clone(),
+                            name: "decision_brief".to_string(),
+                            input: serde_json::json!({"source": "artifact_action_palette"}),
+                            thought_signature: None,
+                        }],
+                        timestamp: Some(chrono::Utc::now()),
+                        tool_duration_ms: None,
+                    };
+                    let tool_result = crate::message::Message {
+                        role: crate::message::Role::User,
+                        content: vec![crate::message::ContentBlock::ToolResult {
+                            tool_use_id,
+                            content: markdown.clone(),
+                            is_error: None,
+                            artifact: Some(artifact.clone()),
+                        }],
+                        timestamp: Some(chrono::Utc::now()),
+                        tool_duration_ms: None,
+                    };
+                    self.add_provider_message(tool_use.clone());
+                    self.add_provider_message(tool_result.clone());
+                    self.session.add_message(tool_use.role, tool_use.content);
+                    self.session.add_message(tool_result.role, tool_result.content);
+                    let _ = self.session.save();
+                }
+                self.push_display_message(
+                    super::DisplayMessage::tool_text(markdown).with_artifact(artifact),
+                );
                 let result = palette
                     .spoken_prose
                     .as_deref()
+                    .or(Some(spoken.as_str()))
                     .and_then(super::brief_aloud_command)
                     .is_some_and(super::spawn_artifact_action);
                 self.set_status_notice(if result {

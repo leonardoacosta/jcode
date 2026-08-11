@@ -67,3 +67,16 @@ fn artifact_action_palette_captures_typed_target_and_stable_actions() {
         ]
     );
 }
+
+#[test]
+fn decision_brief_composer_returns_markdown_and_herald_safe_prose() {
+    let source = "# Architecture options\n\n- Choose the contextual palette because it keeps actions close to the rendered artifact.\n- Preserve a written record before speech.\n- Use Herald as the only delivery path.\n\nNext, wire the selected action.";
+    let (markdown, spoken) = compose_decision_brief(source).expect("brief pair");
+
+    assert!(markdown.starts_with("# Decision Brief"));
+    assert!(markdown.contains("## Summary"));
+    assert!(markdown.contains("## Next step"));
+    assert!((60..=150).contains(&spoken.split_whitespace().count()));
+    assert!(!spoken.contains(['#', '`', '_']));
+    assert!(!spoken.contains('/'));
+}

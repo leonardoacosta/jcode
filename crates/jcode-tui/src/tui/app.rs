@@ -153,6 +153,60 @@ fn spawn_artifact_action(mut command: std::process::Command) -> bool {
     true
 }
 
+fn compose_decision_brief(source: &str) -> Option<(String, String)> {
+    let source = source.trim();
+    if source.is_empty() {
+        return None;
+    }
+
+    let clean_lines: Vec<String> = source
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with("```") && !line.starts_with('#'))
+        .map(|line| line.trim_start_matches(['-', '*', '>']).trim().to_string())
+        .filter(|line| !line.is_empty())
+        .collect();
+    let summary = clean_lines
+        .iter()
+        .take(4)
+        .cloned()
+        .collect::<Vec<_>>()
+        .join(" ");
+    if summary.is_empty() {
+        return None;
+    }
+
+    let markdown = format!(
+        "# Decision Brief\n\n## Summary\n\n{}\n\n## Key points\n\n{}\n\n## Next step\n\nReview the brief, confirm the intended outcome, and choose the next action.",
+        summary,
+        clean_lines
+            .iter()
+            .take(5)
+            .map(|line| format!("- {line}"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
+
+    let mut spoken_words: Vec<&str> = summary
+        .split_whitespace()
+        .filter(|word| {
+            !word.contains(['/', '`', '_'])
+                && !word.contains("::")
+                && !word.chars().any(|ch| ch.is_ascii_digit())
+        })
+        .take(120)
+        .collect();
+    const CLOSING: &str = "The important outcome is to understand what this artifact changes, why that matters, and which decision should happen next. Review the written brief, confirm the intended direction, and then continue with the selected action. If anything is unclear, inspect the original artifact before proceeding so the next step stays grounded in the source.";
+    if spoken_words.len() < 60 {
+        spoken_words.extend(CLOSING.split_whitespace().take(60 - spoken_words.len()));
+    }
+    let mut spoken = spoken_words.join(" ");
+    if !spoken.ends_with(['.', '!', '?']) {
+        spoken.push('.');
+    }
+    Some((markdown, spoken))
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum ArtifactActionTarget {
     Url(String),
