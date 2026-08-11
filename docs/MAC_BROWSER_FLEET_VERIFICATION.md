@@ -40,6 +40,7 @@ Observed protocol results:
 - Jcode navigation against a current target: rejected with `Mac browser fleet approval required on the Mac`.
 - A separate Mac-local authority socket was installed with mode `600`; it is not part of the SSH-forwarded peer socket.
 - A two-minute `navigate` lease was granted locally for a dedicated ordinary-origin target. Jcode navigation through the public `browser: "mac"` path returned `accepted` and changed that target through CDP.
+- A subsequent real Chrome `/json/list` observation found the same target at the expected `https://example.org` origin, confirming the accepted response represented an actual browser-state change rather than only protocol acknowledgement.
 - Revoking the lease immediately restored `approval required` for the same target.
 - Emergency stop overrode a newly granted lease. Releasing emergency stop left no active elevated authority.
 - After a Jcode server reload removed the ephemeral forward, the SSH StreamLocal socket was recreated at mode `600`; `browser list_tabs browser=mac` returned 17 live targets and a mutation still returned approval-required, confirming bridge recovery and no residual authority.
