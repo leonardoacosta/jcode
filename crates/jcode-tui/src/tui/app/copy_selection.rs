@@ -61,13 +61,24 @@ impl App {
     }
 
     pub(super) fn open_artifact_action_palette(&mut self) {
-        let Some(raw) = self.current_copy_selection_text() else {
-            self.set_status_notice("Artifact actions unavailable: select a URL, path, or natural-language brief first");
+        // The palette is a global action on the focused transcript, not only on
+        // an already-active drag selection. When invoked from normal mode, use
+        // the visible chat context as the semantic artifact source so the
+        // documented hotkey has an observable effect without requiring a
+        // separate copy-selection gesture first.
+        let raw = self.current_copy_selection_text().or_else(|| {
+            self.select_chat_viewport_context();
+            self.current_copy_selection_text()
+        });
+        let Some(raw) = raw else {
+            self.set_status_notice("Artifact actions unavailable: no rendered artifact is focused");
             return;
         };
         let value = raw.trim().to_string();
         if value.is_empty() || value.starts_with('-') {
-            self.set_status_notice("Artifact actions unavailable: selected target is empty or unsafe");
+            self.set_status_notice(
+                "Artifact actions unavailable: selected target is empty or unsafe",
+            );
             return;
         }
 
@@ -127,7 +138,11 @@ impl App {
         match action {
             super::ArtifactAction::CopyTarget => {
                 let copied = super::helpers::copy_to_clipboard(palette.target_value());
-                self.set_status_notice(if copied { "Artifact target copied" } else { "Artifact target copy failed" });
+                self.set_status_notice(if copied {
+                    "Artifact target copied"
+                } else {
+                    "Artifact target copy failed"
+                });
             }
             super::ArtifactAction::BriefAloud => {
                 let source = palette.target_value();
@@ -166,7 +181,8 @@ impl App {
                     self.add_provider_message(tool_use.clone());
                     self.add_provider_message(tool_result.clone());
                     self.session.add_message(tool_use.role, tool_use.content);
-                    self.session.add_message(tool_result.role, tool_result.content);
+                    self.session
+                        .add_message(tool_result.role, tool_result.content);
                     let _ = self.session.save();
                 }
                 self.push_display_message(
@@ -193,7 +209,11 @@ impl App {
                 };
                 let launched = super::artifact_action_command(program, palette.target_value())
                     .is_some_and(super::spawn_artifact_action);
-                self.set_status_notice(if launched { "Artifact action launched" } else { "Artifact action unavailable" });
+                self.set_status_notice(if launched {
+                    "Artifact action launched"
+                } else {
+                    "Artifact action unavailable"
+                });
             }
         }
     }
