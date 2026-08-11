@@ -1,0 +1,7 @@
+schema: spec-driven
+created: 2026-08-11
+goal: Command Center selects safe Orca orchestration patterns while preserving
+  canonical identities, durable authority, and verifiable lifecycle evidence.
+initiative:
+  store: jcode
+  id: command-center-orchestration
