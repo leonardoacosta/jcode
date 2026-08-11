@@ -673,6 +673,14 @@ fn login_azure_flow() -> Result<()> {
     if model.is_empty() {
         anyhow::bail!("No deployment/model name provided.");
     }
+    let additional_models = read_line_trimmed(
+        "Other Azure deployment names to show in /model (optional, comma-separated): ",
+    )?;
+    let model_list = if additional_models.trim().is_empty() {
+        model.clone()
+    } else {
+        format!("{},{}", model, additional_models)
+    };
 
     eprintln!("\nAuthentication method:");
     eprintln!("  1. Microsoft Entra ID (recommended)");
@@ -691,6 +699,7 @@ fn login_azure_flow() -> Result<()> {
     let mut assignments = vec![
         (azure::ENDPOINT_ENV, endpoint),
         (azure::MODEL_ENV, model),
+        (azure::MODELS_ENV, model_list),
         (
             azure::USE_ENTRA_ENV,
             if use_entra { "1" } else { "0" }.to_string(),
