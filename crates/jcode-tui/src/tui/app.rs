@@ -169,7 +169,10 @@ struct ArtifactActionPalette {
 impl ArtifactActionPalette {
     fn capture(target: ArtifactActionTarget, spoken_prose: Option<String>) -> Self {
         let mut actions = Vec::with_capacity(5);
-        if spoken_prose.as_deref().is_some_and(|prose| !prose.trim().is_empty()) {
+        if spoken_prose
+            .as_deref()
+            .is_some_and(|prose| !prose.trim().is_empty())
+        {
             actions.push(ArtifactAction::BriefAloud);
         }
         actions.extend([
