@@ -143,6 +143,57 @@ fn brief_aloud_command(prose: &str) -> Option<std::process::Command> {
     Some(command)
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum ArtifactActionTarget {
+    Url(String),
+    Path(String),
+    DecisionBrief(String),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ArtifactAction {
+    BriefAloud,
+    Mopen,
+    Ropen,
+    Iopen,
+    CopyTarget,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct ArtifactActionPalette {
+    target: ArtifactActionTarget,
+    spoken_prose: Option<String>,
+    actions: Vec<ArtifactAction>,
+}
+
+impl ArtifactActionPalette {
+    fn capture(target: ArtifactActionTarget, spoken_prose: Option<String>) -> Self {
+        let mut actions = Vec::with_capacity(5);
+        if spoken_prose.as_deref().is_some_and(|prose| !prose.trim().is_empty()) {
+            actions.push(ArtifactAction::BriefAloud);
+        }
+        actions.extend([
+            ArtifactAction::Mopen,
+            ArtifactAction::Ropen,
+            ArtifactAction::Iopen,
+            ArtifactAction::CopyTarget,
+        ]);
+        Self {
+            target,
+            spoken_prose,
+            actions,
+        }
+    }
+
+    fn target(&self) -> &ArtifactActionTarget {
+        &self.target
+    }
+
+    fn actions(&self) -> &[ArtifactAction] {
+        &self.actions
+    }
+}
+
 pub(crate) const COMMAND_SUGGESTION_VISIBLE_LIMIT: usize = 8;
 
 fn active_runtime_provider_key() -> Option<String> {
