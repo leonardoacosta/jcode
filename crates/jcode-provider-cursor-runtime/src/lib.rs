@@ -67,6 +67,7 @@ fn build_cli_prompt(system: &str, messages: &[Message]) -> String {
                     tool_use_id,
                     content,
                     is_error,
+                    ..
                 } => {
                     out.push_str("[tool_result ");
                     out.push_str(tool_use_id);

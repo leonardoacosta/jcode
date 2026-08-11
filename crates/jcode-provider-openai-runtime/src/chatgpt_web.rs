@@ -653,6 +653,7 @@ fn build_web_prompt(
                     tool_use_id,
                     content,
                     is_error,
+                    ..
                 } => {
                     blocks.push(json!({
                         "type": "tool_result",

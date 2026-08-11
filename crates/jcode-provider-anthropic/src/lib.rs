@@ -89,7 +89,6 @@ pub fn format_messages(messages: &[Message], is_oauth: bool) -> Vec<ApiMessage> 
                             "[Session interrupted before tool execution completed]".to_string(),
                         ),
                         is_error: true,
-                        artifact: None,
                     });
                 }
             }
@@ -232,6 +231,7 @@ fn dedupe_tool_results(messages: &[Message]) -> Vec<Message> {
                 tool_use_id,
                 content,
                 is_error,
+                ..
             } = block
             else {
                 continue;
@@ -350,12 +350,12 @@ pub fn format_content_blocks(blocks: &[ContentBlock], is_oauth: bool) -> Vec<Api
                 tool_use_id,
                 content,
                 is_error,
+                ..
             } => {
                 result.push(ApiContentBlock::ToolResult {
                     tool_use_id: sanitize_tool_id(tool_use_id),
                     content: ToolResultContent::Text(content.clone()),
                     is_error: is_error.unwrap_or(false),
-                    artifact: None,
                 });
             }
             ContentBlock::Image { media_type, data } => {
