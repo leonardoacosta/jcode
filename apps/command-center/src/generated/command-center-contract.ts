@@ -137,6 +137,7 @@ export type CommandPayload =
       type: "update_step";
       initiativeId: EntityId;
       expectedRevision: number;
+      milestoneId: EntityId;
       stepId: EntityId;
       status: StepStatus;
     }

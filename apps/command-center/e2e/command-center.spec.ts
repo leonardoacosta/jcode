@@ -36,9 +36,33 @@ async function installFixture(
   await page.route("**/api/command-center/snapshot**", async (route) =>
     route.fulfill({ json: current }),
   );
+  await page.route("**/api/command-center/bootstrap", async (route) =>
+    route.fulfill({
+      json: {
+        id: "fixture-session",
+        csrf_token: "fixture-csrf",
+        expires_at: "2099-01-01T00:00:00Z",
+        scope: [],
+      },
+    }),
+  );
+  await page.route("**/api/command-center/initiatives**", async (route) =>
+    route.fulfill({ json: current }),
+  );
+  let eventDelivered = false;
+  await page.route("**/api/command-center/replay**", async (route) => {
+    const events = eventDelivered ? [] : [nextEvent];
+    eventDelivered = true;
+    await route.fulfill({ json: { events, snapshot_required: false } });
+  });
   await page.route("**/api/command-center/commands", async (route) => {
     const body = route.request().postDataJSON() as {
-      payload: { type: string; stepId?: string; status?: string; summary?: string };
+      payload: {
+        type: string;
+        step_id?: string;
+        status?: string;
+        summary?: string;
+      };
     };
     if (body.payload.type === "update_step") {
       current = {
@@ -50,7 +74,7 @@ async function installFixture(
               currentMilestone: {
                 ...current.selectedInitiative.currentMilestone,
                 steps: current.selectedInitiative.currentMilestone.steps.map((step) =>
-                  step.id === body.payload.stepId
+                  step.id === body.payload.step_id
                     ? { ...step, status: body.payload.status as never }
                     : step,
                 ),
@@ -59,7 +83,7 @@ async function installFixture(
           : current.selectedInitiative,
       };
     }
-    if (body.payload.type === "checkpoint_initiative" && current.selectedInitiative) {
+    if (body.payload.type === "checkpoint" && current.selectedInitiative) {
       current = {
         ...current,
         selectedInitiative: {

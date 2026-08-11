@@ -52,6 +52,7 @@ function WorkspaceRoute() {
         type: "update_step",
         initiativeId: initiative.id,
         expectedRevision: initiative.revision,
+        milestoneId: initiative.currentMilestone.id,
         stepId,
         status,
       },
