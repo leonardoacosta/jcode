@@ -2245,6 +2245,15 @@ pub(super) fn handle_pre_control_shortcuts(
         return true;
     }
 
+    if app
+        .toggle_keys
+        .artifact_action_palette
+        .matches(code, modifiers)
+    {
+        app.open_artifact_action_palette();
+        return true;
+    }
+
     if handle_visible_copy_shortcut(app, code, modifiers) {
         return true;
     }
@@ -2485,6 +2494,19 @@ pub(super) fn handle_modal_key(
     code: KeyCode,
     modifiers: KeyModifiers,
 ) -> Result<bool> {
+    if app
+        .toggle_keys
+        .artifact_action_palette
+        .matches(code, modifiers)
+    {
+        app.open_artifact_action_palette();
+        return Ok(true);
+    }
+
+    if app.artifact_action_palette.is_some() {
+        app.handle_artifact_action_palette_key(code);
+        return Ok(true);
+    }
     if app.prompt_history_search.is_some() {
         app.handle_prompt_history_search_key(code, modifiers);
         return Ok(true);

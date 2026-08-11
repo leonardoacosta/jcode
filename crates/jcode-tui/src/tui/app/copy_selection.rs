@@ -60,6 +60,108 @@ impl App {
         crate::tui::ui::copy_selection_text(range)
     }
 
+    pub(super) fn open_artifact_action_palette(&mut self) {
+        let Some(raw) = self.current_copy_selection_text() else {
+            self.set_status_notice("Artifact actions unavailable: select a URL, path, or natural-language brief first");
+            return;
+        };
+        let value = raw.trim().to_string();
+        if value.is_empty() || value.starts_with('-') {
+            self.set_status_notice("Artifact actions unavailable: selected target is empty or unsafe");
+            return;
+        }
+
+        let (target, spoken) = if value.starts_with("https://") || value.starts_with("http://") {
+            (super::ArtifactActionTarget::Url(value), None)
+        } else if value.starts_with('/')
+            || value.starts_with("./")
+            || value.starts_with("../")
+            || value.starts_with("~/")
+        {
+            (super::ArtifactActionTarget::Path(value), None)
+        } else {
+            let words = value.split_whitespace().count();
+            let natural = (60..=150).contains(&words)
+                && !value.contains(['#', '`'])
+                && !value.lines().any(|line| line.trim_start().starts_with(['-', '*']));
+            if !natural {
+                self.set_status_notice(
+                    "Artifact actions unavailable: select a URL, path, or 60-150 word spoken brief",
+                );
+                return;
+            }
+            (
+                super::ArtifactActionTarget::DecisionBrief(value.clone()),
+                Some(value),
+            )
+        };
+
+        self.artifact_action_palette = Some(super::ArtifactActionPalette::capture(target, spoken));
+        self.set_status_notice(
+            "Artifact actions: B brief aloud · M Mac · R remote · I iPhone · C copy · Esc cancel",
+        );
+    }
+
+    pub(super) fn handle_artifact_action_palette_key(&mut self, code: KeyCode) {
+        if matches!(code, KeyCode::Esc) {
+            self.artifact_action_palette = None;
+            self.set_status_notice("Artifact actions cancelled");
+            return;
+        }
+
+        let Some(palette) = self.artifact_action_palette.take() else {
+            return;
+        };
+        let requested = match code {
+            KeyCode::Char('b' | 'B') => Some(super::ArtifactAction::BriefAloud),
+            KeyCode::Char('m' | 'M') => Some(super::ArtifactAction::Mopen),
+            KeyCode::Char('r' | 'R') => Some(super::ArtifactAction::Ropen),
+            KeyCode::Char('i' | 'I') => Some(super::ArtifactAction::Iopen),
+            KeyCode::Char('c' | 'C') => Some(super::ArtifactAction::CopyTarget),
+            _ => None,
+        };
+        let Some(action) = requested else {
+            self.artifact_action_palette = Some(palette);
+            self.set_status_notice("Artifact actions: press B, M, R, I, C, or Esc");
+            return;
+        };
+        if !palette.actions().contains(&action) {
+            self.set_status_notice("That artifact action is unavailable for the selected target");
+            return;
+        }
+
+        match action {
+            super::ArtifactAction::CopyTarget => {
+                let copied = super::helpers::copy_to_clipboard(palette.target_value());
+                self.set_status_notice(if copied { "Artifact target copied" } else { "Artifact target copy failed" });
+            }
+            super::ArtifactAction::BriefAloud => {
+                let result = palette
+                    .spoken_prose
+                    .as_deref()
+                    .and_then(super::brief_aloud_command)
+                    .and_then(|mut command| command.spawn().ok());
+                self.set_status_notice(if result.is_some() {
+                    "Herald briefing launched"
+                } else {
+                    "Herald briefing unavailable"
+                });
+            }
+            destination => {
+                let program = match destination {
+                    super::ArtifactAction::Mopen => "mopen",
+                    super::ArtifactAction::Ropen => "ropen",
+                    super::ArtifactAction::Iopen => "iopen",
+                    _ => unreachable!(),
+                };
+                let launched = super::artifact_action_command(program, palette.target_value())
+                    .and_then(|mut command| command.spawn().ok())
+                    .is_some();
+                self.set_status_notice(if launched { "Artifact action launched" } else { "Artifact action unavailable" });
+            }
+        }
+    }
+
     fn line_text(pane: crate::tui::CopySelectionPane, abs_line: usize) -> Option<String> {
         match pane {
             crate::tui::CopySelectionPane::Chat => {

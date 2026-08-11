@@ -175,12 +175,14 @@ impl ArtifactActionPalette {
         {
             actions.push(ArtifactAction::BriefAloud);
         }
-        actions.extend([
-            ArtifactAction::Mopen,
-            ArtifactAction::Ropen,
-            ArtifactAction::Iopen,
-            ArtifactAction::CopyTarget,
-        ]);
+        if matches!(target, ArtifactActionTarget::Url(_) | ArtifactActionTarget::Path(_)) {
+            actions.extend([
+                ArtifactAction::Mopen,
+                ArtifactAction::Ropen,
+                ArtifactAction::Iopen,
+            ]);
+        }
+        actions.push(ArtifactAction::CopyTarget);
         Self {
             target,
             spoken_prose,
@@ -188,12 +190,21 @@ impl ArtifactActionPalette {
         }
     }
 
+    #[cfg(test)]
     fn target(&self) -> &ArtifactActionTarget {
         &self.target
     }
 
     fn actions(&self) -> &[ArtifactAction] {
         &self.actions
+    }
+
+    fn target_value(&self) -> &str {
+        match &self.target {
+            ArtifactActionTarget::Url(value)
+            | ArtifactActionTarget::Path(value)
+            | ArtifactActionTarget::DecisionBrief(value) => value,
+        }
     }
 }
 
@@ -1464,6 +1475,7 @@ pub struct App {
     inline_view_state: Option<super::InlineViewState>,
     // Interactive model/provider picker
     inline_interactive_state: Option<super::InlineInteractiveState>,
+    artifact_action_palette: Option<ArtifactActionPalette>,
     // Cached model picker entries. Building these can require hydrating large provider catalogs.
     model_picker_cache: Option<ModelPickerCache>,
     model_picker_catalog_revision: u64,
