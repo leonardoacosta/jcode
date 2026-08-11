@@ -91,6 +91,20 @@ After the launch-argument and per-profile manifest fixes, the extension bridge a
 - A request carrying an out-of-date generation was refused with `stale generation; refresh inventory`.
 - `jcode-mac-browser-fleet authority grant` issued a scoped, time-bounded lease from the Mac-local authority socket, which is not reachable through the SSH-forwarded peer socket.
 
-Still unproven and deliberately not claimed: execution of an approved mutation on an ordinary tab, revocation restoring approval-required, hard-deny categories against ordinary targets, and any Edge ordinary-profile routing.
+Still unproven and deliberately not claimed: hard-deny categories against ordinary targets, selector-based interaction on ordinary tabs, and any Edge ordinary-profile routing.
+
+## Approval lifecycle on a real ordinary tab (2026-08-11)
+
+Run end to end against the operator's real Chrome profile, through the broker's peer socket and the Mac-local authority socket:
+
+1. `navigate` on an ordinary target: `approvalRequired`, `local approval is required`.
+2. Mac-local `authority grant --capability navigate --duration-seconds 300`: `ok`, returning a scoped `leaseId`.
+3. Same `navigate` with the lease active: `ok`, `accepted`.
+4. Mac-local `authority revoke --lease-id <id>`: `ok`, `revoked: true`.
+5. Same `navigate` after revocation: `approvalRequired` again.
+
+`revoke` without a `leaseId` is rejected as `malformed` rather than silently revoking everything. The lease is scoped to one target, one capability, and a bounded duration, and can only be issued from the Mac-local authority socket, which is never forwarded over SSH.
+
+After removing the temporary diagnostic shim and reinstalling with `jcode-mac-browser-setup install`, both native-host manifests point directly at `~/.local/bin/jcode-mac-browser-fleet`, and `browser list_tabs browser=mac` still returns ordinary-profile targets. The verified path uses no debug wrapper.
 
 Operator note: `jcode-mac-browser-setup install` writes the SSH include file but deliberately does not edit `~/.ssh/config`. The `Include ~/.ssh/jcode-mac-browser-fleet.conf` line must be present in that config, and an unrelated rewrite of the file will silently drop the tunnel.
