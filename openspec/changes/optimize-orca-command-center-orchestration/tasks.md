@@ -16,14 +16,15 @@
 
 ## 3. Runtime Identity Correction
 
-- [ ] 3.1 Add or update focused tests in `/home/nyaptor/dev/jcode/source/jcode/crates/jcode-app-core/src/command_center.rs` proving Orca runtime ID cannot populate canonical project ID and unresolved canonical identity fails closed.
-- [ ] 3.2 Change the Orca observation adapter to run the resolved version-matched `ORCA repo list --json`, match the current absolute repository path to exactly one canonical repository/project ID, and preserve runtime ID only as runtime metadata. If the command fails, its schema is unsupported, or zero/multiple matches remain, stop with unresolved canonical identity; do not add undocumented start, retry, or cancel commands.
+- [x] 3.1 Add or update focused tests in `/home/nyaptor/dev/jcode/source/jcode/crates/jcode-app-core/src/command_center.rs` proving Orca runtime ID cannot populate canonical project ID and unresolved canonical identity fails closed.
+- [x] 3.2 Change the Orca observation adapter to run the resolved version-matched `ORCA repo list --json`, resolve the current absolute working directory to the unique longest registered repository ancestor and its canonical repository/project ID, and preserve runtime ID only as runtime metadata. If the command fails, its schema is unsupported, or zero/ambiguous matches remain, stop with unresolved canonical identity; do not add undocumented start, retry, or cancel commands.
 - [ ] 3.3 Extend the Command Center identifier envelope and focused tests to preserve distinct Task, Dispatch, worktree, terminal, correlation, and idempotency identifiers in addition to Jcode and Orca run/project IDs.
 - [ ] 3.4 Implement scoped replay invalidation, crash-safe idempotency reconciliation, verified capability projection, and partial-cleanup recovery states in the Command Center service and adapter surfaces.
 - [ ] 3.5 Ensure scheduled triggers enter the same pattern-selection, permission, correlation, idempotency, and receipt-settlement path as interactive commands, with distinct causal dispatch attempts for retries.
-- [ ] 3.6 Verify the focused Rust integration.
+- [x] 3.6 Verify the focused Rust integration.
   - Run `cargo fmt -p jcode-app-core -- --check && cargo check -p jcode-app-core -p jcode-command-center && cargo test -p jcode-app-core command_center --lib && cargo test -p jcode-command-center --lib` from `/home/nyaptor/dev/jcode/source/jcode`.
   - Expected result: formatting and checks exit 0 and both focused test commands report zero failures.
+  - Observed: formatting and checks exited 0; app-core reported 4 passed with the opt-in live test ignored in the normal suite; command-center reported 20 passed; and the explicit live boundary run from `/home/nyaptor/dev/jcode/source/jcode` resolved its unique registered Orca repository ancestor while preserving a distinct runtime ID.
 
 ## 4. Documentation and Initiative Projection
 

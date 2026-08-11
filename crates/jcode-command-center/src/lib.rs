@@ -185,6 +185,8 @@ pub struct JcodeRunReference {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OrcaReference {
     pub project_id: Option<OrcaProjectId>,
+    #[serde(default)]
+    pub runtime_id: Option<String>,
     pub run_id: Option<OrcaRunId>,
     pub worker_ids: Vec<String>,
     pub terminal_ids: Vec<String>,
@@ -1159,6 +1161,7 @@ where
                 .await
                 .unwrap_or_else(|err| OrcaReference {
                     project_id: None,
+                    runtime_id: None,
                     run_id: None,
                     worker_ids: Vec::new(),
                     terminal_ids: Vec::new(),
@@ -1870,6 +1873,7 @@ mod tests {
             }
             Ok(OrcaReference {
                 project_id: Some(OrcaProjectId("orca-project".into())),
+                runtime_id: Some("orca-runtime".into()),
                 run_id: None,
                 worker_ids: vec![],
                 terminal_ids: vec![],

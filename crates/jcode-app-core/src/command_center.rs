@@ -103,7 +103,7 @@ pub fn service_for_working_dir(
         GoalInitiativeRepository::new(working_dir.clone()),
         AmbientScheduleProjectionSource::new(),
         SessionRunProjectionSource::new(),
-        OrcaCliAdapter::default(),
+        OrcaCliAdapter::for_working_dir(working_dir),
     )
 }
 
@@ -269,6 +269,7 @@ impl RunProjectionSource for SessionRunProjectionSource {
 #[derive(Debug, Clone)]
 pub struct OrcaCliAdapter {
     command: String,
+    working_dir: Option<PathBuf>,
     runner: Arc<dyn OrcaCommandRunner>,
 }
 
@@ -280,16 +281,33 @@ impl Default for OrcaCliAdapter {
 
 impl OrcaCliAdapter {
     pub fn new(command: impl Into<String>) -> Self {
+        Self::with_working_dir(command, std::env::current_dir().ok())
+    }
+
+    pub fn for_working_dir(working_dir: Option<PathBuf>) -> Self {
+        Self::with_working_dir(
+            std::env::var("JCODE_ORCA_CLI").unwrap_or_else(|_| "orca".to_string()),
+            working_dir,
+        )
+    }
+
+    fn with_working_dir(command: impl Into<String>, working_dir: Option<PathBuf>) -> Self {
         Self {
             command: command.into(),
+            working_dir,
             runner: Arc::new(ProcessOrcaCommandRunner),
         }
     }
 
     #[cfg(test)]
-    fn with_runner(command: impl Into<String>, runner: Arc<dyn OrcaCommandRunner>) -> Self {
+    fn with_runner(
+        command: impl Into<String>,
+        working_dir: Option<PathBuf>,
+        runner: Arc<dyn OrcaCommandRunner>,
+    ) -> Self {
         Self {
             command: command.into(),
+            working_dir,
             runner,
         }
     }
@@ -300,6 +318,48 @@ impl OrcaCliAdapter {
             .run(&self.command, &["status".to_string(), "--json".to_string()])
             .await?;
         serde_json::from_slice(&output).map_err(|_| CommandCenterError::OrcaUnavailable)
+    }
+
+    async fn canonical_project_id(&self) -> Result<OrcaProjectId, CommandCenterError> {
+        let working_dir = self
+            .working_dir
+            .as_deref()
+            .ok_or_else(unresolved_orca_identity)?
+            .canonicalize()
+            .map_err(|_| unresolved_orca_identity())?;
+        let output = self
+            .runner
+            .run(
+                &self.command,
+                &["repo".to_string(), "list".to_string(), "--json".to_string()],
+            )
+            .await?;
+        let response: OrcaRepoListResponse =
+            serde_json::from_slice(&output).map_err(|_| CommandCenterError::OrcaUnavailable)?;
+        if !response.ok {
+            return Err(CommandCenterError::OrcaUnavailable);
+        }
+
+        let mut matches = response
+            .result
+            .repos
+            .into_iter()
+            .filter_map(|repo| {
+                let path = Path::new(&repo.path).canonicalize().ok()?;
+                working_dir.starts_with(&path).then_some((path, repo.id))
+            })
+            .collect::<Vec<_>>();
+        matches.sort_by_key(|(path, _)| std::cmp::Reverse(path.components().count()));
+        let (matched_path, matched_id) = matches.first().ok_or_else(unresolved_orca_identity)?;
+        let matched_depth = matched_path.components().count();
+        if matched_id.trim().is_empty()
+            || matches
+                .get(1)
+                .is_some_and(|(path, _)| path.components().count() == matched_depth)
+        {
+            return Err(unresolved_orca_identity());
+        }
+        Ok(OrcaProjectId(matched_id.clone()))
     }
 
     fn unsupported_runtime_command(&self, capability: &str) -> CommandCenterError {
@@ -316,8 +376,11 @@ impl OrcaAdapter for OrcaCliAdapter {
         if !status.ok || !status.result.runtime.reachable {
             return Err(CommandCenterError::OrcaUnavailable);
         }
+        let runtime_id = status.result.runtime.runtime_id;
+        let project_id = self.canonical_project_id().await?;
         Ok(OrcaReference {
-            project_id: status.result.runtime.runtime_id.map(OrcaProjectId),
+            project_id: Some(project_id),
+            runtime_id,
             run_id: None,
             worker_ids: Vec::new(),
             terminal_ids: Vec::new(),
@@ -403,6 +466,26 @@ struct OrcaRuntimeStatus {
     capabilities: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct OrcaRepoListResponse {
+    #[serde(default)]
+    ok: bool,
+    #[serde(default)]
+    result: OrcaRepoListResult,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+struct OrcaRepoListResult {
+    #[serde(default)]
+    repos: Vec<OrcaRepo>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct OrcaRepo {
+    id: String,
+    path: PathBuf,
+}
+
 #[derive(Debug, Clone)]
 struct RunRecordStore {
     path: PathBuf,
@@ -446,6 +529,12 @@ fn storage_error(error: impl std::fmt::Display) -> CommandCenterError {
     }
 }
 
+fn unresolved_orca_identity() -> CommandCenterError {
+    CommandCenterError::InvalidCommand {
+        reason: "unresolved canonical Orca repository identity".to_string(),
+    }
+}
+
 fn schedule_mentions_initiative(item: &crate::ambient::ScheduledItem, id: &InitiativeId) -> bool {
     let needle = id.0.as_str();
     item.context.contains(needle)
@@ -465,6 +554,8 @@ mod tests {
     use jcode_command_center::AuthContext;
     use jcode_task_types::GoalScope;
     use serde_json::json;
+    use std::collections::VecDeque;
+    use std::sync::Mutex;
 
     fn with_home<T>(f: impl FnOnce(PathBuf, PathBuf) -> T) -> T {
         let _guard = crate::storage::lock_test_env();
@@ -560,41 +651,84 @@ mod tests {
     }
 
     #[derive(Debug)]
-    struct StaticRunner(Vec<u8>);
+    struct ExpectedOrcaCall {
+        args: Vec<String>,
+        output: Vec<u8>,
+    }
+
+    #[derive(Debug)]
+    struct ScriptedRunner(Mutex<VecDeque<ExpectedOrcaCall>>);
+
+    impl ScriptedRunner {
+        fn new(calls: Vec<ExpectedOrcaCall>) -> Self {
+            Self(Mutex::new(calls.into()))
+        }
+    }
 
     #[async_trait]
-    impl OrcaCommandRunner for StaticRunner {
+    impl OrcaCommandRunner for ScriptedRunner {
         async fn run(
             &self,
             _command: &str,
             args: &[String],
         ) -> Result<Vec<u8>, CommandCenterError> {
-            assert_eq!(args, &["status".to_string(), "--json".to_string()]);
-            Ok(self.0.clone())
+            let call = self
+                .0
+                .lock()
+                .expect("runner lock")
+                .pop_front()
+                .expect("unexpected Orca command");
+            assert_eq!(args, call.args);
+            Ok(call.output)
+        }
+    }
+
+    fn expected_call(args: &[&str], value: serde_json::Value) -> ExpectedOrcaCall {
+        ExpectedOrcaCall {
+            args: args.iter().map(|value| (*value).to_string()).collect(),
+            output: serde_json::to_vec(&value).expect("serialize Orca response"),
         }
     }
 
     #[test]
     fn orca_cli_observes_status_and_rejects_unsupported_run_commands() {
-        with_home(|_, _project| {
+        with_home(|_, project| {
             tokio::runtime::Runtime::new()
                 .unwrap()
                 .block_on(async move {
+                    let nested_working_dir = project.join("source/jcode");
+                    std::fs::create_dir_all(&nested_working_dir).expect("nested working dir");
                     let adapter = OrcaCliAdapter::with_runner(
                         "orca",
-                        Arc::new(StaticRunner(
-                            serde_json::to_vec(&json!({
-                                "ok": true,
-                                "result": {
-                                    "runtime": {
-                                        "reachable": true,
-                                        "runtimeId": "runtime-1",
-                                        "capabilities": ["orchestration.contract.v1"]
+                        Some(nested_working_dir),
+                        Arc::new(ScriptedRunner::new(vec![
+                            expected_call(
+                                &["status", "--json"],
+                                json!({
+                                    "ok": true,
+                                    "result": {
+                                        "runtime": {
+                                            "reachable": true,
+                                            "runtimeId": "runtime-1",
+                                            "capabilities": ["orchestration.contract.v1"]
+                                        }
                                     }
-                                }
-                            }))
-                            .unwrap(),
-                        )),
+                                }),
+                            ),
+                            expected_call(
+                                &["repo", "list", "--json"],
+                                json!({
+                                    "ok": true,
+                                    "result": {
+                                        "repos": [{
+                                            "id": "repo-1",
+                                            "path": project
+                                        }]
+                                    },
+                                    "_meta": { "runtimeId": "runtime-1" }
+                                }),
+                            ),
+                        ])),
                     );
                     let observed = adapter
                         .observe(&InitiativeId("alpha-goal".to_string()))
@@ -602,8 +736,9 @@ mod tests {
                         .expect("observe status");
                     assert_eq!(
                         observed.project_id,
-                        Some(OrcaProjectId("runtime-1".to_string()))
+                        Some(OrcaProjectId("repo-1".to_string()))
                     );
+                    assert_eq!(observed.runtime_id.as_deref(), Some("runtime-1"));
                     assert_eq!(
                         observed.gate_ids,
                         vec!["orchestration.contract.v1".to_string()]
@@ -622,5 +757,74 @@ mod tests {
                     ));
                 })
         });
+    }
+
+    #[test]
+    fn orca_cli_leaves_canonical_identity_unresolved_for_zero_or_multiple_path_matches() {
+        with_home(|_, project| {
+            tokio::runtime::Runtime::new()
+                .unwrap()
+                .block_on(async move {
+                    for repos in [
+                        json!([]),
+                        json!([
+                            { "id": "repo-1", "path": project },
+                            { "id": "repo-2", "path": project }
+                        ]),
+                    ] {
+                        let adapter = OrcaCliAdapter::with_runner(
+                            "orca",
+                            Some(project.clone()),
+                            Arc::new(ScriptedRunner::new(vec![
+                                expected_call(
+                                    &["status", "--json"],
+                                    json!({
+                                        "ok": true,
+                                        "result": {
+                                            "runtime": {
+                                                "reachable": true,
+                                                "runtimeId": "runtime-1"
+                                            }
+                                        }
+                                    }),
+                                ),
+                                expected_call(
+                                    &["repo", "list", "--json"],
+                                    json!({
+                                        "ok": true,
+                                        "result": { "repos": repos }
+                                    }),
+                                ),
+                            ])),
+                        );
+
+                        let error = adapter
+                            .observe(&InitiativeId("alpha-goal".to_string()))
+                            .await
+                            .expect_err("identity must fail closed");
+                        assert!(matches!(error, CommandCenterError::InvalidCommand { .. }));
+                    }
+                })
+        });
+    }
+
+    #[test]
+    #[ignore = "requires a live Orca runtime and registered repository path"]
+    fn orca_cli_resolves_live_repository_without_using_runtime_identity() {
+        let repo_path = std::env::var_os("JCODE_TEST_ORCA_REPO_PATH")
+            .map(PathBuf::from)
+            .expect("JCODE_TEST_ORCA_REPO_PATH must name an Orca-registered repository");
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async move {
+                let observed = OrcaCliAdapter::for_working_dir(Some(repo_path))
+                    .observe(&InitiativeId("live-orca-identity-check".to_string()))
+                    .await
+                    .expect("resolve live Orca repository identity");
+                let project_id = observed.project_id.expect("canonical project identity").0;
+                let runtime_id = observed.runtime_id.expect("runtime metadata");
+                assert_ne!(project_id, runtime_id);
+                assert!(!project_id.trim().is_empty());
+            });
     }
 }
