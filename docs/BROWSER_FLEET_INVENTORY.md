@@ -65,10 +65,18 @@ load the unpacked extension itself. `bbadmin` is loaded; `o365` is not.
 
 To enroll `o365`: open Edge on that profile, go to `edge://extensions`, enable
 Developer mode, choose "Load unpacked", and select
-`~/.jcode/mac-browser-fleet-extension-edge`. The manifest already authorizes the
-extension ID, so no reinstall is needed if Edge assigns the same ID; if it
-differs, re-run `jcode-mac-browser-setup install` with
+`~/.jcode/mac-browser-fleet-extension-edge`.
+
+No reinstall is needed afterwards. Chromium derives an unpacked extension's ID
+from the absolute directory path, so loading the same directory in a second
+profile produces the same ID (`fhhloicfoliebblijlggiohfkdkfljcc`), which the
+shared native-host manifest already authorizes. Only if the directory moves does
+the ID change, requiring `jcode-mac-browser-setup install` to be re-run with
 `JCODE_MAC_BROWSER_FLEET_EDGE_EXTENSION_ID` set to the new value.
+
+Edge here is unmanaged (no `ExtensionInstallForcelist` or `ExtensionSettings`
+policy), so this load cannot be automated and is deliberately left to the
+operator.
 
 Each profile reports its own `profileLabel`, so leases stay scoped per profile
 even though both share one user-data-dir and one manifest.
