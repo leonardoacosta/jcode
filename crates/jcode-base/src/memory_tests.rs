@@ -922,6 +922,7 @@ fn focused_query_excludes_multiline_tool_errors_but_keeps_later_user_prose() {
                 content: "This command was not run.\nUNIQUE_MULTILINE_ERROR_PAYLOAD\nThe target cannot be confirmed.\nThe operation is irreversible."
                     .to_string(),
                 is_error: Some(true),
+                artifact: None,
             },
             ContentBlock::Text {
                 text: "Keep the token rotation behavior unchanged.".to_string(),
