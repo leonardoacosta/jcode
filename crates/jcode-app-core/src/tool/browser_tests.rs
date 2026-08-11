@@ -18,6 +18,7 @@ fn snapshot_maps_to_annotated_get_content() {
     let input = BrowserInput {
         action: "snapshot".into(),
         browser: None,
+        profile: None,
         provider_action: None,
         params: None,
         url: None,
@@ -61,6 +62,7 @@ fn eval_maps_script_and_page_world() {
     let input = BrowserInput {
         action: "eval".into(),
         browser: None,
+        profile: None,
         provider_action: None,
         params: None,
         url: None,
@@ -102,6 +104,7 @@ fn interactables_maps_to_bridge_action() {
     let input = BrowserInput {
         action: "interactables".into(),
         browser: None,
+        profile: None,
         provider_action: None,
         params: None,
         url: None,
@@ -147,6 +150,7 @@ fn schema_exposes_advanced_browser_fields() {
 
     assert!(props.contains_key("action"));
     assert!(props.contains_key("browser"));
+    assert!(props.contains_key("profile"));
     assert!(props.contains_key("url"));
     assert!(props.contains_key("tab_id"));
     assert!(props.contains_key("tab_ref"));
@@ -192,6 +196,14 @@ fn resolve_provider_rejects_unsupported_browser() {
         err.to_string()
             .contains("not wired into the built-in browser tool")
     );
+}
+
+#[test]
+fn profile_selection_requires_explicit_chrome() {
+    assert!(validate_profile_route(Some("social"), "chrome").is_ok());
+    assert!(validate_profile_route(Some("social"), "auto").is_err());
+    assert!(validate_profile_route(Some("social"), "firefox").is_err());
+    assert!(validate_profile_route(None, "auto").is_ok());
 }
 
 #[test]
@@ -270,6 +282,7 @@ async fn agent_browser_provider_live_smoke() {
 
     let tool = BrowserTool::new();
     let session_id = "live/chrome smoke".to_string();
+    let profile = std::env::var("JCODE_AGENT_BROWSER_LIVE_PROFILE").ok();
     let ctx = ToolContext {
         session_id: session_id.clone(),
         message_id: "message".to_string(),
@@ -289,30 +302,43 @@ async fn agent_browser_provider_live_smoke() {
         .expect("chrome status should execute");
     assert_eq!(status.metadata.as_ref().unwrap()["browser"], "chrome");
 
+    let mut open_input = json!({"action": "open", "browser": "chrome", "url": "about:blank"});
+    if let Some(profile) = profile.as_deref() {
+        open_input["profile"] = json!(profile);
+    }
     let opened = tool
-        .execute(
-            json!({"action": "open", "browser": "chrome", "url": "about:blank"}),
-            ctx.clone(),
-        )
+        .execute(open_input, ctx.clone())
         .await
         .expect("chrome open should execute");
     assert_eq!(
         opened.metadata.as_ref().unwrap()["backend"],
         "agent_browser"
     );
+    if let Some(profile) = profile.as_deref() {
+        assert_eq!(opened.metadata.as_ref().unwrap()["profile"], profile);
+        assert_eq!(
+            opened.metadata.as_ref().unwrap()["credential_bearing_profile"],
+            true
+        );
+    }
 
+    let mut title_input = json!({"action": "get_content", "browser": "chrome", "format": "title"});
+    if let Some(profile) = profile.as_deref() {
+        title_input["profile"] = json!(profile);
+    }
     let title = tool
-        .execute(
-            json!({"action": "get_content", "browser": "chrome", "format": "title"}),
-            ctx,
-        )
+        .execute(title_input, ctx)
         .await
         .expect("chrome get title should execute");
     assert_eq!(title.metadata.as_ref().unwrap()["browser"], "chrome");
 
+    let mut screenshot_input = json!({"action": "screenshot", "browser": "chrome"});
+    if let Some(profile) = profile.as_deref() {
+        screenshot_input["profile"] = json!(profile);
+    }
     let screenshot = tool
         .execute(
-            json!({"action": "screenshot", "browser": "chrome"}),
+            screenshot_input,
             ToolContext {
                 session_id: session_id.clone(),
                 message_id: "message".to_string(),
@@ -327,9 +353,7 @@ async fn agent_browser_provider_live_smoke() {
         .expect("chrome screenshot should execute");
     assert_eq!(screenshot.images.len(), 1);
 
-    let session_name = agent_browser::session_name(&session_id);
-    let _ = tokio::process::Command::new("agent-browser")
-        .args(["--session", &session_name, "--json", "close", "--all"])
-        .output()
-        .await;
+    agent_browser::close_live_session(&session_id, profile.as_deref())
+        .await
+        .expect("live Chrome session should close");
 }

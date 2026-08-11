@@ -1,4 +1,7 @@
-use super::{BrowserInput, BrowserProvider, attach_browser_metadata, render_browser_output};
+use super::{
+    BrowserInput, BrowserProvider, add_metadata_field, attach_browser_metadata,
+    render_browser_output,
+};
 use crate::tool::{ToolContext, ToolOutput};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -14,7 +17,7 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::sync::Mutex;
 
 const MIN_AGENT_BROWSER_VERSION: (u64, u64, u64) = (0, 27, 3);
-const MAX_AGENT_BROWSER_MINOR_EXCLUSIVE: u64 = 28;
+const MAX_AGENT_BROWSER_MINOR_EXCLUSIVE: u64 = 35;
 const NORMAL_TIMEOUT: Duration = Duration::from_secs(30);
 const INSTALL_TIMEOUT: Duration = Duration::from_secs(600);
 const MAX_STDIN_BYTES: usize = 1024 * 1024;
@@ -166,16 +169,20 @@ impl BrowserProvider for AgentBrowserProvider {
         }
 
         let exe = discover_trusted_executable().await?;
-        let session = session_name(&ctx.session_id);
+        let profile = resolve_profile(input.profile.as_deref()).await?;
+        let session = session_name_for_profile(&ctx.session_id, input.profile.as_deref());
         let lock = session_lock(&session).await;
         let _guard = lock.lock().await;
         let runtime = runtime_dir().await?;
         let config = neutral_config(&runtime).await?;
-        let globals = global_args(&config, &session);
+        let globals = global_args(&config, &session, profile.as_deref());
 
         if action == "screenshot" {
             let output = screenshot(&exe, &globals, input, ctx).await?;
-            return Ok(attach_browser_metadata(output, self.id(), "chrome"));
+            return Ok(attach_profile_metadata(
+                attach_browser_metadata(output, self.id(), "chrome"),
+                input.profile.as_deref(),
+            ));
         }
 
         let (argv, stdin, title, sensitive) = map_action(action, input, ctx).await?;
@@ -197,10 +204,13 @@ impl BrowserProvider for AgentBrowserProvider {
         let value = parse_agent_browser_output(&result, &sensitive)
             .with_context(|| format!("agent-browser action '{action}' failed"))?;
         let normalized = normalize_action_result(action, value);
-        Ok(attach_browser_metadata(
-            render_browser_output(action, title, normalized),
-            self.id(),
-            "chrome",
+        Ok(attach_profile_metadata(
+            attach_browser_metadata(
+                render_browser_output(action, title, normalized),
+                self.id(),
+                "chrome",
+            ),
+            input.profile.as_deref(),
         ))
     }
 }
@@ -209,7 +219,7 @@ async fn chrome_status() -> Result<(TrustedExecutable, Value)> {
     let exe = discover_trusted_executable().await?;
     let runtime = runtime_dir().await?;
     let config = neutral_config(&runtime).await?;
-    let globals = global_args(&config, "jcode-status");
+    let globals = global_args(&config, "jcode-status", None);
     let result = run_agent_browser(
         &exe,
         &globals,
@@ -272,7 +282,7 @@ async fn discover_trusted_executable() -> Result<TrustedExecutable> {
     let version = parse_version(version_result.stdout.trim())?;
     if !is_supported_version(&version) {
         anyhow::bail!(
-            "agent-browser version {version} is incompatible; supported range is >=0.27.3,<0.28.0"
+            "agent-browser version {version} is incompatible; supported range is >=0.27.3,<0.35.0"
         );
     }
     let fingerprint = executable_fingerprint(&canonical).await?;
@@ -314,11 +324,12 @@ async fn validate_executable_path(path: &Path, explicit: bool) -> Result<()> {
         }
     }
     if !explicit {
-        let cwd = std::env::current_dir()
+        let repository = std::env::current_dir()
             .ok()
-            .and_then(|p| p.canonicalize().ok());
-        if let Some(cwd) = cwd
-            && path.starts_with(&cwd)
+            .and_then(|p| p.canonicalize().ok())
+            .and_then(repository_root);
+        if let Some(repository) = repository
+            && is_repository_local(path, &repository)
         {
             anyhow::bail!(
                 "refusing repository-local agent-browser from PATH: {}",
@@ -327,6 +338,21 @@ async fn validate_executable_path(path: &Path, explicit: bool) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn repository_root(mut path: PathBuf) -> Option<PathBuf> {
+    loop {
+        if path.join(".git").exists() {
+            return Some(path);
+        }
+        if !path.pop() {
+            return None;
+        }
+    }
+}
+
+fn is_repository_local(executable: &Path, repository: &Path) -> bool {
+    executable.starts_with(repository)
 }
 
 async fn executable_fingerprint(path: &Path) -> Result<String> {
@@ -392,6 +418,52 @@ pub(super) fn session_name(session_id: &str) -> String {
     format!("jcode-{readable}-{suffix}")
 }
 
+pub(super) fn session_name_for_profile(session_id: &str, profile: Option<&str>) -> String {
+    match profile {
+        Some(profile) => session_name(&format!("{session_id}\0profile:{profile}")),
+        None => session_name(session_id),
+    }
+}
+
+fn validate_profile_name(profile: &str) -> Result<&str> {
+    if profile.is_empty()
+        || profile.len() > 64
+        || !profile
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+    {
+        anyhow::bail!(
+            "browser profile must be a 1-64 character name containing only letters, numbers, '.', '-', or '_'; filesystem paths are not accepted"
+        );
+    }
+    Ok(profile)
+}
+
+async fn resolve_profile(profile: Option<&str>) -> Result<Option<String>> {
+    let Some(profile) = profile else {
+        return Ok(None);
+    };
+    let profile = validate_profile_name(profile)?;
+    let data_home = std::env::var_os("XDG_DATA_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share")));
+    if let Some(data_home) = data_home {
+        let custom = data_home.join("agent-browser/profiles").join(profile);
+        if tokio::fs::metadata(&custom)
+            .await
+            .is_ok_and(|metadata| metadata.is_dir())
+        {
+            return Ok(Some(
+                tokio::fs::canonicalize(&custom)
+                    .await?
+                    .display()
+                    .to_string(),
+            ));
+        }
+    }
+    Ok(Some(profile.to_string()))
+}
+
 async fn runtime_dir() -> Result<PathBuf> {
     let base = std::env::var_os("JCODE_AGENT_BROWSER_RUNTIME_DIR")
         .map(PathBuf::from)
@@ -415,8 +487,8 @@ async fn neutral_config(runtime: &Path) -> Result<PathBuf> {
     Ok(path)
 }
 
-fn global_args(config: &Path, session: &str) -> Vec<String> {
-    vec![
+fn global_args(config: &Path, session: &str, profile: Option<&str>) -> Vec<String> {
+    let mut args = vec![
         "--config".into(),
         config.display().to_string(),
         "--session".into(),
@@ -424,7 +496,47 @@ fn global_args(config: &Path, session: &str) -> Vec<String> {
         "--engine".into(),
         "chrome".into(),
         "--json".into(),
-    ]
+    ];
+    if let Some(profile) = profile {
+        args.push("--profile".into());
+        args.push(profile.to_string());
+    }
+    args
+}
+
+fn attach_profile_metadata(mut output: ToolOutput, profile: Option<&str>) -> ToolOutput {
+    if let Some(profile) = profile {
+        add_metadata_field(&mut output, "profile", json!(profile));
+        add_metadata_field(&mut output, "credential_bearing_profile", json!(true));
+    }
+    output
+}
+
+#[cfg(test)]
+pub(super) async fn close_live_session(session_id: &str, profile: Option<&str>) -> Result<()> {
+    let exe = discover_trusted_executable().await?;
+    let runtime = runtime_dir().await?;
+    let config = neutral_config(&runtime).await?;
+    let profile_arg = resolve_profile(profile).await?;
+    let session = session_name_for_profile(session_id, profile);
+    let globals = global_args(&config, &session, profile_arg.as_deref());
+    let result = run_agent_browser(
+        &exe,
+        &globals,
+        &["close".into(), "--all".into()],
+        None,
+        NORMAL_TIMEOUT,
+        MAX_STDOUT_BYTES,
+        MAX_STDERR_BYTES,
+    )
+    .await?;
+    if !result.status_success {
+        anyhow::bail!(
+            "failed to close live agent-browser session: {}",
+            result.stderr
+        );
+    }
+    Ok(())
 }
 
 fn timeout_for(input: &BrowserInput) -> Duration {
@@ -1049,11 +1161,12 @@ mod tests {
     }
 
     #[test]
-    fn version_range_accepts_only_probed_minor() {
+    fn version_range_accepts_probed_compatible_minors() {
         assert!(is_supported_version("0.27.3"));
         assert!(is_supported_version("0.27.9"));
+        assert!(is_supported_version("0.34.0"));
         assert!(!is_supported_version("0.27.2"));
-        assert!(!is_supported_version("0.28.0"));
+        assert!(!is_supported_version("0.35.0"));
     }
 
     #[test]
@@ -1064,4 +1177,32 @@ mod tests {
         assert!(!value.to_string().contains("secret"));
         assert!(value.pointer("/data/0/command").is_none());
     }
+}
+
+#[test]
+fn supported_versions_include_current_agent_browser_minor() {
+    assert!(is_supported_version("0.27.3"));
+    assert!(is_supported_version("0.34.0"));
+    assert!(!is_supported_version("0.35.0"));
+}
+
+#[test]
+fn executable_under_home_is_not_repository_local_when_repo_is_a_sibling() {
+    let executable = Path::new("/home/example/.local/bin/agent-browser");
+    let repository = Path::new("/home/example/dev/jcode");
+    assert!(!is_repository_local(executable, repository));
+    assert!(is_repository_local(
+        Path::new("/home/example/dev/jcode/node_modules/.bin/agent-browser"),
+        repository,
+    ));
+}
+
+#[test]
+fn profile_names_are_allowlisted_and_paths_are_rejected() {
+    assert_eq!(validate_profile_name("social").unwrap(), "social");
+    assert_eq!(validate_profile_name("Default").unwrap(), "Default");
+    assert!(validate_profile_name("../social").is_err());
+    assert!(validate_profile_name("/tmp/social").is_err());
+    assert!(validate_profile_name("social/profile").is_err());
+    assert!(validate_profile_name("social profile").is_err());
 }

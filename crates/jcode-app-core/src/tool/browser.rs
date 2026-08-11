@@ -35,6 +35,8 @@ struct BrowserInput {
     #[serde(default)]
     browser: Option<String>,
     #[serde(default)]
+    profile: Option<String>,
+    #[serde(default)]
     provider_action: Option<String>,
     #[serde(default)]
     params: Option<Value>,
@@ -206,6 +208,13 @@ impl Tool for BrowserTool {
             }),
         );
         properties.insert(
+            "profile".into(),
+            json!({
+                "type": "string",
+                "description": "Explicit agent-browser Chrome profile name. Names only; paths are rejected. Custom profiles under the agent-browser profile directory are resolved safely. Chrome only. Repeat on each action that should use the profile."
+            }),
+        );
+        properties.insert(
             "provider_action".into(),
             json!({
                 "type": "string",
@@ -296,6 +305,7 @@ impl Tool for BrowserTool {
     async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput> {
         let params: BrowserInput = serde_json::from_value(input)?;
         let requested_browser = params.browser.as_deref().unwrap_or("auto");
+        validate_profile_route(params.profile.as_deref(), requested_browser)?;
 
         match params.action.as_str() {
             "status" if requested_browser == "auto" => auto_status(&ctx).await,
@@ -320,6 +330,15 @@ impl Tool for BrowserTool {
             }
         }
     }
+}
+
+fn validate_profile_route(profile: Option<&str>, browser: &str) -> Result<()> {
+    if profile.is_some() && browser != "chrome" {
+        anyhow::bail!(
+            "browser profile selection requires browser='chrome'; auto and other browser providers do not accept agent-browser profiles"
+        );
+    }
+    Ok(())
 }
 
 async fn execute_auto_browser(

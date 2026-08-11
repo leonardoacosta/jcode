@@ -754,8 +754,9 @@ and hotkey-friendly dictation without requiring a bundled speech-to-text stack.
 
 jcode includes a first-class built-in `browser` tool for browser control inside agent sessions.
 
-Current built-in backend:
+Current built-in backends:
 - Firefox via Firefox Agent Bridge
+- Chrome via a trusted optional `agent-browser` executable
 
 Current built-in tool actions include:
 - `status`
@@ -784,10 +785,12 @@ jcode browser setup
 
 Once setup is complete, the model can use the built-in `browser` tool directly. The UI also summarizes browser tool calls compactly, for example opening a URL, clicking a selector, or typing into a field without echoing sensitive typed text.
 
+Chrome uses isolated Jcode-owned sessions by default. To deliberately reuse login state, pass an explicit safe profile name with `browser: "chrome"`, for example `profile: "social"`. Jcode rejects profile paths and profile selection through `browser: "auto"` or non-Chrome providers. A matching custom profile beneath the local agent-browser profile directory is resolved automatically; otherwise the name is treated as a Chrome profile directory name such as `Default`.
+
 Notes:
 - the provider/tool architecture is in place for additional backends
-- Firefox is the wired built-in backend today
-- Chrome bridge / remote debugging style providers can be added on top of the same browser tool later
+- Chrome browser state lives on the machine running the Jcode server/provider process
+- remote Mac browser steering requires a deliberate Mac-side bridge rather than a homelab-local profile
 
 ---
 

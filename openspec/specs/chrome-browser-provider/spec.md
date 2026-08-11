@@ -70,8 +70,19 @@ Jcode SHALL execute Chrome automation in a unique named agent-browser session de
 
 #### Scenario: Hostile configuration or environment exists
 - **WHEN** user, project, environment, or CLI defaults specify profile, state, session-name, auto-connect, CDP, extension, init-script, engine/provider override, executable override, remote-provider, proxy credential, or auth-vault behavior
-- **THEN** Jcode SHALL ignore or clear those settings for Chrome provider actions unless a future explicit capability authorizes them
+- **THEN** Jcode SHALL ignore or clear those settings for Chrome provider actions unless the request uses the explicit `profile` capability below
 - **AND** it SHALL NOT attach to the user's daily browser profile or restored auth state.
+
+#### Scenario: Explicitly select a Chrome profile
+- **WHEN** a request uses `browser: "chrome"` with a `profile` name
+- **THEN** Jcode SHALL accept only a bounded name and SHALL reject filesystem paths or traversal
+- **AND** it SHALL resolve a matching custom profile beneath the agent-browser profile directory, otherwise pass the validated Chrome profile name
+- **AND** it SHALL isolate the credential-bearing profile in a profile-specific Jcode session
+- **AND** it SHALL mark the result metadata as using a credential-bearing profile.
+
+#### Scenario: Attempt profile selection through another route
+- **WHEN** a request supplies `profile` with `browser: "auto"`, Firefox, or another provider
+- **THEN** Jcode SHALL reject the request instead of silently ignoring or rerouting the profile.
 
 #### Scenario: Sanitized session names would collide
 - **WHEN** two distinct Jcode session IDs normalize to the same readable session-name prefix, including punctuation, Unicode, empty-prefix, or long-ID cases
@@ -240,4 +251,3 @@ The repository SHALL include deterministic and live verification that proves com
 #### Scenario: Preserve Firefox regression coverage
 - **WHEN** the complete browser-focused test gate runs
 - **THEN** existing Firefox provider tests SHALL continue to pass alongside Chrome provider tests.
-
