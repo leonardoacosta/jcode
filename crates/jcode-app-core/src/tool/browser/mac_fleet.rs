@@ -78,6 +78,8 @@ pub fn build_request(
             "selector": input.selector,
             "text": input.text,
             "key": input.key,
+            "x": input.x,
+            "y": input.y,
         }),
     })
 }

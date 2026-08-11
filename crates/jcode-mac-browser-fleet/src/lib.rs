@@ -11,6 +11,9 @@ use tokio::net::{TcpStream, UnixListener, UnixStream};
 use url::Url;
 
 pub use jcode_mac_browser_policy::Action;
+use jcode_mac_browser_policy::{
+    Context, Decision, Denial, Lease, PolicyEngine, Scope, Target as PolicyTarget,
+};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum FleetErrorKind {
@@ -23,6 +26,8 @@ pub enum FleetErrorKind {
     StaleGeneration,
     DeadlineExceeded,
     ApprovalRequired,
+    HardDenied,
+    EmergencyStop,
     UnsupportedCapability,
     UntrustedEndpoint,
     Io,
@@ -70,8 +75,35 @@ pub enum Capability {
     Inventory,
     Navigate,
     Click,
+    Type,
+    Press,
     RichInspection,
     Evaluate,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AuthorityAction {
+    GrantLease,
+    RevokeLease,
+    EmergencyStop,
+    ReleaseEmergencyStop,
+    Status,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthorityEnvelope {
+    pub version: u16,
+    pub action: AuthorityAction,
+    #[serde(default)]
+    pub lease_id: Option<String>,
+    #[serde(default)]
+    pub target: Option<TargetRef>,
+    #[serde(default)]
+    pub capabilities: Vec<Capability>,
+    #[serde(default)]
+    pub duration_seconds: Option<u64>,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -207,6 +239,7 @@ pub struct AuditMetadata {
 #[derive(Clone, Debug)]
 pub struct BrokerConfig {
     pub socket_path: PathBuf,
+    pub authority_socket_path: Option<PathBuf>,
     pub secret: String,
     pub max_payload_bytes: usize,
     pub max_in_flight: usize,
@@ -226,6 +259,7 @@ pub enum FleetRequest {
         target: TargetRef,
         action: Action,
         deadline: Duration,
+        payload: serde_json::Value,
     },
 }
 
@@ -257,6 +291,25 @@ impl FleetRequest {
             target,
             action,
             deadline,
+            payload: serde_json::Value::Null,
+        }
+    }
+
+    pub fn action_with_payload(
+        id: impl Into<String>,
+        auth: String,
+        target: TargetRef,
+        action: Action,
+        deadline: Duration,
+        payload: serde_json::Value,
+    ) -> Self {
+        Self::Action {
+            id: id.into(),
+            auth,
+            target,
+            action,
+            deadline,
+            payload,
         }
     }
 
@@ -294,7 +347,57 @@ pub enum FleetResponse {
 pub struct InventoryUpdate {
     browser: BrowserKind,
     profile: String,
-    targets: Vec<TargetRef>,
+    targets: Vec<ManagedTarget>,
+}
+
+#[derive(Clone, Debug)]
+pub struct ManagedTarget {
+    reference: TargetRef,
+    websocket_url: Option<String>,
+    origin: String,
+    context: Context,
+}
+
+impl ManagedTarget {
+    pub fn new(reference: TargetRef, websocket_url: String, url: String) -> Result<Self> {
+        if !is_loopback_websocket_url(&websocket_url) {
+            return Err(FleetError::new(
+                FleetErrorKind::UntrustedEndpoint,
+                "managed target websocket must be loopback",
+            ));
+        }
+        Ok(Self::with_optional_websocket(
+            reference,
+            Some(websocket_url),
+            url,
+        ))
+    }
+
+    fn from_reference(reference: TargetRef) -> Self {
+        Self {
+            reference,
+            websocket_url: None,
+            origin: "local://unmanaged".to_string(),
+            context: Context::Ordinary,
+        }
+    }
+
+    fn with_optional_websocket(
+        reference: TargetRef,
+        websocket_url: Option<String>,
+        url: String,
+    ) -> Self {
+        Self {
+            reference,
+            websocket_url,
+            origin: origin_for_url(&url),
+            context: context_for_url(&url),
+        }
+    }
+
+    pub fn reference(&self) -> &TargetRef {
+        &self.reference
+    }
 }
 
 impl InventoryUpdate {
@@ -306,12 +409,30 @@ impl InventoryUpdate {
         Self {
             browser,
             profile: profile.into(),
+            targets: targets
+                .into_iter()
+                .map(ManagedTarget::from_reference)
+                .collect(),
+        }
+    }
+
+    pub fn managed(
+        browser: BrowserKind,
+        profile: impl Into<String>,
+        targets: Vec<ManagedTarget>,
+    ) -> Self {
+        Self {
+            browser,
+            profile: profile.into(),
             targets,
         }
     }
 
-    pub fn targets(&self) -> &[TargetRef] {
-        &self.targets
+    pub fn targets(&self) -> Vec<TargetRef> {
+        self.targets
+            .iter()
+            .map(|target| target.reference.clone())
+            .collect()
     }
 }
 
@@ -349,9 +470,12 @@ fn is_read_only(action: Action) -> bool {
 pub struct Broker {
     config: BrokerConfig,
     listener: UnixListener,
+    authority_listener: Option<UnixListener>,
     generation: u64,
-    targets: BTreeMap<String, TargetRef>,
+    targets: BTreeMap<String, ManagedTarget>,
     replay_guard: MutationReplayGuard,
+    policy: PolicyEngine,
+    lease_counter: u64,
 }
 
 impl Broker {
@@ -372,12 +496,38 @@ impl Broker {
                 )
             },
         )?;
+        let authority_listener = if let Some(path) = &config.authority_socket_path {
+            if let Some(parent) = path.parent() {
+                fs::create_dir_all(parent).map_err(|_| {
+                    FleetError::new(
+                        FleetErrorKind::Io,
+                        "could not create authority socket directory",
+                    )
+                })?;
+            }
+            let _ = fs::remove_file(path);
+            let listener = UnixListener::bind(path).map_err(|_| {
+                FleetError::new(FleetErrorKind::Io, "could not bind authority socket")
+            })?;
+            fs::set_permissions(path, fs::Permissions::from_mode(0o600)).map_err(|_| {
+                FleetError::new(
+                    FleetErrorKind::Io,
+                    "could not restrict authority socket permissions",
+                )
+            })?;
+            Some(listener)
+        } else {
+            None
+        };
         Ok(Self {
             config,
             listener,
+            authority_listener,
             generation: 0,
             targets: BTreeMap::new(),
             replay_guard: MutationReplayGuard::default(),
+            policy: PolicyEngine::new(),
+            lease_counter: 0,
         })
     }
 
@@ -388,14 +538,17 @@ impl Broker {
         self.targets
             .retain(|key, _| !key.starts_with(&prefix_with_separator));
         for mut target in update.targets {
-            target.generation = self.generation;
+            target.reference.generation = self.generation;
             self.targets.insert(
-                format!("{}:{}:{}", prefix, target.window_id, target.tab_id),
+                format!(
+                    "{}:{}:{}",
+                    prefix, target.reference.window_id, target.reference.tab_id
+                ),
                 target,
             );
         }
         for target in self.targets.values_mut() {
-            target.generation = self.generation;
+            target.reference.generation = self.generation;
         }
         Ok(())
     }
@@ -426,10 +579,19 @@ impl Broker {
                 Ok(FleetResponse::Health {
                     generation: self.generation,
                     connected_targets: self.targets.len(),
-                    targets: self.targets.values().cloned().collect(),
+                    targets: self
+                        .targets
+                        .values()
+                        .map(|target| target.reference.clone())
+                        .collect(),
                 })
             }
-            FleetRequest::Action { target, action, .. } => {
+            FleetRequest::Action {
+                target,
+                action,
+                payload,
+                ..
+            } => {
                 self.replay_guard.observe(request.id(), *action)?;
                 if target.generation != self.generation {
                     return Err(FleetError::new(
@@ -440,20 +602,242 @@ impl Broker {
                 if is_read_only(*action) {
                     return Ok(FleetResponse::Accepted);
                 }
-                Err(FleetError::new(
-                    FleetErrorKind::ApprovalRequired,
-                    "local approval is required",
-                ))
+                let state = self.target_state(target).ok_or_else(|| {
+                    FleetError::new(FleetErrorKind::StaleGeneration, "target is not connected")
+                })?;
+                let policy_target = policy_target_for(&state);
+                match self
+                    .policy
+                    .authorize(request.id(), *action, &policy_target, now_seconds())
+                {
+                    Decision::Allow => self.execute_cdp_action(state, *action, payload).await,
+                    Decision::RequireLocalApproval => Err(FleetError::new(
+                        FleetErrorKind::ApprovalRequired,
+                        "local approval is required",
+                    )),
+                    Decision::Deny(Denial::HardDenied(_)) => Err(FleetError::new(
+                        FleetErrorKind::HardDenied,
+                        "target is blocked by hard-deny policy",
+                    )),
+                    Decision::Deny(Denial::EmergencyStop) => Err(FleetError::new(
+                        FleetErrorKind::EmergencyStop,
+                        "Mac browser fleet emergency stop is active",
+                    )),
+                    Decision::Deny(_) => Err(FleetError::new(
+                        FleetErrorKind::ApprovalRequired,
+                        "local approval is required",
+                    )),
+                }
             }
         }
     }
 
+    fn target_state(&self, target: &TargetRef) -> Option<ManagedTarget> {
+        self.targets
+            .values()
+            .find(|candidate| {
+                candidate.reference.browser_id == target.browser_id
+                    && candidate.reference.window_id == target.window_id
+                    && candidate.reference.tab_id == target.tab_id
+                    && candidate.reference.generation == target.generation
+            })
+            .cloned()
+    }
+
+    async fn execute_cdp_action(
+        &self,
+        target: ManagedTarget,
+        action: Action,
+        payload: &serde_json::Value,
+    ) -> Result<FleetResponse> {
+        let websocket_url = target.websocket_url.ok_or_else(|| {
+            FleetError::new(
+                FleetErrorKind::UnsupportedCapability,
+                "target does not expose a managed CDP websocket",
+            )
+        })?;
+        let mut client = CdpClient::connect(&websocket_url).await?;
+        match action {
+            Action::Navigate => {
+                let url = payload
+                    .get("url")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or_else(|| {
+                        FleetError::new(FleetErrorKind::Malformed, "navigate requires url")
+                    })?;
+                client.call("Page.enable", serde_json::json!({})).await?;
+                client
+                    .call("Page.navigate", serde_json::json!({ "url": url }))
+                    .await?;
+                client.call("Page.disable", serde_json::json!({})).await?;
+            }
+            Action::Click => {
+                let x = payload
+                    .get("x")
+                    .and_then(serde_json::Value::as_f64)
+                    .unwrap_or(0.0);
+                let y = payload
+                    .get("y")
+                    .and_then(serde_json::Value::as_f64)
+                    .unwrap_or(0.0);
+                client.call("Input.dispatchMouseEvent", serde_json::json!({"type":"mousePressed","x":x,"y":y,"button":"left","clickCount":1})).await?;
+                client.call("Input.dispatchMouseEvent", serde_json::json!({"type":"mouseReleased","x":x,"y":y,"button":"left","clickCount":1})).await?;
+            }
+            Action::Type => {
+                if let Some(text) = payload.get("text").and_then(serde_json::Value::as_str) {
+                    client
+                        .call("Input.insertText", serde_json::json!({ "text": text }))
+                        .await?;
+                } else if let Some(key) = payload.get("key").and_then(serde_json::Value::as_str) {
+                    client
+                        .call(
+                            "Input.dispatchKeyEvent",
+                            serde_json::json!({"type":"keyDown","key":key}),
+                        )
+                        .await?;
+                    client
+                        .call(
+                            "Input.dispatchKeyEvent",
+                            serde_json::json!({"type":"keyUp","key":key}),
+                        )
+                        .await?;
+                } else {
+                    return Err(FleetError::new(
+                        FleetErrorKind::Malformed,
+                        "type requires text or key",
+                    ));
+                }
+            }
+            _ => {
+                return Err(FleetError::new(
+                    FleetErrorKind::UnsupportedCapability,
+                    "action is not supported by managed CDP execution",
+                ));
+            }
+        }
+        Ok(FleetResponse::Accepted)
+    }
+
     pub async fn serve(mut self) -> Result<()> {
         loop {
-            let (stream, _) = self.listener.accept().await.map_err(|_| {
-                FleetError::new(FleetErrorKind::Io, "could not accept fleet connection")
-            })?;
-            self.serve_connection(stream).await?;
+            enum Accepted {
+                Peer(UnixStream),
+                Authority(UnixStream),
+            }
+            let accepted = if let Some(authority_listener) = &self.authority_listener {
+                tokio::select! {
+                    peer = self.listener.accept() => Accepted::Peer(peer.map_err(|_| FleetError::new(FleetErrorKind::Io, "could not accept fleet connection"))?.0),
+                    authority = authority_listener.accept() => Accepted::Authority(authority.map_err(|_| FleetError::new(FleetErrorKind::Io, "could not accept authority connection"))?.0),
+                }
+            } else {
+                let (stream, _) = self.listener.accept().await.map_err(|_| {
+                    FleetError::new(FleetErrorKind::Io, "could not accept fleet connection")
+                })?;
+                Accepted::Peer(stream)
+            };
+            match accepted {
+                Accepted::Peer(stream) => self.serve_connection(stream).await?,
+                Accepted::Authority(stream) => self.serve_authority_connection(stream).await?,
+            }
+        }
+    }
+
+    pub async fn serve_authority_connection(&mut self, stream: UnixStream) -> Result<()> {
+        let (read_half, mut write_half) = stream.into_split();
+        let mut reader = BufReader::new(read_half).take((self.config.max_payload_bytes + 1) as u64);
+        let mut line = Vec::new();
+        reader
+            .read_until(b'\n', &mut line)
+            .await
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not read authority request"))?;
+        let response = match self.handle_authority_bytes(&line) {
+            Ok(result) => serde_json::json!({"ok": true, "result": result}),
+            Err(error) => serde_json::json!({
+                "ok": false,
+                "error": {"kind": error_kind_name(error.kind()), "message": error.to_string()}
+            }),
+        };
+        let mut encoded = serde_json::to_vec(&response).map_err(|_| {
+            FleetError::new(FleetErrorKind::Io, "could not encode authority response")
+        })?;
+        encoded.push(b'\n');
+        write_half.write_all(&encoded).await.map_err(|_| {
+            FleetError::new(FleetErrorKind::Io, "could not write authority response")
+        })?;
+        Ok(())
+    }
+
+    fn handle_authority_bytes(&mut self, bytes: &[u8]) -> Result<serde_json::Value> {
+        if bytes.len() > self.config.max_payload_bytes {
+            return Err(FleetError::new(
+                FleetErrorKind::Oversized,
+                "authority request exceeded size limit",
+            ));
+        }
+        let request: AuthorityEnvelope = serde_json::from_slice(bytes).map_err(|_| {
+            FleetError::new(FleetErrorKind::Malformed, "authority request was malformed")
+        })?;
+        if request.version != 1 {
+            return Err(FleetError::new(
+                FleetErrorKind::UnsupportedVersion,
+                "unsupported authority protocol version",
+            ));
+        }
+        match request.action {
+            AuthorityAction::GrantLease => {
+                let target = request.target.ok_or_else(|| {
+                    FleetError::new(FleetErrorKind::Malformed, "grant requires target")
+                })?;
+                if target.generation != self.generation {
+                    return Err(FleetError::new(
+                        FleetErrorKind::StaleGeneration,
+                        "lease target generation is stale",
+                    ));
+                }
+                let state = self.target_state(&target).ok_or_else(|| {
+                    FleetError::new(
+                        FleetErrorKind::StaleGeneration,
+                        "lease target is not connected",
+                    )
+                })?;
+                let mut actions = BTreeSet::new();
+                for capability in request.capabilities {
+                    actions.insert(action_for_capability(capability)?);
+                }
+                if actions.is_empty() {
+                    return Err(FleetError::new(
+                        FleetErrorKind::UnsupportedCapability,
+                        "grant requires at least one mutation capability",
+                    ));
+                }
+                self.lease_counter = self.lease_counter.saturating_add(1);
+                let lease_id = format!("mac-lease-{}-{}", self.generation, self.lease_counter);
+                let lease = Lease::with_id(
+                    lease_id.clone(),
+                    Scope::for_target(&policy_target_for(&state)),
+                    actions,
+                    request.duration_seconds.unwrap_or(60),
+                );
+                self.policy
+                    .issue_lease(lease, now_seconds())
+                    .map_err(fleet_error_for_denial)?;
+                Ok(serde_json::json!({"leaseId": lease_id, "generation": self.generation}))
+            }
+            AuthorityAction::RevokeLease => {
+                let lease_id = request.lease_id.ok_or_else(|| {
+                    FleetError::new(FleetErrorKind::Malformed, "revoke requires leaseId")
+                })?;
+                Ok(serde_json::json!({"revoked": self.policy.revoke_lease(&lease_id)}))
+            }
+            AuthorityAction::EmergencyStop => {
+                self.policy.activate_emergency_stop();
+                Ok(serde_json::json!({"emergencyStop": true}))
+            }
+            AuthorityAction::ReleaseEmergencyStop => {
+                self.policy.release_emergency_stop_locally();
+                Ok(serde_json::json!({"emergencyStop": false}))
+            }
+            AuthorityAction::Status => Ok(serde_json::json!({"generation": self.generation})),
         }
     }
 
@@ -522,6 +906,8 @@ struct CdpHttpTarget {
     id: String,
     #[serde(rename = "type")]
     target_type: String,
+    #[serde(default)]
+    url: Option<String>,
     web_socket_debugger_url: Option<String>,
 }
 
@@ -659,14 +1045,21 @@ impl ManagedCdpSource {
                         .is_some_and(is_loopback_websocket_url)
             })
             .take(self.max_targets)
-            .map(|target| TargetRef {
-                browser_id: browser_id.to_string(),
-                window_id: "managed-cdp".to_string(),
-                tab_id: target.id,
-                generation: 0,
+            .filter_map(|target| {
+                ManagedTarget::new(
+                    TargetRef {
+                        browser_id: browser_id.to_string(),
+                        window_id: "managed-cdp".to_string(),
+                        tab_id: target.id,
+                        generation: 0,
+                    },
+                    target.web_socket_debugger_url?,
+                    target.url.unwrap_or_else(|| "about:blank".to_string()),
+                )
+                .ok()
             })
             .collect();
-        Ok(InventoryUpdate::connected(
+        Ok(InventoryUpdate::managed(
             self.browser,
             "managed-cdp",
             targets,
@@ -680,6 +1073,229 @@ fn is_loopback_websocket_url(raw: &str) -> bool {
             && matches!(url.host_str(), Some("127.0.0.1" | "::1"))
             && url.port_or_known_default().is_some()
     })
+}
+
+fn now_seconds() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
+fn policy_target_for(target: &ManagedTarget) -> PolicyTarget {
+    PolicyTarget {
+        browser: target.reference.browser_id.clone(),
+        profile: target.reference.window_id.clone(),
+        tab: target.reference.tab_id.clone(),
+        origin: target.origin.clone(),
+        generation: target.reference.generation,
+        context: target.context,
+    }
+}
+
+fn origin_for_url(raw: &str) -> String {
+    Url::parse(raw)
+        .map(|url| url.origin().ascii_serialization())
+        .unwrap_or_else(|_| raw.split('/').next().unwrap_or("about:blank").to_string())
+}
+
+fn context_for_url(raw: &str) -> Context {
+    let lower = raw.to_ascii_lowercase();
+    if lower.starts_with("chrome://") || lower.starts_with("edge://") || lower.starts_with("about:")
+    {
+        return Context::PrivilegedBrowserUrl;
+    }
+    if lower.contains("/password") || lower.contains("passwords") {
+        return Context::PasswordManager;
+    }
+    Context::Ordinary
+}
+
+fn action_for_capability(capability: Capability) -> Result<Action> {
+    match capability {
+        Capability::Navigate => Ok(Action::Navigate),
+        Capability::Click => Ok(Action::Click),
+        Capability::Type | Capability::Press => Ok(Action::Type),
+        Capability::Inventory | Capability::RichInspection | Capability::Evaluate => {
+            Err(FleetError::new(
+                FleetErrorKind::UnsupportedCapability,
+                "authority grants only support mutation capabilities",
+            ))
+        }
+    }
+}
+
+fn fleet_error_for_denial(denial: Denial) -> FleetError {
+    match denial {
+        Denial::LeaseDurationExceeded => FleetError::new(
+            FleetErrorKind::UnsupportedCapability,
+            "lease duration exceeds local policy maximum",
+        ),
+        Denial::HardDenied(_) => FleetError::new(FleetErrorKind::HardDenied, "hard-denied target"),
+        Denial::EmergencyStop => FleetError::new(FleetErrorKind::EmergencyStop, "emergency stop"),
+        Denial::RemoteAuthorityOperation => {
+            FleetError::new(FleetErrorKind::ApprovalRequired, "remote authority denied")
+        }
+    }
+}
+
+struct CdpClient {
+    stream: TcpStream,
+    next_id: u64,
+}
+
+impl CdpClient {
+    async fn connect(raw: &str) -> Result<Self> {
+        if !is_loopback_websocket_url(raw) {
+            return Err(FleetError::new(
+                FleetErrorKind::UntrustedEndpoint,
+                "managed CDP websocket must remain loopback",
+            ));
+        }
+        let url = Url::parse(raw).map_err(|_| {
+            FleetError::new(
+                FleetErrorKind::UntrustedEndpoint,
+                "CDP websocket URL is invalid",
+            )
+        })?;
+        if url.scheme() == "wss" {
+            return Err(FleetError::new(
+                FleetErrorKind::UnsupportedCapability,
+                "managed CDP execution currently supports local ws endpoints only",
+            ));
+        }
+        let host = url.host_str().expect("validated host");
+        let port = url.port_or_known_default().expect("validated port");
+        let mut stream = TcpStream::connect((host, port)).await.map_err(|_| {
+            FleetError::new(FleetErrorKind::Io, "managed CDP websocket is unavailable")
+        })?;
+        let path = if url.path().is_empty() {
+            "/"
+        } else {
+            url.path()
+        };
+        let authority = if host.contains(':') {
+            format!("[{host}]:{port}")
+        } else {
+            format!("{host}:{port}")
+        };
+        let request = format!(
+            "GET {path} HTTP/1.1\r\nHost: {authority}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Version: 13\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n\r\n"
+        );
+        stream.write_all(request.as_bytes()).await.map_err(|_| {
+            FleetError::new(FleetErrorKind::Io, "could not open managed CDP websocket")
+        })?;
+        let mut headers = Vec::new();
+        loop {
+            if headers.len() > 16 * 1024 {
+                return Err(FleetError::new(
+                    FleetErrorKind::Oversized,
+                    "managed CDP websocket handshake exceeded size limit",
+                ));
+            }
+            let mut byte = [0_u8; 1];
+            stream.read_exact(&mut byte).await.map_err(|_| {
+                FleetError::new(FleetErrorKind::Io, "could not read CDP websocket handshake")
+            })?;
+            headers.push(byte[0]);
+            if headers.ends_with(b"\r\n\r\n") {
+                break;
+            }
+        }
+        if !headers.starts_with(b"HTTP/1.1 101") && !headers.starts_with(b"HTTP/1.0 101") {
+            return Err(FleetError::new(
+                FleetErrorKind::Io,
+                "managed CDP websocket handshake failed",
+            ));
+        }
+        Ok(Self { stream, next_id: 0 })
+    }
+
+    async fn call(&mut self, method: &str, params: serde_json::Value) -> Result<serde_json::Value> {
+        self.next_id = self.next_id.saturating_add(1);
+        let id = self.next_id;
+        let request = serde_json::json!({"id": id, "method": method, "params": params});
+        self.write_text(&request.to_string()).await?;
+        self.read_text().await.and_then(|text| {
+            serde_json::from_str(&text)
+                .map_err(|_| FleetError::new(FleetErrorKind::Malformed, "CDP response malformed"))
+        })
+    }
+
+    async fn write_text(&mut self, text: &str) -> Result<()> {
+        let payload = text.as_bytes();
+        let mut frame = vec![0x81];
+        if payload.len() < 126 {
+            frame.push(0x80 | payload.len() as u8);
+        } else if payload.len() <= u16::MAX as usize {
+            frame.push(0x80 | 126);
+            frame.extend_from_slice(&(payload.len() as u16).to_be_bytes());
+        } else {
+            return Err(FleetError::new(
+                FleetErrorKind::Oversized,
+                "CDP request exceeded websocket frame limit",
+            ));
+        }
+        let mask = [0x4a, 0x43, 0x4f, 0x44];
+        frame.extend_from_slice(&mask);
+        frame.extend(
+            payload
+                .iter()
+                .enumerate()
+                .map(|(index, byte)| byte ^ mask[index % 4]),
+        );
+        self.stream
+            .write_all(&frame)
+            .await
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not write CDP request"))
+    }
+
+    async fn read_text(&mut self) -> Result<String> {
+        let mut head = [0_u8; 2];
+        self.stream
+            .read_exact(&mut head)
+            .await
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not read CDP response"))?;
+        if head[0] & 0x0f != 1 {
+            return Err(FleetError::new(
+                FleetErrorKind::Malformed,
+                "CDP response was not a text frame",
+            ));
+        }
+        let mut len = usize::from(head[1] & 0x7f);
+        if len == 126 {
+            let mut ext = [0_u8; 2];
+            self.stream.read_exact(&mut ext).await.map_err(|_| {
+                FleetError::new(FleetErrorKind::Io, "could not read CDP response length")
+            })?;
+            len = u16::from_be_bytes(ext) as usize;
+        }
+        if len > 1024 * 1024 {
+            return Err(FleetError::new(
+                FleetErrorKind::Oversized,
+                "CDP response exceeded size limit",
+            ));
+        }
+        let masked = head[1] & 0x80 != 0;
+        let mut mask = [0_u8; 4];
+        if masked {
+            self.stream.read_exact(&mut mask).await.map_err(|_| {
+                FleetError::new(FleetErrorKind::Io, "could not read CDP response mask")
+            })?;
+        }
+        let mut payload = vec![0_u8; len];
+        self.stream
+            .read_exact(&mut payload)
+            .await
+            .map_err(|_| FleetError::new(FleetErrorKind::Io, "could not read CDP response body"))?;
+        if masked {
+            for (index, byte) in payload.iter_mut().enumerate() {
+                *byte ^= mask[index % 4];
+            }
+        }
+        String::from_utf8(payload)
+            .map_err(|_| FleetError::new(FleetErrorKind::Malformed, "CDP response was not UTF-8"))
+    }
 }
 
 fn envelope_to_request(envelope: FleetEnvelope) -> Result<FleetRequest> {
@@ -703,12 +1319,13 @@ fn envelope_to_request(envelope: FleetEnvelope) -> Result<FleetRequest> {
                 WireAction::Type | WireAction::Press => Action::Type,
                 _ => unreachable!(),
             };
-            Ok(FleetRequest::action(
+            Ok(FleetRequest::action_with_payload(
                 envelope.id,
                 envelope.auth,
                 target,
                 action,
                 deadline,
+                envelope.payload,
             ))
         }
     }
@@ -725,6 +1342,8 @@ fn error_kind_name(kind: FleetErrorKind) -> &'static str {
         FleetErrorKind::StaleGeneration => "staleGeneration",
         FleetErrorKind::DeadlineExceeded => "deadlineExceeded",
         FleetErrorKind::ApprovalRequired => "approvalRequired",
+        FleetErrorKind::HardDenied => "hardDenied",
+        FleetErrorKind::EmergencyStop => "emergencyStop",
         FleetErrorKind::UnsupportedCapability => "unsupportedCapability",
         FleetErrorKind::UntrustedEndpoint => "untrustedEndpoint",
         FleetErrorKind::Io => "io",

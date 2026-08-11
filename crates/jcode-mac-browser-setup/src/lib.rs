@@ -66,6 +66,12 @@ impl InstallOptions {
             .join("Library/Application Support/Jcode/MacBrowserFleet/jcode-mac-browser-fleet.sock")
     }
 
+    pub fn authority_socket_path(&self) -> PathBuf {
+        self.home.join(
+            "Library/Application Support/Jcode/MacBrowserFleet/jcode-mac-browser-fleet-authority.sock",
+        )
+    }
+
     pub fn forwarded_socket_path(&self) -> PathBuf {
         PathBuf::from("~/.jcode/browser/mac-fleet.sock")
     }
@@ -306,10 +312,12 @@ pub fn render_launch_agent(opts: &InstallOptions) -> String {
   <array>
     <string>{}</string>
     <string>broker</string>
-    <string>--socket</string>
-    <string>{}</string>
-    <string>--peer-secret</string>
-    <string>{}</string>
+	    <string>--socket</string>
+	    <string>{}</string>
+	    <string>--authority-socket</string>
+	    <string>{}</string>
+	    <string>--peer-secret</string>
+	    <string>{}</string>
     <string>--policy</string>
     <string>{}</string>
 {}
@@ -323,6 +331,7 @@ pub fn render_launch_agent(opts: &InstallOptions) -> String {
 "#,
         xml(&opts.broker_path),
         xml(&opts.socket_path()),
+        xml(&opts.authority_socket_path()),
         xml(&opts.peer_secret_path()),
         xml(&opts.policy_path()),
         managed_cdp_arguments

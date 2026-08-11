@@ -165,6 +165,7 @@ impl Approval {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Lease {
+    lease_id: String,
     scope: Scope,
     actions: BTreeSet<Action>,
     duration_seconds: u64,
@@ -177,7 +178,17 @@ impl Lease {
         actions: impl IntoIterator<Item = Action>,
         duration_seconds: u64,
     ) -> Self {
+        Self::with_id("", scope, actions, duration_seconds)
+    }
+
+    pub fn with_id(
+        lease_id: impl Into<String>,
+        scope: Scope,
+        actions: impl IntoIterator<Item = Action>,
+        duration_seconds: u64,
+    ) -> Self {
         Self {
+            lease_id: lease_id.into(),
             scope,
             actions: actions.into_iter().collect(),
             duration_seconds,
@@ -228,6 +239,12 @@ impl PolicyEngine {
         lease.expires_at = now.saturating_add(lease.duration_seconds);
         self.leases.push(lease);
         Ok(())
+    }
+
+    pub fn revoke_lease(&mut self, lease_id: &str) -> bool {
+        let before = self.leases.len();
+        self.leases.retain(|lease| lease.lease_id != lease_id);
+        before != self.leases.len()
     }
 
     pub fn authorize(

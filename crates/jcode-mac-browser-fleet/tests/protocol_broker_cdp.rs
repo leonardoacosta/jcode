@@ -3,11 +3,13 @@ use std::os::unix::fs::PermissionsExt;
 use std::time::Duration;
 
 use jcode_mac_browser_fleet::{
-    Action, Broker, BrokerConfig, BrowserKind, Capability, CdpAdapter, CdpEndpoint, FleetErrorKind,
-    FleetRequest, FleetResponse, InventoryUpdate, ManagedCdpSource, MutationReplayGuard,
-    ProtocolCodec, ProtocolSession, TargetRef,
+    Action, AuthorityAction, AuthorityEnvelope, Broker, BrokerConfig, BrowserKind, Capability,
+    CdpAdapter, CdpEndpoint, FleetErrorKind, FleetRequest, FleetResponse, InventoryUpdate,
+    ManagedCdpSource, ManagedTarget, MutationReplayGuard, ProtocolCodec, ProtocolSession,
+    TargetRef,
 };
 use tempfile::tempdir;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 
 fn secret() -> String {
     "test-secret-with-enough-entropy".to_string()
@@ -70,6 +72,7 @@ async fn broker_uses_0600_socket_auth_generations_deadlines_and_no_mutation_repl
     let socket = dir.path().join("fleet.sock");
     let mut broker = Broker::bind(BrokerConfig {
         socket_path: socket.clone(),
+        authority_socket_path: None,
         secret: secret(),
         max_payload_bytes: 4096,
         max_in_flight: 1,
@@ -294,6 +297,7 @@ async fn broker_merges_multiple_browser_sources_and_reports_current_generation()
     let socket = dir.path().join("fleet.sock");
     let mut broker = Broker::bind(BrokerConfig {
         socket_path: socket,
+        authority_socket_path: None,
         secret: secret(),
         max_payload_bytes: 4096,
         max_in_flight: 4,
@@ -351,5 +355,437 @@ async fn broker_merges_multiple_browser_sources_and_reports_current_generation()
     assert!(
         targets.iter().all(|target| target.generation == generation),
         "all advertised targets must carry the current broker generation: {targets:?}"
+    );
+}
+
+async fn authority_round_trip(
+    broker: &mut Broker,
+    request: AuthorityEnvelope,
+) -> serde_json::Value {
+    let (mut client, server) = tokio::net::UnixStream::pair().unwrap();
+    let server = async move { broker.serve_authority_connection(server).await.unwrap() };
+    let client = async move {
+        let mut encoded = serde_json::to_vec(&request).unwrap();
+        encoded.push(b'\n');
+        client.write_all(&encoded).await.unwrap();
+        let mut reader = BufReader::new(client);
+        let mut line = Vec::new();
+        reader.read_until(b'\n', &mut line).await.unwrap();
+        serde_json::from_slice::<serde_json::Value>(&line).unwrap()
+    };
+    let (_, response) = tokio::join!(server, client);
+    response
+}
+
+fn authority_grant(
+    target: TargetRef,
+    capabilities: Vec<Capability>,
+    duration_seconds: u64,
+) -> AuthorityEnvelope {
+    AuthorityEnvelope {
+        version: 1,
+        action: AuthorityAction::GrantLease,
+        lease_id: None,
+        target: Some(target),
+        capabilities,
+        duration_seconds: Some(duration_seconds),
+    }
+}
+
+fn managed_target(generation: u64, websocket_url: String, url: &str) -> ManagedTarget {
+    ManagedTarget::new(target(generation), websocket_url, url.to_string()).unwrap()
+}
+
+#[tokio::test]
+async fn broker_requires_mac_local_authority_and_enforces_lease_scope_revocation_expiry_and_stop() {
+    let dir = tempdir().unwrap();
+    let peer_socket = dir.path().join("peer.sock");
+    let authority_socket = dir.path().join("authority.sock");
+    let mut broker = Broker::bind(BrokerConfig {
+        socket_path: peer_socket.clone(),
+        authority_socket_path: Some(authority_socket.clone()),
+        secret: secret(),
+        max_payload_bytes: 4096,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    assert_eq!(
+        std::fs::metadata(&authority_socket)
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777,
+        0o600
+    );
+    broker
+        .apply_inventory(InventoryUpdate::managed(
+            BrowserKind::Chrome,
+            "managed-cdp",
+            vec![managed_target(
+                0,
+                "ws://127.0.0.1:9/devtools/page/page-1".to_string(),
+                "https://example.com/page",
+            )],
+        ))
+        .unwrap();
+    let current = target(1);
+
+    let peer_mutation = FleetRequest::action_with_payload(
+        "peer-mut-unauthorized",
+        secret(),
+        current.clone(),
+        Action::Navigate,
+        Duration::from_secs(1),
+        serde_json::json!({"url":"https://example.com/next"}),
+    );
+    assert_eq!(
+        broker.handle(peer_mutation).await.unwrap_err().kind(),
+        FleetErrorKind::ApprovalRequired
+    );
+
+    let grant = authority_round_trip(
+        &mut broker,
+        authority_grant(current.clone(), vec![Capability::Navigate], 60),
+    )
+    .await;
+    assert_eq!(
+        grant.get("ok").and_then(|value| value.as_bool()),
+        Some(true)
+    );
+    let lease_id = grant
+        .pointer("/result/leaseId")
+        .and_then(|value| value.as_str())
+        .expect("grant returns lease id")
+        .to_string();
+
+    assert_eq!(
+        broker
+            .handle(FleetRequest::action_with_payload(
+                "wrong-capability",
+                secret(),
+                current.clone(),
+                Action::Click,
+                Duration::from_secs(1),
+                serde_json::json!({"x":1,"y":1}),
+            ))
+            .await
+            .unwrap_err()
+            .kind(),
+        FleetErrorKind::ApprovalRequired
+    );
+    assert_eq!(
+        broker
+            .handle(FleetRequest::action_with_payload(
+                "wrong-generation",
+                secret(),
+                target(0),
+                Action::Navigate,
+                Duration::from_secs(1),
+                serde_json::json!({"url":"https://example.com/next"}),
+            ))
+            .await
+            .unwrap_err()
+            .kind(),
+        FleetErrorKind::StaleGeneration
+    );
+
+    let revoke = authority_round_trip(
+        &mut broker,
+        AuthorityEnvelope {
+            version: 1,
+            action: AuthorityAction::RevokeLease,
+            lease_id: Some(lease_id),
+            target: None,
+            capabilities: Vec::new(),
+            duration_seconds: None,
+        },
+    )
+    .await;
+    assert_eq!(
+        revoke.get("ok").and_then(|value| value.as_bool()),
+        Some(true)
+    );
+    assert_eq!(
+        broker
+            .handle(FleetRequest::action_with_payload(
+                "after-revoke",
+                secret(),
+                current.clone(),
+                Action::Navigate,
+                Duration::from_secs(1),
+                serde_json::json!({"url":"https://example.com/next"}),
+            ))
+            .await
+            .unwrap_err()
+            .kind(),
+        FleetErrorKind::ApprovalRequired
+    );
+
+    let expiring = authority_round_trip(
+        &mut broker,
+        authority_grant(current.clone(), vec![Capability::Navigate], 0),
+    )
+    .await;
+    assert_eq!(
+        expiring.get("ok").and_then(|value| value.as_bool()),
+        Some(true)
+    );
+    assert_eq!(
+        broker
+            .handle(FleetRequest::action_with_payload(
+                "after-expiry",
+                secret(),
+                current.clone(),
+                Action::Navigate,
+                Duration::from_secs(1),
+                serde_json::json!({"url":"https://example.com/next"}),
+            ))
+            .await
+            .unwrap_err()
+            .kind(),
+        FleetErrorKind::ApprovalRequired
+    );
+
+    let _ = authority_round_trip(
+        &mut broker,
+        authority_grant(current.clone(), vec![Capability::Navigate], 60),
+    )
+    .await;
+    let stop = authority_round_trip(
+        &mut broker,
+        AuthorityEnvelope {
+            version: 1,
+            action: AuthorityAction::EmergencyStop,
+            lease_id: None,
+            target: None,
+            capabilities: Vec::new(),
+            duration_seconds: None,
+        },
+    )
+    .await;
+    assert_eq!(stop.get("ok").and_then(|value| value.as_bool()), Some(true));
+    assert!(matches!(
+        broker
+            .handle(FleetRequest::health(
+                "health-during-stop",
+                secret(),
+                1,
+                Duration::from_secs(1)
+            ))
+            .await
+            .unwrap(),
+        FleetResponse::Health { .. }
+    ));
+    assert_eq!(
+        broker
+            .handle(FleetRequest::action_with_payload(
+                "during-stop",
+                secret(),
+                current,
+                Action::Navigate,
+                Duration::from_secs(1),
+                serde_json::json!({"url":"https://example.com/next"}),
+            ))
+            .await
+            .unwrap_err()
+            .kind(),
+        FleetErrorKind::EmergencyStop
+    );
+}
+
+#[tokio::test]
+async fn hard_denies_survive_local_leases_and_cdp_websocket_urls_stay_loopback_internal() {
+    let dir = tempdir().unwrap();
+    let mut broker = Broker::bind(BrokerConfig {
+        socket_path: dir.path().join("peer.sock"),
+        authority_socket_path: None,
+        secret: secret(),
+        max_payload_bytes: 4096,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    broker
+        .apply_inventory(InventoryUpdate::managed(
+            BrowserKind::Chrome,
+            "managed-cdp",
+            vec![managed_target(
+                0,
+                "ws://127.0.0.1:9/devtools/page/settings".to_string(),
+                "chrome://settings/passwords",
+            )],
+        ))
+        .unwrap();
+    let FleetResponse::Health { targets, .. } = broker
+        .handle(FleetRequest::health(
+            "hard-deny-health",
+            secret(),
+            0,
+            Duration::from_secs(1),
+        ))
+        .await
+        .unwrap()
+    else {
+        panic!("health should return targets");
+    };
+    let serialized = serde_json::to_string(&targets).unwrap();
+    assert!(!serialized.contains("webSocketDebuggerUrl"));
+    assert!(!serialized.contains("devtools/page"));
+
+    let denied = target(1);
+    let grant = authority_round_trip(
+        &mut broker,
+        authority_grant(denied.clone(), vec![Capability::Navigate], 60),
+    )
+    .await;
+    assert_eq!(
+        grant.get("ok").and_then(|value| value.as_bool()),
+        Some(true)
+    );
+    assert_eq!(
+        broker
+            .handle(FleetRequest::action_with_payload(
+                "hard-denied-mutation",
+                secret(),
+                denied,
+                Action::Navigate,
+                Duration::from_secs(1),
+                serde_json::json!({"url":"https://example.com/next"}),
+            ))
+            .await
+            .unwrap_err()
+            .kind(),
+        FleetErrorKind::HardDenied
+    );
+
+    assert_eq!(
+        ManagedTarget::new(
+            target(0),
+            "ws://192.0.2.10:9222/devtools/page/remote".to_string(),
+            "https://example.com".to_string(),
+        )
+        .unwrap_err()
+        .kind(),
+        FleetErrorKind::UntrustedEndpoint
+    );
+}
+
+async fn fake_cdp_server() -> (String, tokio::task::JoinHandle<Vec<String>>) {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let handle = tokio::spawn(async move {
+        let (mut stream, _) = listener.accept().await.unwrap();
+        let mut headers = Vec::new();
+        loop {
+            let mut byte = [0_u8; 1];
+            stream.read_exact(&mut byte).await.unwrap();
+            headers.push(byte[0]);
+            if headers.ends_with(b"\r\n\r\n") {
+                break;
+            }
+        }
+        stream
+            .write_all(b"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: test\r\n\r\n")
+            .await
+            .unwrap();
+        let mut seen = Vec::new();
+        for id in 1..=3 {
+            let text = read_client_ws_text(&mut stream).await;
+            let method = serde_json::from_str::<serde_json::Value>(&text)
+                .unwrap()
+                .get("method")
+                .and_then(|value| value.as_str())
+                .unwrap()
+                .to_string();
+            seen.push(method);
+            write_server_ws_text(
+                &mut stream,
+                &serde_json::json!({"id": id, "result": {}}).to_string(),
+            )
+            .await;
+        }
+        seen
+    });
+    (format!("ws://{addr}/devtools/page/page-1"), handle)
+}
+
+async fn read_client_ws_text(stream: &mut tokio::net::TcpStream) -> String {
+    let mut head = [0_u8; 2];
+    stream.read_exact(&mut head).await.unwrap();
+    assert_eq!(head[0] & 0x0f, 1);
+    assert_ne!(head[1] & 0x80, 0, "client frames must be masked");
+    let mut len = usize::from(head[1] & 0x7f);
+    if len == 126 {
+        let mut ext = [0_u8; 2];
+        stream.read_exact(&mut ext).await.unwrap();
+        len = u16::from_be_bytes(ext) as usize;
+    }
+    let mut mask = [0_u8; 4];
+    stream.read_exact(&mut mask).await.unwrap();
+    let mut payload = vec![0_u8; len];
+    stream.read_exact(&mut payload).await.unwrap();
+    for (index, byte) in payload.iter_mut().enumerate() {
+        *byte ^= mask[index % 4];
+    }
+    String::from_utf8(payload).unwrap()
+}
+
+async fn write_server_ws_text(stream: &mut tokio::net::TcpStream, text: &str) {
+    let bytes = text.as_bytes();
+    let mut frame = vec![0x81];
+    frame.push(bytes.len() as u8);
+    frame.extend_from_slice(bytes);
+    stream.write_all(&frame).await.unwrap();
+}
+
+#[tokio::test]
+async fn approved_managed_cdp_mutation_executes_against_fake_loopback_websocket() {
+    let (websocket_url, server) = fake_cdp_server().await;
+    let dir = tempdir().unwrap();
+    let mut broker = Broker::bind(BrokerConfig {
+        socket_path: dir.path().join("peer.sock"),
+        authority_socket_path: None,
+        secret: secret(),
+        max_payload_bytes: 4096,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    broker
+        .apply_inventory(InventoryUpdate::managed(
+            BrowserKind::Chrome,
+            "managed-cdp",
+            vec![managed_target(0, websocket_url, "https://example.com")],
+        ))
+        .unwrap();
+    let current = target(1);
+    let grant = authority_round_trip(
+        &mut broker,
+        authority_grant(current.clone(), vec![Capability::Navigate], 60),
+    )
+    .await;
+    assert_eq!(
+        grant.get("ok").and_then(|value| value.as_bool()),
+        Some(true)
+    );
+
+    assert_eq!(
+        broker
+            .handle(FleetRequest::action_with_payload(
+                "approved-navigate",
+                secret(),
+                current,
+                Action::Navigate,
+                Duration::from_secs(1),
+                serde_json::json!({"url":"https://example.com/next"}),
+            ))
+            .await
+            .unwrap(),
+        FleetResponse::Accepted
+    );
+    assert_eq!(
+        server.await.unwrap(),
+        vec!["Page.enable", "Page.navigate", "Page.disable"]
     );
 }
