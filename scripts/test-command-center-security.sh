@@ -45,7 +45,7 @@ if [[ -z "$base_url" ]]; then
   exit 1
 fi
 
-status=$(curl -fsS -o /dev/null -w '%{http_code}' "$base_url/api/command-center/snapshot" || true)
+status=$(curl -fsS -o /dev/null -w '%{http_code}' "$base_url/api/command-center/initiatives" || true)
 if [[ "$status" =~ ^2 ]]; then
   echo "unauthenticated snapshot read succeeded" >&2
   exit 1

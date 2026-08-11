@@ -7,6 +7,7 @@
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
@@ -21,6 +22,7 @@ use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::set_header::SetResponseHeaderLayer;
 use uuid::Uuid;
 
@@ -37,6 +39,7 @@ pub enum Authority {
 macro_rules! id_type {
     ($name:ident) => {
         #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+        #[serde(transparent)]
         pub struct $name(pub String);
     };
 }
@@ -190,7 +193,7 @@ pub struct OrcaReference {
     pub freshness: Freshness,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct CommandCenterSnapshot {
     pub metadata: ProtocolMetadata,
     pub revision: Revision,
@@ -202,12 +205,317 @@ pub struct CommandCenterSnapshot {
     pub available_actions: AvailableActions,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct InitiativeListSnapshot {
     pub metadata: ProtocolMetadata,
     pub revision: Revision,
     pub initiatives: Vec<InitiativeProjection>,
     pub freshness: Freshness,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserProtocolMeta<'a> {
+    protocol_version: &'static str,
+    snapshot_revision: u64,
+    stream_id: &'a str,
+    sequence: u64,
+}
+
+#[derive(Serialize)]
+struct BrowserConnection<'a> {
+    state: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reason: Option<&'a str>,
+    #[serde(rename = "lastConnectedAt", skip_serializing_if = "Option::is_none")]
+    last_connected_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserMilestoneStep<'a> {
+    id: &'a str,
+    title: &'a str,
+    status: &'a str,
+}
+
+#[derive(Serialize)]
+struct BrowserMilestone<'a> {
+    id: &'a str,
+    title: &'a str,
+    status: &'a str,
+    steps: Vec<BrowserMilestoneStep<'a>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserSchedule<'a> {
+    id: &'a str,
+    cadence: &'a str,
+    timezone: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    next_fire: Option<DateTime<Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    last_result: Option<&'a str>,
+    retry_state: String,
+    freshness: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    evidence: Option<&'a str>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserAvailableActions {
+    checkpoint: bool,
+    update_milestone: bool,
+    start_run: bool,
+    retry_run: bool,
+    cancel_run: bool,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserInitiative<'a> {
+    id: &'a str,
+    title: &'a str,
+    outcome: &'a str,
+    status: &'static str,
+    revision: u64,
+    current_milestone: BrowserMilestone<'a>,
+    success_criteria: &'a [String],
+    blockers: &'a [String],
+    next_actions: &'a [String],
+    children: [(); 0],
+    schedules: Vec<BrowserSchedule<'a>>,
+    checkpoints: [(); 0],
+    freshness: &'static str,
+    updated_at: DateTime<Utc>,
+    available_actions: BrowserAvailableActions,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserRun<'a> {
+    id: &'a str,
+    initiative_id: &'a str,
+    status: &'a str,
+    health: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    orca_project_id: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    orca_run_id: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    last_observed_at: Option<DateTime<Utc>>,
+    workers: [(); 0],
+    gates: [(); 0],
+    timeline: [(); 0],
+    attention: Vec<&'a str>,
+    available_actions: BrowserRunActions,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct BrowserRunActions {
+    start_run: bool,
+    retry_run: bool,
+    cancel_run: bool,
+}
+
+fn browser_freshness(freshness: &Freshness) -> &'static str {
+    match freshness.state {
+        FreshnessState::Fresh => "live",
+        FreshnessState::Stale => "stale",
+        FreshnessState::Unavailable => "unavailable",
+    }
+}
+
+fn browser_status(status: GoalStatus) -> &'static str {
+    status.as_str()
+}
+
+fn browser_milestone(initiative: &InitiativeProjection) -> BrowserMilestone<'_> {
+    let milestone = initiative
+        .current_milestone_id
+        .as_deref()
+        .and_then(|id| {
+            initiative
+                .milestones
+                .iter()
+                .find(|milestone| milestone.id == id)
+        })
+        .or_else(|| initiative.milestones.first());
+    match milestone {
+        Some(milestone) => BrowserMilestone {
+            id: &milestone.id,
+            title: &milestone.title,
+            status: &milestone.status,
+            steps: milestone
+                .steps
+                .iter()
+                .map(|step| BrowserMilestoneStep {
+                    id: &step.id,
+                    title: &step.content,
+                    status: &step.status,
+                })
+                .collect(),
+        },
+        None => BrowserMilestone {
+            id: "",
+            title: "No current milestone",
+            status: "pending",
+            steps: Vec::new(),
+        },
+    }
+}
+
+fn browser_initiative<'a>(
+    initiative: &'a InitiativeProjection,
+    schedules: &'a [LinkedScheduleProjection],
+    freshness: &'a Freshness,
+    actions: &'a AvailableActions,
+) -> BrowserInitiative<'a> {
+    BrowserInitiative {
+        id: &initiative.id.0,
+        title: &initiative.title,
+        outcome: if initiative.why.is_empty() {
+            &initiative.description
+        } else {
+            &initiative.why
+        },
+        status: browser_status(initiative.status),
+        revision: initiative.revision.0,
+        current_milestone: browser_milestone(initiative),
+        success_criteria: &initiative.success_criteria,
+        blockers: &initiative.blockers,
+        next_actions: &initiative.next_actions,
+        children: [],
+        schedules: schedules
+            .iter()
+            .map(|schedule| BrowserSchedule {
+                id: &schedule.id.0,
+                cadence: &schedule.cadence,
+                timezone: &schedule.timezone,
+                next_fire: schedule.next_fire_at,
+                last_result: schedule.last_result.as_deref(),
+                retry_state: schedule.retry_count.to_string(),
+                freshness: browser_freshness(&schedule.freshness),
+                evidence: schedule.failure_evidence.as_deref(),
+            })
+            .collect(),
+        checkpoints: [],
+        freshness: browser_freshness(freshness),
+        updated_at: initiative.updated_at,
+        available_actions: BrowserAvailableActions {
+            checkpoint: actions.checkpoint_initiative,
+            update_milestone: actions.update_initiative,
+            start_run: actions.start_initiative_run,
+            retry_run: actions.retry_linked_run,
+            cancel_run: actions.cancel_linked_run,
+        },
+    }
+}
+
+impl Serialize for InitiativeListSnapshot {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct ListDto<'a> {
+            meta: BrowserProtocolMeta<'a>,
+            initiatives: Vec<BrowserInitiative<'a>>,
+            connection: BrowserConnection<'a>,
+        }
+        let no_actions = AvailableActions::default();
+        ListDto {
+            meta: BrowserProtocolMeta {
+                protocol_version: "command-center.v1",
+                snapshot_revision: self.revision.0,
+                stream_id: "",
+                sequence: 0,
+            },
+            initiatives: self
+                .initiatives
+                .iter()
+                .map(|initiative| browser_initiative(initiative, &[], &self.freshness, &no_actions))
+                .collect(),
+            connection: BrowserConnection {
+                state: browser_freshness(&self.freshness),
+                reason: self.freshness.evidence.as_deref(),
+                last_connected_at: self.freshness.last_success_at,
+            },
+        }
+        .serialize(serializer)
+    }
+}
+
+impl Serialize for CommandCenterSnapshot {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        #[serde(rename_all = "camelCase")]
+        struct SnapshotDto<'a> {
+            meta: BrowserProtocolMeta<'a>,
+            initiatives: Vec<BrowserInitiative<'a>>,
+            selected_initiative: BrowserInitiative<'a>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            selected_run: Option<BrowserRun<'a>>,
+            connection: BrowserConnection<'a>,
+        }
+        let selected_run = self.runs.first().map(|run| BrowserRun {
+            id: &run.id.0,
+            initiative_id: &run.initiative_id.0,
+            status: &run.status,
+            health: browser_freshness(&self.orca.freshness),
+            orca_project_id: self.orca.project_id.as_ref().map(|id| id.0.as_str()),
+            orca_run_id: run.orca_run_id.as_ref().map(|id| id.0.as_str()),
+            last_observed_at: self.orca.last_observed_at,
+            workers: [],
+            gates: [],
+            timeline: [],
+            attention: self
+                .orca
+                .freshness
+                .evidence
+                .as_deref()
+                .into_iter()
+                .collect(),
+            available_actions: BrowserRunActions {
+                start_run: self.available_actions.start_initiative_run,
+                retry_run: self.available_actions.retry_linked_run,
+                cancel_run: self.available_actions.cancel_linked_run,
+            },
+        });
+        SnapshotDto {
+            meta: BrowserProtocolMeta {
+                protocol_version: "command-center.v1",
+                snapshot_revision: self.revision.0,
+                stream_id: "",
+                sequence: 0,
+            },
+            initiatives: vec![browser_initiative(
+                &self.initiative,
+                &self.schedules,
+                &self.freshness,
+                &self.available_actions,
+            )],
+            selected_initiative: browser_initiative(
+                &self.initiative,
+                &self.schedules,
+                &self.freshness,
+                &self.available_actions,
+            ),
+            selected_run,
+            connection: BrowserConnection {
+                state: browser_freshness(&self.freshness),
+                reason: self.freshness.evidence.as_deref(),
+                last_connected_at: self.freshness.last_success_at,
+            },
+        }
+        .serialize(serializer)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -415,7 +723,7 @@ pub struct EntityRefs {
     pub orca_run_id: Option<OrcaRunId>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum EventPayload {
     InitiativeUpdated {
@@ -437,6 +745,69 @@ pub enum EventPayload {
         name: String,
         requires_snapshot: bool,
     },
+}
+
+impl<'de> Deserialize<'de> for EventPayload {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de::Error as _;
+
+        #[derive(Deserialize)]
+        #[serde(tag = "type", rename_all = "snake_case")]
+        enum KnownEventPayload {
+            InitiativeUpdated { initiative: InitiativeProjection },
+            ScheduleUpdated { schedule: LinkedScheduleProjection },
+            RunUpdated { run: JcodeRunReference },
+            OrcaObserved { reference: OrcaReference },
+            CommandUpdated { result: CommandResult },
+        }
+
+        let value = serde_json::Value::deserialize(deserializer)?;
+        let event_type = value
+            .get("type")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| D::Error::missing_field("type"))?;
+
+        if event_type == "unknown" {
+            let name = value
+                .get("name")
+                .and_then(serde_json::Value::as_str)
+                .ok_or_else(|| D::Error::missing_field("name"))?;
+            let requires_snapshot = value
+                .get("requires_snapshot")
+                .and_then(serde_json::Value::as_bool)
+                .ok_or_else(|| D::Error::missing_field("requires_snapshot"))?;
+            return Ok(Self::Unknown {
+                name: name.to_owned(),
+                requires_snapshot,
+            });
+        }
+
+        let known = match event_type {
+            "initiative_updated" | "schedule_updated" | "run_updated" | "orca_observed"
+            | "command_updated" => {
+                serde_json::from_value::<KnownEventPayload>(value).map_err(D::Error::custom)?
+            }
+            name => {
+                return Ok(Self::Unknown {
+                    name: name.to_owned(),
+                    requires_snapshot: true,
+                });
+            }
+        };
+
+        Ok(match known {
+            KnownEventPayload::InitiativeUpdated { initiative } => {
+                Self::InitiativeUpdated { initiative }
+            }
+            KnownEventPayload::ScheduleUpdated { schedule } => Self::ScheduleUpdated { schedule },
+            KnownEventPayload::RunUpdated { run } => Self::RunUpdated { run },
+            KnownEventPayload::OrcaObserved { reference } => Self::OrcaObserved { reference },
+            KnownEventPayload::CommandUpdated { result } => Self::CommandUpdated { result },
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -536,6 +907,8 @@ pub struct CommandCenterConfig {
     pub bind_addr: SocketAddr,
     pub allowed_origins: Vec<String>,
     pub authenticated_remote: bool,
+    /// Built SolidStart output served by the daemon. API-only test hosts may omit it.
+    pub asset_dir: Option<PathBuf>,
 }
 
 impl Default for CommandCenterConfig {
@@ -545,6 +918,7 @@ impl Default for CommandCenterConfig {
             bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
             allowed_origins: Vec::new(),
             authenticated_remote: false,
+            asset_dir: None,
         }
     }
 }
@@ -1152,7 +1526,8 @@ pub async fn spawn_command_center_http_host(
 }
 
 pub fn command_center_router(state: CommandCenterHttpState) -> Router {
-    Router::new()
+    let asset_dir = state.config.asset_dir.clone();
+    let router = Router::new()
         .route("/api/command-center/bootstrap", post(bootstrap_handler))
         .route("/api/command-center/initiatives", get(list_handler))
         .route(
@@ -1161,7 +1536,18 @@ pub fn command_center_router(state: CommandCenterHttpState) -> Router {
         )
         .route("/api/command-center/commands", post(command_handler))
         .route("/api/command-center/replay", get(replay_handler))
-        .with_state(state)
+        .with_state(state);
+    let router = if let Some(asset_dir) = asset_dir {
+        let index = asset_dir.join("index.html");
+        router.fallback_service(
+            ServeDir::new(asset_dir)
+                .append_index_html_on_directories(true)
+                .fallback(ServeFile::new(index)),
+        )
+    } else {
+        router
+    };
+    router
         .layer(SetResponseHeaderLayer::if_not_present(
             header::X_FRAME_OPTIONS,
             HeaderValue::from_static("DENY"),
@@ -1176,7 +1562,9 @@ pub fn command_center_router(state: CommandCenterHttpState) -> Router {
         ))
         .layer(SetResponseHeaderLayer::if_not_present(
             header::CONTENT_SECURITY_POLICY,
-            HeaderValue::from_static("default-src 'self'; frame-ancestors 'none'"),
+            HeaderValue::from_static(
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'",
+            ),
         ))
 }
 
@@ -1360,6 +1748,42 @@ pub fn write_typescript_contract(out_dir: &std::path::Path) -> std::io::Result<(
 mod tests {
     use super::*;
     use jcode_task_types::{GoalScope, GoalStep};
+
+    #[test]
+    fn protocol_ids_are_distinct_owned_types_with_scalar_json() {
+        use std::any::TypeId;
+
+        assert_ne!(TypeId::of::<InitiativeId>(), TypeId::of::<JcodeRunId>());
+        assert_ne!(TypeId::of::<JcodeRunId>(), TypeId::of::<OrcaRunId>());
+        assert_ne!(TypeId::of::<CommandId>(), TypeId::of::<IdempotencyKey>());
+
+        let initiative = InitiativeId("initiative-1".into());
+        assert_eq!(serde_json::to_value(&initiative).unwrap(), "initiative-1");
+        assert_eq!(
+            serde_json::from_value::<InitiativeId>(serde_json::json!("initiative-1")).unwrap(),
+            initiative
+        );
+    }
+
+    #[test]
+    fn generated_contract_preserves_id_ownership() {
+        let contract = generated_typescript_contract();
+
+        for declaration in [
+            "export type InitiativeId = Brand<string, \"InitiativeId\">;",
+            "export type JcodeRunId = Brand<string, \"JcodeRunId\">;",
+            "export type OrcaRunId = Brand<string, \"OrcaRunId\">;",
+            "export type StreamId = Brand<string, \"StreamId\">;",
+            "export type IdempotencyKey = Brand<string, \"IdempotencyKey\">;",
+        ] {
+            assert!(contract.contains(declaration), "missing {declaration}");
+        }
+        assert!(contract.contains("streamId: StreamId;"));
+        assert!(contract.contains("initiativeId: InitiativeId;"));
+        assert!(contract.contains("runId?: JcodeRunId;"));
+        assert!(contract.contains("orcaRunId?: OrcaRunId;"));
+        assert!(contract.contains("idempotencyKey: IdempotencyKey;"));
+    }
 
     #[derive(Clone)]
     struct MemoryRepo(Arc<Mutex<(Goal, Revision)>>);
@@ -1545,6 +1969,46 @@ mod tests {
         }
     }
 
+    #[tokio::test]
+    async fn list_snapshot_serializes_to_browser_contract_shape() {
+        let list = service(false).list_initiatives(&auth()).await.unwrap();
+        let value = serde_json::to_value(list).unwrap();
+
+        assert_eq!(value["meta"]["protocolVersion"], "command-center.v1");
+        assert_eq!(value["meta"]["snapshotRevision"], 0);
+        assert_eq!(value["connection"]["state"], "live");
+        assert_eq!(value["initiatives"][0]["id"], "command-center");
+        assert_eq!(value["initiatives"][0]["currentMilestone"]["id"], "m1");
+        assert_eq!(
+            value["initiatives"][0]["currentMilestone"]["steps"][0]["title"],
+            "step"
+        );
+        assert!(value.get("metadata").is_none());
+        assert!(value.get("revision").is_none());
+    }
+
+    #[tokio::test]
+    async fn detail_snapshot_serializes_selected_browser_projections() {
+        let snapshot = service(false)
+            .snapshot(&auth(), &InitiativeId("command-center".into()))
+            .await
+            .unwrap();
+        let value = serde_json::to_value(snapshot).unwrap();
+
+        assert_eq!(value["meta"]["snapshotRevision"], 1);
+        assert_eq!(value["initiatives"][0]["id"], "command-center");
+        assert_eq!(
+            value["selectedInitiative"]["availableActions"]["checkpoint"],
+            true
+        );
+        assert_eq!(
+            value["selectedInitiative"]["schedules"],
+            serde_json::json!([])
+        );
+        assert!(value.get("initiative").is_none());
+        assert!(value.get("available_actions").is_none());
+    }
+
     #[test]
     fn default_config_is_disabled_and_loopback_safe() {
         let config = CommandCenterConfig::default();
@@ -1556,6 +2020,7 @@ mod tests {
             bind_addr: SocketAddr::from(([0, 0, 0, 0], 8080)),
             allowed_origins: vec![],
             authenticated_remote: false,
+            asset_dir: None,
         };
         assert_eq!(
             remote.validate(),
@@ -1570,6 +2035,7 @@ mod tests {
             bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
             allowed_origins: vec!["http://127.0.0.1".into()],
             authenticated_remote: false,
+            asset_dir: None,
         };
         let session = BrowserSessionIssuer::new(Duration::minutes(1)).issue(vec![]);
         let good = RequestGuard {
@@ -1741,6 +2207,7 @@ mod tests {
                 bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
                 allowed_origins: Vec::new(),
                 authenticated_remote: false,
+                asset_dir: None,
             },
             BrowserSessionStore::new(ttl),
             runtime(),
@@ -1748,6 +2215,50 @@ mod tests {
         .await
         .unwrap()
         .unwrap()
+    }
+
+    #[tokio::test]
+    async fn http_host_serves_static_spa_routes_from_managed_asset_dir() {
+        let asset_dir =
+            std::env::temp_dir().join(format!("jcode-command-center-assets-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&asset_dir).unwrap();
+        std::fs::write(
+            asset_dir.join("index.html"),
+            "<main>managed command center</main>",
+        )
+        .unwrap();
+        let host = spawn_command_center_http_host(
+            CommandCenterConfig {
+                enabled: true,
+                bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
+                allowed_origins: Vec::new(),
+                authenticated_remote: false,
+                asset_dir: Some(asset_dir.clone()),
+            },
+            BrowserSessionStore::new(Duration::minutes(1)),
+            runtime(),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+
+        let response = reqwest::get(format!(
+            "http://{}/initiatives/example/runs/run-1",
+            host.addr()
+        ))
+        .await
+        .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(
+            response
+                .text()
+                .await
+                .unwrap()
+                .contains("managed command center")
+        );
+
+        host.shutdown().await.unwrap();
+        std::fs::remove_dir_all(asset_dir).unwrap();
     }
 
     async fn bootstrap(client: &reqwest::Client, host: &CommandCenterHttpHost) -> BrowserSession {
@@ -1775,6 +2286,7 @@ mod tests {
                 bind_addr: SocketAddr::from(([0, 0, 0, 0], 0)),
                 allowed_origins: Vec::new(),
                 authenticated_remote: false,
+                asset_dir: None,
             },
             BrowserSessionStore::new(Duration::minutes(5)),
             runtime(),
@@ -1811,10 +2323,11 @@ mod tests {
             .unwrap()
             .error_for_status()
             .unwrap()
-            .json::<InitiativeListSnapshot>()
+            .json::<serde_json::Value>()
             .await
             .unwrap();
-        assert_eq!(listed.initiatives.len(), 1);
+        assert_eq!(listed["initiatives"].as_array().unwrap().len(), 1);
+        assert_eq!(listed["initiatives"][0]["id"], "command-center");
 
         let missing_csrf = client
             .post(format!("{base}/api/command-center/commands"))
@@ -1936,6 +2449,71 @@ mod tests {
                 requires_snapshot: true,
                 ..
             }
+        ));
+    }
+
+    #[test]
+    fn future_event_variant_deserializes_as_snapshot_requiring_unknown() {
+        let event: EventEnvelope = serde_json::from_value(serde_json::json!({
+            "protocol_version": PROTOCOL_VERSION,
+            "stream_id": "s",
+            "sequence": 8,
+            "timestamp": "2026-08-11T06:00:00Z",
+            "source": "system",
+            "entity_refs": {},
+            "payload": {
+                "type": "initiative_replanned",
+                "plan_revision": 4,
+                "details": { "reason": "future protocol field" }
+            }
+        }))
+        .unwrap();
+
+        assert_eq!(event.sequence, 8);
+        assert_eq!(
+            event.payload,
+            EventPayload::Unknown {
+                name: "initiative_replanned".into(),
+                requires_snapshot: true,
+            }
+        );
+    }
+
+    #[test]
+    fn explicit_unknown_payload_accepts_additive_fields() {
+        let payload: EventPayload = serde_json::from_value(serde_json::json!({
+            "type": "unknown",
+            "name": "adapter_extension",
+            "requires_snapshot": false,
+            "raw_payload": { "adapter_version": 2 },
+            "future_metadata": ["compatible"]
+        }))
+        .unwrap();
+
+        assert_eq!(
+            payload,
+            EventPayload::Unknown {
+                name: "adapter_extension".into(),
+                requires_snapshot: false,
+            }
+        );
+    }
+
+    #[test]
+    fn malformed_known_event_is_not_downgraded_to_unknown() {
+        let error = serde_json::from_value::<EventPayload>(serde_json::json!({
+            "type": "run_updated",
+            "unexpected": true
+        }))
+        .unwrap_err();
+
+        assert!(error.to_string().contains("run"));
+    }
+
+    #[test]
+    fn generated_contract_matches_unknown_event_wire_shape() {
+        assert!(generated_typescript_contract().contains(
+            "{ type: \"unknown\"; name: string; requires_snapshot: boolean } & Record<string, unknown>"
         ));
     }
 }

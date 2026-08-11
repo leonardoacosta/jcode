@@ -17,9 +17,11 @@ export function AppShell(props: {
         Skip to command center
       </a>
       <header>
-        <a href="/initiatives" class="brand">
-          Jcode Command Center
-        </a>
+        <h1 class="brand-title">
+          <a href="/initiatives" class="brand">
+            Jcode Command Center
+          </a>
+        </h1>
         <ConnectionBadge
           state={props.snapshot?.connection.state ?? "loading"}
           reason={props.snapshot?.connection.reason}

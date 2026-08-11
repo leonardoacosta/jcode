@@ -10,52 +10,52 @@
 - [x] 2.1 Add public Rust DTOs for protocol metadata, authoritative snapshots, initiative projections, linked schedule projections, Jcode run references, normalized Orca references, freshness, available actions, and typed errors.
 - [x] 2.2 Add typed command envelopes and results with authentication context, expected entity revision, client idempotency key, pending/completed/failed state, and correlation IDs.
 - [x] 2.3 Add ordered event envelopes with protocol version, authorization-scoped stream ID, stream-local monotonic sequence, timestamp, source, entity references, typed payload, replay cursor, and snapshot-required response; filter authorization before replay persistence/emission and rotate streams when session or subscription scope changes.
-- [ ] 2.4 Implement deterministic TypeScript generation from the public Rust DTO boundary and add `scripts/check-command-center-contracts.sh` to regenerate into a temporary directory, compare output, and fail on stale generated files.
-- [ ] 2.5 Add serialization, backward/forward compatibility, unknown-event, ID ownership, and generated-output tests for the contract package.
+- [x] 2.4 Implement deterministic TypeScript generation from the public Rust DTO boundary and add `scripts/check-command-center-contracts.sh` to regenerate into a temporary directory, compare output, and fail on stale generated files.
+- [x] 2.5 Add serialization, backward/forward compatibility, unknown-event, ID ownership, and generated-output tests for the contract package.
 
 ## 3. Daemon-owned web host and security
 
 - [x] 3.1 Add an experimental command-center configuration that is disabled by default and binds the HTTP listener to loopback when enabled.
-- [ ] 3.2 Serve the SolidStart application, snapshots, typed commands, and event stream through one Jcode-managed lifecycle and verify clean startup, shutdown, restart, and disabled-mode behavior.
+- [x] 3.2 Serve the SolidStart application, snapshots, typed commands, and event stream through one Jcode-managed lifecycle and verify clean startup, shutdown, restart, and disabled-mode behavior.
 - [x] 3.3 Implement trusted local browser bootstrap and short-lived scoped browser sessions without placing provider credentials or reusable bearer secrets in URLs or client persistence.
 - [x] 3.4 Enforce same-origin, CSRF, origin allowlist, method/content-type, session expiry, and security-header requirements for browser requests.
 - [x] 3.5 Reject non-loopback binding unless explicit authenticated remote transport and allowed origins are configured; surface the exposed address and security mode at startup.
-- [ ] 3.6 Add `scripts/test-command-center-security.sh` and focused tests for unauthenticated reads, CSRF mutation attempts, expired sessions, disallowed origins, non-loopback misconfiguration, secret leakage, replay-cursor scope isolation, and deterministic tunnel fixtures; the script SHALL exit nonzero on any failed case.
+- [x] 3.6 Add `scripts/test-command-center-security.sh` and focused tests for unauthenticated reads, CSRF mutation attempts, expired sessions, disallowed origins, non-loopback misconfiguration, secret leakage, replay-cursor scope isolation, and deterministic tunnel fixtures; the script SHALL exit nonzero on any failed case.
 
 ## 4. Query, command, and event services
 
-- [ ] 4.1 Implement initiative list and detail query services over existing durable initiative storage without exposing internal persistence structs.
+- [x] 4.1 Implement initiative list and detail query services over existing durable initiative storage without exposing internal persistence structs.
 - [x] 4.2 Add explicit initiative-to-Orca-project, initiative-to-Jcode-run, initiative-to-schedule, and Jcode-run-to-Orca-run reference models with migration-safe optional fields and canonical Orca IDs.
-- [ ] 4.3 Implement initiative milestone/step update, checkpoint, blocker, and next-action commands with revision checks, authorization, idempotency, and authoritative result payloads.
-- [ ] 4.4 Implement linked schedule projection with cadence, timezone, next fire, last result/run, retry, missed-wake, stale-claim, and failure evidence while leaving global schedule administration out of scope.
+- [x] 4.3 Implement initiative milestone/step update, checkpoint, blocker, and next-action commands with revision checks, authorization, idempotency, and authoritative result payloads.
+- [x] 4.4 Implement linked schedule projection with cadence, timezone, next fire, last result/run, retry, missed-wake, stale-claim, and failure evidence while leaving global schedule administration out of scope.
 - [ ] 4.5 Implement the Orca adapter for versioned project/run/worker/terminal/gate observations and only `start_initiative_run`, `retry_linked_run`, and `cancel_linked_run`; enforce the design capability table, preserve Orca identifiers and last-observed timestamps, and reject every other runtime mutation before adapter invocation.
 - [x] 4.6 Implement authorization-scoped event persistence/replay or bounded replay buffers with stream IDs, stream-local sequence validation, cursor-scope rejection, authorization/subscription rotation, gap detection, and snapshot-required fallback.
-- [ ] 4.7 Add domain tests for stale initiative revisions, duplicate commands, pending downstream actions, missing links, unknown entities, unavailable Orca, capability negotiation, replay success, and replay gaps.
+- [x] 4.7 Add domain tests for stale initiative revisions, duplicate commands, pending downstream actions, missing links, unknown entities, unavailable Orca, capability negotiation, replay success, and replay gaps.
 
 ## 5. SolidStart application foundation
 
 - [x] 5.1 Create the SolidStart workspace with locked dependency versions, formatting/lint/typecheck/test commands, generated client consumption, and no independent domain database or server functions that bypass Jcode.
-- [ ] 5.2 Implement the application shell, authenticated bootstrap, route loaders, connection status, error boundary, keyboard focus conventions, accessible live regions, and host-neutral embedded-width layout contract.
-- [ ] 5.3 Implement `/initiatives` with authoritative loading, empty, unavailable, error, resumable, historical, blocker, progress-evidence, and freshness states.
+- [x] 5.2 Implement the application shell, authenticated bootstrap, route loaders, connection status, error boundary, keyboard focus conventions, accessible live regions, and host-neutral embedded-width layout contract.
+- [x] 5.3 Implement `/initiatives` with authoritative loading, empty, unavailable, error, resumable, historical, blocker, progress-evidence, and freshness states.
 - [x] 5.4 Implement `/initiatives/:initiativeId` and `/initiatives/:initiativeId/runs/:runId` with relationship validation and stable deep links.
 - [x] 5.5 Add a client projection store that installs snapshots atomically, applies only next-sequence events, preserves client-owned layout/filter/selection/draft state, and reconciles through replay or snapshot replacement.
-- [ ] 5.6 Add client tests for expired authentication, route-not-found/forbidden, event gaps, unknown events, disconnect/reconnect, snapshot replacement, and preservation of local interface state.
+- [x] 5.6 Add client tests for expired authentication, route-not-found/forbidden, event gaps, unknown events, disconnect/reconnect, snapshot replacement, and preservation of local interface state.
 
 ## 6. Split initiative and execution workspace
 
-- [ ] 6.1 Build the resizable durable pane for outcome, status, current milestone, steps, success criteria, blockers, next actions, child references, linked schedules, and checkpoint history.
-- [ ] 6.2 Build initiative editing and checkpoint controls with explicit pending state, stale-revision reconciliation, permission handling, inline inspect/retry/dismiss recovery, and no optimistic claim of authoritative success.
-- [ ] 6.3 Build the live execution pane for linked Jcode run health, normalized Orca graph, workers/sessions, terminals, gates/approvals, attention items, event timeline, freshness, and explicit no-run state.
+- [x] 6.1 Build the resizable durable pane for outcome, status, current milestone, steps, success criteria, blockers, next actions, child references, linked schedules, and checkpoint history.
+- [x] 6.2 Build initiative editing and checkpoint controls with explicit pending state, stale-revision reconciliation, permission handling, inline inspect/retry/dismiss recovery, and no optimistic claim of authoritative success.
+- [x] 6.3 Build the live execution pane for linked Jcode run health, normalized Orca graph, workers/sessions, terminals, gates/approvals, attention items, event timeline, freshness, and explicit no-run state.
 - [x] 6.4 Disable or hide unsupported runtime actions using server-supplied capabilities and render stale/unavailable Orca state without degrading durable initiative management.
-- [ ] 6.5 Verify keyboard-only operation, visible focus, semantic headings/regions, status announcements, reduced-motion behavior, narrow embedded-surface layout, and large event-list virtualization.
+- [x] 6.5 Verify keyboard-only operation, visible focus, semantic headings/regions, status announcements, reduced-motion behavior, narrow embedded-surface layout, and large event-list virtualization.
   - Run `pnpm --dir apps/command-center test -- accessibility embedded-layout virtualization`; expected result is exit 0 with keyboard-only focus traversal, accessible status announcements, reduced-motion assertions, the minimum embedded-width fixture, and bounded large-list rendering all passing.
   - touches: `apps/command-center/src/`, `apps/command-center/tests/`, and accessibility/embedded-width fixtures (new)
   - depends on: 6.1, 6.2, 6.3, 6.4
-- [ ] 6.6 Add component and interaction tests covering every loading, empty, unavailable, stale, error, data, pending-command, failed-command, and recovery state required by the specs.
+- [x] 6.6 Add component and interaction tests covering every loading, empty, unavailable, stale, error, data, pending-command, failed-command, and recovery state required by the specs.
 
 ## 7. Managed topology and acceptance workflow
 
-- [ ] 7.1 Add a non-production test configuration that launches one isolated Jcode daemon, command-center web host, deterministic initiative fixture, schedule fixture, and compatible Orca runtime/fixture without using the shared user daemon.
+- [x] 7.1 Add a non-production test configuration that launches one isolated Jcode daemon, command-center web host, deterministic initiative fixture, schedule fixture, and compatible Orca runtime/fixture without using the shared user daemon.
 - [ ] 7.2 Add `scripts/test-command-center.sh` and Playwright coverage for authenticated launch, initiative discovery, split route rendering, milestone/step update, checkpointing, linked schedule evidence, live event update, run deep link, scoped-cursor rejection, disconnect, replay, snapshot reconciliation, and initiative resume; expected script result is exit 0 with every named workflow passing.
 - [ ] 7.3 Run the same acceptance workflow with Orca intentionally unavailable and verify durable initiative operations continue while runtime state is explicitly degraded and unsafe actions cannot succeed.
   - Run `pnpm --dir apps/command-center test:e2e -- --project orca-unavailable`; expected result is exit 0 with initiative update/checkpoint/resume passing, the execution pane marked unavailable with last-observed evidence, and every unsafe runtime command absent or rejected.
@@ -76,7 +76,7 @@
 
 - [x] 8.1 Document command-center enablement, loopback default, authenticated remote bridge, browser-session behavior, troubleshooting, logs, shutdown, and rollback.
 - [x] 8.2 Update architecture documentation to mark SolidStart as the canonical interactive browser UI, the Context Control Room as a lightweight inspector, Orca as project/live-runtime authority, and the future desktop `CommandCenter` surface as a later milestone.
-- [ ] 8.3 Verify existing TUI, initiative tool, `/initiatives` commands, schedules, ambient runner, daemon socket clients, browser automation tool, and desktop2 build remain behaviorally compatible when the web feature is disabled.
+- [x] 8.3 Verify existing TUI, initiative tool, `/initiatives` commands, schedules, ambient runner, daemon socket clients, browser automation tool, and desktop2 build remain behaviorally compatible when the web feature is disabled.
   - Run `cargo test -p jcode-app-core goal`, `cargo test -p jcode-app-core ambient`, `cargo test -p jcode-app-core browser`, `cargo test -p jcode-tui control_room`, `cargo test -p jcode-tui initiatives`, `cargo check --profile selfdev -p jcode-desktop2`, and `cargo test --profile selfdev -p jcode server`; expected result is exit 0 for every command with the web feature disabled and no existing client, initiative, schedule, browser-tool, or desktop contract regression.
   - touches: compatibility tests adjacent to the affected Rust modules and existing client fixtures
   - depends on: 3.2, 4.7, 5.6, 6.6

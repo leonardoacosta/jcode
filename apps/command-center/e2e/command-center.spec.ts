@@ -33,10 +33,7 @@ async function installFixture(
     }
     Object.defineProperty(window, "EventSource", { value: FixtureEventSource });
   }, nextEvent);
-  await page.route("**/api/command-center/snapshot**", async (route) =>
-    route.fulfill({ json: current }),
-  );
-  await page.route("**/api/command-center/bootstrap", async (route) =>
+  await page.route("**/api/command-center/bootstrap**", async (route) =>
     route.fulfill({
       json: {
         id: "fixture-session",
@@ -111,13 +108,17 @@ test.beforeEach(async ({ page }, testInfo) => {
 
 test("authenticated bootstrap loads authoritative command center", async ({ page }) => {
   await page.goto("/initiatives/init-command-center/runs/run-1");
-  await expect(page.getByRole("heading", { name: "Jcode Command Center" })).toBeVisible();
+  await expect(
+    page.getByRole("banner").getByRole("heading", { name: "Jcode Command Center" }),
+  ).toBeVisible();
   await expect(page.getByLabel(/Connection/)).toBeVisible();
 });
 
 test("discovery route lists accessible initiatives @fixture-only", async ({ page }) => {
   await page.goto("/initiatives");
-  await expect(page.getByRole("heading", { name: "Jcode Command Center" })).toBeVisible();
+  await expect(
+    page.getByRole("banner").getByRole("heading", { name: "Jcode Command Center" }),
+  ).toBeVisible();
   await expect(
     page.getByText("Supervise durable initiatives beside live execution."),
   ).toBeVisible();
@@ -151,6 +152,25 @@ test("schedule evidence and live event stream render @fixture-only", async ({ pa
   await page.goto("/initiatives/init-command-center/runs/run-1");
   await expect(page.getByText("Last schedule evidence from fixture")).toBeVisible();
   await expect(page.getByText("Reconnect event applied")).toBeVisible();
+});
+
+test("accessibility, keyboard resize, embedded width, and virtualization hold @fixture-only", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 520, height: 720 });
+  await page.goto("/initiatives/init-command-center/runs/run-1");
+
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Skip to command center" })).toBeFocused();
+  await page.getByLabel("Pane size").focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByLabel("Pane size")).toHaveJSProperty("value", "49");
+  await expect(page.getByLabel("Virtualized event timeline").locator("li")).toHaveCount(40);
+
+  const columns = await page
+    .getByLabel("Split initiative and execution workspace")
+    .evaluate((element) => getComputedStyle(element).gridTemplateColumns);
+  expect(columns.trim().split(/\s+/)).toHaveLength(1);
 });
 
 test("disconnect, replay gap, snapshot replacement, and resume are visible @fixture-only", async ({

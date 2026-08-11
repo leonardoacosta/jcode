@@ -7,15 +7,50 @@ import "./styles.css";
 
 const transport = new HttpCommandCenterTransport();
 
+export function loadFailureState(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("bootstrap_401") || message.includes("snapshot_401")) {
+    return {
+      title: "Authentication expired",
+      message:
+        "Your command-center browser session expired. Reload to request a fresh scoped session.",
+    };
+  }
+  if (message.includes("snapshot_403")) {
+    return {
+      title: "Initiative forbidden",
+      message: "This browser session is not allowed to inspect the requested initiative.",
+    };
+  }
+  if (message.includes("snapshot_404")) {
+    return {
+      title: "Initiative not found",
+      message: "No authoritative Jcode initiative exists for this route.",
+    };
+  }
+  return {
+    title: "Snapshot failed",
+    message:
+      "The route cannot obtain authoritative data. Use retry after authentication or daemon recovery.",
+  };
+}
+
 function WorkspaceRoute() {
   const path = typeof location === "undefined" ? "/initiatives" : location.pathname;
   const [failure, setFailure] = createSignal<string>();
+  const [loadError, setLoadError] = createSignal<unknown>();
   const [pending, setPending] = createSignal(false);
   const store = createProjectionStore();
   const [snapshot] = createResource(async () => {
-    const next = await transport.loadSnapshot(path);
-    store.installSnapshot(next);
-    return next;
+    try {
+      const next = await transport.loadSnapshot(path);
+      store.installSnapshot(next);
+      setLoadError(undefined);
+      return next;
+    } catch (error) {
+      setLoadError(error);
+      return undefined;
+    }
   });
   const current = () => store.snapshot ?? snapshot();
   const checkpoint = async (summary: string) => {
@@ -96,15 +131,7 @@ function WorkspaceRoute() {
           />
         }
       >
-        <Show
-          when={!snapshot.error}
-          fallback={
-            <StateCard
-              title="Snapshot failed"
-              message="The route cannot obtain authoritative data. Use retry after authentication or daemon recovery."
-            />
-          }
-        >
+        <Show when={!loadError()} fallback={<StateCard {...loadFailureState(loadError())} />}>
           <Show
             when={current()?.selectedInitiative}
             fallback={<InitiativeList initiatives={current()?.initiatives ?? []} />}

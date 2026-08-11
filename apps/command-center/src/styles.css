@@ -40,6 +40,10 @@ body {
   color: var(--text);
   text-decoration: none;
 }
+.brand-title {
+  margin: 0;
+  font-size: 1rem;
+}
 .badge,
 .status {
   border: 1px solid var(--line);

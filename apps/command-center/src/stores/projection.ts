@@ -1,6 +1,44 @@
 import { createSignal } from "solid-js";
 import type { CommandCenterSnapshot, EventEnvelope } from "../generated/command-center-contract";
 
+type UnknownRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null;
+}
+
+function isInitiativeProjection(
+  value: unknown,
+): value is CommandCenterSnapshot["initiatives"][number] {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.title === "string" &&
+    isRecord(value.currentMilestone) &&
+    Array.isArray(value.schedules) &&
+    isRecord(value.availableActions)
+  );
+}
+
+function isRunProjection(
+  value: unknown,
+): value is NonNullable<CommandCenterSnapshot["selectedRun"]> {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.initiativeId === "string" &&
+    typeof value.health === "string" &&
+    Array.isArray(value.workers) &&
+    Array.isArray(value.gates) &&
+    Array.isArray(value.timeline) &&
+    isRecord(value.availableActions)
+  );
+}
+
+function unknownEventRequiresSnapshot(payload: UnknownRecord): boolean {
+  return payload.requiresSnapshot === true || payload.requires_snapshot === true;
+}
+
 export interface LocalUiState {
   durablePanePercent: number;
   selectedRunId?: string;
@@ -42,6 +80,7 @@ export function createProjectionStore(initial?: CommandCenterSnapshot) {
     const withSequence = { ...current, meta: { ...current.meta, sequence: event.sequence } };
     const payload = event.payload;
     if (payload.type === "initiative_updated") {
+      if (!isInitiativeProjection(payload.initiative)) return "snapshot_required";
       setSnapshotSignal({
         ...withSequence,
         selectedInitiative: payload.initiative,
@@ -53,6 +92,7 @@ export function createProjectionStore(initial?: CommandCenterSnapshot) {
       return "applied";
     }
     if (payload.type === "run_updated") {
+      if (!isRunProjection(payload.run)) return "snapshot_required";
       setSnapshotSignal({ ...withSequence, selectedRun: payload.run });
       setUi("announcement", `Run ${payload.run.id} updated`);
       return "applied";
@@ -72,6 +112,9 @@ export function createProjectionStore(initial?: CommandCenterSnapshot) {
       return "applied";
     }
     if (payload.type === "snapshot_required") return "snapshot_required";
+    if (payload.type === "unknown" && unknownEventRequiresSnapshot(payload)) {
+      return "snapshot_required";
+    }
     setSnapshotSignal(withSequence);
     return "applied";
   };

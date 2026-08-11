@@ -88,7 +88,7 @@ fn log_task_completion(result: Result<(), tokio::task::JoinError>) {
 }
 
 #[derive(Clone)]
-pub(super) struct ServerRuntime {
+pub(crate) struct ServerRuntime {
     sessions: Arc<RwLock<HashMap<String, Arc<Mutex<Agent>>>>>,
     event_tx: broadcast::Sender<ServerEvent>,
     provider: Arc<dyn Provider>,
@@ -261,6 +261,14 @@ impl ServerRuntime {
                 }
             })
             .await
+    }
+
+    pub(crate) async fn spawn_cancellable_background_task<F, Fut>(&self, task: F) -> bool
+    where
+        F: FnOnce(CancellationToken) -> Fut,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        self.tasks.spawn(task).await
     }
 
     async fn spawn_client_task(

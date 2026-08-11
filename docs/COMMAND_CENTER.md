@@ -1,6 +1,6 @@
 # Command Center
 
-Status: planned vertical-slice support for OpenSpec change `add-solidstart-command-center-vertical-slice`.
+Status: experimental vertical-slice implementation for OpenSpec change `add-solidstart-command-center-vertical-slice`.
 
 The Command Center is the browser-first supervision surface for Jcode initiatives. The approved first slice is a Jcode-daemon-hosted SolidStart application that shows durable initiative intent beside linked live execution state.
 
@@ -23,6 +23,19 @@ Required startup evidence:
 4. Location of logs and the isolated daemon/socket used by the test harness.
 
 Non-loopback binding without authenticated transport and allowed origins is a startup failure.
+
+The daemon lifecycle reads these experimental environment variables:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `JCODE_COMMAND_CENTER_ENABLED` | unset/disabled | Set to `1`, `true`, or `yes` to start the managed host. |
+| `JCODE_COMMAND_CENTER_BIND_ADDR` | `127.0.0.1:0` | Loopback listener address. Use a fixed port for acceptance or SSH forwarding. |
+| `JCODE_COMMAND_CENTER_ASSET_DIR` | unset | Path to the built SolidStart `.output/public` directory. |
+| `JCODE_COMMAND_CENTER_ALLOWED_ORIGINS` | empty | Comma-separated browser origins. The bound loopback origin is added automatically when empty. |
+| `JCODE_COMMAND_CENTER_AUTHENTICATED_REMOTE` | disabled | Required together with an allowlist before any non-loopback bind is accepted. |
+| `JCODE_ORCA_CLI` | `orca` | Orca CLI executable. On the managed Linux host this is normally `/home/nyaptor/.local/bin/orca-ide`. |
+
+The host is owned by the daemon runtime task scope. Daemon shutdown and reload cancel the lifecycle task, gracefully stop the HTTP listener, and release the port. There is no independently managed Node service in the deployed topology.
 
 ## Browser sessions
 

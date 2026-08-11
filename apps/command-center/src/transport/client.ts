@@ -27,6 +27,16 @@ interface ReplayBatch {
   snapshot_required?: boolean;
 }
 
+interface RustCommandResult {
+  commandId?: string;
+  idempotencyKey?: string;
+  correlationId?: string;
+  state: CommandResult["state"];
+  authoritative?: unknown;
+  snapshot?: CommandCenterSnapshot;
+  error?: { kind?: string; message?: string; reason?: string; entity?: string; inspect?: string };
+}
+
 function camelize(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(camelize);
   if (!value || typeof value !== "object") return value;
@@ -40,6 +50,48 @@ function camelize(value: unknown): unknown {
 
 function initiativeIdFromPath(path: string): string | undefined {
   return path.match(/^\/initiatives\/([^/]+)/)?.[1];
+}
+
+function commandErrorCode(
+  error: RustCommandResult["error"],
+): NonNullable<CommandResult["error"]>["code"] {
+  switch (error?.kind) {
+    case "reauthentication_required":
+    case "unauthorized":
+      return "reauthentication_required";
+    case "forbidden":
+      return "forbidden";
+    case "stale_revision":
+      return "stale_revision";
+    case "orca_unavailable":
+      return "unavailable";
+    default:
+      return "invalid";
+  }
+}
+
+function commandErrorMessage(error: RustCommandResult["error"]): string {
+  if (!error) return "Command failed";
+  if (error.message) return error.message;
+  if (error.reason) return error.reason;
+  if (error.entity) return `${error.entity} not found`;
+  return error.kind?.replaceAll("_", " ") ?? "Command failed";
+}
+
+function browserCommandResult(value: unknown): CommandResult {
+  const result = camelize(value) as RustCommandResult;
+  return {
+    state: result.state,
+    correlationId: result.correlationId ?? result.commandId ?? result.idempotencyKey ?? "unknown",
+    snapshot: result.snapshot,
+    error: result.error
+      ? {
+          code: commandErrorCode(result.error),
+          message: commandErrorMessage(result.error),
+          inspect: result.error.inspect,
+        }
+      : undefined,
+  };
 }
 
 export class HttpCommandCenterTransport implements CommandCenterTransport {
@@ -120,7 +172,7 @@ export class HttpCommandCenterTransport implements CommandCenterTransport {
           message: `Command failed with HTTP ${response.status}`,
         },
       };
-    return camelize(await response.json()) as CommandResult;
+    return browserCommandResult(await response.json());
   }
 
   subscribe(

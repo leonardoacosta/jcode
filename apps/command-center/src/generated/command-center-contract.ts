@@ -1,3 +1,15 @@
+declare const idBrand: unique symbol;
+export type Brand<Value, Name extends string> = Value & { readonly [idBrand]?: Name };
+
+export type InitiativeId = Brand<string, "InitiativeId">;
+export type ScheduleRefId = Brand<string, "ScheduleRefId">;
+export type JcodeRunId = Brand<string, "JcodeRunId">;
+export type OrcaProjectId = Brand<string, "OrcaProjectId">;
+export type OrcaRunId = Brand<string, "OrcaRunId">;
+export type StreamId = Brand<string, "StreamId">;
+export type CommandId = Brand<string, "CommandId">;
+export type IdempotencyKey = Brand<string, "IdempotencyKey">;
+
 export type EntityId = string;
 export type Freshness = "live" | "stale" | "unavailable" | "loading" | "error";
 export type InitiativeStatus = "active" | "blocked" | "completed" | "archived";
@@ -7,7 +19,7 @@ export type CommandState = "pending" | "completed" | "failed";
 export interface ProtocolMeta {
   protocolVersion: "command-center.v1";
   snapshotRevision: number;
-  streamId: string;
+  streamId: StreamId;
   sequence: number;
 }
 
@@ -29,7 +41,7 @@ export interface Checkpoint {
   createdAt: string;
 }
 export interface ScheduleProjection {
-  id: EntityId;
+  id: ScheduleRefId;
   cadence: string;
   timezone: string;
   nextFire?: string;
@@ -52,7 +64,7 @@ export interface AvailableActions {
   cancelRun: boolean;
 }
 export interface InitiativeProjection {
-  id: EntityId;
+  id: InitiativeId;
   title: string;
   outcome: string;
   status: InitiativeStatus;
@@ -89,12 +101,12 @@ export interface TimelineEvent {
   severity: "info" | "warning" | "error";
 }
 export interface RunProjection {
-  id: EntityId;
-  initiativeId: EntityId;
+  id: JcodeRunId;
+  initiativeId: InitiativeId;
   status: "idle" | "running" | "failed" | "completed" | "canceling";
   health: Freshness;
-  orcaProjectId?: string;
-  orcaRunId?: string;
+  orcaProjectId?: OrcaProjectId;
+  orcaRunId?: OrcaRunId;
   lastObservedAt?: string;
   workers: WorkerProjection[];
   gates: GateProjection[];
@@ -102,22 +114,24 @@ export interface RunProjection {
   attention: string[];
   availableActions: Pick<AvailableActions, "startRun" | "retryRun" | "cancelRun">;
 }
-export interface CommandCenterSnapshot {
+export interface InitiativeListSnapshot {
   meta: ProtocolMeta;
   initiatives: InitiativeProjection[];
+  connection: { state: Freshness; reason?: string; lastConnectedAt?: string };
+}
+export interface CommandCenterSnapshot extends InitiativeListSnapshot {
   selectedInitiative?: InitiativeProjection;
   selectedRun?: RunProjection;
-  connection: { state: Freshness; reason?: string; lastConnectedAt?: string };
 }
 export type EventPayload =
   | { type: "initiative_updated"; initiative: InitiativeProjection }
   | { type: "run_updated"; run: RunProjection }
-  | { type: "timeline_appended"; runId: EntityId; event: TimelineEvent }
+  | { type: "timeline_appended"; runId: JcodeRunId; event: TimelineEvent }
   | { type: "snapshot_required"; reason: string }
-  | { type: "unknown"; rawType: string };
+  | ({ type: "unknown"; name: string; requires_snapshot: boolean } & Record<string, unknown>);
 export interface EventEnvelope {
   protocolVersion: "command-center.v1";
-  streamId: string;
+  streamId: StreamId;
   sequence: number;
   timestamp: string;
   source: "jcode" | "orca";
@@ -127,7 +141,7 @@ export interface EventEnvelope {
 export type CommandPayload =
   | {
       type: "checkpoint_initiative";
-      initiativeId: EntityId;
+      initiativeId: InitiativeId;
       expectedRevision: number;
       summary: string;
       blockers: string[];
@@ -135,7 +149,7 @@ export type CommandPayload =
     }
   | {
       type: "update_step";
-      initiativeId: EntityId;
+      initiativeId: InitiativeId;
       expectedRevision: number;
       milestoneId: EntityId;
       stepId: EntityId;
@@ -143,12 +157,12 @@ export type CommandPayload =
     }
   | {
       type: "start_initiative_run" | "retry_linked_run" | "cancel_linked_run";
-      initiativeId: EntityId;
-      runId?: EntityId;
+      initiativeId: InitiativeId;
+      runId?: JcodeRunId;
       expectedRevision: number;
     };
 export interface CommandEnvelope {
-  idempotencyKey: string;
+  idempotencyKey: IdempotencyKey;
   payload: CommandPayload;
 }
 export interface CommandResult {

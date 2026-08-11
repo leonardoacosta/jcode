@@ -42,7 +42,7 @@ mod reload;
 mod reload_recovery;
 mod reload_state;
 mod reload_trace;
-mod runtime;
+pub(crate) mod runtime;
 mod socket;
 mod swarm;
 mod swarm_channels;
@@ -1197,6 +1197,8 @@ impl Server {
         let runtime = self.runtime();
         let main_handle = runtime.spawn_main_accept_loop(main_listener);
         let debug_handle = runtime.spawn_debug_accept_loop(debug_listener, server_start_time);
+
+        crate::command_center::spawn_managed_http_host(&runtime).await;
 
         crate::logging::info("Accept loop tasks spawned");
 
