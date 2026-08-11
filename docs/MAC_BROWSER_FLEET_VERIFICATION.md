@@ -72,11 +72,25 @@ Deploying the extension-bridge build to the real Mac exposed four defects that t
 | `~` in the `RemoteForward` listen path | Every reverse tunnel failed with `remote port forwarding failed for listen path` | Render an absolute `/home/<user>/...` path; `ssh_include_forwards_to_an_absolute_remote_socket_path` forbids tilde paths |
 | Stale native-host defaults | Chrome launches the host with no arguments, so it silently targeted the old socket and secret | Shared `default_broker_socket_path` and `default_native_secret_path` helpers; `native_host_defaults_match_the_installed_broker_socket_layout` keeps both crates aligned |
 | Unsupervised reverse tunnel | A manual `ssh -N` died on sleep, network loss, or session reload, leaving a stale socket and a dead bridge | `dev.jcode.mac-browser-fleet-tunnel` LaunchAgent with `KeepAlive`; `tunnel_launch_agent_keeps_the_reverse_forward_alive` pins the supervision flags |
+| Chrome launch arguments rejected | Chrome starts a host as `<binary> <manifest-path> <origin>`; the binary treated the manifest path as an unknown subcommand and exited instantly, so every extension reload silently failed | `classify_invocation` treats any non-subcommand launch as native-messaging; `chrome_style_native_host_launch_is_not_a_usage_error` pins Chrome's exact argv shape |
+| Manifest missing from the active user-data-dir | The extension was loaded in a secondary `--user-data-dir` profile whose `NativeMessagingHosts` directory was empty, so Chrome never launched the host at all | Manifests are written to every discovered user-data-dir; `native_host_manifests_reach_alternate_user_data_dirs` pins the behavior |
 
 Observed after the fixes, through Jcode's public interface:
 
 - `browser list_tabs browser=mac` returned 10 live managed Chrome targets.
 - Killing the broker: launchd relaunched it and discovery recovered.
 - Killing the tunnel: the forwarded socket was rebound automatically within 15 seconds and discovery recovered.
+
+## Ordinary-profile acceptance (2026-08-11)
+
+After the launch-argument and per-profile manifest fixes, the extension bridge attached and ordinary Chrome tabs became visible through Jcode's public interface:
+
+- `browser list_tabs browser=mac` returned nine `ordinary-chrome` targets from the operator's real profile, alongside the `managed-chrome` CDP targets, each carrying opaque `tab_*` and `win_*` references rather than raw Chrome identifiers.
+- The inventory generation advanced on its own (10, then 36, then 47) as real tabs changed, confirming the extension keeps pushing live snapshots rather than a single stale one.
+- `browser open browser=mac` against a real ordinary tab was refused with `approval required on the Mac`, so ordinary profiles are read-only until a Mac-local human approves.
+- A request carrying an out-of-date generation was refused with `stale generation; refresh inventory`.
+- `jcode-mac-browser-fleet authority grant` issued a scoped, time-bounded lease from the Mac-local authority socket, which is not reachable through the SSH-forwarded peer socket.
+
+Still unproven and deliberately not claimed: execution of an approved mutation on an ordinary tab, revocation restoring approval-required, hard-deny categories against ordinary targets, and any Edge ordinary-profile routing.
 
 Operator note: `jcode-mac-browser-setup install` writes the SSH include file but deliberately does not edit `~/.ssh/config`. The `Include ~/.ssh/jcode-mac-browser-fleet.conf` line must be present in that config, and an unrelated rewrite of the file will silently drop the tunnel.
