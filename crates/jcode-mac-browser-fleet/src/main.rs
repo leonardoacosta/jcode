@@ -114,12 +114,10 @@ async fn run_native_host(args: Vec<std::ffi::OsString>) -> Result<(), Box<dyn st
     }
     let home = std::env::var_os("HOME").ok_or("HOME is required for native-host defaults")?;
     let home = PathBuf::from(home);
-    let socket_path = socket.unwrap_or_else(|| {
-        home.join("Library/Application Support/Jcode/MacBrowserFleet/jcode-mac-browser-fleet.sock")
-    });
-    let secret_path = native_secret.unwrap_or_else(|| {
-        home.join("Library/Application Support/Jcode/MacBrowserFleet/native.secret")
-    });
+    let socket_path =
+        socket.unwrap_or_else(|| jcode_mac_browser_fleet::default_broker_socket_path(&home));
+    let secret_path =
+        native_secret.unwrap_or_else(|| jcode_mac_browser_fleet::default_native_secret_path(&home));
     let secret = fs::read_to_string(secret_path)?.trim().to_string();
     if secret.is_empty() {
         return Err("native secret is empty".into());

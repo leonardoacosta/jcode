@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
@@ -241,6 +241,24 @@ pub struct NativeHostBridgeConfig {
     pub socket_path: PathBuf,
     pub secret: String,
     pub max_payload_bytes: usize,
+}
+
+/// Directory holding the Mac-local broker sockets.
+///
+/// Deliberately short: macOS caps `sockaddr_un.sun_path` at 104 bytes, so a
+/// longer directory makes the broker fail to bind at runtime.
+pub fn default_socket_dir(home: &Path) -> PathBuf {
+    home.join(".jcode/mac-fleet")
+}
+
+/// Default broker socket the native host connects to.
+pub fn default_broker_socket_path(home: &Path) -> PathBuf {
+    default_socket_dir(home).join("broker.sock")
+}
+
+/// Default native-messaging secret path used to authenticate to the broker.
+pub fn default_native_secret_path(home: &Path) -> PathBuf {
+    home.join("Library/Application Support/Jcode/MacBrowserFleet/native.secret")
 }
 
 #[derive(Default)]

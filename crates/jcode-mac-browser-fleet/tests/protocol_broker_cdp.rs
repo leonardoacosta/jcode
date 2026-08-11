@@ -1289,3 +1289,26 @@ async fn peer_and_native_secrets_are_not_interchangeable_between_wire_surfaces()
     assert!(!peer_as_internal.to_string().contains("test-peer-secret"));
     server.abort();
 }
+
+#[test]
+fn native_host_defaults_match_the_installed_broker_socket_layout() {
+    // The native host is launched by Chrome with no arguments, so its defaults
+    // must match what the setup tool installs. A stale default silently breaks
+    // every ordinary-profile connection while all files still look installed.
+    let home = std::path::Path::new("/Users/test");
+
+    let socket = jcode_mac_browser_fleet::default_broker_socket_path(home);
+    let secret = jcode_mac_browser_fleet::default_native_secret_path(home);
+
+    assert_eq!(
+        socket,
+        std::path::PathBuf::from("/Users/test/.jcode/mac-fleet/broker.sock")
+    );
+    assert!(socket.to_string_lossy().len() <= 103);
+    assert_eq!(
+        secret,
+        std::path::PathBuf::from(
+            "/Users/test/Library/Application Support/Jcode/MacBrowserFleet/native.secret"
+        )
+    );
+}
