@@ -89,8 +89,8 @@ The following matrix records the observed result for each changed public boundar
 | Real browser bootstrap and deep-link rendering through the Jcode daemon | Playwright repository-local project pointed at the real isolated managed listener | The browser bootstrapped a short-lived session, loaded `/initiatives/.../runs/...`, rendered the semantic Command Center heading, and queried the protected API successfully. CSP, missing-resource handling, and heading defects found by this path were fixed before the pass. |
 | Disconnect, replay, snapshot replacement, unknown events, and local UI-state preservation | Projection-store unit tests and named Playwright reconnect workflow | Next-sequence events applied, gaps triggered reconciliation, replacement snapshots installed atomically, unknown events did not corrupt state, and client-owned layout/selection state survived replacement. |
 | Existing interfaces when the feature is disabled | Focused app-core goal/ambient/browser tests, TUI control-room/initiative tests, desktop2 check, and Jcode server tests | All invoked compatibility commands exited 0. Existing initiative, schedule, browser-tool, TUI, desktop, and daemon behavior remained available with the listener disabled. |
-| Repository-local SSH/tunnel invariants | `bash scripts/test-command-center-tunnel-fixture.sh --fixture-only` and managed Mac/homelab smoke precondition probe | Deterministic stream/path isolation passed and both SSH aliases plus managed Jcode readiness were confirmed. Final Mac-origin browser use is not claimed because the homelab Command Center listener has not been deployed and enabled. |
-| Full rollout gate | OpenSpec task 8.4 and managed topology task 7.5 | Blocked, not passed. The approved Orca mutation contract, managed listener deployment, Mac-origin browser tunnel, managed-hardware P95/resource measurements, and a stable repository-wide fmt/clippy window remain required. |
+| Managed Mac/homelab topology | `bash scripts/test-command-center-tunnel-fixture.sh --fixture-only` and `bash scripts/test-command-center-mac-smoke.sh --mac-host mac --jcode-host homelab` | Deterministic stream/path isolation passed. The systemd-managed homelab listener served only on `127.0.0.1:43118`; a real headless Google Chrome process on the Mac rendered the initiative route through an SSH local forward, observed durable initiative content, and exposed no provider-secret markers. |
+| Full rollout gate | OpenSpec task 8.4 | Blocked, not passed. The approved Orca mutation contract, managed-hardware P95/resource measurements, and a stable repository-wide fmt/clippy window remain required. |
 
 ## Managed Mac/homelab terminal post gate
 
@@ -109,7 +109,12 @@ Expected result:
 - Provider credentials remain on the homelab and are not visible to the browser.
 - Repository, tool, and runtime evidence resolve to homelab resources.
 
-Failure of this post gate blocks rollout beyond local development, but it should be reported separately from deterministic repository-local gate status.
+The managed gate passed on 2026-08-11 using the systemd-owned homelab daemon at
+`127.0.0.1:43118`, an SSH local forward created from the Mac, and the Mac's native
+Google Chrome in headless mode. The rendered DOM contained the live durable
+`jcode-command-center` initiative and no provider-secret markers. Failure of this
+post gate blocks rollout beyond local development and must be reported separately
+from deterministic repository-local gate status.
 
 ## Thresholds
 
@@ -135,9 +140,17 @@ Repository-local functional measurements are recorded, but task 7.6 remains open
 - The real isolated daemon reached the protected API and rendered an authenticated browser deep link successfully.
 - Listener shutdown released the configured port and left no managed Command Center child process.
 - The 10,000-event client fixture remains bounded to 40 rendered timeline rows through virtualization.
-- Repository-local event, reconnect, and resource measurements are not substitutes for the required 60-second idle CPU/memory and P95 managed-host measurements. Those remain a rollout blocker rather than an inferred pass.
+- On the managed homelab, an isolated disabled/enabled lifecycle measurement produced 606 ms disabled readiness, 688 ms enabled HTTP readiness, 108/107 ms shutdown, and a 2.2 MiB initial RSS delta.
+- A simultaneous 60-second isolated comparison measured 0.017% disabled CPU, 0.000% enabled CPU, a 1.5 MiB enabled RSS delta, and 72 KiB growth during the enabled sample. This passes the idle CPU and memory thresholds without attributing unrelated activity from the shared production daemon to the Command Center.
+- The live systemd-managed endpoint returned 100 initiative-route requests at 0.344 ms P95 HTTP latency. This is transport evidence, not a substitute for daemon-event-to-render latency.
+- Event-to-render P95 and reconnect-to-authoritative-state P95 remain unmeasured on the managed topology. Task 7.6 therefore remains open rather than inferring those results from fixture timing.
 
 The rejected alternative is a daemon-supervised SolidStart server process. It would add a second private listener, extra packaging and shutdown state, and no benefit for this client-rendered slice. The selected topology builds static assets once and keeps all HTTP, authentication, commands, events, and lifecycle ownership in the Rust daemon.
+
+Release deployment runs `scripts/install_command_center_assets.sh` from the exact
+detached commit, installs regular asset files at
+`~/.jcode/command-center/public`, and only then reloads the managed Jcode daemon.
+Frontend-only commits participate in the same post-commit deployment queue.
 
 ## Operations
 

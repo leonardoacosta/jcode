@@ -1,7 +1,7 @@
 ## 1. Baseline and architecture seam
 
 - [x] 1.1 Record the current daemon transport, server lifecycle, initiative persistence, ambient scheduling, permissions, and Orca integration seams in implementation notes tied to exact source paths; verify with targeted existing tests before changing code.
-- [ ] 1.2 Spike SolidStart build and SSR integration against the Rust daemon and select either in-process asset/SSR hosting or a daemon-supervised private child process; document measured startup, idle-memory, shutdown, and packaging results and stop if the option requires an independently exposed listener or workflow authority.
+- [x] 1.2 Spike SolidStart build and SSR integration against the Rust daemon and select either in-process asset/SSR hosting or a daemon-supervised private child process; document measured startup, idle-memory, shutdown, and packaging results and stop if the option requires an independently exposed listener or workflow authority.
 - [x] 1.3 Define the command-center crate/package ownership boundaries, affected workspace manifests, generated-client location, and feature/config flag without moving existing domain behavior into the frontend.
 - [x] 1.4 Add a migration-ledger update that maps the source documents listed in `design.md` to absorbed, retained, completed-foundation, partially-superseded, or later-milestone decisions; do not archive any source in this child change.
 
@@ -65,7 +65,7 @@
   - Run `bash scripts/test-command-center-tunnel-fixture.sh`; expected result is exit 0 with the simulated remote client unable to reach a non-loopback listener directly, able to authenticate through the forwarded endpoint, unable to reuse another stream cursor, and unable to observe provider secrets or host-local execution paths.
   - touches: `scripts/test-command-center-tunnel-fixture.sh` and deterministic bridge fixtures (new)
   - depends on: 3.6, 7.2
-- [ ] 7.5 Perform the terminal post gate on the managed Mac/homelab topology after repository-local acceptance passes.
+- [x] 7.5 Perform the terminal post gate on the managed Mac/homelab topology after repository-local acceptance passes.
   - Preconditions: SSH aliases `mac` and `homelab`, the managed homelab Jcode service, and an enabled test-only command-center listener reachable only through the approved tunnel.
   - Run `bash scripts/test-command-center-mac-smoke.sh --mac-host mac --jcode-host homelab`; expected result is exit 0 with a Mac-origin browser session authenticated through the tunnel, the initiative route served by the homelab daemon, no browser-visible provider secret, and repository/tool/runtime evidence resolving only to homelab resources.
   - touches: `scripts/test-command-center-mac-smoke.sh` and terminal post-gate evidence output (new)
