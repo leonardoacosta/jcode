@@ -1,0 +1,76 @@
+{
+  "harness": "canon-eval",
+  "purpose": "Binding A/B eval of the incumbent corpus's motion-and-transitions SKILL.md (Arm A) vs emil's AUDIT.md + STANDARDS.md (Arm B) — per design.md § Canon eval methodology (Req-1).",
+  "arms": {
+    "A": {
+      "label": "incumbent corpus",
+      "canon_files": ["skills/motion-and-transitions/SKILL.md"]
+    },
+    "B": {
+      "label": "emil",
+      "canon_files": [
+        "skills/motion-and-transitions/evals/canon-eval/upstream/AUDIT.md",
+        "skills/motion-and-transitions/evals/canon-eval/upstream/STANDARDS.md"
+      ]
+    }
+  },
+  "dimensions": ["easing_tokens", "duration_bounds", "entrance_scale", "review_coverage"],
+  "review_fixtures": [
+    {
+      "id": "01-ease-in-enter",
+      "file": "fixtures/review/01-ease-in-enter.css",
+      "planted_defect": "ease-in on an enter transition",
+      "dimension": "easing_tokens",
+      "pass_condition": "arm's review output flags the `ease-in` timing function on `.toast` as wrong-direction easing for an entrance"
+    },
+    {
+      "id": "02-scale-zero",
+      "file": "fixtures/review/02-scale-zero.css",
+      "planted_defect": "scale(0) entrance",
+      "dimension": "entrance_scale",
+      "pass_condition": "arm's review output flags `transform: scale(0)` as an invalid entrance value and cites a 0.9-0.97 (or equivalent non-zero) floor"
+    },
+    {
+      "id": "03-transition-all",
+      "file": "fixtures/review/03-transition-all.css",
+      "planted_defect": "transition: all",
+      "dimension": "review_coverage",
+      "pass_condition": "arm's review output flags `transition: all` as animating unintended / non-GPU properties"
+    },
+    {
+      "id": "04-symmetric-press",
+      "file": "fixtures/review/04-symmetric-press.css",
+      "planted_defect": "symmetric press/release timing on a deliberate action",
+      "dimension": "review_coverage",
+      "pass_condition": "arm's review output flags identical press/release duration as missing asymmetric (slow press / fast release, or vice versa per the arm's own rule) timing"
+    },
+    {
+      "id": "05-keyboard-action-animation",
+      "file": "fixtures/review/05-keyboard-action-animation.tsx",
+      "planted_defect": "animation on a 100+/day keyboard-initiated action (command palette toggle)",
+      "dimension": "review_coverage",
+      "pass_condition": "arm's review output flags the animation on the command-palette toggle as a frequency violation (recommends removal or a no-animation default)"
+    },
+    {
+      "id": "06-missing-reduced-motion",
+      "file": "fixtures/review/06-missing-reduced-motion.css",
+      "planted_defect": "no @media (prefers-reduced-motion: reduce) guard",
+      "dimension": "review_coverage",
+      "pass_condition": "arm's review output flags the absent reduced-motion guard as a required fix, not optional polish"
+    },
+    {
+      "id": "07-non-gpu-property",
+      "file": "fixtures/review/07-non-gpu-property.css",
+      "planted_defect": "animating `height` (layout-triggering property)",
+      "dimension": "review_coverage",
+      "pass_condition": "arm's review output flags `transition: height` as a non-compositor property and recommends transform-based alternative (measured-height technique or max-height/scale substitute)"
+    }
+  ],
+  "generation_fixtures": {
+    "source": "skills/motion-and-transitions/evals/evals.json (reused verbatim, per tasks.md 1.1 — no new prompts authored)",
+    "ids": [1, 2, 3, 4],
+    "scoring_note": "Judged blind to which curve family is used — score = compliance with shared feel rules only (reduced-motion guard present, duration under the arm's own UI ceiling, origin-awareness where applicable). Curve-token identity is scored separately under the easing_tokens dimension, not folded into generation-fixture pass/fail."
+  },
+  "scoring_rule": "Tie or <10% delta on a dimension: incumbent corpus incumbent stays canonical (design.md). A dimension win requires a real catch-rate or compliance delta, not a single-fixture edge case.",
+  "provenance": "Upstream AUDIT.md/STANDARDS.md fetched verbatim from https://github.com/emilkowalski/skills (MIT) 2026-07-16 — eval fixtures only, never wired into any routing surface."
+}

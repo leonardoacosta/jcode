@@ -1,0 +1,90 @@
+# This repository sits at JCODE_HOME, not in the jcode source checkout.
+# Keep authored artifacts and installed skills, but exclude mutable runtime state,
+# credentials, caches, generated binaries, session transcripts, and nested repos.
+
+# Credentials and machine-local configuration
+auth*.json
+auth*.bak
+openai-auth*.json
+openai-auth*.bak
+config.toml
+config.bak
+config.lock
+servers.json
+devices.json
+machine_id
+telemetry_id
+
+# Provider/account state
+copilot_usage.json
+copilot_usage.bak
+provider_activity.json
+provider_activity.bak
+setup_hints.json
+setup_hints.bak
+keymap-snapshot.json
+keymap-snapshot.bak
+
+# Runtime state and IPC
+active_pids/
+internal_pids/
+streaming_pids/
+telemetry_active_sessions/
+pending-login/
+pending-soft-interrupts/
+reload-recovery/
+reload-traces/
+ssh-control/
+selfdev-build-requests/
+*.lock
+*.stamp
+last_focused_client_session
+last_seen_changelog
+reload-context-session_*.json
+subscribe-nudge.json
+update_metadata.json
+
+# Sessions, prompts, personal state, and generated UI state
+sessions/
+goals/
+memory/
+state/
+todos/
+side_panel/
+browser/
+hotkey/
+.superpowers/
+prompt-history.jsonl
+
+# Caches, logs, generated media, models, and build outputs
+cache/
+logs/
+builds/
+models/
+scratch/
+presentation/
+presentation-http.log
+presentation-http-audio.mp3
+mcp-schema-cache.json
+kokoro-models.json
+
+# Telemetry markers
+no_telemetry
+telemetry_install_sent
+telemetry_version_sent
+telemetry_milestone_*
+telemetry_session_starts_*
+
+# Managed/nested repositories and migration state
+source/
+migrations/
+openspec/
+
+# Miscellaneous local probes
+vercel-prod-env-check
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.tmp

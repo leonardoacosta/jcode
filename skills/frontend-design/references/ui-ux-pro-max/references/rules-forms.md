@@ -1,0 +1,34 @@
+
+# Forms & Feedback Rules (MEDIUM) - 31 rules
+
+- `input-labels` - Visible label per input (not placeholder-only)
+- `error-placement` - Show error below the related field
+- `submit-feedback` - Loading then success/error state on submit
+- `required-indicators` - Mark required fields (e.g. asterisk)
+- `empty-states` - Helpful message and action when no content
+- `toast-dismiss` - Auto-dismiss toasts in 3-5s
+- `confirmation-dialogs` - Confirm before destructive actions
+- `input-helper-text` - Provide persistent helper text below complex inputs, not just placeholder (Material Design)
+- `disabled-states` - Disabled elements use reduced opacity (0.38-0.5) + cursor change + semantic attribute (MD)
+- `progressive-disclosure` - Reveal complex options progressively; don't overwhelm users upfront (Apple HIG)
+- `inline-validation` - Validate on blur (not keystroke); show error only after user finishes input (MD)
+- `input-type-keyboard` - Use semantic input types (email, tel, number) to trigger the correct mobile keyboard (HIG, MD)
+- `password-toggle` - Provide show/hide toggle for password fields (MD)
+- `autofill-support` - Use autocomplete / textContentType attributes so the system can autofill (HIG, MD)
+- `undo-support` - Allow undo for destructive or bulk actions (e.g. "Undo delete" toast) (Apple HIG)
+- `success-feedback` - Confirm completed actions with brief visual feedback (checkmark, toast, color flash) (MD)
+- `error-recovery` - Error messages must include a clear recovery path (retry, edit, help link) (HIG, MD)
+- `multi-step-progress` - Multi-step flows show step indicator or progress bar; allow back navigation (MD)
+- `form-autosave` - Long forms should auto-save drafts to prevent data loss on accidental dismissal (Apple HIG)
+- `sheet-dismiss-confirm` - Confirm before dismissing a sheet/modal with unsaved changes (Apple HIG)
+- `error-clarity` - Error messages must state cause + how to fix (not just "Invalid input") (HIG, MD)
+- `field-grouping` - Group related fields logically (fieldset/legend or visual grouping) (MD)
+- `read-only-distinction` - Read-only state should be visually and semantically different from disabled (MD)
+- `focus-management` - After submit error, auto-focus the first invalid field (WCAG, MD)
+- `error-summary` - For multiple errors, show summary at top with anchor links to each field (WCAG)
+- `touch-friendly-input` - Mobile input height >=44px to meet touch target requirements (Apple HIG)
+- `destructive-emphasis` - Destructive actions use semantic danger color (red) and are visually separated from primary actions (HIG, MD)
+- `toast-accessibility` - Toasts must not steal focus; use aria-live="polite" for screen reader announcement (WCAG)
+- `aria-live-errors` - Form errors use aria-live region or role="alert" to notify screen readers (WCAG)
+- `contrast-feedback` - Error and success state colors must meet 4.5:1 contrast ratio (WCAG, MD)
+- `timeout-feedback` - Request timeout must show clear feedback with retry option (MD)

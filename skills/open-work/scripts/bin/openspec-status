@@ -1,0 +1,643 @@
+#!/usr/bin/env bash
+# openspec-status — scan CWD for unarchived openspec proposals and their beads status
+# Usage: openspec-status [--json | --closure-check <slug>... | --queue] [--no-enrich]
+# Output: table (default), JSON array (--json), a closure gate (--closure-check), or
+# the computed execution queue (--queue).
+#
+# --no-enrich skips the Phase 4 bd-show fan-out entirely: classification falls back
+# to tasks.md checkbox counts alone (epic/feature status reads "unknown", priorities
+# empty — do NOT combine with --queue, whose ranking needs the priority map). For
+# consumers that only need name/state/tasks (e.g. open-items), this turns a 20-90s
+# dolt-bound run into <1s.
+#
+# --closure-check is a GATE, not a detection script: it exits non-zero when any of
+# the given slugs is complete (all tasks [x] or its epic/feature bead closed) but
+# still sits unarchived under openspec/changes/. Intentional exception to the
+# scripts-as-data-producers "always exit 0" convention (rules/TOOLING.md) — this
+# mode is invoked as a run step by /apply and /apply:all, never as a `!` preprocessor
+# block, so a non-zero exit on findings is the point.
+#
+# --queue (advisor-plans/029, proposal-queue-linearity) emits a NEW top-level object
+# `{"queue": [...], "ordering": ..., "warnings": [...]}` rather than extending the
+# plain `--json` array shape — commands/next.md and commands/open.md both do
+# `jq '.[] | ...'` against the default --json output, so that shape must stay a bare
+# array. The queue delegates topology + priority-aware ranking to
+# `triage-list-drafts --include-approved --priority-file`, reusing its depends_on/after
+# graph rather than re-implementing one here; this mode only supplies the priority
+# map (from bd feature/epic priority, already fetched in PHASE 4) and drops any row
+# already in state=="done" (that's the closure gate's job, not the work queue's).
+
+set -euo pipefail
+
+# Runtime-neutral delegation route. Looks unreferenced from inside this package
+# and is NOT: the consuming harness's scripts/bin/openspec-status is a thin
+# wrapper that exec's this file with "$@" untouched, so every argument here is
+# caller-visible surface. This branch is the documented seam into the runtime
+# package's openspec-status implementation and carries recorded freeze evidence.
+# Deleting it does not error — the unknown first arg falls through to table
+# output — so the failure is silent. Audited and kept 2026-08-04.
+if [[ "${1:-}" == "--runtime-spike-json" ]]; then
+  shift
+  [[ $# -eq 0 ]] || { echo 'usage: openspec-status --runtime-spike-json' >&2; exit 2; }
+  : "${RUNTIME_PACKAGE_ROOT:?RUNTIME_PACKAGE_ROOT is required for the runtime spike}"
+  exec node --experimental-strip-types "$RUNTIME_PACKAGE_ROOT/src/openspec-status.ts" \
+    --project-root "$PWD" --package-root "$RUNTIME_PACKAGE_ROOT" \
+    --config-root "${XDG_CONFIG_HOME:-$HOME/.config}/open-work" \
+    --state-root "${XDG_STATE_HOME:-$HOME/.local/state}/open-work"
+fi
+
+# Canonical bead-ID grammar, shared with scripts/lib/beads-helpers.sh's
+# `BEADS_ID_RE` (bash) and scripts/bin/spec-sync's `BEADS_ID_RE` (Python) — see
+# openspec/changes/shared-bead-id-marker-parser/. Sourcing beads-helpers.sh here
+# only for the constant (its functions are unused by this script); the guarded
+# `(return 0 2>/dev/null) || set -euo pipefail` at its top makes sourcing safe —
+# it never overrides this script's own `set -euo pipefail` above.
+# shellcheck source=scripts/lib/beads-helpers.sh
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$SCRIPT_ROOT/lib/beads-helpers.sh"
+
+# --no-enrich pre-scan (must precede lock selection: a no-bd run takes its own
+# lock — it doesn't contend for the dolt budget the main lock serializes, and
+# must not be starved by a 60-90s full run holding that lock).
+NO_ENRICH=false
+_ARGS=()
+for _a in "$@"; do
+  if [[ "$_a" == "--no-enrich" ]]; then NO_ENRICH=true; else _ARGS+=("$_a"); fi
+done
+set -- "${_ARGS[@]}"
+
+# ── GUARD: prevent concurrent invocations ────────────────────────────────────
+# Scoped to THIS repository, not the machine. A single fixed /tmp path made every
+# project on the host contend for one lock: a consumer's bounded retry budget
+# (open-items retries 4x/0.5s) could never outwait an unrelated repo's 60-90s
+# enriched run, and the proposals section silently degraded to "lock contention?".
+# A lock file owned by another user on a shared host also fails `exec` outright
+# under `set -e`. cksum (POSIX, present on Linux and macOS) keys the path; a
+# collision merely restores the old shared-lock behavior for two repos, never
+# worse. XDG_RUNTIME_DIR is per-user and tmpfs-backed where available.
+LOCK_DIR="${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}/openspec-status"
+mkdir -p "$LOCK_DIR"
+_lock_repo="$(git rev-parse --show-toplevel 2>/dev/null || printf '%s' "$PWD")"
+_lock_key="$(printf '%s' "$_lock_repo" | cksum | cut -d' ' -f1)"
+LOCKFILE="$LOCK_DIR/${_lock_repo##*/}-${_lock_key}.lock"
+$NO_ENRICH && LOCKFILE="$LOCK_DIR/${_lock_repo##*/}-${_lock_key}-noenrich.lock"
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+  # Skipping is harmless for the informational modes (table / --json / --queue): the
+  # caller simply re-renders next time. It is NOT harmless for --closure-check, which
+  # this file's own header declares a GATE, and whose caller (/apply Phase 5.5,
+  # /apply:all) branches on the exit code and treats 0 as "closure verified". A blanket
+  # exit 0 here makes "the gate did not run" byte-identical to "the gate passed" —
+  # the same fail-open shape fixed in apply-user-gate-scan (coverage attestation,
+  # schema_version 3, 5ee5699b). Observed live 2026-07-25 archiving
+  # trim-claude-md-duplication: the gate printed "already running, skipping", exited 0,
+  # and /apply would have reported a verified closure it never checked.
+  #
+  # Exit 3, distinct from this mode's exit-1-on-findings, so a caller can tell
+  # "could not check" from "checked and found unarchived specs". Any caller testing
+  # only `!= 0` still fails closed, which is the safe direction.
+  for _guard_arg in "$@"; do
+    if [[ "$_guard_arg" == "--closure-check" ]]; then
+      echo "closure-check: ABORTED — another openspec-status holds the lock; the gate did NOT run." >&2
+      echo "  This is NOT a pass. Re-run once the other instance finishes." >&2
+      exit 3
+    fi
+  done
+  echo "openspec-status already running, skipping." >&2
+  exit 0
+fi
+
+# NOTE: OPENSPEC_STATUS_PARALLEL / MAX_PARALLEL (a bd-show fan-out concurrency
+# cap) no longer exists here as of the 2026-08-06 bd-timeout fix (see PHASE 4
+# below). The per-ID `bd show` fan-out this env var used to throttle was
+# replaced with a single `bd list --id <all-ids>` bulk call, which has no
+# concurrency to cap. The env var name is kept unset intentionally rather
+# than silently ignored -- any caller still setting it gets no error, just no
+# effect, which is the correct behavior for a knob whose target mechanism no
+# longer exists.
+
+JSON_MODE=false
+CLOSURE_MODE=false
+CLOSURE_SLUGS=()
+QUEUE_MODE=false
+case "${1:-}" in
+  --json)
+    JSON_MODE=true
+    ;;
+  --closure-check)
+    CLOSURE_MODE=true
+    shift
+    CLOSURE_SLUGS=("$@")
+    ;;
+  --queue)
+    QUEUE_MODE=true
+    ;;
+esac
+
+# ── PHASE 1: LOCATE ─────────────────────────────────────────────────────────
+SPEC_ROOT=""
+SEARCH_DIRS=("$PWD")
+GIT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
+[[ -n "$GIT_ROOT" && "$GIT_ROOT" != "$PWD" ]] && SEARCH_DIRS+=("$GIT_ROOT")
+
+for dir in "${SEARCH_DIRS[@]}"; do
+  if [[ -d "$dir/openspec/changes" ]]; then
+    SPEC_ROOT="$dir/openspec/changes"
+    break
+  fi
+done
+
+if [[ -z "$SPEC_ROOT" ]]; then
+  if $CLOSURE_MODE; then
+    echo "closure-check: no openspec/ found — nothing to check."
+    exit 0
+  elif $QUEUE_MODE; then
+    echo '{"queue":[],"ordering":"empty","warnings":[],"error":"No openspec/ found in this project"}'
+  elif $JSON_MODE; then
+    echo '{"error":"No openspec/ found in this project","specs":[]}'
+  else
+    echo "No openspec/ found in this project."
+  fi
+  exit 0
+fi
+
+# ── PHASE 2: COLLECT UNARCHIVED SPECS ───────────────────────────────────────
+# bd-alpha1.3: proposal.md is NOT required to register a spec dir — a dir with
+# only tasks.md (e.g. a spec that lost/never got its proposal.md) still IS a
+# real unarchived spec, and silently skipping it here made it invisible to
+# /open, /triage, /apply --queue, and worse, the --closure-check gate itself
+# (a completed-but-unarchived spec missing proposal.md could never trip the
+# gate). Only requirement now: the dir has at least one recognizable spec
+# file (proposal.md or tasks.md) — a truly empty dir is still skipped.
+declare -a SPEC_NAMES=()
+declare -A SPEC_MISSING_PROPOSAL=()
+for dir in "$SPEC_ROOT"/*/; do
+  [[ ! -d "$dir" ]] && continue
+  name=$(basename "$dir")
+  [[ "$name" == "archive" ]] && continue
+  if [[ ! -f "$dir/proposal.md" && ! -f "$dir/tasks.md" ]]; then
+    continue
+  fi
+  SPEC_NAMES+=("$name")
+  if [[ ! -f "$dir/proposal.md" ]]; then
+    SPEC_MISSING_PROPOSAL[$name]="true"
+  fi
+done
+
+if [[ ${#SPEC_NAMES[@]} -eq 0 ]]; then
+  if $CLOSURE_MODE; then
+    echo "closure-check: no in-flight specs — nothing to check."
+    exit 0
+  elif $QUEUE_MODE; then
+    echo '{"queue":[],"ordering":"empty","warnings":[]}'
+  elif $JSON_MODE; then
+    echo '{"specs":[],"message":"No in-flight specs"}'
+  else
+    echo "No in-flight specs. Run /feature to create one."
+  fi
+  exit 0
+fi
+
+# ── PHASE 3: PARSE EACH SPEC ────────────────────────────────────────────────
+# Parallel temp dir for beads query results
+TMPDIR_BD=$(mktemp -d)
+trap 'rm -rf "$TMPDIR_BD"' EXIT
+
+declare -A SPEC_TITLE SPEC_EPIC SPEC_FEATURE SPEC_TOTAL SPEC_DONE
+declare -A SPEC_TASK_IDS   # space-separated beads IDs per spec
+declare -A SPEC_AGE_DAYS SPEC_STALE   # Req-1: filesystem-mtime-based age/staleness
+declare -A SPEC_ORDER   # add-plan-promotion-and-order-codes: proposal.md `order:` frontmatter, display-only
+
+NOW_EPOCH=$(date +%s)
+
+for name in "${SPEC_NAMES[@]}"; do
+  dir="$SPEC_ROOT/$name"
+
+  # title from proposal.md
+  title=$(grep -m1 "^# Proposal:" "$dir/proposal.md" 2>/dev/null \
+    | sed 's/^# Proposal: *//' || echo "$name")
+  SPEC_TITLE[$name]="$title"
+
+  # order: frontmatter (same awk idiom as the doc_agent: extractor in
+  # execution-model.md's DOC sub-batching) -- scoped to the first `---` block only,
+  # never a false match on prose mentioning "order" elsewhere in the proposal.
+  order=$(awk 'NR==1 && /^---$/{f=1;next} f && /^---$/{exit} f && /^order:/{sub(/^order:[[:space:]]*/,""); print; exit}' "$dir/proposal.md" 2>/dev/null || true)
+  SPEC_ORDER[$name]="${order:-}"
+
+  SPEC_EPIC[$name]=""
+  SPEC_FEATURE[$name]=""
+  SPEC_TOTAL[$name]=0
+  SPEC_DONE[$name]=0
+  SPEC_TASK_IDS[$name]=""
+
+  # age_days / stale (Req-1) — proposal.md filesystem mtime, integer days.
+  # GNU stat (-c) first (Linux, the target platform); BSD stat (-f) fallback.
+  # Fall back to tasks.md mtime when proposal.md is absent (bd-alpha1.3) rather
+  # than silently reading age_days=0/stale=false for every such spec.
+  # Threshold aligned to 14 days (retire-status-frontmatter-lifecycle,
+  # 2026-07-16) to match /feature's funnel-pressure warning and
+  # SPEC_CLASSIFICATION's own STALE cutoff (CUTOFF_STALE below) -- single
+  # staleness computation, no second parallel definition.
+  age_src="$dir/proposal.md"
+  [[ ! -f "$age_src" ]] && age_src="$dir/tasks.md"
+  mtime=$(stat -c %Y "$age_src" 2>/dev/null || stat -f %m "$age_src" 2>/dev/null || echo "")
+  if [[ -n "$mtime" ]]; then
+    age_days=$(( (NOW_EPOCH - mtime) / 86400 ))
+  else
+    age_days=0
+  fi
+  SPEC_AGE_DAYS[$name]="$age_days"
+  if [[ "$age_days" -gt 14 ]]; then
+    SPEC_STALE[$name]="true"
+  else
+    SPEC_STALE[$name]="false"
+  fi
+
+  if [[ -f "$dir/tasks.md" ]]; then
+    # epic ID
+    epic=$(grep -oP "(?<=beads:epic:)${BEADS_ID_RE}" "$dir/tasks.md" 2>/dev/null | head -1 || true)
+    SPEC_EPIC[$name]="${epic:-}"
+
+    # feature ID (feature-primary priority model — rules/BEADS.md; a proposal's
+    # priority lives on its FEATURE bead, epic priority only as legacy fallback)
+    feature=$(grep -oP "(?<=beads:feature:)${BEADS_ID_RE}" "$dir/tasks.md" 2>/dev/null | head -1 || true)
+    SPEC_FEATURE[$name]="${feature:-}"
+
+    # task counts (grep -c prints "0" on no-match AND exits 1; use || true so we
+    # keep grep's "0" without appending another "0" via echo)
+    total=$(grep -cE '^\s*- \[[ x]\]' "$dir/tasks.md" 2>/dev/null || true)
+    done=$(grep -cE '^\s*- \[x\]' "$dir/tasks.md" 2>/dev/null || true)
+    SPEC_TOTAL[$name]="${total:-0}"
+    SPEC_DONE[$name]="${done:-0}"
+
+    # beads task IDs (from task lines only, not the epic comment)
+    task_ids=$(grep -E '^\s*- \[' "$dir/tasks.md" 2>/dev/null \
+      | grep -oP "(?<=\[beads:)${BEADS_ID_RE}(?=\])" \
+      | tr '\n' ' ' | sed 's/ $//' || true)
+    SPEC_TASK_IDS[$name]="${task_ids:-}"
+  fi
+done
+
+# ── PHASE 4: BATCH BEADS QUERY (single bulk call, not per-ID fan-out) ───────
+# Collect all unique IDs
+declare -A ALL_IDS=()
+for name in "${SPEC_NAMES[@]}"; do
+  [[ -n "${SPEC_EPIC[$name]}" ]] && ALL_IDS["${SPEC_EPIC[$name]}"]=1
+  [[ -n "${SPEC_FEATURE[$name]}" ]] && ALL_IDS["${SPEC_FEATURE[$name]}"]=1
+  for tid in ${SPEC_TASK_IDS[$name]}; do
+    ALL_IDS["$tid"]=1
+  done
+done
+
+# root-cause investigation (2026-08-06, live on otaku-odyssey): the previous
+# design fanned out ONE `bd show <id>` process per unique ID (xargs -P
+# "$MAX_PARALLEL"), which on a repo with ~26+ open specs means 300+ unique
+# epic/feature/task IDs -- 300+ separate bd process launches, all reading the
+# same `.beads/beads.db`. The earlier "Dolt lock contention" comment here was
+# also WRONG about the mechanism: `.beads/beads.db` is SQLite (`file
+# .beads/beads.db` -> "SQLite 3.x database"), not Dolt -- Dolt only backs the
+# separate `.beads/embeddeddolt/` git-sync store, which `bd show`/`bd list`
+# never touch. The real mechanism: `PRAGMA busy_timeout` is 0 on this DB (bd
+# sets no busy timeout of its own), so a `bd show`/`bd list` call that
+# collides with ANY concurrent writer (another `bd` mutation, an auto-import
+# daemon cycle, another session's hook) fails fast with "failed to search
+# issues: context canceled" on stderr rather than blocking-and-retrying. At
+# N=300+ concurrent readers even with MAX_PARALLEL capped, this repo measured
+# 90-300+s wall time and a 45% observed failure rate (`unknown` status) on a
+# representative real run, timing out the 5-minute `!`-preprocessor budget
+# multiple command invocations rely on (`/apply`, `/explore` via `open-items`).
+# A retry-with-backoff mitigation (tried first, kept as history in the
+# workflow-log/design.md for this investigation) helped but could not close
+# the gap at this ID count, because the exposure window scales with N.
+#
+# `bd list --id <comma-separated>,... --all --json --limit 0` accepts a
+# batch ID filter and returns every match in ONE process -- confirmed live
+# with all 338 real IDs from this repo's open specs: 2.5s total, exit 0, all
+# 338 resolved. This eliminates the fan-out (and therefore the concurrency
+# exposure) entirely rather than tuning around it: 1 bd invocation instead of
+# N. IDs bd doesn't return (deleted/renumbered/stale tasks.md references, or
+# the rare transient collision on this ONE remaining call) fall through to
+# "unknown", same default as before. `--all` is required -- without it `bd
+# list` applies its default status filter and silently omits closed epics/
+# features, which would misclassify every ARCHIVE-eligible spec in Phase 5b.
+# `--limit 0` disables the default 50-row cap (`bd list --help`), otherwise a
+# repo with >50 matched IDs would silently truncate.
+# [beads:bd-timeout]
+declare -A BD_STATUS=() BD_PRIORITY=()
+if ! $NO_ENRICH && [[ ${#ALL_IDS[@]} -gt 0 ]]; then
+  ALL_IDS_CSV=$(printf '%s\n' "${!ALL_IDS[@]}" | paste -sd,)
+  BULK_RESULT=$(timeout 30 bd list --id "$ALL_IDS_CSV" --all --json --limit 0 2>/dev/null || echo "")
+  if [[ -z "$BULK_RESULT" ]] || ! echo "$BULK_RESULT" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    # Single retry -- one bulk call still has a (much smaller) collision
+    # window than the old per-ID fan-out, worth one cheap retry before
+    # falling back to all-unknown for this run.
+    sleep 0.5
+    BULK_RESULT=$(timeout 30 bd list --id "$ALL_IDS_CSV" --all --json --limit 0 2>/dev/null || echo "")
+  fi
+  if [[ -n "$BULK_RESULT" ]] && echo "$BULK_RESULT" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    while IFS=$'\t' read -r bd_id bd_status bd_priority; do
+      [[ -n "$bd_id" ]] || continue
+      BD_STATUS[$bd_id]="${bd_status:-unknown}"
+      BD_PRIORITY[$bd_id]="$bd_priority"
+    done < <(echo "$BULK_RESULT" | jq -r '.[] | [.id, (.status // "unknown"), (.priority // "")] | @tsv')
+  fi
+fi
+for id in "${!ALL_IDS[@]}"; do
+  if [[ -z "${BD_STATUS[$id]+x}" ]]; then
+    BD_STATUS[$id]="unknown"
+    BD_PRIORITY[$id]=""
+  fi
+done
+
+# ── PHASE 5: CLASSIFY ────────────────────────────────────────────────────────
+declare -A SPEC_STATE  # open | in-progress | done
+for name in "${SPEC_NAMES[@]}"; do
+  epic="${SPEC_EPIC[$name]}"
+  if [[ -n "$epic" ]]; then
+    epic_status="${BD_STATUS[$epic]:-unknown}"
+  else
+    epic_status="unknown"
+  fi
+  total="${SPEC_TOTAL[$name]}"
+  done_count="${SPEC_DONE[$name]}"
+
+  if [[ "$epic_status" == "closed" ]]; then
+    SPEC_STATE[$name]="done"
+  elif [[ "$total" -gt 0 && "$done_count" -eq "$total" ]]; then
+    SPEC_STATE[$name]="done"
+  elif [[ "$done_count" -gt 0 ]]; then
+    SPEC_STATE[$name]="in-progress"
+  elif [[ "$epic_status" == "in_progress" ]]; then
+    SPEC_STATE[$name]="in-progress"
+  else
+    SPEC_STATE[$name]="open"
+  fi
+done
+
+# ── PHASE 5b: HOUSEKEEP CLASSIFIER (Req-2, advisory only) ───────────────────
+# Ports commands/workflow/housekeep.md step 3h's ARCHIVE/COMPLETE/STALE triage
+# so it runs push-based here too — same thresholds, no divergent cutoff.
+# ARCHIVE: linked epic CLOSED. COMPLETE: all tasks.md checkboxes done (and not
+# already ARCHIVE). STALE: no git activity in >14 days (housekeep's cutoff).
+# Advisory only — never archives/deletes/edits a proposal (SURFACE-DO-NOT-DELETE).
+declare -A SPEC_CLASSIFICATION
+CUTOFF_STALE=$(date -d '14 days ago' --iso-8601 2>/dev/null || date -v-14d +%Y-%m-%d)
+for name in "${SPEC_NAMES[@]}"; do
+  dir="$SPEC_ROOT/$name"
+  epic="${SPEC_EPIC[$name]}"
+  epic_status=""
+  [[ -n "$epic" ]] && epic_status="${BD_STATUS[$epic]:-unknown}"
+  total="${SPEC_TOTAL[$name]}"
+  done_count="${SPEC_DONE[$name]}"
+  last_mod=$(git log -1 --format=%aI -- "$dir" 2>/dev/null || true)
+
+  if [[ "$epic_status" == "closed" ]]; then
+    SPEC_CLASSIFICATION[$name]="ARCHIVE"
+  elif [[ "$total" -gt 0 && "$done_count" -eq "$total" ]]; then
+    SPEC_CLASSIFICATION[$name]="COMPLETE"
+  elif [[ -n "$last_mod" && "$last_mod" < "$CUTOFF_STALE" ]]; then
+    SPEC_CLASSIFICATION[$name]="STALE"
+  else
+    SPEC_CLASSIFICATION[$name]=""
+  fi
+done
+
+# ── CLOSURE GATE (--closure-check) ──────────────────────────────────────────
+# A slug that isn't in SPEC_NAMES at all is already archived (or never existed
+# here) — that's a pass, not a failure. Only state=="done" (complete but still
+# under openspec/changes/, by construction of PHASE 2 above) is a violation.
+if $CLOSURE_MODE; then
+  declare -a FAILURES=()
+  for slug in "${CLOSURE_SLUGS[@]}"; do
+    [[ -z "$slug" ]] && continue
+    found=false
+    for name in "${SPEC_NAMES[@]}"; do
+      [[ "$name" == "$slug" ]] && { found=true; break; }
+    done
+    $found || continue
+    [[ "${SPEC_STATE[$slug]}" == "done" ]] && FAILURES+=("$slug")
+  done
+
+  if [[ ${#FAILURES[@]} -gt 0 ]]; then
+    echo "CLOSURE GATE FAILED — completed but unarchived:"
+    for slug in "${FAILURES[@]}"; do
+      echo "  - $slug"
+    done
+    exit 1
+  fi
+  echo "closure-check: ${#CLOSURE_SLUGS[@]} slug(s) checked, none completed-and-unarchived."
+  exit 0
+fi
+
+# ── QUEUE (--queue) ─────────────────────────────────────────────────────────
+# Delegates topology/priority ranking to triage-list-drafts (advisor-plans/029) --
+# this only supplies the per-spec priority map (feature bead priority, epic
+# fallback, default 2) and drops rows already state=="done" (the closure gate's
+# job, not the work queue's).
+if $QUEUE_MODE; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  TRIAGE_BIN="$SCRIPT_DIR/triage-list-drafts"
+
+  PRIO_FILE="$TMPDIR_BD/.priority.json"
+  {
+    echo "{"
+    first=true
+    for name in "${SPEC_NAMES[@]}"; do
+      feature="${SPEC_FEATURE[$name]:-}"
+      epic="${SPEC_EPIC[$name]:-}"
+      prio=""
+      [[ -n "$feature" ]] && prio="${BD_PRIORITY[$feature]:-}"
+      [[ -z "$prio" && -n "$epic" ]] && prio="${BD_PRIORITY[$epic]:-}"
+      [[ -z "$prio" ]] && prio=2
+      $first || echo ","
+      first=false
+      printf '  %s: %s' "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$name")" "$prio"
+    done
+    echo ""
+    echo "}"
+  } > "$PRIO_FILE"
+
+  if [[ -f "$TRIAGE_BIN" ]]; then
+    QUEUE_RAW=$(python3 "$TRIAGE_BIN" --json --include-approved --priority-file "$PRIO_FILE" \
+      --changes-dir "$SPEC_ROOT" 2>/dev/null || echo '{"drafts":[],"warnings":[],"ordering":"error"}')
+  else
+    QUEUE_RAW='{"drafts":[],"warnings":["triage-list-drafts not found or not executable"],"ordering":"error"}'
+  fi
+
+  # Drop state=="done" rows (closure gate's territory) and renumber rank 1..N.
+  DONE_SLUGS_FILE="$TMPDIR_BD/.done-slugs"
+  : > "$DONE_SLUGS_FILE"
+  for n in "${SPEC_NAMES[@]}"; do
+    [[ "${SPEC_STATE[$n]}" == "done" ]] && echo "$n" >> "$DONE_SLUGS_FILE"
+  done
+
+  # Per-slug tasks_done/tasks_total/state, so consumers (e.g. /triage) can tell an
+  # approved-but-partially-started spec apart from a fresh one (canonical session-loop-research
+  # record §3, plan 029 amendment (b): default action is `/apply <slug> --continue`
+  # for the former, plain `/apply <slug>` for the latter). openspec-status already
+  # computed this in PHASE 3/5 -- no second classifier, per the two-oracle rule.
+  PROGRESS_FILE="$TMPDIR_BD/.progress.json"
+  {
+    echo "{"
+    first=true
+    for name in "${SPEC_NAMES[@]}"; do
+      $first || echo ","
+      first=false
+      printf '  %s: {"tasks_done": %s, "tasks_total": %s, "state": %s}' \
+        "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "$name")" \
+        "${SPEC_DONE[$name]}" "${SPEC_TOTAL[$name]}" \
+        "$(python3 -c 'import json,sys; print(json.dumps(sys.argv[1]))' "${SPEC_STATE[$name]}")"
+    done
+    echo ""
+    echo "}"
+  } > "$PROGRESS_FILE"
+
+  printf '%s' "$QUEUE_RAW" | python3 -c "
+import json, sys
+raw = json.load(sys.stdin)
+with open('$DONE_SLUGS_FILE') as f:
+    done_slugs = {line.strip() for line in f if line.strip()}
+with open('$PROGRESS_FILE') as f:
+    progress = json.load(f)
+rows = [d for d in raw.get('drafts', []) if d.get('slug') not in done_slugs]
+queue = []
+for i, d in enumerate(rows):
+    row = dict(d)
+    row['rank'] = i + 1
+    p = progress.get(row['slug'], {})
+    row['tasks_done'] = p.get('tasks_done', 0)
+    row['tasks_total'] = p.get('tasks_total', 0)
+    row['in_progress'] = bool(p.get('tasks_total', 0)) and 0 < p.get('tasks_done', 0) < p.get('tasks_total', 0)
+    queue.append(row)
+out = {
+    'queue': queue,
+    'ordering': raw.get('ordering', 'unknown'),
+    'warnings': raw.get('warnings', []),
+}
+print(json.dumps(out, indent=2))
+"
+  exit 0
+fi
+
+# ── PHASE 6: OUTPUT ──────────────────────────────────────────────────────────
+# Sort: open first, then in-progress, then done
+state_order() {
+  case "$1" in
+    open)        echo 0 ;;
+    in-progress) echo 1 ;;
+    done)        echo 2 ;;
+    *)           echo 3 ;;
+  esac
+}
+
+# Build sorted spec list
+declare -a SORTED_SPECS=()
+while IFS= read -r line; do
+  SORTED_SPECS+=("${line#* }")
+done < <(
+  for name in "${SPEC_NAMES[@]}"; do
+    echo "$(state_order "${SPEC_STATE[$name]}") $name"
+  done | sort -n
+)
+
+if $JSON_MODE; then
+  # JSON output
+  echo "["
+  first=true
+  for name in "${SORTED_SPECS[@]}"; do
+    $first || echo ","
+    first=false
+    epic="${SPEC_EPIC[$name]:-}"
+    if [[ -n "$epic" ]]; then
+      epic_status="${BD_STATUS[$epic]:-unknown}"
+    else
+      epic_status="unknown"
+    fi
+    # order: null (bare, unquoted) when absent -- matches how every other optional
+    # field in this object represents "absent" (missing_proposal_md's boolean, etc.)
+    # and matches triage-list-drafts's own "order": null convention. A quoted empty
+    # string here would be a silent inconsistency with both.
+    order_json="null"
+    [[ -n "${SPEC_ORDER[$name]:-}" ]] && order_json="\"${SPEC_ORDER[$name]//\"/\\\"}\""
+    cat <<EOF
+  {
+    "name": "$name",
+    "title": "${SPEC_TITLE[$name]//\"/\\\"}",
+    "state": "${SPEC_STATE[$name]}",
+    "tasks_done": ${SPEC_DONE[$name]},
+    "tasks_total": ${SPEC_TOTAL[$name]},
+    "epic_id": "$epic",
+    "epic_status": "$epic_status",
+    "age_days": ${SPEC_AGE_DAYS[$name]:-0},
+    "stale": ${SPEC_STALE[$name]:-false},
+    "classification": "${SPEC_CLASSIFICATION[$name]:-}",
+    "missing_proposal_md": $([[ -n "${SPEC_MISSING_PROPOSAL[$name]:-}" ]] && echo true || echo false),
+    "order": $order_json
+  }
+EOF
+  done
+  echo "]"
+else
+  # Table output
+  ICON_open="○"
+  ICON_in_progress="◑"
+  ICON_done="✓"
+
+  echo ""
+  echo "━━━ OpenSpec Status ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  printf "  %-12s │ %-28s │ %-7s │ %s\n" "State" "Spec" "Tasks" "Epic"
+  echo "  ────────────┼──────────────────────────────┼─────────┼──────────────"
+
+  for name in "${SORTED_SPECS[@]}"; do
+    state="${SPEC_STATE[$name]}"
+    epic="${SPEC_EPIC[$name]:-—}"
+    epic_status="${BD_STATUS[$epic]:-}"
+    total="${SPEC_TOTAL[$name]}"
+    done_count="${SPEC_DONE[$name]}"
+    title="${SPEC_TITLE[$name]}"
+
+    # icon
+    case "$state" in
+      open)        icon="○" label="open       " ;;
+      in-progress) icon="◑" label="in-progress" ;;
+      done)        icon="✓" label="done       " ;;
+      *)           icon="?" label="unknown    " ;;
+    esac
+
+    # epic suffix
+    epic_suffix=""
+    if [[ "$state" == "done" && -n "$epic" && "$epic" != "—" ]]; then
+      epic_suffix=" (unarchived!)"
+    elif [[ -n "$epic_status" && "$epic_status" != "unknown" && "$epic_status" != "open" ]]; then
+      epic_suffix=" ($epic_status)"
+    fi
+
+    # truncate title
+    short_name="${name:0:28}"
+    tasks_str="${done_count}/${total}"
+    [[ "$total" -eq 0 ]] && tasks_str="no tasks"
+    [[ -n "${SPEC_MISSING_PROPOSAL[$name]:-}" ]] && epic_suffix="${epic_suffix} [no proposal.md]"
+
+    printf "  %s %-11s │ %-28s │ %-7s │ %s%s\n" \
+      "$icon" "$label" "$short_name" "$tasks_str" "$epic" "$epic_suffix"
+  done
+
+  echo ""
+  # Summary counts
+  n_open=0; n_prog=0; n_done=0; n_missing=0
+  for name in "${SPEC_NAMES[@]}"; do
+    # Use pre-increment + : to avoid set -e exit when var was 0
+    # (post-increment returns old value; ((0)) → exit 1)
+    case "${SPEC_STATE[$name]}" in
+      open)        n_open=$((n_open + 1)) ;;
+      in-progress) n_prog=$((n_prog + 1)) ;;
+      done)        n_done=$((n_done + 1)) ;;
+    esac
+    [[ -n "${SPEC_MISSING_PROPOSAL[$name]:-}" ]] && n_missing=$((n_missing + 1))
+  done
+  echo "  ${#SPEC_NAMES[@]} specs  ·  ${n_open} open  ·  ${n_prog} in-progress  ·  ${n_done} done (unarchived)"
+  if [[ "$n_missing" -gt 0 ]]; then
+    echo "  WARN: ${n_missing} spec(s) missing proposal.md — see [no proposal.md] rows above"
+  fi
+  echo ""
+fi

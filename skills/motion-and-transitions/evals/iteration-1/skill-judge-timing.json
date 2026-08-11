@@ -1,0 +1,7 @@
+{
+  "total_tokens": 63152,
+  "duration_ms": 102950,
+  "tool_uses": 7,
+  "score": "106/120 (88%)",
+  "verdict": "minor revisions"
+}

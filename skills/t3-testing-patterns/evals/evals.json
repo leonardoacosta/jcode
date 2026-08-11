@@ -1,0 +1,72 @@
+{
+  "skill_name": "t3-testing-patterns",
+  "evals": [
+    {
+      "id": 1,
+      "name": "canonical-target-fails-closed",
+      "prompt": "Our canonical root Playwright run has BASE_URL=http://127.0.0.1:3000 but E2E_BASE_URL is missing. An engineer says the config should default to localhost so collection can proceed. Review the proposed behavior and give the correct command/validation policy.",
+      "expected": "Rejects the run before collection, treats BASE_URL as guidance-only, preserves exact root public key names, and provides no implicit loopback fallback.",
+      "files": [],
+      "assertions": [
+        {"id": "fails-before-collection", "check": "requires missing E2E_BASE_URL to fail before Playwright collection or execution"},
+        {"id": "rejects-legacy-fallback", "check": "does not accept BASE_URL as runtime fallback"},
+        {"id": "rejects-silent-loopback", "check": "does not default the canonical run to localhost or another loopback address"},
+        {"id": "distinguishes-local-opt-in", "check": "requires exact root key names test:e2e and test:e2e:local and routes local execution through the latter"},
+        {"id": "requires-private-runner-capability", "check": "rejects a naked URL and requires an owner-only non-symlink short-lived capability with constant-time token binding mode, operation, URL, target, non-production deployment, run, database, and service identities"},
+        {"id": "enforces-mode-target-operation-matrix", "check": "canonical permits only deployed HTTPS execution; local only loopback execution; CI only loopback execution with full identities; every non-loopback target requires HTTPS"},
+        {"id": "requires-safe-deployment-identities", "check": "does not treat any non-loopback host as safe; verifies production denial and trusted identities before provisioning/migration/seed, then revalidates unchanged after preparation"},
+        {"id": "rejects-url-credential-channels", "check": "rejects base URL userinfo, query, and fragment; routes bypass credentials through protected redacted headers/cookies"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "isolated-two-shard-ci-lifecycle",
+      "prompt": "Design a two-shard CI Playwright job that runs an authenticated mutation-capable suite against an app started on loopback. Explain provisioning, build/start, setup, shard commands, cleanup, timeout, and evidence behavior.",
+      "expected": "A lane-owned isolated target with run identity, migrated/seeded database, immutable build, verified listener, setup once, shards using --no-deps, finite timeouts, and always-run cleanup/report inventory.",
+      "files": [],
+      "assertions": [
+        {"id": "owns-isolated-target", "check": "requires CI loopback execution with full run/lane-owned non-production database, services, listener, production denial, and validated identity rather than accepting loopback alone"},
+        {"id": "builds-immutable-app-once", "check": "migrates and seeds before one immutable application build and starts without listener reuse"},
+        {"id": "runs-setup-once", "check": "runs serial setup once and both shards with native --shard plus --no-deps"},
+        {"id": "bounds-cleanup-and-timeouts", "check": "reserves finite cleanup headroom and terminates only run-owned processes under always-run behavior"},
+        {"id": "inventories-artifacts", "check": "requires per-shard machine-readable/blob evidence and fails when expected artifacts are missing"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "mutation-parallelism-and-personas",
+      "prompt": "A mutation-heavy E2E suite proposes fullyParallel: true and eight workers because every lane has its own database. Several tests share an admin storageState and create parent/child records. Review the proposal and state what is required before concurrency can increase.",
+      "expected": "Keeps serial one-worker defaults, requires exact narrow mutation ownership and child-first cleanup, isolates persona contexts without privilege fallback, and demands same-target comparable evidence before scaling.",
+      "files": [],
+      "assertions": [
+        {"id": "keeps-serial-default", "check": "sets fullyParallel false and one worker until safety is proven"},
+        {"id": "requires-narrow-ownership", "check": "includes run, lane or shard, worker, test, and retry identity with immediate exact-ID registration"},
+        {"id": "requires-safe-cleanup", "check": "requires child-before-parent exact cleanup, leak evidence, and failure on unknown provenance"},
+        {"id": "authorizes-before-update-delete", "check": "rejects update/delete before side effect unless the exact ID is same-owner or covered by an explicit bounded reversible lease"},
+        {"id": "isolates-personas", "check": "uses exact persona storage in isolated contexts with bounded same-persona recovery and no privilege fallback"},
+        {"id": "protects-storage-state", "check": "uses gitignored run-owned 0700 directory and 0600 atomic files with bounded lifetime, cleanup, and server-session revocation"},
+        {"id": "derives-owner-server-side", "check": "derives mutation/provider run-owner identity server-side from an authenticated non-production capability and rejects client-asserted headers/body/query values"},
+        {"id": "requires-concurrency-evidence", "check": "does not treat a separate database alone as proof and requires two adjacent comparable clean runs"}
+      ]
+    },
+    {
+      "id": 4,
+      "name": "multi-browser-evidence-and-benchmark",
+      "prompt": "Review a multi-browser E2E result: Chromium was split into four shards, Firefox ran @critical tests, the optional exclusions file is absent, one quarantined test expired, a payment used a deterministic adapter, two tests passed on retry, and one blob report is missing. Can this count as a clean worker benchmark? Describe collection, merge, flake, provider, quarantine, and browser-install requirements.",
+      "expected": "Absence means no exclusions; exact Chromium completeness remains required; missing report, expired quarantine, and retry passes disqualify clean evidence; deterministic provider receipts/reset are not live-provider proof; browser dependency closure and post-run classification are required.",
+      "files": [],
+      "assertions": [
+        {"id": "treats-absent-exclusions-as-empty", "check": "does not require an empty exclusions file and keeps a strict sole source if one appears"},
+        {"id": "preserves-chromium-completeness", "check": "requires authored-versus-collected equality through collection-only explicit --list, exposing exact unfiltered chromium with no setup/webServer/dependency graph; rejects collection test execution"},
+        {"id": "fails-incomplete-report-merge", "check": "fails expected-artifact inventory for a missing blob and performs always-run merge/upload"},
+        {"id": "classifies-retry-pass-flakes", "check": "requires machine-readable post-run retry classification and does not call retry passes clean"},
+        {"id": "rejects-expired-quarantine", "check": "requires structured current metadata and a scheduled/manual quarantine lane"},
+        {"id": "separates-provider-evidence", "check": "requires adapter receipt/reset/escaped-record checks and does not claim live-provider integration"},
+        {"id": "requires-browser-dependency-closure", "check": "installs every selected browser plus setup browser dependencies and does not silently omit WebKit based on host OS"},
+        {"id": "requires-validated-webkit-omission", "check": "allows WebKit omission only through a validated unsupported capability with visible retained omission evidence"},
+        {"id": "enforces-artifact-secret-policy", "check": "never uploads storage state; scans/redacts secrets and sensitive URL/header/body content; restricts retention/access; fails closed when unsafe"},
+        {"id": "disqualifies-benchmark", "check": "does not accept sharded, flaky, incomplete, or quarantine-invalid output as clean worker evidence"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "total_tokens": 41709,
+  "duration_ms": 8222,
+  "tool_uses": 1,
+  "summary": "Fixed-position sidebar with transform: translateX(-100%) and 300ms ease-in-out transition on transform, toggled by .open class."
+}
