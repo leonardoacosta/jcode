@@ -445,6 +445,51 @@ body:before{
   .orchestration-card .orch-arrow{min-width:12px}
 }
 
+/* Intermediate widths: the desktop row layouts need the same care as 390/1280. */
+@media (min-width:781px) and (max-width:1180px){
+  /* card 2: the single 650px row cannot fit, so wrap it like mobile. */
+  .orchestration-panel{overflow-x:hidden!important}
+  .orch-flow{
+    min-width:0!important;width:100%;height:auto;
+    grid-template-columns:auto 14px auto 14px auto!important;
+    grid-template-rows:auto auto auto!important;
+    justify-content:center;align-items:center;gap:10px 6px;
+  }
+  .orchestration-card .orch-loop{grid-column:1;grid-row:1}
+  .orchestration-card .orch-a1{grid-column:2;grid-row:1}
+  .orchestration-card .orch-plan{grid-column:3;grid-row:1}
+  .orchestration-card .orch-a2{grid-column:4;grid-row:1}
+  .orchestration-card .orch-merge-row{grid-column:5;grid-row:1}
+  .orchestration-card .orch-fanout{grid-column:1/-1;grid-row:2;display:flex;justify-content:center;gap:8px;width:100%}
+  .orchestration-card .orch-a3{display:none}
+  .orchestration-card .orch-answer{grid-column:1/-1;grid-row:3;justify-self:center;display:flex;align-items:center;gap:8px;margin-top:4px}
+  .orchestration-card .orch-agents{display:flex;gap:4px}
+  /* the fan-out slide must not carry tasks into the answer row */
+  .orchestration-card .orch-task{transform:none!important}
+
+  /* card 5: fewer columns so tool names stay whole. */
+  .tools-layer .tool-bus{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+  .tools-layer .tool-cell:not(:last-child)::after{display:none}
+
+  /* card 7: stack the memory groups instead of squeezing three columns. */
+  .memory-card .memory-panel{grid-template-columns:1fr!important;grid-template-rows:auto auto auto;gap:10px;justify-items:center}
+  .memory-card .memory-flow{grid-column:1;grid-row:1}
+  .memory-card .memory-restored{grid-column:1;grid-row:2;width:100%}
+  .memory-card .memory-score{grid-column:1;grid-row:3;display:flex;gap:6px;border-left:0;border-top:1px solid rgba(255,240,199,.18);padding-top:6px;width:100%;justify-content:center}
+  .memory-card .memory-score span{display:inline}
+}
+
+/* Narrow phones: keep long labels intact. */
+@media (max-width:400px){
+  .context-layer .ctx-segment em,
+  .context-layer .ctx-segment strong{white-space:normal;overflow:visible;text-overflow:clip}
+  .context-layer .ctx-segment{min-width:0;padding-inline:3px}
+  .context-layer .ctx-segment em{font-size:8px!important;letter-spacing:.02em}
+  .context-layer .context-segments{gap:3px}
+  .context-layer .context-note{flex-wrap:wrap;white-space:normal;overflow:visible;text-overflow:clip}
+  .context-layer .context-note span{white-space:normal;overflow:visible;text-overflow:clip}
+}
+
 /* 4 model: badges are chips, not full-width bars; label sits beside its path. */
 .model-card .model-path{grid-template-columns:minmax(72px,.8fr) auto auto minmax(0,1fr);justify-items:start}
 .model-card .badge{justify-self:start;width:auto;flex:none}
