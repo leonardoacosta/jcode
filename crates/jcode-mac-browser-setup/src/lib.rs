@@ -12,6 +12,7 @@ pub struct InstallOptions {
     pub home: PathBuf,
     pub broker_path: PathBuf,
     pub homelab_host: String,
+    pub homelab_user: String,
     pub chrome_extension_id: String,
     pub edge_extension_id: String,
     pub managed_cdp_chrome: Option<String>,
@@ -24,6 +25,7 @@ impl InstallOptions {
             home,
             broker_path: broker_path.into(),
             homelab_host: "jcode-homelab".to_string(),
+            homelab_user: "jcode".to_string(),
             chrome_extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
             edge_extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
             managed_cdp_chrome: None,
@@ -83,7 +85,11 @@ impl InstallOptions {
     }
 
     pub fn forwarded_socket_path(&self) -> PathBuf {
-        PathBuf::from("~/.jcode/browser/mac-fleet.sock")
+        // Absolute: sshd does not expand `~` in RemoteForward listen paths.
+        PathBuf::from(format!(
+            "/home/{}/.jcode/browser/mac-fleet.sock",
+            self.homelab_user
+        ))
     }
 }
 
@@ -640,7 +646,7 @@ mod tests {
         let ssh = fs::read_to_string(opts.ssh_include_path()).unwrap();
         assert!(ssh.contains("StreamLocalBindUnlink yes"));
         assert!(ssh.contains("RemoteForward"));
-        assert!(ssh.contains("~/.jcode/browser/mac-fleet.sock"));
+        assert!(ssh.contains("/.jcode/browser/mac-fleet.sock"));
         assert!(!ssh.contains("LocalForward"));
         assert!(!ssh.contains("0.0.0.0"));
         assert!(!ssh.contains(":9222"));
@@ -729,5 +735,34 @@ mod tests {
                 rendered.len()
             );
         }
+    }
+
+    #[test]
+    fn ssh_include_forwards_to_an_absolute_remote_socket_path() {
+        // sshd does not expand `~` in RemoteForward listen paths, so a tilde
+        // path makes every reverse forward fail with
+        // "remote port forwarding failed for listen path".
+        let mut opts = InstallOptions::fixture(
+            PathBuf::from("/Users/test"),
+            "/Users/test/.local/bin/jcode-mac-browser-fleet",
+        );
+        opts.homelab_user = "nyaptor".to_string();
+
+        let ssh = render_ssh_include(&opts);
+        let forward_line = ssh
+            .lines()
+            .find(|line| line.trim_start().starts_with("RemoteForward "))
+            .expect("ssh include must configure a RemoteForward");
+        let listen_path = forward_line.split_whitespace().nth(1).unwrap();
+
+        assert!(
+            !listen_path.contains('~'),
+            "remote listen path {listen_path} must not rely on tilde expansion"
+        );
+        assert!(
+            listen_path.starts_with('/'),
+            "remote listen path {listen_path} must be absolute"
+        );
+        assert!(listen_path.contains("nyaptor"));
     }
 }

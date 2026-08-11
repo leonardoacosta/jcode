@@ -25,6 +25,11 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             opts.homelab_host = host;
         }
     }
+    if let Ok(user) = env::var("JCODE_MAC_BROWSER_FLEET_HOMELAB_USER") {
+        if !user.trim().is_empty() {
+            opts.homelab_user = user;
+        }
+    }
     if let Ok(extension_id) = env::var("JCODE_MAC_BROWSER_FLEET_EXTENSION_ID") {
         if !extension_id.trim().is_empty() {
             opts.chrome_extension_id = extension_id.clone();
