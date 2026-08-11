@@ -19,7 +19,7 @@ head="$(git rev-parse HEAD)"
 # previous hook run failed after its request was consumed).
 if [ "${JCODE_DEPLOY_FORCE:-}" != "1" ]; then
     if ! git diff-tree --root --no-commit-id --name-only -r "$head" \
-        | grep -Eq '^(crates/|src/|build\.rs$|Cargo\.(toml|lock)$|rust-toolchain|\.cargo/)'; then
+        | grep -Eq '^(crates/|src/|apps/command-center/|build\.rs$|Cargo\.(toml|lock)$|rust-toolchain|\.cargo/)'; then
         exit 0
     fi
 fi
@@ -86,6 +86,7 @@ fi
 
         if (
             cd "$worktree"
+            ./scripts/install_command_center_assets.sh
             CARGO_TARGET_DIR="$target_dir" ./scripts/install_release.sh --fast
         ) >> "$log" 2>&1; then
             echo "$(date -Is) deploy finished (HEAD=$short)" >> "$log"
