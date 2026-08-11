@@ -14,6 +14,7 @@ export const NATIVE_HOST_MESSAGE_TYPES = Object.freeze([
   "inventory_request",
   "action_request",
   "action_idle",
+  "resync_request",
 ]);
 
 export const MESSAGE_SCHEMAS = Object.freeze({
@@ -28,6 +29,7 @@ export const MESSAGE_SCHEMAS = Object.freeze({
   inventory_request: Object.freeze({ required: ["type", "requestId"], optional: [] }),
   action_poll: Object.freeze({ required: ["type", "requestId"], optional: [] }),
   action_idle: Object.freeze({ required: ["type"], optional: [] }),
+  resync_request: Object.freeze({ required: ["type"], optional: [] }),
   inventory_snapshot: Object.freeze({ required: ["type", "snapshot"], optional: [] }),
   inventory_delta: Object.freeze({
     required: [
@@ -60,7 +62,7 @@ export const MESSAGE_SCHEMAS = Object.freeze({
  * @typedef {{type:"action_request", requestId:string, generation:number, action:string, target:{windowId?:number, tabId?:number}, payload:Record<string, unknown>}} ActionRequest
  * @typedef {{type:"action_response", requestId:string, ok:boolean, result?:Record<string, unknown>, error?:{code:string, message:string}}} ActionResponse
  * @typedef {ExtensionHello | ActionPoll | ActionResponse | ({type:"inventory_snapshot", snapshot:Record<string, unknown>}) | ({type:"inventory_delta"} & Record<string, unknown>)} ExtensionMessage
- * @typedef {InventoryRequest | ActionRequest | {type:"action_idle"} | {type:"hello_ack", protocolVersion:number, sessionId:string}} NativeHostMessage
+ * @typedef {InventoryRequest | ActionRequest | {type:"action_idle"} | {type:"resync_request"} | {type:"hello_ack", protocolVersion:number, sessionId:string}} NativeHostMessage
  */
 
 export class ProtocolError extends Error {
@@ -231,6 +233,7 @@ export function parseNativeHostMessage(message, { expectedGeneration } = {}) {
       if (message.target.windowId !== undefined && !isId(message.target.windowId)) fail("invalid_message", "window ID is invalid");
       if (message.target.tabId === undefined && message.target.windowId === undefined) fail("invalid_message", "action target is required");
       break;
+    case "resync_request":
     case "action_idle":
       break;
   }

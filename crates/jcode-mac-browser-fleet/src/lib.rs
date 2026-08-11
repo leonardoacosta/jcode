@@ -1369,6 +1369,17 @@ impl Broker {
     fn poll_extension_action(&mut self, source: ExtensionSourcePayload) -> serde_json::Value {
         self.prune_expired_extension_actions();
         let source_key = extension_source_key(source.browser_kind, &source.profile_label);
+        // A poll from a source with no registered targets means the broker
+        // restarted while the extension kept its native host alive. Ask it to
+        // re-register instead of answering idle forever, or the browser stays
+        // invisible to the fleet until someone reloads the extension.
+        let source_is_known = self
+            .targets
+            .values()
+            .any(|target| target.extension_source_key.as_deref() == Some(source_key.as_str()));
+        if !source_is_known {
+            return serde_json::json!({"type": "resync_request"});
+        }
         let Some(index) = self
             .pending_extension_actions
             .iter()

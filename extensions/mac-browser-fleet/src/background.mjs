@@ -213,6 +213,13 @@ export function installMacBrowserFleetBridge(browserApi, options = {}) {
         return;
       }
 
+      if (parsed.type === "resync_request") {
+        // The broker restarted and no longer knows this source. Re-register by
+        // pushing a fresh snapshot; the port itself is still healthy.
+        currentSnapshot = undefined;
+        await postInitialSnapshot();
+        return;
+      }
       if (parsed.type === "inventory_request") {
         if (!currentSnapshot) await postInitialSnapshot();
         else safePost(port, { type: "inventory_snapshot", snapshot: currentSnapshot });

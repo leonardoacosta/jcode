@@ -372,3 +372,32 @@ test("derives a distinct profile label per browser profile", async () => {
   const second = await resolveProfileLabel({ storage: shared });
   assert.equal(first, second, "profile label must persist for the same profile");
 });
+
+test("re-registers when the broker asks for a resync", async () => {
+  // After a broker restart the native port stays open but the broker has
+  // forgotten this source. It replies resync_request to the poll the extension
+  // already sends, and the extension must push a fresh snapshot rather than
+  // waiting for a manual reload.
+  const browserApi = fakeBrowserApi({
+    windows: [{ id: 1, focused: true, tabs: [{ id: 11, url: "https://example.com/", active: true }] }],
+  });
+  installMacBrowserFleetBridge(browserApi, {
+    browserKind: "chrome",
+    sessionId: "sess-resync",
+    profileLabel: "profile-a",
+  });
+
+  const port = browserApi.ports.at(-1);
+  // Let the initial snapshot settle so we only measure the resync reaction.
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  const before = port.posted.filter((m) => m.type === "inventory_snapshot").length;
+
+  port.receive({ type: "resync_request" });
+  await new Promise((resolve) => setTimeout(resolve, 10));
+
+  const after = port.posted.filter((m) => m.type === "inventory_snapshot").length;
+  assert.ok(
+    after > before,
+    `expected a fresh snapshot after resync_request (before=${before} after=${after})`,
+  );
+});

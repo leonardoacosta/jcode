@@ -1423,3 +1423,47 @@ async fn one_bad_connection_does_not_terminate_the_broker() {
 
     handle.abort();
 }
+
+#[tokio::test]
+async fn action_poll_from_an_unknown_source_requests_re_registration() {
+    // The broker holds extension inventory in memory. After it restarts (or is
+    // relaunched by launchd), every extension still has a live native host but
+    // the broker no longer knows that source, so the browser silently vanishes
+    // from the fleet. The poll the extension already sends every second is the
+    // natural liveness signal: an unknown source must be told to re-register
+    // rather than answered with a plain idle.
+    let dir = tempdir().unwrap();
+    let socket = dir.path().join("resync.sock");
+    let mut broker = Broker::bind(BrokerConfig {
+        socket_path: socket.clone(),
+        authority_socket_path: None,
+        secret: secret(),
+        native_secret: Some(native_secret()),
+        max_payload_bytes: 65_536,
+        max_in_flight: 4,
+    })
+    .await
+    .unwrap();
+    let handle = tokio::spawn(async move { broker.serve().await });
+
+    let response = broker_line(
+        &socket,
+        serde_json::json!({
+            "version": 1,
+            "auth": native_secret(),
+            "id": "poll-unknown",
+            "action": "extensionActionPoll",
+            "payload": {"browserKind": "chrome", "profileLabel": "profile-unknown"}
+        }),
+    )
+    .await;
+
+    let result = response.get("result").cloned().unwrap_or_default();
+    assert_eq!(
+        result.get("type").and_then(serde_json::Value::as_str),
+        Some("resync_request"),
+        "unknown source must be asked to re-register: {response}"
+    );
+
+    handle.abort();
+}
