@@ -11,6 +11,22 @@ The Command Center is the browser-first supervision surface for Jcode initiative
 - The SolidStart client owns only layout, focus, filters, selections, scroll position, transient drafts, and other reversible interface state.
 - The terminal Context Control Room remains a lightweight inspector. It is not a second command-center implementation.
 
+## Implementation seams
+
+The vertical slice deliberately extends existing Jcode authorities instead of creating a parallel application backend:
+
+| Concern | Existing authority and exact seam | Command Center integration |
+|---|---|---|
+| Daemon transport and lifecycle | `crates/jcode-app-core/src/server.rs` (`Server::finish_startup_after_bind`) and `crates/jcode-app-core/src/server/runtime.rs` (`RuntimeTaskScope`) | `crates/jcode-app-core/src/command_center.rs::spawn_managed_http_host` starts the loopback HTTP host inside the daemon task scope, so reload and shutdown cancel and join it. |
+| Durable initiatives | `crates/jcode-app-core/src/goal.rs` and the existing goal persistence used by the initiative tool | `GoalInitiativeRepository` projects and revision-checks those records through public Command Center DTOs. It does not add a frontend database. |
+| Ambient scheduling | `crates/jcode-app-core/src/ambient.rs` and persisted ambient queue state | `AmbientScheduleProjectionSource` exposes initiative-linked evidence without becoming global schedule administration. |
+| Jcode run evidence | Existing persisted session/run records | `SessionRunProjectionSource` reads linked run projections and preserves Jcode and Orca references. |
+| Permissions and browser security | Command Center auth context, scoped browser sessions, and same-origin HTTP middleware in `crates/jcode-command-center/src/lib.rs` | The browser receives short-lived scoped session material only. Mutations require CSRF, origin, revision, and idempotency evidence. |
+| Orca authority | The installed Orca CLI and canonical Orca project/run identifiers | `OrcaCliAdapter` uses the verified `status --json` observation surface. Unsupported start, retry, and cancel mutations fail closed until Orca exposes an approved lifecycle contract. |
+| Browser contract | Public Rust DTOs and `generate-command-center-types` in `crates/jcode-command-center` | Generated output is committed at `apps/command-center/src/generated/command-center-contract.ts` and drift-checked by `scripts/check-command-center-contracts.sh`. |
+
+The pre-change seams were exercised after integration through focused goal, ambient, browser, TUI initiative/control-room, desktop2, and server checks with the feature disabled. The managed-host path was separately exercised through an isolated daemon, protected API, real browser deep link, security probes, and listener shutdown.
+
 ## Enablement and listener posture
 
 The command center must be disabled by default until its security, compatibility, contract, browser, and managed-topology gates pass. When enabled, the listener must bind to loopback unless an operator explicitly configures authenticated remote access and an origin allowlist.
@@ -91,6 +107,18 @@ The first slice must record these measurements before enablement-by-default is c
 | Shutdown cleanup | No leaked child process, listener, socket, or temporary directory after daemon shutdown. |
 
 If a threshold is exceeded, keep the feature behind the experimental flag and document the blocker in the durable initiative.
+
+### Current measurement status
+
+Repository-local functional measurements are recorded, but task 7.6 remains open until the complete threshold suite runs on the managed homelab hardware. The current evidence is:
+
+- Production SolidStart packaging succeeds and is served directly from `.output/public` by the Rust-managed host. There is no independently exposed Node listener or second workflow authority.
+- The real isolated daemon reached the protected API and rendered an authenticated browser deep link successfully.
+- Listener shutdown released the configured port and left no managed Command Center child process.
+- The 10,000-event client fixture remains bounded to 40 rendered timeline rows through virtualization.
+- Repository-local event, reconnect, and resource measurements are not substitutes for the required 60-second idle CPU/memory and P95 managed-host measurements. Those remain a rollout blocker rather than an inferred pass.
+
+The rejected alternative is a daemon-supervised SolidStart server process. It would add a second private listener, extra packaging and shutdown state, and no benefit for this client-rendered slice. The selected topology builds static assets once and keeps all HTTP, authentication, commands, events, and lifecycle ownership in the Rust daemon.
 
 ## Operations
 

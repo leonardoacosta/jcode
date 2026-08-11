@@ -1,6 +1,6 @@
 ## 1. Baseline and architecture seam
 
-- [ ] 1.1 Record the current daemon transport, server lifecycle, initiative persistence, ambient scheduling, permissions, and Orca integration seams in implementation notes tied to exact source paths; verify with targeted existing tests before changing code.
+- [x] 1.1 Record the current daemon transport, server lifecycle, initiative persistence, ambient scheduling, permissions, and Orca integration seams in implementation notes tied to exact source paths; verify with targeted existing tests before changing code.
 - [ ] 1.2 Spike SolidStart build and SSR integration against the Rust daemon and select either in-process asset/SSR hosting or a daemon-supervised private child process; document measured startup, idle-memory, shutdown, and packaging results and stop if the option requires an independently exposed listener or workflow authority.
 - [x] 1.3 Define the command-center crate/package ownership boundaries, affected workspace manifests, generated-client location, and feature/config flag without moving existing domain behavior into the frontend.
 - [x] 1.4 Add a migration-ledger update that maps the source documents listed in `design.md` to absorbed, retained, completed-foundation, partially-superseded, or later-milestone decisions; do not archive any source in this child change.
@@ -56,8 +56,8 @@
 ## 7. Managed topology and acceptance workflow
 
 - [x] 7.1 Add a non-production test configuration that launches one isolated Jcode daemon, command-center web host, deterministic initiative fixture, schedule fixture, and compatible Orca runtime/fixture without using the shared user daemon.
-- [ ] 7.2 Add `scripts/test-command-center.sh` and Playwright coverage for authenticated launch, initiative discovery, split route rendering, milestone/step update, checkpointing, linked schedule evidence, live event update, run deep link, scoped-cursor rejection, disconnect, replay, snapshot reconciliation, and initiative resume; expected script result is exit 0 with every named workflow passing.
-- [ ] 7.3 Run the same acceptance workflow with Orca intentionally unavailable and verify durable initiative operations continue while runtime state is explicitly degraded and unsafe actions cannot succeed.
+- [x] 7.2 Add `scripts/test-command-center.sh` and Playwright coverage for authenticated launch, initiative discovery, split route rendering, milestone/step update, checkpointing, linked schedule evidence, live event update, run deep link, scoped-cursor rejection, disconnect, replay, snapshot reconciliation, and initiative resume; expected script result is exit 0 with every named workflow passing.
+- [x] 7.3 Run the same acceptance workflow with Orca intentionally unavailable and verify durable initiative operations continue while runtime state is explicitly degraded and unsafe actions cannot succeed.
   - Run `pnpm --dir apps/command-center test:e2e -- --project orca-unavailable`; expected result is exit 0 with initiative update/checkpoint/resume passing, the execution pane marked unavailable with last-observed evidence, and every unsafe runtime command absent or rejected.
   - touches: `apps/command-center/e2e/` and isolated Orca-unavailable fixtures (new)
   - depends on: 7.1, 7.2
@@ -84,4 +84,4 @@
   - Run `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo check --profile selfdev --workspace`, `bash scripts/check-command-center-contracts.sh`, `bash scripts/test-command-center-security.sh`, `pnpm --dir apps/command-center format:check`, `pnpm --dir apps/command-center lint`, `pnpm --dir apps/command-center typecheck`, `pnpm --dir apps/command-center test`, `bash scripts/test-command-center.sh`, `bash scripts/test-command-center-tunnel-fixture.sh`, `openspec validate add-solidstart-command-center-vertical-slice --strict --no-interactive`, and `git diff --check`; expected result is exit 0 for every command, no stale generated files, no failing security scenario, and no skipped repository-local acceptance path. Task 7.5 supplies the separate managed-topology terminal post gate.
   - touches: generated contract output, test reports, OpenSpec artifacts, and repository metadata only
   - depends on: 7.3, 7.4, 7.6, 8.1, 8.2, 8.3
-- [ ] 8.5 Update the durable `jcode-command-center` initiative with the final milestone status, evidence, blockers, next steps, and links to the containing commit and follow-on scheduling, Orca, portfolio, and desktop child changes.
+- [x] 8.5 Update the durable `jcode-command-center` initiative with the final milestone status, evidence, blockers, next steps, and links to the containing commit and follow-on scheduling, Orca, portfolio, and desktop child changes.
