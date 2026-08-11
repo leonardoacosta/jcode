@@ -1,4 +1,4 @@
-use jcode_mac_browser_setup::{InstallOptions, install, remove, status};
+use jcode_mac_browser_setup::{install, remove, status, InstallOptions};
 use std::env;
 use std::path::PathBuf;
 
@@ -27,7 +27,18 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     }
     if let Ok(extension_id) = env::var("JCODE_MAC_BROWSER_FLEET_EXTENSION_ID") {
         if !extension_id.trim().is_empty() {
-            opts.extension_id = extension_id;
+            opts.chrome_extension_id = extension_id.clone();
+            opts.edge_extension_id = extension_id;
+        }
+    }
+    if let Ok(extension_id) = env::var("JCODE_MAC_BROWSER_FLEET_CHROME_EXTENSION_ID") {
+        if !extension_id.trim().is_empty() {
+            opts.chrome_extension_id = extension_id;
+        }
+    }
+    if let Ok(extension_id) = env::var("JCODE_MAC_BROWSER_FLEET_EDGE_EXTENSION_ID") {
+        if !extension_id.trim().is_empty() {
+            opts.edge_extension_id = extension_id;
         }
     }
     opts.managed_cdp_chrome = non_empty_env("JCODE_MAC_BROWSER_FLEET_MANAGED_CDP_CHROME");
@@ -35,17 +46,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     match command.as_str() {
         "install" => {
-            if opts.extension_id == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" {
-                return Err("set JCODE_MAC_BROWSER_FLEET_EXTENSION_ID to the 32-character Chrome or Edge extension ID before install".into());
-            }
-            if opts.extension_id.len() != 32
-                || !opts
-                    .extension_id
-                    .bytes()
-                    .all(|byte| matches!(byte, b'a'..=b'p'))
-            {
-                return Err("JCODE_MAC_BROWSER_FLEET_EXTENSION_ID must be 32 lowercase letters from a through p".into());
-            }
+            validate_extension_id(
+                "JCODE_MAC_BROWSER_FLEET_CHROME_EXTENSION_ID",
+                &opts.chrome_extension_id,
+            )?;
+            validate_extension_id(
+                "JCODE_MAC_BROWSER_FLEET_EDGE_EXTENSION_ID",
+                &opts.edge_extension_id,
+            )?;
             let report = install(&opts)?;
             println!(
                 "installed={:?} refreshed={:?} backups={}",
@@ -86,4 +94,17 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 fn non_empty_env(name: &str) -> Option<String> {
     env::var(name).ok().filter(|value| !value.trim().is_empty())
+}
+
+fn validate_extension_id(name: &str, extension_id: &str) -> Result<(), Box<dyn std::error::Error>> {
+    if extension_id == "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" {
+        return Err(format!(
+            "set {name}, or backward-compatible JCODE_MAC_BROWSER_FLEET_EXTENSION_ID, to the 32-character browser extension ID before install"
+        )
+        .into());
+    }
+    if extension_id.len() != 32 || !extension_id.bytes().all(|byte| matches!(byte, b'a'..=b'p')) {
+        return Err(format!("{name} must be 32 lowercase letters from a through p").into());
+    }
+    Ok(())
 }

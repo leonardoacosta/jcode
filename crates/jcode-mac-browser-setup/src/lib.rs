@@ -12,7 +12,8 @@ pub struct InstallOptions {
     pub home: PathBuf,
     pub broker_path: PathBuf,
     pub homelab_host: String,
-    pub extension_id: String,
+    pub chrome_extension_id: String,
+    pub edge_extension_id: String,
     pub managed_cdp_chrome: Option<String>,
     pub managed_cdp_edge: Option<String>,
 }
@@ -23,7 +24,8 @@ impl InstallOptions {
             home,
             broker_path: broker_path.into(),
             homelab_host: "jcode-homelab".to_string(),
-            extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            chrome_extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
+            edge_extension_id: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa".to_string(),
             managed_cdp_chrome: None,
             managed_cdp_edge: None,
         }
@@ -339,10 +341,10 @@ pub fn render_launch_agent(opts: &InstallOptions) -> String {
 }
 
 pub fn render_native_host(opts: &InstallOptions, browser: &str) -> String {
-    let app = if browser == "edge" {
-        "com.microsoft.edge"
+    let (app, extension_id) = if browser == "edge" {
+        ("com.microsoft.edge", &opts.edge_extension_id)
     } else {
-        "com.google.chrome"
+        ("com.google.chrome", &opts.chrome_extension_id)
     };
     format!(
         r#"{{
@@ -356,7 +358,7 @@ pub fn render_native_host(opts: &InstallOptions, browser: &str) -> String {
 }}
 "#,
         json(&opts.broker_path),
-        json_text(&opts.extension_id)
+        json_text(extension_id)
     )
 }
 
@@ -480,14 +482,12 @@ mod tests {
             .status()
             .is_ok()
         {
-            assert!(
-                Command::new("plutil")
-                    .arg("-lint")
-                    .arg(opts.launch_agent_path())
-                    .status()
-                    .unwrap()
-                    .success()
-            );
+            assert!(Command::new("plutil")
+                .arg("-lint")
+                .arg(opts.launch_agent_path())
+                .status()
+                .unwrap()
+                .success());
         }
 
         remove(&opts).unwrap();
@@ -526,12 +526,10 @@ mod tests {
         fs::write(opts.launch_agent_path(), "operator plist edit").unwrap();
 
         let report = install(&opts).unwrap();
-        assert!(
-            report
-                .backups
-                .iter()
-                .any(|p| p.to_string_lossy().contains("policy.toml.bak"))
-        );
+        assert!(report
+            .backups
+            .iter()
+            .any(|p| p.to_string_lossy().contains("policy.toml.bak")));
         assert!(report.backups.iter().any(|p| {
             p.to_string_lossy()
                 .contains("dev.jcode.mac-browser-fleet.plist.bak")
@@ -565,5 +563,38 @@ mod tests {
         assert!(!ssh.contains("LocalForward"));
         assert!(!ssh.contains("0.0.0.0"));
         assert!(!ssh.contains(":9222"));
+    }
+
+    #[test]
+    fn native_host_manifests_use_independent_browser_extension_ids() {
+        let mut opts = InstallOptions::fixture(
+            PathBuf::from("/Users/test"),
+            "/Users/test/.local/bin/jcode-mac-browser-fleet",
+        );
+        opts.chrome_extension_id = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb".to_string();
+        opts.edge_extension_id = "cccccccccccccccccccccccccccccccc".to_string();
+
+        let chrome = render_native_host(&opts, "chrome");
+        let edge = render_native_host(&opts, "edge");
+
+        assert!(chrome.contains("com.google.chrome"));
+        assert!(chrome.contains("chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb/"));
+        assert!(!chrome.contains("cccccccccccccccccccccccccccccccc"));
+        assert!(edge.contains("com.microsoft.edge"));
+        assert!(edge.contains("chrome-extension://cccccccccccccccccccccccccccccccc/"));
+        assert!(!edge.contains("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
+    }
+
+    #[test]
+    fn native_host_manifest_path_remains_executable_without_encoded_arguments() {
+        let opts = InstallOptions::fixture(
+            PathBuf::from("/Users/test"),
+            "/Users/test/.local/bin/jcode-mac-browser-fleet",
+        );
+        let chrome = render_native_host(&opts, "chrome");
+
+        assert!(chrome.contains("\"path\": \"/Users/test/.local/bin/jcode-mac-browser-fleet\""));
+        assert!(!chrome.contains("native-host"));
+        assert!(!chrome.contains("--socket"));
     }
 }

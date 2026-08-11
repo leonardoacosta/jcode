@@ -73,12 +73,15 @@ Set the broker path when it differs from `/usr/local/bin/jcode-mac-browser-broke
 
 ```bash
 export JCODE_MAC_BROWSER_FLEET_BROKER="$HOME/.local/bin/jcode-mac-browser-fleet"
-export JCODE_MAC_BROWSER_FLEET_EXTENSION_ID="<32-character ID shown by chrome://extensions or edge://extensions>"
+export JCODE_MAC_BROWSER_FLEET_CHROME_EXTENSION_ID="<32-character ID shown by chrome://extensions>"
+export JCODE_MAC_BROWSER_FLEET_EDGE_EXTENSION_ID="<32-character ID shown by edge://extensions>"
+# Optional backward-compatible shortcut when both browsers use the same unpacked-extension ID:
+# export JCODE_MAC_BROWSER_FLEET_EXTENSION_ID="<32-character Chrome/Edge extension ID>"
 export JCODE_MAC_BROWSER_FLEET_HOMELAB_HOST="<SSH host alias used by the Mac>"
 cargo run --manifest-path crates/jcode-mac-browser-setup/Cargo.toml -- install
 ```
 
-Load the unpacked extension first, copy its browser-assigned ID, and then run setup. Setup rejects its fixture placeholder so it cannot silently install a native-host manifest that no real extension may use.
+Load the unpacked extension first in each browser, copy the browser-assigned ID from `chrome://extensions` and `edge://extensions`, and then run setup. Setup rejects fixture placeholders so it cannot silently install a native-host manifest that no real extension may use. Chrome and Edge manifests are rendered independently, each with its own `allowed_origins` entry and the broker executable as the manifest `path`. Chromium native-host manifests do not support argv, so the executable must enter native-host mode itself when launched by the browser.
 
 Setup creates only Jcode-owned artifacts:
 
