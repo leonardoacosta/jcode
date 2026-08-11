@@ -1,0 +1,14 @@
+[package]
+name = "jcode-mac-browser-setup"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "jcode-mac-browser-setup"
+path = "src/main.rs"
