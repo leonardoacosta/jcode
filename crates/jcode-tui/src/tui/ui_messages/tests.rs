@@ -3119,6 +3119,8 @@ fn render_assistant_message_plan_card_wraps_instead_of_truncating() {
 fn explicit_rendered_artifacts_have_distinct_card_identities_and_colors() {
     use jcode_tui_messages::{RenderedArtifact, RenderedArtifactKind};
 
+    crate::tui::color_support::pin_truecolor_for_tests();
+
     let cases = [
         (
             RenderedArtifact::new(RenderedArtifactKind::Markdown),
