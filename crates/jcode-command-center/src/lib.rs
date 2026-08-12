@@ -49,6 +49,11 @@ id_type!(ScheduleRefId);
 id_type!(JcodeRunId);
 id_type!(OrcaProjectId);
 id_type!(OrcaRunId);
+id_type!(OrcaTaskId);
+id_type!(OrcaDispatchId);
+id_type!(OrcaWorktreeId);
+id_type!(OrcaTerminalId);
+id_type!(CorrelationId);
 id_type!(StreamId);
 id_type!(CommandId);
 id_type!(IdempotencyKey);
@@ -188,9 +193,20 @@ pub struct OrcaReference {
     #[serde(default)]
     pub runtime_id: Option<String>,
     pub run_id: Option<OrcaRunId>,
+    #[serde(default)]
+    pub task_ids: Vec<OrcaTaskId>,
+    #[serde(default)]
+    pub dispatch_ids: Vec<OrcaDispatchId>,
+    #[serde(default)]
+    pub worktree_ids: Vec<OrcaWorktreeId>,
     pub worker_ids: Vec<String>,
-    pub terminal_ids: Vec<String>,
+    #[serde(default)]
+    pub terminal_ids: Vec<OrcaTerminalId>,
     pub gate_ids: Vec<String>,
+    #[serde(default)]
+    pub correlation_ids: Vec<CorrelationId>,
+    #[serde(default)]
+    pub idempotency_keys: Vec<IdempotencyKey>,
     pub last_observed_at: Option<DateTime<Utc>>,
     pub freshness: Freshness,
 }
@@ -718,11 +734,19 @@ pub enum EventSource {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct EntityRefs {
     pub initiative_id: Option<InitiativeId>,
     pub schedule_id: Option<ScheduleRefId>,
     pub jcode_run_id: Option<JcodeRunId>,
+    pub orca_project_id: Option<OrcaProjectId>,
     pub orca_run_id: Option<OrcaRunId>,
+    pub orca_task_id: Option<OrcaTaskId>,
+    pub orca_dispatch_id: Option<OrcaDispatchId>,
+    pub orca_worktree_id: Option<OrcaWorktreeId>,
+    pub orca_terminal_id: Option<OrcaTerminalId>,
+    pub correlation_id: Option<CorrelationId>,
+    pub idempotency_key: Option<IdempotencyKey>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -1163,9 +1187,14 @@ where
                     project_id: None,
                     runtime_id: None,
                     run_id: None,
+                    task_ids: Vec::new(),
+                    dispatch_ids: Vec::new(),
+                    worktree_ids: Vec::new(),
                     worker_ids: Vec::new(),
                     terminal_ids: Vec::new(),
                     gate_ids: Vec::new(),
+                    correlation_ids: Vec::new(),
+                    idempotency_keys: Vec::new(),
                     last_observed_at: None,
                     freshness: Freshness::unavailable(err.to_string()),
                 }),
@@ -1875,9 +1904,14 @@ mod tests {
                 project_id: Some(OrcaProjectId("orca-project".into())),
                 runtime_id: Some("orca-runtime".into()),
                 run_id: None,
+                task_ids: vec![],
+                dispatch_ids: vec![],
+                worktree_ids: vec![],
                 worker_ids: vec![],
                 terminal_ids: vec![],
                 gate_ids: vec![],
+                correlation_ids: vec![],
+                idempotency_keys: vec![],
                 last_observed_at: Some(Utc::now()),
                 freshness: Freshness::fresh(),
             })
@@ -2011,6 +2045,86 @@ mod tests {
         );
         assert!(value.get("initiative").is_none());
         assert!(value.get("available_actions").is_none());
+    }
+
+    #[test]
+    fn identifier_envelope_preserves_distinct_command_center_ids() {
+        let refs = EntityRefs {
+            initiative_id: Some(InitiativeId("jcode-initiative".into())),
+            schedule_id: Some(ScheduleRefId("schedule".into())),
+            jcode_run_id: Some(JcodeRunId("jcode-run".into())),
+            orca_project_id: Some(OrcaProjectId("orca-project".into())),
+            orca_run_id: Some(OrcaRunId("orca-run".into())),
+            orca_task_id: Some(OrcaTaskId("orca-task".into())),
+            orca_dispatch_id: Some(OrcaDispatchId("orca-dispatch".into())),
+            orca_worktree_id: Some(OrcaWorktreeId("orca-worktree".into())),
+            orca_terminal_id: Some(OrcaTerminalId("orca-terminal".into())),
+            correlation_id: Some(CorrelationId("correlation".into())),
+            idempotency_key: Some(IdempotencyKey("idempotency".into())),
+        };
+
+        let value = serde_json::to_value(&refs).unwrap();
+        assert_eq!(value["jcode_run_id"], "jcode-run");
+        assert_eq!(value["orca_project_id"], "orca-project");
+        assert_eq!(value["orca_run_id"], "orca-run");
+        assert_eq!(value["orca_task_id"], "orca-task");
+        assert_eq!(value["orca_dispatch_id"], "orca-dispatch");
+        assert_eq!(value["orca_worktree_id"], "orca-worktree");
+        assert_eq!(value["orca_terminal_id"], "orca-terminal");
+        assert_eq!(value["correlation_id"], "correlation");
+        assert_eq!(value["idempotency_key"], "idempotency");
+
+        let restored: EntityRefs = serde_json::from_value(value).unwrap();
+        assert_eq!(restored, refs);
+    }
+
+    #[test]
+    fn orca_reference_preserves_runtime_identifiers_separately() {
+        let reference = OrcaReference {
+            project_id: Some(OrcaProjectId("canonical-project".into())),
+            runtime_id: Some("runtime-instance".into()),
+            run_id: Some(OrcaRunId("run".into())),
+            task_ids: vec![OrcaTaskId("task".into())],
+            dispatch_ids: vec![OrcaDispatchId("dispatch".into())],
+            worktree_ids: vec![OrcaWorktreeId("worktree".into())],
+            worker_ids: vec!["worker".into()],
+            terminal_ids: vec![OrcaTerminalId("terminal".into())],
+            gate_ids: vec!["gate".into()],
+            correlation_ids: vec![CorrelationId("correlation".into())],
+            idempotency_keys: vec![IdempotencyKey("idempotency".into())],
+            last_observed_at: None,
+            freshness: Freshness::fresh(),
+        };
+
+        let value = serde_json::to_value(&reference).unwrap();
+        assert_eq!(value["project_id"], "canonical-project");
+        assert_eq!(value["runtime_id"], "runtime-instance");
+        assert_eq!(value["task_ids"], serde_json::json!(["task"]));
+        assert_eq!(value["dispatch_ids"], serde_json::json!(["dispatch"]));
+        assert_eq!(value["worktree_ids"], serde_json::json!(["worktree"]));
+        assert_eq!(value["terminal_ids"], serde_json::json!(["terminal"]));
+        assert_eq!(value["correlation_ids"], serde_json::json!(["correlation"]));
+        assert_eq!(
+            value["idempotency_keys"],
+            serde_json::json!(["idempotency"])
+        );
+
+        let legacy: OrcaReference = serde_json::from_value(serde_json::json!({
+            "project_id": "canonical-project",
+            "runtime_id": "runtime-instance",
+            "run_id": null,
+            "worker_ids": [],
+            "terminal_ids": [],
+            "gate_ids": [],
+            "last_observed_at": null,
+            "freshness": Freshness::fresh(),
+        }))
+        .unwrap();
+        assert!(legacy.task_ids.is_empty());
+        assert!(legacy.dispatch_ids.is_empty());
+        assert!(legacy.worktree_ids.is_empty());
+        assert!(legacy.correlation_ids.is_empty());
+        assert!(legacy.idempotency_keys.is_empty());
     }
 
     #[test]

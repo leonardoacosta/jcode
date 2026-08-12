@@ -20,7 +20,8 @@
 
 - [x] 3.1 Add or update focused tests in `/home/nyaptor/dev/jcode/source/jcode/crates/jcode-app-core/src/command_center.rs` proving Orca runtime ID cannot populate canonical project ID and unresolved canonical identity fails closed.
 - [x] 3.2 Change the Orca observation adapter to run the resolved version-matched `ORCA repo list --json`, resolve the current absolute working directory to the unique longest registered repository ancestor and its canonical repository/project ID, and preserve runtime ID only as runtime metadata. If the command fails, its schema is unsupported, or zero/ambiguous matches remain, stop with unresolved canonical identity; do not add undocumented start, retry, or cancel commands.
-- [ ] 3.3 Extend the Command Center identifier envelope and focused tests to preserve distinct Task, Dispatch, worktree, terminal, correlation, and idempotency identifiers in addition to Jcode and Orca run/project IDs.
+- [x] 3.3 Extend the Command Center identifier envelope and focused tests to preserve distinct Task, Dispatch, worktree, terminal, correlation, and idempotency identifiers in addition to Jcode and Orca run/project IDs.
+  - Completed evidence (2026-08-12): added typed `OrcaTaskId`, `OrcaDispatchId`, `OrcaWorktreeId`, `OrcaTerminalId`, and `CorrelationId`; extended `EntityRefs` and `OrcaReference` while preserving legacy deserialization defaults; added focused tests `identifier_envelope_preserves_distinct_command_center_ids` and `orca_reference_preserves_runtime_identifiers_separately`; committed in this scoped Jcode change.
 - [ ] 3.4 Implement scoped replay invalidation, crash-safe idempotency reconciliation, verified capability projection, and partial-cleanup recovery states in the Command Center service and adapter surfaces.
 - [ ] 3.5 Ensure scheduled triggers enter the same pattern-selection, permission, correlation, idempotency, and receipt-settlement path as interactive commands, with distinct causal dispatch attempts for retries.
 - [x] 3.6 Verify the focused Rust integration.
@@ -34,7 +35,8 @@
   - Completed evidence (2026-08-12): added the Orca Command Center orchestration bridge, explicit `orca-cli` / `orchestration` / `jcode-command-center-orchestration` boundary, orchestration pattern selection, identifier envelope, replay/scheduling/cleanup rules, and ledger migration status.
 - [x] 4.2 Add `scripts/test-command-center-architecture.sh` that serves `docs/diagrams/` on an isolated loopback port, launches Chromium at 393x852, asserts `scrollWidth == innerWidth`, asserts no fixed element intersects a section heading, captures `artifacts/command-center-architecture-mobile.png`, and shuts the server down. Run it and expect exit 0 plus the retained screenshot.
   - Completed evidence (2026-08-12): `bash scripts/test-command-center-architecture.sh` printed `PASS command center architecture mobile smoke: /home/nyaptor/dev/jcode/source/jcode/artifacts/command-center-architecture-mobile.png`; the local shell wrapper appended its known zsh `status` export error after script success, so evidence is recorded from the script payload.
-- [ ] 4.3 Replace the linked OpenSpec initiative's TBD sections with accepted requirements, approved decisions, affected repositories, dependencies, risks, and coordinated task status; verify the pre-implementation state with `openspec initiative show command-center-orchestration --store jcode`.
+- [x] 4.3 Replace the linked OpenSpec initiative's TBD sections with accepted requirements, approved decisions, affected repositories, dependencies, risks, and coordinated task status; verify the pre-implementation state with `openspec initiative show command-center-orchestration --store jcode`.
+  - Completed evidence (2026-08-12): `openspec initiative show command-center-orchestration --store jcode` resolved the `jcode` context store; initiative files now contain accepted requirements, approved layered-projection decisions, affected repositories, dependencies, risks, and coordinated status with recorded agents and Jcode commit IDs.
 
 ## 5. Acceptance and Persistence
 
@@ -44,6 +46,7 @@
 - [ ] 5.2 Verify the final OpenSpec artifact set.
   - Run `openspec validate optimize-orca-command-center-orchestration --strict --no-interactive && bash /home/nyaptor/dev/codex/scripts/verify-codex-feature-artifacts.sh --root "$PWD" --change optimize-orca-command-center-orchestration --phase final` from `/home/nyaptor/dev/jcode/source/jcode`.
   - Expected result: strict validation exits 0 and every required deterministic verifier row reports `PASS`.
+  - Partial evidence (2026-08-12): `openspec validate optimize-orca-command-center-orchestration --strict --no-interactive` printed `Change 'optimize-orca-command-center-orchestration' is valid`. The final codex artifact verifier was not run in this continuation because remaining implementation tasks 3.4 and 3.5 are still open.
 - [x] 5.3 Verify repository hygiene and obsolete-guidance removal for the implemented skill slice.
   - Run `git diff --check` in both repositories and `! grep -Rni --exclude-dir=.git 'llmtrim' /home/nyaptor/dev/agents/skills/orca-cli /home/nyaptor/dev/agents/skills/orchestration /home/nyaptor/dev/agents/skills/jcode-command-center-orchestration`.
   - Expected result: diff hygiene passes, the obsolete-guidance grep finds no matches, and the committed/queued paths remain limited to the intended skill, script, OpenSpec, documentation, diagram, and app-core files.
