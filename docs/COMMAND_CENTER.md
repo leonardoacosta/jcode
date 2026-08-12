@@ -175,3 +175,21 @@ Rollback is configuration first:
 5. If a daemon-supervised SolidStart child process exists, verify shutdown removed the process and private listener.
 
 Rollback must not delete durable initiative records or Orca evidence unless a separate user-approved data migration says so.
+
+## Orca Command Center orchestration bridge
+
+OpenSpec change `optimize-orca-command-center-orchestration` layers policy on top of the existing vertical slice rather than replacing it. The approved skill boundary is:
+
+- `orca-cli` owns version-matched Orca runtime mechanics and full handoff operations.
+- `orchestration` owns generic supervised Run, Task, Dispatch, and worker coordination.
+- `jcode-command-center-orchestration` owns Jcode Command Center policy: initiative and schedule authority, durable-state correlation, permission gates, lifecycle projection, identifier preservation, degraded-state handling, and acceptance evidence.
+
+The Command Center must choose one orchestration pattern before mutating state: observation-only projection, full handoff, supervised DAG coordination, approval-gated mutation, or scheduled retry. Each pattern records the authority that made the decision and the authority that executed it. If the required canonical identity or capability proof is missing, the bridge fails closed and keeps runtime controls disabled.
+
+### Identifier envelope
+
+Command Center records must preserve distinct identifiers instead of collapsing them into a single runtime ID. The envelope includes Jcode initiative/run IDs, canonical Orca repository/project IDs, Orca runtime run IDs, Task IDs, Dispatch IDs, worktree IDs, terminal IDs, schedule attempt IDs, correlation IDs, and idempotency keys. Runtime IDs are evidence, not canonical project identity. Replayed or recovered events must retain the original correlation and idempotency evidence so a retry can be distinguished from a duplicate settlement.
+
+### Replay, scheduling, and cleanup rules
+
+Replay gaps invalidate only the affected stream scope and request an authoritative replacement snapshot. Scheduled triggers enter the same pattern-selection, permission, correlation, idempotency, and receipt-settlement path as interactive commands; every retry creates a distinct causal dispatch attempt. Partial cleanup is represented as a recoverable degraded state with owned resources, attempted cleanup actions, and remaining safe next actions. Unsupported Orca start, retry, cancel, or cleanup mutations remain typed unsupported-capability outcomes until a verified Orca contract exists.

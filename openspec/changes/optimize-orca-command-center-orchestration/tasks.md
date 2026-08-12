@@ -28,8 +28,10 @@
 
 ## 4. Documentation and Initiative Projection
 
-- [ ] 4.1 Update `docs/COMMAND_CENTER.md` and `docs/COMMAND_CENTER_MIGRATION_LEDGER.md` with the approved layered projection bridge, three-skill boundary, orchestration selection model, identifier rules, and migration status.
-- [ ] 4.2 Add `scripts/test-command-center-architecture.sh` that serves `docs/diagrams/` on an isolated loopback port, launches Chromium at 393x852, asserts `scrollWidth == innerWidth`, asserts no fixed element intersects a section heading, captures `artifacts/command-center-architecture-mobile.png`, and shuts the server down. Run it and expect exit 0 plus the retained screenshot.
+- [x] 4.1 Update `docs/COMMAND_CENTER.md` and `docs/COMMAND_CENTER_MIGRATION_LEDGER.md` with the approved layered projection bridge, three-skill boundary, orchestration selection model, identifier rules, and migration status.
+  - Completed evidence (2026-08-12): added the Orca Command Center orchestration bridge, explicit `orca-cli` / `orchestration` / `jcode-command-center-orchestration` boundary, orchestration pattern selection, identifier envelope, replay/scheduling/cleanup rules, and ledger migration status.
+- [x] 4.2 Add `scripts/test-command-center-architecture.sh` that serves `docs/diagrams/` on an isolated loopback port, launches Chromium at 393x852, asserts `scrollWidth == innerWidth`, asserts no fixed element intersects a section heading, captures `artifacts/command-center-architecture-mobile.png`, and shuts the server down. Run it and expect exit 0 plus the retained screenshot.
+  - Completed evidence (2026-08-12): `bash scripts/test-command-center-architecture.sh` printed `PASS command center architecture mobile smoke: /home/nyaptor/dev/jcode/source/jcode/artifacts/command-center-architecture-mobile.png`; the local shell wrapper appended its known zsh `status` export error after script success, so evidence is recorded from the script payload.
 - [ ] 4.3 Replace the linked OpenSpec initiative's TBD sections with accepted requirements, approved decisions, affected repositories, dependencies, risks, and coordinated task status; verify the pre-implementation state with `openspec initiative show command-center-orchestration --store jcode`.
 
 ## 5. Acceptance and Persistence

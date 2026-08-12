@@ -31,3 +31,16 @@ Before the command center can be enabled by default, the implementation record m
 ## Rollback requirements
 
 Rollback must be a configuration rollback first. Disable the experimental web host and verify no listener or daemon-supervised child process survives shutdown. Preserve durable initiative, schedule, session, and Orca reference data. Existing TUI, daemon socket, ambient, browser automation, and desktop2 clients must remain usable with the feature disabled.
+
+## optimize-orca-command-center-orchestration bridge update
+
+The `optimize-orca-command-center-orchestration` change extends this ledger with a three-skill policy boundary. Existing Command Center documentation remains the operational reference; the new bridge makes the Orca relationship explicit without transferring Jcode initiative, schedule, approval, or durable replay authority to Orca.
+
+| Surface | Migration status | Required evidence |
+|---|---|---|
+| `orca-cli` skill | Runtime mechanics only | Skill projection self-tests and live skill load show Command Center policy is deferred to `jcode-command-center-orchestration`. |
+| `orchestration` skill | Generic supervised coordination only | Obsolete `llmtrim` guidance is absent and full-handoff work routes to `orca-cli`. |
+| `jcode-command-center-orchestration` skill | Focused policy bridge | Skill tests cover pattern selection, authority language, identifier envelope, replay gaps, unsupported capabilities, degraded states, and acceptance evidence. |
+| Command Center adapter | Canonical identity guarded | App-core tests prove Orca runtime ID cannot populate canonical project ID and unresolved canonical identity fails closed. |
+| Identifier envelope and replay | In progress | Task/Dispatch/worktree/terminal/correlation/idempotency preservation, scoped replay invalidation, crash-safe reconciliation, verified capability projection, and partial-cleanup recovery remain follow-up implementation work. |
+| Scheduled retry projection | In progress | Scheduled triggers must use the same permission, correlation, idempotency, and receipt-settlement path as interactive commands. |
