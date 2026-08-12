@@ -144,13 +144,29 @@ fn brief_aloud_command(prose: &str) -> Option<std::process::Command> {
 }
 
 fn spawn_artifact_action(mut command: std::process::Command) -> bool {
+    command
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null());
     let Ok(mut child) = command.spawn() else {
         return false;
     };
-    std::thread::spawn(move || {
-        let _ = child.wait();
-    });
-    true
+
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return status.success(),
+            Ok(None) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(std::time::Duration::from_millis(25));
+            }
+            Ok(None) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return false;
+            }
+            Err(_) => return false,
+        }
+    }
 }
 
 fn compose_decision_brief(source: &str) -> Option<(String, String)> {
@@ -239,7 +255,10 @@ impl ArtifactActionPalette {
         {
             actions.push(ArtifactAction::BriefAloud);
         }
-        if matches!(target, ArtifactActionTarget::Url(_) | ArtifactActionTarget::Path(_)) {
+        if matches!(
+            target,
+            ArtifactActionTarget::Url(_) | ArtifactActionTarget::Path(_)
+        ) {
             actions.extend([
                 ArtifactAction::Mopen,
                 ArtifactAction::Ropen,

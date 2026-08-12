@@ -17,6 +17,23 @@ fn artifact_action_destination_builds_direct_command_and_rejects_unsafe_targets(
 }
 
 #[test]
+fn artifact_action_launch_reports_exit_status_without_retrying() {
+    let mut success = std::process::Command::new("sh");
+    success.arg("-c").arg("exit 0");
+    assert!(spawn_artifact_action(success));
+
+    let mut failure = std::process::Command::new("sh");
+    failure.arg("-c").arg("exit 7");
+    assert!(!spawn_artifact_action(failure));
+}
+
+#[test]
+fn artifact_action_launch_fails_for_missing_helper() {
+    let command = std::process::Command::new("jcode-test-missing-helper-hopefully");
+    assert!(!spawn_artifact_action(command));
+}
+
+#[test]
 fn brief_aloud_builds_direct_say_brief_command_and_rejects_blank_prose() {
     let prose = "The decision is approved because it keeps delivery focused.";
     let command = brief_aloud_command(prose).expect("non-blank spoken prose");

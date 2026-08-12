@@ -964,6 +964,33 @@ mod tests {
     }
 
     #[test]
+    fn decision_brief_artifact_identity_round_trips_in_tool_result() {
+        let block = ContentBlock::ToolResult {
+            tool_use_id: "call-brief".to_string(),
+            content: "# Decision Brief\n\nChoose the focused palette.".to_string(),
+            is_error: None,
+            artifact: Some(
+                RenderedArtifact::new(RenderedArtifactKind::DecisionBrief)
+                    .with_title("Decision Brief"),
+            ),
+        };
+        let json = serde_json::to_string(&block).unwrap();
+        assert!(json.contains("decision_brief"));
+
+        match serde_json::from_str::<ContentBlock>(&json).unwrap() {
+            ContentBlock::ToolResult {
+                content, artifact, ..
+            } => {
+                assert!(content.starts_with("# Decision Brief"));
+                let artifact = artifact.expect("decision brief artifact metadata");
+                assert_eq!(artifact.kind, RenderedArtifactKind::DecisionBrief);
+                assert_eq!(artifact.title.as_deref(), Some("Decision Brief"));
+            }
+            other => panic!("expected tool result, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn unknown_artifact_kind_deserializes_for_generic_fallback() {
         let block: ContentBlock = serde_json::from_str(
             r#"{"type":"tool_result","tool_use_id":"call-1","content":"kept","artifact":{"kind":"future_widget"}}"#,

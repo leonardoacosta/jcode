@@ -2244,8 +2244,7 @@ pub(super) fn handle_pre_control_shortcuts(
         return true;
     }
 
-    let artifact_palette_fallback =
-        code == KeyCode::Char('a') && modifiers == KeyModifiers::ALT;
+    let artifact_palette_fallback = code == KeyCode::Char('a') && modifiers == KeyModifiers::ALT;
     if app
         .toggle_keys
         .artifact_action_palette
