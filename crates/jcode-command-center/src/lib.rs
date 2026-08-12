@@ -649,6 +649,15 @@ impl CommandPayload {
             | Self::DirectOrcaMutation { initiative_id, .. } => initiative_id,
         }
     }
+
+    pub fn is_runtime_command(&self) -> bool {
+        matches!(
+            self,
+            Self::StartInitiativeRun { .. }
+                | Self::RetryLinkedRun { .. }
+                | Self::CancelLinkedRun { .. }
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -1259,8 +1268,11 @@ where
                 }),
             );
         }
-        if let Ok(payload) = self.execute_runtime_command(&envelope).await {
-            return base(CommandState::Pending, Some(payload), None);
+        if envelope.payload.is_runtime_command() {
+            return match self.execute_runtime_command(&envelope).await {
+                Ok(payload) => base(CommandState::Pending, Some(payload), None),
+                Err(error) => base(CommandState::Failed, None, Some(error)),
+            };
         }
         match self.apply_initiative_command(&envelope).await {
             Ok(initiative) => base(
@@ -1921,6 +1933,9 @@ mod tests {
             id: &InitiativeId,
             _key: &IdempotencyKey,
         ) -> Result<(JcodeRunReference, OrcaRunId), CommandCenterError> {
+            if self.unavailable {
+                return Err(CommandCenterError::OrcaUnavailable);
+            }
             let now = Utc::now();
             Ok((
                 JcodeRunReference {
@@ -1948,6 +1963,9 @@ mod tests {
             run_id: &JcodeRunId,
             _key: &IdempotencyKey,
         ) -> Result<JcodeRunReference, CommandCenterError> {
+            if self.unavailable {
+                return Err(CommandCenterError::OrcaUnavailable);
+            }
             let now = Utc::now();
             Ok(JcodeRunReference {
                 id: run_id.clone(),
@@ -2298,6 +2316,24 @@ mod tests {
             result.authoritative,
             Some(CommandResultPayload::RunAccepted { .. })
         ));
+    }
+
+    #[tokio::test]
+    async fn unavailable_runtime_command_fails_closed_without_initiative_fallback() {
+        let service = service(true);
+        let result = service
+            .execute(envelope(
+                CommandPayload::StartInitiativeRun {
+                    initiative_id: InitiativeId("command-center".into()),
+                },
+                Revision(1),
+                "k5",
+            ))
+            .await;
+
+        assert_eq!(result.state, CommandState::Failed);
+        assert_eq!(result.authoritative, None);
+        assert_eq!(result.error, Some(CommandCenterError::OrcaUnavailable));
     }
 
     #[tokio::test]
