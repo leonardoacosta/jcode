@@ -21,7 +21,8 @@
 ## 4. Acceptance
 
 - [ ] 4.1 Exercise `/explore` through the installed public REPL and prove no Codex/Claude activation.
+  - Evidence: `./target/debug/jcode run --no-update --socket /run/user/1000/jcode-skill-acceptance-2.sock --tool-profile none '/explore public skill resolution acceptance probe, do not use model routing'` resolved to the public `/explore` skill and returned `Model routing was not used` on 2026-08-12. Installed REPL/TUI activation remains open, so acceptance is not closed.
 - [ ] 4.2 Exercise local-only, Recon-backed, swarm-assisted, degraded, and durable decision-map workflows.
 - [ ] 4.3 Verify handoff reuse and stale-revision rejection.
 - [ ] 4.4 Run focused tests and strict OpenSpec validation.
-  - Evidence: `openspec validate add-native-explore-workflow --strict` passed on 2026-08-12. Public REPL acceptance and degraded workflow exercises remain open, so acceptance is not closed.
+  - Evidence: `openspec validate add-native-explore-workflow --strict` passed on 2026-08-12. `cargo test -p jcode-base skill:: -- --nocapture` passed on 2026-08-12, covering slash invocation parsing/resolution including colon-bearing skills, multi-word registered names, unknown fallback, and file-drop rejection. Public installed REPL/TUI and degraded workflow exercises remain open, so acceptance is not closed.

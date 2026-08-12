@@ -40,10 +40,11 @@
 ## 6. Acceptance
 
 - [ ] 6.1 Exercise native `/apply` and `/apply:all` activation through installed Jcode public interfaces.
+  - Evidence: `./target/debug/jcode run --no-update --socket /run/user/1000/jcode-skill-acceptance-4.sock --tool-profile none '/apply add-native-explore-workflow'` and `./target/debug/jcode run --no-update --socket /run/user/1000/jcode-skill-acceptance.sock --tool-profile none '/apply:all add-native-explore-workflow add-native-feature-workflow'` both resolved through public run interface on 2026-08-12 and reached expected degraded no-tool paths while preserving selected arguments. Installed REPL/TUI activation remains open.
 - [ ] 6.2 Exercise explicit queue selection, dependency order, conflicts, cycles, stale schedules, invalid inputs, and no implicit queue broadening.
 - [ ] 6.3 Exercise feature failure with dependent pauses, independent continuation, retry lineage, and partial settlement.
 - [ ] 6.4 Exercise all risk tiers, same-provider normal review, high-risk cross-provider review, critical approval, and review invalidation.
 - [ ] 6.5 Exercise Orca-supervised, Jcode-native fallback, missing-capability, interruption, resume, cancellation, and cleanup paths.
 - [ ] 6.6 Exercise telemetry degradation and bounded side-pane and terminal behavior under large queues.
 - [ ] 6.7 Run focused repository tests, contract drift checks, public workflow acceptance, and strict OpenSpec validation.
-  - Evidence: `cargo test -p jcode-base skill::tests::parse_invocation -- --nocapture` and `openspec validate add-native-apply-workflows --strict` passed on 2026-08-12. Public workflow acceptance, contract drift checks, Mac/Orca/external capability gates, and full-suite coverage remain open.
+  - Evidence: `cargo test -p jcode-base skill:: -- --nocapture` and `openspec validate add-native-apply-workflows --strict` passed on 2026-08-12. The focused skill tests cover slash invocation parsing/resolution including colon-bearing `/apply:all`, multi-word registered names, unknown fallback, and file-drop rejection. Public workflow acceptance, contract drift checks, Mac/Orca/external capability gates, and full-suite coverage remain open.

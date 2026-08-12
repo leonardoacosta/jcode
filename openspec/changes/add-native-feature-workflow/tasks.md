@@ -31,7 +31,8 @@
 ## 5. Acceptance
 
 - [ ] 5.1 Exercise direct `/feature` and explore-fed `/feature` through public Jcode interfaces.
+  - Evidence: `./target/debug/jcode run --no-update --socket /run/user/1000/jcode-skill-acceptance-3.sock --tool-profile none '/feature public skill resolution acceptance probe from explore handoff'` resolved the public `/feature` skill through the run interface on 2026-08-12 and reached the expected degraded no-tool path. Direct repository-backed execution and true explore-fed handoff acceptance remain open.
 - [ ] 5.2 Exercise OpenSpec, alternate-authority, degraded, setup-declined, conflict, and stale-handoff paths.
 - [ ] 5.3 Prove artifact mutation invalidates review and validation evidence.
 - [ ] 5.4 Run focused tests and strict OpenSpec validation.
-  - Evidence: `openspec validate add-native-feature-workflow --strict` passed on 2026-08-12. Public interface, degraded, conflict, stale-handoff, and mutation-invalidation acceptance paths remain open.
+  - Evidence: `openspec validate add-native-feature-workflow --strict` passed on 2026-08-12. `cargo test -p jcode-base skill:: -- --nocapture` passed on 2026-08-12, covering slash invocation parsing/resolution used by public feature activation. Public repository-backed direct/explore-fed execution, degraded, conflict, stale-handoff, and mutation-invalidation acceptance paths remain open.
