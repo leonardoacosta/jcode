@@ -311,6 +311,7 @@ impl Tool for InitiativeTool {
                         } else {
                             None
                         },
+                        updates: None,
                         checkpoint_summary: if params.action == "checkpoint" {
                             params
                                 .checkpoint_summary

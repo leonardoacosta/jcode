@@ -53,6 +53,7 @@ pub struct GoalUpdateInput {
     pub blockers: Option<Vec<String>>,
     pub current_milestone_id: Option<Option<String>>,
     pub progress_percent: Option<Option<u8>>,
+    pub updates: Option<Vec<GoalUpdate>>,
     pub checkpoint_summary: Option<String>,
 }
 
@@ -139,6 +140,9 @@ pub fn update_goal(
     }
     if let Some(progress_percent) = update.progress_percent {
         goal.progress_percent = progress_percent.map(|p| p.min(100));
+    }
+    if let Some(updates) = update.updates {
+        goal.updates = updates;
     }
     if let Some(summary) = update
         .checkpoint_summary

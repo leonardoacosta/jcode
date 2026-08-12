@@ -182,6 +182,7 @@ impl InitiativeRepository for GoalInitiativeRepository {
                 blockers: Some(goal.blockers),
                 current_milestone_id: Some(goal.current_milestone_id),
                 progress_percent: Some(goal.progress_percent),
+                updates: Some(goal.updates),
                 checkpoint_summary: None,
             },
         )
@@ -612,6 +613,66 @@ mod tests {
 
                     let stale = repo.save(&auth, saved, revision).await.expect_err("stale");
                     assert!(matches!(stale, CommandCenterError::StaleRevision { .. }));
+                })
+        });
+    }
+
+    #[test]
+    fn goal_repository_persists_checkpoint_history_appended_by_the_service() {
+        with_home(|_, project| {
+            tokio::runtime::Runtime::new()
+                .unwrap()
+                .block_on(async move {
+                    let goal = crate::goal::create_goal(
+                        crate::goal::GoalCreateInput {
+                            title: "Ship Command Center".to_string(),
+                            scope: GoalScope::Project,
+                            ..crate::goal::GoalCreateInput::default()
+                        },
+                        Some(&project),
+                    )
+                    .expect("create goal");
+                    let repo = GoalInitiativeRepository::new(Some(project.clone()));
+                    let auth = AuthContext {
+                        session_id: "test-session".to_string(),
+                        user_label: None,
+                        csrf_token: "csrf".to_string(),
+                        expires_at: Utc::now() + chrono::Duration::minutes(5),
+                        allowed_initiatives: Vec::new(),
+                    };
+
+                    let (mut loaded, revision) = repo
+                        .get(&auth, &InitiativeId(goal.id.clone()))
+                        .await
+                        .expect("get");
+                    let before = loaded.updates.len();
+                    // Mirrors what CommandCenterService does for CommandPayload::Checkpoint.
+                    loaded.updates.push(jcode_task_types::GoalUpdate {
+                        at: Utc::now(),
+                        summary: "browser checkpoint".to_string(),
+                    });
+
+                    let (saved, _) = repo.save(&auth, loaded, revision).await.expect("save");
+                    assert_eq!(
+                        saved.updates.len(),
+                        before + 1,
+                        "checkpoint must survive the save round trip"
+                    );
+                    assert_eq!(
+                        saved.updates.last().map(|u| u.summary.as_str()),
+                        Some("browser checkpoint")
+                    );
+
+                    // The checkpoint must be durable on disk, not just in the response.
+                    let (reloaded, _) = repo
+                        .get(&auth, &InitiativeId(goal.id.clone()))
+                        .await
+                        .expect("reload");
+                    assert_eq!(
+                        reloaded.updates.last().map(|u| u.summary.as_str()),
+                        Some("browser checkpoint"),
+                        "checkpoint must be persisted to the goal store"
+                    );
                 })
         });
     }
