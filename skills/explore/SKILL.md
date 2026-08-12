@@ -26,6 +26,18 @@ At the start of every native workflow run:
 6. Repeat a setup prompt only after an explicit reset, repository identity change, or explicit setup request.
 7. Check telemetry every run and emit best-effort workflow start, phase, route, efficiency, degradation, and completion observations when supported. Telemetry failure never changes routing or correctness.
 
+### Degraded routes
+
+When OpenSpec, Beads, Recon, swarm, memory, session history, initiatives, side-panel rendering, or telemetry is unavailable, continue only after naming the unavailable surface and its impact. Do not substitute a hidden durable ledger. Use session `todo` for the live plan, cite the missing integration in limitations, and constrain recommendations to evidence that was actually gathered. A degraded exploration may still end in:
+
+- a local-only recommendation when repository evidence is sufficient;
+- a Recon-backed recommendation when canonical external records are available;
+- a read-only swarm-assisted recommendation when independent evidence would materially reduce uncertainty;
+- a durable decision map when critical decisions remain unresolved; or
+- a blocked handoff when freshness, provenance, or repository readiness cannot be established.
+
+If an initialization was declined or failed, do not ask again in the same repository unless the user explicitly requests setup or reset. Report the decline/failure as a routing constraint, not as an error in the user's request.
+
 ## Evidence sequence
 
 Follow this native phase order:
@@ -40,6 +52,18 @@ Follow this native phase order:
 8. Structured `/feature` handoff or durable initiative checkpoint.
 
 Ask the user only for user-only judgments that cannot be discovered or safely defaulted. Lead with a recommendation and evidence.
+
+## Integration rules
+
+- `todo`: maintain the session plan, progress, confidence, and closeout evidence.
+- `memory`: recall relevant durable facts and store only durable user preferences or project facts that are worth reusing.
+- `session_search`: recover prior decisions, acceptance evidence, or interrupted context before asking the user to repeat it.
+- `initiative`: create or update only when exploration enters decision-map mode or needs durable checkpoints.
+- `side_panel`: render optional live maps or summaries, but never treat the page as authoritative state.
+- Recon: consult or create canonical read-only research records only when external claims or prior-art freshness matter. Treat Recon output as evidence with provenance and freshness, not as implementation authority.
+- `swarm`: use optional read-only workers only for independent evidence domains. Workers may inspect and summarize, but the root session owns synthesis, routing, and final handoff.
+
+Do not create a second ledger, duplicate OpenSpec/Beads tracking, or record speculative plans as accepted work.
 
 ## Decision-map mode
 
@@ -73,3 +97,61 @@ End with:
 - If `/feature` is selected, a structured handoff containing destination, success criteria, provenance, evidence IDs, assumptions, alternatives, in/out scope, decisions, surface inventory, confirmed revisions, dependencies, conflicts, edge cases, done means, remaining questions, limitations, and recommended action.
 
 The handoff is session context for native `/feature`, not a second durable ledger.
+
+### Feature handoff schema
+
+Use this shape when `/feature` is the selected default route:
+
+```yaml
+handoff:
+  destination: /feature
+  topic: <feature/change topic>
+  revision:
+    repo_root: <absolute or repository-relative root>
+    git_head: <confirmed HEAD or unavailable>
+    generated_at: <UTC timestamp>
+    freshness_check: <what /feature must recheck before reuse>
+  success_criteria:
+    - <observable outcome>
+  provenance:
+    requested_by: <user/session>
+    source_prompt: <original topic summary>
+    prior_context:
+      - <memory/session/initiative/OpenSpec/Beads/Recon id or none>
+  evidence:
+    - id: <stable local id>
+      kind: <repo|memory|session|initiative|openspec|beads|recon|swarm|external>
+      source: <file, command, tool result, or record>
+      freshness: <revision/date/snapshot>
+      supports: <claim>
+  assumptions:
+    - <assumption and why it is acceptable>
+  alternatives:
+    - option: <route>
+      rationale: <tradeoff>
+  scope:
+    in:
+      - <included work>
+    out:
+      - <excluded work>
+  decisions:
+    resolved:
+      - <decision and evidence>
+    unresolved:
+      - <question, owner, and blocking impact>
+  surfaces:
+    - <files, commands, APIs, UI, docs, tests, or integrations likely affected>
+  dependencies:
+    - <dependency or none>
+  conflicts:
+    - <conflict or none>
+  edge_cases:
+    - <edge case>
+  done_means:
+    - <verification or acceptance condition>
+  limitations:
+    - <degraded path, stale evidence, or unavailable tool>
+  recommended_action: <one next command/workflow>
+```
+
+Native `/feature` must reject or refresh a handoff when the repository root, confirmed revision, critical evidence freshness, or selected destination no longer matches the current request.
