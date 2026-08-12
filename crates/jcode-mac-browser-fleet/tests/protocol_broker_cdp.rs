@@ -1434,7 +1434,7 @@ async fn action_poll_from_an_unknown_source_requests_re_registration() {
     // rather than answered with a plain idle.
     let dir = tempdir().unwrap();
     let socket = dir.path().join("resync.sock");
-    let mut broker = Broker::bind(BrokerConfig {
+    let broker = Broker::bind(BrokerConfig {
         socket_path: socket.clone(),
         authority_socket_path: None,
         secret: secret(),
