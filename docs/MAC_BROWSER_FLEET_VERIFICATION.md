@@ -136,3 +136,15 @@ before consulting leases, because a lease authorizes acting on a target and
 never authorizes navigating that target somewhere privileged. Pinned by
 `navigation_destination_is_hard_denied_even_under_an_active_lease`.
 
+
+## Resume verification (2026-08-12)
+
+Resumed `add-mac-browser-fleet` on Linux at commit `8e065803d` plus local working-tree formatting changes. Locally provable checks were run again after a Jcode server reload interrupted the first full verification attempt.
+
+Passed locally:
+
+- `cargo test -p jcode-mac-browser-fleet`: 22 broker/protocol/CDP/native-host tests passed.
+- `cargo fmt --check`, `cargo test -p jcode-mac-browser-policy`, `cargo test -p jcode-mac-browser-setup`, `cargo test -p jcode-mac-browser-fleet`, `scripts/dev_cargo.sh test -p jcode-app-core browser_tests:: --no-default-features`, and `git diff --check` all completed before the targeted TUI filter step failed because the filter matched zero integration-test binaries under the repository cargo wrapper policy.
+- Corrected targeted follow-up: `JCODE_DEV_CARGO_ALLOW_ZERO_TESTS=1 cargo test -p jcode-tui artifact_action_palette_captures_typed_target_and_stable_actions && cargo test -p jcode-harness-api dynamic_tool_done_matches_typescript_sdk_fixture` passed.
+
+Mac-only acceptance remains explicitly blocked in this Linux session because no Mac browser fleet host, Chrome/Edge ordinary profiles, Mac-local authority UI, launchd agent, or SSH reverse socket was available to exercise. Do not archive this change until a Mac-attached session re-runs the real Chrome and Edge acceptance in tasks 5.2 through 5.4 and records the exact installed commit evidence.
