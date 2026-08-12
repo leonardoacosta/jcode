@@ -37,7 +37,8 @@ The server watches a directory for HTML files and serves the newest one to the b
 # Start server with persistence (mockups saved to project)
 scripts/start-server.sh --project-dir /path/to/project
 
-# Returns: {"type":"server-started","port":52341,"url":"http://localhost:52341",
+# Returns: {"type":"server-started","port":52341,"url":"http://192.168.1.42:52341",
+#           "lan_url":"http://192.168.1.42:52341",
 #           "screen_dir":"/path/to/project/.superpowers/brainstorm/12345-1706000000/content",
 #           "state_dir":"/path/to/project/.superpowers/brainstorm/12345-1706000000/state"}
 ```
@@ -81,12 +82,14 @@ scripts/start-server.sh --project-dir /path/to/project --foreground
 
 **Other environments:** The server must keep running in the background across conversation turns. If your environment reaps detached processes, use `--foreground` and launch the command with your platform's background execution mechanism.
 
-If the URL is unreachable from your browser (common in remote/containerized setups), bind a non-loopback host:
+The server binds to `0.0.0.0` by default so the document is reachable from another device on the local network. The startup JSON reports `lan_url`; give that URL to the user and verify it with a real request before claiming the preview is available. `localhost` is only a same-machine fallback when no LAN address can be detected.
+
+For an intentionally private preview, bind loopback explicitly:
 
 ```bash
 scripts/start-server.sh \
   --project-dir /path/to/project \
-  --host 0.0.0.0 \
+  --host 127.0.0.1 \
   --url-host localhost
 ```
 

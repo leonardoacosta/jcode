@@ -8,8 +8,8 @@
 # Options:
 #   --project-dir <path>  Store session files under <path>/.superpowers/brainstorm/
 #                         instead of /tmp. Files persist after server stops.
-#   --host <bind-host>    Host/interface to bind (default: 127.0.0.1).
-#                         Use 0.0.0.0 in remote/containerized environments.
+#   --host <bind-host>    Host/interface to bind (default: 0.0.0.0).
+#                         Use 127.0.0.1 only for an intentionally private preview.
 #   --url-host <host>     Hostname shown in returned URL JSON.
 #   --foreground          Run server in the current terminal (no backgrounding).
 #   --background          Force background mode (overrides Codex auto-foreground).
@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR=""
 FOREGROUND="false"
 FORCE_BACKGROUND="false"
-BIND_HOST="127.0.0.1"
+BIND_HOST="0.0.0.0"
 URL_HOST=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -52,11 +52,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "$URL_HOST" ]]; then
-  if [[ "$BIND_HOST" == "127.0.0.1" || "$BIND_HOST" == "localhost" ]]; then
+  if [[ "$BIND_HOST" == "0.0.0.0" ]]; then
+    LAN_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    if [[ -z "$LAN_HOST" ]] && command -v ip >/dev/null 2>&1; then
+      LAN_HOST="$(ip route get 1.1.1.1 2>/dev/null | awk '/src/ {for (i=1;i<=NF;i++) if ($i=="src") {print $(i+1); exit}}')"
+    fi
+    URL_HOST="${LAN_HOST:-localhost}"
+  elif [[ "$BIND_HOST" == "127.0.0.1" || "$BIND_HOST" == "localhost" ]]; then
     URL_HOST="localhost"
   else
     URL_HOST="$BIND_HOST"
   fi
+fi
+
+if [[ "$BIND_HOST" == "0.0.0.0" && "$URL_HOST" == "localhost" ]]; then
+  echo '{"warning":"LAN address could not be detected; preview is bound to all interfaces but use the machine LAN address instead of localhost from another device."}' >&2
 fi
 
 # Some environments reap detached/background processes. Auto-foreground when detected.
@@ -133,7 +143,11 @@ for i in {1..50}; do
       fi
       sleep 0.1
     done
-    if [[ "$alive" != "true" ]]; then
+  if [[ "$alive" != "true" ]]; then
+      if [[ "$BIND_HOST" == "0.0.0.0" ]]; then
+        echo '{"warning":"LAN bind failed; retrying as localhost-only preview."}' >&2
+        exec "$0" ${PROJECT_DIR:+--project-dir "$PROJECT_DIR"} --host 127.0.0.1 --url-host localhost
+      fi
       echo "{\"error\": \"Server started but was killed. Retry in a persistent terminal with: $SCRIPT_DIR/start-server.sh${PROJECT_DIR:+ --project-dir $PROJECT_DIR} --host $BIND_HOST --url-host $URL_HOST --foreground\"}"
       exit 1
     fi
@@ -144,5 +158,9 @@ for i in {1..50}; do
 done
 
 # Timeout - server didn't start
+if [[ "$BIND_HOST" == "0.0.0.0" ]]; then
+  echo '{"warning":"LAN bind failed; retrying as localhost-only preview."}' >&2
+  exec "$0" ${PROJECT_DIR:+--project-dir "$PROJECT_DIR"} --host 127.0.0.1 --url-host localhost
+fi
 echo '{"error": "Server failed to start within 5 seconds"}'
 exit 1

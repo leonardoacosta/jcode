@@ -167,6 +167,9 @@ Apply these principles to every diagram:
 **Output location:** Write to `docs/diagrams/` inside the current project. Use a descriptive filename based on content: `modem-architecture.html`, `pipeline-flow.html`, `schema-overview.html`. Only use `~/.claude/diagrams/` when working in the global `~/.claude` repo itself — all project work stays local.
 
 **Open in browser:**
+- Prefer `ropen docs/diagrams/filename.html` in remote or headless environments.
+- When starting a preview server, bind to `0.0.0.0` by default, detect the machine's LAN address, and report both the local and LAN URLs. The LAN URL is the one to give the user for access from another device.
+- Verify the reported URL with a real HTTP request before claiming the document is available. If binding to all interfaces fails, retry on `127.0.0.1`, clearly label the result as same-machine-only, and explain that another device cannot reach it.
 - macOS: `open docs/diagrams/filename.html`
 - Linux: `xdg-open docs/diagrams/filename.html`
 
