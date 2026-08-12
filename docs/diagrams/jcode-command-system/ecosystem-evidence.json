@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "generated_from_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+  "snapshot_digest": "sha256:ecosystem-claim-map-v1-2026-08-12",
+  "redaction_policy": {
+    "secrets_included": false,
+    "raw_session_text_included": false,
+    "credential_material_included": false,
+    "numeric_benchmarks_included": false,
+    "notes": "References are limited to repository paths and short content digests. No token values, credential blobs, or raw transcript text are included. Claims avoid unsupported numeric comparisons."
+  },
+  "observation_window": {
+    "label": "repository snapshot inspected 2026-08-12",
+    "revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+    "scope": [
+      "README.md",
+      "OAUTH.md",
+      "ROADMAP_HANDOFF.md",
+      "docs/diagrams/jcode-command-system/index.html",
+      "docs/diagrams/jcode-command-system/telemetry-results.html",
+      "openspec/changes/add-command-system-documentation-microsite/design.md",
+      "openspec/changes/add-command-system-documentation-microsite/specs/command-system-docs/spec.md",
+      "scripts/test-command-system-docs.py"
+    ],
+    "limitations": [
+      "This is a repository-grounded documentation snapshot, not an external product benchmark.",
+      "Pi-specific claims are intentionally low-confidence because no product-specific integration contract was found in inspected repository files.",
+      "Provider behavior outside committed documentation and code was not measured for this page."
+    ]
+  },
+  "references": [
+    {
+      "ref_id": "ref:readme",
+      "path": "README.md",
+      "digest": "sha256:3858a76b2024416b",
+      "sanitized": true
+    },
+    {
+      "ref_id": "ref:oauth",
+      "path": "OAUTH.md",
+      "digest": "sha256:7cbfe0000a64a869",
+      "sanitized": true
+    },
+    {
+      "ref_id": "ref:roadmap",
+      "path": "ROADMAP_HANDOFF.md",
+      "digest": "sha256:ca746b527132839b",
+      "sanitized": true
+    },
+    {
+      "ref_id": "ref:index",
+      "path": "docs/diagrams/jcode-command-system/index.html",
+      "digest": "sha256:e96e7514e9bc7a19",
+      "sanitized": true
+    },
+    {
+      "ref_id": "ref:telemetry-page",
+      "path": "docs/diagrams/jcode-command-system/telemetry-results.html",
+      "digest": "sha256:195436fedffbcda0",
+      "sanitized": true
+    },
+    {
+      "ref_id": "ref:microsite-design",
+      "path": "openspec/changes/add-command-system-documentation-microsite/design.md",
+      "digest": "sha256:c022bd7a1e3c6613",
+      "sanitized": true
+    },
+    {
+      "ref_id": "ref:microsite-spec",
+      "path": "openspec/changes/add-command-system-documentation-microsite/specs/command-system-docs/spec.md",
+      "digest": "sha256:3e8eb69d6b2c4169",
+      "sanitized": true
+    },
+    {
+      "ref_id": "ref:validator",
+      "path": "scripts/test-command-system-docs.py",
+      "digest": "sha256:2754cf9a0a7463a4",
+      "sanitized": true
+    }
+  ],
+  "claims": [
+    {
+      "id": "claude-code",
+      "claim_id": "ecosystem:claude-code:role",
+      "subject": "Claude Code",
+      "label": "documented",
+      "confidence": "high",
+      "claim": "Claude Code is represented in this repository as an external CLI/session and native credential source that Jcode can interoperate with after explicit trust decisions.",
+      "supporting_refs": [
+        "ref:oauth",
+        "ref:roadmap"
+      ],
+      "cooperation_boundary": "Use Claude Code artifacts and credentials only through documented approval and takeover boundaries.",
+      "limitations": "This claim does not benchmark Claude Code quality or assert automatic credential access."
+    },
+    {
+      "id": "codex",
+      "claim_id": "ecosystem:codex:role",
+      "subject": "Codex",
+      "label": "documented",
+      "confidence": "medium",
+      "claim": "Codex/OpenAI appears as a provider lane in auth and provider-neutral orchestration planning.",
+      "supporting_refs": [
+        "ref:oauth",
+        "ref:roadmap",
+        "ref:telemetry-page"
+      ],
+      "cooperation_boundary": "Use as a peer provider behind auth, routing, and human approval gates rather than an automatic default.",
+      "limitations": "The inspected files contain less product-specific local-session detail for Codex than for Claude Code."
+    },
+    {
+      "id": "pi",
+      "claim_id": "ecosystem:pi:role",
+      "subject": "Pi",
+      "label": "inferred",
+      "confidence": "low",
+      "claim": "Pi can only be presented as an advisory conversational surface in this repository-grounded comparison because no Pi-specific committed integration contract was found in the inspected files.",
+      "supporting_refs": [
+        "ref:microsite-spec"
+      ],
+      "cooperation_boundary": "Keep Pi output advisory unless future committed evidence grants it tool or execution authority.",
+      "limitations": "No claims are made about Pi credentials, automated tooling, session import, or runtime performance."
+    },
+    {
+      "id": "jcode",
+      "claim_id": "ecosystem:jcode:role",
+      "subject": "Jcode",
+      "label": "documented",
+      "confidence": "high",
+      "claim": "Jcode is the repository-native command center for this microsite work, combining local tools, static validation, evidence maps, auth boundaries, and swarm coordination surfaces.",
+      "supporting_refs": [
+        "ref:index",
+        "ref:telemetry-page",
+        "ref:validator",
+        "ref:oauth"
+      ],
+      "cooperation_boundary": "Own local orchestration and validation while keeping risky auth, routing, and handoff mutations approval-gated.",
+      "limitations": "Evidence quality is bounded by committed or deliberately captured artifacts."
+    },
+    {
+      "id": "cross-provider-agents",
+      "claim_id": "ecosystem:cross-provider-agents:role",
+      "subject": "Cross-provider agents",
+      "label": "documented",
+      "confidence": "medium",
+      "claim": "Cross-provider coordination is documented as a way to route roles, compare outputs, and preserve evidence without allowing automated tournaments to mutate production routing by themselves.",
+      "supporting_refs": [
+        "ref:roadmap",
+        "ref:telemetry-page",
+        "ref:validator"
+      ],
+      "cooperation_boundary": "Coordinate through shared artifacts, claim IDs, and explicit reports; require human approval for production routing or irreversible authority changes.",
+      "limitations": "This page does not assert a universal winner or quantify provider superiority."
+    }
+  ]
+}

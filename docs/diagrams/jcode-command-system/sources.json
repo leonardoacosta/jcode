@@ -1,0 +1,1400 @@
+{
+  "version": 1,
+  "generated_from_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+  "authority": "openspec/changes/add-command-system-documentation-microsite",
+  "pages": {
+    "index.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "hero": {
+          "claim": "approved visual direction",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "chapter_cards": {
+          "claim": "approved six-page scope",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "journey_diagram": {
+          "claim": "approved system journey",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence_map": {
+          "claim": "this change",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "command-lifecycle.html": {
+      "sources": [
+        "openspec/changes/add-native-explore-workflow/design.md",
+        "openspec/changes/add-native-feature-workflow/design.md",
+        "openspec/changes/add-native-apply-workflows/design.md"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "three-phase lifecycle",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "decisions": {
+          "claim": "native workflow decisions",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "authority handoff",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "snippet": {
+          "claim": "public command shapes",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "status": {
+          "claim": "approved design, not production-complete",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence_map": {
+          "claim": "source changes",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "lane-protocol.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "three temporary threads",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol"
+        },
+        "contract": {
+          "claim": "approved lane rules",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol"
+        },
+        "diagram": {
+          "claim": "lane split and alignment",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol"
+        },
+        "snippet": {
+          "claim": "project and lane prefixes",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol"
+        },
+        "caveat": {
+          "claim": "not shipped command behavior",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol"
+        },
+        "evidence_map": {
+          "claim": "this change",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol"
+        }
+      }
+    },
+    "apply-orchestration.html": {
+      "sources": [
+        "openspec/changes/add-native-apply-workflows/design.md",
+        "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "L1/L2/L3 rigor",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "levels": {
+          "claim": "risk policy",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "topology and runtime selection",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "snippet": {
+          "claim": "cross-provider only when high",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "authority": {
+          "claim": "Jcode versus Orca",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence_map": {
+          "claim": "source changes",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "model-routing.html": {
+      "sources": [
+        "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+        "evals/model-routing/experiments/local-smoke.json"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "four routing classes",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "ladder": {
+          "claim": "model-free through frontier",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "pre-classified role routing",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "snippet": {
+          "claim": "candidate registry",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "caveat": {
+          "claim": "avoid cheap-first failure",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence_map": {
+          "claim": "tournament design and descriptor",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "evaluation-tournament.html": {
+      "sources": [
+        "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+        "evals/model-routing/experiments/local-smoke.json"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "qualification and locked holdout",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "phases": {
+          "claim": "eight execution gates",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "provider-aware blocks",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "snippet": {
+          "claim": "frozen descriptor",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "safety": {
+          "claim": "fail-closed boundaries",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence_map": {
+          "claim": "tournament design and descriptor",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "telemetry-results.html": {
+      "sources": [
+        "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "blind comparison",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "observed-evidence"
+        },
+        "metrics": {
+          "claim": "journal timings and scores",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "observed-evidence"
+        },
+        "diagram": {
+          "claim": "provider-native token evidence",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "observed-evidence"
+        },
+        "judges": {
+          "claim": "split preference",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "observed-evidence"
+        },
+        "snippet": {
+          "claim": "receipt excerpt",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "observed-evidence"
+        },
+        "caveats": {
+          "claim": "one fixture, timing and accounting limits, no mutation, human approval",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "observed-evidence"
+        },
+        "evidence_map": {
+          "claim": "receipt, attempts, judges",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "observed-evidence"
+        }
+      }
+    },
+    "agent-stack.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "surface": {
+          "claim": "surface",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "orchestration": {
+          "claim": "orchestration",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "context": {
+          "claim": "context",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "model": {
+          "claim": "model",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "tools": {
+          "claim": "tools",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "runtime": {
+          "claim": "runtime",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "memory": {
+          "claim": "memory",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "stack-surface.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "stack-orchestration.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "stack-context.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "stack-model.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "stack-tools.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "stack-runtime.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "stack-memory.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    },
+    "daily-driven-ecosystem.html": {
+      "sources": [
+        "openspec/changes/add-command-system-documentation-microsite/design.md",
+        "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+      ],
+      "content": {
+        "claude-code": {
+          "claim": "claude code",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "cb734d887a405b5d4a34f397520fbc7b01c8e3122a325bce095c062fac7cbc85",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "codex": {
+          "claim": "codex",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "cb734d887a405b5d4a34f397520fbc7b01c8e3122a325bce095c062fac7cbc85",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "pi": {
+          "claim": "pi",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "cb734d887a405b5d4a34f397520fbc7b01c8e3122a325bce095c062fac7cbc85",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "jcode": {
+          "claim": "jcode",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "cb734d887a405b5d4a34f397520fbc7b01c8e3122a325bce095c062fac7cbc85",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "cross-provider-agents": {
+          "claim": "cross provider agents",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "cb734d887a405b5d4a34f397520fbc7b01c8e3122a325bce095c062fac7cbc85",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "cooperation-diagram": {
+          "claim": "cooperation diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+          "confidence": "high",
+          "implementation_status": "approved-design"
+        }
+      }
+    }
+  },
+  "required_caveats": [
+    "temporary conversation protocol",
+    "not shipped command behavior",
+    "one frozen fixture",
+    "provider-native accounting",
+    "split judge preference",
+    "production routing was not mutated",
+    "separate human approval"
+  ],
+  "ecosystem_evidence": {
+    "path": "docs/diagrams/jcode-command-system/ecosystem-evidence.json",
+    "snapshot_digest": "cb734d887a405b5d4a34f397520fbc7b01c8e3122a325bce095c062fac7cbc85",
+    "observation_window": "2026-01-01/2026-08-12",
+    "redaction": "sanitized references only"
+  },
+  "telemetry_source": "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+}
