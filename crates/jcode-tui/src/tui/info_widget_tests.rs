@@ -5,11 +5,32 @@ use super::{
     calculate_widget_height, effective_prompt_tokens, occasional_status_tip,
     render_kv_cache_widget, render_memory_compact, render_memory_widget, render_model_widget,
     render_todos_compact, render_todos_expanded, render_todos_widget, render_usage_compact,
-    render_usage_widget, swarm_plan_todos, truncate_smart,
+    render_usage_widget, swarm_plan_todos, truncate_smart, is_widget_hidden, set_widget_hidden,
 };
 use crate::protocol::SwarmMemberStatus;
 use ratatui::layout::Rect;
 use std::time::{Duration, Instant};
+
+#[test]
+fn widget_visibility_is_independent() {
+    set_widget_hidden(WidgetKind::Todos, false);
+    set_widget_hidden(WidgetKind::MemoryActivity, false);
+    set_widget_hidden(WidgetKind::ContextUsage, false);
+    set_widget_hidden(WidgetKind::KvCache, false);
+    set_widget_hidden(WidgetKind::UsageLimits, false);
+    set_widget_hidden(WidgetKind::ContextUsage, true);
+    set_widget_hidden(WidgetKind::KvCache, false);
+    set_widget_hidden(WidgetKind::UsageLimits, false);
+
+    assert!(is_widget_hidden(WidgetKind::ContextUsage));
+    assert!(!is_widget_hidden(WidgetKind::KvCache));
+    assert!(!is_widget_hidden(WidgetKind::UsageLimits));
+    set_widget_hidden(WidgetKind::KvCache, true);
+    set_widget_hidden(WidgetKind::UsageLimits, true);
+
+    assert!(!is_widget_hidden(WidgetKind::Todos));
+    assert!(!is_widget_hidden(WidgetKind::MemoryActivity));
+}
 
 #[test]
 fn effective_prompt_tokens_handles_split_and_subset_accounting() {

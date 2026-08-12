@@ -45,7 +45,6 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph},
 };
 use std::collections::HashMap;
-#[cfg(test)]
 use std::collections::HashSet;
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
@@ -664,6 +663,18 @@ pub struct CompactionInfo {
 }
 
 impl InfoWidgetData {
+    pub fn hide_widget(&mut self, kind: WidgetKind) {
+        match kind {
+            WidgetKind::ContextUsage => self.context_info = None,
+            WidgetKind::KvCache => self.cache_hit_info = None,
+            WidgetKind::UsageLimits => self.usage_info = None,
+            WidgetKind::ModelInfo => self.model = None,
+            WidgetKind::Todos => self.todos.clear(),
+            WidgetKind::MemoryActivity => self.memory_info = None,
+            _ => {}
+        }
+    }
+
     fn widget_disabled(kind: WidgetKind) -> bool {
         matches!(kind, WidgetKind::AmbientMode | WidgetKind::Tips)
     }
@@ -868,6 +879,8 @@ struct SingleWidgetState {
 struct WidgetsState {
     /// Whether the user has disabled widgets
     enabled: bool,
+    /// Widget kinds hidden by an individual status-line toggle.
+    hidden: HashSet<WidgetKind>,
     /// Per-widget state (keyed by WidgetKind)
     widget_states: HashMap<WidgetKind, SingleWidgetState>,
     /// Current placements (updated each frame)
@@ -892,6 +905,7 @@ impl Default for WidgetsState {
     fn default() -> Self {
         Self {
             enabled: true,
+            hidden: HashSet::new(),
             widget_states: HashMap::new(),
             placements: Vec::new(),
             anchors: Vec::new(),
@@ -927,6 +941,26 @@ pub fn is_enabled() -> bool {
         .as_ref()
         .map(|s| s.enabled)
         .unwrap_or(true)
+}
+
+/// Set visibility for one widget without affecting other widgets.
+pub fn set_widget_hidden(kind: WidgetKind, hidden: bool) {
+    let mut guard = get_or_init_state();
+    if let Some(state) = guard.as_mut() {
+        if hidden {
+            state.hidden.insert(kind);
+        } else {
+            state.hidden.remove(&kind);
+        }
+    }
+}
+
+/// Check whether one widget has been hidden by an individual control.
+pub fn is_widget_hidden(kind: WidgetKind) -> bool {
+    get_or_init_state()
+        .as_ref()
+        .map(|state| state.hidden.contains(&kind))
+        .unwrap_or(false)
 }
 
 /// Intersect the dock-gating `reliable` margin profile with the settlement
@@ -978,10 +1012,14 @@ pub fn calculate_placements(
         None => return Vec::new(),
     };
 
+    let mut filtered = data.clone();
+    for kind in state.hidden.iter().copied() {
+        filtered.hide_widget(kind);
+    }
     let outcome = super::info_widget_layout::calculate_placements_anchored(
         messages_area,
         margins,
-        data,
+        &filtered,
         state.enabled,
         &state.anchors,
     );

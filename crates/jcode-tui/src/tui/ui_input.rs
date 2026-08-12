@@ -1070,11 +1070,15 @@ pub(super) fn draw_status(frame: &mut Frame, app: &dyn TuiState, area: Rect, pen
             occasional_status_tip(area.width as usize, app.animation_elapsed() as u64)
         {
             Line::from(vec![Span::styled(tip, Style::default().fg(dim_color()))])
+        } else if let Some(line) = compact_fact_status_line(app, area.width as usize) {
+            line
         } else {
             Line::from("")
         }
     } else {
-        if let Some(tip) =
+        if let Some(line) = compact_fact_status_line(app, area.width as usize) {
+            line
+        } else if let Some(tip) =
             occasional_status_tip(area.width as usize, app.animation_elapsed() as u64)
         {
             Line::from(vec![Span::styled(tip, Style::default().fg(dim_color()))])
@@ -1090,6 +1094,42 @@ pub(super) fn draw_status(frame: &mut Frame, app: &dyn TuiState, area: Rect, pen
         return;
     }
     frame.render_widget(Paragraph::new(line), area);
+}
+
+fn compact_fact_status_line(app: &dyn TuiState, width: usize) -> Option<Line<'static>> {
+    let data = app.info_widget_data();
+    let mut parts = Vec::new();
+    if let Some(model) = data.model.filter(|value| !value.trim().is_empty()) {
+        parts.push(format!("{}", session_facts::pretty_model(&model)));
+    }
+    if let Some(provider) = data.provider_name.filter(|value| !value.trim().is_empty()) {
+        parts.push(provider);
+    }
+    if let Some(effort) = data.reasoning_effort.filter(|value| !value.trim().is_empty()) {
+        parts.push(effort);
+    }
+    if let Some(context) = data.context_info {
+        if let Some(limit) = app.context_limit() {
+            let used = data.observed_context_tokens.unwrap_or(context.total_chars as u64 / 4);
+            let pct = (used.saturating_mul(100) / limit as u64).min(100);
+            parts.push(format!("Context {}%", pct));
+        }
+    }
+    if let Some(cache) = data.cache_hit_info.and_then(|cache| cache.hit_ratio()) {
+        parts.push(format!("KV {:.0}%", cache * 100.0));
+    }
+    if let Some(usage) = data.usage_info.filter(|usage| usage.available) {
+        parts.push(format!("Limits {}%", usage.max_usage_pct()));
+    }
+    if parts.is_empty() {
+        return None;
+    }
+    let mut text = parts.join(" · ");
+    if text.chars().count() > width {
+        text = text.chars().take(width.saturating_sub(1)).collect();
+        text.push('…');
+    }
+    Some(Line::from(Span::styled(text, Style::default().fg(dim_color()))))
 }
 
 /// Append the "+N queued" suffix span (in the queued accent color) when there
