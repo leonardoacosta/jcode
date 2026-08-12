@@ -8,6 +8,7 @@ or Recon boundaries. It never performs paid provider calls.
 from __future__ import annotations
 
 import argparse, hashlib, json, random, re, shutil, sys
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -253,6 +254,36 @@ def publish_recon() -> dict[str, Any]:
         raise EvalError("Recon publication unavailable: authoritative recon command not found; retained local non-canonical bundle required")
     raise EvalError("Recon publication unavailable: command adapter is fail-closed and does not execute publication in offline mode")
 
+def parse_timestamp(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+def collect_session(session_id: str, journal: Path) -> dict[str, Any]:
+    rows = [json.loads(line) for line in journal.read_text().splitlines() if line.strip()]
+    messages = [message for row in rows for message in row.get("append_messages", [])]
+    if not messages: raise EvalError("session journal contains no messages")
+    first = parse_timestamp(messages[0]["timestamp"]); last = parse_timestamp(messages[-1]["timestamp"])
+    first_assistant = next((parse_timestamp(m["timestamp"]) for m in messages if m.get("role") == "assistant"), None)
+    tokens = {"input":0,"output":0,"cache_read":0,"cache_write":0}
+    tools=[]; tool_ms=0; steering=[]; outputs=[]
+    for message in messages:
+        usage=message.get("token_usage") or {}
+        tokens["input"] += int(usage.get("input_tokens", 0)); tokens["output"] += int(usage.get("output_tokens", 0))
+        tokens["cache_read"] += int(usage.get("cache_read_input_tokens", 0)); tokens["cache_write"] += int(usage.get("cache_creation_input_tokens", 0))
+        tool_ms += int(message.get("tool_duration_ms") or 0)
+        for block in message.get("content", []):
+            if block.get("type") == "tool_use": tools.append(block.get("name", "unknown"))
+            if message.get("role") == "user" and block.get("type") == "text": steering.append(block.get("text", ""))
+            if message.get("role") == "assistant" and block.get("type") == "text": outputs.append(block.get("text", ""))
+    tokens["total"] = sum(tokens.values())
+    meta = rows[-1].get("meta", {})
+    return {
+        "session_id":session_id, "provider":meta.get("provider_key"), "model":meta.get("model"),
+        "tokens":tokens,
+        "timings":{"wall_ms":int((last-first).total_seconds()*1000), "first_assistant_ms":int((first_assistant-first).total_seconds()*1000) if first_assistant else None, "tool_ms":tool_ms},
+        "tool_calls":tools, "steering_digest":sha("\n".join(steering)), "output_digest":sha("\n".join(outputs)),
+        "output_text":"\n".join(outputs), "message_count":len(messages), "source":"persisted-session-journal"
+    }
+
 def emit(x: dict[str, Any]) -> None: print(json.dumps(x, indent=2, sort_keys=True))
 
 def main(argv: list[str]) -> int:
@@ -269,6 +300,7 @@ def main(argv: list[str]) -> int:
     jr=sub.add_parser("judge-receipt"); jr.add_argument("--candidate-digest", required=True); jr.add_argument("--judge-id", required=True); jr.add_argument("--verdict", required=True)
     ir=sub.add_parser("invalidate-receipt"); ir.add_argument("--receipt", required=True); ir.add_argument("--candidate-digest", required=True)
     ad=sub.add_parser("adjudicate"); ad.add_argument("--candidate-digest", required=True); ad.add_argument("--decision", required=True)
+    cs=sub.add_parser("collect-session"); cs.add_argument("--session-id", required=True); cs.add_argument("--journal", type=Path, required=True)
     a=p.parse_args(argv)
     try:
         if a.cmd=="validate": emit(validate_descriptor(a.descriptor))
@@ -289,6 +321,7 @@ def main(argv: list[str]) -> int:
         elif a.cmd=="judge-receipt": emit(judge_receipt(a.candidate_digest, a.judge_id, a.verdict))
         elif a.cmd=="invalidate-receipt": emit(invalidate_receipt(a.receipt, a.candidate_digest))
         elif a.cmd=="adjudicate": emit(adjudicate(a.candidate_digest, a.decision))
+        elif a.cmd=="collect-session": emit(collect_session(a.session_id, a.journal))
         elif a.cmd=="bundle": emit(bundle(a.events, a.output, a.descriptor))
         elif a.cmd=="publish-recon": emit(publish_recon())
     except (EvalError, ValueError, OSError) as exc:

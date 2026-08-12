@@ -1,0 +1,26 @@
+{
+  "message_count": 6,
+  "model": "gpt-5.5",
+  "output_digest": "sha256:0c3da21c5befa6895ce06016cd77ec9cc174a6ab5926ef1aad340f67a424d1bf",
+  "output_text": "fixture_id: `mr-qualify-synthesis-normal`  \nroute/model identity: not explicitly provided in the prompt\n\n- Purpose: create a repository-native, reproducible model-routing tournament that measures role-specific quality, safety, latency, reliability, and cost per accepted result before encoding Jcode routing defaults.\n- Execution phases: `validate` offline first, then gated `smoke`, role-level `qualify`, finalist `select`, untouched `holdout`, whole-command `integrate`, evidence `publish`, and human `approve`.\n- Authority boundaries: Jcode owns descriptors, budgets, scheduling, evidence, safety stops, and recommendations. Providers own model execution and usage data. Orca may own runtime resources. Recon owns canonical publication when available.\n- Safety gates: no paid tournament before smoke gates pass. Trials are isolated, destructive actions and third-party mutations are prohibited, deterministic checks precede blind judges, high-risk roles require cross-provider review, and routing changes require human approval.\n- Remaining integration blockers: whole-command adapters depend on `/explore`, `/feature`, `/apply`, `/apply:all` existing, Recon canonical publication depends on its command contract, and live runs fail closed without route auth, telemetry, pricing, isolation, or judge calibration.\n\ntools used: `read`, `swarm report`  \nfiles read: `proposal.md`, `design.md`  \nrefusal/safety stop: none  \nvalidation performed: confirmed synthesis covers all requested categories from only the two allowed files.",
+  "provider": "openai-oauth",
+  "session_id": "session_deer_1786503222224_68c4eb569ad37cc5",
+  "source": "persisted-session-journal",
+  "steering_digest": "sha256:3abc7a78aaf81600e870d304de751543e4c7e116dd30cfe09c4e2a855915c7ad",
+  "timings": {
+    "first_assistant_ms": 4166,
+    "tool_ms": 0,
+    "wall_ms": 20371
+  },
+  "tokens": {
+    "cache_read": 129280,
+    "cache_write": 0,
+    "input": 135202,
+    "output": 647,
+    "total": 265129
+  },
+  "tool_calls": [
+    "batch",
+    "swarm"
+  ]
+}

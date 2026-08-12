@@ -156,5 +156,24 @@ class ModelRoutingCliTests(unittest.TestCase):
             substituted = self.run_cli("validate", "--descriptor", str(path), expect=1)
             self.assertIn("silent route substitution is forbidden", substituted["stderr"])
 
+    def test_collect_session_telemetry_reports_token_classes_timings_and_steering(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            journal = Path(td) / "session.jsonl"
+            rows = [
+                {"meta":{"provider_key":"claude-oauth","model":"claude-fable-5"},"append_messages":[{"role":"user","timestamp":"2026-01-01T00:00:00Z","content":[{"type":"text","text":"frozen prompt"}]}]},
+                {"meta":{"provider_key":"claude-oauth","model":"claude-fable-5"},"append_messages":[{"role":"assistant","timestamp":"2026-01-01T00:00:01Z","content":[{"type":"tool_use","name":"read","input":{"file_path":"a.md"}}],"token_usage":{"input_tokens":10,"output_tokens":2,"cache_read_input_tokens":3,"cache_creation_input_tokens":4}}]},
+                {"meta":{"provider_key":"claude-oauth","model":"claude-fable-5"},"append_messages":[{"role":"user","timestamp":"2026-01-01T00:00:02Z","tool_duration_ms":125,"content":[{"type":"tool_result","content":"ok"}]}]},
+                {"meta":{"provider_key":"claude-oauth","model":"claude-fable-5"},"append_messages":[{"role":"assistant","timestamp":"2026-01-01T00:00:04Z","content":[{"type":"text","text":"final answer"}],"token_usage":{"input_tokens":20,"output_tokens":5,"cache_read_input_tokens":6,"cache_creation_input_tokens":7}}]},
+            ]
+            journal.write_text("".join(json.dumps(row)+"\n" for row in rows))
+            result = self.run_cli("collect-session", "--session-id", "session-test", "--journal", str(journal))
+            self.assertEqual(result["tokens"], {"input":30,"output":7,"cache_read":9,"cache_write":11,"total":57})
+            self.assertEqual(result["timings"]["wall_ms"], 4000)
+            self.assertEqual(result["timings"]["first_assistant_ms"], 1000)
+            self.assertEqual(result["timings"]["tool_ms"], 125)
+            self.assertEqual(result["tool_calls"], ["read"])
+            self.assertRegex(result["steering_digest"], r"^sha256:[0-9a-f]{64}$")
+            self.assertRegex(result["output_digest"], r"^sha256:[0-9a-f]{64}$")
+
 if __name__ == "__main__":
     unittest.main()
