@@ -6,7 +6,7 @@
 
 ## 2. Shared static microsite foundation
 
-- [x] 2.1 Create `docs/diagrams/jcode-command-system/` with `index.html`, six concept pages, `styles.css`, and `site.js`.
+- [x] 2.1 Create `docs/diagrams/jcode-command-system/` with `index.html`, six concept pages, and `styles.css`; keep current-page semantics static so no shared JavaScript is required.
 - [x] 2.2 Implement the approved parchment/walnut/umber/espresso/copper token system, typography, focus states, layout, chapter rail, breadcrumbs, and previous/next navigation.
 - [x] 2.3 Implement semantic landmarks, skip links, responsive chapter navigation, reduced-motion behavior, and no-JavaScript fallbacks.
 - [x] 2.4 Keep all runtime assets local and reject remote fonts, scripts, stylesheets, images, and CDN Mermaid dependencies.
