@@ -125,6 +125,44 @@ pub struct AvailableActions {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RuntimeMutationCapabilities {
+    pub start_initiative_run: bool,
+    pub retry_linked_run: bool,
+    pub cancel_linked_run: bool,
+}
+
+impl RuntimeMutationCapabilities {
+    pub fn unavailable() -> Self {
+        Self {
+            start_initiative_run: false,
+            retry_linked_run: false,
+            cancel_linked_run: false,
+        }
+    }
+}
+
+impl Default for RuntimeMutationCapabilities {
+    fn default() -> Self {
+        Self::unavailable()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CleanupResourceState {
+    VerifiedReleased,
+    RecoveryRequired,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CleanupResourceProjection {
+    pub resource_kind: String,
+    pub resource_id: String,
+    pub state: CleanupResourceState,
+    pub evidence: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InitiativeProjection {
     pub id: InitiativeId,
     pub title: String,
@@ -852,6 +890,23 @@ pub struct ReplayCursor {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReplayScope {
+    pub principal_session_id: String,
+    pub initiative_id: InitiativeId,
+    pub orca_run_id: Option<OrcaRunId>,
+    pub authorized_until: DateTime<Utc>,
+}
+
+impl ReplayScope {
+    pub fn is_valid_for(&self, auth: &AuthContext, now: DateTime<Utc>) -> bool {
+        self.principal_session_id == auth.session_id
+            && auth.allows(&self.initiative_id)
+            && self.authorized_until > now
+            && auth.expires_at > now
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReplayBatch {
     pub events: Vec<EventEnvelope>,
     pub snapshot_required: bool,
@@ -859,6 +914,7 @@ pub struct ReplayBatch {
 
 pub struct ReplayBuffer {
     stream_id: StreamId,
+    scope: Option<ReplayScope>,
     retention: usize,
     next_sequence: u64,
     events: VecDeque<EventEnvelope>,
@@ -868,6 +924,17 @@ impl ReplayBuffer {
     pub fn new(stream_id: StreamId, retention: usize) -> Self {
         Self {
             stream_id,
+            scope: None,
+            retention,
+            next_sequence: 1,
+            events: VecDeque::new(),
+        }
+    }
+
+    pub fn new_scoped(stream_id: StreamId, scope: ReplayScope, retention: usize) -> Self {
+        Self {
+            stream_id,
+            scope: Some(scope),
             retention,
             next_sequence: 1,
             events: VecDeque::new(),
@@ -929,8 +996,29 @@ impl ReplayBuffer {
         })
     }
 
+    pub fn replay_authorized(
+        &self,
+        auth: &AuthContext,
+        cursor: &ReplayCursor,
+    ) -> Result<ReplayBatch, CommandCenterError> {
+        if let Some(scope) = &self.scope {
+            if !scope.is_valid_for(auth, Utc::now()) {
+                return Err(CommandCenterError::ReplayScopeMismatch);
+            }
+        }
+        self.replay(cursor)
+    }
+
     pub fn rotate(&mut self, stream_id: StreamId) {
         self.stream_id = stream_id;
+        self.scope = None;
+        self.next_sequence = 1;
+        self.events.clear();
+    }
+
+    pub fn rotate_scoped(&mut self, stream_id: StreamId, scope: ReplayScope) {
+        self.stream_id = stream_id;
+        self.scope = Some(scope);
         self.next_sequence = 1;
         self.events.clear();
     }
@@ -1107,6 +1195,9 @@ pub trait RunProjectionSource: Send + Sync {
 
 #[async_trait]
 pub trait OrcaAdapter: Send + Sync {
+    async fn capabilities(&self) -> Result<RuntimeMutationCapabilities, CommandCenterError> {
+        Ok(RuntimeMutationCapabilities::unavailable())
+    }
     async fn observe(&self, id: &InitiativeId) -> Result<OrcaReference, CommandCenterError>;
     async fn start_initiative_run(
         &self,
@@ -1182,40 +1273,42 @@ where
             return Err(CommandCenterError::Forbidden);
         }
         let (goal, revision) = self.initiatives.get(auth, id).await?;
+        let orca = self
+            .orca
+            .observe(id)
+            .await
+            .unwrap_or_else(|err| OrcaReference {
+                project_id: None,
+                runtime_id: None,
+                run_id: None,
+                task_ids: Vec::new(),
+                dispatch_ids: Vec::new(),
+                worktree_ids: Vec::new(),
+                worker_ids: Vec::new(),
+                terminal_ids: Vec::new(),
+                gate_ids: Vec::new(),
+                correlation_ids: Vec::new(),
+                idempotency_keys: Vec::new(),
+                last_observed_at: None,
+                freshness: Freshness::unavailable(err.to_string()),
+            });
+        let runtime_capabilities = self.orca.capabilities().await.unwrap_or_default();
         Ok(CommandCenterSnapshot {
             metadata: ProtocolMetadata::default(),
             revision,
             initiative: InitiativeProjection::from((goal, revision)),
             schedules: self.schedules.schedules_for(id).await?,
             runs: self.runs.runs_for(id).await?,
-            orca: self
-                .orca
-                .observe(id)
-                .await
-                .unwrap_or_else(|err| OrcaReference {
-                    project_id: None,
-                    runtime_id: None,
-                    run_id: None,
-                    task_ids: Vec::new(),
-                    dispatch_ids: Vec::new(),
-                    worktree_ids: Vec::new(),
-                    worker_ids: Vec::new(),
-                    terminal_ids: Vec::new(),
-                    gate_ids: Vec::new(),
-                    correlation_ids: Vec::new(),
-                    idempotency_keys: Vec::new(),
-                    last_observed_at: None,
-                    freshness: Freshness::unavailable(err.to_string()),
-                }),
+            orca,
             freshness: Freshness::fresh(),
             available_actions: AvailableActions {
                 update_initiative: true,
                 checkpoint_initiative: true,
                 manage_blockers: true,
                 manage_next_actions: true,
-                start_initiative_run: true,
-                retry_linked_run: true,
-                cancel_linked_run: true,
+                start_initiative_run: runtime_capabilities.start_initiative_run,
+                retry_linked_run: runtime_capabilities.retry_linked_run,
+                cancel_linked_run: runtime_capabilities.cancel_linked_run,
             },
         })
     }
@@ -1288,37 +1381,56 @@ where
         &self,
         envelope: &CommandEnvelope,
     ) -> Result<CommandResultPayload, CommandCenterError> {
+        let capabilities = self.orca.capabilities().await?;
         match &envelope.payload {
-            CommandPayload::StartInitiativeRun { initiative_id } => self
-                .orca
-                .start_initiative_run(initiative_id, &envelope.idempotency_key)
-                .await
-                .map(|(run, orca_run_id)| CommandResultPayload::RunAccepted {
-                    run,
-                    orca_run_id: Some(orca_run_id),
-                }),
+            CommandPayload::StartInitiativeRun { initiative_id } => {
+                if !capabilities.start_initiative_run {
+                    return Err(CommandCenterError::UnsupportedCapability {
+                        capability: "orca.command_center.start_initiative_run".to_string(),
+                    });
+                }
+                self.orca
+                    .start_initiative_run(initiative_id, &envelope.idempotency_key)
+                    .await
+                    .map(|(run, orca_run_id)| CommandResultPayload::RunAccepted {
+                        run,
+                        orca_run_id: Some(orca_run_id),
+                    })
+            }
             CommandPayload::RetryLinkedRun {
                 initiative_id,
                 run_id,
-            } => self
-                .orca
-                .retry_linked_run(initiative_id, run_id, &envelope.idempotency_key)
-                .await
-                .map(|(run, orca_run_id)| CommandResultPayload::RunAccepted {
-                    run,
-                    orca_run_id: Some(orca_run_id),
-                }),
+            } => {
+                if !capabilities.retry_linked_run {
+                    return Err(CommandCenterError::UnsupportedCapability {
+                        capability: "orca.command_center.retry_linked_run".to_string(),
+                    });
+                }
+                self.orca
+                    .retry_linked_run(initiative_id, run_id, &envelope.idempotency_key)
+                    .await
+                    .map(|(run, orca_run_id)| CommandResultPayload::RunAccepted {
+                        run,
+                        orca_run_id: Some(orca_run_id),
+                    })
+            }
             CommandPayload::CancelLinkedRun {
                 initiative_id,
                 run_id,
-            } => self
-                .orca
-                .cancel_linked_run(initiative_id, run_id, &envelope.idempotency_key)
-                .await
-                .map(|run| CommandResultPayload::RunAccepted {
-                    run,
-                    orca_run_id: None,
-                }),
+            } => {
+                if !capabilities.cancel_linked_run {
+                    return Err(CommandCenterError::UnsupportedCapability {
+                        capability: "orca.command_center.cancel_linked_run".to_string(),
+                    });
+                }
+                self.orca
+                    .cancel_linked_run(initiative_id, run_id, &envelope.idempotency_key)
+                    .await
+                    .map(|run| CommandResultPayload::RunAccepted {
+                        run,
+                        orca_run_id: None,
+                    })
+            }
             _ => Err(CommandCenterError::UnsupportedCapability {
                 capability: "not_runtime".to_string(),
             }),
@@ -1908,6 +2020,17 @@ mod tests {
     }
     #[async_trait]
     impl OrcaAdapter for FakeOrca {
+        async fn capabilities(&self) -> Result<RuntimeMutationCapabilities, CommandCenterError> {
+            if self.unavailable {
+                return Err(CommandCenterError::OrcaUnavailable);
+            }
+            Ok(RuntimeMutationCapabilities {
+                start_initiative_run: true,
+                retry_linked_run: false,
+                cancel_linked_run: true,
+            })
+        }
+
         async fn observe(&self, _id: &InitiativeId) -> Result<OrcaReference, CommandCenterError> {
             if self.unavailable {
                 return Err(CommandCenterError::OrcaUnavailable);
@@ -2061,8 +2184,33 @@ mod tests {
             value["selectedInitiative"]["schedules"],
             serde_json::json!([])
         );
+        assert_eq!(
+            value["selectedInitiative"]["availableActions"]["startRun"],
+            true
+        );
+        assert_eq!(
+            value["selectedInitiative"]["availableActions"]["retryRun"],
+            false
+        );
+        assert_eq!(
+            value["selectedInitiative"]["availableActions"]["cancelRun"],
+            true
+        );
         assert!(value.get("initiative").is_none());
         assert!(value.get("available_actions").is_none());
+    }
+
+    #[tokio::test]
+    async fn unavailable_runtime_capabilities_are_not_projected_as_actions() {
+        let snapshot = service(true)
+            .snapshot(&auth(), &InitiativeId("command-center".into()))
+            .await
+            .unwrap();
+
+        assert!(!snapshot.available_actions.start_initiative_run);
+        assert!(!snapshot.available_actions.retry_linked_run);
+        assert!(!snapshot.available_actions.cancel_linked_run);
+        assert_eq!(snapshot.orca.freshness.state, FreshnessState::Unavailable);
     }
 
     #[test]
@@ -2247,6 +2395,80 @@ mod tests {
         );
     }
 
+    #[test]
+    fn scoped_replay_rejects_authorization_and_expiry_boundaries() {
+        let mut scoped = ReplayBuffer::new_scoped(
+            StreamId("s1".into()),
+            ReplayScope {
+                principal_session_id: "session".into(),
+                initiative_id: InitiativeId("command-center".into()),
+                orca_run_id: Some(OrcaRunId("orca-run".into())),
+                authorized_until: Utc::now() + Duration::minutes(5),
+            },
+            4,
+        );
+        scoped.push(
+            EventSource::OrcaAdapter,
+            EntityRefs {
+                initiative_id: Some(InitiativeId("command-center".into())),
+                orca_run_id: Some(OrcaRunId("orca-run".into())),
+                ..EntityRefs::default()
+            },
+            EventPayload::Unknown {
+                name: "future".into(),
+                requires_snapshot: true,
+            },
+        );
+
+        assert_eq!(
+            scoped
+                .replay_authorized(
+                    &auth(),
+                    &ReplayCursor {
+                        stream_id: StreamId("s1".into()),
+                        sequence: 0,
+                    },
+                )
+                .unwrap()
+                .events
+                .len(),
+            1
+        );
+
+        let mut wrong_auth = auth();
+        wrong_auth.session_id = "other-session".into();
+        assert_eq!(
+            scoped.replay_authorized(
+                &wrong_auth,
+                &ReplayCursor {
+                    stream_id: StreamId("s1".into()),
+                    sequence: 0,
+                },
+            ),
+            Err(CommandCenterError::ReplayScopeMismatch)
+        );
+
+        scoped.rotate_scoped(
+            StreamId("s2".into()),
+            ReplayScope {
+                principal_session_id: "session".into(),
+                initiative_id: InitiativeId("command-center".into()),
+                orca_run_id: Some(OrcaRunId("orca-run".into())),
+                authorized_until: Utc::now() - Duration::minutes(1),
+            },
+        );
+        assert_eq!(
+            scoped.replay_authorized(
+                &auth(),
+                &ReplayCursor {
+                    stream_id: StreamId("s2".into()),
+                    sequence: 0,
+                },
+            ),
+            Err(CommandCenterError::ReplayScopeMismatch)
+        );
+    }
+
     #[tokio::test]
     async fn stale_revision_and_duplicate_commands_are_handled() {
         let service = service(false);
@@ -2316,6 +2538,30 @@ mod tests {
             result.authoritative,
             Some(CommandResultPayload::RunAccepted { .. })
         ));
+    }
+
+    #[tokio::test]
+    async fn unsupported_runtime_capability_is_rejected_before_adapter_invocation() {
+        let service = service(false);
+        let result = service
+            .execute(envelope(
+                CommandPayload::RetryLinkedRun {
+                    initiative_id: InitiativeId("command-center".into()),
+                    run_id: JcodeRunId("run-1".into()),
+                },
+                Revision(1),
+                "k4-retry-unsupported",
+            ))
+            .await;
+
+        assert_eq!(result.state, CommandState::Failed);
+        assert_eq!(result.authoritative, None);
+        assert_eq!(
+            result.error,
+            Some(CommandCenterError::UnsupportedCapability {
+                capability: "orca.command_center.retry_linked_run".to_string(),
+            })
+        );
     }
 
     #[tokio::test]
