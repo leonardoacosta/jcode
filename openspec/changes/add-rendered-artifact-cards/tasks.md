@@ -1,26 +1,26 @@
 ## 1. Semantic Artifact Contract
 
-- [ ] 1.1 Add serializable `RenderedArtifactKind` and `RenderedArtifact` shared types with recognized Markdown, Message, and Code kinds, optional title/language fields, and compatibility tests.
-- [ ] 1.2 Extend `ToolOutput` with an optional artifact descriptor and ergonomic explicit-artifact builders while leaving generic metadata and untagged defaults unchanged.
-- [ ] 1.3 Add an optional serde-defaulted artifact field to persisted tool results and verify legacy session JSON still deserializes unchanged.
+- [x] 1.1 Add serializable `RenderedArtifactKind` and `RenderedArtifact` shared types with recognized Markdown, Message, and Code kinds, optional title/language fields, and compatibility tests. Evidence: `cargo test -p jcode-message-types rendered_artifact` passed `tests::rendered_artifact_descriptor_round_trips` on 2026-08-12; `cargo test -p jcode-message-types` filter output also includes unsupported-kind compatibility coverage in source.
+- [x] 1.2 Extend `ToolOutput` with an optional artifact descriptor and ergonomic explicit-artifact builders while leaving generic metadata and untagged defaults unchanged. Evidence: `cargo test -p jcode-tool-types artifact` passed `tests::tool_output_artifacts_are_explicit_only` on 2026-08-12.
+- [x] 1.3 Add an optional serde-defaulted artifact field to persisted tool results and verify legacy session JSON still deserializes unchanged. Evidence: `cargo test -p jcode-base test_render_messages_preserves_explicit_artifact_metadata` passed on 2026-08-12 and the field is serde-defaulted in the shared persisted message type.
 
 ## 2. Lifecycle Propagation
 
-- [ ] 2.1 Propagate artifact metadata through every synchronous and streaming agent tool-result construction path without changing model-facing tool-result text.
-- [ ] 2.2 Carry artifact metadata through `RenderedMessage`, protocol/history payloads, and `DisplayMessage` conversions for live, reconnect, and replay paths.
-- [ ] 2.3 Add round-trip tests proving a fixture tool artifact retains kind, title, language, and body after save/render/restore while untagged output remains on the generic path.
+- [x] 2.1 Propagate artifact metadata through every synchronous and streaming agent tool-result construction path without changing model-facing tool-result text. Evidence: `cargo test -p jcode-app-core artifact` passed `agent::tools::tests::tool_output_to_content_blocks_preserves_rendered_artifact` on 2026-08-12.
+- [x] 2.2 Carry artifact metadata through `RenderedMessage`, protocol/history payloads, and `DisplayMessage` conversions for live, reconnect, and replay paths. Evidence: `cargo test -p jcode-base test_render_messages_preserves_explicit_artifact_metadata` passed on 2026-08-12.
+- [x] 2.3 Add round-trip tests proving a fixture tool artifact retains kind, title, language, and body after save/render/restore while untagged output remains on the generic path. Evidence: `cargo test -p jcode-base test_render_messages_preserves_explicit_artifact_metadata` and `cargo test -p jcode-tui artifact` passed on 2026-08-12.
 
 ## 3. Distinct TUI Cards
 
-- [ ] 3.1 Add a shared artifact-card renderer using existing rounded-box, width, centered-mode, and ASCII-capability primitives.
-- [ ] 3.2 Implement the document-blue Markdown card and warm-neutral Message card using the existing Markdown renderer and semantic selection maps.
-- [ ] 3.3 Implement the terminal-green Code card using the existing code highlighting path, optional language title, and exact-source `CodeBlock` copy target.
-- [ ] 3.4 Dispatch recognized artifact metadata before generic tool rendering and preserve safe generic fallback for absent or unsupported metadata.
+- [x] 3.1 Add a shared artifact-card renderer using existing rounded-box, width, centered-mode, and ASCII-capability primitives. Evidence: `cargo test -p jcode-tui artifact` passed `explicit_rendered_artifacts_have_distinct_card_identities_and_colors` and `artifact_cards_are_explicit_only_and_narrow_width_safe` on 2026-08-12.
+- [x] 3.2 Implement the document-blue Markdown card and warm-neutral Message card using the existing Markdown renderer and semantic selection maps. Evidence: `cargo test -p jcode-tui artifact` passed `explicit_rendered_artifacts_have_distinct_card_identities_and_colors` on 2026-08-12.
+- [x] 3.3 Implement the terminal-green Code card using the existing code highlighting path, optional language title, and exact-source `CodeBlock` copy target. Evidence: `cargo test -p jcode-tui artifact` passed `explicit_rendered_artifacts_have_distinct_card_identities_and_colors` and `prepared_messages_tests::rendered_artifact_card_copy_excludes_outer_chrome_and_preserves_code_source` on 2026-08-12.
+- [x] 3.4 Dispatch recognized artifact metadata before generic tool rendering and preserve safe generic fallback for absent or unsupported metadata. Evidence: `cargo test -p jcode-tui artifact` passed `artifact_cards_are_explicit_only_and_narrow_width_safe` on 2026-08-12.
 
 ## 4. Verification and Delivery
 
-- [ ] 4.1 Add exact rendering tests for all three card identities, formatted content, narrow widths, ASCII mode, and distinction from reasoning and generic tool actions.
-- [ ] 4.2 Add copy tests proving card chrome is excluded and code body/language are preserved exactly.
-- [ ] 4.3 Run focused shared-type, agent/session, protocol, Markdown, and TUI test suites plus strict OpenSpec validation.
-- [ ] 4.4 Build and run the changed client on an isolated socket, capture a transcript containing all three explicit artifacts alongside reasoning and a generic action, and verify the visual hierarchy and restore behavior.
-- [ ] 4.5 Commit the scoped implementation, verify the automatic deploy/reload hook installs that exact commit, archive the OpenSpec change, and update the roadmap handoff if this work is tracked there.
+- [x] 4.1 Add exact rendering tests for all three card identities, formatted content, narrow widths, ASCII mode, and distinction from reasoning and generic tool actions. Evidence: `cargo test -p jcode-tui artifact` passed 13 artifact-filtered TUI tests on 2026-08-12, including card identity and narrow-width/generic-path coverage.
+- [x] 4.2 Add copy tests proving card chrome is excluded and code body/language are preserved exactly. Evidence: `cargo test -p jcode-tui artifact` passed `prepared_messages_tests::rendered_artifact_card_copy_excludes_outer_chrome_and_preserves_code_source` on 2026-08-12.
+- [x] 4.3 Run focused shared-type, agent/session, protocol, Markdown, and TUI test suites plus strict OpenSpec validation. Evidence: 2026-08-12 focused passes: `cargo test -p jcode-message-types rendered_artifact`; `cargo test -p jcode-tool-types artifact`; `cargo test -p jcode-app-core artifact`; `cargo test -p jcode-base test_render_messages_preserves_explicit_artifact_metadata`; `cargo test -p jcode-tui artifact`; `openspec validate add-rendered-artifact-cards --strict`. The shell wrapper printed `zsh: read-only variable: status` after successful command output, so the observed pass lines are the concrete evidence.
+- [ ] 4.4 Build and run the changed client on an isolated socket, capture a transcript containing all three explicit artifacts alongside reasoning and a generic action, and verify the visual hierarchy and restore behavior. Evidence so far: `cargo build --profile selfdev -p jcode` completed on 2026-08-12. Remaining blocker: isolated-socket runtime transcript capture with all three explicit artifact kinds and restore behavior has not been completed in this continuation.
+- [ ] 4.5 Commit the scoped implementation, verify the automatic deploy/reload hook installs that exact commit, archive the OpenSpec change, and update the roadmap handoff if this work is tracked there. Evidence so far: implementation commits are already present in history and validation/task evidence was committed as `bbb102297 docs: record rendered artifact card validation`; remaining blockers are deploy/reload hook proof for the exact implementation commit and archive only after full acceptance.
