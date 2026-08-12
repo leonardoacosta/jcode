@@ -141,4 +141,16 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn preserves_colon_bearing_skill_invocations() {
+        let registry = registry(&["apply:all"]);
+        assert_eq!(
+            registry.resolve_invocation("/apply:all feature-a feature-b"),
+            Some(SkillInvocation {
+                name: "apply:all",
+                prompt: Some("feature-a feature-b"),
+            })
+        );
+    }
 }

@@ -17,6 +17,8 @@ Treat `/apply` as Jcode's native lifecycle for one approved feature. It resolves
 
 ## Scheduling and execution path
 
+Load `references/native-apply-contracts.md` when constructing, validating, resuming, reviewing, or settling a native apply schedule.
+
 Compile the selected feature into the shared canonical schedule used by `/apply:all`. The schedule records revision, provenance, dependency, conflict, touched path, mutable resource, risk, verification, lineage, idempotency, and extension fields.
 
 Before editing, freeze and report one execution path:

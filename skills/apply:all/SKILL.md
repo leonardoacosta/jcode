@@ -16,6 +16,8 @@ Treat `/apply:all` as the queue-level form of native `/apply`. It schedules only
 
 ## Canonical schedule and waves
 
+Load `references/native-apply-contracts.md` when constructing, validating, resuming, reviewing, or settling a native apply-all schedule.
+
 Compile the selected queue into the same versioned schedule and wave-plan contracts as `/apply`. For each feature record:
 
 - Authority, revision, provenance, dependencies, conflicts, touched paths, claims, repositories, workspaces, external systems, schemas, deployments, mutable resources, verification contract, risk, lineage, idempotency scope, and extension fields.
