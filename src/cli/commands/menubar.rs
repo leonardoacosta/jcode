@@ -37,8 +37,8 @@ pub(crate) fn remote_counts_report(state: RemoteCountsState) -> RemoteCountsRepo
 }
 
 #[cfg(target_os = "macos")]
-fn remote_presence() -> Result<Vec<SessionPresence>> {
-    crate::cli::remote::fetch_remote_presence_blocking()
+async fn remote_presence() -> Result<Vec<SessionPresence>> {
+    crate::cli::remote::fetch_remote_presence().await
 }
 
 #[derive(Debug, Serialize)]
@@ -131,9 +131,9 @@ fn format_session_menu_item_title_with_display(
     }
 }
 
-pub fn run_menubar_command(once: bool, json: bool) -> Result<()> {
+pub async fn run_menubar_command(once: bool, json: bool) -> Result<()> {
     #[cfg(target_os = "macos")]
-    let remote = remote_presence();
+    let remote = remote_presence().await;
 
     if json {
         #[cfg(target_os = "macos")]

@@ -144,23 +144,20 @@ pub(crate) fn prepare_default_args(args: &mut Args) -> Result<()> {
 }
 
 #[cfg(target_os = "macos")]
-pub(crate) fn fetch_remote_presence_blocking() -> Result<Vec<crate::session::SessionPresence>> {
+pub(crate) async fn fetch_remote_presence() -> Result<Vec<crate::session::SessionPresence>> {
     let path = crate::server::socket_path();
-    let runtime = tokio::runtime::Runtime::new()?;
-    runtime.block_on(async move {
-        let mut client = crate::server::Client::connect_with_path(path).await?;
-        match client.get_presence().await? {
-            crate::protocol::ServerEvent::Presence { sessions, .. } => Ok(sessions
-                .into_iter()
-                .map(|session| crate::session::SessionPresence {
-                    session_id: session.session_id,
-                    pid: 0,
-                    streaming: session.streaming,
-                    streaming_since: None,
-                    internal: false,
-                })
-                .collect()),
-            other => Err(anyhow!("unexpected homelab presence response: {other:?}")),
-        }
-    })
+    let mut client = crate::server::Client::connect_with_path(path).await?;
+    match client.get_presence().await? {
+        crate::protocol::ServerEvent::Presence { sessions, .. } => Ok(sessions
+            .into_iter()
+            .map(|session| crate::session::SessionPresence {
+                session_id: session.session_id,
+                pid: 0,
+                streaming: session.streaming,
+                streaming_since: None,
+                internal: false,
+            })
+            .collect()),
+        other => Err(anyhow!("unexpected homelab presence response: {other:?}")),
+    }
 }

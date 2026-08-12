@@ -561,7 +561,7 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
             RestartCommand::Clear => commands::run_restart_clear_command()?,
         },
         Some(Command::Menubar { once, json }) => {
-            commands::run_menubar_command(once, json)?;
+            commands::run_menubar_command(once, json).await?;
         }
         None => run_default_command(args).await?,
     }
