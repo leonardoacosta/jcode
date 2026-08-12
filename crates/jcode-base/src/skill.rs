@@ -655,7 +655,7 @@ impl SkillRegistry {
         if name.is_empty()
             || !name
                 .chars()
-                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_'))
+                .all(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | ':'))
         {
             return None;
         }
@@ -976,6 +976,13 @@ mod tests {
             Some(SkillInvocation {
                 name: "frontend-design",
                 prompt: Some("build a settings page"),
+            })
+        );
+        assert_eq!(
+            SkillRegistry::parse_invocation("/apply:all change-a change-b"),
+            Some(SkillInvocation {
+                name: "apply:all",
+                prompt: Some("change-a change-b"),
             })
         );
     }
