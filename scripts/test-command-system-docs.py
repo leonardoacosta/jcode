@@ -271,6 +271,16 @@ def validate_sources(site: Path, sources: dict) -> list[Diagnostic]:
         errors.append(diagnostic("DOCS-ECOSYSTEM", "sources.json", "ecosystem_evidence", "missing frozen ecosystem snapshot id"))
     elif snapshot.get("snapshot_digest") and not SHA256_RE.fullmatch(str(snapshot.get("snapshot_digest"))):
         errors.append(diagnostic("DOCS-ECOSYSTEM", "sources.json", "ecosystem_evidence", "snapshot_digest must be sha256:<64 hex>; use snapshot_id for semantic ids"))
+    if isinstance(snapshot, dict) and snapshot.get("path"):
+        errors.extend(
+            validate_source_pin(
+                "sources.json",
+                "ecosystem_evidence",
+                str(snapshot.get("source_revision", "")),
+                {str(snapshot["path"]): snapshot.get("source_digest")},
+                [str(snapshot["path"])],
+            )
+        )
     return errors
 
 

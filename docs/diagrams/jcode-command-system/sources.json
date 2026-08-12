@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_from_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+  "generated_from_revision": "7e23a8b835983f3d132c527ed03f52caea896037",
   "authority": "openspec/changes/add-command-system-documentation-microsite",
   "pages": {
     "index.html": {
@@ -1868,8 +1868,8 @@
     "observation_window": "repository snapshot inspected 2026-08-12",
     "redaction": "sanitized references only",
     "snapshot_id": "ecosystem-claim-map-v1-2026-08-12",
-    "source_revision": "acceptance_blocked: working-tree evidence file changed after HEAD; freeze after final byte set",
-    "source_digest": "sha256:cb734d887a405b5d4a34f397520fbc7b01c8e3122a325bce095c062fac7cbc85"
+    "source_revision": "7e23a8b835983f3d132c527ed03f52caea896037",
+    "source_digest": "sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4"
   },
   "telemetry_source": "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
   "revision_policy": {
