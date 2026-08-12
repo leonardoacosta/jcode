@@ -1875,6 +1875,6 @@
   "revision_policy": {
     "source_revision": "full git commit containing the cited source bytes",
     "source_digest": "sha256:<64 lowercase hex> computed from git show <source_revision>:<path>",
-    "final_digest_freeze": "acceptance_blocked until all approved page/shared-asset mutations are complete; rerun JCS-RDG-015 after byte freeze"
+    "final_digest_freeze": "resolved at implementation commit 7e23a8b835983f3d132c527ed03f52caea896037; ecosystem evidence digest sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4 is validator-enforced"
   }
 }
