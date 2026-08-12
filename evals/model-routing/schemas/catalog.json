@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "schemas": {
+    "experiment_descriptor": ["version", "name", "seed", "environment_hash", "cache_policy", "isolation", "retry_policy", "concurrency", "roles", "routes", "fixtures", "pricing_snapshot", "power_budget", "stop_conditions", "tool_permissions", "fixture_revisions", "judges", "rubrics", "smoke_gates", "commands"],
+    "model_route": ["route_id", "provider_family", "model", "version", "reasoning_controls", "context_limit", "output_limit", "tool_capabilities", "role_eligibility", "availability"],
+    "trial_event": ["attempt_id", "role", "fixture_id", "route_id", "provider", "status", "confounded", "cost_usd", "latency_ms"],
+    "judge_record": ["judge_id", "route_id", "provider_family", "observation", "abstained"],
+    "aggregate": ["attempts", "quality_denominator", "accepted_attempts", "acceptance_rate", "confound_rate", "total_cost_usd", "cost_per_accepted_usd", "latency_p50_ms", "repair_burden"],
+    "publication_receipt": ["kind", "canonical", "experiment_id", "descriptor_digest", "events_digest", "aggregates", "recon_publication"]
+  }
+}

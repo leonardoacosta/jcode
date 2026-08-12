@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "roles": [
+    {"id": "extraction-classification", "risk": "normal", "model_required": true},
+    {"id": "mechanical-editing", "risk": "normal", "model_required": true},
+    {"id": "semantic-synthesis", "risk": "normal", "model_required": true},
+    {"id": "proposal-task-authoring", "risk": "high", "model_required": true},
+    {"id": "normal-implementation", "risk": "high", "model_required": true},
+    {"id": "frontier-implementation", "risk": "high", "model_required": true},
+    {"id": "adversarial-review", "risk": "high", "model_required": true},
+    {"id": "autoresearch-candidate-generation", "risk": "high", "model_required": true},
+    {"id": "model-free-deterministic-work", "risk": "deterministic", "model_required": false}
+  ],
+  "baseline": "model-free"
+}

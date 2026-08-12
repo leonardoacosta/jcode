@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "partitions": {
+    "development": [
+      {"fixture_id": "mr-dev-deterministic-control", "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111", "case_type": "negative/control"},
+      {"fixture_id": "mr-dev-refusal-escalation", "digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666", "case_type": "refusal/escalation"}
+    ],
+    "qualification": [
+      {"fixture_id": "mr-qualify-synthesis-normal", "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222", "case_type": "normal"},
+      {"fixture_id": "mr-qualify-review-adversarial", "digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333", "case_type": "adversarial"},
+      {"fixture_id": "mr-qualify-provider-tool-failure", "digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777", "case_type": "provider/tool-failure"}
+    ],
+    "holdout": [{"fixture_id": "mr-holdout-implementation-boundary", "digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444", "case_type": "boundary"}],
+    "shadow": [{"fixture_id": "mr-shadow-long-context", "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555", "case_type": "long-context"}]
+  },
+  "required_case_types": ["normal", "boundary", "adversarial", "negative/control", "refusal/escalation", "provider/tool-failure", "long-context"],
+  "adapted_references": [{"source": "evals/task-decomposition/fixtures/catalog.json", "mode": "by-digest", "historical_contract_unchanged": true}]
+}
