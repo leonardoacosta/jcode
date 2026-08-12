@@ -1,0 +1,3 @@
+{"type":"server-started","port":65428,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:65428","screen_dir":"/home/nyaptor/dev/jcode/source/jcode/.superpowers/brainstorm/2818306-1786453855/content","state_dir":"/home/nyaptor/dev/jcode/source/jcode/.superpowers/brainstorm/2818306-1786453855/state"}
+{"type":"screen-added","file":"/home/nyaptor/dev/jcode/source/jcode/.superpowers/brainstorm/2818306-1786453855/content/orca-architecture-options.html"}
+{"type":"server-stopped","reason":"idle timeout"}

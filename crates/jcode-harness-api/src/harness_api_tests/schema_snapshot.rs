@@ -77,10 +77,8 @@ fn dynamic_tool_done_matches_typescript_sdk_fixture() {
         error: Some("remote tool returned partial data".into()),
     });
     let actual = serde_json::to_string(&frame).unwrap();
-    let fixture = include_str!(
-        "../../../../sdk/typescript/test/fixtures/rust-tool-done.jsonl"
-    )
-    .trim_end();
+    let fixture =
+        include_str!("../../../../sdk/typescript/test/fixtures/rust-tool-done.jsonl").trim_end();
     assert_eq!(actual, fixture);
 }
 
