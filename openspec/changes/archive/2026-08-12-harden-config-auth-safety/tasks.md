@@ -63,11 +63,11 @@
   - depends on: 4.1
   - Verify with `python3 -c 'import pathlib,tomllib; p=pathlib.Path("/home/nyaptor/dev/jcode/config.toml"); tomllib.loads(p.read_text()); tomllib.loads(p.with_suffix(".bak").read_text())'` and `jcode auth status --json`; the expected result is one valid `auto_client_reload = true` key, a parseable primary and backup, OpenAI and Claude reported available, and no inferred broad external-auth trust.
 
-- [ ] 4.3 Validate the recovered noninteractive providers and prepare the completed change for archive.
+- [x] 4.3 Validate the recovered noninteractive providers and prepare the completed change for archive.
   - touches: `openspec/changes/harden-config-auth-safety/`
   - depends on: 4.2
   - Verify with `jcode auth doctor openai --validate --json`, `jcode auth doctor claude --validate --json`, and `openspec validate harden-config-auth-safety --strict --no-interactive`; the expected result is successful live validation for OpenAI and Claude and a zero-exit strict OpenSpec validation. Archive follows only after the terminal Copilot gate also passes.
-  - Blocked evidence (2026-08-10): OpenAI passed its full provider-and-tool validation, Claude credential load and token refresh passed, and Anthropic OAuth preflight passed. The live Claude request still returns HTTP 429 `rate_limit_error` from Anthropic, most recently at 16:41 CDT. Keep this task open and do not archive until that external account limit clears and the exact doctor command passes.
+  - Completed evidence (2026-08-12): `jcode auth doctor openai --validate --json`, `jcode auth doctor claude --validate --json`, and `jcode auth doctor copilot --validate --json` each reported `any_issue: false`, provider status `available`, and runtime + tool validation passed just now. `openspec validate harden-config-auth-safety --strict --no-interactive` reported `Change 'harden-config-auth-safety' is valid`. The local shell wrapper still appended its known zsh `status` export error after successful command output, so evidence is recorded from the command payloads rather than the wrapper exit code.
 
 ## User Gate
 
