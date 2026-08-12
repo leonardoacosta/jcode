@@ -25,7 +25,7 @@ class ModelRoutingCliTests(unittest.TestCase):
     def event(self, **kw: object) -> dict:
         base = {
             "attempt_id": "a1", "attempt_index": 0, "role": "semantic-synthesis", "fixture_id": "mr-qualify-synthesis-normal",
-            "route_id": "jcode:claude-api:claude-fable-5", "provider": "anthropic", "status": "accepted",
+            "route_id": "jcode:claude-oauth:claude-fable-5", "provider": "anthropic", "status": "accepted",
             "confounded": False, "confound_type": None, "cost_usd": 0.42, "normalized_cost_usd": 0.40,
             "latency_ms": 1200, "queue_ms": 10, "ttft_ms": 20, "model_ms": 1000, "tool_ms": 100,
             "judge_ms": 70, "wall_ms": 1200, "timeout": False, "repair_count": 1, "defect_count": 0,
@@ -102,10 +102,10 @@ class ModelRoutingCliTests(unittest.TestCase):
             self.assertIn("normalized_cost_usd", self.run_cli("append-event", "--events", str(events), "--event", json.dumps(bad), expect=1)["stderr"])
 
     def test_anonymize_judges_calibration_receipts_adjudication_and_recon_fail_closed(self) -> None:
-        candidate = json.dumps({"route_id": "jcode:openai:gpt-5.5", "provider": "openai", "text": "OpenAI route solved it"})
+        candidate = json.dumps({"route_id": "jcode:openai-oauth:gpt-5.5", "provider": "openai", "text": "OpenAI route solved it"})
         anon = self.run_cli("anonymize", "--candidate", candidate)
         self.assertNotIn("openai", json.dumps(anon).lower())
-        self.assertIn("candidate model cannot be its own sole judge", self.run_cli("validate-judges", "--candidate-route", "jcode:openai:gpt-5.5", "--judges", "jcode:openai:gpt-5.5", expect=1)["stderr"])
+        self.assertIn("candidate model cannot be its own sole judge", self.run_cli("validate-judges", "--candidate-route", "jcode:openai-oauth:gpt-5.5", "--judges", "jcode:openai-oauth:gpt-5.5", expect=1)["stderr"])
         cal = self.run_cli("judge-calibration")
         self.assertIn("false_positive_rate", cal)
         receipt = self.run_cli("judge-receipt", "--candidate-digest", "sha256:" + "a"*64, "--judge-id", "cold-review-openai", "--verdict", "fail")
@@ -117,6 +117,14 @@ class ModelRoutingCliTests(unittest.TestCase):
         self.assertIn("Recon publication unavailable", self.run_cli("publish-recon", expect=1)["stderr"])
 
     def test_smoke_selection_spending_stop_qualification_holdout_and_promotion_reports(self) -> None:
+        ready = self.run_cli("smoke-ready")
+        self.assertTrue(ready["ready"])
+        self.assertFalse(ready["requires_additional_budget_approval"])
+        self.assertEqual(
+            set(ready["authorized_access_kinds"]),
+            {"oauth", "deterministic"},
+        )
+        self.assertTrue(ready["silent_route_substitution_forbidden"])
         report = self.run_cli("selection-report")
         self.assertFalse(report["mutates_production_routing"])
         self.assertIn("acceptance_blocked", json.dumps(report))
@@ -131,6 +139,22 @@ class ModelRoutingCliTests(unittest.TestCase):
         stop = self.run_cli("spending-stop", "--spent-usd", "10.01")
         self.assertTrue(stop["stop_new_scheduling"])
         self.assertIn("incomplete_cells", stop)
+
+    def test_unapproved_metered_routes_and_silent_substitution_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            descriptor = json.loads(DESC.read_text())
+            descriptor["routes"][0]["access_kind"] = "metered-api"
+            descriptor["routes"][0]["execution_approved"] = False
+            path = Path(td) / "metered.json"
+            path.write_text(json.dumps(descriptor))
+            denied = self.run_cli("smoke-ready", "--descriptor", str(path), expect=1)
+            self.assertIn("route execution not authorized", denied["stderr"])
+
+            descriptor = json.loads(DESC.read_text())
+            descriptor["routes"][0]["fallback_route_id"] = descriptor["routes"][1]["route_id"]
+            path.write_text(json.dumps(descriptor))
+            substituted = self.run_cli("validate", "--descriptor", str(path), expect=1)
+            self.assertIn("silent route substitution is forbidden", substituted["stderr"])
 
 if __name__ == "__main__":
     unittest.main()

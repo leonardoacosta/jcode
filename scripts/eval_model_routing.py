@@ -19,6 +19,8 @@ ID_RE = re.compile(r"^[a-z0-9][a-z0-9:.-]*[a-z0-9]$")
 DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 LEAKAGE = ("expected model", "reference answer", "hidden holdout", "judge:", "route tier", "expected tier", "expected tool")
 BLOCKED_ACTIONS = {"payment", "credential-change", "third-party-message", "deployment", "destructive-action", "external-mutation"}
+ACCESS_KINDS = {"oauth", "approved-api", "azure-api", "metered-api", "deterministic"}
+PREAUTHORIZED_ACCESS_KINDS = {"oauth", "approved-api", "azure-api", "deterministic"}
 
 class EvalError(RuntimeError): pass
 
@@ -81,6 +83,9 @@ def validate_descriptor(path: Path) -> dict[str, Any]:
         require(isinstance(rid, str) and ID_RE.match(rid), failures, f"{prefix}.route_id")
         require(isinstance(provider, str) and provider, failures, f"{prefix}.provider_family")
         require(r.get("availability") in {"available","unavailable","unauthenticated","not-implemented"}, failures, f"{prefix}.availability")
+        require(r.get("access_kind") in ACCESS_KINDS, failures, f"{prefix}.access_kind")
+        require(isinstance(r.get("execution_approved"), bool), failures, f"{prefix}.execution_approved")
+        require("fallback_route_id" not in r, failures, f"{prefix}: silent route substitution is forbidden")
         if isinstance(provider, str): providers.add(provider)
         if isinstance(rid, str): require(rid in prices, failures, f"pricing missing for {rid}")
     budget = d.get("power_budget", {}) if isinstance(d.get("power_budget"), dict) else {}
@@ -176,7 +181,7 @@ def replay(events_path: Path) -> dict[str, Any]:
 
 def anonymize(candidate_text: str) -> dict[str, Any]:
     data = json.loads(candidate_text); text = canonical(data)
-    for term in ("openai","anthropic","claude","gpt","fable","jcode:openai:gpt-5.5","jcode:claude-api:claude-fable-5"):
+    for term in ("openai","anthropic","claude","gpt","fable","jcode:openai-oauth:gpt-5.5","jcode:claude-oauth:claude-fable-5"):
         text = re.sub(re.escape(term), "[redacted-model]", text, flags=re.I)
     return {"anonymized": True, "candidate": json.loads(text)}
 
@@ -189,7 +194,18 @@ def validate_judges(candidate_route: str, judges: list[str], desc_path: Path) ->
 def smoke_ready(path: Path) -> dict[str, Any]:
     validate_descriptor(path); d=load(path); unavailable=[r for r in d["routes"] if r["availability"] != "available"]
     if unavailable: raise EvalError("unavailable route: " + ", ".join(r["route_id"] for r in unavailable))
-    return {"ready": True, "phase": "smoke", "provider_traffic": False, "gates": d["smoke_gates"]}
+    unauthorized = [r for r in d["routes"] if r["access_kind"] not in PREAUTHORIZED_ACCESS_KINDS or not r["execution_approved"]]
+    if unauthorized: raise EvalError("route execution not authorized: " + ", ".join(r["route_id"] for r in unauthorized))
+    return {
+        "ready": True,
+        "phase": "smoke",
+        "provider_traffic": False,
+        "gates": d["smoke_gates"],
+        "authorized_routes": [r["route_id"] for r in d["routes"]],
+        "authorized_access_kinds": sorted({r["access_kind"] for r in d["routes"]}),
+        "requires_additional_budget_approval": False,
+        "silent_route_substitution_forbidden": True,
+    }
 
 def selection_report(path: Path) -> dict[str, Any]:
     validate_descriptor(path); d=load(path)

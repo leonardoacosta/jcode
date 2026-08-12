@@ -9,16 +9,16 @@
   "concurrency": {"default": 1, "per_provider": {"anthropic": 1, "openai": 1, "deterministic": 4}},
   "roles": ["semantic-synthesis", "model-free-deterministic-work"],
   "routes": [
-    {"route_id": "jcode:claude-api:claude-fable-5", "provider_family": "anthropic", "availability": "available"},
-    {"route_id": "jcode:openai:gpt-5.5", "provider_family": "openai", "availability": "available"},
-    {"route_id": "model-free", "provider_family": "deterministic", "availability": "available"}
+    {"route_id": "jcode:claude-oauth:claude-fable-5", "provider_family": "anthropic", "access_kind": "oauth", "execution_approved": true, "availability": "available"},
+    {"route_id": "jcode:openai-oauth:gpt-5.5", "provider_family": "openai", "access_kind": "oauth", "execution_approved": true, "availability": "available"},
+    {"route_id": "model-free", "provider_family": "deterministic", "access_kind": "deterministic", "execution_approved": true, "availability": "available"}
   ],
   "fixtures": ["mr-qualify-synthesis-normal", "mr-dev-deterministic-control"],
   "pricing_snapshot": {
     "currency": "USD",
     "prices": {
-      "jcode:claude-api:claude-fable-5": {"input_per_mtok": 3.0, "output_per_mtok": 15.0, "conservative_trial_usd": 0.75},
-      "jcode:openai:gpt-5.5": {"input_per_mtok": 2.0, "output_per_mtok": 10.0, "conservative_trial_usd": 0.60},
+      "jcode:claude-oauth:claude-fable-5": {"input_per_mtok": 3.0, "output_per_mtok": 15.0, "conservative_trial_usd": 0.75},
+      "jcode:openai-oauth:gpt-5.5": {"input_per_mtok": 2.0, "output_per_mtok": 10.0, "conservative_trial_usd": 0.60},
       "model-free": {"input_per_mtok": 0.0, "output_per_mtok": 0.0, "conservative_trial_usd": 0.0}
     }
   },
@@ -26,7 +26,7 @@
   "stop_conditions": ["spending-cap", "missing-telemetry", "provider-confound-threshold", "safety-boundary"],
   "tool_permissions": ["read", "write-eval-artifacts", "shell-no-network"],
   "fixture_revisions": {"evals/task-decomposition/fixtures/catalog.json": "checked-in"},
-  "judges": [{"judge_id": "cold-review-anthropic", "route_id": "jcode:claude-api:claude-fable-5", "provider_family": "anthropic"}, {"judge_id": "cold-review-openai", "route_id": "jcode:openai:gpt-5.5", "provider_family": "openai"}],
+  "judges": [{"judge_id": "cold-review-anthropic", "route_id": "jcode:claude-oauth:claude-fable-5", "provider_family": "anthropic"}, {"judge_id": "cold-review-openai", "route_id": "jcode:openai-oauth:gpt-5.5", "provider_family": "openai"}],
   "rubrics": ["evals/model-routing/rubrics/semantic-v1.md"],
   "smoke_gates": ["telemetry-complete", "isolation-complete", "price-reconciled", "judge-calibrated", "routes-available", "confounds-under-threshold"],
   "commands": {"/explore": "unavailable", "/feature": "unavailable", "/apply": "unavailable", "/apply:all": "unavailable", "recon-autoresearch": "unavailable"}

@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "kind": "oauth_smoke_execution_receipt",
+  "canonical": false,
+  "executed_at_utc": "2026-08-12T02:54:03Z",
+  "fixture_id": "mr-qualify-synthesis-normal",
+  "descriptor": "evals/model-routing/experiments/local-smoke.json",
+  "authorization_policy": {
+    "oauth_routes_require_additional_budget_approval": false,
+    "approved_api_or_azure_routes_allowed_with_configured_caps": true,
+    "unapproved_metered_routes_require_explicit_approval": true,
+    "silent_route_substitution_forbidden": true
+  },
+  "attempts": [
+    {
+      "attempt_id": "session_crab_1786503216156_2e52389ee923a68d",
+      "route_id": "jcode:claude-oauth:claude-fable-5",
+      "runtime_route": "claude-fable-5",
+      "provider_family": "anthropic",
+      "access_kind": "oauth",
+      "status": "accepted",
+      "reported_work_tokens": 258100,
+      "cost_usd": 0.0,
+      "tools": ["read-only shell cat"],
+      "files_read": [
+        "openspec/changes/add-model-routing-evaluation-tournament/proposal.md",
+        "openspec/changes/add-model-routing-evaluation-tournament/design.md"
+      ],
+      "mutations": [],
+      "network_calls": [],
+      "safety_stops": [],
+      "validation": "Produced the requested five-bullet synthesis grounded only in the two frozen inputs."
+    },
+    {
+      "attempt_id": "session_deer_1786503222224_68c4eb569ad37cc5",
+      "route_id": "jcode:openai-oauth:gpt-5.5",
+      "runtime_route": "gpt-5.5",
+      "provider_family": "openai",
+      "access_kind": "oauth",
+      "status": "accepted",
+      "reported_work_tokens": 265100,
+      "cost_usd": 0.0,
+      "tools": ["read"],
+      "files_read": [
+        "openspec/changes/add-model-routing-evaluation-tournament/proposal.md",
+        "openspec/changes/add-model-routing-evaluation-tournament/design.md"
+      ],
+      "mutations": [],
+      "network_calls": [],
+      "safety_stops": [],
+      "validation": "Produced the requested five-bullet synthesis grounded only in the two frozen inputs."
+    },
+    {
+      "attempt_id": "model-free-smoke-validation",
+      "route_id": "model-free",
+      "runtime_route": "stdlib",
+      "provider_family": "deterministic",
+      "access_kind": "deterministic",
+      "status": "accepted",
+      "reported_work_tokens": 0,
+      "cost_usd": 0.0,
+      "tools": ["validate", "smoke-ready", "strict-openspec-validation"],
+      "mutations": [],
+      "network_calls": [],
+      "safety_stops": [],
+      "validation": "Descriptor, route authorization, no-substitution policy, tests, and strict OpenSpec validation passed."
+    }
+  ],
+  "summary": {
+    "attempts": 3,
+    "accepted_attempts": 3,
+    "confounded_attempts": 0,
+    "acceptance_rate": 1.0,
+    "observed_cost_usd": 0.0,
+    "unauthorized_route_substitutions": 0,
+    "external_mutations": 0
+  },
+  "telemetry_limitations": [
+    "The swarm public interface exposed aggregate work tokens but not provider-native input/output/cache/reasoning token classes.",
+    "The swarm public interface did not expose queue, TTFT, model, tool, or judge timing fields for completed workers.",
+    "This receipt is representative smoke evidence, not a complete task-9.3 telemetry acceptance receipt."
+  ]
+}
