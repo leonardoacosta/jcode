@@ -1,7 +1,6 @@
 {
   "version": 1,
-  "generated_from_revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
-  "snapshot_digest": "sha256:ecosystem-claim-map-v1-2026-08-12",
+  "generated_from_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
   "redaction_policy": {
     "secrets_included": false,
     "raw_session_text_included": false,
@@ -11,7 +10,7 @@
   },
   "observation_window": {
     "label": "repository snapshot inspected 2026-08-12",
-    "revision": "460def530c27c34aa8c1c5bf98687c38e0a787b6",
+    "revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
     "scope": [
       "README.md",
       "OAUTH.md",
@@ -32,50 +31,66 @@
     {
       "ref_id": "ref:readme",
       "path": "README.md",
-      "digest": "sha256:3858a76b2024416b",
-      "sanitized": true
+      "digest": "sha256:3858a76b2024416b792d538327aed338624e32db74e9a5c670946d682f706f97",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
     },
     {
       "ref_id": "ref:oauth",
       "path": "OAUTH.md",
-      "digest": "sha256:7cbfe0000a64a869",
-      "sanitized": true
+      "digest": "sha256:7cbfe0000a64a86908714226dab6fb6f6195512b1fae44b381d4ef9844753507",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
     },
     {
       "ref_id": "ref:roadmap",
       "path": "ROADMAP_HANDOFF.md",
-      "digest": "sha256:ca746b527132839b",
-      "sanitized": true
+      "digest": "sha256:ca746b527132839bccc419b8ee82c73b5d53fd11cbcb8487ea188c1f344220fc",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
     },
     {
       "ref_id": "ref:index",
       "path": "docs/diagrams/jcode-command-system/index.html",
-      "digest": "sha256:e96e7514e9bc7a19",
-      "sanitized": true
+      "digest": "sha256:2a8f106ba1b3bb56bba71b5599e75508a319aa022d96afe5373e001381cea417",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
     },
     {
       "ref_id": "ref:telemetry-page",
       "path": "docs/diagrams/jcode-command-system/telemetry-results.html",
-      "digest": "sha256:195436fedffbcda0",
-      "sanitized": true
+      "digest": "sha256:852763c45cccb567f7c8d53ef9d84f7ff2688dd89cc32beacbf7c0c3802e607d",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
     },
     {
       "ref_id": "ref:microsite-design",
       "path": "openspec/changes/add-command-system-documentation-microsite/design.md",
-      "digest": "sha256:c022bd7a1e3c6613",
-      "sanitized": true
+      "digest": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
     },
     {
       "ref_id": "ref:microsite-spec",
       "path": "openspec/changes/add-command-system-documentation-microsite/specs/command-system-docs/spec.md",
-      "digest": "sha256:3e8eb69d6b2c4169",
-      "sanitized": true
+      "digest": "sha256:3e8eb69d6b2c4169ebed859db8298822202f3c44265e7233b3f10cba4a75bc3e",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
     },
     {
       "ref_id": "ref:validator",
       "path": "scripts/test-command-system-docs.py",
-      "digest": "sha256:2754cf9a0a7463a4",
-      "sanitized": true
+      "digest": "sha256:2754cf9a0a7463a49c38a2eac6f04de10c796c171303558f6ad61255c9f7973a",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
     }
   ],
   "claims": [
@@ -152,5 +167,7 @@
       "cooperation_boundary": "Coordinate through shared artifacts, claim IDs, and explicit reports; require human approval for production routing or irreversible authority changes.",
       "limitations": "This page does not assert a universal winner or quantify provider superiority."
     }
-  ]
+  ],
+  "snapshot_id": "ecosystem-claim-map-v1-2026-08-12",
+  "final_digest_freeze": "acceptance_blocked until all approved page/shared-asset mutations are complete; this file currently records a working-tree candidate."
 }

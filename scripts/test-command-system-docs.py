@@ -8,8 +8,10 @@ create or mutate microsite HTML/CSS/source data.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -42,7 +44,12 @@ LAYER_PAGES = [
 ECOSYSTEM_PAGE = "daily-driven-ecosystem.html"
 PAGES = ["index.html", *COMMAND_PAGES, ATLAS_PAGE, *LAYER_PAGES, ECOSYSTEM_PAGE]
 CHAPTERS = [*COMMAND_PAGES, ATLAS_PAGE, *LAYER_PAGES, ECOSYSTEM_PAGE]
-SHARED_ASSETS = ["styles.css", "site.js", "sources.json", "ecosystem-evidence.json"]
+SHARED_ASSETS = [
+    "styles.css",
+    "sources.json",
+    "ecosystem-evidence.json",
+    "atlas-history-evidence.json",
+]
 
 STABLE_IDS = {
     "DOCS-INDEX",
@@ -63,7 +70,7 @@ REQUIRED_ARTIFACTS = {
     "DOCS-LAYER": LAYER_PAGES,
     "DOCS-ECOSYSTEM": [ECOSYSTEM_PAGE, "ecosystem-evidence.json"],
     "DOCS-EVIDENCE": ["sources.json"],
-    "DOCS-OFFLINE": [*PAGES, "styles.css", "site.js"],
+    "DOCS-OFFLINE": [*PAGES, "styles.css"],
     "DOCS-A11Y": PAGES,
     "DOCS-TRUTH": PAGES,
 }
@@ -75,6 +82,32 @@ REMOTE_RE = re.compile(r"(?:src|href)=[\"'](?:https?:)?//", re.I)
 CSS_REMOTE_RE = re.compile(r"(?:@import|url\()\s*[\"']?(?:https?:)?//", re.I)
 ANIME_RE = re.compile(r"\banime(?:\.min)?\.js\b|\banime\.", re.I)
 CONTRAST_TOKEN_RE = re.compile(r"contrast", re.I)
+GIT_REV_RE = re.compile(r"^[0-9a-f]{40}$")
+SHA256_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+EXPECTED_ECOSYSTEM_CLASSES = {
+    "claude-code": ("documented", "high"),
+    "codex": ("documented", "medium"),
+    "pi": ("inferred", "low"),
+    "jcode": ("documented", "high"),
+    "cross-provider-agents": ("documented", "medium"),
+}
+DIAGRAM_MANIFESTS = {
+    "index.html": {"intent", "feature", "apply", "evidence"},
+    "command-lifecycle.html": {"feature", "apply", "human"},
+    "lane-protocol.html": {"lanes", "decision"},
+    "apply-orchestration.html": {"risk", "topology", "direct", "swarm", "dag", "jcode", "orca", "verification"},
+    "model-routing.html": {"deterministic", "model", "frontier", "cold", "review"},
+    "evaluation-tournament.html": {"descriptor", "deterministic", "checks", "blind", "judges", "evidence", "human"},
+    "telemetry-results.html": {"claude", "openai"},
+    "agent-stack.html": {"surface", "orchestration", "context", "model", "tools", "runtime", "memory"},
+    "stack-surface.html": {"intent", "command", "surface", "orchestration", "human"},
+    "stack-orchestration.html": {"request", "plan", "slots", "merge", "evidence", "owner"},
+    "stack-context.html": {"repo", "rules", "retrieved", "files", "evidence", "context"},
+    "stack-model.html": {"role", "capability", "provider", "route", "fail", "closed"},
+    "stack-tools.html": {"tool", "schema", "args", "effect", "observation"},
+    "stack-runtime.html": {"start", "observe", "timeout", "receipt"},
+    "stack-memory.html": {"fact", "receipt", "recall", "restore", "context"},
+}
 
 
 @dataclass
@@ -162,6 +195,39 @@ def validate_inventory(site: Path) -> list[Diagnostic]:
     return errors
 
 
+def git_blob_digest(revision: str, path: str) -> str | None:
+    if not GIT_REV_RE.fullmatch(revision):
+        return None
+    try:
+        data = subprocess.check_output(["git", "show", f"{revision}:{path}"], cwd=ROOT, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def validate_source_pin(page_name: str, element: str, revision: str, digests: object, refs: list[str]) -> list[Diagnostic]:
+    errors: list[Diagnostic] = []
+    if not GIT_REV_RE.fullmatch(str(revision)):
+        errors.append(diagnostic("DOCS-EVIDENCE", page_name, element, "source_revision must be a full 40-character git commit"))
+        return errors
+    if SHA256_RE.fullmatch(str(revision)):
+        errors.append(diagnostic("DOCS-EVIDENCE", page_name, element, "source_revision must not contain a sha256 digest"))
+    if not isinstance(digests, dict) or not digests:
+        errors.append(diagnostic("DOCS-EVIDENCE", page_name, element, "missing source_digest map"))
+        return errors
+    for ref in refs:
+        digest = digests.get(ref)
+        if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
+            errors.append(diagnostic("DOCS-EVIDENCE", page_name, element, f"source_digest for {ref} must be sha256:<64 hex>"))
+            continue
+        actual = git_blob_digest(str(revision), ref)
+        if actual is None:
+            errors.append(diagnostic("DOCS-EVIDENCE", page_name, element, f"source_revision does not contain {ref}"))
+        elif actual != digest:
+            errors.append(diagnostic("DOCS-EVIDENCE", page_name, element, f"source_digest mismatch for {ref}"))
+    return errors
+
+
 def validate_sources(site: Path, sources: dict) -> list[Diagnostic]:
     errors: list[Diagnostic] = []
     page_records = source_page_records(sources)
@@ -191,12 +257,20 @@ def validate_sources(site: Path, sources: dict) -> list[Diagnostic]:
             refs = trace.get("source_refs", [])
             if refs and not set(refs).issubset(set(page_sources)):
                 errors.append(diagnostic("DOCS-EVIDENCE", page_name, element, "has undeclared source_refs"))
-            if evidence_class == "inferred" and "confidence" not in trace:
-                errors.append(diagnostic("DOCS-TRUTH", page_name, element, "inferred claim lacks confidence"))
+            if refs:
+                errors.extend(validate_source_pin(page_name, element, str(trace.get("source_revision", "")), trace.get("source_digest"), refs))
+            if evidence_class == "inferred" and trace.get("confidence") not in {"low", "medium"}:
+                errors.append(diagnostic("DOCS-TRUTH", page_name, element, "inferred claim must carry low or medium confidence"))
+            if page_name == ECOSYSTEM_PAGE and element in EXPECTED_ECOSYSTEM_CLASSES:
+                expected_class, expected_confidence = EXPECTED_ECOSYSTEM_CLASSES[element]
+                if (trace.get("evidence_class"), trace.get("confidence")) != (expected_class, expected_confidence):
+                    errors.append(diagnostic("DOCS-EVIDENCE", page_name, element, f"ecosystem class/confidence must be {expected_class}/{expected_confidence}"))
 
     snapshot = sources.get("ecosystem_evidence") or sources.get("ecosystemEvidence")
-    if not isinstance(snapshot, dict) or not snapshot.get("snapshot_digest"):
-        errors.append(diagnostic("DOCS-ECOSYSTEM", "sources.json", "ecosystem_evidence", "missing frozen ecosystem snapshot digest"))
+    if not isinstance(snapshot, dict) or not (snapshot.get("snapshot_id") or snapshot.get("snapshot_digest")):
+        errors.append(diagnostic("DOCS-ECOSYSTEM", "sources.json", "ecosystem_evidence", "missing frozen ecosystem snapshot id"))
+    elif snapshot.get("snapshot_digest") and not SHA256_RE.fullmatch(str(snapshot.get("snapshot_digest"))):
+        errors.append(diagnostic("DOCS-ECOSYSTEM", "sources.json", "ecosystem_evidence", "snapshot_digest must be sha256:<64 hex>; use snapshot_id for semantic ids"))
     return errors
 
 
@@ -220,6 +294,42 @@ def validate_page(site: Path, name: str, parser: Parser, text: str) -> list[Diag
         errors.append(diagnostic("DOCS-DIAGRAM", name, "mermaid-source", "missing Mermaid source"))
     if name != "index.html" and "<pre" not in text:
         errors.append(diagnostic("DOCS-DIAGRAM", name, "snippet", "missing code/data snippet"))
+    manifest = DIAGRAM_MANIFESTS.get(name)
+    if manifest:
+        svgs = re.findall(r"<svg\b[\s\S]*?</svg>", text, flags=re.I)
+        mermaid = re.search(r'<pre class="mermaid-source">([\s\S]*?)</pre>', text, flags=re.I)
+        fallback = re.search(r'class="diagram-fallback"[^>]*>([\s\S]*?)</(?:p|div)>', text, flags=re.I)
+        representations = {
+            "svg": svgs[1] if len(svgs) > 1 else "",
+            "mermaid": mermaid.group(1) if mermaid else "",
+            "fallback": fallback.group(1) if fallback else "",
+        }
+        for representation, body in representations.items():
+            normalized = re.sub(r"<[^>]+>", " ", body).casefold()
+            missing_terms = sorted(term for term in manifest if term not in normalized)
+            if missing_terms:
+                errors.append(
+                    diagnostic(
+                        "DOCS-DIAGRAM",
+                        name,
+                        representation,
+                        f"semantic manifest mismatch; missing {missing_terms}",
+                    )
+                )
+    current_links = [
+        attrs
+        for tag, attrs in parser.attrs_by_tag
+        if tag == "a" and attrs.get("aria-current") == "page"
+    ]
+    if len(current_links) != 1:
+        errors.append(
+            diagnostic(
+                "DOCS-A11Y",
+                name,
+                "aria-current",
+                f"expected exactly one current-page link, found {len(current_links)}",
+            )
+        )
     if REMOTE_RE.search(text):
         errors.append(diagnostic("DOCS-OFFLINE", name, "asset", "remote asset reference"))
     if name == ATLAS_PAGE and ANIME_RE.search(text):
@@ -253,6 +363,8 @@ def validate_atlas_contract(site: Path, parser: Parser, sources: dict) -> list[D
             errors.append(diagnostic("DOCS-ATLAS", ATLAS_PAGE, layer, f"missing atlas card link to {page}"))
     if ECOSYSTEM_PAGE not in linked_pages:
         errors.append(diagnostic("DOCS-ATLAS", ATLAS_PAGE, "ecosystem-link", f"missing link to {ECOSYSTEM_PAGE}"))
+    if "atlas-history-evidence.json" not in linked_pages:
+        errors.append(diagnostic("DOCS-EVIDENCE", ATLAS_PAGE, "history-evidence", "missing persisted Atlas history evidence link"))
 
     atlas_record = source_page_records(sources).get(ATLAS_PAGE, {})
     content_keys = set((atlas_record.get("content") or {}).keys())
@@ -282,9 +394,29 @@ def validate_ecosystem(site: Path, parser: Parser) -> list[Diagnostic]:
     except (json.JSONDecodeError, OSError) as exc:
         return [diagnostic("DOCS-ECOSYSTEM", "ecosystem-evidence.json", "file", f"unreadable frozen ecosystem evidence: {exc}")]
     claims = evidence.get("claims", []) if isinstance(evidence, dict) else []
+    claim_by_id = {claim.get("id"): claim for claim in claims if isinstance(claim, dict)}
     for card in HARNESS_CARDS:
         if card not in linked_targets and not any(card in str(claim).casefold() for claim in claims):
             errors.append(diagnostic("DOCS-ECOSYSTEM", ECOSYSTEM_PAGE, card, "missing linked or frozen evidence-backed harness card"))
+        if card in EXPECTED_ECOSYSTEM_CLASSES:
+            claim = claim_by_id.get(card, {})
+            expected_label, expected_confidence = EXPECTED_ECOSYSTEM_CLASSES[card]
+            if (claim.get("label"), claim.get("confidence")) != (expected_label, expected_confidence):
+                errors.append(diagnostic("DOCS-EVIDENCE", "ecosystem-evidence.json", card, f"claim label/confidence must be {expected_label}/{expected_confidence}"))
+    for ref in evidence.get("references", []):
+        if not isinstance(ref, dict):
+            continue
+        revision = ref.get("source_revision")
+        digest = ref.get("digest")
+        path = ref.get("path")
+        if not GIT_REV_RE.fullmatch(str(revision)):
+            errors.append(diagnostic("DOCS-EVIDENCE", "ecosystem-evidence.json", str(ref.get("ref_id", "reference")), "reference source_revision must be a full git commit"))
+        elif isinstance(path, str) and isinstance(digest, str):
+            actual = git_blob_digest(str(revision), path)
+            if not SHA256_RE.fullmatch(digest):
+                errors.append(diagnostic("DOCS-EVIDENCE", "ecosystem-evidence.json", path, "reference digest must be sha256:<64 hex>"))
+            elif actual and actual != digest:
+                errors.append(diagnostic("DOCS-EVIDENCE", "ecosystem-evidence.json", path, "reference digest mismatch"))
     return errors
 
 
@@ -305,6 +437,16 @@ def validate_css(site: Path) -> list[Diagnostic]:
         errors.append(diagnostic("DOCS-A11Y", "styles.css", "mobile-nav", "mobile chapter navigation must remain visible and scrollable"))
     if not CONTRAST_TOKEN_RE.search(css):
         errors.append(diagnostic("DOCS-A11Y", "styles.css", "contrast", "contrast pair computation metadata is missing"))
+    if "#f3bd52" in css:
+        errors.append(diagnostic("DOCS-A11Y", "styles.css", "focus-visible", "focus color fails on light surfaces"))
+    if ".chapter-menu a[aria-current=page]{background:var(--copper);color:var(--espresso)}" in css:
+        errors.append(diagnostic("DOCS-A11Y", "styles.css", "active-tab", "active chapter tab contrast is below 4.5:1"))
+    if "pre.mermaid-source" not in css:
+        errors.append(diagnostic("DOCS-A11Y", "styles.css", "mermaid-source", "pre.mermaid-source needs an explicit readable foreground"))
+    if ".diagram-panel,.snippet-panel,.layer article,.layer>section" in css:
+        errors.append(diagnostic("DOCS-TRUTH", "styles.css", "atlas-scope", "Atlas additive selectors must be scoped under .atlas-shell"))
+    if ".card .num{font:700 54px" in css:
+        errors.append(diagnostic("DOCS-A11Y", "styles.css", "evidence-label", "evidence labels must not use the low-opacity watermark component"))
     return errors
 
 
@@ -449,13 +591,29 @@ def run_self_test() -> int:
         (site / "telemetry-results.html").write_text('<!doctype html><title>telemetry</title><main id="main"><h1>Telemetry</h1><p>drifted values only</p></main>')
         (site / "styles.css").write_text(":root{--parchment:#fff;--walnut:#000;--umber:#321;--espresso:#111;--copper:#b76}:focus-visible{outline:1px solid} @media(max-width:900px){.chapter-menu{display:none}}")
         (site / "site.js").write_text("")
-        (site / "sources.json").write_text(json.dumps({"telemetry_source": "missing-telemetry-fixture.json", "pages": {"index.html": {"sources": [], "content": {"claim": {"claim": "unsupported", "evidence_class": "unsupported", "source_refs": [], "source_revision": "stale", "confidence": "low", "implementation_status": "draft"}}}}}))
+        (site / "sources.json").write_text(json.dumps({"telemetry_source": "missing-telemetry-fixture.json", "pages": {"index.html": {"sources": ["missing-source.md"], "content": {"claim": {"claim": "unsupported", "evidence_class": "unsupported", "source_refs": ["missing-source.md"], "source_revision": "stale", "source_digest": {"missing-source.md": "not-a-digest"}, "confidence": "low", "implementation_status": "draft"}}}}}))
         errors = validate_site(site)
     observed_ids = {error.req for error in errors}
     missing = sorted(expected_ids - observed_ids)
     if missing:
         for item in missing:
             print(f"[DOCS-TRUTH] self-test#{item}: negative fixture did not emit expected diagnostic family", file=sys.stderr)
+        return 1
+    rendered = "\n".join(error.render() for error in errors).casefold()
+    promised_defects = {
+        "stale revision": "source_revision",
+        "semantic diagram disagreement": "semantic manifest mismatch",
+        "telemetry drift": "telemetry evidence",
+        "remote asset": "remote asset",
+        "inaccessible contrast": "contrast",
+        "current-page ambiguity": "aria-current",
+    }
+    absent = [label for label, marker in promised_defects.items() if marker not in rendered]
+    if absent:
+        print(
+            f"[DOCS-TRUTH] self-test#defect-classes: missing focused diagnostics for {absent}",
+            file=sys.stderr,
+        )
         return 1
     print(f"command-system-docs self-test: PASS ({len(errors)} expected negative diagnostics observed)")
     return 0
