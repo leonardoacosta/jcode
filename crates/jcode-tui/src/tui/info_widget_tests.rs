@@ -2,10 +2,10 @@ use super::{
     BackgroundInfo, CacheHitInfo, CacheMissAttribution, GraphEdge, GraphNode, InfoWidgetData,
     Margins, MemoryActivity, MemoryEvent, MemoryEventKind, MemoryInfo, MemoryState, PipelineState,
     StepStatus, SwarmInfo, UsageInfo, UsageProvider, WidgetKind, calculate_placements,
-    calculate_widget_height, effective_prompt_tokens, occasional_status_tip,
+    calculate_widget_height, effective_prompt_tokens, is_widget_hidden, occasional_status_tip,
     render_kv_cache_widget, render_memory_compact, render_memory_widget, render_model_widget,
     render_todos_compact, render_todos_expanded, render_todos_widget, render_usage_compact,
-    render_usage_widget, swarm_plan_todos, truncate_smart, is_widget_hidden, set_widget_hidden,
+    render_usage_widget, set_widget_hidden, swarm_plan_todos, truncate_smart,
 };
 use crate::protocol::SwarmMemberStatus;
 use ratatui::layout::Rect;

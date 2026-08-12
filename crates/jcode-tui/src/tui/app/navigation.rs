@@ -1353,6 +1353,29 @@ impl App {
             }};
         }
 
+        if matches!(mouse.kind, MouseEventKind::Down(MouseButton::Left))
+            && let Some(segment) = input_ui::status_segment_at(mouse.column, mouse.row)
+        {
+            use crate::tui::info_widget::{WidgetKind, is_widget_hidden, set_widget_hidden};
+            match segment {
+                input_ui::StatusSegment::ModelContext => {
+                    let hidden = !is_widget_hidden(WidgetKind::ModelInfo);
+                    set_widget_hidden(WidgetKind::ModelInfo, hidden);
+                    set_widget_hidden(WidgetKind::ContextUsage, hidden);
+                    set_widget_hidden(WidgetKind::Overview, hidden);
+                }
+                input_ui::StatusSegment::KvCache => {
+                    let hidden = !is_widget_hidden(WidgetKind::KvCache);
+                    set_widget_hidden(WidgetKind::KvCache, hidden);
+                }
+                input_ui::StatusSegment::UsageLimits => {
+                    let hidden = !is_widget_hidden(WidgetKind::UsageLimits);
+                    set_widget_hidden(WidgetKind::UsageLimits, hidden);
+                }
+            }
+            finish_mouse_event!(false, "status_segment_toggle");
+        }
+
         if self.changelog_scroll.is_some() {
             match mouse.kind {
                 MouseEventKind::ScrollUp => {

@@ -14,6 +14,25 @@ use crate::tui::info_widget::occasional_status_tip;
 use crate::tui::layout_utils;
 use crate::tui::session_facts;
 use ratatui::{prelude::*, style::Modifier, widgets::Paragraph};
+use std::sync::Mutex;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum StatusSegment {
+    ModelContext,
+    KvCache,
+    UsageLimits,
+}
+
+static STATUS_SEGMENT_HITS: Mutex<Vec<(Rect, StatusSegment)>> = Mutex::new(Vec::new());
+
+pub(crate) fn status_segment_at(column: u16, row: u16) -> Option<StatusSegment> {
+    STATUS_SEGMENT_HITS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .iter()
+        .find(|(rect, _)| rect.contains(Position { x: column, y: row }))
+        .map(|(_, segment)| *segment)
+}
 
 pub(crate) fn shell_mode_color() -> Color {
     rgb(110, 214, 151)
@@ -752,6 +771,10 @@ fn append_batch_progress_spans(
 }
 
 pub(super) fn draw_status(frame: &mut Frame, app: &dyn TuiState, area: Rect, pending_count: usize) {
+    STATUS_SEGMENT_HITS
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .clear();
     let elapsed = app.elapsed().map(|d| d.as_secs_f32()).unwrap_or(0.0);
     let stale_secs = app.time_since_activity().map(|d| d.as_secs_f32());
     let (cache_read, cache_creation) = app.streaming_cache_tokens();
@@ -1089,6 +1112,33 @@ pub(super) fn draw_status(frame: &mut Frame, app: &dyn TuiState, area: Rect, pen
 
     crate::memory::check_staleness();
 
+    if !app.is_processing()
+        && crate::build::read_build_progress().is_none()
+        && app.rate_limit_remaining().is_none()
+        && let Some((_, hits)) = compact_fact_status_parts(app, area.width as usize)
+    {
+        let line_width = hits.last().map(|(_, (_, end))| *end).unwrap_or(0) as u16;
+        let offset = if app.centered_mode() {
+            area.width.saturating_sub(line_width) / 2
+        } else {
+            0
+        };
+        let mut stored = STATUS_SEGMENT_HITS
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        stored.extend(hits.into_iter().map(|(segment, (start, end))| {
+            (
+                Rect {
+                    x: area.x.saturating_add(offset).saturating_add(start as u16),
+                    y: area.y,
+                    width: end.saturating_sub(start) as u16,
+                    height: 1,
+                },
+                segment,
+            )
+        }));
+    }
+
     if app.centered_mode() {
         frame.render_widget(Paragraph::new(line.alignment(Alignment::Center)), area);
         return;
@@ -1097,39 +1147,78 @@ pub(super) fn draw_status(frame: &mut Frame, app: &dyn TuiState, area: Rect, pen
 }
 
 fn compact_fact_status_line(app: &dyn TuiState, width: usize) -> Option<Line<'static>> {
+    compact_fact_status_parts(app, width).map(|(line, _)| line)
+}
+
+fn compact_fact_status_parts(
+    app: &dyn TuiState,
+    width: usize,
+) -> Option<(Line<'static>, Vec<(StatusSegment, (usize, usize))>)> {
     let data = app.info_widget_data();
-    let mut parts = Vec::new();
+    let mut parts: Vec<(String, Option<StatusSegment>)> = Vec::new();
     if let Some(model) = data.model.filter(|value| !value.trim().is_empty()) {
-        parts.push(format!("{}", session_facts::pretty_model(&model)));
+        parts.push((
+            format!("{}", session_facts::pretty_model(&model)),
+            Some(StatusSegment::ModelContext),
+        ));
     }
     if let Some(provider) = data.provider_name.filter(|value| !value.trim().is_empty()) {
-        parts.push(provider);
+        parts.push((provider, Some(StatusSegment::ModelContext)));
     }
-    if let Some(effort) = data.reasoning_effort.filter(|value| !value.trim().is_empty()) {
-        parts.push(effort);
+    if let Some(effort) = data
+        .reasoning_effort
+        .filter(|value| !value.trim().is_empty())
+    {
+        parts.push((effort, Some(StatusSegment::ModelContext)));
     }
     if let Some(context) = data.context_info {
         if let Some(limit) = app.context_limit() {
-            let used = data.observed_context_tokens.unwrap_or(context.total_chars as u64 / 4);
+            let used = data
+                .observed_context_tokens
+                .unwrap_or(context.total_chars as u64 / 4);
             let pct = (used.saturating_mul(100) / limit as u64).min(100);
-            parts.push(format!("Context {}%", pct));
+            parts.push((
+                format!("Context {}%", pct),
+                Some(StatusSegment::ModelContext),
+            ));
         }
     }
     if let Some(cache) = data.cache_hit_info.and_then(|cache| cache.hit_ratio()) {
-        parts.push(format!("KV {:.0}%", cache * 100.0));
+        parts.push((
+            format!("KV {:.0}%", cache * 100.0),
+            Some(StatusSegment::KvCache),
+        ));
     }
     if let Some(usage) = data.usage_info.filter(|usage| usage.available) {
-        parts.push(format!("Limits {}%", usage.max_usage_pct()));
+        parts.push((
+            format!("Limits {}%", usage.max_usage_pct()),
+            Some(StatusSegment::UsageLimits),
+        ));
     }
     if parts.is_empty() {
         return None;
     }
-    let mut text = parts.join(" · ");
+    let mut text = String::new();
+    let mut hits = Vec::new();
+    for (index, (part, segment)) in parts.iter().enumerate() {
+        if index > 0 {
+            text.push_str(" · ");
+        }
+        let start = text.chars().count();
+        text.push_str(part);
+        let end = text.chars().count();
+        if let Some(segment) = segment {
+            hits.push((*segment, (start, end)));
+        }
+    }
     if text.chars().count() > width {
         text = text.chars().take(width.saturating_sub(1)).collect();
         text.push('…');
     }
-    Some(Line::from(Span::styled(text, Style::default().fg(dim_color()))))
+    Some((
+        Line::from(Span::styled(text, Style::default().fg(dim_color()))),
+        hits,
+    ))
 }
 
 /// Append the "+N queued" suffix span (in the queued accent color) when there
