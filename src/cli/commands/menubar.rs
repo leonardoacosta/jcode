@@ -41,6 +41,11 @@ async fn remote_presence() -> Result<Vec<SessionPresence>> {
     crate::cli::remote::fetch_remote_presence().await
 }
 
+#[cfg(target_os = "macos")]
+fn remote_presence_blocking() -> Result<Vec<SessionPresence>> {
+    crate::cli::remote::fetch_remote_presence_blocking()
+}
+
 #[derive(Debug, Serialize)]
 struct CountsReport {
     total: usize,
@@ -624,7 +629,7 @@ mod macos {
             // process won't auto-adopt the change on its own).
             sync_app_appearance(&app_for_refresh);
 
-            let mut sessions = match super::remote_presence() {
+            let mut sessions = match super::remote_presence_blocking() {
                 Ok(sessions) => sessions,
                 Err(error) => {
                     if let Some(button) = status_item.button(mtm) {

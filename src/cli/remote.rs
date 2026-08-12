@@ -161,3 +161,13 @@ pub(crate) async fn fetch_remote_presence() -> Result<Vec<crate::session::Sessio
         other => Err(anyhow!("unexpected homelab presence response: {other:?}")),
     }
 }
+
+#[cfg(target_os = "macos")]
+pub(crate) fn fetch_remote_presence_blocking() -> Result<Vec<crate::session::SessionPresence>> {
+    std::thread::spawn(|| -> Result<Vec<crate::session::SessionPresence>> {
+        let runtime = tokio::runtime::Runtime::new()?;
+        runtime.block_on(fetch_remote_presence())
+    })
+    .join()
+    .map_err(|_| anyhow!("remote presence worker thread panicked"))?
+}
