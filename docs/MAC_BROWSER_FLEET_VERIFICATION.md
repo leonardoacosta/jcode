@@ -147,4 +147,24 @@ Passed locally:
 - `cargo fmt --check`, `cargo test -p jcode-mac-browser-policy`, `cargo test -p jcode-mac-browser-setup`, `cargo test -p jcode-mac-browser-fleet`, `scripts/dev_cargo.sh test -p jcode-app-core browser_tests:: --no-default-features`, and `git diff --check` all completed before the targeted TUI filter step failed because the filter matched zero integration-test binaries under the repository cargo wrapper policy.
 - Corrected targeted follow-up: `JCODE_DEV_CARGO_ALLOW_ZERO_TESTS=1 cargo test -p jcode-tui artifact_action_palette_captures_typed_target_and_stable_actions && cargo test -p jcode-harness-api dynamic_tool_done_matches_typescript_sdk_fixture` passed.
 
-Mac-only acceptance remains explicitly blocked in this Linux session because no Mac browser fleet host, Chrome/Edge ordinary profiles, Mac-local authority UI, launchd agent, or SSH reverse socket was available to exercise. Do not archive this change until a Mac-attached session re-runs the real Chrome and Edge acceptance in tasks 5.2 through 5.4 and records the exact installed commit evidence.
+
+## Linux revalidation (2026-08-12)
+
+Resumed `add-mac-browser-fleet` in a Linux homelab session at the current `dev...mine/dev` checkout. No model-routing files or unrelated lanes were intentionally modified. The Mac fleet browser provider reported the Mac fleet bridge as configured, but live acceptance through `browser: "mac"` was blocked because the forwarded broker socket was unavailable at `/home/nyaptor/.jcode/browser/mac-fleet.sock`.
+
+Passed locally in this session:
+
+- `cargo test -p jcode-mac-browser-fleet --locked`: 22 broker/protocol/CDP/native-host tests passed.
+- `cargo test -p jcode-mac-browser-policy --locked`: 10 policy tests passed.
+- `cargo test -p jcode-app-core mac_fleet --locked`: 5 Mac fleet provider tests passed. The crate emitted two pre-existing unused-import warnings in unrelated test modules.
+- `node --test tests/*.test.mjs test/*.test.mjs` from `extensions/mac-browser-fleet`: 47 extension, native-host, manifest, inventory, protocol, reconnect, and action-handler tests passed.
+- `cargo fmt --check`: passed.
+- `cargo test -p jcode-mac-browser-setup --locked`: 12 setup, launch-agent, SSH include, manifest, socket-path, and preservation tests passed.
+- `git diff --check`: passed.
+- `openspec validate add-mac-browser-fleet --strict`: passed.
+
+Blocked or not claimed from this Linux session:
+
+- `browser list_tabs browser=mac` through the public Jcode interface failed with `Mac browser fleet socket is unavailable at /home/nyaptor/.jcode/browser/mac-fleet.sock`.
+- Real Mac Chrome acceptance tasks 5.2, Edge acceptance task 5.3, and installed exact-commit deployment/reload task 5.4 remain blocked until the Mac launch agent, SSH reverse socket, browser profiles, and Mac-local authority surface are available.
+- The Mac-local approval/status UI in task 2.4 remains incomplete, so the change is not ready to archive despite deterministic local validation passing.
