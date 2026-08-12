@@ -3,6 +3,7 @@ use super::client_comm::{
     handle_comm_read, handle_comm_share, handle_comm_subscribe_channel,
     handle_comm_unsubscribe_channel,
 };
+use super::client_state::handle_get_presence;
 use super::client_writer::write_direct_event;
 use super::comm_await::{CommAwaitMembersContext, handle_comm_await_members};
 use super::comm_control::{
@@ -127,6 +128,9 @@ pub(super) async fn handle_lightweight_control_request(
     });
 
     match request {
+        Request::GetPresence { id } => {
+            handle_get_presence(id, &writer).await?;
+        }
         Request::CommShare {
             id,
             session_id: req_session_id,

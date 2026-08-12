@@ -648,6 +648,7 @@ impl Request {
         matches!(
             self,
             Request::Ping { .. }
+                | Request::GetPresence { .. }
                 | Request::CommShare { .. }
                 | Request::CommRead { .. }
                 | Request::CommMessage { .. }

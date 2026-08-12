@@ -155,12 +155,24 @@ impl Client {
         let json = serde_json::to_string(&request)? + "\n";
         self.writer.write_all(json.as_bytes()).await?;
 
-        let mut line = String::new();
-        let n = self.reader.read_line(&mut line).await?;
-        if n == 0 {
-            anyhow::bail!("Server disconnected");
+        loop {
+            let mut line = String::new();
+            let n = self.reader.read_line(&mut line).await?;
+            if n == 0 {
+                anyhow::bail!("Server disconnected");
+            }
+            let event: ServerEvent = serde_json::from_str(&line)?;
+            match event {
+                ServerEvent::Ack { id: ack_id } if ack_id == id => continue,
+                ServerEvent::Presence {
+                    id: response_id, ..
+                } if response_id == id => {
+                    return Ok(event);
+                }
+                ServerEvent::Error { id: error_id, .. } if error_id == id => return Ok(event),
+                other => return Ok(other),
+            }
         }
-        Ok(serde_json::from_str(&line)?)
     }
 
     pub async fn clear(&mut self) -> Result<()> {
