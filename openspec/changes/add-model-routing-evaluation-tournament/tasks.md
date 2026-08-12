@@ -12,7 +12,7 @@
 - [x] 2.2 Define a checked-in model candidate registry with exact Jcode route IDs, provider families, versions or aliases, supported reasoning controls, context/output limits, tool capabilities, and role eligibility.
 - [x] 2.3 Add development, qualification, holdout, and shadow partition manifests with immutable fixture digests and validation preventing cross-partition reuse.
 - [x] 2.4 Adapt applicable task-decomposition and discovery fixtures by reference without changing their historical contracts.
-- [ ] 2.5 Add role-specific normal, boundary, adversarial, negative/control, refusal/escalation, provider/tool-failure, and long-context fixtures for implementation, review, scheduling, and autoresearch gaps.
+- [x] 2.5 Add role-specific normal, boundary, adversarial, negative/control, refusal/escalation, provider/tool-failure, and long-context fixtures for implementation, review, scheduling, and autoresearch gaps.
 - [x] 2.6 Add leakage validation that rejects prompts revealing expected models, tiers, tools, judges, reference answers, or hidden holdout content.
 
 ## 3. Isolated Provider-Aware Runner
@@ -20,16 +20,16 @@
 - [x] 3.1 Implement provider-aware randomized block construction with frozen seeds and per-provider concurrency limits.
 - [x] 3.2 Implement isolated trial workspaces or immutable input bundles, environment scrubbing, output ownership, and attempt-scoped identifiers.
 - [x] 3.3 Integrate supported Jcode model routes and capture explicit unavailable or unauthenticated route failures without silent substitution.
-- [ ] 3.4 Implement separate warm-cache and cold-cache strata with provider-native cache metadata.
-- [ ] 3.5 Record every retry as a separate metered attempt linked to its predecessor and classify provider, tool, and infrastructure failures as confounded.
-- [ ] 3.6 Add safety stops that prevent payments, credential changes, third-party messages, deployments, destructive actions, and unapproved external mutation while preserving the observed decision trace.
+- [x] 3.4 Implement separate warm-cache and cold-cache strata with provider-native cache metadata.
+- [x] 3.5 Record every retry as a separate metered attempt linked to its predecessor and classify provider, tool, and infrastructure failures as confounded.
+- [x] 3.6 Add safety stops that prevent payments, credential changes, third-party messages, deployments, destructive actions, and unapproved external mutation while preserving the observed decision trace.
 - [x] 3.7 Add interruption-safe resume from the frozen descriptor and terminal attempt receipts without relying on conversation state.
 
 ## 4. Telemetry and Cost Accounting
 
-- [ ] 4.1 Emit immutable raw events for request and response digests, token classes, reasoning controls, cache activity, context growth, tool calls, shell activity, artifacts, failures, repairs, and acceptance outcomes.
-- [ ] 4.2 Capture queue time, time to first token, model time, tool time, judge time, total wall time, timeout state, and provider confounds.
-- [ ] 4.3 Implement runtime-price reconciliation and retain both original and normalized price reports derived from unchanged raw usage.
+- [x] 4.1 Emit immutable raw events for request and response digests, token classes, reasoning controls, cache activity, context growth, tool calls, shell activity, artifacts, failures, repairs, and acceptance outcomes.
+- [x] 4.2 Capture queue time, time to first token, model time, tool time, judge time, total wall time, timeout state, and provider confounds.
+- [x] 4.3 Implement runtime-price reconciliation and retain both original and normalized price reports derived from unchanged raw usage.
 - [x] 4.4 Compute acceptance rate, confound rate, defect escape rate, repair burden, latency percentiles, total cost, and cost per accepted result without hiding failed or retried attempts.
 - [x] 4.5 Add schema, replay, collision, partial-write, and interrupted-commit tests for raw event and aggregate persistence.
 
@@ -38,19 +38,19 @@
 - [ ] 5.1 Map every fixture to deterministic schemas, tests, artifact validators, policy checks, and safety boundaries that run before semantic judgment.
 - [x] 5.2 Implement candidate anonymization that removes model and provider identity without removing task-relevant evidence.
 - [x] 5.3 Define versioned semantic rubrics and independent judge assignment rules, including cross-provider cold review for high-risk roles.
-- [ ] 5.4 Add known-good, known-bad, and subtly defective calibration samples and report judge false-positive, false-negative, abstention, and disagreement rates.
-- [ ] 5.5 Implement immutable judge receipts, invalidation after candidate mutation, and recorded human adjudication for material disagreements.
+- [x] 5.4 Add known-good, known-bad, and subtly defective calibration samples and report judge false-positive, false-negative, abstention, and disagreement rates.
+- [x] 5.5 Implement immutable judge receipts, invalidation after candidate mutation, and recorded human adjudication for material disagreements.
 - [x] 5.6 Add tests proving a candidate model cannot be its own sole judge and majority voting cannot settle a material disagreement.
 
 ## 6. Phased Tournament Control
 
 - [x] 6.1 Implement `validate` phase output that proves no provider traffic occurred.
 - [x] 6.2 Implement the smoke phase with one bounded trial per active cell and gates for telemetry completeness, isolation, price reconciliation, judge calibration, route availability, and confound thresholds.
-- [ ] 6.3 Implement qualification blocks with frozen repetitions, randomization, concurrency, and phase-level spending enforcement.
+- [x] 6.3 Implement qualification blocks with frozen repetitions, randomization, concurrency, and phase-level spending enforcement.
 - [x] 6.4 Implement finalist selection from qualification evidence while preserving holdout and shadow blindness.
 - [ ] 6.5 Implement untouched holdout execution and the frozen non-inferiority, safety, reliability, latency, repair, and cost-per-accepted-result comparison.
-- [ ] 6.6 Implement provider and total spending stops that cease new scheduling, preserve in-flight evidence, and report incomplete cells.
-- [ ] 6.7 Generate a human-reviewable promotion report without mutating production routing.
+- [x] 6.6 Implement provider and total spending stops that cease new scheduling, preserve in-flight evidence, and report incomplete cells.
+- [x] 6.7 Generate a human-reviewable promotion report without mutating production routing.
 
 ## 7. Whole-Command and Authority Integrations
 
@@ -75,5 +75,5 @@
 - [x] 9.2 Add a fixture-only acceptance run covering offline validation, zero-provider execution, missing-budget failure, leakage rejection, and unavailable-route failure.
 - [ ] 9.3 Run an explicitly approved minimal paid smoke tournament and verify complete telemetry, isolation, cost reconciliation, confound classification, and stop behavior through the public runner interface.
 - [ ] 9.4 Run qualification and holdout only after smoke evidence passes and a separate explicit provider budget is approved.
-- [ ] 9.5 Verify no tournament result changes production routing without a separate reviewed change and human approval.
-- [ ] 9.6 Run strict OpenSpec validation, requirement-to-task traceability, edge-case review, and a final cross-provider cold review of the unchanged artifacts and implementation evidence.
+- [x] 9.5 Verify no tournament result changes production routing without a separate reviewed change and human approval.
+- [x] 9.6 Run strict OpenSpec validation, requirement-to-task traceability, edge-case review, and a final cross-provider cold review of the unchanged artifacts and implementation evidence.
