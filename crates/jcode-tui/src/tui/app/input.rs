@@ -2244,7 +2244,12 @@ pub(super) fn handle_pre_control_shortcuts(
         return true;
     }
 
-    let artifact_palette_fallback = code == KeyCode::Char('a') && modifiers == KeyModifiers::ALT;
+    // Some Mac terminal/socket paths preserve the Control modifier but drop
+    // Option-as-Alt, while others do the inverse. Accept either single
+    // modifier for this otherwise-unused chord, in addition to the canonical
+    // Alt+Control binding above.
+    let artifact_palette_fallback =
+        code == KeyCode::Char('a') && matches!(modifiers, KeyModifiers::ALT | KeyModifiers::CONTROL);
     if app
         .toggle_keys
         .artifact_action_palette
