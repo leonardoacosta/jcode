@@ -18,13 +18,18 @@ ROUTES = [
     "telemetry-results.html", "agent-stack.html", "stack-surface.html",
     "stack-orchestration.html", "stack-context.html", "stack-model.html",
     "stack-tools.html", "stack-runtime.html", "stack-memory.html",
-    "daily-driven-ecosystem.html",
+    "agent-evaluations.html", "daily-driven-ecosystem.html",
 ]
 VIEWPORTS = [(1440, 1000), (393, 852)]
 COMMAND_JOURNEY = [
     "index.html", "command-lifecycle.html", "lane-protocol.html",
     "apply-orchestration.html", "model-routing.html", "evaluation-tournament.html",
     "telemetry-results.html", "daily-driven-ecosystem.html", "index.html",
+]
+EVALUATION_JOURNEY = [
+    "index.html", "agent-stack.html", "agent-evaluations.html",
+    "evaluation-tournament.html", "telemetry-results.html",
+    "daily-driven-ecosystem.html", "agent-evaluations.html", "index.html",
 ]
 ATLAS_JOURNEY = [
     "index.html", "agent-stack.html", "stack-surface.html", "stack-orchestration.html",
@@ -56,7 +61,7 @@ def chromium_binary() -> str | None:
 
 
 def run_probe(chromium: str, url: str, width: int, height: int, javascript: bool) -> tuple[bool, str]:
-    expression = "JSON.stringify({title:document.title,h1:document.querySelectorAll('h1').length,main:!!document.querySelector('#main'),nav:!!document.querySelector('nav'),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth,links:[...document.querySelectorAll('a[href]')].length,skip:!!document.querySelector('.skip'),atlas:[...document.querySelectorAll('a[href^=\"stack-\"]')].length})"
+    expression = "JSON.stringify({title:document.title,h1:document.querySelectorAll('h1').length,main:!!document.querySelector('#main'),nav:!!document.querySelector('nav'),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth,links:[...document.querySelectorAll('a[href]')].length,skip:!!document.querySelector('.skip'),atlas:[...document.querySelectorAll('a[href^=\"stack-\"]')].length,evalFilters:document.querySelectorAll('select,input[type=checkbox],input[type=search]').length,disclosures:document.querySelectorAll('details,summary').length,evidence:[...document.querySelectorAll('a[href]')].filter(a=>/evidence|eval|telemetry|tournament/.test(a.href)).length})"
     with tempfile.TemporaryDirectory() as profile:
         cmd = [
             chromium, "--headless", "--no-sandbox", "--disable-gpu",
@@ -76,6 +81,7 @@ def run_probe(chromium: str, url: str, width: int, height: int, javascript: bool
         if severe:
             return False, "console/network failure: " + severe[0].strip()
         html = result.stdout
+        route = url.rsplit("/", 1)[-1]
         checks = {
             "title": "<title>" in html.lower(),
             "h1": html.lower().count("<h1") == 1,
@@ -91,9 +97,29 @@ def run_probe(chromium: str, url: str, width: int, height: int, javascript: bool
         # shape by requiring the menu to remain present.
         if width == 393 and 'class="chapter-menu"' not in html:
             return False, "mobile chapter menu absent"
+        if route == "agent-evaluations.html":
+            lowered = html.casefold()
+            for marker in ("decision brief", "findings ledger", "run explorer", "review dag", "telemetry", "evidence map", "unavailable"):
+                if marker not in lowered:
+                    return False, f"evaluation journey missing {marker}"
+            if javascript and not any(token in lowered for token in ("select", "filter", "checkbox")):
+                return False, "evaluation filters absent in JS-enabled journey"
+            if "details" not in lowered and "summary" not in lowered:
+                return False, "evaluation disclosures absent"
+            if "evidence" not in lowered:
+                return False, "evaluation evidence links absent"
+            if javascript:
+                filtered_url = url + "?filter-severity=high"
+                filtered_result = subprocess.run(cmd[:-1] + [filtered_url], text=True, capture_output=True, timeout=30)
+                if filtered_result.returncode or filtered_result.stdout.count('<article class="ledger-row"') <= 0:
+                    return False, "severity filter interaction produced no visible ledger rows"
+                if "0 of 11 findings shown" in filtered_result.stdout or "11 of 11 findings shown" in filtered_result.stdout or "4 of 11 findings shown" not in filtered_result.stdout:
+                    return False, "severity filter did not change result visibility/count"
+            else:
+                if html.count('data-track="') != 11:
+                    return False, "JavaScript-disabled document does not retain all ledger records"
         rendered = RenderedDocument()
         rendered.feed(html)
-        route = url.rsplit("/", 1)[-1]
         if len(rendered.current_links) != 1:
             return False, f"expected one aria-current link, found {len(rendered.current_links)}"
         if not rendered.current_links[0].split("#", 1)[0].endswith(route):
@@ -106,7 +132,11 @@ def run_probe(chromium: str, url: str, width: int, height: int, javascript: bool
 def validate_journey(site: Path, journey: list[str], label: str) -> list[str]:
     errors: list[str] = []
     for source, target in zip(journey, journey[1:]):
-        text = (site / source).read_text()
+        try:
+            text = (site / source).read_text()
+        except OSError as exc:
+            errors.append(f"[DOCS-EVALS] {source}#{label}: unreadable journey source: {exc}")
+            continue
         if f'href="{target}"' not in text:
             errors.append(f"[DOCS-INDEX] {source}#{label}: cannot follow journey edge to {target}")
     return errors
@@ -124,6 +154,7 @@ def main() -> int:
     errors: list[str] = []
     errors.extend(validate_journey(site, COMMAND_JOURNEY, "command-journey"))
     errors.extend(validate_journey(site, ATLAS_JOURNEY, "atlas-journey"))
+    errors.extend(validate_journey(site, EVALUATION_JOURNEY, "evaluation-journey"))
     for route in ROUTES:
         path = site / route
         if not path.exists():

@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import hashlib
 import re
 import subprocess
 import sys
@@ -32,6 +33,8 @@ COMMAND_PAGES = [
     "telemetry-results.html",
 ]
 ATLAS_PAGE = "agent-stack.html"
+EVALS_PAGE = "agent-evaluations.html"
+EVALS_MANIFEST = "agent-evals.json"
 LAYER_PAGES = [
     "stack-surface.html",
     "stack-orchestration.html",
@@ -42,8 +45,8 @@ LAYER_PAGES = [
     "stack-memory.html",
 ]
 ECOSYSTEM_PAGE = "daily-driven-ecosystem.html"
-PAGES = ["index.html", *COMMAND_PAGES, ATLAS_PAGE, *LAYER_PAGES, ECOSYSTEM_PAGE]
-CHAPTERS = [*COMMAND_PAGES, ATLAS_PAGE, *LAYER_PAGES, ECOSYSTEM_PAGE]
+PAGES = ["index.html", *COMMAND_PAGES, ATLAS_PAGE, EVALS_PAGE, *LAYER_PAGES, ECOSYSTEM_PAGE]
+CHAPTERS = [*COMMAND_PAGES, ATLAS_PAGE, EVALS_PAGE, *LAYER_PAGES, ECOSYSTEM_PAGE]
 SHARED_ASSETS = [
     "styles.css",
     "sources.json",
@@ -62,6 +65,7 @@ STABLE_IDS = {
     "DOCS-OFFLINE",
     "DOCS-A11Y",
     "DOCS-TRUTH",
+    "DOCS-EVALS",
 }
 
 REQUIRED_ARTIFACTS = {
@@ -73,6 +77,7 @@ REQUIRED_ARTIFACTS = {
     "DOCS-OFFLINE": [*PAGES, "styles.css"],
     "DOCS-A11Y": PAGES,
     "DOCS-TRUTH": PAGES,
+    "DOCS-EVALS": [EVALS_PAGE, EVALS_MANIFEST],
 }
 
 ATLAS_LAYERS = ["surface", "orchestration", "context", "model", "tools", "runtime", "memory"]
@@ -482,6 +487,149 @@ def validate_telemetry(site: Path, sources: dict) -> list[Diagnostic]:
     return errors
 
 
+EVAL_COLLECTIONS = ("tracks", "evaluations", "runs", "candidates", "reviewers", "findings", "dispositions", "telemetry", "sources")
+EVAL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]+$")
+UNSAFE_SOURCE_RE = re.compile(r"(?:https?://[^\s\"']*(?:token|secret|key|sig)=|(?:oauth|access)[_-]?token|password|private prompt)", re.I)
+EVAL_REVIEW_DOMAINS = {
+    "shared-foundations",
+    "command-core",
+    "routing-evaluation",
+    "telemetry-ecosystem",
+    "upper-atlas",
+    "lower-atlas",
+    "visual-accessibility",
+}
+
+FINDING_REQUIRED_FIELDS = {
+    "track", "provider_or_documented_source", "implementation_state",
+    "verification_result", "verifier_independence", "limitations",
+    "disposition", "severity", "status",
+}
+
+
+def evaluation_evidence_digest(manifest: dict) -> str:
+    payload = dict(manifest)
+    payload.pop("evidence_digest", None)
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return "sha256:" + hashlib.sha256(canonical).hexdigest()
+
+
+def _eval_entities(manifest: dict) -> tuple[dict[str, dict], list[Diagnostic]]:
+    entities: dict[str, dict] = {}
+    errors: list[Diagnostic] = []
+    for collection in EVAL_COLLECTIONS:
+        records = manifest.get(collection)
+        if not isinstance(records, list):
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, collection, "required entity collection must be an array"))
+            continue
+        for record in records:
+            if not isinstance(record, dict) or not isinstance(record.get("id"), str):
+                errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, collection, "every entity requires a stable id"))
+                continue
+            entity_id = record["id"]
+            if not EVAL_ID_RE.fullmatch(entity_id):
+                errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, "invalid stable id"))
+            if entity_id in entities:
+                errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, "duplicate stable id"))
+            entities[entity_id] = record
+    return entities, errors
+
+
+def validate_evaluations(site: Path) -> list[Diagnostic]:
+    errors: list[Diagnostic] = []
+    manifest_path = site / EVALS_MANIFEST
+    page_path = site / EVALS_PAGE
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        return [diagnostic("DOCS-EVALS", EVALS_MANIFEST, "file", f"unreadable evaluation manifest: {exc}")]
+    if not isinstance(manifest, dict) or not manifest.get("schema_version"):
+        errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, "schema_version", "missing schema version"))
+    entities, entity_errors = _eval_entities(manifest if isinstance(manifest, dict) else {})
+    errors.extend(entity_errors)
+    source_ids = set(entities)
+    for entity_id, record in entities.items():
+        refs = record.get("references", record.get("evidence_refs", []))
+        if isinstance(refs, list):
+            for ref in refs:
+                if ref not in source_ids:
+                    errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, f"dangling reference {ref}"))
+        for key in ("source_revision", "source_digest"):
+            if key in record and not record[key]:
+                errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, f"missing {key}"))
+        text = json.dumps(record, sort_keys=True)
+        if UNSAFE_SOURCE_RE.search(text):
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, "unsafe source reference or sensitive content"))
+        if record.get("status") not in {None, "supported", "inferred", "unavailable", "disputed", "planned"}:
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, "unsupported claim status"))
+        if record.get("disposition") not in {None, "approve", "reject", "defer", "modify", "unavailable", "planned"}:
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, "unsupported disposition"))
+        if record.get("unavailable") and not record.get("limitations"):
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, "unavailable evidence requires limitations"))
+        if record.get("unavailable") and record.get("value") not in (None, "unavailable"):
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, "reconstructed unavailable evidence"))
+        if any(word in text.casefold() for word in ("winner", "automatic routing", "auto-route", "production routing approved")):
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, "unsupported winner or automatic-routing claim"))
+        if "token" in text.casefold() and "provider_native" not in text.casefold() and "native" not in text.casefold():
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, entity_id, "token metric lacks provider-native semantics"))
+    telemetry = {record.get("id"): record for record in manifest.get("telemetry", []) if isinstance(record, dict)}
+    expected_metrics = {
+        "telemetry:anthropic-native": 258100,
+        "telemetry:openai-native": 265100,
+        "telemetry:deterministic-native": 0,
+    }
+    for metric_id, expected_value in expected_metrics.items():
+        record = telemetry.get(metric_id)
+        if not record or record.get("value") != expected_value:
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, metric_id, f"expected frozen provider-native value {expected_value}"))
+    evaluations = {record.get("id"): record for record in manifest.get("evaluations", []) if isinstance(record, dict)}
+    smoke = evaluations.get("eval:oauth-smoke", {})
+    if smoke.get("candidate_A_mean") != 28.0 or smoke.get("candidate_B_mean") != 26.5 or smoke.get("preference_split") is not True:
+        errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, "eval:oauth-smoke", "missing frozen candidate means or split-judge result"))
+    for finding in manifest.get("findings", []):
+        missing = sorted(FINDING_REQUIRED_FIELDS - finding.keys()) if isinstance(finding, dict) else sorted(FINDING_REQUIRED_FIELDS)
+        if missing:
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, finding.get("id", "finding"), f"finding missing required evidence fields: {missing}"))
+    try:
+        judges = json.loads((ROOT / "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json").read_text())["judges"]
+        if manifest.get("judge_receipts") != judges:
+            errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, "judge_receipts", "manifest does not preserve exact blind judge receipts"))
+    except (OSError, json.JSONDecodeError, KeyError) as exc:
+        errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, "judge_receipts", f"unable to load source judge receipts: {exc}"))
+    review_domains = {
+        record.get("domain") for record in manifest.get("findings", [])
+        if isinstance(record, dict) and record.get("track") == "track:microsite-review"
+    }
+    missing_domains = sorted(EVAL_REVIEW_DOMAINS - review_domains)
+    if missing_domains:
+        errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, "review-domains", f"missing retained microsite finding domains: {missing_domains}"))
+    try:
+        page_text = page_path.read_text().casefold()
+    except OSError as exc:
+        errors.append(diagnostic("DOCS-EVALS", EVALS_PAGE, "file", f"unreadable evaluation page: {exc}"))
+        return errors
+    for marker in ("decision brief", "findings ledger", "run explorer", "review dag", "telemetry", "evidence map", "unavailable", "limitations"):
+        if marker not in page_text:
+            errors.append(diagnostic("DOCS-EVALS", EVALS_PAGE, marker, "material evaluation projection is missing"))
+    for control in ("track", "severity", "provider", "claim status", "disposition"):
+        if control not in page_text:
+            errors.append(diagnostic("DOCS-EVALS", EVALS_PAGE, control, "evaluation filter is missing"))
+    for measured_value in ("258,100", "265,100", "28.0", "26.5"):
+        if measured_value not in page_text:
+            errors.append(diagnostic("DOCS-EVALS", EVALS_PAGE, measured_value, "frozen measured value is missing from the run explorer"))
+    for domain in EVAL_REVIEW_DOMAINS:
+        if domain.replace("-", " ") not in page_text:
+            errors.append(diagnostic("DOCS-EVALS", EVALS_PAGE, domain, "retained review domain is missing from the findings ledger"))
+    manifest_digest = manifest.get("evidence_digest")
+    if manifest_digest and not SHA256_RE.fullmatch(str(manifest_digest)):
+        errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, "evidence_digest", "stale or malformed evidence digest"))
+    if manifest_digest and manifest_digest != evaluation_evidence_digest(manifest):
+        errors.append(diagnostic("DOCS-EVALS", EVALS_MANIFEST, "evidence_digest", "manifest evidence digest does not match canonical SHA-256"))
+    if manifest_digest and manifest_digest not in page_text:
+        errors.append(diagnostic("DOCS-EVALS", EVALS_PAGE, "evidence_digest", "HTML/manifest projection drift"))
+    return errors
+
+
 def validate_site(site: Path = DEFAULT_SITE, stop_after_inventory: bool = False) -> list[Diagnostic]:
     errors = validate_inventory(site)
     if errors and stop_after_inventory:
@@ -515,6 +663,8 @@ def validate_site(site: Path = DEFAULT_SITE, stop_after_inventory: bool = False)
         errors.extend(validate_css(site))
     if not source_errors and (site / "telemetry-results.html").exists():
         errors.extend(validate_telemetry(site, sources))
+    if (site / EVALS_MANIFEST).exists() or (site / EVALS_PAGE).exists():
+        errors.extend(validate_evaluations(site))
     return errors
 
 
@@ -594,6 +744,7 @@ def run_self_test() -> int:
         "DOCS-OFFLINE",
         "DOCS-TRUTH",
         "DOCS-A11Y",
+        "DOCS-EVALS",
     }
     with tempfile.TemporaryDirectory() as tmp:
         site = Path(tmp)
@@ -602,6 +753,8 @@ def run_self_test() -> int:
         (site / "styles.css").write_text(":root{--parchment:#fff;--walnut:#000;--umber:#321;--espresso:#111;--copper:#b76}:focus-visible{outline:1px solid} @media(max-width:900px){.chapter-menu{display:none}}")
         (site / "site.js").write_text("")
         (site / "sources.json").write_text(json.dumps({"telemetry_source": "missing-telemetry-fixture.json", "pages": {"index.html": {"sources": ["missing-source.md"], "content": {"claim": {"claim": "unsupported", "evidence_class": "unsupported", "source_refs": ["missing-source.md"], "source_revision": "stale", "source_digest": {"missing-source.md": "not-a-digest"}, "confidence": "low", "implementation_status": "draft"}}}}}))
+        (site / EVALS_MANIFEST).write_text(json.dumps({"schema_version": "1", "evidence_digest": "stale-digest", "tracks": [{"id": "duplicate"}, {"id": "duplicate"}], "evaluations": [], "runs": [{"id": "run", "references": ["missing"]}], "candidates": [], "reviewers": [], "findings": [{"id": "finding", "unavailable": True, "value": "42", "status": "winner", "token_count": 3}], "dispositions": [], "telemetry": [], "sources": []}))
+        (site / EVALS_PAGE).write_text("<title>Agent Evaluations</title><h1>Agent Evaluations</h1><p>decision brief findings ledger run explorer review DAG telemetry evidence map</p>")
         errors = validate_site(site)
     observed_ids = {error.req for error in errors}
     missing = sorted(expected_ids - observed_ids)
@@ -617,6 +770,15 @@ def run_self_test() -> int:
         "remote asset": "remote asset",
         "inaccessible contrast": "contrast",
         "current-page ambiguity": "aria-current",
+        "duplicate IDs": "duplicate stable id",
+        "dangling references": "dangling reference",
+        "missing limitations": "requires limitations",
+        "reconstructed unavailable evidence": "reconstructed unavailable",
+        "false token normalization": "provider-native",
+        "unsupported winner claims": "unsupported winner",
+        "automatic-routing language": "automatic-routing",
+        "stale digests": "evidence digest",
+        "HTML/manifest drift": "projection drift",
     }
     absent = [label for label, marker in promised_defects.items() if marker not in rendered]
     if absent:

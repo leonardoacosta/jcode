@@ -1,0 +1,592 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-08-13T00:00:00Z",
+  "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+  "authority_boundary": "Evaluation evidence informs review; it never mutates production routing automatically.",
+  "tracks": [
+    {
+      "id": "track:measured-tournament",
+      "name": "Measured OAuth smoke tournament",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca",
+      "references": [
+        "src:5",
+        "src:6"
+      ],
+      "limitations": "One frozen qualification fixture and bounded smoke evidence; not a universal ranking."
+    },
+    {
+      "id": "track:microsite-review",
+      "name": "Microsite review and remediation",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+      "references": [
+        "src:2",
+        "src:3"
+      ],
+      "limitations": "Some prompts, outputs, and stage receipts were not durably persisted."
+    }
+  ],
+  "evaluations": [
+    {
+      "id": "eval:oauth-smoke",
+      "name": "OAuth smoke execution",
+      "track": "track:measured-tournament",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca",
+      "references": [
+        "track:measured-tournament",
+        "src:5",
+        "src:6"
+      ],
+      "limitations": "Both candidates passed one fixture; judge preferences split; no routing mutation authorized.",
+      "candidate_A_mean": 28.0,
+      "candidate_B_mean": 26.5,
+      "preference_split": true
+    },
+    {
+      "id": "eval:microsite-review",
+      "name": "Command-system microsite review",
+      "track": "track:microsite-review",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+      "references": [
+        "track:microsite-review",
+        "src:2",
+        "src:3"
+      ],
+      "limitations": "Observed and planned stages are distinguished; unavailable evidence is not reconstructed."
+    }
+  ],
+  "runs": [
+    {
+      "id": "run:oauth-2026-08-12",
+      "evaluation": "eval:oauth-smoke",
+      "status": "supported",
+      "fixture": "mr-qualify-synthesis-normal",
+      "accepted_attempts": 3,
+      "references": [
+        "eval:oauth-smoke",
+        "src:5"
+      ],
+      "limitations": "Bounded smoke run; provider-native queue time, internal reasoning, and true TTFT are unavailable."
+    },
+    {
+      "id": "run:microsite-remediation",
+      "evaluation": "eval:microsite-review",
+      "status": "supported",
+      "references": [
+        "eval:microsite-review",
+        "src:2",
+        "src:3"
+      ],
+      "limitations": "Stage receipts are partial and unavailable fields remain explicit."
+    }
+  ],
+  "candidates": [
+    {
+      "id": "candidate:fable",
+      "run": "run:oauth-2026-08-12",
+      "provider": "Anthropic",
+      "model": "Claude Fable 5",
+      "status": "supported",
+      "references": [
+        "run:oauth-2026-08-12",
+        "src:5"
+      ],
+      "limitations": "Provider-native metrics are not normalized across providers."
+    },
+    {
+      "id": "candidate:sol",
+      "run": "run:oauth-2026-08-12",
+      "provider": "OpenAI",
+      "model": "GPT-5.5",
+      "status": "supported",
+      "references": [
+        "run:oauth-2026-08-12",
+        "src:5"
+      ],
+      "limitations": "Provider-native metrics are not normalized across providers."
+    },
+    {
+      "id": "candidate:deterministic",
+      "run": "run:oauth-2026-08-12",
+      "provider": "deterministic",
+      "model": "stdlib baseline",
+      "status": "supported",
+      "references": [
+        "run:oauth-2026-08-12",
+        "src:5"
+      ],
+      "limitations": "Control path, not a model candidate."
+    }
+  ],
+  "reviewers": [
+    {
+      "id": "reviewer:fable-judge",
+      "name": "Claude judge",
+      "provider": "Anthropic",
+      "status": "supported",
+      "references": [
+        "run:oauth-2026-08-12",
+        "src:6"
+      ],
+      "limitations": "Blind receipt only."
+    },
+    {
+      "id": "reviewer:sol-judge",
+      "name": "OpenAI judge",
+      "provider": "OpenAI",
+      "status": "supported",
+      "references": [
+        "run:oauth-2026-08-12",
+        "src:6"
+      ],
+      "limitations": "Blind receipt only."
+    },
+    {
+      "id": "reviewer:human-gate",
+      "name": "Human disposition gate",
+      "provider": "human",
+      "status": "supported",
+      "references": [
+        "track:microsite-review",
+        "src:2"
+      ],
+      "limitations": "Recorded authority is separate from model recommendations."
+    },
+    {
+      "id": "reviewer:cold-review",
+      "name": "Cold deterministic and human verification",
+      "provider": "deterministic/human",
+      "status": "planned",
+      "references": [
+        "track:microsite-review",
+        "src:3"
+      ],
+      "limitations": "Some stage evidence is unavailable."
+    }
+  ],
+  "findings": [
+    {
+      "id": "finding:split-preference",
+      "track": "track:measured-tournament",
+      "severity": "medium",
+      "status": "supported",
+      "provider_native": "Anthropic/OpenAI judge receipts",
+      "summary": "Both candidates passed one frozen fixture and judge preference split.",
+      "disposition": "defer",
+      "references": [
+        "run:oauth-2026-08-12",
+        "reviewer:fable-judge",
+        "reviewer:sol-judge",
+        "disp:hold-routing",
+        "src:6"
+      ],
+      "limitations": "No universal preferred candidate claim; broader qualification and holdout evidence are required.",
+      "provider_or_documented_source": "Anthropic/OpenAI judge receipts",
+      "implementation_state": "not implemented",
+      "verification_result": "verified from cited evidence",
+      "verifier_independence": "cross-provider blind judge receipt"
+    },
+    {
+      "id": "finding:no-routing-mutation",
+      "track": "track:measured-tournament",
+      "severity": "high",
+      "status": "supported",
+      "provider_native": "deterministic receipt",
+      "summary": "Production routing was not mutated.",
+      "disposition": "reject",
+      "references": [
+        "run:oauth-2026-08-12",
+        "disp:hold-routing",
+        "src:5"
+      ],
+      "limitations": "Promotion requires separate human approval and routing-policy change.",
+      "provider_or_documented_source": "deterministic receipt",
+      "implementation_state": "not implemented",
+      "verification_result": "verified from cited evidence",
+      "verifier_independence": "independent deterministic or human review"
+    },
+    {
+      "id": "finding:review-dag",
+      "track": "track:microsite-review",
+      "severity": "high",
+      "status": "supported",
+      "provider_native": "documented workflow",
+      "summary": "Fable discovery flows to Sol refinement, human disposition, Luna implementation, then cold verification.",
+      "disposition": "approve",
+      "references": [
+        "reviewer:human-gate",
+        "disp:dag-policy",
+        "src:2",
+        "src:3"
+      ],
+      "limitations": "Planned stages are not asserted as observed executions.",
+      "provider_or_documented_source": "documented workflow",
+      "implementation_state": "documented",
+      "verification_result": "verified from cited evidence",
+      "verifier_independence": "cross-provider blind judge receipt"
+    },
+    {
+      "id": "finding:unavailable-receipts",
+      "track": "track:microsite-review",
+      "severity": "medium",
+      "status": "unavailable",
+      "provider_native": "unavailable",
+      "value": "unavailable",
+      "summary": "Full prompts and outputs for some review events were not durably persisted.",
+      "disposition": "unavailable",
+      "unavailable": true,
+      "references": [
+        "run:microsite-remediation",
+        "disp:dag-policy",
+        "src:3"
+      ],
+      "limitations": "The page publishes a sanitized summary only and does not reconstruct missing evidence.",
+      "provider_or_documented_source": "unavailable",
+      "implementation_state": "documented",
+      "verification_result": "unavailable",
+      "verifier_independence": "cross-provider blind judge receipt"
+    },
+    {
+      "id": "finding:microsite-shared-foundations",
+      "track": "track:microsite-review",
+      "domain": "shared-foundations",
+      "severity": "medium",
+      "status": "supported",
+      "provider_native": "documented source: validator depth/source mapping",
+      "provider_or_documented_source": "documented source: validator depth/source mapping",
+      "summary": "Validator depth and source mapping are explicit review requirements for the evidence atlas.",
+      "disposition": "modify",
+      "references": [
+        "run:microsite-remediation",
+        "eval:microsite-review",
+        "src:2",
+        "src:3"
+      ],
+      "implementation_state": "retained for implementation",
+      "limitations": "Source mapping coverage remains tied to the frozen repository corpus.",
+      "verification_result": "pending browser/static verification",
+      "verifier_independence": "cross-provider blind judge receipt"
+    },
+    {
+      "id": "finding:microsite-command-core",
+      "track": "track:microsite-review",
+      "domain": "command-core",
+      "severity": "medium",
+      "status": "supported",
+      "provider_native": "documented source: microsite review",
+      "provider_or_documented_source": "documented source: microsite review",
+      "summary": "Mobile navigation and breadcrumbs are retained as command-system documentation affordances.",
+      "disposition": "modify",
+      "references": [
+        "run:microsite-remediation",
+        "eval:microsite-review",
+        "src:2",
+        "src:3"
+      ],
+      "implementation_state": "retained for implementation",
+      "limitations": "Responsive behavior is verified by browser checks, not inferred from markup alone.",
+      "verification_result": "pending browser/static verification",
+      "verifier_independence": "cross-provider blind judge receipt"
+    },
+    {
+      "id": "finding:microsite-routing-evaluation",
+      "track": "track:microsite-review",
+      "domain": "routing-evaluation",
+      "severity": "medium",
+      "status": "supported",
+      "provider_native": "documented source: diagram review",
+      "provider_or_documented_source": "documented source: diagram review",
+      "summary": "SVG and Mermaid representations must remain semantically aligned.",
+      "disposition": "modify",
+      "references": [
+        "run:microsite-remediation",
+        "eval:microsite-review",
+        "src:2",
+        "src:3"
+      ],
+      "implementation_state": "retained for implementation",
+      "limitations": "Parity is a documentation check and does not establish runtime routing behavior.",
+      "verification_result": "pending browser/static verification",
+      "verifier_independence": "cross-provider blind judge receipt"
+    },
+    {
+      "id": "finding:microsite-telemetry-ecosystem",
+      "track": "track:microsite-review",
+      "domain": "telemetry-ecosystem",
+      "severity": "high",
+      "status": "supported",
+      "provider_native": "documented source: telemetry review",
+      "provider_or_documented_source": "documented source: telemetry review",
+      "summary": "An unsupported quantitative claim was identified and must not be presented as measured evidence.",
+      "disposition": "reject",
+      "references": [
+        "run:microsite-remediation",
+        "eval:microsite-review",
+        "src:2",
+        "src:3"
+      ],
+      "implementation_state": "retained for implementation",
+      "limitations": "No replacement value is inferred where the committed evidence is insufficient.",
+      "verification_result": "pending browser/static verification",
+      "verifier_independence": "cross-provider blind judge receipt"
+    },
+    {
+      "id": "finding:microsite-upper-atlas",
+      "track": "track:microsite-review",
+      "domain": "upper-atlas",
+      "severity": "medium",
+      "status": "supported",
+      "provider_native": "documented source: ecosystem review",
+      "provider_or_documented_source": "documented source: ecosystem review",
+      "summary": "Telemetry and evidence labels must preserve their measurement boundary and provenance.",
+      "disposition": "modify",
+      "references": [
+        "run:microsite-remediation",
+        "eval:microsite-review",
+        "src:2",
+        "src:3"
+      ],
+      "implementation_state": "retained for implementation",
+      "limitations": "Provider-native values remain non-comparable across providers.",
+      "verification_result": "pending browser/static verification",
+      "verifier_independence": "cross-provider blind judge receipt"
+    },
+    {
+      "id": "finding:microsite-lower-atlas",
+      "track": "track:microsite-review",
+      "domain": "lower-atlas",
+      "severity": "medium",
+      "status": "supported",
+      "provider_native": "documented source: Atlas review",
+      "provider_or_documented_source": "documented source: Atlas review",
+      "summary": "Atlas boilerplate and provenance need explicit retained treatment.",
+      "disposition": "modify",
+      "references": [
+        "run:microsite-remediation",
+        "eval:microsite-review",
+        "src:2",
+        "src:3"
+      ],
+      "implementation_state": "retained for implementation",
+      "limitations": "Boilerplate is documented as a review finding, not asserted as a universal defect.",
+      "verification_result": "pending browser/static verification",
+      "verifier_independence": "cross-provider blind judge receipt"
+    },
+    {
+      "id": "finding:microsite-visual-accessibility",
+      "track": "track:microsite-review",
+      "domain": "visual-accessibility",
+      "severity": "high",
+      "status": "supported",
+      "provider_native": "documented source: browser accessibility review",
+      "provider_or_documented_source": "documented source: browser accessibility review",
+      "summary": "aria-current and browser accessibility behavior are retained as verification findings.",
+      "disposition": "approve",
+      "references": [
+        "run:microsite-remediation",
+        "eval:microsite-review",
+        "src:2",
+        "src:3"
+      ],
+      "implementation_state": "retained for implementation",
+      "limitations": "Static markup checks do not replace assistive-technology testing.",
+      "verification_result": "pending browser/static verification",
+      "verifier_independence": "cross-provider blind judge receipt"
+    }
+  ],
+  "dispositions": [
+    {
+      "id": "disp:hold-routing",
+      "decision": "defer",
+      "authority": "human",
+      "status": "supported",
+      "references": [
+        "finding:split-preference",
+        "finding:no-routing-mutation",
+        "src:6"
+      ],
+      "limitations": "No production routing change authorized."
+    },
+    {
+      "id": "disp:dag-policy",
+      "decision": "approve",
+      "authority": "human",
+      "status": "supported",
+      "references": [
+        "finding:review-dag",
+        "finding:unavailable-receipts",
+        "src:2",
+        "src:3"
+      ],
+      "limitations": "Policy evidence does not prove every stage ran."
+    }
+  ],
+  "telemetry": [
+    {
+      "id": "telemetry:anthropic-native",
+      "run": "run:oauth-2026-08-12",
+      "provider": "Anthropic",
+      "metric": "provider_native_reported_work_tokens",
+      "value": 258100,
+      "unit": "provider-native count",
+      "provider_native": true,
+      "status": "supported",
+      "references": [
+        "run:oauth-2026-08-12",
+        "src:5"
+      ],
+      "limitations": "Not comparable to OpenAI metric classes."
+    },
+    {
+      "id": "telemetry:openai-native",
+      "run": "run:oauth-2026-08-12",
+      "provider": "OpenAI",
+      "metric": "provider_native_reported_work_tokens",
+      "value": 265100,
+      "unit": "provider-native count",
+      "provider_native": true,
+      "status": "supported",
+      "references": [
+        "run:oauth-2026-08-12",
+        "src:5"
+      ],
+      "limitations": "Not comparable to Anthropic metric classes."
+    },
+    {
+      "id": "telemetry:missing-boundaries",
+      "run": "run:oauth-2026-08-12",
+      "provider": "provider",
+      "metric": "queue_time_true_ttft_internal_reasoning",
+      "value": "unavailable",
+      "provider_native": true,
+      "status": "unavailable",
+      "unavailable": true,
+      "references": [
+        "run:oauth-2026-08-12",
+        "src:5"
+      ],
+      "limitations": "Persisted response latency is not provider TTFT; unavailable fields remain unavailable."
+    },
+    {
+      "id": "telemetry:deterministic-native",
+      "run": "run:oauth-2026-08-12",
+      "provider": "deterministic",
+      "metric": "provider_native_reported_work_tokens",
+      "value": 0,
+      "unit": "provider-native count",
+      "provider_native": true,
+      "status": "supported",
+      "references": [
+        "run:oauth-2026-08-12",
+        "src:5"
+      ],
+      "limitations": "Deterministic control path; zero is a frozen local baseline, not a provider-equivalent token measure."
+    }
+  ],
+  "sources": [
+    {
+      "id": "src:1",
+      "path": "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14"
+    },
+    {
+      "id": "src:2",
+      "path": "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2"
+    },
+    {
+      "id": "src:3",
+      "path": "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5"
+    },
+    {
+      "id": "src:4",
+      "path": "evals/model-routing/README.md",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb"
+    },
+    {
+      "id": "src:5",
+      "path": "evals/model-routing/experiments/local-smoke.json",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+    },
+    {
+      "id": "src:6",
+      "path": "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+      "status": "supported",
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+      "source_digest": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+    }
+  ],
+  "judge_receipts": [
+    {
+      "session_id": "session_dragon_1786504633358_d27c0631dfe22117",
+      "route": "claude-oauth/claude-haiku-4-5",
+      "scores": {
+        "candidate_A": {
+          "purpose": 5,
+          "phases": 5,
+          "authority": 5,
+          "safety": 5,
+          "blockers": 5,
+          "concision": 3,
+          "total": 28
+        },
+        "candidate_B": {
+          "purpose": 5,
+          "phases": 5,
+          "authority": 5,
+          "safety": 4,
+          "blockers": 5,
+          "concision": 5,
+          "total": 29
+        }
+      },
+      "preference": "candidate_B",
+      "confidence": 0.92
+    },
+    {
+      "session_id": "session_humpback_1786504640736_424be6c27d17c9fe",
+      "route": "openai-oauth/gpt-5.4-mini",
+      "scores": {
+        "candidate_A": {
+          "purpose": 5,
+          "phases": 5,
+          "authority": 5,
+          "safety": 5,
+          "blockers": 5,
+          "concision": 3,
+          "total": 28
+        },
+        "candidate_B": {
+          "purpose": 4,
+          "phases": 4,
+          "authority": 4,
+          "safety": 4,
+          "blockers": 4,
+          "concision": 4,
+          "total": 24
+        }
+      },
+      "preference": "candidate_A",
+      "confidence": 0.93
+    }
+  ],
+  "evidence_digest": "sha256:c2c59eabd39a1ec4f9c519a6eb6527178667b9b84dce844a4bf5affe77e8004a"
+}
