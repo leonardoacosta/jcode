@@ -477,6 +477,9 @@ impl MultiProvider {
                 | ModelRouteApiMethod::CodeAssistOAuth
                 | ModelRouteApiMethod::RemoteCatalog
                 | ModelRouteApiMethod::Current
+                // Same handling as the historical `Other("chatgpt-web")`:
+                // no model-spec rewrite for the browser-backed route.
+                | ModelRouteApiMethod::ChatgptWeb
                 | ModelRouteApiMethod::Other(_) => {}
             }
         }

@@ -4229,6 +4229,23 @@ mod tests {
         assert!(!remote_model_catalog_snapshot_is_safe(&oversized));
     }
 
+    #[test]
+    fn remote_model_catalog_accepts_first_class_chatgpt_web_route() {
+        // Regression: the Firefox-backed ChatGPT web route is a first-class
+        // picker entry, but its api_method used to parse to
+        // `ModelRouteApiMethod::Other`, which this gate rejects. One such route
+        // made the entire snapshot unpersistable, so every provider's models
+        // (Azure deployments included) vanished from a cold-started picker
+        // until a manual /refresh-model-list.
+        let snapshot = jcode_provider_core::ModelCatalogSnapshot::new(
+            Some("OpenAI".to_string()),
+            Some("gpt-5.6-pro[web]".to_string()),
+            vec!["gpt-5.6-pro[web]".to_string()],
+            vec![model_route("gpt-5.6-pro[web]", "OpenAI", "chatgpt-web")],
+        );
+        assert!(remote_model_catalog_snapshot_is_safe(&snapshot));
+    }
+
     fn model_route(model: &str, provider: &str, api_method: &str) -> crate::provider::ModelRoute {
         crate::provider::ModelRoute {
             model: model.to_string(),

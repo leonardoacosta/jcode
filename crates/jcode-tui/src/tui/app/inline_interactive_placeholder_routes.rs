@@ -49,6 +49,8 @@ pub(super) fn route_supports_reasoning_effort(api_method: &str) -> bool {
         | Method::Bedrock
         | Method::CodeAssistOAuth
         | Method::AntigravityHttps
+        // Browser-backed ChatGPT route: no per-request effort channel.
+        | Method::ChatgptWeb
         | Method::RemoteCatalog
         | Method::Current
         | Method::Other(_) => false,

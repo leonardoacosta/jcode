@@ -733,6 +733,10 @@ impl RuntimeKey {
             ModelRouteApiMethod::AntigravityHttps => Self::Antigravity,
             ModelRouteApiMethod::RemoteCatalog => Self::RemoteCatalog,
             ModelRouteApiMethod::Current => Self::Current,
+            // Keep the browser-backed ChatGPT route on its historical
+            // `Other("chatgpt-web")` runtime key so saved selections and
+            // failover state keyed by stable id do not drift.
+            ModelRouteApiMethod::ChatgptWeb => Self::Other("chatgpt-web".to_string()),
             ModelRouteApiMethod::Other(method) => Self::Other(method.clone()),
         }
     }
@@ -867,6 +871,11 @@ pub enum ModelRouteApiMethod {
     Bedrock,
     CodeAssistOAuth,
     AntigravityHttps,
+    /// First-class route for the logged-in Firefox ChatGPT session model
+    /// (`build_chatgpt_web_route`). It must parse to a named variant, not
+    /// `Other`: the remote model catalog safety gate rejects `Other`, and an
+    /// unparseable first-class route poisons the whole persisted catalog.
+    ChatgptWeb,
     RemoteCatalog,
     Current,
     Other(String),
@@ -902,6 +911,7 @@ impl ModelRouteApiMethod {
             "bedrock" => Self::Bedrock,
             "code-assist-oauth" => Self::CodeAssistOAuth,
             "https" => Self::AntigravityHttps,
+            "chatgpt-web" => Self::ChatgptWeb,
             "remote-catalog" => Self::RemoteCatalog,
             "current" => Self::Current,
             _ => {
@@ -971,6 +981,7 @@ impl ModelRouteApiMethod {
             Self::Cursor => "cursor".to_string(),
             Self::Bedrock => "bedrock".to_string(),
             Self::AntigravityHttps => "https".to_string(),
+            Self::ChatgptWeb => "chatgpt-web".to_string(),
             Self::RemoteCatalog => "remote-catalog".to_string(),
             Self::Current => "current".to_string(),
             Self::Other(method) => method
@@ -1390,6 +1401,14 @@ mod tests {
             ModelRouteApiMethod::parse("claude-api"),
             ModelRouteApiMethod::AnthropicApiKey
         );
+        // First-class browser-backed route: must not fall through to `Other`,
+        // or the remote catalog safety gate refuses to persist every provider's
+        // routes (the picker then needs a manual refresh after each restart).
+        assert_eq!(
+            ModelRouteApiMethod::parse("chatgpt-web"),
+            ModelRouteApiMethod::ChatgptWeb
+        );
+        assert_eq!(ModelRouteApiMethod::ChatgptWeb.display_label(), "chatgpt-web");
     }
 
     #[test]
