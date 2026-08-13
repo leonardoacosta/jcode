@@ -44,12 +44,13 @@
 - [x] 6.4 Run `python3 scripts/test-command-system-docs-browser.py --site docs/diagrams/jcode-command-system` and require all real-browser journeys, viewports, JS modes, filters, links, fallbacks, focus, overflow, console, and network checks to pass.
 - [x] 6.5 Run `openspec validate add-agent-evaluation-evidence-atlas --strict --no-interactive` successfully.
 - [x] 6.6 Freeze SHA-256 digests for proposal, design, spec, tasks, manifest, page, source inventory, shared assets, and validators.
-- [ ] 6.7 Obtain a fresh independent semantic review bound to those digests covering every requirement, scenario, task, check, exclusion, dependency, conflict, privacy boundary, authority boundary, and displayed finding.
+- [x] 6.7 Obtain a fresh independent semantic review bound to those digests covering every requirement, scenario, task, check, exclusion, dependency, conflict, privacy boundary, authority boundary, and displayed finding.
 
 ## 7. WS integration and delivery
 
-- [ ] 7.1 Copy only the settled Jcode evaluation Atlas files and required navigation/shared-asset changes into the WS documentation source, preserving unrelated WS work.
-- [ ] 7.2 Run the real WS docs content sync, OpenAPI generation, and production build with the repository-supported Node/pnpm toolchain.
-- [ ] 7.3 Commit and push the scoped WS change to `dev`, record the exact commit, and monitor the exact Azure docs pipeline run to a successful terminal state.
-- [ ] 7.4 Verify the live Entra-gated Agent Evaluations route, internal links, and deployed asset revision as far as authenticated access permits.
+- [x] 7.1 Copy only the settled Jcode evaluation Atlas files and required navigation/shared-asset changes into the WS documentation source, preserving unrelated WS work.
+- [x] 7.2 Run the real WS docs content sync, OpenAPI generation, and production build with the repository-supported Node/pnpm toolchain.
+- [x] 7.3 Commit and push the scoped WS change to `dev`, record the exact commit, and monitor the exact Azure docs pipeline run to a successful terminal state.
+- [x] 7.4 Verify the live Entra-gated Agent Evaluations route, internal links, and deployed asset revision as far as authenticated access permits.
 - [ ] 7.5 Record the Jcode revision, WS revision, Azure run, live URL, evidence digest, limitations, and acceptance result, then send the live URL through ntfy.
+  - Delivery record: Jcode `f06d2ed959894e4ba39440507fa805c780463c08`; WS `c40a4b1a7421bf4531414df33af840ecc9a293a0`; Azure docs run `58712` succeeded; live URL `https://docs.bridgespecialty.com/_docs/diagrams/jcode-command-system/agent-evaluations.html`; evidence digest `sha256:29f2cdda61a0a6a9441f335343e114944b4480b582a58cfa13f2608b4e2154dd`; unauthenticated verification reached the expected Entra sign-in boundary. ntfy delivery remains acceptance-blocked because no ntfy client/topic configuration is present on this host.
