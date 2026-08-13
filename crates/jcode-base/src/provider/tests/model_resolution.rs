@@ -1872,6 +1872,8 @@ fn test_context_limit_spark_vs_codex() {
 
 #[test]
 fn test_context_limit_gpt_5_4() {
+    let _guard = crate::storage::lock_test_env();
+    crate::provider::models::reset_model_catalog_services_for_tests();
     assert_eq!(context_limit_for_model("gpt-5.4"), Some(1_000_000));
     assert_eq!(context_limit_for_model("gpt-5.4-pro"), Some(1_000_000));
     assert_eq!(context_limit_for_model("gpt-5.4[1m]"), Some(1_000_000));
@@ -1879,6 +1881,8 @@ fn test_context_limit_gpt_5_4() {
 
 #[test]
 fn test_context_limit_respects_provider_hint() {
+    let _guard = crate::storage::lock_test_env();
+    crate::provider::models::reset_model_catalog_services_for_tests();
     assert_eq!(
         context_limit_for_model_with_provider("gpt-5.4", Some("openai")),
         Some(1_000_000)
@@ -1895,6 +1899,8 @@ fn test_context_limit_respects_provider_hint() {
 
 #[test]
 fn test_resolve_model_capabilities_uses_provider_hint() {
+    let _guard = crate::storage::lock_test_env();
+    crate::provider::models::reset_model_catalog_services_for_tests();
     let openai = resolve_model_capabilities("gpt-5.4", Some("openai"));
     assert_eq!(openai.provider.as_deref(), Some("openai"));
     assert_eq!(openai.context_window, Some(1_000_000));
@@ -2023,12 +2029,15 @@ fn test_context_limit_claude() {
 
 #[test]
 fn test_context_limit_dynamic_cache() {
+    let _guard = crate::storage::lock_test_env();
+    crate::provider::models::reset_model_catalog_services_for_tests();
     populate_context_limits(
         [("test-model-xyz".to_string(), 64_000)]
             .into_iter()
             .collect(),
     );
     assert_eq!(context_limit_for_model("test-model-xyz"), Some(64_000));
+    crate::provider::models::reset_model_catalog_services_for_tests();
 }
 
 // --- Migrated from the OpenRouter runtime tests: these exercise MultiProvider
