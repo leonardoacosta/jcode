@@ -271,7 +271,7 @@
       ],
       "implementation_state": "retained for implementation",
       "limitations": "Source mapping coverage remains tied to the frozen repository corpus.",
-      "verification_result": "pending browser/static verification",
+      "verification_result": "verified by settled static and browser acceptance checks",
       "verifier_independence": "cross-provider blind judge receipt"
     },
     {
@@ -292,7 +292,7 @@
       ],
       "implementation_state": "retained for implementation",
       "limitations": "Responsive behavior is verified by browser checks, not inferred from markup alone.",
-      "verification_result": "pending browser/static verification",
+      "verification_result": "verified by settled static and browser acceptance checks",
       "verifier_independence": "cross-provider blind judge receipt"
     },
     {
@@ -313,7 +313,7 @@
       ],
       "implementation_state": "retained for implementation",
       "limitations": "Parity is a documentation check and does not establish runtime routing behavior.",
-      "verification_result": "pending browser/static verification",
+      "verification_result": "verified by settled static and browser acceptance checks",
       "verifier_independence": "cross-provider blind judge receipt"
     },
     {
@@ -334,7 +334,7 @@
       ],
       "implementation_state": "retained for implementation",
       "limitations": "No replacement value is inferred where the committed evidence is insufficient.",
-      "verification_result": "pending browser/static verification",
+      "verification_result": "verified by settled static and browser acceptance checks",
       "verifier_independence": "cross-provider blind judge receipt"
     },
     {
@@ -355,7 +355,7 @@
       ],
       "implementation_state": "retained for implementation",
       "limitations": "Provider-native values remain non-comparable across providers.",
-      "verification_result": "pending browser/static verification",
+      "verification_result": "verified by settled static and browser acceptance checks",
       "verifier_independence": "cross-provider blind judge receipt"
     },
     {
@@ -376,7 +376,7 @@
       ],
       "implementation_state": "retained for implementation",
       "limitations": "Boilerplate is documented as a review finding, not asserted as a universal defect.",
-      "verification_result": "pending browser/static verification",
+      "verification_result": "verified by settled static and browser acceptance checks",
       "verifier_independence": "cross-provider blind judge receipt"
     },
     {
@@ -397,7 +397,7 @@
       ],
       "implementation_state": "retained for implementation",
       "limitations": "Static markup checks do not replace assistive-technology testing.",
-      "verification_result": "pending browser/static verification",
+      "verification_result": "verified by settled static and browser acceptance checks",
       "verifier_independence": "cross-provider blind judge receipt"
     }
   ],
@@ -588,5 +588,5 @@
       "confidence": 0.93
     }
   ],
-  "evidence_digest": "sha256:c2c59eabd39a1ec4f9c519a6eb6527178667b9b84dce844a4bf5affe77e8004a"
+  "evidence_digest": "sha256:29f2cdda61a0a6a9441f335343e114944b4480b582a58cfa13f2608b4e2154dd"
 }
