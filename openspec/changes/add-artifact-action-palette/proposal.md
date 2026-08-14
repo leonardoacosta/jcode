@@ -38,13 +38,13 @@ None. This change depends on the active `add-rendered-artifact-cards` change and
 - Jcode TUI focus/navigation, hotkey registry, inline-interactive palette, transcript artifact rendering, message/tool metadata, and session restore paths.
 - Jcode agent/tool surface for producing paired written and spoken decision briefs.
 - External optional integrations: `/home/nyaptor/dev/personal/herald` through `say_brief`, plus installed `mopen`, `ropen`, and `iopen` CLIs.
-- No new third-party dependency and no Herald repository code change. Herald remains the sole speech transport owner.
+- No new third-party dependency and no Herald repository code change in this feature. Jcode consumes Herald's existing accepted-request ID and scoped `notify stop` control. Herald remains the sole speech transport and playback owner.
 
 ## Done Means
 
 - A focused artifact or rendered URL opens the keyboard-operable palette through the configured binding.
 - Decision Brief cards persist and restore with semantic copy behavior.
-- Brief aloud persists written Markdown and sends separately validated natural prose through Herald only on explicit selection.
+- Each briefing action persists written Markdown, sends separately validated natural prose through Herald only on explicit selection, stores the accepted `request_id`, and stops that exact request on reclick or mode switch.
 - Explicit `mopen`, `ropen`, and `iopen` actions are bounded and fail softly, while ordinary click behavior is unchanged.
 - Focused tests, strict OpenSpec validation, isolated-socket runtime acceptance, and authorized real integration checks pass with no duplicate speech.
 

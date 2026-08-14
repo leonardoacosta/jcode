@@ -50,14 +50,39 @@ Jcode SHALL compose a compact written Decision Brief and separate natural spoken
 - **THEN** Jcode MUST NOT invoke Herald briefing delivery
 
 ### Requirement: Herald briefing integration
-Jcode SHALL send spoken briefing prose through Herald's existing explicit brief path without implementing a parallel speech, synthesis, playback, retry, or history pipeline.
+Jcode SHALL expose two explicit Herald briefing actions for every supported rendered asset: `One sentence short` and `Explain step by step`. Both actions SHALL use Herald's existing brief path without implementing a parallel speech, synthesis, playback, retry, or history pipeline.
+The accepted Herald result SHALL provide an opaque `request_id`; Jcode SHALL retain the active ID and use Herald's scoped stop control for cancellation.
+
+#### Scenario: Rendered asset exposes briefing actions
+- **WHEN** a supported rendered asset is actionable
+- **THEN** the asset action surface shows `One sentence short` and `Explain step by step`, with the short briefing as the primary action
+
+#### Scenario: Short briefing starts
+- **WHEN** the user selects `One sentence short` while no briefing is playing
+- **THEN** Jcode sends one concise orientation sentence for that asset through Herald, records the accepted opaque `request_id`, and shows a preparing or playing state
+
+#### Scenario: Step-by-step briefing starts
+- **WHEN** the user selects `Explain step by step` while no briefing is playing
+- **THEN** Jcode sends a numbered walkthrough of the asset through Herald, records the accepted opaque `request_id`, and shows a preparing or playing state
+
+#### Scenario: Reclick stops the active briefing
+- **WHEN** the user selects the same briefing action while its briefing is preparing or playing
+- **THEN** Jcode immediately invokes `herald notify stop <request_id>` for the active request, returns the action to its idle state, and does not enqueue or replay the briefing
+
+#### Scenario: Switching briefing modes stops the prior mode
+- **WHEN** the user selects the other briefing action while a briefing is preparing or playing
+- **THEN** Jcode invokes `herald notify stop <request_id>` for the active briefing before starting the newly selected mode and never speaks both briefings concurrently
 
 #### Scenario: Herald accepts a briefing
-- **WHEN** the user selects Brief aloud and Herald accepts the request
+- **WHEN** the user selects either briefing action and Herald accepts the request
 - **THEN** Jcode reports the briefing as accepted and treats Herald history as the authoritative eventual delivery outcome
 
+#### Scenario: Herald accepts a stop request
+- **WHEN** Jcode stops an active briefing using its stored request ID
+- **THEN** Jcode treats Herald's `canceled` or bounded no-op result as the authoritative stop outcome, clears the active ID, and never substitutes global mute or process termination
+
 #### Scenario: Herald is unavailable
-- **WHEN** the brief entry point cannot be resolved or launched
+- **WHEN** the selected brief entry point cannot be resolved or launched
 - **THEN** Jcode preserves the written Decision Brief, reports speech as unavailable, and does not fail the turn or session
 
 #### Scenario: Request outcome is ambiguous

@@ -51,7 +51,7 @@ Spoken text contains no Markdown, file paths, identifiers, code, or unrequested 
 
 ### 5. Invoke Herald through its existing brief path
 
-Resolve `say_brief` from the client environment. Do not implement synthesis, HTTP service logic, fallback, history, playback, or retry in Jcode. Invocation is foreground-bounded and never backgrounded. Jcode reports accepted, unavailable, or failed-to-launch; Herald history remains authoritative for eventual delivery.
+Resolve `say_brief` from the client environment. The accepted response must expose Herald's opaque `request_id`; retain it only for the active briefing action. On reclick or mode switch, invoke Herald's existing scoped stop control as `herald notify stop <request_id>` and never use global mute or kill a player process. The equivalent service boundary is `POST /notify/stop` with `{ "request_id": "..." }`. Do not implement synthesis, HTTP service logic, fallback, history, playback, or retry in Jcode. Invocation is foreground-bounded and never backgrounded. Jcode reports accepted, unavailable, failed-to-launch, or stop best-effort; Herald history remains authoritative for eventual delivery.
 
 ### 6. Route explicit opener actions through installed helpers
 
@@ -64,7 +64,7 @@ The palette binding can be changed or disabled. Existing artifact kinds and seri
 ## Risks / Trade-offs
 
 - **[Risk] Wrong focus target** → capture semantic target data and fail closed.
-- **[Risk] Duplicate speech** → invoke one Herald path once and never retry an ambiguous request.
+- **[Risk] Duplicate speech** → invoke one Herald path once, retain its returned request ID, stop that exact ID on reclick, and never retry an ambiguous request.
 - **[Risk] Accepted request later fails playback** → report accepted and rely on Herald history.
 - **[Risk] Spoken text leaks screen-only material** → validate speech before invocation and retain written Markdown separately.
 - **[Risk] Helpers hang** → bounded child execution with concise stderr capture.
