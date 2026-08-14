@@ -40,7 +40,7 @@
 
 ## Blocked checks
 
-The original `pymobiledevice3` tunnel path is blocked, but the Linux capability is now available through the Rust userspace tunnel bridge. Screenshot capture, HID discovery, and accessibility-settings reads are verified. Full live remote control is explicitly version-gated by iOS 26.4.2, so accessibility-tree, tap, text-entry, recovery, and MFA tests cannot be completed on this build. The upstream bridge's basic probes showed that some older pymobiledevice3 actions are not implemented on this iOS 26 build, while app enumeration works.
+The original `pymobiledevice3` tunnel path is blocked, but Linux RSD transport is available through the Rust userspace tunnel bridge. Screenshot capture, HID discovery, and accessibility-settings reads are verified. The specific CoreDevice display-stream remote-control action is version-gated by iOS 26.4.2, not RSD as a whole. A separate iOS 26-compatible route is to deploy a signed XCUITest/WebDriverAgent-style runner to the phone and expose its tap/screenshot endpoints over usbmuxd; Linux hosting of that route is documented as experimental and requires an Apple-built or otherwise validly signed runner.
 
 ## Safe operating procedure
 
@@ -50,9 +50,9 @@ The original `pymobiledevice3` tunnel path is blocked, but the Linux capability 
 4. Run `idevicepair validate` and read only non-sensitive metadata.
 5. Enable Developer Mode on the phone.
 6. Run `pymobiledevice3 mounter auto-mount` while the phone is unlocked.
-7. Start `rust-ios-device-tunnel` 0.1.8 in userspace mode and run the upstream `pymobiledevice3_coredevice_bridge.py` transport bridge for CoreDevice work. For live remote control, use an iOS 27+ device or a supported Mac/Xcode path.
+7. For CoreDevice display streaming, use an iOS 27+ device or supported Mac/Xcode path. For iOS 26 control, investigate the signed XCUITest/WebDriverAgent runner route over usbmuxd, with Linux `go-ios` forwarding as the experimental host path.
 8. Do not jailbreak, extract passcodes, export cookies, or run MFA actions until screenshot/accessibility/input tests and emergency-stop behavior pass.
 
 ## Closeout criteria
 
-The initiative can close only after a device/build that permits remote control proves screenshot, accessibility-tree, harmless tap/text-entry, disconnect/reconnect, emergency-stop, and one explicitly approved MFA boundary test. The Linux RSD transport prerequisite is satisfied, but iOS 26.4.2 itself blocks live control with an explicit iOS 27.0 requirement.
+The initiative can close only after either the CoreDevice route or the signed XCUITest/WebDriverAgent route proves screenshot, accessibility-tree, harmless tap/text-entry, disconnect/reconnect, emergency-stop, and one explicitly approved MFA boundary test. The Linux RSD transport prerequisite is satisfied; iOS 26.4.2 blocks only the tested CoreDevice display-control action.
