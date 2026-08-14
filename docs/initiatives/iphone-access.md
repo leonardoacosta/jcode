@@ -34,6 +34,9 @@
 - The live screen-stream server can read accessibility settings, but display
   stream startup is rejected with CoreDevice error 9021: `Remote control
   requires iOS 27.0 or later on this device.`
+- Two consecutive userspace tunnel create/close cycles completed cleanly, and
+  the device remained discoverable afterward. Physical cable disconnect and
+  reconnect remain untested.
 
 ## Blocked checks
 
