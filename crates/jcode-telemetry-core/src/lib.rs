@@ -1167,7 +1167,7 @@ fn post_payload(payload: serde_json::Value, timeout: Duration) -> bool {
             .build()
             .expect("telemetry HTTP client should build")
     });
-    match client
+    let primary_succeeded = match client
         .post(TELEMETRY_ENDPOINT)
         .timeout(timeout)
         .json(&payload)
@@ -1192,7 +1192,62 @@ fn post_payload(payload: serde_json::Value, timeout: Duration) -> bool {
             logging::warn(&format!("telemetry payload send failed: {err}"));
             false
         }
+    };
+
+    let grafana_succeeded = post_grafana_payload(&payload, timeout);
+    primary_succeeded || grafana_succeeded
+}
+
+fn post_grafana_payload(payload: &serde_json::Value, timeout: Duration) -> bool {
+    let Some(endpoint) = std::env::var_os("JCODE_GRAFANA_LOKI_URL") else {
+        return false;
+    };
+    let endpoint = endpoint.to_string_lossy();
+    let labels = serde_json::json!({
+        "service_name": "jcode",
+        "source": "jcode-live-telemetry",
+        "event": payload.get("event").and_then(Value::as_str).unwrap_or("unknown"),
+    });
+    let timestamp = Utc::now()
+        .timestamp_nanos_opt()
+        .unwrap_or_default()
+        .to_string();
+    let body = serde_json::json!({
+        "streams": [{
+            "stream": labels,
+            "values": [[timestamp, serde_json::to_string(payload).unwrap_or_else(|_| "{}".to_string())]],
+        }],
+    });
+    let mut request = client_for_grafana()
+        .post(endpoint.as_ref())
+        .timeout(timeout)
+        .json(&body);
+    if let Some(token) = std::env::var_os("JCODE_GRAFANA_LOKI_TOKEN") {
+        request = request.bearer_auth(token.to_string_lossy());
     }
+    match request.send() {
+        Ok(response) if response.status().is_success() => true,
+        Ok(response) => {
+            logging::warn(&format!(
+                "Grafana Loki rejected telemetry with HTTP {}",
+                response.status()
+            ));
+            false
+        }
+        Err(err) => {
+            logging::warn(&format!("Grafana Loki telemetry send failed: {err}"));
+            false
+        }
+    }
+}
+
+fn client_for_grafana() -> &'static reqwest::blocking::Client {
+    TELEMETRY_HTTP_CLIENT.get_or_init(|| {
+        reqwest::blocking::Client::builder()
+            .user_agent(jcode_provider_core::JCODE_USER_AGENT)
+            .build()
+            .expect("telemetry HTTP client should build")
+    })
 }
 
 fn telemetry_status_is_permanent(status: u16) -> bool {
