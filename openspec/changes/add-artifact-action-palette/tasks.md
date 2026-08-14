@@ -22,8 +22,8 @@
   - Evidence: `BriefAloud` path persists a `DecisionBrief` tool result before invoking `say_brief`; focused brief tests passed on 2026-08-12.
 - [x] 3.3 Add a dependency-injected Herald brief adapter with failing tests for accepted, unavailable, launch-failed, timed-out or ambiguous, and no-retry cases; then implement bounded foreground invocation through the existing `say_brief` contract.
   - Evidence: `brief_aloud_builds_direct_say_brief_command_and_rejects_blank_prose` passed on 2026-08-12; shared full-suite attempt was blocked by unrelated pre-existing failures listed under 5.1.
-- [ ] 3.4 Replace the single Brief aloud action with paired `One sentence short` and `Explain step by step` actions, route both through the existing Herald brief adapter, capture Herald's accepted opaque `request_id`, and make reclicking the active action stop that exact request immediately via `herald notify stop <request_id>`.
-  - Verify focused palette rendering, short-versus-step prose composition, request-ID capture, active-state toggling, stop-on-reclick, mode switching, unavailable Herald, bounded stop no-op handling, and no-duplicate-speech behavior.
+- [ ] 3.4 Replace the single Brief aloud action with paired `One sentence short` and `Explain step by step` actions, route both through the existing Herald brief adapter, capture Herald's accepted opaque `request_id`, and make reclicking the active action stop that exact request immediately via `herald notify stop <request_id>` without cutting the queue.
+  - Verify focused palette rendering, short-versus-step prose composition, request-ID capture, active-state toggling, stop-on-reclick, mode switching, queue preservation and ordering, unavailable Herald, bounded stop no-op handling, and no-duplicate-speech behavior.
 
 ## 4. Explicit Open Helpers
 

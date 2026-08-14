@@ -51,7 +51,7 @@ Spoken text contains no Markdown, file paths, identifiers, code, or unrequested 
 
 ### 5. Invoke Herald through its existing brief path
 
-Resolve `say_brief` from the client environment. The accepted response must expose Herald's opaque `request_id`; retain it only for the active briefing action. On reclick or mode switch, invoke Herald's existing scoped stop control as `herald notify stop <request_id>` and never use global mute or kill a player process. The equivalent service boundary is `POST /notify/stop` with `{ "request_id": "..." }`. Do not implement synthesis, HTTP service logic, fallback, history, playback, or retry in Jcode. Invocation is foreground-bounded and never backgrounded. Jcode reports accepted, unavailable, failed-to-launch, or stop best-effort; Herald history remains authoritative for eventual delivery.
+Resolve `say_brief` from the client environment. The accepted response must expose Herald's opaque `request_id`; retain it only for the active briefing action. On reclick or mode switch, invoke Herald's existing scoped stop control as `herald notify stop <request_id>` and never use global mute or kill a player process. Stopping one request must never truncate, clear, reorder, or otherwise cut the rest of the Herald queue. The equivalent service boundary is `POST /notify/stop` with `{ "request_id": "..." }`. Do not implement synthesis, HTTP service logic, fallback, history, playback, or retry in Jcode. Invocation is foreground-bounded and never backgrounded. Jcode reports accepted, unavailable, failed-to-launch, or stop best-effort; Herald history remains authoritative for eventual delivery.
 
 ### 6. Route explicit opener actions through installed helpers
 

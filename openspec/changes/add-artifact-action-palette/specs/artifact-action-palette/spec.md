@@ -51,7 +51,7 @@ Jcode SHALL compose a compact written Decision Brief and separate natural spoken
 
 ### Requirement: Herald briefing integration
 Jcode SHALL expose two explicit Herald briefing actions for every supported rendered asset: `One sentence short` and `Explain step by step`. Both actions SHALL use Herald's existing brief path without implementing a parallel speech, synthesis, playback, retry, or history pipeline.
-The accepted Herald result SHALL provide an opaque `request_id`; Jcode SHALL retain the active ID and use Herald's scoped stop control for cancellation.
+The accepted Herald result SHALL provide an opaque `request_id`; Jcode SHALL retain the active ID and use Herald's scoped stop control for cancellation. Cancellation SHALL be request-scoped and SHALL never cut, clear, reorder, or discard unrelated queued briefings.
 
 #### Scenario: Rendered asset exposes briefing actions
 - **WHEN** a supported rendered asset is actionable
@@ -71,7 +71,7 @@ The accepted Herald result SHALL provide an opaque `request_id`; Jcode SHALL ret
 
 #### Scenario: Switching briefing modes stops the prior mode
 - **WHEN** the user selects the other briefing action while a briefing is preparing or playing
-- **THEN** Jcode invokes `herald notify stop <request_id>` for the active briefing before starting the newly selected mode and never speaks both briefings concurrently
+- **THEN** Jcode invokes `herald notify stop <request_id>` for the active briefing before starting the newly selected mode, leaves unrelated queued briefings intact and in order, and never speaks both briefings concurrently
 
 #### Scenario: Herald accepts a briefing
 - **WHEN** the user selects either briefing action and Herald accepts the request
@@ -79,7 +79,7 @@ The accepted Herald result SHALL provide an opaque `request_id`; Jcode SHALL ret
 
 #### Scenario: Herald accepts a stop request
 - **WHEN** Jcode stops an active briefing using its stored request ID
-- **THEN** Jcode treats Herald's `canceled` or bounded no-op result as the authoritative stop outcome, clears the active ID, and never substitutes global mute or process termination
+- **THEN** Jcode treats Herald's `canceled` or bounded no-op result as the authoritative stop outcome, clears the active ID, preserves unrelated queued briefings in order, and never substitutes global mute or process termination
 
 #### Scenario: Herald is unavailable
 - **WHEN** the selected brief entry point cannot be resolved or launched
