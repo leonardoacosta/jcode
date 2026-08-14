@@ -37,6 +37,13 @@
 - Two consecutive userspace tunnel create/close cycles completed cleanly, and
   the device remained discoverable afterward. Physical cable disconnect and
   reconnect remain untested.
+- The Mac target `mac` sees the same device UDID
+  `00008120-000224683AEB401E` as the Linux host, so the cross-host device
+  identity matches.
+- Mac prerequisites are present: macOS 26.5.2, Xcode 26.6, XcodeGen, and an
+  Apple Development certificate. The first runner build is blocked because
+  Xcode has no signed-in developer account and no provisioning profiles for
+  the runner bundle identifiers.
 
 ## Blocked checks
 
