@@ -31,10 +31,13 @@
 - A direct CoreDevice screenshot probe succeeded, producing a 305,773-byte PNG.
 - Universal HID enumeration succeeded and exposed the authenticated touchscreen,
   keyboard, and main-screen-button services.
+- The live screen-stream server can read accessibility settings, but display
+  stream startup is rejected with CoreDevice error 9021: `Remote control
+  requires iOS 27.0 or later on this device.`
 
 ## Blocked checks
 
-The original `pymobiledevice3` tunnel path is blocked, but the Linux capability is now available through the Rust userspace tunnel bridge. Screenshot capture and HID discovery are verified. Accessibility-tree, tap, text-entry, recovery, and MFA tests still need to be exercised through the specific CoreDevice service APIs. The upstream bridge's basic probes showed that some older pymobiledevice3 actions are not implemented on this iOS 26 build, while app enumeration works.
+The original `pymobiledevice3` tunnel path is blocked, but the Linux capability is now available through the Rust userspace tunnel bridge. Screenshot capture, HID discovery, and accessibility-settings reads are verified. Full live remote control is explicitly version-gated by iOS 26.4.2, so accessibility-tree, tap, text-entry, recovery, and MFA tests cannot be completed on this build. The upstream bridge's basic probes showed that some older pymobiledevice3 actions are not implemented on this iOS 26 build, while app enumeration works.
 
 ## Safe operating procedure
 
@@ -44,9 +47,9 @@ The original `pymobiledevice3` tunnel path is blocked, but the Linux capability 
 4. Run `idevicepair validate` and read only non-sensitive metadata.
 5. Enable Developer Mode on the phone.
 6. Run `pymobiledevice3 mounter auto-mount` while the phone is unlocked.
-7. Start `rust-ios-device-tunnel` 0.1.8 in userspace mode and run the upstream `pymobiledevice3_coredevice_bridge.py` transport bridge for live CoreDevice work.
+7. Start `rust-ios-device-tunnel` 0.1.8 in userspace mode and run the upstream `pymobiledevice3_coredevice_bridge.py` transport bridge for CoreDevice work. For live remote control, use an iOS 27+ device or a supported Mac/Xcode path.
 8. Do not jailbreak, extract passcodes, export cookies, or run MFA actions until screenshot/accessibility/input tests and emergency-stop behavior pass.
 
 ## Closeout criteria
 
-The initiative can close only after the Linux bridge proves screenshot, accessibility-tree, harmless tap/text-entry, disconnect/reconnect, emergency-stop, and one explicitly approved MFA boundary test. The RSD transport prerequisite is now satisfied; the remaining work is service-level implementation and safety validation.
+The initiative can close only after a device/build that permits remote control proves screenshot, accessibility-tree, harmless tap/text-entry, disconnect/reconnect, emergency-stop, and one explicitly approved MFA boundary test. The Linux RSD transport prerequisite is satisfied, but iOS 26.4.2 itself blocks live control with an explicit iOS 27.0 requirement.
