@@ -28,10 +28,13 @@
   `com.apple.coredevice.screencaptureservice`.
 - The upstream `pymobiledevice3` bridge works over that userspace tunnel:
   app enumeration completed successfully on iOS 26.4.2.
+- A direct CoreDevice screenshot probe succeeded, producing a 305,773-byte PNG.
+- Universal HID enumeration succeeded and exposed the authenticated touchscreen,
+  keyboard, and main-screen-button services.
 
 ## Blocked checks
 
-The original `pymobiledevice3` tunnel path is blocked, but the Linux capability is now available through the Rust userspace tunnel bridge. Live screenshot, accessibility, tap, text-entry, recovery, and MFA tests still need to be exercised through the specific CoreDevice service APIs. The upstream bridge's basic probes showed that some older pymobiledevice3 actions are not implemented on this iOS 26 build, while app enumeration works.
+The original `pymobiledevice3` tunnel path is blocked, but the Linux capability is now available through the Rust userspace tunnel bridge. Screenshot capture and HID discovery are verified. Accessibility-tree, tap, text-entry, recovery, and MFA tests still need to be exercised through the specific CoreDevice service APIs. The upstream bridge's basic probes showed that some older pymobiledevice3 actions are not implemented on this iOS 26 build, while app enumeration works.
 
 ## Safe operating procedure
 
