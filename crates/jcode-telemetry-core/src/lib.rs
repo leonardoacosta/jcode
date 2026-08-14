@@ -30,6 +30,13 @@ const BLOCKING_INSTALL_TIMEOUT: Duration = Duration::from_millis(1200);
 const BLOCKING_LIFECYCLE_TIMEOUT: Duration = Duration::from_millis(800);
 const TELEMETRY_SCHEMA_VERSION: u32 = 6;
 const DEFAULT_DISCOVERY_ENDPOINT: &str = "https://api.jcode.sh/v1/discovery";
+const OTLP_LOGS_URL_ENV: &str = "JCODE_OTLP_LOGS_URL";
+const OTLP_AUTHORIZATION_ENV: &str = "JCODE_OTLP_AUTHORIZATION";
+// Explicit opt-in contract for cross-project OTLP correlation. This is not
+// inferred from cwd, repo remotes, session text, or any secret-bearing config.
+const OTLP_ORCA_PROJECT_ID_ENV: &str = "JCODE_OTLP_ORCA_PROJECT_ID";
+const OTLP_ORCA_PROJECT_ID_ATTRIBUTE: &str = "orcaProjectId";
+const OTLP_ORCA_PROJECT_ID_MAX_LEN: usize = 128;
 static TELEMETRY_PERMANENTLY_REJECTED: AtomicBool = AtomicBool::new(false);
 static TELEMETRY_QUEUE_OVERFLOW_WARNED: AtomicBool = AtomicBool::new(false);
 static TELEMETRY_BACKGROUND_SENDER: OnceLock<SyncSender<Value>> = OnceLock::new();
@@ -1199,7 +1206,7 @@ fn post_payload(payload: serde_json::Value, timeout: Duration) -> bool {
 }
 
 fn post_grafana_payload(payload: &serde_json::Value, timeout: Duration) -> bool {
-    let Some(endpoint) = std::env::var_os("JCODE_OTLP_LOGS_URL") else {
+    let Some(endpoint) = std::env::var_os(OTLP_LOGS_URL_ENV) else {
         return false;
     };
     let endpoint = endpoint.to_string_lossy();
@@ -1207,23 +1214,12 @@ fn post_grafana_payload(payload: &serde_json::Value, timeout: Duration) -> bool 
         .timestamp_nanos_opt()
         .unwrap_or_default()
         .to_string();
-    let body = serde_json::json!({
-        "resourceLogs": [{
-            "resource": {"attributes": [
-                {"key": "service.name", "value": {"stringValue": "jcode"}},
-                {"key": "source", "value": {"stringValue": "jcode-live-telemetry"}},
-            ]},
-            "scopeLogs": [{"logRecords": [{
-                "timeUnixNano": timestamp,
-                "body": {"stringValue": serde_json::to_string(payload).unwrap_or_else(|_| "{}".to_string())},
-            }]}],
-        }],
-    });
+    let body = grafana_otlp_payload(payload, timestamp);
     let mut request = client_for_grafana()
         .post(endpoint.as_ref())
         .timeout(timeout)
         .json(&body);
-    if let Some(authorization) = std::env::var_os("JCODE_OTLP_AUTHORIZATION") {
+    if let Some(authorization) = std::env::var_os(OTLP_AUTHORIZATION_ENV) {
         request = request.header(
             reqwest::header::AUTHORIZATION,
             authorization.to_string_lossy().as_ref(),
@@ -1243,6 +1239,47 @@ fn post_grafana_payload(payload: &serde_json::Value, timeout: Duration) -> bool 
             false
         }
     }
+}
+
+fn grafana_otlp_payload(payload: &serde_json::Value, timestamp: String) -> serde_json::Value {
+    serde_json::json!({
+        "resourceLogs": [{
+            "resource": {"attributes": otlp_resource_attributes()},
+            "scopeLogs": [{"logRecords": [{
+                "timeUnixNano": timestamp,
+                "body": {"stringValue": serde_json::to_string(payload).unwrap_or_else(|_| "{}".to_string())},
+            }]}],
+        }],
+    })
+}
+
+fn otlp_resource_attributes() -> Vec<serde_json::Value> {
+    let mut attributes = vec![
+        serde_json::json!({"key": "service.name", "value": {"stringValue": "jcode"}}),
+        serde_json::json!({"key": "source", "value": {"stringValue": "jcode-live-telemetry"}}),
+    ];
+    if let Some(orca_project_id) = configured_otlp_orca_project_id() {
+        attributes.push(serde_json::json!({
+            "key": OTLP_ORCA_PROJECT_ID_ATTRIBUTE,
+            "value": {"stringValue": orca_project_id},
+        }));
+    }
+    attributes
+}
+
+fn configured_otlp_orca_project_id() -> Option<String> {
+    let value = std::env::var(OTLP_ORCA_PROJECT_ID_ENV).ok()?;
+    let value = value.trim();
+    if value.is_empty() || value.len() > OTLP_ORCA_PROJECT_ID_MAX_LEN {
+        return None;
+    }
+    if !value
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-' | b':'))
+    {
+        return None;
+    }
+    Some(value.to_string())
 }
 
 fn client_for_grafana() -> &'static reqwest::blocking::Client {

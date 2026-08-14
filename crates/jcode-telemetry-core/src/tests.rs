@@ -1,4 +1,6 @@
 use super::*;
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::sync::{Mutex, OnceLock};
 
 // All of these tests mutate process-global state: the env-var opt-out tests
@@ -57,6 +59,152 @@ fn background_delivery_queue_is_bounded() {
 #[test]
 fn telemetry_endpoint_uses_production_custom_domain() {
     assert_eq!(TELEMETRY_ENDPOINT, "https://telemetry.jcode.sh/v1/event");
+}
+
+fn otlp_string_attribute<'a>(payload: &'a serde_json::Value, key: &str) -> Option<&'a str> {
+    payload["resourceLogs"][0]["resource"]["attributes"]
+        .as_array()?
+        .iter()
+        .find(|attribute| attribute["key"] == key)
+        .and_then(|attribute| attribute["value"]["stringValue"].as_str())
+}
+
+fn spawn_otlp_test_listener(status_code: u16) -> (String, std::sync::mpsc::Receiver<String>) {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("bind local OTLP test listener");
+    let endpoint = format!("http://{}", listener.local_addr().expect("local address"));
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().expect("accept OTLP test request");
+        stream
+            .set_read_timeout(Some(std::time::Duration::from_secs(2)))
+            .expect("set OTLP test read timeout");
+
+        let mut bytes = Vec::new();
+        let header_end = loop {
+            let mut buffer = [0_u8; 512];
+            let read = stream.read(&mut buffer).expect("read OTLP test request");
+            assert!(read > 0, "OTLP test request closed before headers");
+            bytes.extend_from_slice(&buffer[..read]);
+            if let Some(position) = bytes.windows(4).position(|window| window == b"\r\n\r\n") {
+                break position + 4;
+            }
+        };
+        let headers = String::from_utf8_lossy(&bytes[..header_end]);
+        let content_length = headers
+            .lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                name.eq_ignore_ascii_case("content-length").then(|| {
+                    value
+                        .trim()
+                        .parse::<usize>()
+                        .expect("content length is usize")
+                })
+            })
+            .expect("OTLP request includes content length");
+        while bytes.len() - header_end < content_length {
+            let mut buffer = [0_u8; 512];
+            let read = stream.read(&mut buffer).expect("read OTLP test body");
+            assert!(read > 0, "OTLP test request closed before body");
+            bytes.extend_from_slice(&buffer[..read]);
+        }
+        let body = String::from_utf8(bytes[header_end..header_end + content_length].to_vec())
+            .expect("OTLP request body is utf8");
+        let _ = tx.send(body);
+        write!(
+            stream,
+            "HTTP/1.1 {status_code} test\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+        )
+        .expect("write OTLP test response");
+    });
+    (endpoint, rx)
+}
+
+#[test]
+fn otlp_resource_attributes_include_explicit_orca_project_id_only() {
+    let _guard = lock_test_env();
+    jcode_core::env::remove_var(OTLP_ORCA_PROJECT_ID_ENV);
+    let payload =
+        grafana_otlp_payload(&serde_json::json!({"event": "session_start"}), "123".into());
+    assert_eq!(
+        otlp_string_attribute(&payload, "service.name"),
+        Some("jcode")
+    );
+    assert_eq!(
+        otlp_string_attribute(&payload, "source"),
+        Some("jcode-live-telemetry")
+    );
+    assert_eq!(
+        otlp_string_attribute(&payload, OTLP_ORCA_PROJECT_ID_ATTRIBUTE),
+        None
+    );
+
+    jcode_core::env::set_var(OTLP_ORCA_PROJECT_ID_ENV, " orca-project:dev_1.2-3 ");
+    let payload = grafana_otlp_payload(&serde_json::json!({"event": "turn_end"}), "456".into());
+    assert_eq!(
+        otlp_string_attribute(&payload, OTLP_ORCA_PROJECT_ID_ATTRIBUTE),
+        Some("orca-project:dev_1.2-3")
+    );
+
+    jcode_core::env::set_var(
+        OTLP_ORCA_PROJECT_ID_ENV,
+        "tenant/project contains whitespace",
+    );
+    let payload = grafana_otlp_payload(&serde_json::json!({"event": "turn_end"}), "789".into());
+    assert_eq!(
+        otlp_string_attribute(&payload, OTLP_ORCA_PROJECT_ID_ATTRIBUTE),
+        None
+    );
+
+    jcode_core::env::remove_var(OTLP_ORCA_PROJECT_ID_ENV);
+}
+
+#[test]
+fn otlp_exporter_validates_payload_shape_and_failure_behavior_locally() {
+    let _guard = lock_test_env();
+    jcode_core::env::remove_var(OTLP_AUTHORIZATION_ENV);
+    jcode_core::env::set_var(OTLP_ORCA_PROJECT_ID_ENV, "orca-project-local");
+
+    jcode_core::env::remove_var(OTLP_LOGS_URL_ENV);
+    assert!(!post_grafana_payload(
+        &serde_json::json!({"event": "session_start"}),
+        Duration::from_millis(200)
+    ));
+
+    let (endpoint, body_rx) = spawn_otlp_test_listener(200);
+    jcode_core::env::set_var(OTLP_LOGS_URL_ENV, endpoint);
+    assert!(post_grafana_payload(
+        &serde_json::json!({"event": "session_start"}),
+        Duration::from_secs(2)
+    ));
+    let body: serde_json::Value = serde_json::from_str(
+        &body_rx
+            .recv_timeout(std::time::Duration::from_secs(2))
+            .expect("OTLP test server received request"),
+    )
+    .expect("OTLP test body is json");
+    assert_eq!(
+        otlp_string_attribute(&body, OTLP_ORCA_PROJECT_ID_ATTRIBUTE),
+        Some("orca-project-local")
+    );
+    let record_body =
+        body["resourceLogs"][0]["scopeLogs"][0]["logRecords"][0]["body"]["stringValue"]
+            .as_str()
+            .expect("OTLP log record body is string");
+    let original_payload: serde_json::Value =
+        serde_json::from_str(record_body).expect("OTLP log body carries original JSON payload");
+    assert_eq!(original_payload["event"], "session_start");
+
+    let (endpoint, body_rx) = spawn_otlp_test_listener(500);
+    jcode_core::env::set_var(OTLP_LOGS_URL_ENV, endpoint);
+    assert!(!post_grafana_payload(
+        &serde_json::json!({"event": "turn_end"}),
+        Duration::from_secs(2)
+    ));
+    let _ = body_rx.recv_timeout(std::time::Duration::from_secs(2));
+
+    jcode_core::env::remove_var(OTLP_LOGS_URL_ENV);
+    jcode_core::env::remove_var(OTLP_ORCA_PROJECT_ID_ENV);
 }
 
 fn lock_test_env() -> std::sync::MutexGuard<'static, ()> {
