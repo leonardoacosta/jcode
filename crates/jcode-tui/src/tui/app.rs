@@ -143,6 +143,31 @@ fn brief_aloud_command(prose: &str) -> Option<std::process::Command> {
     Some(command)
 }
 
+fn brief_aloud_command_with_request_file(
+    prose: &str,
+    request_file: &std::path::Path,
+) -> Option<std::process::Command> {
+    let mut command = brief_aloud_command(prose)?;
+    command.env("HERALD_REQUEST_ID_FILE", request_file);
+    Some(command)
+}
+
+fn herald_request_id(response: &str) -> Option<String> {
+    let value: serde_json::Value = serde_json::from_str(response).ok()?;
+    let id = value.get("request_id")?.as_str()?.trim();
+    (id.len() == 32 && id.bytes().all(|byte| byte.is_ascii_hexdigit())).then(|| id.to_string())
+}
+
+fn herald_stop_command(request_id: &str) -> Option<std::process::Command> {
+    let valid = request_id.len() == 32 && request_id.bytes().all(|byte| byte.is_ascii_hexdigit());
+    if !valid {
+        return None;
+    }
+    let mut command = std::process::Command::new("herald");
+    command.args(["notify", "stop", request_id]);
+    Some(command)
+}
+
 fn spawn_artifact_action(mut command: std::process::Command) -> bool {
     command
         .stdin(std::process::Stdio::null())
@@ -232,7 +257,8 @@ enum ArtifactActionTarget {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ArtifactAction {
-    BriefAloud,
+    BriefShort,
+    BriefStepByStep,
     Mopen,
     Ropen,
     Iopen,
@@ -253,7 +279,7 @@ impl ArtifactActionPalette {
             .as_deref()
             .is_some_and(|prose| !prose.trim().is_empty())
         {
-            actions.push(ArtifactAction::BriefAloud);
+            actions.extend([ArtifactAction::BriefShort, ArtifactAction::BriefStepByStep]);
         }
         if matches!(
             target,
@@ -1559,6 +1585,7 @@ pub struct App {
     // Interactive model/provider picker
     inline_interactive_state: Option<super::InlineInteractiveState>,
     artifact_action_palette: Option<ArtifactActionPalette>,
+    active_herald_request_id: Option<String>,
     // Cached model picker entries. Building these can require hydrating large provider catalogs.
     model_picker_cache: Option<ModelPickerCache>,
     model_picker_catalog_revision: u64,

@@ -47,6 +47,29 @@ fn brief_aloud_builds_direct_say_brief_command_and_rejects_blank_prose() {
 }
 
 #[test]
+fn herald_brief_response_extracts_request_id_and_builds_scoped_stop_command() {
+    let response = r#"{"status":"accepted","request_id":"0123456789abcdef0123456789abcdef"}"#;
+    assert_eq!(
+        herald_request_id(response),
+        Some("0123456789abcdef0123456789abcdef".to_string())
+    );
+
+    let command = herald_stop_command("0123456789abcdef0123456789abcdef")
+        .expect("valid request ID builds a stop command");
+    assert_eq!(command.get_program(), std::ffi::OsStr::new("herald"));
+    assert_eq!(
+        command.get_args().collect::<Vec<_>>(),
+        [
+            std::ffi::OsStr::new("notify"),
+            std::ffi::OsStr::new("stop"),
+            std::ffi::OsStr::new("0123456789abcdef0123456789abcdef"),
+        ]
+    );
+    assert!(herald_request_id("not json").is_none());
+    assert!(herald_stop_command("bad-id").is_none());
+}
+
+#[test]
 fn artifact_action_palette_captures_typed_target_and_stable_actions() {
     let mut source = "https://example.com/report".to_string();
     let palette = ArtifactActionPalette::capture(
@@ -62,7 +85,8 @@ fn artifact_action_palette_captures_typed_target_and_stable_actions() {
     assert_eq!(
         palette.actions(),
         &[
-            ArtifactAction::BriefAloud,
+            ArtifactAction::BriefShort,
+            ArtifactAction::BriefStepByStep,
             ArtifactAction::Mopen,
             ArtifactAction::Ropen,
             ArtifactAction::Iopen,

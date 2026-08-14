@@ -103,7 +103,7 @@ impl App {
 
         self.artifact_action_palette = Some(super::ArtifactActionPalette::capture(target, spoken));
         self.set_status_notice(
-            "Artifact actions: B brief aloud · M Mac · R remote · I iPhone · C copy · Esc cancel",
+            "Artifact actions: S short · D step by step · M Mac · R remote · I iPhone · C copy · Esc cancel",
         );
     }
 
@@ -118,7 +118,8 @@ impl App {
             return;
         };
         let requested = match code {
-            KeyCode::Char('b' | 'B') => Some(super::ArtifactAction::BriefAloud),
+            KeyCode::Char('s' | 'S') => Some(super::ArtifactAction::BriefShort),
+            KeyCode::Char('d' | 'D') => Some(super::ArtifactAction::BriefStepByStep),
             KeyCode::Char('m' | 'M') => Some(super::ArtifactAction::Mopen),
             KeyCode::Char('r' | 'R') => Some(super::ArtifactAction::Ropen),
             KeyCode::Char('i' | 'I') => Some(super::ArtifactAction::Iopen),
@@ -127,7 +128,7 @@ impl App {
         };
         let Some(action) = requested else {
             self.artifact_action_palette = Some(palette);
-            self.set_status_notice("Artifact actions: press B, M, R, I, C, or Esc");
+            self.set_status_notice("Artifact actions: press S, D, M, R, I, C, or Esc");
             return;
         };
         if !palette.actions().contains(&action) {
@@ -144,11 +145,32 @@ impl App {
                     "Artifact target copy failed"
                 });
             }
-            super::ArtifactAction::BriefAloud => {
+            super::ArtifactAction::BriefShort | super::ArtifactAction::BriefStepByStep => {
+                if let Some(request_id) = self.active_herald_request_id.take() {
+                    let stopped = super::herald_stop_command(&request_id)
+                        .is_some_and(super::spawn_artifact_action);
+                    self.set_status_notice(if stopped {
+                        "Herald briefing stopped; queue preserved"
+                    } else {
+                        "Herald stop requested; queue preserved"
+                    });
+                    return;
+                }
                 let source = palette.target_value();
-                let Some((markdown, spoken)) = super::compose_decision_brief(source) else {
+                let Some((markdown, composed_spoken)) = super::compose_decision_brief(source)
+                else {
                     self.set_status_notice("Decision Brief could not be composed");
                     return;
+                };
+                let spoken = match action {
+                    super::ArtifactAction::BriefShort => {
+                        composed_spoken.split_once('.').map_or_else(
+                            || composed_spoken.clone(),
+                            |(sentence, _)| format!("{sentence}."),
+                        )
+                    }
+                    super::ArtifactAction::BriefStepByStep => composed_spoken,
+                    _ => unreachable!(),
                 };
                 let artifact = jcode_tui_messages::RenderedArtifact::new(
                     jcode_tui_messages::RenderedArtifactKind::DecisionBrief,
@@ -188,13 +210,23 @@ impl App {
                 self.push_display_message(
                     super::DisplayMessage::tool_text(markdown).with_artifact(artifact),
                 );
-                let result = palette
-                    .spoken_prose
-                    .as_deref()
-                    .or(Some(spoken.as_str()))
-                    .and_then(super::brief_aloud_command)
-                    .is_some_and(super::spawn_artifact_action);
-                self.set_status_notice(if result {
+                let request_file = std::env::temp_dir()
+                    .join(format!("jcode-herald-{}", crate::id::new_id("request")));
+                let result = Some(spoken.as_str())
+                    .and_then(|prose| {
+                        super::brief_aloud_command_with_request_file(prose, &request_file)
+                    })
+                    .and_then(|mut command| {
+                        let child = command.spawn().ok()?;
+                        let status = child.wait_with_output().ok()?.status;
+                        status.success().then(|| {
+                            let response = std::fs::read_to_string(&request_file).ok();
+                            let _ = std::fs::remove_file(&request_file);
+                            response.and_then(|value| super::herald_request_id(&value))
+                        })?
+                    });
+                self.active_herald_request_id = result;
+                self.set_status_notice(if self.active_herald_request_id.is_some() {
                     "Herald briefing launched"
                 } else {
                     "Herald briefing unavailable"
