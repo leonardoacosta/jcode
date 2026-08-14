@@ -1199,43 +1199,47 @@ fn post_payload(payload: serde_json::Value, timeout: Duration) -> bool {
 }
 
 fn post_grafana_payload(payload: &serde_json::Value, timeout: Duration) -> bool {
-    let Some(endpoint) = std::env::var_os("JCODE_GRAFANA_LOKI_URL") else {
+    let Some(endpoint) = std::env::var_os("JCODE_OTLP_LOGS_URL") else {
         return false;
     };
     let endpoint = endpoint.to_string_lossy();
-    let labels = serde_json::json!({
-        "service_name": "jcode",
-        "source": "jcode-live-telemetry",
-        "event": payload.get("event").and_then(Value::as_str).unwrap_or("unknown"),
-    });
     let timestamp = Utc::now()
         .timestamp_nanos_opt()
         .unwrap_or_default()
         .to_string();
     let body = serde_json::json!({
-        "streams": [{
-            "stream": labels,
-            "values": [[timestamp, serde_json::to_string(payload).unwrap_or_else(|_| "{}".to_string())]],
+        "resourceLogs": [{
+            "resource": {"attributes": [
+                {"key": "service.name", "value": {"stringValue": "jcode"}},
+                {"key": "source", "value": {"stringValue": "jcode-live-telemetry"}},
+            ]},
+            "scopeLogs": [{"logRecords": [{
+                "timeUnixNano": timestamp,
+                "body": {"stringValue": serde_json::to_string(payload).unwrap_or_else(|_| "{}".to_string())},
+            }]}],
         }],
     });
     let mut request = client_for_grafana()
         .post(endpoint.as_ref())
         .timeout(timeout)
         .json(&body);
-    if let Some(token) = std::env::var_os("JCODE_GRAFANA_LOKI_TOKEN") {
-        request = request.bearer_auth(token.to_string_lossy());
+    if let Some(authorization) = std::env::var_os("JCODE_OTLP_AUTHORIZATION") {
+        request = request.header(
+            reqwest::header::AUTHORIZATION,
+            authorization.to_string_lossy().as_ref(),
+        );
     }
     match request.send() {
         Ok(response) if response.status().is_success() => true,
         Ok(response) => {
             logging::warn(&format!(
-                "Grafana Loki rejected telemetry with HTTP {}",
+                "OTLP logs endpoint rejected telemetry with HTTP {}",
                 response.status()
             ));
             false
         }
         Err(err) => {
-            logging::warn(&format!("Grafana Loki telemetry send failed: {err}"));
+            logging::warn(&format!("OTLP logs telemetry send failed: {err}"));
             false
         }
     }
