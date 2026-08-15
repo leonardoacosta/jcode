@@ -215,17 +215,21 @@ def run():
     a = TelegramAdapter(ix, IDS)
     r = a.handle(tg(1, 555, "deploy prod", user=999),
                  classify=lambda t: "work_request")
-    check("Sender authorization", "An unmapped sender messages the bot",
+    check("Sender authorization", "A sender who is not on the allowlist messages the bot",
           r["classification"] == "unauthorized" and not r["authorized"],
           "recorded as unauthorized")
-    check("Sender authorization", "An unmapped sender messages the bot",
+    check("Sender authorization", "A sender who is not on the allowlist messages the bot",
           len(ix.proposals) == 0 and len(ix.tracked_work) == 0
           and not a.outbound,
           "not promoted, not executed, no repository content returned")
 
+    check("Sender authorization", "A sender who is not on the allowlist messages the bot",
+          "999" in r["sender_identity"],
+          "sender identifier recorded so the operator can self-configure")
+
     r = a.handle(tg(2, 555, "deploy prod", user=7),
                  classify=lambda t: "work_request")
-    check("Sender authorization", "A mapped sender messages the bot",
+    check("Sender authorization", "An allowlisted sender messages the bot",
           r["operator"] == "op:leo" and len(ix.proposals) == 1,
           "forwarded carrying operator identity")
 
