@@ -79,6 +79,8 @@ Replies should be generated from artifacts and gate results, not from model narr
 
 Rate limits, concurrency caps, queue depth, dead-letter handling, replay protection, and per-sender quotas must exist at intake. An unbounded intent source will otherwise saturate worker capacity.
 
+These are admission controls on execution, not retention limits. A throttled or rejected message is still recorded, because maximal retention applies to what arrives, while quotas govern what runs.
+
 ## Extension seams to build in from day one
 
 | Seam | Why it must exist early | Cost if deferred |
