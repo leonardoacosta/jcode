@@ -364,8 +364,23 @@ These constraints are now codified in the OpenSpec change `add-factory-intake-ca
 
 It passes both acceptance gates. The negative control was re-run against the real proposal: injecting `chat_id` and `update_id` into the neutral spec's dedupe scenario left `openspec validate --strict` passing (exit 0) while the boundary check reported both leaks and failed (exit 1). Adding a Slack adapter spec to the live change left the `factory-intake` spec byte-identical (md5 `0d0e967e8698d2a4c44da529ede79bf6`), with both gates still clean.
 
+## Executing the scenarios found four defects reading did not
+
+`scripts/intake-acceptance-model.py` is a reference model of the intake capability in which every assertion maps to a named spec scenario. It is not the implementation; its purpose is to find scenarios that are contradictory or under-specified before production code exists. Running it found four defects, none visible from reading the spec:
+
+| # | Defect | Consequence |
+|---|---|---|
+| 1 | Dedupe key omitted sender and conversation identity | Two operators sending identical text collide |
+| 2 | Key derived from post-redaction content | Two different pasted credentials both redact to the same marker and collapse into one record |
+| 3 | Resend of a throttled message treated as a duplicate | Deferral becomes permanent; the message can never execute |
+| 4 | Single global execution budget | Cheap status queries starve work proposals |
+
+Defect 3 is the most serious: throttling silently became permanent suppression, and the operator's natural recovery action (resend) was the one action guaranteed not to work.
+
+The model's assertions were validated by mutation testing rather than trusted: 12 mutations, each reintroducing a specific wrong behavior, are all caught. An earlier sweep had two survivors; on inspection both were no-op mutants of my own construction, and rewriting them properly exposed defect 1 as a genuine coverage gap. All four defects are now fixed in the model, guarded by regression assertions, and encoded as scenarios in the spec.
+
 ## Limitations
 
-No inbox implementation exists yet. The proposal is drafted and validated; no code is written. This document is design constraint research only, derived from the repository's factory documentation, the observed ambient queue storage format (`ambient/queue.json`), and the Telegram Bot API specification as of version 10.2.
+No inbox implementation exists yet. The proposal is drafted and validated, and a reference model executes its scenarios, but no production code is written. The model shares an author with the spec, so it proves internal consistency and implementability, not that the design meets a need. This document is design constraint research only, derived from the repository's factory documentation, the observed ambient queue storage format (`ambient/queue.json`), and the Telegram Bot API specification as of version 10.2.
 
 The adapter-neutrality claim is validated only at the specification level. Whether a Slack adapter truly requires no changes outside itself can only be proven by building both adapters, and that evidence does not exist yet.
