@@ -35,9 +35,10 @@ flowchart LR
 8. [Observability](observability.md)
 9. [Governance and risk](governance-and-risk.md)
 10. [Feedback and learning](feedback-and-learning.md)
-11. [Open-harness landscape](open-harness-landscape.md)
-12. [Jcode mapping](jcode-mapping.md)
-13. [Sources and limitations](sources-and-limitations.md)
+11. [Software-factory frameworks](frameworks.md)
+12. [Open-harness landscape](open-harness-landscape.md)
+13. [Jcode mapping](jcode-mapping.md)
+14. [Sources and limitations](sources-and-limitations.md)
 
 ## Vocabulary
 
