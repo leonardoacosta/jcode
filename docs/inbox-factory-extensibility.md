@@ -133,7 +133,7 @@ The intake store holds **provider-shaped** input. OpenSpec and Beads hold curate
 
 **Provider-shaped** means the data still carries the structure, vocabulary, and quirks of the messaging platform that produced it, rather than the structure the factory reasons in.
 
-A Telegram webhook does not deliver "a request." It delivers an `Update` object with an `update_id`, at most one populated variant among roughly thirty optional fields (`message`, `edited_message`, `callback_query`, `my_chat_member`, and so on), a nested `Message` with `chat`, `from`, `entities`, and possibly media descriptors. Slack delivers a different envelope: a Socket Mode wrapper around an event with `team`, `channel`, `ts`, `thread_ts`, and block structures. Neither resembles the other, and neither resembles a specification or a task.
+A Telegram webhook does not deliver "a request." It delivers an `Update` object with an `update_id`, at most one populated variant among its 26 optional fields (Bot API 10.2) (`message`, `edited_message`, `callback_query`, `my_chat_member`, and so on), a nested `Message` with `chat`, `from`, `entities`, and possibly media descriptors. Slack delivers a different envelope: a Socket Mode wrapper around an event with `team`, `channel`, `ts`, `thread_ts`, and block structures. Neither resembles the other, and neither resembles a specification or a task.
 
 Provider-shaped data has four properties that make it unfit for durable authority:
 
