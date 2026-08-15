@@ -1186,6 +1186,15 @@ async fn dispatch_pending_server_reload(app: &mut App, remote: &mut RemoteConnec
 }
 
 pub(super) async fn process_remote_followups(app: &mut App, remote: &mut RemoteConnection) {
+    // Dispatch requests are edge-triggered by the run loop. If a gate below
+    // makes us return before sending, keep the edge armed while work remains
+    // queued. Otherwise the queue can sit idle until the 30-second starvation
+    // watchdog notices it.
+    let rearm_queued_dispatch = |app: &mut App| {
+        if app.has_queued_followups() && !app.is_processing {
+            app.pending_queued_dispatch = true;
+        }
+    };
     // A pending *server* reload must be dispatched even when the bootstrap
     // History payload was intentionally deferred. The runtime-identity /
     // stale-binary guard in the History handler sets `pending_server_reload =
@@ -1251,6 +1260,7 @@ pub(super) async fn process_remote_followups(app: &mut App, remote: &mut RemoteC
 
     if !remote.has_loaded_history() {
         note_startup_submit_deferred(app, "remote history not loaded yet");
+        rearm_queued_dispatch(app);
         return;
     }
 
@@ -1456,6 +1466,7 @@ pub(super) async fn process_remote_followups(app: &mut App, remote: &mut RemoteC
                 }
             }
         }
+        rearm_queued_dispatch(app);
         return;
     }
 
