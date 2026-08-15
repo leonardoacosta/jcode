@@ -129,7 +129,22 @@ Intake is a distinct authority from specification and work state.
 | OpenSpec | Specifications and change contracts | Unfiltered chat noise would pollute the specification authority |
 | Beads | Issues, dependencies, work state | Not every message becomes work; most never should |
 
-The intake store holds high-volume, low-trust, provider-shaped input. OpenSpec and Beads hold curated, approved, durable authority. Promotion from intake into either is an explicit, audited transition, never an implicit write.
+The intake store holds **provider-shaped** input. OpenSpec and Beads hold curated, approved, durable authority. Promotion from intake into either is an explicit, audited transition, never an implicit write.
+
+**Provider-shaped** means the data still carries the structure, vocabulary, and quirks of the messaging platform that produced it, rather than the structure the factory reasons in.
+
+A Telegram webhook does not deliver "a request." It delivers an `Update` object with an `update_id`, at most one populated variant among roughly thirty optional fields (`message`, `edited_message`, `callback_query`, `my_chat_member`, and so on), a nested `Message` with `chat`, `from`, `entities`, and possibly media descriptors. Slack delivers a different envelope: a Socket Mode wrapper around an event with `team`, `channel`, `ts`, `thread_ts`, and block structures. Neither resembles the other, and neither resembles a specification or a task.
+
+Provider-shaped data has four properties that make it unfit for durable authority:
+
+| Property | Consequence |
+|---|---|
+| Platform-specific schema | `chat.id` and `channel` mean different things and are not interchangeable |
+| Vendor-controlled evolution | Telegram shipped 10.0, 10.1, and 10.2 in three months, each adding fields and update types |
+| One-to-many mapping | One intent may span several messages; one message may contain no intent at all |
+| Delivery semantics baked in | Retries, edits, deletions, and ordering are transport concerns, not intent concerns |
+
+The intake store is where that shape is allowed to exist and be preserved for audit. The **envelope** normalizes it. The **intent** is what the factory actually reasons about. Letting provider shape leak past intake is what makes a system permanently Telegram-flavored.
 
 ### Inbound messages never create initiatives directly
 
@@ -153,57 +168,100 @@ flowchart TD
   A -->|denied or expired| X[Closed with reason]
 ```
 
-## Retention and redaction trade-offs
+## Retention and redaction
 
-Two independent axes. Retention is how long chat-derived data survives. Redaction is how much of it is ever stored.
+### Decision: maximal retention
 
-### Retention options
+Keep everything, indefinitely, at every record class. The factory's value comes from replay, audit, deduplication, and a learning corpus, and all four degrade with deletion. This is a local-first, single-operator system, so the usual argument for aggressive expiry (large breach blast radius across many subjects) does not apply with the same force.
 
-| Option | Behavior | Gains | Costs |
-|---|---|---:|---|
-| Ephemeral | Keep envelope only until the intent resolves | Minimal exposure, smallest storage | No replay, weak audit, duplicate events can re-execute after purge |
-| Short window | Retain raw payload 7–30 days, keep derived intent indefinitely | Debuggable, bounded exposure, dedupe still works | Incidents older than the window are unreproducible |
-| Full retention | Keep everything indefinitely | Complete audit and replay, best learning corpus | Largest breach blast radius, compliance burden, storage growth |
-| Tiered | Raw short, intent medium, approvals and receipts permanent | Matches value to risk per record class | More policy surface and migration logic |
+| Consequence | Effect |
+|---|---|
+| Replay and audit | Complete, permanently |
+| Deduplication | Correct forever, no post-purge re-execution |
+| Learning corpus | Grows monotonically |
+| Storage | Text is negligible; media needs a size cap and content-addressed storage |
+| Exposure | Whatever is written stays written, so the write path is the only control point |
 
-### Redaction options
+Because nothing is ever deleted, the **only** remaining control is what gets written in the first place.
 
-| Option | Behavior | Gains | Costs |
-|---|---|---:|---|
-| None | Store text verbatim | Perfect fidelity, easiest debugging | Secrets and personal data land in durable storage |
-| Ingress redaction | Scrub secrets and identifiers before first write | Strongest protection, nothing sensitive ever persisted | Irreversible, false positives destroy real content, pattern gaps still leak |
-| Egress redaction | Store raw, scrub on read and projection | Full fidelity retained, policy can improve later | Raw store remains a high-value target, every reader must enforce policy |
-| Tokenized | Replace sensitive spans with references to a restricted vault | Reversible for authorized use, low exposure by default | Most complex, adds a second secured store and key management |
+### What redaction is actually for
 
-### The core tension
+Redaction is not censorship of the operator. Nothing is being hidden from you, and no policy assumes your messages are untrustworthy.
 
-Retention and redaction pull in opposite directions:
+The single concrete hazard is this: chat is a low-friction channel, so credentials get pasted into it. That happens constantly and usually by accident, for example forwarding an error message that embeds a token, pasting a connection string while debugging, or relaying a webhook URL that carries a secret in its path.
 
-- Auditability, replay, deduplication, and learning all want **more data for longer**.
-- Breach blast radius, compliance obligations, and the risk of leaking secrets into chat all want **less data for less time**.
+Under maximal retention, a credential pasted once is retained forever.
 
-Note the asymmetry: **redaction failures are irreversible in both directions**. Redacting too aggressively destroys evidence permanently. Redacting too late means the secret was already written to disk, backups, and possibly logs.
+The existing fleet doctrine already forbids reproducing credential values in durable output. The relevant rule is that when a credential is found, it is reported by location and type, never by value, and anything leaving a session is scrubbed before it is written. An always-on inbox is exactly such a durable sink.
 
-### Recommendation
+So the scope of redaction is narrow and specific:
 
-**Tiered retention with ingress redaction of high-confidence secrets, plus egress redaction for everything else.**
+- **In scope:** credential-shaped strings, meaning API keys, bearer tokens, private keys, connection strings with embedded passwords, and secret-bearing URLs.
+- **Out of scope:** everything else you write. Requests, opinions, file paths, repository names, error text, plans, and profanity are all stored verbatim.
 
-| Record class | Retention | Redaction |
+### Why it still matters when the sender is trusted
+
+Trust in the sender is not the same as trust in the storage. Retained credentials create risk independent of who typed them:
+
+1. **Sink multiplication.** An inbox record is read by workers, projected into replies, included in evidence bundles, and potentially rendered in the command center. One paste becomes many copies.
+2. **Rotation defeat.** Rotating a leaked credential does not remove the retained copy, so the audit trail permanently contains a live-looking secret.
+3. **Backup reach.** Anything durable is backed up and synced, expanding the footprint beyond the original store.
+4. **Provider-side copies.** The message already exists on Telegram's or Slack's servers, so retaining a second permanent copy locally adds exposure without adding value.
+
+### Recommended posture
+
+| Policy | Setting |
+|---|---|
+| Retention | Maximal, permanent, all record classes |
+| Redaction scope | Credential-shaped strings only |
+| Redaction point | Ingress, before first durable write |
+| Non-credential content | Never redacted |
+| On detection | Replace with a typed marker such as `[redacted: bearer_token]` and record the detection event |
+| Recovery | The marker names the type and position, so the original can be re-supplied deliberately if it was a false positive |
+| Media and attachments | Content-addressed, stored once, referenced rather than inlined |
+
+This keeps the operator experience unchanged, preserves full fidelity for everything that matters, and closes the one failure mode that maximal retention would otherwise make permanent.
+
+## Options for the remaining open questions
+
+### A. Group conversation authorization
+
+| Option | Behavior | Trade-off |
 |---|---|---|
-| Raw provider payload | 14 days | Ingress scrub of credential-shaped tokens |
-| Normalized envelope | 90 days | Ingress scrub, egress policy on read |
-| Intent record | Life of related work plus 1 year | Egress |
-| Approval artifact | Permanent | Egress, no raw payload embedded |
-| Delivery receipt and gate evidence | Permanent | Egress |
-| Attachments and media | 14 days, reference-only afterward | Never inlined into durable records |
+| A1. Private chat only | Reject all group and channel traffic | Simplest and safest; no team usage, no shared visibility |
+| A2. Explicit mention required | Group messages count only when the bot is addressed or a command prefix is used | Low noise, predictable; misses context in surrounding replies |
+| A3. Allowlisted groups, full read | Approved groups ingest all messages | Rich context and better triage; large volume, many non-intents, more retained third-party content |
+| A4. Mention plus reply-thread capture | Mention opens a thread; subsequent replies in that thread are ingested | Best context-to-noise ratio; needs thread-state tracking per provider |
+| A5. Per-sender authority within groups | Group is allowlisted, but only specific senders can trigger mutating proposals | Enables team visibility with single-operator authority; requires the identity mapping table to be correct |
 
-Rationale: credential-shaped strings are the one class where the cost of a false positive is far lower than the cost of a miss, so they are removed before the first write. Everything else keeps fidelity long enough to debug and replay, while permanent records hold only decisions and evidence rather than raw conversation.
+**Recommendation:** A2 initially, then A4 plus A5. A4 gives real conversational context without ingesting entire group histories, and A5 keeps approval authority narrow while others can still see and discuss.
 
-## Open questions
+### B. Intake store location
 
-- How are group conversations authorized compared with private chats?
-- Does the intake store live inside the repository, in local state, or in a separate service?
-- What is the escalation path when ingress redaction fires on legitimate content?
+| Option | Behavior | Trade-off |
+|---|---|---|
+| B1. In-repository files | Intake records committed as files | Trivially inspectable and versioned; pollutes history with high-volume chat data and cannot be redacted retroactively |
+| B2. Local state directory | Files under Jcode local state, alongside the ambient queue | Matches existing ambient precedent, no new infrastructure; not versioned, needs its own backup story |
+| B3. Embedded database in local state | SQLite for envelopes, intents, correlation, approvals | Real queries, indexes, and transactions; dedupe and approval expiry become simple; one more storage format to maintain |
+| B4. Separate service | Standalone intake service with an API | Multi-host and multi-agent ready; heaviest operationally, contradicts local-first for a single operator |
+
+**Recommendation:** B3. Maximal retention plus deduplication plus approval-token expiry plus correlation lookups is a database workload, and the ambient queue already establishes local state as the right home. Large media should be content-addressed on disk with the database holding references.
+
+### C. Redaction false-positive escalation
+
+| Option | Behavior | Trade-off |
+|---|---|---|
+| C1. Silent redaction | Replace and continue | Zero friction; you may not notice real content was destroyed |
+| C2. Marker plus notification | Replace with a typed marker and tell the sender in the reply | Transparent and cheap; slight reply noise |
+| C3. Quarantine and confirm | Hold the suspected value out of the durable store, ask whether to keep it | No silent loss; adds a round trip and a temporary holding area, which is itself a sensitive store |
+| C4. Sender override token | A prefix such as `!raw` disables redaction for that message | Full operator control; one careless override permanently stores a real secret |
+| C5. Typed markers plus a detection log | Marker in the record, full detection event recorded separately with pattern, offset, and confidence | Auditable, tunable over time, no sensitive value retained |
+
+**Recommendation:** C2 plus C5, and explicitly not C4. The marker names the type and position, so if a redaction was wrong you can simply re-send the value deliberately. The detection log lets patterns be tuned against real traffic instead of guesswork. An override token is the one option that can permanently defeat the only control that maximal retention leaves in place.
+
+## Remaining open question
+
+- Should the identity mapping table be operator-maintained, or derived from provider profile data and confirmed once per identity?
 
 ## Limitations
 
