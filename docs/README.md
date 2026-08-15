@@ -12,6 +12,7 @@ Reference documentation for the jcode codebase.
 
 ## Key entry points
 
+- Factory: `factory/README.md` — AI software-factory lifecycle, architecture, evidence, and research index.
 - Architecture: `SERVER_ARCHITECTURE.md`, `MODULAR_ARCHITECTURE_RFC.md`, `CRATE_OWNERSHIP_BOUNDARIES.md`
 - Swarm: `SWARM_ARCHITECTURE.md`, `SWARM_TASK_GRAPH.md`
 - Memory: `MEMORY_ARCHITECTURE.md`, `MEMORY_BUDGET.md`, `MEMORY_INCIDENT_RUNBOOK.md`
