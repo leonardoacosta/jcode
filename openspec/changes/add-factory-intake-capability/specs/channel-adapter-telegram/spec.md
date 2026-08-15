@@ -55,18 +55,19 @@ In group chats, the adapter SHALL only forward messages that explicitly address 
 
 ### Requirement: Sender authorization
 
-The adapter SHALL forward messages only from senders mapped to a known operator identity.
+The adapter SHALL forward messages only from senders on a configured allowlist. The system is single-operator, so the allowlist is expected to hold exactly one sender; no mapping table or multi-user identity model is implied.
 
-#### Scenario: An unmapped sender messages the bot
+#### Scenario: A sender who is not on the allowlist messages the bot
 
-- **WHEN** a sender with no mapped operator identity sends a message
+- **WHEN** a sender who is not on the allowlist sends a message
 - **THEN** the message is recorded as unauthorized
-- **AND** it is not promoted, executed, or answered with any repository content.
+- **AND** it is not promoted, executed, or answered with any repository content
+- **AND** the sender identifier is recorded, so the operator can read their own identifier from the first attempt and configure the allowlist without external lookup.
 
-#### Scenario: A mapped sender messages the bot
+#### Scenario: An allowlisted sender messages the bot
 
-- **WHEN** a sender mapped to an operator identity sends a message
-- **THEN** the message is forwarded to intake carrying that operator identity.
+- **WHEN** an allowlisted sender sends a message
+- **THEN** the message is forwarded to intake carrying the operator identity.
 
 ### Requirement: Outbound delivery and redaction notice
 

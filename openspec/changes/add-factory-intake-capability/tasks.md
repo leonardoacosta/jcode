@@ -16,9 +16,9 @@
 
 ## 3. Identity
 
-- [ ] 3.1 Resolve the open question: operator-maintained mapping table, or derived-and-confirmed.
-- [ ] 3.2 Implement sender-to-operator mapping.
-- [ ] 3.3 Test that unmapped senders are recorded as unauthorized and answered with no repository content.
+- [ ] 3.1 Implement a single-entry sender allowlist in configuration. Single-operator: no mapping table.
+- [ ] 3.2 Record the sender identifier on unauthorized attempts, so the operator can self-configure from the first message.
+- [ ] 3.3 Test that non-allowlisted senders are recorded as unauthorized and answered with no repository content.
 
 ## 4. Telegram adapter
 

@@ -68,4 +68,4 @@ Group chats forward only messages that mention the bot or reply to it. Broader a
 
 ## Open Questions
 
-- Is the identity mapping table operator-maintained, or derived from provider profile data and confirmed once per identity? It is phase-one work either way, because approval authority depends on it.
+None. Identity was briefly framed as an open question about a mapping table, which was an error: the system is single-operator by decision, so the allowlist holds one entry and there is nothing to map. The operator reads their own sender identifier from the first unauthorized attempt, which the adapter records for exactly this purpose.
