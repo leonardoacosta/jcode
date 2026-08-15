@@ -35,7 +35,7 @@ flowchart LR
 Three distinct layers, never merged:
 
 - **Transport adapter:** provider protocol, signature verification, acknowledgement, retry semantics.
-- **Envelope:** provider-neutral message record with a stable `dedupe_key`.
+- **Envelope:** provider-neutral message record with a stable `dedupe_key`. The provider's own sequence number is not sufficient: Telegram specifies that `update_id` increases sequentially, but if no updates arrive for a week the next identifier is chosen **randomly** instead. A dedupe key derived from provider sequence alone would therefore break after any quiet period, which is the normal state of a single-operator inbox.
 - **Intent:** the factory-level request, which may span several messages or none.
 
 Merging envelope and intent is the most common failure. It forces every later source (email, webhook, CI callback, voice) to imitate chat message shape.
@@ -140,7 +140,7 @@ Provider-shaped data has four properties that make it unfit for durable authorit
 | Property | Consequence |
 |---|---|
 | Platform-specific schema | `chat.id` and `channel` mean different things and are not interchangeable |
-| Vendor-controlled evolution | Telegram shipped 10.0, 10.1, and 10.2 in three months, each adding fields and update types |
+| Vendor-controlled evolution | Telegram shipped 10.0, 10.1, and 10.2 within 67 days (2026-05-08 to 2026-07-14), adding `guest_message`, `subscription`, and whole new message classes |
 | One-to-many mapping | One intent may span several messages; one message may contain no intent at all |
 | Delivery semantics baked in | Retries, edits, deletions, and ordering are transport concerns, not intent concerns |
 
@@ -208,7 +208,7 @@ Trust in the sender is not the same as trust in the storage. Retained credential
 1. **Sink multiplication.** An inbox record is read by workers, projected into replies, included in evidence bundles, and potentially rendered in the command center. One paste becomes many copies.
 2. **Rotation defeat.** Rotating a leaked credential does not remove the retained copy, so the audit trail permanently contains a live-looking secret.
 3. **Backup reach.** Anything durable is backed up and synced, expanding the footprint beyond the original store.
-4. **Provider-side copies.** The message already exists on Telegram's or Slack's servers, so retaining a second permanent copy locally adds exposure without adding value.
+4. **Provider-side copies.** The message already exists on the provider's servers, so a local permanent copy is additive exposure. Note this argument is weaker than it first appears: Telegram states that undelivered updates are not kept longer than 24 hours, so the provider copy of an update is transient while the local copy is permanent. The asymmetry strengthens rather than weakens the case for scrubbing at ingress.
 
 ### Decided posture
 
