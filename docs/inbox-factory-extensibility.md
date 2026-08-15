@@ -238,10 +238,12 @@ This keeps the operator experience unchanged, preserves full fidelity for everyt
 
 Phase one ingests a group message only when the bot is explicitly addressed or a command prefix is used. This keeps the first implementation narrow and makes the ingestion boundary trivial to reason about: if the bot was not addressed, no record is created.
 
-A4 and A5 are deferred but must not be designed out. Two implications for phase one:
+A4 and A5 are deferred, and nothing about them needs deciding now. Neither is load-bearing for phase one:
 
-- The envelope must carry the provider's native thread identity (`message_thread_id` on Telegram, `thread_ts` on Slack) from the first version, even while nothing consumes it. Retrofitting thread identity onto already-stored envelopes is the expensive version of this change.
-- The identity mapping table must exist in phase one even with a single entry, because A5 is per-sender authority and that table is where authority is expressed.
+- **Thread identity is not urgent.** Maximal retention means the raw provider payload is kept permanently, so `message_thread_id` and `thread_ts` can be backfilled from stored payloads whenever A4 is actually built. Carrying the field in the envelope from the start is cheap and worth doing, but it is a convenience, not a one-way door.
+- **The identity mapping table is already required without A5.** Decision 5 makes approvals answerable from Telegram, Slack, the command center, or CLI, which means one human must resolve to one identity across channels regardless of group policy. A5 would consume that table, not motivate it.
+
+The only genuine constraint A2 places on later phases is the one already stated as an anti-pattern: do not hardcode single-chat assumptions. Group and thread scoping must be data on the envelope rather than an assumption in the adapter.
 
 ### B. Intake store location
 
@@ -281,7 +283,7 @@ C5's separate detection log is not adopted now. If redaction patterns later prov
 
 ## Remaining open question
 
-- Should the identity mapping table be operator-maintained, or derived from provider profile data and confirmed once per identity? This is now more consequential than when first raised, because the A5 decision makes that table the place where per-sender authority is expressed.
+- Should the identity mapping table be operator-maintained, or derived from provider profile data and confirmed once per identity? This matters for phase one because multi-channel approval identity depends on it, independently of any group-authorization policy.
 
 ## Limitations
 
