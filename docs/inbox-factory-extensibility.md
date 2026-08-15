@@ -287,6 +287,22 @@ C5's separate detection log is not adopted now. If redaction patterns later prov
 
 - Should the identity mapping table be operator-maintained, or derived from provider profile data and confirmed once per identity? This matters for phase one because multi-channel approval identity depends on it, independently of any group-authorization policy.
 
+## Validation performed
+
+The guidance was tested against the real OpenSpec CLI rather than only reviewed. Two throwaway changes were built under `openspec/changes/`, validated with `openspec validate --strict`, and deleted.
+
+| Test | Result |
+|---|---|
+| A change shaped by this guidance (envelope, approval, redaction requirements) | Valid under `--strict` |
+| Adding a Slack adapter spec afterwards | Valid, and the `factory-intake` spec needed no edit, which is the adapter-neutrality claim holding in the only form testable before implementation |
+| Negative control: a deliberately bad change storing task state in chat history and reading `chat.id` throughout | **Also valid under `--strict`** |
+
+The negative control is the important result. The validator checks structure, requirement wording, and scenario shape. It does not check design quality, and it cannot detect the anti-patterns listed above.
+
+This has a direct consequence for the proposal: **passing `openspec validate` is not evidence that the intake boundary is correct.** The anti-patterns in this document must be enforced by review, because no tool in the repository will catch them. A proposal that hardcodes single-chat assumptions will validate cleanly and still be wrong.
+
 ## Limitations
 
 No inbox implementation exists yet. This document is design constraint research only, derived from repository factory documentation and the existing ambient queue behavior.
+
+The adapter-neutrality claim is validated only at the specification level. Whether a Slack adapter truly requires no changes outside itself can only be proven by building both adapters, and that evidence does not exist yet.
