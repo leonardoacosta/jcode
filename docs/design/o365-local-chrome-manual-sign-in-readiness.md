@@ -27,9 +27,9 @@ Observed on 2026-08-15 through the Jcode browser provider:
 - Launch behavior: target process is owned by the named launcher and uses the persistent O365 profile.
 - The initial page is not a routing control. All later tabs and navigations in this Chrome process inherit the same SOCKS proxy policy.
 - Visible authentication state: authenticated session confirmed after manual sign-in. The Teams page exposed a visible `Sign out` control.
-- Application state: Teams then displayed `CREATE_USER_CONTEXT_FAILED_GENERIC` with a `Restart` control. This is an application-context failure, not an indication that the profile is signed out.
-- Proxy evidence: the live process included `--proxy-server=socks5://127.0.0.1:1080`; the local SOCKS listener and CDP endpoint were ready. Page content itself does not display a SOCKS indicator.
-- Hidden browser state: not inspected.
+- Visible recovery attempt: clicking Teams `Restart` did not clear `CREATE_USER_CONTEXT_FAILED_GENERIC`; the page continued to show both the error and `Sign out`.
+- Browser-origin route probe: navigating this target to `https://api.ipify.org/` returned the same address as `curl --proxy socks5h://127.0.0.1:1080 https://api.ipify.org`, and differed from the direct no-proxy result. This is end-to-end evidence that the O365 Chrome process used the SOCKS route for that navigation.
+- DNS behavior: the external-IP probe does not by itself prove LAN hostname DNS behavior; that remains a separate verification item.
 
 ## Manual sign-in readiness checklist
 
@@ -68,4 +68,4 @@ Report one of these states without attempting credential work:
 
 ## Latest readiness finding
 
-`chrome_o365` is operational as a named target and the persistent profile now has a visible authenticated Microsoft 365 session, confirmed by the Teams `Sign out` control. Teams currently reports `CREATE_USER_CONTEXT_FAILED_GENERIC`, so authentication is ready but Teams application context is not. The target process is launched with the explicit SOCKS proxy policy; verify the process and listener rather than relying on page appearance for routing evidence.
+`chrome_o365` is operational as a named target and the persistent profile has a visible authenticated Microsoft 365 session, confirmed by the Teams `Sign out` control. A browser-origin external-IP probe matched the SOCKS path and differed from the direct path. Teams still reports `CREATE_USER_CONTEXT_FAILED_GENERIC` after a visible `Restart` attempt, so authentication and proxy routing are ready but Teams application context is not. DNS behavior for LAN hostnames and external VNC client authentication remain separate open checks.
