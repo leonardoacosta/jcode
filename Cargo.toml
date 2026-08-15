@@ -19,6 +19,7 @@ members = [
     "crates/jcode-mac-browser-setup",
     "crates/jcode-ambient-types",
     "crates/jcode-intake-types",
+    "crates/jcode-intake-telegram",
     "crates/jcode-auth-types",
     "crates/jcode-embedding",
     "crates/jcode-gateway-types",

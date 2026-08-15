@@ -23,7 +23,7 @@ pub struct Record {
     pub deferred: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Classification {
     WorkRequest,
     ResearchRequest,
@@ -32,7 +32,7 @@ pub enum Classification {
     Unauthorized,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum IntakeEvent {
     Redaction { record: RecordId, count: usize },
     Deferral { record: RecordId, class: String },

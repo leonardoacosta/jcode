@@ -341,3 +341,41 @@ fn redactor_scope_is_narrow() {
     }
     assert!(redactor.scrub(TG_TOKEN).count > 0, "real token must redact");
 }
+
+/// Scenario: A sender who is not on the allowlist messages the bot.
+/// Authorization is checked before interpretation, so an unauthorized
+/// request never reaches the classifier.
+#[test]
+fn unauthorized_messages_are_recorded_but_never_promoted() {
+    let mut store = IntakeStore::with_classifier(None, |_| Ok(Classification::WorkRequest));
+    let id = store.receive_unauthorized(
+        envelope("telegram", "tg:999", "c1", "deploy prod"),
+        json!({}),
+    );
+    let rec = store.records().iter().find(|r| r.id == id).unwrap();
+
+    assert_eq!(store.records().len(), 1, "the attempt is retained in full");
+    assert_eq!(rec.classification, Some(Classification::Unauthorized));
+    assert!(!rec.executed, "an unauthorized message must not execute");
+    assert!(rec.operator.is_none());
+    assert!(
+        store.proposals().is_empty() && store.tracked_work().is_empty(),
+        "no proposal or tracked work may come from an unauthorized sender"
+    );
+}
+
+/// An unauthorized message is still scrubbed: retention is unconditional,
+/// so the credential path must not depend on authorization.
+#[test]
+fn unauthorized_messages_are_still_scrubbed() {
+    let mut store = IntakeStore::new(None);
+    store.receive_unauthorized(
+        envelope("telegram", "tg:999", "c1", &format!("token {TG_TOKEN}")),
+        json!({"leaked": TG_TOKEN}),
+    );
+    let serialized = serde_json::to_string(store.records()).expect("records serialize");
+    assert!(
+        !serialized.contains(TG_TOKEN),
+        "credentials must be scrubbed regardless of authorization"
+    );
+}

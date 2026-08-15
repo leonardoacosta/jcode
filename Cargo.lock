@@ -3759,6 +3759,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "jcode-intake-telegram"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "jcode-intake-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "jcode-intake-types"
 version = "0.1.0"
 dependencies = [

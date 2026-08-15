@@ -16,22 +16,22 @@
 
 ## 3. Identity
 
-- [ ] 3.1 Implement a single-entry sender allowlist in configuration. Single-operator: no mapping table.
-- [ ] 3.2 Record the sender identifier on unauthorized attempts, so the operator can self-configure from the first message.
-- [ ] 3.3 Test that non-allowlisted senders are recorded as unauthorized and answered with no repository content.
+- [x] 3.1 Implement a single-entry sender allowlist in configuration. Single-operator: no mapping table.
+- [x] 3.2 Record the sender identifier on unauthorized attempts, so the operator can self-configure from the first message.
+- [x] 3.3 Test that non-allowlisted senders are recorded as unauthorized and answered with no repository content.
 
 ## 4. Telegram adapter
 
-- [ ] 4.1 Implement update mapping into envelopes, retaining raw payloads.
-- [ ] 4.2 Implement unhandled-variant recording, including the variant name.
-- [ ] 4.3 Implement group mention/reply gating and direct-message pass-through.
-- [ ] 4.4 Implement outbound delivery and redaction notices.
+- [x] 4.1 Implement update mapping into envelopes, retaining raw payloads.
+- [x] 4.2 Implement unhandled-variant recording, including the variant name.
+- [x] 4.3 Implement group mention/reply gating and direct-message pass-through.
+- [x] 4.4 Implement outbound delivery and redaction notices.
 - [ ] 4.5 Add the bot credential to the existing secret-handling path; verify it never appears in stored records or logs.
 
 ## 5. Acceptance
 
-- [ ] 5.1 `openspec validate add-factory-intake-capability --strict` passes.
-- [ ] 5.2 `scripts/check-intake-boundary.py` reports clean for this change.
+- [x] 5.1 `openspec validate add-factory-intake-capability --strict` passes.
+- [x] 5.2 `scripts/check-intake-boundary.py` reports clean for this change.
 - [ ] 5.3 End-to-end: a real message from a mapped sender produces a durable record and a proposal, and no tracked work until approval.
 - [ ] 5.4 End-to-end: approving from chat creates tracked work linked to the originating record.
 - [ ] 5.5 Neutrality conformance: draft a second adapter spec and confirm the `factory-intake` spec requires no edit. This is the real test of the design, and it is expected to be run before the first adapter is considered done.

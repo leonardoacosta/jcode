@@ -109,9 +109,32 @@ impl IntakeStore {
     /// in that order. The returned id always names a retained record.
     pub fn receive(
         &mut self,
+        envelope: Envelope,
+        raw_payload: serde_json::Value,
+        operator: Option<String>,
+    ) -> RecordId {
+        self.ingest(envelope, raw_payload, operator, true)
+    }
+
+    /// Record a message from a sender that is not authorized.
+    ///
+    /// The message is retained in full, but it is never classified, executed,
+    /// or promoted. Authorization is checked before interpretation so an
+    /// unauthorized request cannot reach the classifier at all.
+    pub fn receive_unauthorized(
+        &mut self,
+        envelope: Envelope,
+        raw_payload: serde_json::Value,
+    ) -> RecordId {
+        self.ingest(envelope, raw_payload, None, false)
+    }
+
+    fn ingest(
+        &mut self,
         mut envelope: Envelope,
         raw_payload: serde_json::Value,
         operator: Option<String>,
+        authorized: bool,
     ) -> RecordId {
         // The key must observe the original content, but the original itself must
         // never enter any retained structure.
@@ -157,6 +180,11 @@ impl IntakeStore {
                 record: id,
                 count: redactions,
             });
+        }
+
+        if !authorized {
+            self.last_record_mut(id).classification = Some(Classification::Unauthorized);
+            return id;
         }
 
         if let Some(prior_id) = prior_id {
