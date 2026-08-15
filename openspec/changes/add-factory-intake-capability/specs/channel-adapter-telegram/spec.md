@@ -11,6 +11,12 @@ The adapter SHALL map Telegram `Update` objects into provider-neutral intake env
 - **AND** retains the full raw `Update` for audit
 - **AND** emits no Telegram-specific identifier into the envelope.
 
+#### Scenario: The adapter hands a message to intake
+
+- **WHEN** the adapter passes a parsed message across the intake boundary
+- **THEN** the handed-over structure contains no Telegram-specific field name, not merely the stored record
+- **AND** intake accepts a fixed set of named fields, so an adapter cannot introduce transport fields by passing extra arguments.
+
 #### Scenario: An unsupported update type arrives
 
 - **WHEN** an `Update` carries a variant the adapter does not handle
