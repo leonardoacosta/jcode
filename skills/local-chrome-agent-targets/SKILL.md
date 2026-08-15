@@ -24,9 +24,15 @@ Pass the named target on every browser action that should use it:
 {"action":"snapshot","browser":"chrome_bbadmin"}
 ```
 
-Use `chrome_o365` instead when the requested account boundary is O365. Do not pass a separate `profile` value with a named target. The target owns its profile path, CDP endpoint, lifecycle, and proxy policy.
+Use the named target's normalized browser interface for navigation. The initial URL is not a routing control: once Chrome is launched with the target policy, all tabs and later navigations in that Chrome process inherit the same isolated profile, loopback CDP, and SOCKS proxy settings.
 
-## Security contract
+## Authentication and runtime state
+
+- Visible `Sign out` controls or an authenticated Microsoft 365 shell prove that the browser profile has a visible authenticated session. They do not authorize Azure CLI or REST calls.
+- A Microsoft app can be authenticated and still fail during application initialization. For example, Teams may show `CREATE_USER_CONTEXT_FAILED_GENERIC` while also showing `Sign out`. Report those as separate states: authenticated session present, application context failed.
+- If status succeeds but target actions fail, check whether the owned Chrome process exited. Relaunch through the named wrapper or normalized provider. Do not attach to an unrelated Chrome process or silently fall back.
+- Do not infer SOCKS routing from page appearance. Verify the live process launch policy and SOCKS readiness. Chrome does not display a general SOCKS indicator in page content.
+
 
 - Traffic must use the configured local SOCKS endpoint. The launcher/provider fails closed when the proxy is unavailable.
 - CDP must remain bound to loopback only.
@@ -46,7 +52,7 @@ Use `chrome_o365` instead when the requested account boundary is O365. Do not pa
 
 ## Failure handling
 
-- If the target is unavailable, report whether the failure is proxy readiness, profile lock, CDP readiness, or browser runtime setup.
+- If the target is unavailable, report whether the failure is proxy readiness, profile lock, CDP readiness, browser runtime setup, or an exited owned process.
 - Do not silently fall back from a named target to the ordinary browser or another account.
 - If a target is already authenticated, do not claim that this authorizes CLI access. Browser authorization and CLI token-cache authorization are separate OAuth client contexts.
 
