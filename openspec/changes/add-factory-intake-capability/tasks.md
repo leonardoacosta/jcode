@@ -1,18 +1,18 @@
 ## 1. Intake core
 
-- [ ] 1.1 Define the provider-neutral envelope, with intake-assigned identifiers and an adapter-name field.
-- [ ] 1.2 Implement content-and-identity dedupe key derivation; add a test asserting stability when a simulated transport reuses or randomizes its sequence identifiers.
-- [ ] 1.3 Implement the intake store: durable append, dedupe lookup, pending-approval query, raw payload retention.
-- [ ] 1.4 Implement ingress credential scrubbing with a redaction event; test that no unredacted copy reaches any store or log.
-- [ ] 1.5 Implement record-before-interpret ordering; test that a classification failure leaves an inspectable record.
+- [x] 1.1 Define the provider-neutral envelope, with intake-assigned identifiers and an adapter-name field.
+- [x] 1.2 Implement content-and-identity dedupe key derivation; add a test asserting stability when a simulated transport reuses or randomizes its sequence identifiers.
+- [x] 1.3 Implement the intake store: durable append, dedupe lookup, pending-approval query, raw payload retention.
+- [x] 1.4 Implement ingress credential scrubbing with a redaction event; test that no unredacted copy reaches any store or log.
+- [x] 1.5 Implement record-before-interpret ordering; test that a classification failure leaves an inspectable record.
 
 ## 2. Promotion and approval
 
-- [ ] 2.1 Implement classification into: work request, research request, status request, unrecognized.
-- [ ] 2.2 Implement proposal creation in awaiting-approval state; test that no tracked work is created before approval.
-- [ ] 2.3 Implement the approval transition recording approver identity, time, and channel.
+- [x] 2.1 Implement classification into: work request, research request, status request, unrecognized.
+- [x] 2.2 Implement proposal creation in awaiting-approval state; test that no tracked work is created before approval.
+- [x] 2.3 Implement the approval transition recording approver identity, time, and channel.
 - [ ] 2.4 Implement the two read-only paths; test that neither mutates repository, initiative, or configuration state.
-- [ ] 2.5 Implement execution admission control; test that throttled messages are still recorded in full.
+- [x] 2.5 Implement execution admission control; test that throttled messages are still recorded in full.
 
 ## 3. Identity
 

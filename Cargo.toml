@@ -18,6 +18,7 @@ members = [
     "crates/jcode-mac-browser-policy",
     "crates/jcode-mac-browser-setup",
     "crates/jcode-ambient-types",
+    "crates/jcode-intake-types",
     "crates/jcode-auth-types",
     "crates/jcode-embedding",
     "crates/jcode-gateway-types",
