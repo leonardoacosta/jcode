@@ -104,6 +104,10 @@ Mutating actions require explicit approval. Read-only diagnostics, plans, status
 | Approval reply | Original chat/thread updated | No adapter or credentials | Blocked |
 | Deduplication/retry | Duplicate events do not create tasks | No inbox implementation | Blocked |
 
+## Extensibility constraints
+
+Before this research is codified into a proposal, apply the factory-intake constraints in [Inbox extensibility for the software factory pattern](inbox-factory-extensibility.md). They require the inbox to be built as a provider-neutral intent source and approval surface rather than a chat integration.
+
 ## Recommended implementation order
 
 1. Platform-neutral inbox record and lifecycle.
