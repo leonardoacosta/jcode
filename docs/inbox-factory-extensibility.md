@@ -208,7 +208,7 @@ Trust in the sender is not the same as trust in the storage. Retained credential
 3. **Backup reach.** Anything durable is backed up and synced, expanding the footprint beyond the original store.
 4. **Provider-side copies.** The message already exists on Telegram's or Slack's servers, so retaining a second permanent copy locally adds exposure without adding value.
 
-### Recommended posture
+### Decided posture
 
 | Policy | Setting |
 |---|---|
@@ -216,13 +216,13 @@ Trust in the sender is not the same as trust in the storage. Retained credential
 | Redaction scope | Credential-shaped strings only |
 | Redaction point | Ingress, before first durable write |
 | Non-credential content | Never redacted |
-| On detection | Replace with a typed marker such as `[redacted: bearer_token]` and record the detection event |
+| On detection | Replace with a typed marker such as `[redacted: bearer_token]` and state in the reply that a redaction occurred |
 | Recovery | The marker names the type and position, so the original can be re-supplied deliberately if it was a false positive |
 | Media and attachments | Content-addressed, stored once, referenced rather than inlined |
 
 This keeps the operator experience unchanged, preserves full fidelity for everything that matters, and closes the one failure mode that maximal retention would otherwise make permanent.
 
-## Options for the remaining open questions
+## Resolved: authorization, storage, and escalation
 
 ### A. Group conversation authorization
 
@@ -234,7 +234,14 @@ This keeps the operator experience unchanged, preserves full fidelity for everyt
 | A4. Mention plus reply-thread capture | Mention opens a thread; subsequent replies in that thread are ingested | Best context-to-noise ratio; needs thread-state tracking per provider |
 | A5. Per-sender authority within groups | Group is allowlisted, but only specific senders can trigger mutating proposals | Enables team visibility with single-operator authority; requires the identity mapping table to be correct |
 
-**Recommendation:** A2 initially, then A4 plus A5. A4 gives real conversational context without ingesting entire group histories, and A5 keeps approval authority narrow while others can still see and discuss.
+**Decision: A2 now, A4 plus A5 later.**
+
+Phase one ingests a group message only when the bot is explicitly addressed or a command prefix is used. This keeps the first implementation narrow and makes the ingestion boundary trivial to reason about: if the bot was not addressed, no record is created.
+
+A4 and A5 are deferred but must not be designed out. Two implications for phase one:
+
+- The envelope must carry the provider's native thread identity (`message_thread_id` on Telegram, `thread_ts` on Slack) from the first version, even while nothing consumes it. Retrofitting thread identity onto already-stored envelopes is the expensive version of this change.
+- The identity mapping table must exist in phase one even with a single entry, because A5 is per-sender authority and that table is where authority is expressed.
 
 ### B. Intake store location
 
@@ -245,7 +252,14 @@ This keeps the operator experience unchanged, preserves full fidelity for everyt
 | B3. Embedded database in local state | SQLite for envelopes, intents, correlation, approvals | Real queries, indexes, and transactions; dedupe and approval expiry become simple; one more storage format to maintain |
 | B4. Separate service | Standalone intake service with an API | Multi-host and multi-agent ready; heaviest operationally, contradicts local-first for a single operator |
 
-**Recommendation:** B3. Maximal retention plus deduplication plus approval-token expiry plus correlation lookups is a database workload, and the ambient queue already establishes local state as the right home. Large media should be content-addressed on disk with the database holding references.
+**Decision: B3, embedded SQLite in local state, with media content-addressed on disk.**
+
+Consequences to carry into the proposal:
+
+- The database file lives in Jcode local state, not in the repository, so intake volume never enters version history and a redaction is always physically possible.
+- Media and attachments are stored by content hash on disk; the database holds the hash, the provider file reference, and the size. Identical forwarded media is stored once.
+- Schema migrations become a real obligation. Under maximal retention the store is never rebuilt from scratch, so every migration must be forward-only and non-destructive.
+- The store needs its own backup story, since local state is typically outside the repository backup path.
 
 ### C. Redaction false-positive escalation
 
@@ -257,11 +271,17 @@ This keeps the operator experience unchanged, preserves full fidelity for everyt
 | C4. Sender override token | A prefix such as `!raw` disables redaction for that message | Full operator control; one careless override permanently stores a real secret |
 | C5. Typed markers plus a detection log | Marker in the record, full detection event recorded separately with pattern, offset, and confidence | Auditable, tunable over time, no sensitive value retained |
 
-**Recommendation:** C2 plus C5, and explicitly not C4. The marker names the type and position, so if a redaction was wrong you can simply re-send the value deliberately. The detection log lets patterns be tuned against real traffic instead of guesswork. An override token is the one option that can permanently defeat the only control that maximal retention leaves in place.
+**Decision: C2, marker plus notification. C4 is rejected outright.**
+
+When a credential-shaped string is detected at ingress it is replaced with a typed marker such as `[redacted: bearer_token]`, and the reply states that a redaction occurred. Recovery from a false positive is simply re-sending the value deliberately.
+
+No sender override token exists at any point. An override is the only option that can permanently defeat the single control that maximal retention leaves in place, and one careless use is unrecoverable.
+
+C5's separate detection log is not adopted now. If redaction patterns later prove too aggressive or too permissive, a detection log recording pattern, offset, and confidence, but never the matched value, is the correct instrument to add.
 
 ## Remaining open question
 
-- Should the identity mapping table be operator-maintained, or derived from provider profile data and confirmed once per identity?
+- Should the identity mapping table be operator-maintained, or derived from provider profile data and confirmed once per identity? This is now more consequential than when first raised, because the A5 decision makes that table the place where per-sender authority is expressed.
 
 ## Limitations
 
