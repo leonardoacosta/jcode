@@ -195,6 +195,8 @@ fn schema_exposes_advanced_browser_fields() {
         .as_array()
         .expect("browser enum should be an array");
     assert!(browser_enum.iter().any(|value| value == "mac"));
+    assert!(browser_enum.iter().any(|value| value == "chrome_bbadmin"));
+    assert!(browser_enum.iter().any(|value| value == "chrome_o365"));
 }
 
 #[test]
@@ -203,6 +205,8 @@ fn resolve_provider_accepts_auto_firefox_chrome_and_mac() {
     assert!(resolve_provider(Some("firefox")).is_ok());
     assert!(resolve_provider(Some("chrome")).is_ok());
     assert!(resolve_provider(Some("mac")).is_ok());
+    assert!(resolve_provider(Some("chrome_bbadmin")).is_ok());
+    assert!(resolve_provider(Some("chrome_o365")).is_ok());
 }
 
 #[test]

@@ -28,6 +28,59 @@ const IDLE_TIMEOUT_MS: &str = "1800000";
 
 pub struct AgentBrowserProvider;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LocalChromeTarget {
+    BbAdmin,
+    O365,
+}
+
+impl LocalChromeTarget {
+    fn from_browser(browser: Option<&str>) -> Option<Self> {
+        match browser {
+            Some("chrome_bbadmin") => Some(Self::BbAdmin),
+            Some("chrome_o365") => Some(Self::O365),
+            _ => None,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::BbAdmin => "chrome_bbadmin",
+            Self::O365 => "chrome_o365",
+        }
+    }
+
+    fn profile_dir(self) -> Result<PathBuf> {
+        let data_home = std::env::var_os("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .or_else(|| {
+                std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/share"))
+            })
+            .ok_or_else(|| anyhow::anyhow!("cannot resolve local Chrome profile data directory"))?;
+        Ok(data_home.join("jcode").join(match self {
+            Self::BbAdmin => "chrome-bbadmin",
+            Self::O365 => "chrome-o365",
+        }))
+    }
+
+    fn proxy_url(self) -> String {
+        let specific = match self {
+            Self::BbAdmin => "JCODE_CHROME_BBADMIN_PROXY",
+            Self::O365 => "JCODE_CHROME_O365_PROXY",
+        };
+        std::env::var(specific)
+            .or_else(|_| std::env::var("JCODE_CHROME_SOCKS_PROXY"))
+            .unwrap_or_else(|_| "socks5://127.0.0.1:1080".to_string())
+    }
+
+    fn cdp_port(self) -> &'static str {
+        match self {
+            Self::BbAdmin => "9223",
+            Self::O365 => "9224",
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct TrustedExecutable {
     path: PathBuf,
@@ -169,13 +222,30 @@ impl BrowserProvider for AgentBrowserProvider {
         }
 
         let exe = discover_trusted_executable().await?;
-        let profile = resolve_profile(input.profile.as_deref()).await?;
-        let session = session_name_for_profile(&ctx.session_id, input.profile.as_deref());
+        let target = LocalChromeTarget::from_browser(input.browser.as_deref());
+        if target.is_some() && input.profile.is_some() {
+            anyhow::bail!("local Chrome targets select their own profile; do not pass profile");
+        }
+        let profile = match target {
+            Some(_) => None,
+            None => resolve_profile(input.profile.as_deref()).await?,
+        };
+        let session = session_name_for_profile(
+            &ctx.session_id,
+            target
+                .map(LocalChromeTarget::name)
+                .or(input.profile.as_deref()),
+        );
         let lock = session_lock(&session).await;
         let _guard = lock.lock().await;
         let runtime = runtime_dir().await?;
         let config = neutral_config(&runtime).await?;
-        let globals = global_args(&config, &session, profile.as_deref());
+        let mut globals = global_args(&config, &session, profile.as_deref(), None);
+
+        if let Some(target) = target {
+            globals.push("--cdp".into());
+            globals.push(target.cdp_port().into());
+        }
 
         if action == "screenshot" {
             let output = screenshot(&exe, &globals, input, ctx).await?;
@@ -210,7 +280,9 @@ impl BrowserProvider for AgentBrowserProvider {
                 self.id(),
                 "chrome",
             ),
-            input.profile.as_deref(),
+            target
+                .map(LocalChromeTarget::name)
+                .or(input.profile.as_deref()),
         ))
     }
 }
@@ -219,7 +291,7 @@ async fn chrome_status() -> Result<(TrustedExecutable, Value)> {
     let exe = discover_trusted_executable().await?;
     let runtime = runtime_dir().await?;
     let config = neutral_config(&runtime).await?;
-    let globals = global_args(&config, "jcode-status", None);
+    let globals = global_args(&config, "jcode-status", None, None);
     let result = run_agent_browser(
         &exe,
         &globals,
@@ -487,7 +559,12 @@ async fn neutral_config(runtime: &Path) -> Result<PathBuf> {
     Ok(path)
 }
 
-fn global_args(config: &Path, session: &str, profile: Option<&str>) -> Vec<String> {
+fn global_args(
+    config: &Path,
+    session: &str,
+    profile: Option<&str>,
+    proxy: Option<String>,
+) -> Vec<String> {
     let mut args = vec![
         "--config".into(),
         config.display().to_string(),
@@ -500,6 +577,10 @@ fn global_args(config: &Path, session: &str, profile: Option<&str>) -> Vec<Strin
     if let Some(profile) = profile {
         args.push("--profile".into());
         args.push(profile.to_string());
+    }
+    if let Some(proxy) = proxy {
+        args.push("--proxy".into());
+        args.push(proxy);
     }
     args
 }
@@ -519,7 +600,7 @@ pub(super) async fn close_live_session(session_id: &str, profile: Option<&str>) 
     let config = neutral_config(&runtime).await?;
     let profile_arg = resolve_profile(profile).await?;
     let session = session_name_for_profile(session_id, profile);
-    let globals = global_args(&config, &session, profile_arg.as_deref());
+    let globals = global_args(&config, &session, profile_arg.as_deref(), None);
     let result = run_agent_browser(
         &exe,
         &globals,
@@ -1205,4 +1286,31 @@ fn profile_names_are_allowlisted_and_paths_are_rejected() {
     assert!(validate_profile_name("/tmp/social").is_err());
     assert!(validate_profile_name("social/profile").is_err());
     assert!(validate_profile_name("social profile").is_err());
+}
+
+#[test]
+fn local_targets_have_distinct_profiles_and_socks_proxy() {
+    let bbadmin = LocalChromeTarget::from_browser(Some("chrome_bbadmin")).unwrap();
+    let o365 = LocalChromeTarget::from_browser(Some("chrome_o365")).unwrap();
+    assert_ne!(bbadmin.profile_dir().unwrap(), o365.profile_dir().unwrap());
+    assert_eq!(bbadmin.proxy_url(), "socks5://127.0.0.1:1080");
+    assert_eq!(o365.proxy_url(), "socks5://127.0.0.1:1080");
+}
+
+#[test]
+fn global_args_include_profile_and_proxy_for_local_target() {
+    let args = global_args(
+        Path::new("/tmp/jcode-config.json"),
+        "jcode-test",
+        Some("/home/test/.local/share/jcode/chrome-bbadmin"),
+        Some("socks5://127.0.0.1:1080".to_string()),
+    );
+    assert!(
+        args.windows(2)
+            .any(|pair| { pair == ["--profile", "/home/test/.local/share/jcode/chrome-bbadmin"] })
+    );
+    assert!(
+        args.windows(2)
+            .any(|pair| { pair == ["--proxy", "socks5://127.0.0.1:1080"] })
+    );
 }

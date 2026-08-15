@@ -213,7 +213,7 @@ impl Tool for BrowserTool {
             "browser".into(),
             json!({
                 "type": "string",
-                "enum": ["auto", "firefox", "chrome", "mac", "safari", "edge"],
+                "enum": ["auto", "firefox", "chrome", "chrome_bbadmin", "chrome_o365", "mac", "safari", "edge"],
                 "description": "Browser."
             }),
         );
@@ -527,7 +527,7 @@ fn attach_browser_metadata(
 
 fn resolve_provider(browser: Option<&str>) -> Result<&'static dyn BrowserProvider> {
     let browser = browser.unwrap_or("auto");
-    if browser == "chrome" {
+    if matches!(browser, "chrome" | "chrome_bbadmin" | "chrome_o365") {
         return Ok(&AGENT_BROWSER_PROVIDER);
     }
     #[cfg(unix)]
