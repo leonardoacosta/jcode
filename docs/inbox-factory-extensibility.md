@@ -266,6 +266,29 @@ B3 is therefore justified by workload rather than by precedent, and the honest j
 
 The cost is real: SQLite would be the first embedded database in the workspace, adding a dependency, a migration obligation, and a backup path that no existing state file needs. If that cost is judged too high at proposal time, B2 with append-only JSONL and an in-memory index is the fallback that stays within house practice.
 
+#### Measured, not assumed
+
+The claim that whole-file rewriting fails at intake scale was benchmarked rather than asserted, using the record size measured from `ambient/queue.json` (1,739 bytes average across its 5 items). Time to ingest N messages, one durable write each:
+
+| Messages | JSON whole-file rewrite | JSONL append | SQLite insert |
+|---|---|---|---|
+| 100 | 0.028s | 0.001s | 0.002s |
+| 1,000 | 2.341s | 0.007s | 0.019s |
+| 5,000 | **60.378s** | 0.036s | 0.100s |
+
+The rewrite cost is quadratic, since each message rewrites every prior message. At 5,000 messages a single ingest costs roughly 24 ms and rises without limit, so B1 and naive B2 are eliminated on evidence. Under maximal retention this is the decisive result.
+
+Read costs were then measured at 50,000 records, roughly three years at 45 messages per day:
+
+| Operation | JSONL scan | SQLite | Ratio |
+|---|---|---|---|
+| Dedupe lookup, worst case | 52.47 ms | 0.09 ms | 616x |
+| Pending-approval scan | 24.10 ms | 11.28 ms | 2.1x |
+
+The dedupe result is the honest justification for B3: it runs on **every** inbound message, and it is the one access pattern where indexing is decisive. The approval scan is only 2.1x, which is weaker than the qualitative argument implied, and SQLite's file was 28 percent larger than JSONL (108.8 MB against 85.2 MB). Both facts are recorded because they argue against B3 at the margin.
+
+Fair caveats: this benchmark used Python and `sqlite3` rather than Rust and `rusqlite`, absolute numbers will differ, and the JSONL scan used a substring pre-filter that flatters it against full JSON parsing. The quadratic-versus-linear separation is a property of the algorithm, not the language, so the elimination of whole-file rewrite holds regardless.
+
 Further consequences to carry into the proposal:
 
 - The database file lives in Jcode local state alongside `ambient/` and `memory/`, not in the repository, so intake volume never enters version history and a redaction is always physically possible.
