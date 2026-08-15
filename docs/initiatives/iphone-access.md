@@ -54,6 +54,10 @@
 - Emergency stop was verified by stopping the USB forward, confirming the
   control endpoint was unreachable, then restarting `iproxy` and receiving
   `GET /health` = `ok` again.
+- The initiative-authorized device-authentication boundary probe ran through
+  `POST /command {"action":"unlock"}` without submitting credentials or
+  approving an MFA challenge. It returned `{"ok":true}`, and health plus a
+  follow-up screenshot remained available.
 
 ## Blocked checks
 
@@ -72,4 +76,4 @@ The original `pymobiledevice3` tunnel path is blocked, but Linux RSD transport i
 
 ## Closeout criteria
 
-The initiative can close after the signed XCUITest route proves screenshot, accessibility-tree or equivalent device-state access, harmless tap/text-entry, disconnect/reconnect, and emergency-stop. The initiative itself authorizes these bounded tests. An MFA test requires a named target workflow to be meaningful; no such workflow was defined here, so it is not a closure blocker. The Linux RSD transport prerequisite is satisfied; iOS 26 blocks only the tested CoreDevice display-control action.
+The initiative can close after the signed XCUITest route proves screenshot, accessibility-tree or equivalent device-state access, harmless tap/text-entry, disconnect/reconnect, emergency-stop, and the bounded device-authentication probe. The initiative itself authorizes these tests. No credentials or MFA approval were submitted. The Linux RSD transport prerequisite is satisfied; iOS 26 blocks only the tested CoreDevice display-control action.
