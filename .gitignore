@@ -83,6 +83,10 @@ openspec/
 # Miscellaneous local probes
 vercel-prod-env-check
 
+# Python bytecode
+__pycache__/
+*.pyc
+
 # OS/editor noise
 .DS_Store
 Thumbs.db
