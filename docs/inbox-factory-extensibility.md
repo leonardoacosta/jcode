@@ -330,7 +330,22 @@ The guidance was tested against the real OpenSpec CLI rather than only reviewed.
 
 The negative control is the important result. The validator checks structure, requirement wording, and scenario shape. It does not check design quality, and it cannot detect the anti-patterns listed above.
 
-This has a direct consequence for the proposal: **passing `openspec validate` is not evidence that the intake boundary is correct.** The anti-patterns in this document must be enforced by review, because no tool in the repository will catch them. A proposal that hardcodes single-chat assumptions will validate cleanly and still be wrong.
+This has a direct consequence for the proposal: **passing `openspec validate` is not evidence that the intake boundary is correct.** A proposal that hardcodes single-chat assumptions validates cleanly and is still wrong.
+
+### Boundary linter
+
+Because the gap is mechanical, it is now closed mechanically. `scripts/check-intake-boundary.py` checks an OpenSpec change for the anti-patterns above: provider vocabulary appearing in provider-neutral specs, and task state described as living in chat history. Adapter specs under `channel-adapter-*` are exempt, since naming `update_id` is exactly their job.
+
+Behavior observed on the same probes used above:
+
+| Input | OpenSpec validator | Boundary linter |
+|---|---|---|
+| Intake plus Telegram plus Slack adapters | valid | clean, exit 0 |
+| Bad design keyed by `chat_id` and `update_id`, task state in chat | **valid** | 3 violations, exit 1 |
+
+Additional observed behavior: adding the Slack adapter spec left the shared `factory-intake` spec byte-identical (md5 unchanged), which is the adapter-neutrality claim holding in the only form testable before implementation. Run against all 13 existing OpenSpec changes in the repository, the linter reported zero violations, so it does not fire on unrelated work. Missing `specs/`, missing arguments, and nonexistent paths all exit 2 rather than crashing.
+
+Its limits are real: it matches vocabulary and phrasing, so it catches a spec that *says* the wrong thing, not an implementation that *does* the wrong thing. It is a review aid, not a proof of correctness.
 
 ## Limitations
 
