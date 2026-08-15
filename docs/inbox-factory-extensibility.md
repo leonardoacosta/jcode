@@ -347,14 +347,17 @@ Additional observed behavior: adding the Slack adapter spec left the shared `fac
 
 The linter self-tests. `scripts/check-intake-boundary.py --selftest` builds neutral, provider-leaking, adapter-exempt, and chat-state fixtures in a temporary directory and asserts the exit code for each, so its two-directional behavior is reproducible rather than a one-time observation. Run against all 13 active and 12 archived OpenSpec changes in the repository, it reports zero violations.
 
-**Acceptance gate for the eventual proposal**, both gates required:
+**Acceptance gates for the proposal**, all required:
 
 ```
 openspec validate <change> --strict          # structure
 scripts/check-intake-boundary.py <change>    # design boundary
+scripts/intake-acceptance-model.py           # core scenarios execute
+scripts/adapter-acceptance-model.py          # adapter scenarios + neutrality
+scripts/check-scenario-coverage.py           # no scenario lacks an assertion
 ```
 
-Gate one alone accepts a chat-shaped design. Gate two alone accepts a structurally broken one. Neither is sufficient.
+Each catches what the others cannot. Structure validation accepts a chat-shaped design. The boundary check accepts a structurally broken one. Both accept scenarios that contradict each other, which only execution reveals. And all of them accept a spec scenario that no assertion ever exercises, which is what the coverage gate exists to prevent.
 
 Its limits are real: it matches vocabulary and phrasing, so it catches a spec that *says* the wrong thing, not an implementation that *does* the wrong thing. It is a review aid, not a proof of correctness.
 
@@ -378,6 +381,16 @@ It passes both acceptance gates. The negative control was re-run against the rea
 Defect 3 is the most serious: throttling silently became permanent suppression, and the operator's natural recovery action (resend) was the one action guaranteed not to work.
 
 The model's assertions were validated by mutation testing rather than trusted: 12 mutations, each reintroducing a specific wrong behavior, are all caught. An earlier sweep had two survivors; on inspection both were no-op mutants of my own construction, and rewriting them properly exposed defect 1 as a genuine coverage gap. All four defects are now fixed in the model, guarded by regression assertions, and encoded as scenarios in the spec.
+
+## Executing the adapter scenarios found a neutrality blind spot
+
+Neutrality had been checked twice: the shared spec stayed byte-identical when a Slack adapter spec was added, and the boundary linter found no provider vocabulary in the neutral capability. Both are spec-text checks.
+
+`scripts/adapter-acceptance-model.py` tests it by execution instead, running a Telegram-shaped and a deliberately different Slack-shaped adapter through the *same* intake core. Mutation testing then found what neither earlier check could: an adapter that leaks `update_id` into the structure it hands to intake goes **undetected**, because intake copies named fields into the record, so the leak never reaches the record the assertions inspect.
+
+The boundary is what the adapter *hands over*, not what ends up stored. Neutrality is now asserted at the handoff itself, and on the core's signature: intake accepts a fixed set of named parameters, so an adapter cannot smuggle transport fields through. Both leak mutants and a `**kwargs` mutant are now caught, 13 of 13 adapter mutations total.
+
+`scripts/check-scenario-coverage.py` closes the related gap of scenarios nobody executes. It cross-references every spec scenario against assertions in both models and fails when any lacks one. It was negative-controlled in both directions: adding an unasserted scenario and renaming an assertion each produce exit 1. Currently 29/29.
 
 ## Limitations
 
