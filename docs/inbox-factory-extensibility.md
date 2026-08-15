@@ -117,12 +117,93 @@ Recommended capability decomposition:
 
 Adding Slack second is the cheapest available test that the abstraction is real. If Slack requires changes outside its adapter, the boundary is wrong.
 
+## Resolved decisions
+
+### Intent records live in a dedicated intake store
+
+Intake is a distinct authority from specification and work state.
+
+| Store | Owns | Why it must not own intake |
+|---|---|---|
+| Intake store | Envelopes, intents, identity, correlation, approval tokens, delivery receipts | — |
+| OpenSpec | Specifications and change contracts | Unfiltered chat noise would pollute the specification authority |
+| Beads | Issues, dependencies, work state | Not every message becomes work; most never should |
+
+The intake store holds high-volume, low-trust, provider-shaped input. OpenSpec and Beads hold curated, approved, durable authority. Promotion from intake into either is an explicit, audited transition, never an implicit write.
+
+### Inbound messages never create initiatives directly
+
+Default: an inbound message produces a **proposal awaiting approval**.
+
+Two exceptions, both non-mutating:
+
+- **Deliberate research requests:** may execute read-only investigation and return findings without approval.
+- **Status requests:** may read and project existing factory state without approval.
+
+Both exceptions are safe because they cannot change repository, production, or work state. Everything else, including anything that would create an initiative, a bead, a branch, or an external message, waits for an approval artifact.
+
+```mermaid
+flowchart TD
+  M[Inbound message] --> C{Classify}
+  C -->|status| S[Read-only projection]
+  C -->|research| R[Read-only investigation]
+  C -->|anything else| P[Proposal artifact]
+  P --> A{Approval}
+  A -->|approved| W[Factory work begins]
+  A -->|denied or expired| X[Closed with reason]
+```
+
+## Retention and redaction trade-offs
+
+Two independent axes. Retention is how long chat-derived data survives. Redaction is how much of it is ever stored.
+
+### Retention options
+
+| Option | Behavior | Gains | Costs |
+|---|---|---:|---|
+| Ephemeral | Keep envelope only until the intent resolves | Minimal exposure, smallest storage | No replay, weak audit, duplicate events can re-execute after purge |
+| Short window | Retain raw payload 7–30 days, keep derived intent indefinitely | Debuggable, bounded exposure, dedupe still works | Incidents older than the window are unreproducible |
+| Full retention | Keep everything indefinitely | Complete audit and replay, best learning corpus | Largest breach blast radius, compliance burden, storage growth |
+| Tiered | Raw short, intent medium, approvals and receipts permanent | Matches value to risk per record class | More policy surface and migration logic |
+
+### Redaction options
+
+| Option | Behavior | Gains | Costs |
+|---|---|---:|---|
+| None | Store text verbatim | Perfect fidelity, easiest debugging | Secrets and personal data land in durable storage |
+| Ingress redaction | Scrub secrets and identifiers before first write | Strongest protection, nothing sensitive ever persisted | Irreversible, false positives destroy real content, pattern gaps still leak |
+| Egress redaction | Store raw, scrub on read and projection | Full fidelity retained, policy can improve later | Raw store remains a high-value target, every reader must enforce policy |
+| Tokenized | Replace sensitive spans with references to a restricted vault | Reversible for authorized use, low exposure by default | Most complex, adds a second secured store and key management |
+
+### The core tension
+
+Retention and redaction pull in opposite directions:
+
+- Auditability, replay, deduplication, and learning all want **more data for longer**.
+- Breach blast radius, compliance obligations, and the risk of leaking secrets into chat all want **less data for less time**.
+
+Note the asymmetry: **redaction failures are irreversible in both directions**. Redacting too aggressively destroys evidence permanently. Redacting too late means the secret was already written to disk, backups, and possibly logs.
+
+### Recommendation
+
+**Tiered retention with ingress redaction of high-confidence secrets, plus egress redaction for everything else.**
+
+| Record class | Retention | Redaction |
+|---|---|---|
+| Raw provider payload | 14 days | Ingress scrub of credential-shaped tokens |
+| Normalized envelope | 90 days | Ingress scrub, egress policy on read |
+| Intent record | Life of related work plus 1 year | Egress |
+| Approval artifact | Permanent | Egress, no raw payload embedded |
+| Delivery receipt and gate evidence | Permanent | Egress |
+| Attachments and media | 14 days, reference-only afterward | Never inlined into durable records |
+
+Rationale: credential-shaped strings are the one class where the cost of a false positive is far lower than the cost of a miss, so they are removed before the first write. Everything else keeps fidelity long enough to debug and replay, while permanent records hold only decisions and evidence rather than raw conversation.
+
 ## Open questions
 
-- Should intent records live in OpenSpec, Beads, or a dedicated intake store?
-- Does an inbound message ever create an initiative directly, or always a proposal awaiting approval?
-- What is the retention and redaction policy for chat-derived artifacts?
 - How are group conversations authorized compared with private chats?
+- Does the intake store live inside the repository, in local state, or in a separate service?
+- What is the escalation path when ingress redaction fires on legitimate content?
 
 ## Limitations
 
