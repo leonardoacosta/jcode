@@ -95,7 +95,7 @@ Rate limits, concurrency caps, queue depth, dead-letter handling, replay protect
 ## Anti-patterns to prohibit explicitly
 
 - Storing task state in chat message history.
-- Passing raw provider payloads deeper than the adapter.
+- Passing raw provider payloads deeper than the adapter. Storing them in the intake store for audit and backfill is correct; letting downstream logic read them is not.
 - Letting a chat reply directly trigger a mutating action without an approval artifact.
 - Implementing Telegram first in a way that hardcodes single-chat assumptions.
 - Treating message text as a command language without a versioned grammar.
@@ -179,7 +179,7 @@ Keep everything, indefinitely, at every record class. The factory's value comes 
 | Replay and audit | Complete, permanently |
 | Deduplication | Correct forever, no post-purge re-execution |
 | Learning corpus | Grows monotonically |
-| Storage | Text is negligible; media needs a size cap and content-addressed storage |
+| Storage | Text is negligible; media is content-addressed and deduplicated, never dropped for size |
 | Exposure | Whatever is written stays written, so the write path is the only control point |
 
 Because nothing is ever deleted, the **only** remaining control is what gets written in the first place.
@@ -214,7 +214,7 @@ Trust in the sender is not the same as trust in the storage. Retained credential
 |---|---|
 | Retention | Maximal, permanent, all record classes |
 | Redaction scope | Credential-shaped strings only |
-| Redaction point | Ingress, before first durable write |
+| Redaction point | Ingress, before first durable write, so the stored payload is verbatim except for credential markers |
 | Non-credential content | Never redacted |
 | On detection | Replace with a typed marker such as `[redacted: bearer_token]` and state in the reply that a redaction occurred |
 | Recovery | The marker names the type and position, so the original can be re-supplied deliberately if it was a false positive |
@@ -240,7 +240,7 @@ Phase one ingests a group message only when the bot is explicitly addressed or a
 
 A4 and A5 are deferred, and nothing about them needs deciding now. Neither is load-bearing for phase one:
 
-- **Thread identity is not urgent.** Maximal retention means the raw provider payload is kept permanently, so `message_thread_id` and `thread_ts` can be backfilled from stored payloads whenever A4 is actually built. Carrying the field in the envelope from the start is cheap and worth doing, but it is a convenience, not a one-way door.
+- **Thread identity is not urgent.** Maximal retention means the provider payload is kept permanently, redacted only for credential-shaped strings, and thread identifiers are not credential-shaped. `message_thread_id` and `thread_ts` can therefore be backfilled from stored payloads whenever A4 is actually built. Carrying the field in the envelope from the start is cheap and worth doing, but it is a convenience, not a one-way door.
 - **The identity mapping table is already required without A5.** Decision 5 makes approvals answerable from Telegram, Slack, the command center, or CLI, which means one human must resolve to one identity across channels regardless of group policy. A5 would consume that table, not motivate it.
 
 The only genuine constraint A2 places on later phases is the one already stated as an anti-pattern: do not hardcode single-chat assumptions. Group and thread scoping must be data on the envelope rather than an assumption in the adapter.
