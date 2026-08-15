@@ -358,8 +358,14 @@ Gate one alone accepts a chat-shaped design. Gate two alone accepts a structural
 
 Its limits are real: it matches vocabulary and phrasing, so it catches a spec that *says* the wrong thing, not an implementation that *does* the wrong thing. It is a review aid, not a proof of correctness.
 
+## Status
+
+These constraints are now codified in the OpenSpec change `add-factory-intake-capability` (`factory-intake` plus `channel-adapter-telegram`), committed as `78dd11a85` in `source/jcode`.
+
+It passes both acceptance gates. The negative control was re-run against the real proposal: injecting `chat_id` and `update_id` into the neutral spec's dedupe scenario left `openspec validate --strict` passing (exit 0) while the boundary check reported both leaks and failed (exit 1). Adding a Slack adapter spec to the live change left the `factory-intake` spec byte-identical (md5 `0d0e967e8698d2a4c44da529ede79bf6`), with both gates still clean.
+
 ## Limitations
 
-No inbox implementation exists yet. This document is design constraint research only, derived from the repository's factory documentation, the observed ambient queue storage format (`ambient/queue.json`), and the Telegram Bot API specification as of version 10.2.
+No inbox implementation exists yet. The proposal is drafted and validated; no code is written. This document is design constraint research only, derived from the repository's factory documentation, the observed ambient queue storage format (`ambient/queue.json`), and the Telegram Bot API specification as of version 10.2.
 
 The adapter-neutrality claim is validated only at the specification level. Whether a Slack adapter truly requires no changes outside itself can only be proven by building both adapters, and that evidence does not exist yet.
