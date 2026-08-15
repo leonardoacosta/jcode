@@ -49,6 +49,11 @@
   Mac `iproxy` forwarded port 8100 successfully. `GET /health` returned `ok`.
 - `GET /screenshot` through the USB forward returned a valid 1290x2796 JPEG
   (173,617 bytes).
+- A harmless normalized tap request returned `{"ok":true}` and a subsequent
+  screenshot remained available.
+- Emergency stop was verified by stopping the USB forward, confirming the
+  control endpoint was unreachable, then restarting `iproxy` and receiving
+  `GET /health` = `ok` again.
 
 ## Blocked checks
 
