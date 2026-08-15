@@ -1224,9 +1224,11 @@ fn test_ctrl_tab_toggles_queue_mode() {
 
 #[test]
 fn test_auto_poke_starts_enabled_by_default() {
-    let app = create_test_app();
-
-    assert!(app.auto_poke_incomplete_todos);
+    with_temp_jcode_home(|| {
+        crate::config::invalidate_config_cache();
+        let app = create_test_app();
+        assert!(app.auto_poke_incomplete_todos);
+    });
 }
 
 #[test]
