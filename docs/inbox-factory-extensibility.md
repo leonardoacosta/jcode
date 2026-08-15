@@ -107,7 +107,7 @@ The proposal should be written as **factory intake and control-plane capability*
 
 Recommended capability decomposition:
 
-1. Intent intake contract, envelope, identity, and correlation.
+1. Intent intake contract, envelope, identity, correlation, and the SQLite intake store.
 2. Side-effect classification and authorization policy.
 3. Channel adapter interface plus Telegram adapter.
 4. Approval artifact lifecycle.
