@@ -260,9 +260,15 @@ The only genuine constraint A2 places on later phases is the one already stated 
 
 **Decision: B3, embedded SQLite in local state, with media content-addressed on disk.**
 
-Consequences to carry into the proposal:
+**This decision breaks with existing repository practice, and that should be explicit in the proposal.** Checked against the codebase: the ambient queue is `ambient/queue.json`, a JSON file with a `.bak` sibling (`crates/jcode-app-core/src/ambient/paths.rs`), memory is `memory/global.json`, and the same JSON-plus-backup pattern repeats across roughly nine top-level state files. A workspace-wide search for `rusqlite`, `sqlx`, `libsql`, `redb`, and `sled` in `Cargo.toml` files returns **zero matches**, so jcode currently has no embedded database anywhere.
 
-- The database file lives in Jcode local state, not in the repository, so intake volume never enters version history and a redaction is always physically possible.
+B3 is therefore justified by workload rather than by precedent, and the honest justification is that intake differs from existing state in kind: it is append-only, unbounded under maximal retention, and queried by correlation, dedupe key, and approval status, whereas `queue.json` is a small bounded working set rewritten in full. Rewriting an ever-growing JSON file on every inbound message is the failure mode B3 avoids.
+
+The cost is real: SQLite would be the first embedded database in the workspace, adding a dependency, a migration obligation, and a backup path that no existing state file needs. If that cost is judged too high at proposal time, B2 with append-only JSONL and an in-memory index is the fallback that stays within house practice.
+
+Further consequences to carry into the proposal:
+
+- The database file lives in Jcode local state alongside `ambient/` and `memory/`, not in the repository, so intake volume never enters version history and a redaction is always physically possible.
 - Media and attachments are stored by content hash on disk; the database holds the hash, the provider file reference, and the size. Identical forwarded media is stored once.
 - Schema migrations become a real obligation. Under maximal retention the store is never rebuilt from scratch, so every migration must be forward-only and non-destructive.
 - The store needs its own backup story, since local state is typically outside the repository backup path.
@@ -305,6 +311,6 @@ This has a direct consequence for the proposal: **passing `openspec validate` is
 
 ## Limitations
 
-No inbox implementation exists yet. This document is design constraint research only, derived from repository factory documentation and the existing ambient queue behavior.
+No inbox implementation exists yet. This document is design constraint research only, derived from the repository's factory documentation, the observed ambient queue storage format (`ambient/queue.json`), and the Telegram Bot API specification as of version 10.2.
 
 The adapter-neutrality claim is validated only at the specification level. Whether a Slack adapter truly requires no changes outside itself can only be proven by building both adapters, and that evidence does not exist yet.
