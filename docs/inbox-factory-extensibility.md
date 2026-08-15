@@ -157,6 +157,8 @@ Two exceptions, both non-mutating:
 
 Both exceptions are safe because they cannot change repository, production, or work state. Everything else, including anything that would create an initiative, a bead, a branch, or an external message, waits for an approval artifact.
 
+Note that this is deliberately stricter than the general autonomy ladder in decision 3, which allows local-mutating work to proceed automatically with evidence. Chat is the lowest-friction input the factory has, so a misread intent turns into action faster here than anywhere else. The intake policy therefore withholds the local-mutating tier until an approval exists, and decision 3 continues to govern once work is under way. If that proves too conservative in practice, the tier to relax first is local-mutating work inside an already-approved initiative, not the default for a fresh message.
+
 ```mermaid
 flowchart TD
   M[Inbound message] --> C{Classify}
