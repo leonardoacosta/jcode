@@ -345,6 +345,17 @@ Behavior observed on the same probes used above:
 
 Additional observed behavior: adding the Slack adapter spec left the shared `factory-intake` spec byte-identical (md5 unchanged), which is the adapter-neutrality claim holding in the only form testable before implementation. Run against all 13 existing OpenSpec changes in the repository, the linter reported zero violations, so it does not fire on unrelated work. Missing `specs/`, missing arguments, and nonexistent paths all exit 2 rather than crashing.
 
+The linter self-tests. `scripts/check-intake-boundary.py --selftest` builds neutral, provider-leaking, adapter-exempt, and chat-state fixtures in a temporary directory and asserts the exit code for each, so its two-directional behavior is reproducible rather than a one-time observation. Run against all 13 active and 12 archived OpenSpec changes in the repository, it reports zero violations.
+
+**Acceptance gate for the eventual proposal**, both gates required:
+
+```
+openspec validate <change> --strict          # structure
+scripts/check-intake-boundary.py <change>    # design boundary
+```
+
+Gate one alone accepts a chat-shaped design. Gate two alone accepts a structurally broken one. Neither is sufficient.
+
 Its limits are real: it matches vocabulary and phrasing, so it catches a spec that *says* the wrong thing, not an implementation that *does* the wrong thing. It is a review aid, not a proof of correctness.
 
 ## Limitations
