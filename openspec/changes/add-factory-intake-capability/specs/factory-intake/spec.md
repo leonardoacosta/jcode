@@ -30,6 +30,18 @@ Intake SHALL derive deduplication keys from message content and identity. Dedupl
 - **WHEN** a transport assigns non-monotonic or reused sequence identifiers after a period of inactivity
 - **THEN** deduplication remains correct, because no key derives from those identifiers.
 
+#### Scenario: Distinct senders send identical content
+
+- **WHEN** two different senders send byte-identical content, or one sender sends identical content in two conversations
+- **THEN** each is recorded as a distinct message and neither is marked a duplicate
+- **AND** deduplication keys therefore incorporate sender identity and conversation identity, not content alone.
+
+#### Scenario: Two messages containing different credentials arrive
+
+- **WHEN** two messages differ only in credential-shaped content that redacts to the same marker
+- **THEN** they are recorded as distinct messages, not duplicates
+- **AND** deduplication keys are therefore derived before redaction is applied.
+
 ### Requirement: Durable record before interpretation
 
 Intake SHALL persist every inbound message durably before interpreting it, classifying it, or acting on it.
@@ -108,3 +120,15 @@ Intake SHALL bound the rate at which recorded messages cause execution. Admissio
 - **THEN** every message is still recorded in full
 - **AND** execution is deferred or declined for messages beyond the budget
 - **AND** the deferral is recorded against each affected message.
+
+#### Scenario: A deferred message is resent
+
+- **WHEN** a sender resends a message whose earlier copy was deferred and never executed
+- **THEN** the resend is treated as a retry rather than a duplicate, and becomes eligible for execution
+- **AND** a resend of a message that already executed is still treated as a duplicate.
+
+#### Scenario: Admission control is applied across message classes
+
+- **WHEN** the execution budget is consumed
+- **THEN** the budget applies per message class, so read-only traffic cannot starve work proposals
+- **AND** the class of each deferred message is recorded.
