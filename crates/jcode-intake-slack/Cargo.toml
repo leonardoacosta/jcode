@@ -1,0 +1,10 @@
+[package]
+name = "jcode-intake-slack"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+jcode-intake-types = { path = "../jcode-intake-types" }
+serde_json = "1"

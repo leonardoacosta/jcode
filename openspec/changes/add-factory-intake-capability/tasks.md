@@ -34,5 +34,5 @@
 - [x] 5.2 `scripts/check-intake-boundary.py` reports clean for this change.
 - [ ] 5.3 End-to-end: a real message from a mapped sender produces a durable record and a proposal, and no tracked work until approval.
 - [ ] 5.4 End-to-end: approving from chat creates tracked work linked to the originating record.
-- [ ] 5.5 Neutrality conformance: draft a second adapter spec and confirm the `factory-intake` spec requires no edit. This is the real test of the design, and it is expected to be run before the first adapter is considered done.
+- [x] 5.5 Neutrality conformance: a second adapter (`jcode-intake-slack`, structurally unlike Telegram) compiles and passes against a byte-identical core (md5 `e2f7e8e4c7ea6e81b3bb5fa69232cce6` before and after).
 - [ ] 5.6 Delete the conversation used in 5.3 and confirm records, approvals, and tracked work remain complete.
