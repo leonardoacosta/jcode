@@ -53,6 +53,13 @@ Extra fields: `JCODE_HOOK_STATUS` (`ok`/`error`), `JCODE_HOOK_DURATION_MS`,
 `JCODE_HOOK_MODEL`, `JCODE_HOOK_LAST_ASSISTANT_TEXT` (first 4000 chars),
 `JCODE_HOOK_ERROR` (on failure).
 
+`turn_start` and `turn_end` also carry the session's place in the agent tree:
+`JCODE_HOOK_SESSION_ROLE` is `root` for a user-facing session and `child` for a
+spawned one (swarm worker, subagent), and `JCODE_HOOK_PARENT_SESSION_ID` holds
+the spawner's id on children. A notification hook that should fire once per
+user-visible turn — rather than once per worker — must gate on
+`SESSION_ROLE = root`, because `turn_end` fires for every agent turn.
+
 ### `session_start` / `session_end`
 
 `session_start` fires when an agent session becomes active, with

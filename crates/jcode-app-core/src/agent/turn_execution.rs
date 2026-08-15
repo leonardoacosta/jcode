@@ -160,10 +160,29 @@ impl Agent {
             .field("SESSION_NAME", self.session.display_title_or_name())
             .field("MODEL", self.provider_model())
             .field("SOURCE", source.to_string());
+        event = self.with_session_role_fields(event);
         if let Some(cwd) = self.working_dir() {
             event = event.cwd(cwd);
         }
         crate::hooks::dispatch_observer(event);
+    }
+
+    /// Tag a lifecycle event with this session's role in the agent tree.
+    ///
+    /// `SESSION_ROLE` is `root` for a user-facing session and `child` for a
+    /// spawned session (swarm worker, subagent). `PARENT_SESSION_ID` carries
+    /// the spawner's id for children. Notification integrations use these to
+    /// speak only at the end of a user-facing turn instead of once per worker.
+    fn with_session_role_fields(
+        &self,
+        event: crate::hooks::HookEvent,
+    ) -> crate::hooks::HookEvent {
+        match self.session.parent_id.as_deref() {
+            Some(parent_id) => event
+                .field("SESSION_ROLE", "child")
+                .field("PARENT_SESSION_ID", parent_id.to_string()),
+            None => event.field("SESSION_ROLE", "root"),
+        }
     }
 
     /// Fire the `turn_end` observer hook with turn outcome metadata.
@@ -184,6 +203,7 @@ impl Agent {
             .field("STATUS", status)
             .field("DURATION_MS", started_at.elapsed().as_millis().to_string())
             .field("MODEL", self.provider_model());
+        event = self.with_session_role_fields(event);
         if let Some(cwd) = self.working_dir() {
             event = event.cwd(cwd);
         }

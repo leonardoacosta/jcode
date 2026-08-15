@@ -98,6 +98,30 @@ def row_message(indicator):
     custom_name = session_name or session_id or "jcode session"
     return f"{indicator} {project}\n  {custom_name}"
 
+
+def metadata_request():
+    """Put the project name where the sidebar can actually render it.
+
+    `pane.report_agent`'s `message` is state-transition prose; Herdr's agent
+    panel renders configured tokens (`agent`, `tab`, `terminal_title`, ...),
+    never `message`. Row one resolves the `agent` token from the pane's
+    effective display agent, so the project name has to arrive as presentation
+    metadata. `applies_to_source`/`agent` scope the patch to our own report so
+    it cannot repaint another integration's pane.
+    """
+    return {
+        "id": f"{SOURCE}:metadata:{seq}",
+        "method": "pane.report_metadata",
+        "params": {
+            "pane_id": pane_id,
+            "source": f"{SOURCE}-metadata",
+            "agent": AGENT,
+            "applies_to_source": SOURCE,
+            "display_agent": project_name(),
+            "seq": seq,
+        },
+    }
+
 working_subagents = count_field("JCODE_HOOK_SUBAGENTS_WORKING", "subagents_working")
 blocking_subagents = count_field(
     "JCODE_HOOK_SUBAGENTS_BLOCKING", "subagents_working_blocking", "subagents_blocking"
@@ -211,8 +235,13 @@ try:
     if pane_not_found(response):
         fallback_pane = fallback_pane_for_cwd()
         if fallback_pane:
+            pane_id = fallback_pane
             request["params"]["pane_id"] = fallback_pane
             socket_request(request)
+    # Presentation follows state. `session_end` releases the agent, so a
+    # metadata patch there would re-decorate a pane we just handed back.
+    if event != "session_end":
+        socket_request(metadata_request())
 except Exception:
     pass
 PY
