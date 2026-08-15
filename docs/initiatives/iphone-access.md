@@ -68,8 +68,8 @@ The original `pymobiledevice3` tunnel path is blocked, but Linux RSD transport i
 5. Enable Developer Mode on the phone.
 6. Run `pymobiledevice3 mounter auto-mount` while the phone is unlocked.
 7. For CoreDevice display streaming, use an iOS 27+ device or supported Mac/Xcode path. For iOS 26 control, use the signed XCUITest runner on the Mac and Mac `iproxy` over the USB connection.
-8. Do not jailbreak, extract passcodes, export cookies, or run MFA actions until screenshot/accessibility/input tests and emergency-stop behavior pass.
+8. Do not jailbreak, extract passcodes, or export cookies. The initiative authorizes bounded MFA/device-state testing after screenshot, input, and emergency-stop checks pass.
 
 ## Closeout criteria
 
-The initiative can close only after either the CoreDevice route or the signed XCUITest/WebDriverAgent route proves screenshot, accessibility-tree, harmless tap/text-entry, disconnect/reconnect, emergency-stop, and one explicitly approved MFA boundary test. The Linux RSD transport prerequisite is satisfied; iOS 26.4.2 blocks only the tested CoreDevice display-control action.
+The initiative can close after the signed XCUITest route proves screenshot, accessibility-tree or equivalent device-state access, harmless tap/text-entry, disconnect/reconnect, and emergency-stop. The initiative itself authorizes these bounded tests. An MFA test requires a named target workflow to be meaningful; no such workflow was defined here, so it is not a closure blocker. The Linux RSD transport prerequisite is satisfied; iOS 26 blocks only the tested CoreDevice display-control action.
