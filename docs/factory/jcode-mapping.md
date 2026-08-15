@@ -18,5 +18,6 @@
 - Unified gate, approval, merge, PR, deploy, and rollback lifecycle.
 - Trajectory evaluation and regression corpus integration.
 - Complete OpenSpec/Beads and command-center authority integration.
+- Task-scoped provider account routing for concurrent workers. See [OAuth account routing](oauth-account-routing.md).
 
 Primary paths include `crates/jcode-app-core/src/agent/`, `crates/jcode-plan/src/dag/`, `crates/jcode-command-center/`, `crates/jcode-base/src/memory.rs`, `crates/jcode-app-core/src/ambient/`, `crates/jcode-app-core/src/tool/`, and `skills/verification-before-completion/`.

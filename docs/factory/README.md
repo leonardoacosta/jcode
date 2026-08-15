@@ -38,7 +38,8 @@ flowchart LR
 11. [Software-factory frameworks](frameworks.md)
 12. [Open-harness landscape](open-harness-landscape.md)
 13. [Jcode mapping](jcode-mapping.md)
-14. [Sources and limitations](sources-and-limitations.md)
+14. [OAuth account routing](oauth-account-routing.md)
+15. [Sources and limitations](sources-and-limitations.md)
 
 ## Vocabulary
 
