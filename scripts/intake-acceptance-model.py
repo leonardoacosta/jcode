@@ -256,7 +256,7 @@ def run():
     t2 = "987654321:BBHfSHFyTvJmL5RkQxWnPzZbCdEfGhIjKlM"
     p1 = ix.receive("telegram", "op:leo", "c", f"token {t1}", telegram_raw(1, 5, "x"))
     p2 = ix.receive("telegram", "op:leo", "c", f"token {t2}", telegram_raw(2, 5, "x"))
-    check("Content-derived deduplication", "Redacted messages remain distinct",
+    check("Content-derived deduplication", "Two messages containing different credentials arrive",
           p2["duplicate_of"] is None,
           "dedupe uses pre-scrub content; distinct credentials do not collapse")
 
@@ -266,7 +266,7 @@ def run():
                     classify=lambda t: "work_request")
     q2 = ix.receive("telegram", "op:leo", "c", "do it", telegram_raw(2, 5, "do it"),
                     classify=lambda t: "work_request")
-    check("Execution admission control", "A throttled message is resent",
+    check("Execution admission control", "A deferred message is resent",
           q1["deferred"] and q2["retry_of"] == q1["id"] and q2["duplicate_of"] is None,
           "retry is not swallowed as a duplicate")
 
