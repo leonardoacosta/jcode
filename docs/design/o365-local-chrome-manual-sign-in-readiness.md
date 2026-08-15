@@ -24,11 +24,11 @@ Observed on 2026-08-15 through the Jcode browser provider:
 
 - Provider: ready through `agent-browser 0.34.0`.
 - Target: `chrome_o365`.
-- Launch behavior: reused a Chrome target owned by the named target launcher.
-- URL after navigation to `https://www.office.com/`: `https://m365.cloud.microsoft/`.
-- Page title: `Microsoft 365 Copilot - Sign in`.
-- Visible authentication state: signed out. The page exposes a visible `Sign in` button and public Microsoft 365 marketing/app entry points.
-- Credentials/login automation: not attempted.
+- Launch behavior: target process is owned by the named launcher and uses the persistent O365 profile.
+- The initial page is not a routing control. All later tabs and navigations in this Chrome process inherit the same SOCKS proxy policy.
+- Visible authentication state: authenticated session confirmed after manual sign-in. The Teams page exposed a visible `Sign out` control.
+- Application state: Teams then displayed `CREATE_USER_CONTEXT_FAILED_GENERIC` with a `Restart` control. This is an application-context failure, not an indication that the profile is signed out.
+- Proxy evidence: the live process included `--proxy-server=socks5://127.0.0.1:1080`; the local SOCKS listener and CDP endpoint were ready. Page content itself does not display a SOCKS indicator.
 - Hidden browser state: not inspected.
 
 ## Manual sign-in readiness checklist
@@ -48,10 +48,12 @@ Before asking the human operator to sign in manually, verify these checks from v
 After the human signs in, an agent may perform only visible readiness checks:
 
 1. Reopen `https://www.office.com/` with `browser: "chrome_o365"`.
-2. Confirm the page no longer presents the primary signed-out marketing state.
-3. Confirm visible Microsoft 365 app navigation is present, such as Outlook, Word, Excel, PowerPoint, OneDrive, Teams, or Copilot app launch controls.
-4. Record only page title, URL origin, and visible UI labels needed to prove readiness.
-5. Do not record account identifiers unless the user explicitly asks and the identifier is already visible on the page.
+2. Confirm a visible Microsoft 365 shell, app navigation, or `Sign out` control.
+3. Treat application initialization errors separately. A page may show `Sign out` and still report an application error such as `CREATE_USER_CONTEXT_FAILED_GENERIC`.
+4. If status succeeds but actions fail, check whether the owned Chrome process exited and relaunch through the named target. Do not attach to an unrelated browser.
+5. Verify the live process launch policy and SOCKS listener when routing evidence is needed. Do not infer routing from page appearance.
+6. Record only page title, URL origin, and visible UI labels needed to prove readiness.
+7. Do not record account identifiers unless the user explicitly asks and the identifier is already visible on the page.
 
 ## Failure classification
 
@@ -66,4 +68,4 @@ Report one of these states without attempting credential work:
 
 ## Latest readiness finding
 
-`chrome_o365` is operational as a named target but not signed in. It is ready for a human-only manual O365 sign-in. The next agent action should stop at the visible Microsoft sign-in prompt and wait for the human operator to complete authentication outside agent automation.
+`chrome_o365` is operational as a named target and the persistent profile now has a visible authenticated Microsoft 365 session, confirmed by the Teams `Sign out` control. Teams currently reports `CREATE_USER_CONTEXT_FAILED_GENERIC`, so authentication is ready but Teams application context is not. The target process is launched with the explicit SOCKS proxy policy; verify the process and listener rather than relying on page appearance for routing evidence.

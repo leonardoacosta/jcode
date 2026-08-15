@@ -40,7 +40,7 @@ The launcher requires a configured SOCKS endpoint before starting Chrome. It may
 - an already-running local SOCKS listener, or
 - an SSH dynamic forward started and supervised by the launcher or its companion service.
 
-The exact endpoint and SSH destination remain configuration values, not hardcoded secrets. Startup performs a loopback connectivity/readiness check and fails closed if the endpoint is absent or unavailable. Chrome is started with an explicit SOCKS proxy flag and no fallback direct route.
+The initial page or URL does not determine routing. Once Chrome starts with the target policy, every tab and later navigation in that Chrome process inherits the explicit SOCKS proxy, isolated profile, and loopback CDP settings. A page's appearance does not show whether SOCKS is active, so verification must inspect the owned process launch policy and the SOCKS listener/readiness path.
 
 DNS behavior must be selected deliberately. The default should use SOCKS5 hostname resolution where supported so LAN hostnames do not resolve outside the tunnel. This requires a verification probe before implementation is considered complete.
 
@@ -130,7 +130,9 @@ The first implementation should prefer termination on final release to minimize 
 - Never accept arbitrary paths or arbitrary provider names from skills.
 - Keep runtime metadata and any local secrets mode `0600`.
 - Do not log cookies, authorization headers, profile contents, SSH credentials, or full command lines containing secrets.
-- Distinguish unavailable proxy, profile lock, stale process, CDP failure, and authentication-required errors.
+- Distinguish unavailable proxy, profile lock, stale process, exited owned process, CDP failure, authentication-required state, and application-context failure.
+- A visible authenticated page or `Sign out` control proves only that the browser profile has a visible session. It does not prove Azure CLI or REST authorization.
+- An application can show `Sign out` and still fail during initialization, such as Teams reporting `CREATE_USER_CONTEXT_FAILED_GENERIC`.
 - Never kill unrelated Chrome processes.
 - Treat profile directories as sensitive local data and exclude them from repository paths and backups.
 
@@ -142,7 +144,7 @@ Given either alias, when Chrome starts, it uses only that alias's persistent use
 
 ### R2. Enforced SOCKS routing
 
-Given the SOCKS endpoint is unavailable, launching either alias fails before Chrome starts. Given it is available, an observable external-IP and LAN-host probe confirms traffic uses the expected route and DNS behavior.
+Given the SOCKS endpoint is unavailable, launching either alias fails before Chrome starts. Given it is available, the owned Chrome process includes the explicit SOCKS proxy flag and an observable external-IP and LAN-host probe confirms traffic uses the expected route and DNS behavior. The initial URL is not part of the routing guarantee, and page content alone is not sufficient evidence of proxy use.
 
 ### R3. Human aliases
 
@@ -168,8 +170,9 @@ Profile data never enters the repository, logs, telemetry, generated artifacts, 
 
 Given a named browser target is authenticated to Azure Portal, when a workflow needs Azure CLI or REST access, it authenticates through Azure CLI or Azure SDK credentials instead of browser state. Browser cookies, browser storage, CDP network credentials, and browser-derived tokens are never read or exported.
 
-## Explicit exclusions
+### R9. Visible authenticated session and application readiness
 
+Given a human signs into `chrome_o365`, a visible `Sign out` control or authenticated Microsoft 365 shell proves the profile has a visible authenticated session. If a Microsoft app then reports an initialization error, the session state and application readiness must be reported separately. If the owned process exits, the target must be relaunched through the named launcher rather than attaching to an unrelated browser.
 - No remote browser or Mac changes.
 - No automatic migration of existing Chrome profiles.
 - No automated login or credential harvesting.
@@ -192,6 +195,7 @@ Given a named browser target is authenticated to Azure Portal, when a workflow n
 9. Add unit tests for allowlists, flags, proxy fail-closed behavior, port binding, stale state, ownership, and Azure authorization separation.
 10. Add local integration tests with a test SOCKS endpoint and disposable profiles.
 11. Run a live homelab smoke test with manual login, proxy route verification, LAN-host access, CDP attachment, CLI identity separation, and cleanup.
+12. Verify post-login visible session state separately from Microsoft application initialization errors and owned-process lifecycle failures.
 
 ## Verification gates
 
