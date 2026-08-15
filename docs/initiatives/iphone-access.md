@@ -5,7 +5,7 @@
 - Host: Arch Linux server
 - Device: Leonardo’s iPhone
 - UDID: `00008120-000224683AEB401E`
-- iOS: `26.4.2`, build `23E261`
+- iOS: `26.6` (Mac CoreDevice report)
 - USB pairing and trust: verified
 - `usbmuxd`: installed and active
 - Developer Mode: enabled
@@ -40,10 +40,15 @@
 - The Mac target `mac` sees the same device UDID
   `00008120-000224683AEB401E` as the Linux host, so the cross-host device
   identity matches.
-- Mac prerequisites are present: macOS 26.5.2, Xcode 26.6, XcodeGen, and an
-  Apple Development certificate. The first runner build is blocked because
-  Xcode has no signed-in developer account and no provisioning profiles for
-  the runner bundle identifiers.
+- Mac prerequisites are present: macOS 26.5.2, Xcode 26.6, XcodeGen, an Apple
+  Development certificate, and provisioning profiles. The signed runner build
+  completed successfully after the Mac login keychain was authorized.
+- The signed XCUITest runner launched on the physical iPhone and exposed its
+  on-device HTTP server on port 8100.
+- Homebrew `libimobiledevice` and `libusbmuxd` were installed on the Mac, and
+  Mac `iproxy` forwarded port 8100 successfully. `GET /health` returned `ok`.
+- `GET /screenshot` through the USB forward returned a valid 1290x2796 JPEG
+  (173,617 bytes).
 
 ## Blocked checks
 
@@ -57,7 +62,7 @@ The original `pymobiledevice3` tunnel path is blocked, but Linux RSD transport i
 4. Run `idevicepair validate` and read only non-sensitive metadata.
 5. Enable Developer Mode on the phone.
 6. Run `pymobiledevice3 mounter auto-mount` while the phone is unlocked.
-7. For CoreDevice display streaming, use an iOS 27+ device or supported Mac/Xcode path. For iOS 26 control, investigate the signed XCUITest/WebDriverAgent runner route over usbmuxd, with Linux `go-ios` forwarding as the experimental host path.
+7. For CoreDevice display streaming, use an iOS 27+ device or supported Mac/Xcode path. For iOS 26 control, use the signed XCUITest runner on the Mac and Mac `iproxy` over the USB connection.
 8. Do not jailbreak, extract passcodes, export cookies, or run MFA actions until screenshot/accessibility/input tests and emergency-stop behavior pass.
 
 ## Closeout criteria
