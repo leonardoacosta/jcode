@@ -6,7 +6,7 @@ use std::{
 };
 
 use chrono::Utc;
-use jcode_intake_types::{ProposalId, SqliteIntakeStore, SqliteStoreError};
+use jcode_intake_types::{ProposalId, SqliteIntakeStore, SqliteStoreError, StoreError};
 use serde_json::Value;
 
 use crate::{
@@ -145,11 +145,13 @@ impl<T: TelegramTransport> TelegramIntakeRunner<T> {
         if let Some(parent) = database_path.as_ref().parent() {
             std::fs::create_dir_all(parent).map_err(RunnerError::Io)?;
         }
+        let store = SqliteIntakeStore::open(database_path, None)?;
+        let next_offset = store.polling_offset("telegram")?;
         Ok(Self {
             transport,
             adapter,
-            store: SqliteIntakeStore::open(database_path, None)?,
-            next_offset: None,
+            store,
+            next_offset,
             poll_timeout_seconds,
         })
     }
@@ -164,8 +166,14 @@ impl<T: TelegramTransport> TelegramIntakeRunner<T> {
             if matches!(handled, Handled::Recorded(_))
                 && let Some((proposal, approver, conversation)) = approval
             {
-                self.store
-                    .approve(proposal, approver, Utc::now(), "telegram".to_owned())?;
+                match self
+                    .store
+                    .approve(proposal, approver, Utc::now(), "telegram".to_owned())
+                {
+                    Ok(_)
+                    | Err(SqliteStoreError::Store(StoreError::ProposalAlreadyApproved(_))) => {}
+                    Err(error) => return Err(error.into()),
+                }
                 self.adapter
                     .deliver(conversation, format!("Approved proposal {}.", proposal.0));
             }
@@ -174,6 +182,8 @@ impl<T: TelegramTransport> TelegramIntakeRunner<T> {
                     self.next_offset
                         .map_or(id + 1, |current| current.max(id + 1)),
                 );
+                self.store
+                    .set_polling_offset("telegram", self.next_offset.expect("offset was set"))?;
             }
         }
         for outbound in self.adapter.take_outbound() {
@@ -405,5 +415,47 @@ mod tests {
                 .iter()
                 .any(|(_, text)| text.contains("Approved proposal 1"))
         );
+    }
+
+    #[test]
+    fn reopening_runner_restores_the_persisted_polling_offset() {
+        let temp = tempdir().unwrap();
+        let db = temp.path().join("intake.sqlite");
+        let mut transport = FakeTransport::default();
+        transport.updates.push_back(vec![update(41, "status")]);
+        let mut first = runner(db.clone(), transport);
+
+        first.run_once().unwrap();
+        drop(first);
+
+        let mut reopened = runner(db, FakeTransport::default());
+        reopened.run_once().unwrap();
+
+        assert_eq!(reopened.transport().polls, vec![(Some(42), 20)]);
+    }
+
+    #[test]
+    fn replaying_an_approved_command_is_idempotent() {
+        let temp = tempdir().unwrap();
+        let db = temp.path().join("intake.sqlite");
+        let mut transport = FakeTransport::default();
+        transport
+            .updates
+            .push_back(vec![update(1, "implement telegram intake")]);
+        transport.updates.push_back(vec![update(2, "approve 1")]);
+        let mut first = runner(db.clone(), transport);
+
+        first.run_once().unwrap();
+        first.run_once().unwrap();
+        drop(first);
+
+        let mut replay = FakeTransport::default();
+        replay.updates.push_back(vec![update(2, "approve 1")]);
+        let mut reopened = runner(db, replay);
+
+        reopened
+            .run_once()
+            .expect("approval replay remains successful");
+        assert_eq!(reopened.store().tracked_work().unwrap().len(), 1);
     }
 }

@@ -351,6 +351,30 @@ impl SqliteIntakeStore {
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
+    pub fn polling_offset(&self, adapter: &str) -> Result<Option<i64>, SqliteStoreError> {
+        self.connection
+            .query_row(
+                "SELECT next_offset FROM polling_offsets WHERE adapter = ?1",
+                [adapter],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(Into::into)
+    }
+
+    pub fn set_polling_offset(
+        &mut self,
+        adapter: &str,
+        next_offset: i64,
+    ) -> Result<(), SqliteStoreError> {
+        self.connection.execute(
+            "INSERT INTO polling_offsets (adapter, next_offset) VALUES (?1, ?2)
+             ON CONFLICT(adapter) DO UPDATE SET next_offset = excluded.next_offset",
+            params![adapter, next_offset],
+        )?;
+        Ok(())
+    }
+
     pub fn approve(
         &mut self,
         proposal: ProposalId,
@@ -600,6 +624,10 @@ CREATE TABLE IF NOT EXISTS tracked_work (
 CREATE TABLE IF NOT EXISTS class_counters (
     class TEXT PRIMARY KEY,
     executed_count INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS polling_offsets (
+    adapter TEXT PRIMARY KEY,
+    next_offset INTEGER NOT NULL
 );
 "#;
 
