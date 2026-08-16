@@ -26,7 +26,7 @@
 - [x] 4.2 Implement unhandled-variant recording, including the variant name.
 - [x] 4.3 Implement group mention/reply gating and direct-message pass-through.
 - [x] 4.4 Implement outbound delivery and redaction notices.
-- [ ] 4.5 Add the bot credential to the existing secret-handling path; verify it never appears in stored records or logs.
+- [x] 4.5 Add the bot credential to the existing secret-handling path (`TELEGRAM_BOT_TOKEN` / hardened `telegram.env` via `jcode-provider-env`); verify synthetic credentials never appear in stored records, `Debug`, public errors, or provider error bodies.
 
 ## 5. Acceptance
 

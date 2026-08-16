@@ -7,8 +7,12 @@
 
 pub mod adapter;
 pub mod allowlist;
+pub mod client;
+pub mod credential;
 pub mod mapping;
 
 pub use adapter::{Handled, Outbound, TelegramAdapter};
 pub use allowlist::{Allowlist, unauthorized_hint};
+pub use client::{ApiError, TelegramClient};
+pub use credential::{BotToken, CredentialError, load_bot_token};
 pub use mapping::{ParseOutcome, ParsedMessage, parse, to_envelope};
