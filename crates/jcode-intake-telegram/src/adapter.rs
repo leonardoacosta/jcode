@@ -53,6 +53,17 @@ impl TelegramAdapter {
         &self.outbound
     }
 
+    /// Remove all queued outbound messages after a runner has delivered them.
+    pub fn take_outbound(&mut self) -> Vec<Outbound> {
+        std::mem::take(&mut self.outbound)
+    }
+
+    /// Resolve a transport sender to the configured single operator identity.
+    #[must_use]
+    pub fn operator_for_sender(&self, sender: &str) -> Option<&str> {
+        self.allowlist.resolve(sender)
+    }
+
     /// Queue a message for delivery to a conversation.
     pub fn deliver(&mut self, conversation: impl Into<String>, text: impl Into<String>) {
         self.outbound.push(Outbound {

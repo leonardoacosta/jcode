@@ -50,6 +50,7 @@ impl TelegramClient {
 
     /// Send a plain-text response to a conversation.
     pub fn send_message(&self, conversation: &str, text: &str) -> Result<Value, ApiError> {
+        let conversation = conversation.strip_prefix("tg:").unwrap_or(conversation);
         self.call(
             "sendMessage",
             &json!({"chat_id": conversation, "text": text}),
@@ -174,6 +175,19 @@ mod tests {
         assert!(request.starts_with(&format!("POST /bot{TOKEN}/sendMessage")));
         assert!(request.contains("\"chat_id\":\"555\""));
         assert!(request.contains("\"text\":\"hello\""));
+    }
+
+    #[test]
+    fn send_message_converts_neutral_telegram_conversation_at_transport_boundary() {
+        let (base_url, request) = one_shot_server(200, r#"{"ok":true,"result":{"message_id":1}}"#);
+        let client = TelegramClient::with_base_url(BotToken::new(TOKEN).unwrap(), base_url);
+
+        client.send_message("tg:-10055", "hello").unwrap();
+
+        let request = request.join().unwrap();
+        let body = request.split("\r\n\r\n").nth(1).unwrap();
+        let json: Value = serde_json::from_str(body).unwrap();
+        assert_eq!(json["chat_id"], "-10055");
     }
 
     #[test]
