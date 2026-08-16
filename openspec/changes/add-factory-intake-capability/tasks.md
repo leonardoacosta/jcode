@@ -11,7 +11,7 @@
 - [x] 2.1 Implement classification into: work request, research request, status request, unrecognized.
 - [x] 2.2 Implement proposal creation in awaiting-approval state; test that no tracked work is created before approval.
 - [x] 2.3 Implement the approval transition recording approver identity, time, and channel.
-- [ ] 2.4 Implement the two read-only paths; test that neither mutates repository, initiative, or configuration state.
+- [x] 2.4 Implement the two read-only paths; test that neither mutates repository, initiative, or configuration state.
 - [x] 2.5 Implement execution admission control; test that throttled messages are still recorded in full.
 
 ## 3. Identity

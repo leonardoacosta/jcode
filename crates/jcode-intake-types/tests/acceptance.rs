@@ -379,3 +379,54 @@ fn unauthorized_messages_are_still_scrubbed() {
         "credentials must be scrubbed regardless of authorization"
     );
 }
+
+/// Scenario: A message is read-only.
+/// The two read-only exceptions may answer without approval, but they must
+/// not mutate repository, initiative, or configuration state. The store is
+/// the only mutable surface intake owns, so the assertion is that neither
+/// path produces a proposal or tracked work.
+#[test]
+fn read_only_classifications_never_mutate_work_state() {
+    for text in [
+        "what is the status of the build",
+        "research the retry semantics",
+    ] {
+        let mut store = IntakeStore::new(None);
+        let id = store.receive(
+            envelope("telegram", "op:leo", "c1", text),
+            json!({}),
+            Some("op:leo".into()),
+        );
+        let rec = store.records().iter().find(|r| r.id == id).unwrap();
+
+        assert!(
+            matches!(
+                rec.classification,
+                Some(Classification::StatusRequest) | Some(Classification::ResearchRequest)
+            ),
+            "{text:?} should classify as a read-only request, got {:?}",
+            rec.classification
+        );
+        assert!(
+            store.proposals().is_empty(),
+            "a read-only request must not create a proposal"
+        );
+        assert!(
+            store.tracked_work().is_empty(),
+            "a read-only request must not create tracked work"
+        );
+    }
+}
+
+/// A work request is the complement: it does produce a proposal, so the
+/// read-only assertion above is not passing vacuously.
+#[test]
+fn work_requests_are_not_treated_as_read_only() {
+    let mut store = IntakeStore::new(None);
+    store.receive(
+        envelope("telegram", "op:leo", "c1", "build the dashboard"),
+        json!({}),
+        Some("op:leo".into()),
+    );
+    assert_eq!(store.proposals().len(), 1);
+}
