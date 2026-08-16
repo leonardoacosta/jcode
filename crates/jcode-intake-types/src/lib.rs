@@ -8,10 +8,12 @@ pub mod dedupe;
 pub mod envelope;
 pub mod record;
 pub mod redact;
+pub mod sqlite;
 pub mod store;
 
 pub use dedupe::DedupeKey;
 pub use envelope::{Attachment, Envelope};
 pub use record::{Classification, IntakeEvent, Record, RecordId};
 pub use redact::{Redactor, ScrubOutcome};
+pub use sqlite::{SqliteIntakeStore, SqliteStoreError};
 pub use store::{IntakeStore, StoreError};
