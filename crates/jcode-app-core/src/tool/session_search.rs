@@ -669,8 +669,9 @@ fn search_sessions_blocking(
                         report.truncated = true;
                     }
                 }
-                if candidates.len() > MAX_DESERIALIZE {
-                    candidates.truncate(MAX_DESERIALIZE);
+                let deserialize_limit = candidate_deserialize_limit(options);
+                if candidates.len() > deserialize_limit {
+                    candidates.truncate(deserialize_limit);
                     report.truncated = true;
                 }
 
@@ -710,6 +711,14 @@ fn search_sessions_blocking(
     report.results.sort_unstable_by(compare_results);
     report.results = group_and_limit_results(report.results, options);
     Ok(report)
+}
+
+fn candidate_deserialize_limit(options: &SearchOptions) -> usize {
+    if options.exhaustive {
+        usize::MAX
+    } else {
+        MAX_DESERIALIZE
+    }
 }
 
 fn collect_session_files(

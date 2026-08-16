@@ -56,6 +56,82 @@ fn run_search(home: &Path, query: &str, options: &SearchOptions) -> Vec<SearchRe
     run_report(home, query, options).results
 }
 
+fn public_tool_context(home: &Path) -> ToolContext {
+    ToolContext {
+        session_id: "current-session".to_string(),
+        message_id: "test-message".to_string(),
+        tool_call_id: "test-tool-call".to_string(),
+        working_dir: Some(home.to_path_buf()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: super::super::ToolExecutionMode::Direct,
+    }
+}
+
+#[test]
+fn exhaustive_search_does_not_cap_matching_candidates_before_scoring() {
+    let mut options = SearchOptions::for_test("current-session");
+    assert_eq!(candidate_deserialize_limit(&options), MAX_DESERIALIZE);
+
+    options.exhaustive = true;
+    assert_eq!(candidate_deserialize_limit(&options), usize::MAX);
+}
+
+#[test]
+fn exhaustive_search_scores_more_than_the_normal_candidate_cap() {
+    with_temp_home(|home| {
+        for index in 0..=MAX_DESERIALIZE {
+            save_test_session(
+                &format!("session-evidence-{index}"),
+                vec![(
+                    Role::Assistant,
+                    vec![text("retrospective completeness evidence")],
+                )],
+            );
+        }
+
+        let mut options = SearchOptions::for_test("current-session");
+        options.exhaustive = true;
+        let report = run_report(home, "retrospective completeness evidence", &options);
+
+        assert_eq!(report.scanned_jcode_sessions, MAX_DESERIALIZE + 1);
+        assert_eq!(report.candidate_jcode_sessions, MAX_DESERIALIZE + 1);
+        assert!(!report.truncated, "exhaustive search must remain complete");
+        assert!(!report.results.is_empty());
+    });
+}
+
+#[test]
+fn public_tool_exhaustive_search_reports_complete_scan_above_normal_cap() {
+    with_temp_home(|home| {
+        for index in 0..=MAX_DESERIALIZE {
+            save_test_session(
+                &format!("session-public-{index}"),
+                vec![(Role::Assistant, vec![text("public exhaustive evidence")])],
+            );
+        }
+
+        let output = tokio::runtime::Runtime::new()
+            .expect("runtime")
+            .block_on(SessionSearchTool::new().execute(
+                json!({
+                    "query": "public exhaustive evidence",
+                    "source": "jcode",
+                    "exhaustive": true
+                }),
+                public_tool_context(home),
+            ))
+            .expect("public tool output");
+
+        assert!(
+            output
+                .output
+                .contains("Scanned: 501 Jcode sessions (501 candidates)")
+        );
+        assert!(!output.output.contains("scan truncated"));
+    });
+}
+
 #[test]
 fn token_overlap_matches_when_exact_phrase_is_absent() {
     with_temp_home(|home| {
