@@ -16,4 +16,6 @@ pub use envelope::{Attachment, Envelope};
 pub use record::{Classification, IntakeEvent, Record, RecordId};
 pub use redact::{Redactor, ScrubOutcome};
 pub use sqlite::{SqliteIntakeStore, SqliteStoreError};
-pub use store::{IntakeStore, StoreError};
+pub use store::{
+    IntakeStore, Proposal, ProposalId, ProposalState, StoreError, TrackedWork, TrackedWorkId,
+};

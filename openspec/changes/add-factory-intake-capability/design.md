@@ -31,7 +31,7 @@ Telegram's API documentation states that `update_id` may be randomized after a p
 
 ### Storage: embedded database, justified narrowly
 
-This introduces the first embedded database in the workspace. Nothing in any workspace `Cargo.toml` currently matches `rusqlite|sqlx|libsql|redb|sled|duckdb`; existing state is JSON files with `.bak` siblings (`ambient/queue.json`, `memory/global.json`, roughly nine such files). This change sets a precedent, so it is justified by measurement rather than preference.
+This introduces the first embedded database in the workspace. Before this change, nothing in any workspace `Cargo.toml` matched `rusqlite|sqlx|libsql|redb|sled|duckdb`; existing state was JSON files with `.bak` siblings (`ambient/queue.json`, `memory/global.json`, roughly nine such files). The implemented `SqliteIntakeStore` uses WAL, relational records/events/proposals/work tables, commits the scrubbed inbound record before classification, and reconstructs authoritative state after restart. This change sets a precedent, so it is justified by measurement rather than preference.
 
 Benchmarked on records of 1739 B, sized from the real `ambient/queue.json`:
 

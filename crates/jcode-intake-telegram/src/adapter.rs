@@ -4,7 +4,7 @@
 //! intake. Transport vocabulary is confined to [`crate::mapping`]; what
 //! crosses the intake boundary here is the provider-neutral envelope.
 
-use jcode_intake_types::{IntakeEvent, IntakeStore, RecordId};
+use jcode_intake_types::{IntakeEvent, IntakeStore, RecordId, SqliteIntakeStore, SqliteStoreError};
 use serde_json::Value;
 
 use crate::{
@@ -89,6 +89,60 @@ impl TelegramAdapter {
         }
     }
 
+    /// Process one update against the authoritative durable backend.
+    ///
+    /// This is the production path. The in-memory [`Self::handle`] method is
+    /// retained as a lightweight test/reference surface.
+    pub fn handle_durable(
+        &mut self,
+        update: &Value,
+        store: &mut SqliteIntakeStore,
+    ) -> Result<Handled, SqliteStoreError> {
+        let parsed = match parse(update, &self.bot_handle) {
+            ParseOutcome::Message(parsed) => parsed,
+            ParseOutcome::Unhandled { variant } => {
+                let envelope = jcode_intake_types::Envelope {
+                    adapter: "telegram".to_owned(),
+                    sender_identity: format!("unhandled:{variant}"),
+                    conversation: format!("unhandled:{variant}"),
+                    content: None,
+                    attachments: Vec::new(),
+                    received_at: chrono::Utc::now(),
+                };
+                let record = store.receive_unauthorized(envelope, update.clone())?;
+                return Ok(Handled::UnhandledVariant { record, variant });
+            }
+        };
+
+        if parsed.is_group && !parsed.addresses_bot {
+            return Ok(Handled::Ignored);
+        }
+
+        match self.allowlist.resolve(&parsed.sender) {
+            Some(operator) => {
+                let operator = operator.to_owned();
+                let envelope = to_envelope(&parsed, &operator);
+                let record = store.receive(envelope, update.clone(), Some(operator))?;
+                let redacted = store.events()?.iter().any(
+                    |event| matches!(event, IntakeEvent::Redaction { record: id, .. } if *id == record),
+                );
+                if redacted {
+                    self.deliver(
+                        &parsed.conversation,
+                        "Note: credential-shaped content was redacted before storage.",
+                    );
+                }
+                Ok(Handled::Recorded(record))
+            }
+            None => {
+                let envelope = to_envelope(&parsed, &parsed.sender);
+                let record = store.receive_unauthorized(envelope, update.clone())?;
+                self.deliver(&parsed.conversation, unauthorized_hint(&parsed.sender));
+                Ok(Handled::Unauthorized(record))
+            }
+        }
+    }
+
     fn forward(
         &mut self,
         parsed: &ParsedMessage,
@@ -152,6 +206,7 @@ mod tests {
     use super::*;
     use jcode_intake_types::Classification;
     use serde_json::json;
+    use tempfile::tempdir;
 
     const TOKEN: &str = "123456789:AAHfSHFyTvJmL5RkQxWnPzZbCdEfGhIjKlM";
 
@@ -285,5 +340,45 @@ mod tests {
             store.records()[1].duplicate_of.is_some(),
             "dedupe must survive a randomized delivery sequence"
         );
+    }
+
+    #[test]
+    fn durable_path_recovers_message_and_proposal_after_restart() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("intake.sqlite");
+        {
+            let mut store = SqliteIntakeStore::open_with_classifier(&path, None, |_| {
+                Ok(Classification::WorkRequest)
+            })
+            .unwrap();
+            let mut adapter = adapter();
+            let outcome = adapter
+                .handle_durable(&private("build a dashboard", 7), &mut store)
+                .unwrap();
+            assert!(matches!(outcome, Handled::Recorded(_)));
+            assert_eq!(store.proposals().unwrap().len(), 1);
+            assert!(store.tracked_work().unwrap().is_empty());
+        }
+
+        let reopened = SqliteIntakeStore::open(&path, None).unwrap();
+        assert_eq!(reopened.records().unwrap().len(), 1);
+        assert_eq!(reopened.proposals().unwrap().len(), 1);
+        assert!(reopened.tracked_work().unwrap().is_empty());
+    }
+
+    #[test]
+    fn durable_path_keeps_unauthorized_sender_out_of_the_classifier() {
+        let mut store = SqliteIntakeStore::open_in_memory_with_classifier(None, |_| {
+            Ok(Classification::WorkRequest)
+        })
+        .unwrap();
+        let mut adapter = adapter();
+        let outcome = adapter
+            .handle_durable(&private("deploy prod", 999), &mut store)
+            .unwrap();
+        assert!(matches!(outcome, Handled::Unauthorized(_)));
+        assert_eq!(store.records().unwrap().len(), 1);
+        assert!(store.proposals().unwrap().is_empty());
+        assert!(store.tracked_work().unwrap().is_empty());
     }
 }
