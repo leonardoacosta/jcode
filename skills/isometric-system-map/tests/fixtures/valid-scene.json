@@ -1,0 +1,283 @@
+{
+  "version": 1,
+  "repository": {
+    "name": "sample-infra",
+    "ref": "main",
+    "commit": "0123456789abcdef0123456789abcdef01234567",
+    "scope": "infra/main.bicep",
+    "summary": "A small deployment and runtime path rendered as a standalone isometric scene."
+  },
+  "art_direction": {
+    "name": "warm technical paper",
+    "principles": [
+      "ink-first linework",
+      "quiet hierarchy",
+      "no interface chrome"
+    ],
+    "palette_roles": {
+      "background": "#d9cfaa",
+      "grid": "#b9ad82",
+      "structure": "#5b553f",
+      "control_path": "#4f4936",
+      "data_path": "#6d5835",
+      "payload": "#28251c",
+      "text": "#2c291f"
+    },
+    "medium": "archival drafting paper",
+    "linework": "fine sepia technical pen",
+    "materials": "flat paper faces with sparse hatching",
+    "typography": "compact monospaced labels",
+    "motion": "small ink dots moving at a measured pace"
+  },
+  "canvas": {
+    "grid_width": 12,
+    "grid_depth": 10,
+    "tile_width": 64,
+    "tile_height": 32
+  },
+  "zones": [
+    {
+      "id": "delivery",
+      "label": "Delivery",
+      "description": "Build and deployment control plane"
+    },
+    {
+      "id": "runtime",
+      "label": "Runtime",
+      "description": "Provisioned application resources"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "pipeline",
+      "code": "CI",
+      "label": "Deploy pipeline",
+      "role": "pipeline",
+      "form": "gateway",
+      "zone": "delivery",
+      "position": { "x": 1, "y": 1 },
+      "footprint": { "width": 2, "depth": 1 },
+      "height": 2.5,
+      "status": "active",
+      "description": "Validates and deploys the subscription template.",
+      "evidence": [
+        {
+          "path": ".azuredevops/deploy.yml",
+          "lines": "12-44",
+          "claim": "The pipeline validates and deploys the Bicep entry point."
+        }
+      ]
+    },
+    {
+      "id": "app",
+      "code": "APP",
+      "label": "Application",
+      "role": "compute",
+      "form": "tower",
+      "zone": "runtime",
+      "position": { "x": 5, "y": 2 },
+      "footprint": { "width": 1, "depth": 1 },
+      "height": 3.5,
+      "status": "active",
+      "description": "Serves the workload and writes records.",
+      "evidence": [
+        {
+          "path": "infra/modules/app.bicep",
+          "lines": "1-80",
+          "claim": "The app module provisions the workload compute."
+        }
+      ]
+    },
+    {
+      "id": "database",
+      "code": "SQL",
+      "label": "SQL database",
+      "role": "data",
+      "form": "stack",
+      "zone": "runtime",
+      "position": { "x": 8, "y": 4 },
+      "footprint": { "width": 2, "depth": 1 },
+      "height": 2,
+      "status": "active",
+      "description": "Persists workload records over a private path.",
+      "evidence": [
+        {
+          "path": "infra/modules/sql.bicep",
+          "lines": "1-96",
+          "claim": "The SQL module creates the data service and private endpoint."
+        }
+      ]
+    },
+    {
+      "id": "telemetry",
+      "code": "OBS",
+      "label": "Telemetry",
+      "role": "observability",
+      "form": "lattice",
+      "zone": "runtime",
+      "position": { "x": 7, "y": 7 },
+      "footprint": { "width": 1, "depth": 2 },
+      "height": 3,
+      "status": "active",
+      "description": "Receives workload diagnostics.",
+      "evidence": [
+        {
+          "path": "infra/modules/monitoring.bicep",
+          "lines": "10-72",
+          "claim": "Diagnostics are connected to the monitoring workspace."
+        }
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "id": "deploy-app",
+      "from": "pipeline",
+      "to": "app",
+      "kind": "delivery",
+      "label": "guarded deployment",
+      "route": [
+        { "x": 3, "y": 1.5 },
+        { "x": 4, "y": 1.5 },
+        { "x": 4, "y": 2.5 },
+        { "x": 5, "y": 2.5 }
+      ],
+      "payload_ids": ["deployment"],
+      "evidence": [
+        {
+          "path": ".azuredevops/deploy.yml",
+          "lines": "31-44",
+          "claim": "The pipeline invokes the app deployment."
+        }
+      ]
+    },
+    {
+      "id": "write-record",
+      "from": "app",
+      "to": "database",
+      "kind": "data",
+      "label": "private SQL write",
+      "route": [
+        { "x": 6, "y": 2.5 },
+        { "x": 7, "y": 2.5 },
+        { "x": 7, "y": 4.5 },
+        { "x": 8, "y": 4.5 }
+      ],
+      "payload_ids": ["record"],
+      "evidence": [
+        {
+          "path": "infra/main.bicep",
+          "lines": "22-31",
+          "claim": "The application is connected to the private SQL dependency."
+        }
+      ]
+    },
+    {
+      "id": "emit-telemetry",
+      "from": "app",
+      "to": "telemetry",
+      "kind": "telemetry",
+      "label": "diagnostics",
+      "route": [
+        { "x": 5.5, "y": 3 },
+        { "x": 5.5, "y": 6 },
+        { "x": 7.5, "y": 6 },
+        { "x": 7.5, "y": 7 }
+      ],
+      "payload_ids": ["diagnostic"],
+      "evidence": [
+        {
+          "path": "infra/modules/monitoring.bicep",
+          "lines": "36-72",
+          "claim": "The workload emits diagnostics to monitoring."
+        }
+      ]
+    }
+  ],
+  "payloads": [
+    {
+      "id": "deployment",
+      "label": "ARM deployment",
+      "kind": "deployment",
+      "description": "Environment parameters and resource outputs.",
+      "evidence": [
+        {
+          "path": ".azuredevops/deploy.yml",
+          "lines": "31-44",
+          "claim": "Deployment parameters cross the delivery path."
+        }
+      ]
+    },
+    {
+      "id": "record",
+      "label": "Workload record",
+      "kind": "record",
+      "description": "A runtime record written to SQL.",
+      "evidence": [
+        {
+          "path": "infra/main.bicep",
+          "lines": "22-31",
+          "claim": "The runtime dependency supports application data writes."
+        }
+      ]
+    },
+    {
+      "id": "diagnostic",
+      "label": "Diagnostic envelope",
+      "kind": "telemetry",
+      "description": "Logs and metrics emitted by the workload.",
+      "evidence": [
+        {
+          "path": "infra/modules/monitoring.bicep",
+          "lines": "36-72",
+          "claim": "Diagnostic settings forward workload telemetry."
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "release-and-run",
+      "label": "Release and run",
+      "description": "Deploy the app, write a record, and emit telemetry.",
+      "steps": [
+        {
+          "path": "deploy-app",
+          "payload": "deployment",
+          "label": "Deploy the workload",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "31-44",
+              "claim": "The pipeline performs the guarded deployment."
+            }
+          ]
+        },
+        {
+          "path": "write-record",
+          "payload": "record",
+          "label": "Write a private record",
+          "evidence": [
+            {
+              "path": "infra/main.bicep",
+              "lines": "22-31",
+              "claim": "The app uses the private SQL dependency."
+            }
+          ]
+        },
+        {
+          "path": "emit-telemetry",
+          "payload": "diagnostic",
+          "label": "Emit diagnostics",
+          "evidence": [
+            {
+              "path": "infra/modules/monitoring.bicep",
+              "lines": "36-72",
+              "claim": "Diagnostics are forwarded to monitoring."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

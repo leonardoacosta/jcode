@@ -1,0 +1,33 @@
+{
+  "skill_name": "isometric-system-map",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Analyze the Brown wholesale Bicep repository supplied as $BROWN_WHOLESALE_REPO at the supplied immutable ref. Create an evidence-backed interactive isometric system map of the active shared foundation and its deployment pipeline. Save map.json and map.html in the requested output directory. Do not modify the source repository. Preserve deployment, dependency, network, identity, data, messaging, and telemetry semantics rather than flattening every relationship into one generic arrow.",
+      "expected_output": "A valid contract JSON file and self-contained HTML map with curated load-bearing buildings, multiple real flows, inspectable payloads, exact repo-relative citations, and truthful status/ownership labels.",
+      "files": [],
+      "expectations": [
+        "Both map.json and map.html are created and map.json passes the bundled validator.",
+        "The artifact records the exact supplied ref and commit rather than claiming unproven freshness.",
+        "Every node, edge, payload, and ordered flow step has repo-relative file citations.",
+        "The map distinguishes delivery/dependency/network/identity/data/telemetry paths.",
+        "The HTML is self-contained and exposes flow selection, pause/resume, trace, reset, payload inspection, and source details.",
+        "The terrain is curated to 24 or fewer non-colliding nodes and 6 or fewer flows."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Analyze the decus-shared Bicep repository supplied as $DECUS_SHARED_REPO at the supplied immutable main ref. Create an evidence-backed interactive isometric system map that explains the network-first foundation, shared services, application consumers, deployment gates, and ownership boundaries. Save map.json and map.html in the requested output directory. Do not modify the source repository. Treat held or externally owned infrastructure explicitly instead of presenting it as live and locally owned.",
+      "expected_output": "A valid contract JSON file and self-contained HTML map preserving phase order, approval or held state, external ownership, private-network dependencies, and application-facing flows with exact citations.",
+      "files": [],
+      "expectations": [
+        "Both map.json and map.html are created and map.json passes the bundled validator.",
+        "The map records the supplied immutable main commit.",
+        "Network-first ordering and later shared-foundation dependencies are represented as directed flows.",
+        "Held, gated, conditional, or externally owned nodes are not mislabeled active.",
+        "Every node, edge, payload, and ordered flow step has repo-relative file citations.",
+        "The HTML is self-contained, keyboard reachable, reduced-motion aware, and exposes all required controls."
+      ]
+    }
+  ]
+}
