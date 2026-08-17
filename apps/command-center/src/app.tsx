@@ -9,13 +9,7 @@ import {
   Show,
   untrack,
 } from "solid-js";
-import {
-  AppShell,
-  DecisionInbox,
-  InitiativeList,
-  SplitWorkspace,
-  StateCard,
-} from "./components/CommandCenter";
+import { AppShell, DecisionInbox, StateCard } from "./components/CommandCenter";
 import { createProjectionStore } from "./stores/projection";
 import { HttpCommandCenterTransport } from "./transport/client";
 import "./styles.css";
@@ -54,9 +48,6 @@ function WorkspaceRoute() {
   const location = useLocation();
   const path = () => location.pathname;
   const [hydrated, setHydrated] = createSignal(false);
-  const [failure, setFailure] = createSignal<string>();
-  const [loadError, setLoadError] = createSignal<unknown>();
-  const [pending, setPending] = createSignal(false);
   const store = createProjectionStore();
   onMount(() => setHydrated(true));
   const [snapshot] = createResource(
@@ -65,10 +56,8 @@ function WorkspaceRoute() {
       try {
         const next = await transport.loadSnapshot(currentPath);
         store.installSnapshot(next);
-        setLoadError(undefined);
         return next;
       } catch (error) {
-        setLoadError(error);
         return undefined;
       }
     },
@@ -82,49 +71,6 @@ function WorkspaceRoute() {
     }
   });
   const current = () => store.snapshot ?? snapshot();
-  const checkpoint = async (summary: string) => {
-    const initiative = current()?.selectedInitiative;
-    if (!initiative) return;
-    setPending(true);
-    setFailure(undefined);
-    const result = await transport.sendCommand({
-      idempotencyKey: crypto.randomUUID(),
-      payload: {
-        type: "checkpoint_initiative",
-        initiativeId: initiative.id,
-        expectedRevision: initiative.revision,
-        summary,
-        blockers: initiative.blockers,
-        nextActions: initiative.nextActions,
-      },
-    });
-    setPending(false);
-    if (result.snapshot) store.installSnapshot(result.snapshot);
-    if (result.state === "failed") setFailure(result.error?.message ?? "Command failed");
-  };
-  const updateStep = async (
-    stepId: string,
-    status: "pending" | "running" | "blocked" | "completed",
-  ) => {
-    const initiative = current()?.selectedInitiative;
-    if (!initiative) return;
-    setPending(true);
-    setFailure(undefined);
-    const result = await transport.sendCommand({
-      idempotencyKey: crypto.randomUUID(),
-      payload: {
-        type: "update_step",
-        initiativeId: initiative.id,
-        expectedRevision: initiative.revision,
-        milestoneId: initiative.currentMilestone.id,
-        stepId,
-        status,
-      },
-    });
-    setPending(false);
-    if (result.snapshot) store.installSnapshot(result.snapshot);
-    if (result.state === "failed") setFailure(result.error?.message ?? "Command failed");
-  };
   createEffect(
     on(
       () => current()?.meta.streamId,
@@ -159,34 +105,6 @@ function WorkspaceRoute() {
       </Show>
       <Show when={path() !== "/ambient" && path() !== "/find"}>
         <DecisionInbox snapshot={decisionInbox()} />
-        <Show
-          when={!snapshot.loading}
-          fallback={
-            <StateCard
-              title="Loading authoritative snapshot"
-              message="Jcode is loading a scoped command-center snapshot."
-            />
-          }
-        >
-          <Show when={!loadError()} fallback={<StateCard {...loadFailureState(loadError())} />}>
-            <Show
-              when={current()?.selectedInitiative}
-              fallback={<InitiativeList initiatives={current()?.initiatives ?? []} />}
-              keyed
-            >
-              {(initiative) => (
-                <SplitWorkspace
-                  initiative={initiative}
-                  run={current()?.selectedRun}
-                  onCheckpoint={checkpoint}
-                  onUpdateStep={updateStep}
-                  pending={pending()}
-                  failure={failure()}
-                />
-              )}
-            </Show>
-          </Show>
-        </Show>
       </Show>
     </AppShell>
   );

@@ -120,8 +120,8 @@ export function FindDrawer(props: {
                   href={reference.href}
                   aria-label={reference.label}
                   style={{
-                    display: "grid",
-                    opacity: isVisible(reference) ? 1 : 0,
+                    display: isVisible(reference) ? "grid" : "none",
+                    opacity: 1,
                     "pointer-events": isVisible(reference) ? "auto" : "none",
                   }}
                 >

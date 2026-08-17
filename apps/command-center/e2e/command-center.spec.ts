@@ -149,13 +149,15 @@ test("authenticated bootstrap loads authoritative command center", async ({ page
     page.getByRole("banner").getByRole("heading", { name: "Jcode Command Center" }),
   ).toBeVisible();
   await expect(page.getByLabel(/Connection/)).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Decision Inbox" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Decision queue" })).toBeVisible();
 });
 
 test("Decision Inbox renders durable provider provenance @fixture-only", async ({ page }) => {
   await page.goto("/initiatives/init-command-center/runs/run-1");
-  await expect(page.getByText("Telegram")).toBeVisible();
-  await expect(page.getByText("Review the Command Center delivery")).toBeVisible();
+  await expect(page.getByText("Telegram · tg:42", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Review the Command Center delivery" }),
+  ).toBeVisible();
   await expect(page.getByText("Work request")).toBeVisible();
   await expect(page.getByText("Awaiting approval")).toBeVisible();
 });
@@ -180,34 +182,20 @@ test("live Telegram message reaches the authenticated Decision Inbox", async ({ 
   await expect(page.getByText(/inbox acceptance ping/i).first()).toBeVisible();
 });
 
-test("discovery route lists accessible initiatives @fixture-only", async ({ page }) => {
+test("discovery route opens the Decision Inbox primary view @fixture-only", async ({ page }) => {
   await page.goto("/initiatives");
-  await expect(
-    page.getByRole("banner").getByRole("heading", { name: "Jcode Command Center" }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("Supervise durable initiatives beside live execution."),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Decision queue" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Filter by type" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Durable packets" })).toBeVisible();
 });
 
-test("discovery navigation renders the selected initiative workspace @fixture-only", async ({
-  page,
-}) => {
+test("packet selection opens the evidence detail pane @fixture-only", async ({ page }) => {
   await page.goto("/initiatives");
-  await page.locator("a.initiative-card").click();
-  await expect(page).toHaveURL(/\/initiatives\/init-command-center$/);
-  await expect(
-    page.getByRole("region", { name: "Split initiative and execution workspace" }),
-  ).toBeVisible();
-});
-
-test("split route deep links to the selected run @fixture-only", async ({ page }) => {
-  await page.goto("/initiatives/init-command-center/runs/run-1");
-  await expect(page.getByRole("heading", { name: "Live execution" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open run run-1" })).toHaveAttribute(
-    "href",
-    "/initiatives/init-command-center/runs/run-1",
-  );
+  await page.getByRole("button", { name: /Review the Command Center delivery packet/i }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Source" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Authority" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Blast radius and rollback" })).toBeVisible();
 });
 
 test("global Find opens as an accessible drawer from the selected run route @fixture-only", async ({
@@ -258,61 +246,36 @@ test("global Find result links preserve initiative and run deep links @fixture-o
   );
 });
 
-test("milestone step update posts command and installs replacement snapshot @fixture-only", async ({
+test("Decision Inbox filters and sorts packets @fixture-only", async ({ page }) => {
+  await page.goto("/initiatives");
+  await page.getByRole("button", { name: "Approvals" }).click();
+  await expect(
+    page.getByRole("button", { name: /Review the Command Center delivery packet/i }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Questions" }).click();
+  await expect(page.getByText("No packets match this filter.")).toBeVisible();
+  await page.getByRole("button", { name: "All 1" }).click();
+  await page.getByRole("combobox", { name: "Sort packets" }).selectOption("oldest");
+  await expect(
+    page.getByRole("button", { name: /Review the Command Center delivery packet/i }),
+  ).toBeVisible();
+});
+
+test("Decision Inbox keeps bounded actions disabled when transport is unsupported @fixture-only", async ({
   page,
 }) => {
-  await page.goto("/initiatives/init-command-center/runs/run-1");
-  await page.getByRole("button", { name: "Mark Workspace frontend complete" }).click();
-  await expect(page.getByText("Workspace frontendcompleted")).toBeVisible();
+  await page.goto("/initiatives");
+  await page.getByRole("button", { name: /Review the Command Center delivery packet/i }).click();
+  await expect(page.getByRole("button", { name: "Approve delivery" })).toBeDisabled();
+  await expect(page.getByText(/unsupported by the current inbox transport/i)).toBeVisible();
 });
 
-test("checkpoint command appends checkpoint history @fixture-only", async ({ page }) => {
-  await page.goto("/initiatives/init-command-center/runs/run-1");
-  await page.getByLabel("Checkpoint summary").fill("E2E checkpoint");
-  await page.getByRole("button", { name: "Checkpoint progress" }).click();
-  await expect(page.getByText("E2E checkpoint")).toBeVisible();
-});
-
-test("schedule evidence and live event stream render @fixture-only", async ({ page }) => {
-  await page.goto("/initiatives/init-command-center/runs/run-1");
-  await expect(page.getByText("Last schedule evidence from fixture")).toBeVisible();
-  await expect(page.getByText("Reconnect event applied")).toBeVisible();
-});
-
-test("accessibility, keyboard resize, embedded width, and virtualization hold @fixture-only", async ({
+test("Decision Inbox keeps the detail sheet reachable on mobile @fixture-only", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 520, height: 720 });
-  await page.goto("/initiatives/init-command-center/runs/run-1");
-
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("link", { name: "Skip to command center" })).toBeFocused();
-  await page.getByLabel("Pane size").focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(page.getByLabel("Pane size")).toHaveJSProperty("value", "49");
-  await expect(page.getByLabel("Virtualized event timeline").locator("li")).toHaveCount(40);
-
-  const columns = await page
-    .getByLabel("Split initiative and execution workspace")
-    .evaluate((element) => getComputedStyle(element).gridTemplateColumns);
-  expect(columns.trim().split(/\s+/)).toHaveLength(1);
-});
-
-test("disconnect, replay gap, snapshot replacement, and resume are visible @fixture-only", async ({
-  page,
-}) => {
-  await page.goto("/initiatives/init-command-center/runs/run-1");
-  await expect(page.getByText("Reconnect event applied")).toBeVisible();
-  await page.getByRole("button", { name: "Next events" }).click();
-  await expect(page.getByText("Ordered event 41")).toBeVisible();
-});
-
-test("degraded Orca keeps durable actions and disables runtime controls @fixture-only", async ({
-  page,
-}, testInfo) => {
-  if (!isOrcaUnavailable(testInfo.project)) return;
-  await page.goto("/initiatives/init-command-center/runs/run-1");
-  await expect(page.getByText("Orca runtime unavailable")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Retry" })).toBeDisabled();
-  await expect(page.getByLabel("Checkpoint summary")).toBeEnabled();
+  await page.goto("/initiatives");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Back to queue" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Durable decision packets" })).toBeVisible();
 });

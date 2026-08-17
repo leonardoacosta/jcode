@@ -869,3 +869,250 @@ button:focus-visible {
     transition: none !important;
   }
 }
+
+/* Decision Inbox primary surface. */
+.compact-bar {
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.queue-toolbar {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sort-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sort-control select {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 8px 28px 8px 12px;
+  font-size: 12px;
+}
+
+.inbox-workspace {
+  grid-template-columns: minmax(300px, 0.78fr) minmax(0, 1.22fr);
+  min-height: calc(100vh - 10rem);
+}
+
+.packet-surface,
+.decision-detail {
+  min-height: 0;
+}
+
+.packet-surface .inbox-list {
+  overflow: auto;
+  max-height: calc(100vh - 15rem);
+}
+
+.staggered-list .inbox-item {
+  animation: packet-in 260ms ease both;
+  animation-delay: calc(var(--packet-index, 0) * 38ms);
+}
+
+@keyframes packet-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.signal.approval {
+  background: var(--pink);
+}
+
+.signal.revisit,
+.signal.receipt {
+  background: var(--faint);
+}
+
+.decision-detail {
+  overflow: auto;
+  padding: 22px;
+}
+
+.mobile-sheet-close {
+  display: none;
+  border: 0;
+  background: transparent;
+  padding: 0 0 18px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: start;
+}
+
+.decision-note {
+  margin: 0 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 3%);
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.phase-line {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 20px 0 2px;
+  border-top: 1px solid var(--line);
+}
+
+.phase {
+  position: relative;
+  padding-top: 16px;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.phase::before {
+  position: absolute;
+  top: -4px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #555;
+  content: "";
+}
+
+.phase.done {
+  color: var(--muted);
+}
+
+.phase.done::before {
+  background: var(--teal);
+}
+
+.phase.current {
+  color: var(--ink);
+}
+
+.phase.current::before {
+  background: var(--pink);
+}
+
+.detail-body {
+  border-bottom: 1px solid var(--line);
+}
+
+.detail-section {
+  border-top: 1px solid var(--line);
+  padding: 17px 0;
+}
+
+.detail-section:first-child {
+  border-top: 0;
+}
+
+.detail-section .section-heading {
+  display: grid;
+  grid-template-columns: minmax(116px, 0.34fr) 1fr;
+  align-items: start;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.detail-section .section-heading h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail-section .section-heading p,
+.detail-copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.info-pair small {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.info-pair p {
+  overflow-wrap: anywhere;
+  margin: 0;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.info-pair code {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+@media (max-width: 760px) {
+  .queue-toolbar {
+    align-items: flex-start;
+  }
+
+  .inbox-workspace {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .packet-surface .inbox-list {
+    max-height: none;
+  }
+
+  .decision-detail {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: block;
+    border: 0;
+    border-radius: 0;
+    padding: 22px 16px calc(var(--mobile-nav) + 24px);
+    background: var(--bg);
+  }
+
+  .mobile-sheet-close {
+    display: block;
+  }
+
+  .detail-section .section-heading {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .staggered-list .inbox-item {
+    animation: none !important;
+  }
+}

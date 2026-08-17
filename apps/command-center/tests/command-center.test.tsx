@@ -74,7 +74,7 @@ describe("command center components", () => {
     );
   });
 
-  it("renders durable Decision Inbox provenance, categories, and approval state", () => {
+  it("renders the dense Decision queue with durable provenance", () => {
     render(() => (
       <DecisionInbox
         snapshot={{
@@ -102,12 +102,124 @@ describe("command center components", () => {
         }}
       />
     ));
-    expect(screen.getByRole("heading", { name: "Decision Inbox" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Decision queue" })).toBeInTheDocument();
     expect(screen.getByText("Slack")).toBeInTheDocument();
     expect(screen.getByText("Work request")).toBeInTheDocument();
     expect(screen.getByText("Awaiting approval")).toBeInTheDocument();
     expect(screen.getByText("1 duplicate delivery retained")).toBeInTheDocument();
     expect(screen.getByText("sl:D123")).toBeInTheDocument();
+  });
+
+  it("filters and sorts durable packets, then opens an evidence-rich detail pane", () => {
+    render(() => (
+      <DecisionInbox
+        snapshot={{
+          generatedAt: "2026-08-17T05:00:00Z",
+          items: [
+            {
+              recordId: 1,
+              source: { adapter: "telegram", senderIdentity: "operator", conversation: "tg:42" },
+              receivedAt: "2026-08-17T05:00:00Z",
+              content: "Approve the verified preview",
+              category: "work_request",
+              status: "awaiting_approval",
+              proposal: { id: 7, state: "awaiting_approval" },
+              dedupeKey: "sha256:approval",
+              duplicateDeliveries: 0,
+              retryDeliveries: 0,
+              redacted: false,
+              rawPayloadRetained: true,
+            },
+            {
+              recordId: 2,
+              source: { adapter: "slack", senderIdentity: "maintainer", conversation: "sl:D123" },
+              receivedAt: "2026-08-17T04:00:00Z",
+              content: "Choose the auth boundary",
+              category: "status_request",
+              status: "read_only",
+              trackedWork: 184,
+              dedupeKey: "sha256:question",
+              duplicateDeliveries: 0,
+              retryDeliveries: 1,
+              redacted: false,
+              rawPayloadRetained: true,
+            },
+            {
+              recordId: 3,
+              source: { adapter: "telegram", senderIdentity: "tester", conversation: "tg:99" },
+              receivedAt: "2026-08-17T03:00:00Z",
+              content: "Resume the retained checkpoint",
+              category: "unrecognized",
+              status: "deferred",
+              dedupeKey: "sha256:revisit",
+              duplicateDeliveries: 0,
+              retryDeliveries: 2,
+              redacted: false,
+              rawPayloadRetained: true,
+            },
+            {
+              recordId: 4,
+              source: { adapter: "slack", senderIdentity: "system", conversation: "sl:receipts" },
+              receivedAt: "2026-08-17T02:00:00Z",
+              content: "Receipt written",
+              category: "research_request",
+              status: "approved",
+              proposal: { id: 8, state: "approved" },
+              dedupeKey: "sha256:receipt",
+              duplicateDeliveries: 1,
+              retryDeliveries: 0,
+              redacted: false,
+              rawPayloadRetained: true,
+            },
+          ],
+        }}
+      />
+    ));
+
+    expect(screen.getByRole("group", { name: "Filter by type" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "All 4" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Approvals" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Questions" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Revisits" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Receipts" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Questions" }));
+    expect(screen.getByText("Choose the auth boundary")).toBeVisible();
+    expect(screen.queryByText("Approve the verified preview")).not.toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "All 4" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Sort packets" }), {
+      target: { value: "oldest" },
+    });
+    const packets = screen.getAllByRole("button", { name: /packet/ });
+    expect(packets[0]).toHaveTextContent("Receipt written");
+
+    fireEvent.click(screen.getByRole("button", { name: /Approve the verified preview/ }));
+    expect(
+      screen.getByRole("heading", { name: "Approve the verified preview" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Source")).toBeInTheDocument();
+    expect(screen.getByText("Authority")).toBeInTheDocument();
+    expect(screen.getByText("Execution")).toBeInTheDocument();
+    expect(screen.getByText("Acceptance")).toBeInTheDocument();
+    expect(screen.getByText("Evidence")).toBeInTheDocument();
+    expect(screen.getByText("Owner trail")).toBeInTheDocument();
+    expect(screen.getByText("Blast radius and rollback")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Approve delivery" })).toBeDisabled();
+    expect(screen.getByText(/unsupported by the current inbox transport/i)).toBeInTheDocument();
+  });
+
+  it("exposes a mobile-safe detail dialog close control and reduced-motion list hook", () => {
+    render(() => <DecisionInbox snapshot={{ generatedAt: "2026-08-17T05:00:00Z", items: [] }} />);
+
+    expect(screen.getByRole("dialog", { name: "Decision packet detail" })).toHaveAttribute(
+      "aria-modal",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Back to packet list" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Durable decision packets" })).toHaveClass(
+      "staggered-list",
+    );
   });
 
   it("renders durable and live panes with accessible states", () => {
