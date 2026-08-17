@@ -1,14 +1,17 @@
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use chrono::Utc;
 use jcode_command_center::{
-    AuthContext, CommandCenterError, Freshness, IdempotencyKey, InitiativeId, InitiativeRepository,
-    JcodeRunId, JcodeRunReference, LinkedScheduleProjection, OrcaAdapter, OrcaProjectId,
-    OrcaReference, OrcaRunId, Revision, RunProjectionSource, RuntimeMutationCapabilities,
-    ScheduleProjectionSource, ScheduleRefId,
+    AuthContext, CancelLinkedRunRequest, CommandCenterError, Freshness, InitiativeId,
+    InitiativeRepository, JcodeRunReference, LinkedScheduleProjection, OrcaAdapter,
+    OrcaCanonicalPlacement, OrcaProjectId, OrcaReference, OrcaTerminalId, OrcaWorkerLauncher,
+    RetryLinkedRunRequest, Revision, RunProjectionSource, RuntimeCommandExecution,
+    RuntimeMutationCapabilities, ScheduleProjectionSource, ScheduleRefId,
+    StartInitiativeRunRequest,
 };
 use jcode_task_types::Goal;
 use serde::{Deserialize, Serialize};
@@ -16,6 +19,14 @@ use tokio::process::Command;
 
 use crate::ambient::AmbientManager;
 use crate::command_center_orca::OrcaCompatibilityProfile;
+use orca_lifecycle::{OrcaCoordinatorBinding, OrcaLifecycleAdapter, OrcaLifecycleConfig};
+
+#[path = "command_center/orca_lifecycle.rs"]
+mod orca_lifecycle;
+
+#[cfg(test)]
+#[path = "command_center/orca_lifecycle_tests.rs"]
+mod orca_lifecycle_tests;
 
 pub(super) async fn spawn_managed_http_host(runtime: &crate::server::runtime::ServerRuntime) {
     let enabled = std::env::var("JCODE_COMMAND_CENTER_ENABLED")
@@ -64,7 +75,14 @@ pub(super) async fn spawn_managed_http_host(runtime: &crate::server::runtime::Se
         asset_dir,
         decision_inbox_db_path,
     };
-    let service = service_for_working_dir(std::env::current_dir().ok());
+    let working_dir = std::env::current_dir().ok();
+    let orca = OrcaCliAdapter::for_working_dir(working_dir.clone());
+    if let Err(error) = orca.reconcile_pending_operations().await {
+        crate::logging::warn(&format!(
+            "Command Center Orca reconciliation failed during startup: {error}"
+        ));
+    }
+    let service = service_for_working_dir_and_orca(working_dir, orca);
     let api = Arc::new(jcode_command_center::CommandCenterRuntime::new(
         service,
         jcode_command_center::StreamId(format!("daemon-{}", uuid::Uuid::new_v4())),
@@ -108,11 +126,24 @@ pub fn service_for_working_dir(
     SessionRunProjectionSource,
     OrcaCliAdapter,
 > {
+    let orca = OrcaCliAdapter::for_working_dir(working_dir.clone());
+    service_for_working_dir_and_orca(working_dir, orca)
+}
+
+fn service_for_working_dir_and_orca(
+    working_dir: Option<PathBuf>,
+    orca: OrcaCliAdapter,
+) -> jcode_command_center::CommandCenterService<
+    GoalInitiativeRepository,
+    AmbientScheduleProjectionSource,
+    SessionRunProjectionSource,
+    OrcaCliAdapter,
+> {
     jcode_command_center::CommandCenterService::new(
         GoalInitiativeRepository::new(working_dir.clone()),
         AmbientScheduleProjectionSource::new(),
         SessionRunProjectionSource::new(),
-        OrcaCliAdapter::for_working_dir(working_dir),
+        orca,
     )
     .with_external_signal_projection(Arc::new(ExternalSignalProjectionSource))
 }
@@ -299,6 +330,7 @@ pub struct OrcaCliAdapter {
     command: String,
     working_dir: Option<PathBuf>,
     runner: Arc<dyn OrcaCommandRunner>,
+    lifecycle: Option<Arc<OrcaLifecycleAdapter>>,
 }
 
 impl Default for OrcaCliAdapter {
@@ -320,11 +352,64 @@ impl OrcaCliAdapter {
     }
 
     fn with_working_dir(command: impl Into<String>, working_dir: Option<PathBuf>) -> Self {
+        let command = command.into();
+        let runner: Arc<dyn OrcaCommandRunner> = Arc::new(ProcessOrcaCommandRunner);
+        Self::with_components(command, working_dir, runner)
+    }
+
+    fn with_components(
+        command: String,
+        working_dir: Option<PathBuf>,
+        runner: Arc<dyn OrcaCommandRunner>,
+    ) -> Self {
+        let coordinator = std::env::var("JCODE_COMMAND_CENTER_ORCA_COORDINATOR_TERMINAL")
+            .ok()
+            .filter(|value| !value.trim().is_empty());
+        let agent = std::env::var("JCODE_COMMAND_CENTER_ORCA_AGENT")
+            .ok()
+            .filter(|value| !value.trim().is_empty());
+        let store = crate::storage::jcode_dir()
+            .ok()
+            .and_then(|home| {
+                jcode_command_center::orca_operation_store::SqliteOrcaOperationStore::open(
+                    home.join("command-center").join("orca-operations.sqlite"),
+                )
+                .ok()
+            })
+            .map(Arc::new);
+        let lifecycle = match (coordinator, agent, store) {
+            (Some(terminal), Some(agent), Some(store)) => {
+                Some(Arc::new(OrcaLifecycleAdapter::new(OrcaLifecycleConfig {
+                    command: command.clone(),
+                    working_dir: working_dir.clone(),
+                    runner: Arc::clone(&runner),
+                    store,
+                    coordinator: OrcaCoordinatorBinding {
+                        terminal: OrcaTerminalId(terminal),
+                    },
+                    launcher: OrcaWorkerLauncher::Agent {
+                        agent,
+                        model: None,
+                        effort: None,
+                    },
+                    timeout: Duration::from_secs(60),
+                })))
+            }
+            _ => None,
+        };
         Self {
-            command: command.into(),
+            command,
             working_dir,
-            runner: Arc::new(ProcessOrcaCommandRunner),
+            runner,
+            lifecycle,
         }
+    }
+
+    async fn reconcile_pending_operations(&self) -> Result<(), CommandCenterError> {
+        if let Some(lifecycle) = &self.lifecycle {
+            lifecycle.reconcile_pending_operations().await?;
+        }
+        Ok(())
     }
 
     #[cfg(test)]
@@ -333,37 +418,51 @@ impl OrcaCliAdapter {
         working_dir: Option<PathBuf>,
         runner: Arc<dyn OrcaCommandRunner>,
     ) -> Self {
-        Self {
-            command: command.into(),
-            working_dir,
-            runner,
-        }
+        Self::with_components(command.into(), working_dir, runner)
     }
 
     async fn status(&self) -> Result<OrcaStatusResponse, CommandCenterError> {
         let output = self
             .runner
-            .run(&self.command, &["status".to_string(), "--json".to_string()])
-            .await?;
-        serde_json::from_slice(&output).map_err(|_| CommandCenterError::OrcaUnavailable)
+            .run(
+                &self.command,
+                &["status".to_string(), "--json".to_string()],
+                self.working_dir.as_deref(),
+                Duration::from_secs(10),
+            )
+            .await
+            .map_err(|_| CommandCenterError::OrcaUnavailable)?;
+        if output.exit_code != Some(0) {
+            return Err(CommandCenterError::OrcaUnavailable);
+        }
+        serde_json::from_slice(&output.stdout).map_err(|_| CommandCenterError::OrcaUnavailable)
     }
 
     async fn validate_compatibility_profile(&self) -> Result<(), CommandCenterError> {
         let status = self
             .runner
-            .run(&self.command, &["status".to_string(), "--json".to_string()])
-            .await?;
+            .run(
+                &self.command,
+                &["status".to_string(), "--json".to_string()],
+                self.working_dir.as_deref(),
+                Duration::from_secs(10),
+            )
+            .await
+            .map_err(|_| incompatible_orca_profile())?;
         let registry = self
             .runner
             .run(
                 &self.command,
                 &["agent-context".to_string(), "--json".to_string()],
+                self.working_dir.as_deref(),
+                Duration::from_secs(10),
             )
-            .await?;
+            .await
+            .map_err(|_| incompatible_orca_profile())?;
         let status: serde_json::Value =
-            serde_json::from_slice(&status).map_err(|_| incompatible_orca_profile())?;
+            serde_json::from_slice(&status.stdout).map_err(|_| incompatible_orca_profile())?;
         let registry: serde_json::Value =
-            serde_json::from_slice(&registry).map_err(|_| incompatible_orca_profile())?;
+            serde_json::from_slice(&registry.stdout).map_err(|_| incompatible_orca_profile())?;
         OrcaCompatibilityProfile::pinned()
             .and_then(|profile| profile.validate_discovery_values(&status, &registry))
             .map_err(|_| incompatible_orca_profile())
@@ -381,10 +480,13 @@ impl OrcaCliAdapter {
             .run(
                 &self.command,
                 &["repo".to_string(), "list".to_string(), "--json".to_string()],
+                self.working_dir.as_deref(),
+                Duration::from_secs(10),
             )
-            .await?;
-        let response: OrcaRepoListResponse =
-            serde_json::from_slice(&output).map_err(|_| CommandCenterError::OrcaUnavailable)?;
+            .await
+            .map_err(|_| CommandCenterError::OrcaUnavailable)?;
+        let response: OrcaRepoListResponse = serde_json::from_slice(&output.stdout)
+            .map_err(|_| CommandCenterError::OrcaUnavailable)?;
         if !response.ok {
             return Err(CommandCenterError::OrcaUnavailable);
         }
@@ -410,21 +512,13 @@ impl OrcaCliAdapter {
         }
         Ok(OrcaProjectId(matched_id.clone()))
     }
-
-    fn unsupported_runtime_command(&self, capability: &str) -> CommandCenterError {
-        CommandCenterError::UnsupportedCapability {
-            capability: capability.to_string(),
-        }
-    }
 }
 
 #[async_trait]
 impl OrcaAdapter for OrcaCliAdapter {
     async fn capabilities(&self) -> Result<RuntimeMutationCapabilities, CommandCenterError> {
-        // Task 4.5b validates the compatibility profile but intentionally does not
-        // advertise mutations. Tasks 4.5c and 4.5d must implement and accept-test
-        // each lifecycle command before any of these flags can become true.
-        let _profile_verified = self.validate_compatibility_profile().await.is_ok();
+        // Lifecycle mutations remain unadvertised until task 4.5e runs the live
+        // acceptance gate. Capability observation is deliberately side-effect free.
         Ok(RuntimeMutationCapabilities::unavailable())
     }
 
@@ -452,36 +546,77 @@ impl OrcaAdapter for OrcaCliAdapter {
         })
     }
 
+    async fn canonical_placement(
+        &self,
+        _id: &InitiativeId,
+    ) -> Result<OrcaCanonicalPlacement, CommandCenterError> {
+        let lifecycle = self
+            .lifecycle
+            .as_ref()
+            .ok_or(CommandCenterError::OrcaCoordinatorUnavailable)?;
+        lifecycle.canonical_placement().await
+    }
+
     async fn start_initiative_run(
         &self,
-        _id: &InitiativeId,
-        _key: &IdempotencyKey,
-    ) -> Result<(JcodeRunReference, OrcaRunId), CommandCenterError> {
-        Err(self.unsupported_runtime_command("orca.command_center.start_initiative_run"))
+        request: StartInitiativeRunRequest,
+    ) -> RuntimeCommandExecution {
+        match self.lifecycle.as_ref() {
+            Some(lifecycle) => lifecycle.start(request).await,
+            None => RuntimeCommandExecution::failed(CommandCenterError::OrcaCoordinatorUnavailable),
+        }
     }
 
-    async fn retry_linked_run(
-        &self,
-        _id: &InitiativeId,
-        _run_id: &JcodeRunId,
-        _key: &IdempotencyKey,
-    ) -> Result<(JcodeRunReference, OrcaRunId), CommandCenterError> {
-        Err(self.unsupported_runtime_command("orca.command_center.retry_linked_run"))
+    async fn retry_linked_run(&self, request: RetryLinkedRunRequest) -> RuntimeCommandExecution {
+        match self.lifecycle.as_ref() {
+            Some(lifecycle) => lifecycle.retry(request).await,
+            None => RuntimeCommandExecution::failed(CommandCenterError::OrcaCoordinatorUnavailable),
+        }
     }
 
-    async fn cancel_linked_run(
-        &self,
-        _id: &InitiativeId,
-        _run_id: &JcodeRunId,
-        _key: &IdempotencyKey,
-    ) -> Result<JcodeRunReference, CommandCenterError> {
-        Err(self.unsupported_runtime_command("orca.command_center.cancel_linked_run"))
+    async fn cancel_linked_run(&self, request: CancelLinkedRunRequest) -> RuntimeCommandExecution {
+        match self.lifecycle.as_ref() {
+            Some(lifecycle) => lifecycle.cancel(request).await,
+            None => RuntimeCommandExecution::failed(CommandCenterError::OrcaCoordinatorUnavailable),
+        }
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OrcaCommandOutput {
+    pub exit_code: Option<i32>,
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
+}
+
+#[derive(Debug)]
+pub enum OrcaProcessError {
+    Spawn(std::io::Error),
+    Timeout,
+    Transport(std::io::Error),
+}
+
+impl std::fmt::Display for OrcaProcessError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Spawn(error) => write!(formatter, "failed to spawn Orca: {error}"),
+            Self::Timeout => formatter.write_str("Orca command timed out"),
+            Self::Transport(error) => write!(formatter, "Orca transport failed: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for OrcaProcessError {}
+
 #[async_trait]
 pub trait OrcaCommandRunner: Send + Sync + std::fmt::Debug {
-    async fn run(&self, command: &str, args: &[String]) -> Result<Vec<u8>, CommandCenterError>;
+    async fn run(
+        &self,
+        command: &str,
+        args: &[String],
+        current_dir: Option<&Path>,
+        timeout: Duration,
+    ) -> Result<OrcaCommandOutput, OrcaProcessError>;
 }
 
 #[derive(Debug)]
@@ -489,18 +624,33 @@ struct ProcessOrcaCommandRunner;
 
 #[async_trait]
 impl OrcaCommandRunner for ProcessOrcaCommandRunner {
-    async fn run(&self, command: &str, args: &[String]) -> Result<Vec<u8>, CommandCenterError> {
-        let output = Command::new(command)
+    async fn run(
+        &self,
+        command: &str,
+        args: &[String],
+        current_dir: Option<&Path>,
+        timeout: Duration,
+    ) -> Result<OrcaCommandOutput, OrcaProcessError> {
+        let mut process = Command::new(command);
+        process
             .args(args)
             .stdin(Stdio::null())
-            .stderr(Stdio::null())
-            .output()
-            .await
-            .map_err(|_| CommandCenterError::OrcaUnavailable)?;
-        if !output.status.success() {
-            return Err(CommandCenterError::OrcaUnavailable);
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true);
+        if let Some(current_dir) = current_dir {
+            process.current_dir(current_dir);
         }
-        Ok(output.stdout)
+        let child = process.spawn().map_err(OrcaProcessError::Spawn)?;
+        let output = tokio::time::timeout(timeout, child.wait_with_output())
+            .await
+            .map_err(|_| OrcaProcessError::Timeout)?
+            .map_err(OrcaProcessError::Transport)?;
+        Ok(OrcaCommandOutput {
+            exit_code: output.status.code(),
+            stdout: output.stdout,
+            stderr: output.stderr,
+        })
     }
 }
 
@@ -799,7 +949,9 @@ mod tests {
             &self,
             _command: &str,
             args: &[String],
-        ) -> Result<Vec<u8>, CommandCenterError> {
+            _current_dir: Option<&Path>,
+            _timeout: Duration,
+        ) -> Result<OrcaCommandOutput, OrcaProcessError> {
             let call = self
                 .0
                 .lock()
@@ -807,7 +959,11 @@ mod tests {
                 .pop_front()
                 .expect("unexpected Orca command");
             assert_eq!(args, call.args);
-            Ok(call.output)
+            Ok(OrcaCommandOutput {
+                exit_code: Some(0),
+                stdout: call.output,
+                stderr: Vec::new(),
+            })
         }
     }
 
@@ -872,17 +1028,7 @@ mod tests {
                         vec!["orchestration.contract.v1".to_string()]
                     );
 
-                    let err = adapter
-                        .start_initiative_run(
-                            &InitiativeId("alpha-goal".to_string()),
-                            &IdempotencyKey("key-1".to_string()),
-                        )
-                        .await
-                        .expect_err("start unsupported");
-                    assert!(matches!(
-                        err,
-                        CommandCenterError::UnsupportedCapability { .. }
-                    ));
+                    assert!(!adapter.capabilities().await.unwrap().start_initiative_run);
                 })
         });
     }
