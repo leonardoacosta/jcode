@@ -1032,6 +1032,8 @@ pub struct CommandCenterConfig {
     pub authenticated_remote: bool,
     /// Built SolidStart output served by the daemon. API-only test hosts may omit it.
     pub asset_dir: Option<PathBuf>,
+    /// Durable intake authority projected read-only into the browser UI.
+    pub decision_inbox_db_path: Option<PathBuf>,
 }
 
 impl Default for CommandCenterConfig {
@@ -1042,6 +1044,7 @@ impl Default for CommandCenterConfig {
             allowed_origins: Vec::new(),
             authenticated_remote: false,
             asset_dir: None,
+            decision_inbox_db_path: None,
         }
     }
 }
@@ -1692,6 +1695,10 @@ pub fn command_center_router(state: CommandCenterHttpState) -> Router {
         )
         .route("/api/command-center/commands", post(command_handler))
         .route("/api/command-center/replay", get(replay_handler))
+        .route(
+            "/api/command-center/decision-inbox",
+            get(decision_inbox_handler),
+        )
         .with_state(state);
     let router = if let Some(asset_dir) = asset_dir {
         let index = asset_dir.join("index.html");
@@ -1823,6 +1830,35 @@ async fn snapshot_handler(
         },
         Err(error) => error_response(error),
     }
+}
+
+async fn decision_inbox_handler(
+    State(state): State<CommandCenterHttpState>,
+    headers: HeaderMap,
+) -> Response {
+    if let Err(error) = session_from_headers(&state, &headers) {
+        return error_response(error);
+    }
+    let items = match &state.config.decision_inbox_db_path {
+        Some(path) if path.exists() => {
+            match jcode_intake_types::SqliteIntakeStore::open(path, None)
+                .and_then(|store| store.decision_inbox_items())
+            {
+                Ok(items) => items,
+                Err(_) => {
+                    return error_response(CommandCenterError::InvalidCommand {
+                        reason: "decision inbox is temporarily unavailable".to_owned(),
+                    });
+                }
+            }
+        }
+        _ => Vec::new(),
+    };
+    Json(jcode_intake_types::DecisionInboxSnapshot {
+        generated_at: Utc::now(),
+        items,
+    })
+    .into_response()
 }
 
 #[derive(Debug, Deserialize)]
@@ -2305,6 +2341,7 @@ mod tests {
             allowed_origins: vec![],
             authenticated_remote: false,
             asset_dir: None,
+            decision_inbox_db_path: None,
         };
         assert_eq!(
             remote.validate(),
@@ -2320,6 +2357,7 @@ mod tests {
             allowed_origins: vec!["http://127.0.0.1".into()],
             authenticated_remote: false,
             asset_dir: None,
+            decision_inbox_db_path: None,
         };
         let session = BrowserSessionIssuer::new(Duration::minutes(1)).issue(vec![]);
         let good = RequestGuard {
@@ -2601,6 +2639,13 @@ mod tests {
     }
 
     async fn spawn_test_host(ttl: Duration) -> CommandCenterHttpHost {
+        spawn_test_host_with_inbox(ttl, None).await
+    }
+
+    async fn spawn_test_host_with_inbox(
+        ttl: Duration,
+        decision_inbox_db_path: Option<PathBuf>,
+    ) -> CommandCenterHttpHost {
         spawn_command_center_http_host(
             CommandCenterConfig {
                 enabled: true,
@@ -2608,6 +2653,7 @@ mod tests {
                 allowed_origins: Vec::new(),
                 authenticated_remote: false,
                 asset_dir: None,
+                decision_inbox_db_path,
             },
             BrowserSessionStore::new(ttl),
             runtime(),
@@ -2615,6 +2661,63 @@ mod tests {
         .await
         .unwrap()
         .unwrap()
+    }
+
+    #[tokio::test]
+    async fn authenticated_decision_inbox_projects_durable_provider_items() {
+        use jcode_intake_types::{Envelope, SqliteIntakeStore};
+
+        let directory = tempfile::tempdir().unwrap();
+        let database = directory.path().join("decision-inbox.sqlite");
+        let mut store = SqliteIntakeStore::open(&database, None).unwrap();
+        store
+            .receive(
+                Envelope {
+                    adapter: "slack".to_owned(),
+                    sender_identity: "sl:U123".to_owned(),
+                    conversation: "sl:D123".to_owned(),
+                    content: Some("implement command center inbox".to_owned()),
+                    attachments: Vec::new(),
+                    received_at: Utc::now(),
+                },
+                serde_json::json!({"envelope_id": "env-1"}),
+                Some("sl:U123".to_owned()),
+            )
+            .unwrap();
+        drop(store);
+
+        let host = spawn_test_host_with_inbox(Duration::minutes(1), Some(database)).await;
+        let client = reqwest::Client::new();
+        let unauthenticated = client
+            .get(format!(
+                "http://{}/api/command-center/decision-inbox",
+                host.addr()
+            ))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(unauthenticated.status(), StatusCode::UNAUTHORIZED);
+
+        let session = bootstrap(&client, &host).await;
+        let snapshot: serde_json::Value = client
+            .get(format!(
+                "http://{}/api/command-center/decision-inbox",
+                host.addr()
+            ))
+            .bearer_auth(&session.id)
+            .send()
+            .await
+            .unwrap()
+            .error_for_status()
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(snapshot["items"][0]["source"]["adapter"], "slack");
+        assert_eq!(snapshot["items"][0]["category"], "work_request");
+        assert_eq!(snapshot["items"][0]["status"], "awaiting_approval");
+        assert_eq!(snapshot["items"][0]["raw_payload_retained"], true);
+        host.shutdown().await.unwrap();
     }
 
     #[tokio::test]
@@ -2634,6 +2737,7 @@ mod tests {
                 allowed_origins: Vec::new(),
                 authenticated_remote: false,
                 asset_dir: Some(asset_dir.clone()),
+                decision_inbox_db_path: None,
             },
             BrowserSessionStore::new(Duration::minutes(1)),
             runtime(),
@@ -2687,6 +2791,7 @@ mod tests {
                 allowed_origins: Vec::new(),
                 authenticated_remote: false,
                 asset_dir: None,
+                decision_inbox_db_path: None,
             },
             BrowserSessionStore::new(Duration::minutes(5)),
             runtime(),

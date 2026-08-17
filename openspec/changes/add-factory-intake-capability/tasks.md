@@ -36,3 +36,12 @@
 - [ ] 5.4 End-to-end: approving from chat creates tracked work linked to the originating record.
 - [x] 5.5 Neutrality conformance: a second adapter (`jcode-intake-slack`, structurally unlike Telegram) compiles and passes against a byte-identical core (md5 `e2f7e8e4c7ea6e81b3bb5fa69232cce6` before and after).
 - [ ] 5.6 Delete the conversation used in 5.3 and confirm records, approvals, and tracked work remain complete.
+
+## 6. Command Center Decision Inbox
+
+- [x] 6.1 Project provider-neutral Telegram and Slack records from the durable SQLite intake store without exposing provider credentials or raw payloads.
+- [x] 6.2 Preserve source adapter, sender identity, conversation, category, approval state, dedupe evidence, retry evidence, and retained-payload status in the read model.
+- [x] 6.3 Expose the read model through an authenticated, read-only Command Center endpoint that fails closed when the store cannot be read.
+- [x] 6.4 Render the Decision Inbox in SolidStart with provider provenance, category, approval state, duplicate evidence, an empty state, and a responsive single-column layout.
+- [x] 6.5 Verify Telegram and Slack normalization, restart persistence, deduplication, reconnect redelivery, credential redaction, authenticated HTTP projection, frontend unit/type/build gates, deterministic Playwright content acceptance, and the isolated managed-host launcher.
+- [ ] 6.6 Credential-gated production acceptance: ingest one real Telegram message and one real Slack Socket Mode message into the configured durable store, then observe both through the managed Command Center host.

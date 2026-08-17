@@ -1,10 +1,61 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
 import type {
   CommandCenterSnapshot,
+  DecisionInboxSnapshot,
   InitiativeProjection,
   RunProjection,
   TimelineEvent,
 } from "../generated/command-center-contract";
+
+const label = (value: string) =>
+  value.replaceAll("_", " ").replace(/^./, (first) => first.toUpperCase());
+
+export function DecisionInbox(props: { snapshot?: DecisionInboxSnapshot }) {
+  return (
+    <section aria-labelledby="decision-inbox-title" class="decision-inbox">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">External attention</p>
+          <h1 id="decision-inbox-title">Decision Inbox</h1>
+        </div>
+        <Show when={props.snapshot}>
+          {(snapshot) => <small>{snapshot().items.length} item(s)</small>}
+        </Show>
+      </div>
+      <For
+        each={props.snapshot?.items ?? []}
+        fallback={<p class="empty-line">No Telegram or Slack items need attention.</p>}
+      >
+        {(item) => (
+          <article class="inbox-row">
+            <div class="inbox-source">
+              <strong>{label(item.source.adapter)}</strong>
+              <span>{item.source.conversation}</span>
+            </div>
+            <div class="inbox-content">
+              <p>{item.content ?? "No text content"}</p>
+              <small class="inbox-taxonomy">
+                <span>{item.category ? label(item.category) : "Unclassified"}</span>
+                <span>{label(item.status)}</span>
+              </small>
+            </div>
+            <div class="inbox-evidence">
+              <Show when={item.duplicateDeliveries > 0}>
+                <span>
+                  {item.duplicateDeliveries} duplicate{" "}
+                  {item.duplicateDeliveries === 1 ? "delivery" : "deliveries"} retained
+                </span>
+              </Show>
+              <Show when={item.retryDeliveries > 0}>
+                <span>{item.retryDeliveries} retry delivery</span>
+              </Show>
+            </div>
+          </article>
+        )}
+      </For>
+    </section>
+  );
+}
 
 export function AppShell(props: {
   snapshot?: CommandCenterSnapshot;

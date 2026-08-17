@@ -96,3 +96,10 @@
   - touches: generated contract output, test reports, OpenSpec artifacts, and repository metadata only
   - depends on: 7.3, 7.4, 7.6, 8.1, 8.2, 8.3
 - [x] 8.5 Update the durable `jcode-command-center` initiative with the final milestone status, evidence, blockers, next steps, and links to the containing commit and follow-on scheduling, Orca, portfolio, and desktop child changes.
+
+## 9. Decision Inbox integration evidence (2026-08-17)
+
+- [x] 9.1 Read provider-neutral Telegram and Slack records from the durable intake store through an authenticated, read-only daemon endpoint.
+- [x] 9.2 Render source provenance, category, approval state, and delivery evidence in SolidStart with responsive and fail-soft behavior.
+- [x] 9.3 Verify focused Rust suites, 19 Solid tests, TypeScript compilation, production packaging, 11 deterministic Playwright workflows, both real isolated-host browser projects, strict OpenSpec validation, and the intake architecture boundary.
+- [ ] 9.4 Run credential-gated live Telegram and Slack ingestion acceptance. Repository fixtures do not satisfy this operational gate.

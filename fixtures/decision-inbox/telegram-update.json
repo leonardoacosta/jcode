@@ -1,0 +1,10 @@
+{
+  "update_id": 41,
+  "message": {
+    "message_id": 9,
+    "date": 1786942800,
+    "chat": { "id": 555, "type": "private" },
+    "from": { "id": 7, "is_bot": false },
+    "text": "implement the Decision Inbox"
+  }
+}

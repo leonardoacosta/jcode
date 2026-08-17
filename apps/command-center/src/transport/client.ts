@@ -2,11 +2,13 @@ import type {
   CommandCenterSnapshot,
   CommandEnvelope,
   CommandResult,
+  DecisionInboxSnapshot,
   EventEnvelope,
 } from "../generated/command-center-contract";
 
 export interface CommandCenterTransport {
   loadSnapshot(path: string): Promise<CommandCenterSnapshot>;
+  loadDecisionInbox(): Promise<DecisionInboxSnapshot>;
   sendCommand(command: CommandEnvelope): Promise<CommandResult>;
   subscribe(
     streamId: string,
@@ -127,6 +129,15 @@ export class HttpCommandCenterTransport implements CommandCenterTransport {
     });
     if (!response.ok) throw new Error(`snapshot_${response.status}`);
     return camelize(await response.json()) as CommandCenterSnapshot;
+  }
+
+  async loadDecisionInbox(): Promise<DecisionInboxSnapshot> {
+    const response = await fetch(`${this.baseUrl}/api/command-center/decision-inbox`, {
+      credentials: "same-origin",
+      headers: await this.authenticatedHeaders(),
+    });
+    if (!response.ok) throw new Error(`decision_inbox_${response.status}`);
+    return camelize(await response.json()) as DecisionInboxSnapshot;
   }
 
   async sendCommand(command: CommandEnvelope): Promise<CommandResult> {

@@ -9,12 +9,27 @@
 //! absorbed any Telegram assumption, this crate could not compile against
 //! it unchanged.
 
+mod client;
+mod credential;
+mod runner;
+
 use chrono::Utc;
 use jcode_intake_types::{Envelope, IntakeStore, RecordId};
 use serde_json::Value;
 
+pub use client::{ApiError, SlackClient};
+pub use credential::{AppToken, BotToken, CredentialError, load_tokens};
+pub use runner::{RunOutcome, RunnerConfig, RunnerError, SlackIntakeRunner};
+
+pub trait SlackTransport {
+    fn next_envelope(&mut self) -> Result<Option<Value>, ApiError>;
+    fn acknowledge(&mut self, envelope_id: &str) -> Result<(), ApiError>;
+    fn send_message(&mut self, conversation: &str, text: &str) -> Result<Value, ApiError>;
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedMessage {
+    pub workspace: String,
     pub sender: String,
     pub conversation: String,
     pub text: String,
@@ -31,7 +46,13 @@ pub enum ParseOutcome {
 /// Parse a Slack event into provider-neutral message data.
 #[must_use]
 pub fn parse(event: &Value, bot_handle: &str) -> ParseOutcome {
-    let inner = event.get("event");
+    let payload = event.get("payload").unwrap_or(event);
+    let workspace = payload
+        .get("team_id")
+        .and_then(Value::as_str)
+        .map(|value| format!("sl-team:{value}"))
+        .unwrap_or_else(|| "sl-team:unknown".to_owned());
+    let inner = payload.get("event");
     let Some(inner) = inner else {
         return ParseOutcome::Unhandled {
             variant: "missing_event".to_owned(),
@@ -59,6 +80,7 @@ pub fn parse(event: &Value, bot_handle: &str) -> ParseOutcome {
     let addresses_bot = text.contains(bot_handle) || inner.get("thread_ts").is_some();
 
     ParseOutcome::Message(ParsedMessage {
+        workspace,
         sender: format!("sl:{user}"),
         conversation: format!("sl:{channel}"),
         text: text.to_owned(),

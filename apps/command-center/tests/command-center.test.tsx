@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@solidjs/testing-library";
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { SplitWorkspace, InitiativeList } from "../src/components/CommandCenter";
+import { DecisionInbox, SplitWorkspace, InitiativeList } from "../src/components/CommandCenter";
 import { loadFailureState } from "../src/app";
 import { createProjectionStore } from "../src/stores/projection";
 import { HttpCommandCenterTransport } from "../src/transport/client";
@@ -9,6 +9,42 @@ import { liveSnapshot, nextEvent, unavailableSnapshot } from "./fixtures/snapsho
 import type { EventEnvelope } from "../src/generated/command-center-contract";
 
 describe("command center components", () => {
+  it("renders durable Decision Inbox provenance, categories, and approval state", () => {
+    render(() => (
+      <DecisionInbox
+        snapshot={{
+          generatedAt: "2026-08-17T05:00:00Z",
+          items: [
+            {
+              recordId: 1,
+              source: {
+                adapter: "slack",
+                senderIdentity: "operator",
+                conversation: "sl:D123",
+              },
+              receivedAt: "2026-08-17T05:00:00Z",
+              content: "implement the Decision Inbox",
+              category: "work_request",
+              status: "awaiting_approval",
+              proposal: { id: 1, state: "awaiting_approval" },
+              dedupeKey: "sha256:test",
+              duplicateDeliveries: 1,
+              retryDeliveries: 0,
+              redacted: false,
+              rawPayloadRetained: true,
+            },
+          ],
+        }}
+      />
+    ));
+    expect(screen.getByRole("heading", { name: "Decision Inbox" })).toBeInTheDocument();
+    expect(screen.getByText("Slack")).toBeInTheDocument();
+    expect(screen.getByText("Work request")).toBeInTheDocument();
+    expect(screen.getByText("Awaiting approval")).toBeInTheDocument();
+    expect(screen.getByText("1 duplicate delivery retained")).toBeInTheDocument();
+    expect(screen.getByText("sl:D123")).toBeInTheDocument();
+  });
+
   it("renders durable and live panes with accessible states", () => {
     render(() => (
       <SplitWorkspace

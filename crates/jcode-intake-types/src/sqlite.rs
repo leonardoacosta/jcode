@@ -1,4 +1,4 @@
-use std::{fmt, panic::AssertUnwindSafe, path::Path};
+use std::{collections::HashMap, fmt, panic::AssertUnwindSafe, path::Path};
 
 use chrono::{DateTime, Utc};
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
@@ -6,6 +6,7 @@ use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use crate::{
     dedupe::DedupeKey,
     envelope::Envelope,
+    inbox::{DecisionInboxItem, DecisionInboxStatus, DecisionProposal, SourceIdentity},
     record::{Classification, IntakeEvent, Record, RecordId},
     redact::Redactor,
     store::{Proposal, ProposalId, ProposalState, StoreError, TrackedWork, TrackedWorkId},
@@ -275,9 +276,9 @@ impl SqliteIntakeStore {
 
     pub fn records(&self) -> Result<Vec<Record>, SqliteStoreError> {
         let mut statement = self.connection.prepare(
-            "SELECT id, adapter, sender_identity, conversation, content, raw_payload, operator,
-                    dedupe_key, duplicate_of, retry_of, classification, classification_error,
-                    executed, deferred
+            "SELECT id, adapter, sender_identity, conversation, content, attachments, received_at,
+                    raw_payload, operator, dedupe_key, duplicate_of, retry_of, classification,
+                    classification_error, executed, deferred
              FROM records ORDER BY id",
         )?;
         let rows = statement.query_map([], row_to_record)?;
@@ -349,6 +350,106 @@ impl SqliteIntakeStore {
             })
         })?;
         rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    /// Project append-only delivery history into canonical operator-facing decisions.
+    pub fn decision_inbox_items(&self) -> Result<Vec<DecisionInboxItem>, SqliteStoreError> {
+        let records = self.records()?;
+        let proposals = self.proposals()?;
+        let tracked_work = self.tracked_work()?;
+        let redacted_records = self
+            .events()?
+            .into_iter()
+            .filter_map(|event| match event {
+                IntakeEvent::Redaction { record, .. } => Some(record),
+                _ => None,
+            })
+            .collect::<std::collections::HashSet<_>>();
+        let proposals_by_record = proposals
+            .iter()
+            .map(|proposal| (proposal.record, proposal))
+            .collect::<HashMap<_, _>>();
+        let work_by_proposal = tracked_work
+            .iter()
+            .map(|work| (work.from_proposal, work.id))
+            .collect::<HashMap<_, _>>();
+
+        let mut grouped: Vec<Vec<&Record>> = Vec::new();
+        let mut group_by_key = HashMap::<String, usize>::new();
+        for record in &records {
+            let key = record.dedupe_key.as_str().to_owned();
+            let index = *group_by_key.entry(key).or_insert_with(|| {
+                grouped.push(Vec::new());
+                grouped.len() - 1
+            });
+            grouped[index].push(record);
+        }
+
+        Ok(grouped
+            .into_iter()
+            .filter_map(|deliveries| {
+                let canonical = deliveries.first().copied()?;
+                let proposal = deliveries
+                    .iter()
+                    .find_map(|record| proposals_by_record.get(&record.id).copied());
+                let category = deliveries
+                    .iter()
+                    .rev()
+                    .find_map(|record| record.classification.clone());
+                let deferred = deliveries.iter().any(|record| record.deferred);
+                let classification_failed = deliveries
+                    .iter()
+                    .any(|record| record.classification_error.is_some());
+                let status = match proposal {
+                    Some(proposal) if proposal.state == ProposalState::Approved => {
+                        DecisionInboxStatus::Approved
+                    }
+                    Some(_) => DecisionInboxStatus::AwaitingApproval,
+                    None if classification_failed => DecisionInboxStatus::ClassificationFailed,
+                    None if deferred => DecisionInboxStatus::Deferred,
+                    None if category == Some(Classification::Unauthorized) => {
+                        DecisionInboxStatus::Unauthorized
+                    }
+                    None if matches!(
+                        category,
+                        Some(Classification::ResearchRequest | Classification::StatusRequest)
+                    ) =>
+                    {
+                        DecisionInboxStatus::ReadOnly
+                    }
+                    None => DecisionInboxStatus::Unrecognized,
+                };
+                let tracked_work =
+                    proposal.and_then(|proposal| work_by_proposal.get(&proposal.id).copied());
+                Some(DecisionInboxItem {
+                    record_id: canonical.id,
+                    source: SourceIdentity {
+                        adapter: canonical.adapter.clone(),
+                        sender_identity: canonical.sender_identity.clone(),
+                        conversation: canonical.conversation.clone(),
+                    },
+                    received_at: canonical.received_at,
+                    content: canonical.content.clone(),
+                    category,
+                    status,
+                    proposal: proposal.map(DecisionProposal::from),
+                    tracked_work,
+                    dedupe_key: canonical.dedupe_key.clone(),
+                    duplicate_deliveries: deliveries
+                        .iter()
+                        .filter(|record| record.duplicate_of.is_some())
+                        .count(),
+                    retry_deliveries: deliveries
+                        .iter()
+                        .filter(|record| record.retry_of.is_some())
+                        .count(),
+                    redacted: deliveries
+                        .iter()
+                        .any(|record| redacted_records.contains(&record.id)),
+                    raw_payload_retained: true,
+                })
+            })
+            .collect())
     }
 
     pub fn polling_offset(&self, adapter: &str) -> Result<Option<i64>, SqliteStoreError> {
@@ -485,38 +586,48 @@ fn insert_event(transaction: &Transaction<'_>, event: &IntakeEvent) -> Result<()
 }
 
 fn row_to_record(row: &rusqlite::Row<'_>) -> Result<Record, rusqlite::Error> {
-    let raw_payload: String = row.get(5)?;
-    let dedupe_key: String = row.get(7)?;
-    let classification: Option<String> = row.get(10)?;
+    let attachments: String = row.get(5)?;
+    let received_at: String = row.get(6)?;
+    let raw_payload: String = row.get(7)?;
+    let dedupe_key: String = row.get(9)?;
+    let classification: Option<String> = row.get(12)?;
     Ok(Record {
         id: RecordId(row.get(0)?),
         adapter: row.get(1)?,
         sender_identity: row.get(2)?,
         conversation: row.get(3)?,
         content: row.get(4)?,
-        raw_payload: serde_json::from_str(&raw_payload).map_err(|error| {
+        attachments: serde_json::from_str(&attachments).map_err(|error| {
             rusqlite::Error::FromSqlConversionFailure(
                 5,
                 rusqlite::types::Type::Text,
                 Box::new(error),
             )
         })?,
-        operator: row.get(6)?,
-        dedupe_key: serde_json::from_str(&format!("\"{dedupe_key}\"")).map_err(|error| {
+        received_at: parse_time(&received_at)?,
+        raw_payload: serde_json::from_str(&raw_payload).map_err(|error| {
             rusqlite::Error::FromSqlConversionFailure(
                 7,
                 rusqlite::types::Type::Text,
                 Box::new(error),
             )
         })?,
-        duplicate_of: row.get::<_, Option<u64>>(8)?.map(RecordId),
-        retry_of: row.get::<_, Option<u64>>(9)?.map(RecordId),
+        operator: row.get(8)?,
+        dedupe_key: serde_json::from_str(&format!("\"{dedupe_key}\"")).map_err(|error| {
+            rusqlite::Error::FromSqlConversionFailure(
+                9,
+                rusqlite::types::Type::Text,
+                Box::new(error),
+            )
+        })?,
+        duplicate_of: row.get::<_, Option<u64>>(10)?.map(RecordId),
+        retry_of: row.get::<_, Option<u64>>(11)?.map(RecordId),
         classification: classification
             .map(|value| parse_classification(&value))
             .transpose()?,
-        classification_error: row.get(11)?,
-        executed: row.get(12)?,
-        deferred: row.get(13)?,
+        classification_error: row.get(13)?,
+        executed: row.get(14)?,
+        deferred: row.get(15)?,
     })
 }
 

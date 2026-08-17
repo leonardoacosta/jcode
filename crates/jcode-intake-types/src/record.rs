@@ -1,6 +1,7 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::dedupe::DedupeKey;
+use crate::{Attachment, dedupe::DedupeKey};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RecordId(pub u64);
@@ -12,6 +13,8 @@ pub struct Record {
     pub sender_identity: String,
     pub conversation: String,
     pub content: Option<String>,
+    pub attachments: Vec<Attachment>,
+    pub received_at: DateTime<Utc>,
     pub raw_payload: serde_json::Value,
     pub operator: Option<String>,
     pub dedupe_key: DedupeKey,
@@ -24,6 +27,7 @@ pub struct Record {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Classification {
     WorkRequest,
     ResearchRequest,

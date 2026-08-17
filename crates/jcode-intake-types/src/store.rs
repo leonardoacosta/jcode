@@ -17,6 +17,7 @@ pub struct ProposalId(pub u64);
 pub struct TrackedWorkId(pub u64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ProposalState {
     AwaitingApproval,
     Approved,
@@ -162,6 +163,8 @@ impl IntakeStore {
             sender_identity: envelope.sender_identity,
             conversation: envelope.conversation,
             content: envelope.content,
+            attachments: envelope.attachments,
+            received_at: envelope.received_at,
             raw_payload,
             operator,
             dedupe_key: dedupe_key.clone(),

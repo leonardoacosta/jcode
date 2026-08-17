@@ -56,6 +56,33 @@ async function installFixture(
         : current;
     await route.fulfill({ json: response });
   });
+  await page.route("**/api/command-center/decision-inbox", async (route) =>
+    route.fulfill({
+      json: {
+        generated_at: "2026-08-17T05:00:00Z",
+        items: [
+          {
+            record_id: 1,
+            source: {
+              adapter: "telegram",
+              sender_identity: "operator",
+              conversation: "tg:42",
+            },
+            received_at: "2026-08-17T05:00:00Z",
+            content: "Review the Command Center delivery",
+            category: "work_request",
+            status: "awaiting_approval",
+            proposal: { id: 1, state: "awaiting_approval" },
+            dedupe_key: "sha256:fixture",
+            duplicate_deliveries: 0,
+            retry_deliveries: 0,
+            redacted: false,
+            raw_payload_retained: true,
+          },
+        ],
+      },
+    }),
+  );
   let eventDelivered = false;
   await page.route("**/api/command-center/replay**", async (route) => {
     const events = eventDelivered ? [] : [nextEvent];
@@ -122,6 +149,15 @@ test("authenticated bootstrap loads authoritative command center", async ({ page
     page.getByRole("banner").getByRole("heading", { name: "Jcode Command Center" }),
   ).toBeVisible();
   await expect(page.getByLabel(/Connection/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Decision Inbox" })).toBeVisible();
+});
+
+test("Decision Inbox renders durable provider provenance @fixture-only", async ({ page }) => {
+  await page.goto("/initiatives/init-command-center/runs/run-1");
+  await expect(page.getByText("Telegram")).toBeVisible();
+  await expect(page.getByText("Review the Command Center delivery")).toBeVisible();
+  await expect(page.getByText("Work request")).toBeVisible();
+  await expect(page.getByText("Awaiting approval")).toBeVisible();
 });
 
 test("discovery route lists accessible initiatives @fixture-only", async ({ page }) => {

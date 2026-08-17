@@ -1,6 +1,12 @@
 import { Router, Route, useLocation } from "@solidjs/router";
 import { createEffect, createResource, createSignal, on, onCleanup, Show, untrack } from "solid-js";
-import { AppShell, InitiativeList, SplitWorkspace, StateCard } from "./components/CommandCenter";
+import {
+  AppShell,
+  DecisionInbox,
+  InitiativeList,
+  SplitWorkspace,
+  StateCard,
+} from "./components/CommandCenter";
 import { createProjectionStore } from "./stores/projection";
 import { HttpCommandCenterTransport } from "./transport/client";
 import "./styles.css";
@@ -50,6 +56,13 @@ function WorkspaceRoute() {
       return next;
     } catch (error) {
       setLoadError(error);
+      return undefined;
+    }
+  });
+  const [decisionInbox] = createResource(async () => {
+    try {
+      return await transport.loadDecisionInbox();
+    } catch {
       return undefined;
     }
   });
@@ -123,6 +136,7 @@ function WorkspaceRoute() {
   );
   return (
     <AppShell snapshot={current()} announcement={store.ui.announcement}>
+      <DecisionInbox snapshot={decisionInbox()} />
       <Show
         when={!snapshot.loading}
         fallback={

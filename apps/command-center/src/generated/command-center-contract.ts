@@ -123,6 +123,35 @@ export interface CommandCenterSnapshot extends InitiativeListSnapshot {
   selectedInitiative?: InitiativeProjection;
   selectedRun?: RunProjection;
 }
+export type DecisionInboxCategory =
+  "work_request" | "research_request" | "status_request" | "unrecognized" | "unauthorized";
+export type DecisionInboxStatus =
+  | "awaiting_approval"
+  | "approved"
+  | "read_only"
+  | "unrecognized"
+  | "unauthorized"
+  | "deferred"
+  | "classification_failed";
+export interface DecisionInboxItem {
+  recordId: number;
+  source: { adapter: string; senderIdentity: string; conversation: string };
+  receivedAt: string;
+  content?: string;
+  category?: DecisionInboxCategory;
+  status: DecisionInboxStatus;
+  proposal?: { id: number; state: string };
+  trackedWork?: number;
+  dedupeKey: string;
+  duplicateDeliveries: number;
+  retryDeliveries: number;
+  redacted: boolean;
+  rawPayloadRetained: boolean;
+}
+export interface DecisionInboxSnapshot {
+  generatedAt: string;
+  items: DecisionInboxItem[];
+}
 export type EventPayload =
   | { type: "initiative_updated"; initiative: InitiativeProjection }
   | { type: "run_updated"; run: RunProjection }

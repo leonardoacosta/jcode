@@ -6,6 +6,7 @@
 
 pub mod dedupe;
 pub mod envelope;
+pub mod inbox;
 pub mod record;
 pub mod redact;
 pub mod sqlite;
@@ -13,6 +14,9 @@ pub mod store;
 
 pub use dedupe::DedupeKey;
 pub use envelope::{Attachment, Envelope};
+pub use inbox::{
+    DecisionInboxItem, DecisionInboxSnapshot, DecisionInboxStatus, DecisionProposal, SourceIdentity,
+};
 pub use record::{Classification, IntakeEvent, Record, RecordId};
 pub use redact::{Redactor, ScrubOutcome};
 pub use sqlite::{SqliteIntakeStore, SqliteStoreError};

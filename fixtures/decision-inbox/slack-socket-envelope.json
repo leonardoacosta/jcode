@@ -1,0 +1,18 @@
+{
+  "envelope_id": "env-1",
+  "type": "events_api",
+  "accepts_response_payload": false,
+  "payload": {
+    "team_id": "T123",
+    "event_id": "Ev123",
+    "event_time": 1786942800,
+    "event": {
+      "type": "message",
+      "channel_type": "im",
+      "channel": "D123",
+      "user": "U123",
+      "text": "implement the Decision Inbox",
+      "ts": "1786942800.000100"
+    }
+  }
+}
