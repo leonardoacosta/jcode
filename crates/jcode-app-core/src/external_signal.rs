@@ -219,6 +219,27 @@ pub struct ExternalSignal {
     pub title: String,
     pub occurred_at: DateTime<Utc>,
     pub observed_at: DateTime<Utc>,
+    #[serde(default)]
+    pub correlations: SignalCorrelations,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct SignalCorrelations {
+    #[serde(default)]
+    pub links: Vec<SignalLink>,
+    #[serde(default)]
+    pub bead_ids: Vec<String>,
+    #[serde(default)]
+    pub git_commits: Vec<String>,
+    pub remedial_commit: Option<String>,
+    pub production_commit: Option<String>,
+    pub production_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SignalLink {
+    pub label: String,
+    pub url: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -237,6 +258,57 @@ pub struct LifecycleAggregate {
     pub title: String,
     pub attention_id: Option<String>,
     pub scheduled_item_id: Option<String>,
+    #[serde(default)]
+    pub signal_ids: Vec<String>,
+    #[serde(default)]
+    pub correlations: SignalCorrelations,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RemediationState {
+    Unlinked,
+    Linked,
+    RemedialCommitIdentified,
+    ReachedProduction,
+    RepeatedAfterProduction,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ProductionQuietTimer {
+    pub production_at: DateTime<Utc>,
+    pub quiet_since: Option<DateTime<Utc>>,
+    pub quiet_for_seconds: Option<i64>,
+    pub repeat_observed_after_production: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct IndividualIssueProjection {
+    pub issue_id: String,
+    pub lifecycle_key: String,
+    pub project_key: String,
+    pub source_id: String,
+    pub fingerprint: String,
+    pub state: LifecycleState,
+    pub severity: SignalSeverity,
+    pub title: String,
+    pub occurrence_count: u64,
+    pub first_seen: DateTime<Utc>,
+    pub last_seen: DateTime<Utc>,
+    pub last_transition_at: DateTime<Utc>,
+    pub signal_ids: Vec<String>,
+    pub attention_id: Option<String>,
+    pub scheduled_item_id: Option<String>,
+    pub links: Vec<SignalLink>,
+    pub bead_ids: Vec<String>,
+    pub git_commits: Vec<String>,
+    pub remedial_commit: Option<String>,
+    pub production_commit: Option<String>,
+    pub production_at: Option<DateTime<Utc>>,
+    pub remediation_state: RemediationState,
+    pub production_quiet_timer: Option<ProductionQuietTimer>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -305,6 +377,7 @@ pub struct ExternalSignalCommandCenterProjection {
     pub accepted_count: u64,
     pub rejected_count: u64,
     pub deduplicated_count: u64,
+    pub issues: Vec<IndividualIssueProjection>,
     pub lifecycles: Vec<LifecycleAggregate>,
     pub processing: Vec<ProcessingRecord>,
     pub dead_letters: Vec<DeadLetterRecord>,
@@ -327,6 +400,7 @@ pub fn command_center_projection(
     config: &ExternalSignalConfig,
 ) -> Result<ExternalSignalCommandCenterProjection> {
     let store = load_store(path)?;
+    let issues = issue_projections(&store, Utc::now());
     Ok(ExternalSignalCommandCenterProjection {
         readiness: ExternalSignalReadinessProjection {
             enabled: config.enabled,
@@ -338,10 +412,82 @@ pub fn command_center_projection(
         accepted_count: store.accepted_count,
         rejected_count: store.rejected_count,
         deduplicated_count: store.deduplicated_count,
+        issues,
         lifecycles: store.lifecycles.into_values().collect(),
         processing: store.processing.into_values().collect(),
         dead_letters: store.dead_letters.into_values().collect(),
     })
+}
+
+fn issue_projections(
+    store: &ExternalSignalStore,
+    now: DateTime<Utc>,
+) -> Vec<IndividualIssueProjection> {
+    store
+        .lifecycles
+        .values()
+        .map(|aggregate| {
+            let correlations = aggregate.correlations.clone();
+            let remediation_state = remediation_state(aggregate, &correlations);
+            let production_quiet_timer = correlations.production_at.map(|production_at| {
+                let repeated = aggregate.last_seen > production_at;
+                ProductionQuietTimer {
+                    production_at,
+                    quiet_since: (!repeated).then_some(production_at),
+                    quiet_for_seconds: (!repeated)
+                        .then_some((now - production_at).num_seconds().max(0)),
+                    repeat_observed_after_production: repeated,
+                }
+            });
+            IndividualIssueProjection {
+                issue_id: format!("issue_{}", &aggregate.lifecycle_key[..24]),
+                lifecycle_key: aggregate.lifecycle_key.clone(),
+                project_key: aggregate.project_key.clone(),
+                source_id: aggregate.source_id.clone(),
+                fingerprint: aggregate.fingerprint.clone(),
+                state: aggregate.state,
+                severity: aggregate.severity,
+                title: aggregate.title.clone(),
+                occurrence_count: aggregate.occurrence_count,
+                first_seen: aggregate.first_seen,
+                last_seen: aggregate.last_seen,
+                last_transition_at: aggregate.last_transition_at,
+                signal_ids: aggregate.signal_ids.clone(),
+                attention_id: aggregate.attention_id.clone(),
+                scheduled_item_id: aggregate.scheduled_item_id.clone(),
+                links: correlations.links,
+                bead_ids: correlations.bead_ids,
+                git_commits: correlations.git_commits,
+                remedial_commit: correlations.remedial_commit,
+                production_commit: correlations.production_commit,
+                production_at: correlations.production_at,
+                remediation_state,
+                production_quiet_timer,
+            }
+        })
+        .collect()
+}
+
+fn remediation_state(
+    aggregate: &LifecycleAggregate,
+    correlations: &SignalCorrelations,
+) -> RemediationState {
+    if let Some(production_at) = correlations.production_at {
+        if aggregate.last_seen > production_at {
+            RemediationState::RepeatedAfterProduction
+        } else {
+            RemediationState::ReachedProduction
+        }
+    } else if correlations.remedial_commit.is_some() {
+        RemediationState::RemedialCommitIdentified
+    } else if !correlations.bead_ids.is_empty()
+        || !correlations.git_commits.is_empty()
+        || !correlations.links.is_empty()
+    {
+        RemediationState::Linked
+    } else {
+        RemediationState::Unlinked
+    }
 }
 
 #[derive(Clone)]
@@ -826,12 +972,13 @@ fn project_webhook(
             .or_else(|| alert.labels.get("alertname"))
             .cloned()
             .unwrap_or_else(|| "Grafana alert".to_string());
+        let correlations = extract_correlations(alert, webhook);
         store
             .signals
             .entry(signal_id.clone())
             .or_insert(ExternalSignal {
                 schema_version: SCHEMA_VERSION,
-                signal_id,
+                signal_id: signal_id.clone(),
                 receipt_id: receipt_id.to_string(),
                 project_key: project_key.to_string(),
                 working_dir: config.projects[project_key].clone(),
@@ -843,16 +990,19 @@ fn project_webhook(
                 title: title.clone(),
                 occurred_at,
                 observed_at: now,
+                correlations: correlations.clone(),
             });
         reduce_lifecycle(
             store,
             lifecycle_key,
+            &signal_id,
             project_key,
             &config.source_id,
             alert,
             lifecycle,
             severity,
             title,
+            correlations,
             occurred_at,
             now,
         );
@@ -867,12 +1017,14 @@ fn project_webhook(
 fn reduce_lifecycle(
     store: &mut ExternalSignalStore,
     key: String,
+    signal_id: &str,
     project_key: &str,
     source_id: &str,
     alert: &GrafanaAlert,
     incoming: LifecycleState,
     severity: SignalSeverity,
     title: String,
+    correlations: SignalCorrelations,
     occurred_at: DateTime<Utc>,
     now: DateTime<Utc>,
 ) {
@@ -894,11 +1046,15 @@ fn reduce_lifecycle(
             title: title.clone(),
             attention_id: None,
             scheduled_item_id: None,
+            signal_ids: Vec::new(),
+            correlations: SignalCorrelations::default(),
         });
     if occurred_at < aggregate.last_transition_at && incoming != aggregate.state {
         return;
     }
     aggregate.occurrence_count += 1;
+    push_unique(&mut aggregate.signal_ids, signal_id.to_string());
+    merge_correlations(&mut aggregate.correlations, correlations);
     aggregate.last_seen = aggregate.last_seen.max(occurred_at);
     aggregate.severity = aggregate.severity.max(severity);
     aggregate.title = title;
@@ -1018,6 +1174,110 @@ fn priority_name(value: SignalSeverity) -> &'static str {
         SignalSeverity::Low => "low",
     }
 }
+
+fn extract_correlations(alert: &GrafanaAlert, webhook: &GrafanaWebhook) -> SignalCorrelations {
+    let mut correlations = SignalCorrelations::default();
+    for (key, value) in webhook
+        .common_labels
+        .iter()
+        .chain(webhook.common_annotations.iter())
+        .chain(alert.labels.iter())
+        .chain(alert.annotations.iter())
+    {
+        collect_correlation_value(&mut correlations, key, value);
+    }
+    for (label, url) in [
+        ("generator", alert.generator_url.as_str()),
+        ("silence", alert.silence_url.as_str()),
+        ("dashboard", alert.dashboard_url.as_str()),
+        ("panel", alert.panel_url.as_str()),
+    ] {
+        if !url.trim().is_empty() {
+            push_link(&mut correlations.links, label, url);
+        }
+    }
+    correlations
+}
+
+fn collect_correlation_value(correlations: &mut SignalCorrelations, key: &str, value: &str) {
+    let normalized = key.to_ascii_lowercase().replace(['-', '.'], "_");
+    match normalized.as_str() {
+        "bead_id" | "bead_ids" | "jcode_bead_id" | "jcode_bead_ids" => {
+            push_split_values(&mut correlations.bead_ids, value)
+        }
+        "git_commit" | "git_commits" | "commit" | "commits" | "jcode_git_commit"
+        | "jcode_git_commits" => push_split_values(&mut correlations.git_commits, value),
+        "remedial_commit" | "remediation_commit" | "fix_commit" | "jcode_remedial_commit" => {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                correlations.remedial_commit = Some(trimmed.to_string());
+                push_unique(&mut correlations.git_commits, trimmed.to_string());
+            }
+        }
+        "production_commit"
+        | "deployed_commit"
+        | "jcode_production_commit"
+        | "jcode_deployed_commit" => {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                correlations.production_commit = Some(trimmed.to_string());
+                push_unique(&mut correlations.git_commits, trimmed.to_string());
+            }
+        }
+        "production_at" | "deployed_at" | "jcode_production_at" | "jcode_deployed_at" => {
+            if let Ok(timestamp) = DateTime::parse_from_rfc3339(value.trim()) {
+                correlations.production_at = Some(timestamp.with_timezone(&Utc));
+            }
+        }
+        "issue_url" | "runbook_url" | "bead_url" | "commit_url" | "deployment_url" => {
+            push_link(&mut correlations.links, key, value);
+        }
+        _ => {}
+    }
+}
+
+fn push_split_values(target: &mut Vec<String>, value: &str) {
+    for item in value.split([',', ' ', '\n']).map(str::trim) {
+        if !item.is_empty() {
+            push_unique(target, item.to_string());
+        }
+    }
+}
+
+fn push_link(target: &mut Vec<SignalLink>, label: &str, url: &str) {
+    let url = url.trim();
+    if url.is_empty() || target.iter().any(|link| link.url == url) {
+        return;
+    }
+    target.push(SignalLink {
+        label: label.to_string(),
+        url: url.to_string(),
+    });
+}
+
+fn merge_correlations(target: &mut SignalCorrelations, incoming: SignalCorrelations) {
+    for link in incoming.links {
+        push_link(&mut target.links, &link.label, &link.url);
+    }
+    for bead_id in incoming.bead_ids {
+        push_unique(&mut target.bead_ids, bead_id);
+    }
+    for commit in incoming.git_commits {
+        push_unique(&mut target.git_commits, commit);
+    }
+    target.remedial_commit = incoming.remedial_commit.or(target.remedial_commit.take());
+    target.production_commit = incoming
+        .production_commit
+        .or(target.production_commit.take());
+    target.production_at = incoming.production_at.or(target.production_at);
+}
+
+fn push_unique<T: PartialEq>(target: &mut Vec<T>, value: T) {
+    if !target.contains(&value) {
+        target.push(value);
+    }
+}
+
 fn sha256(bytes: impl AsRef<[u8]>) -> String {
     Sha256::digest(bytes.as_ref())
         .iter()
@@ -1068,6 +1328,20 @@ mod tests {
             "version":"1", "groupKey":"group", "status":status, "receiver":"jcode", "groupLabels":{},
             "commonLabels":{"jcode_project":"jcode","severity":severity}, "commonAnnotations":{},
             "alerts":[{"status":status,"labels":{"alertname":"DiskFull","jcode_project":"jcode","severity":severity},"annotations":{"summary":"Disk is full"},"startsAt":starts,"endsAt":ends,"generatorURL":"","fingerprint":"abc123"}]
+        })).unwrap()
+    }
+
+    fn payload_with_correlations(
+        status: &str,
+        starts: &str,
+        ends: &str,
+        production_at: &str,
+    ) -> Vec<u8> {
+        serde_json::to_vec(&serde_json::json!({
+            "version":"1", "groupKey":"group", "status":status, "receiver":"jcode", "groupLabels":{},
+            "commonLabels":{"jcode_project":"jcode","severity":"high","jcode_bead_id":"jc-123"},
+            "commonAnnotations":{"issue_url":"https://beads.local/jc-123","jcode_remedial_commit":"abc1234","jcode_production_commit":"def5678","jcode_production_at":production_at},
+            "alerts":[{"status":status,"labels":{"alertname":"DiskFull","jcode_project":"jcode"},"annotations":{"summary":"Disk is full"},"startsAt":starts,"endsAt":ends,"generatorURL":"https://grafana.local/alert","fingerprint":"abc123"}]
         })).unwrap()
     }
 
@@ -1162,6 +1436,85 @@ mod tests {
         assert_eq!(aggregate.state, LifecycleState::Firing);
         assert_eq!(aggregate.generation, 1);
         assert_eq!(aggregate.severity, SignalSeverity::Critical);
+    }
+
+    #[test]
+    fn projection_exposes_deduplicated_issues_with_remediation_and_quiet_timer() {
+        let cfg = config();
+        let mut store = ExternalSignalStore::default();
+        let firing: GrafanaWebhook = serde_json::from_slice(&payload_with_correlations(
+            "firing",
+            "2026-08-17T04:00:00Z",
+            "0001-01-01T00:00:00Z",
+            "2026-08-17T05:00:00Z",
+        ))
+        .unwrap();
+        project_webhook(&mut store, &cfg, "r1", &firing, Utc::now());
+        let projections = issue_projections(
+            &store,
+            DateTime::parse_from_rfc3339("2026-08-17T05:10:00Z")
+                .unwrap()
+                .with_timezone(&Utc),
+        );
+
+        assert_eq!(projections.len(), 1);
+        let issue = &projections[0];
+        assert_eq!(issue.bead_ids, vec!["jc-123"]);
+        assert_eq!(issue.remedial_commit.as_deref(), Some("abc1234"));
+        assert_eq!(issue.production_commit.as_deref(), Some("def5678"));
+        assert!(issue.git_commits.contains(&"abc1234".to_string()));
+        assert!(issue.git_commits.contains(&"def5678".to_string()));
+        assert_eq!(issue.remediation_state, RemediationState::ReachedProduction);
+        assert_eq!(
+            issue
+                .production_quiet_timer
+                .as_ref()
+                .unwrap()
+                .quiet_for_seconds,
+            Some(600)
+        );
+        assert!(
+            issue
+                .links
+                .iter()
+                .any(|link| link.url == "https://beads.local/jc-123")
+        );
+        assert_eq!(
+            store.lifecycles.values().next().unwrap().signal_ids.len(),
+            1
+        );
+    }
+
+    #[test]
+    fn projection_marks_repeats_after_production_without_inventing_quiet_time() {
+        let cfg = config();
+        let mut store = ExternalSignalStore::default();
+        let first: GrafanaWebhook = serde_json::from_slice(&payload_with_correlations(
+            "firing",
+            "2026-08-17T04:00:00Z",
+            "0001-01-01T00:00:00Z",
+            "2026-08-17T05:00:00Z",
+        ))
+        .unwrap();
+        project_webhook(&mut store, &cfg, "r1", &first, Utc::now());
+        let repeat: GrafanaWebhook = serde_json::from_slice(&payload_with_correlations(
+            "firing",
+            "2026-08-17T05:05:00Z",
+            "0001-01-01T00:00:00Z",
+            "2026-08-17T05:00:00Z",
+        ))
+        .unwrap();
+        project_webhook(&mut store, &cfg, "r2", &repeat, Utc::now());
+
+        let issue = issue_projections(&store, Utc::now()).pop().unwrap();
+        assert_eq!(
+            issue.remediation_state,
+            RemediationState::RepeatedAfterProduction
+        );
+        let timer = issue.production_quiet_timer.unwrap();
+        assert!(timer.repeat_observed_after_production);
+        assert_eq!(timer.quiet_since, None);
+        assert_eq!(timer.quiet_for_seconds, None);
     }
 
     #[test]
@@ -1322,10 +1675,8 @@ mod tests {
             path,
             gate: Arc::new(Mutex::new(())),
         };
-        let headers = HeaderMap::from_iter([(
-            header::CONTENT_TYPE,
-            "application/json".parse().unwrap(),
-        )]);
+        let headers =
+            HeaderMap::from_iter([(header::CONTENT_TYPE, "application/json".parse().unwrap())]);
         let body = payload(
             "firing",
             "high",
