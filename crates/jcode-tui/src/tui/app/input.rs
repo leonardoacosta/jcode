@@ -1571,6 +1571,12 @@ impl App {
         }
         let plan = crate::todo::load_plan(&session_id).unwrap_or_default();
         let goals = crate::todo::load_goals(&session_id).unwrap_or_default();
+        let summaries = crate::todo::summarize_gate_observations(&observations, &plan, &goals);
+        for summary in summaries {
+            crate::telemetry::record_completion_review(
+                completion_review_telemetry_for_gate_summary(summary),
+            );
+        }
         let digest = crate::todo::build_gate_digest(&observations, &plan, &goals);
         let _ = crate::todo::clear_gate_observations(&session_id);
         let Some(digest) = digest else {
@@ -1611,6 +1617,16 @@ impl App {
         if !todos.is_empty()
             && crate::todo::take_long_session_review_if_due(&todo_session_id).unwrap_or(false)
         {
+            crate::telemetry::record_completion_review(
+                crate::telemetry::CompletionReviewTelemetry {
+                    trigger: crate::telemetry::CompletionReviewTrigger::LongSession,
+                    goal_grouped: todos.iter().any(|todo| todo.group.is_some()),
+                    unresolved_concern: crate::telemetry::CompletionReviewConcern::StaleAssessment,
+                    continuation_cycles: 1,
+                    resolution: crate::telemetry::CompletionReviewResolution::Pending,
+                    repeated_prompt: false,
+                },
+            );
             self.push_display_message(DisplayMessage::system(
                 "🔍 Rechecking the plan and assessments after extended work...",
             ));
@@ -1657,6 +1673,16 @@ impl App {
                 self.todo_completion_gate_attempts =
                     self.todo_completion_gate_attempts.saturating_add(1);
                 crate::telemetry::record_todo_gate(crate::telemetry::TodoGateKind::Ownership);
+                crate::telemetry::record_completion_review(
+                    crate::telemetry::CompletionReviewTelemetry {
+                        trigger: crate::telemetry::CompletionReviewTrigger::Ownership,
+                        goal_grouped: todos.iter().any(|todo| todo.group.is_some()),
+                        unresolved_concern: crate::telemetry::CompletionReviewConcern::Ownership,
+                        continuation_cycles: 1,
+                        resolution: crate::telemetry::CompletionReviewResolution::Pending,
+                        repeated_prompt: self.todo_completion_gate_attempts > 1,
+                    },
+                );
                 self.push_display_message(DisplayMessage::system(
                     "🔍 Checking end-to-end ownership before finishing...",
                 ));
@@ -1679,11 +1705,34 @@ impl App {
                     self.todo_completion_gate_attempts.saturating_add(1);
                 let notice = if confidence_summary.completion_confidence_needs_validation {
                     crate::telemetry::record_todo_gate(crate::telemetry::TodoGateKind::Completion);
+                    crate::telemetry::record_completion_review(
+                        crate::telemetry::CompletionReviewTelemetry {
+                            trigger:
+                                crate::telemetry::CompletionReviewTrigger::CompletionConfidence,
+                            goal_grouped: todos.iter().any(|todo| todo.group.is_some()),
+                            unresolved_concern:
+                                crate::telemetry::CompletionReviewConcern::CompletionConfidence,
+                            continuation_cycles: 1,
+                            resolution: crate::telemetry::CompletionReviewResolution::Pending,
+                            repeated_prompt: self.todo_completion_gate_attempts > 1,
+                        },
+                    );
                     "🔍 Double-checking confidence for you..."
                 } else {
                     self.todo_confidence_spike_challenged = true;
                     crate::telemetry::record_todo_gate(
                         crate::telemetry::TodoGateKind::ConfidenceSpike,
+                    );
+                    crate::telemetry::record_completion_review(
+                        crate::telemetry::CompletionReviewTelemetry {
+                            trigger: crate::telemetry::CompletionReviewTrigger::ConfidenceSpike,
+                            goal_grouped: todos.iter().any(|todo| todo.group.is_some()),
+                            unresolved_concern:
+                                crate::telemetry::CompletionReviewConcern::CompletionConfidence,
+                            continuation_cycles: 1,
+                            resolution: crate::telemetry::CompletionReviewResolution::Pending,
+                            repeated_prompt: self.todo_completion_gate_attempts > 1,
+                        },
                     );
                     "🔍 Double-checking a confidence jump for you..."
                 };
@@ -1700,6 +1749,47 @@ impl App {
                 || needs_spike_challenge)
                 && !gate_budget_left
             {
+                let repeated_prompt = self.todo_completion_gate_attempts > 1;
+                if ownership_needs_followup {
+                    crate::telemetry::record_completion_review(
+                        crate::telemetry::CompletionReviewTelemetry {
+                            trigger: crate::telemetry::CompletionReviewTrigger::Ownership,
+                            goal_grouped: todos.iter().any(|todo| todo.group.is_some()),
+                            unresolved_concern:
+                                crate::telemetry::CompletionReviewConcern::Ownership,
+                            continuation_cycles: 0,
+                            resolution: crate::telemetry::CompletionReviewResolution::Exhausted,
+                            repeated_prompt,
+                        },
+                    );
+                }
+                if confidence_summary.completion_confidence_needs_validation {
+                    crate::telemetry::record_completion_review(
+                        crate::telemetry::CompletionReviewTelemetry {
+                            trigger:
+                                crate::telemetry::CompletionReviewTrigger::CompletionConfidence,
+                            goal_grouped: todos.iter().any(|todo| todo.group.is_some()),
+                            unresolved_concern:
+                                crate::telemetry::CompletionReviewConcern::CompletionConfidence,
+                            continuation_cycles: 0,
+                            resolution: crate::telemetry::CompletionReviewResolution::Exhausted,
+                            repeated_prompt,
+                        },
+                    );
+                }
+                if needs_spike_challenge {
+                    crate::telemetry::record_completion_review(
+                        crate::telemetry::CompletionReviewTelemetry {
+                            trigger: crate::telemetry::CompletionReviewTrigger::ConfidenceSpike,
+                            goal_grouped: todos.iter().any(|todo| todo.group.is_some()),
+                            unresolved_concern:
+                                crate::telemetry::CompletionReviewConcern::CompletionConfidence,
+                            continuation_cycles: 0,
+                            resolution: crate::telemetry::CompletionReviewResolution::Exhausted,
+                            repeated_prompt,
+                        },
+                    );
+                }
                 // The gate keeps failing but the model is no longer making
                 // progress on it. Nudging again would loop forever, burning an
                 // API call per turn (observed live: an unattended session
@@ -1748,6 +1838,16 @@ impl App {
         let fingerprint =
             serde_json::to_string(&incomplete).unwrap_or_else(|_| poke_message.clone());
         if self.last_auto_poke_fingerprint.as_ref() == Some(&fingerprint) {
+            crate::telemetry::record_completion_review(
+                crate::telemetry::CompletionReviewTelemetry {
+                    trigger: crate::telemetry::CompletionReviewTrigger::AutoPoke,
+                    goal_grouped: incomplete.iter().any(|todo| todo.group.is_some()),
+                    unresolved_concern: crate::telemetry::CompletionReviewConcern::IncompleteTodo,
+                    continuation_cycles: 0,
+                    resolution: crate::telemetry::CompletionReviewResolution::Unresolved,
+                    repeated_prompt: true,
+                },
+            );
             crate::logging::info(&format!(
                 "AUTO_POKE_DECISION action=idle reason=unchanged_todos incomplete={}",
                 incomplete.len()
@@ -1771,6 +1871,14 @@ impl App {
             self.is_processing,
             self.pending_turn,
         ));
+        crate::telemetry::record_completion_review(crate::telemetry::CompletionReviewTelemetry {
+            trigger: crate::telemetry::CompletionReviewTrigger::AutoPoke,
+            goal_grouped: incomplete.iter().any(|todo| todo.group.is_some()),
+            unresolved_concern: crate::telemetry::CompletionReviewConcern::IncompleteTodo,
+            continuation_cycles: 1,
+            resolution: crate::telemetry::CompletionReviewResolution::Pending,
+            repeated_prompt: false,
+        });
         // Open todos mean the model is still iterating; completion-gate
         // exhaustion should only trip when the gate itself stops moving.
         self.todo_completion_gate_attempts = 0;
@@ -1839,6 +1947,40 @@ impl App {
             }
             Err(error) => self.set_status_notice(format!("New terminal failed: {}", error)),
         }
+    }
+}
+
+pub(super) fn completion_review_telemetry_for_gate_summary(
+    summary: crate::todo::GateObservationSummary,
+) -> crate::telemetry::CompletionReviewTelemetry {
+    let unresolved_concern = match summary.kind {
+        crate::todo::GateObservationKind::IntentUnderstanding => {
+            crate::telemetry::CompletionReviewConcern::Intent
+        }
+        crate::todo::GateObservationKind::ClosedFeedbackLoop => {
+            crate::telemetry::CompletionReviewConcern::ClosedFeedbackLoop
+        }
+        crate::todo::GateObservationKind::FeedbackLoopRelevance => {
+            crate::telemetry::CompletionReviewConcern::FeedbackLoopRelevance
+        }
+        crate::todo::GateObservationKind::FeedbackLoopCoverage => {
+            crate::telemetry::CompletionReviewConcern::FeedbackLoopCoverage
+        }
+        crate::todo::GateObservationKind::FeedbackLoopTraceability => {
+            crate::telemetry::CompletionReviewConcern::FeedbackLoopTraceability
+        }
+    };
+    crate::telemetry::CompletionReviewTelemetry {
+        trigger: crate::telemetry::CompletionReviewTrigger::GateDigest,
+        goal_grouped: summary.group.is_some(),
+        unresolved_concern,
+        continuation_cycles: summary.continuation_cycles,
+        resolution: if summary.resolved {
+            crate::telemetry::CompletionReviewResolution::Resolved
+        } else {
+            crate::telemetry::CompletionReviewResolution::Unresolved
+        },
+        repeated_prompt: summary.repeated_prompt,
     }
 }
 
