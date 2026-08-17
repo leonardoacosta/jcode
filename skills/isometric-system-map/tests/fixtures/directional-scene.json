@@ -138,7 +138,7 @@
       "form": "cube",
       "zone": "runtime",
       "position": {
-        "x": 6,
+        "x": 5,
         "y": 12
       },
       "footprint": {
@@ -165,8 +165,8 @@
       "form": "cube",
       "zone": "runtime",
       "position": {
-        "x": 6,
-        "y": 8
+        "x": 5,
+        "y": 10
       },
       "footprint": {
         "width": 1,
@@ -193,7 +193,7 @@
       "zone": "runtime",
       "position": {
         "x": 7,
-        "y": 5
+        "y": 8
       },
       "footprint": {
         "width": 1,
@@ -219,8 +219,8 @@
       "form": "cube",
       "zone": "runtime",
       "position": {
-        "x": 8,
-        "y": 3
+        "x": 7,
+        "y": 6
       },
       "footprint": {
         "width": 2,
@@ -247,7 +247,7 @@
       "zone": "runtime",
       "position": {
         "x": 9,
-        "y": 5
+        "y": 9
       },
       "footprint": {
         "width": 1,
@@ -273,8 +273,8 @@
       "form": "cube",
       "zone": "runtime",
       "position": {
-        "x": 10,
-        "y": 1
+        "x": 6,
+        "y": 4
       },
       "footprint": {
         "width": 1,
@@ -302,16 +302,12 @@
       "label": "incoming request handoff",
       "route": [
         {
-          "x": 7,
-          "y": 12.5
+          "x": 5.5,
+          "y": 13
         },
         {
-          "x": 6,
-          "y": 12.5
-        },
-        {
-          "x": 6,
-          "y": 8.5
+          "x": 5.5,
+          "y": 10
         }
       ],
       "payload_ids": [],
@@ -331,24 +327,16 @@
       "label": "private endpoint handoff",
       "route": [
         {
-          "x": 7,
-          "y": 8.5
+          "x": 5.5,
+          "y": 11
         },
         {
-          "x": 7.5,
-          "y": 8.5
+          "x": 6.5,
+          "y": 11
         },
         {
-          "x": 7.5,
-          "y": 6.5
-        },
-        {
-          "x": 7,
-          "y": 6.5
-        },
-        {
-          "x": 7,
-          "y": 5.5
+          "x": 6.5,
+          "y": 8
         }
       ],
       "payload_ids": [],
@@ -368,20 +356,12 @@
       "label": "SQL private link target",
       "route": [
         {
-          "x": 8,
-          "y": 5.5
+          "x": 7.5,
+          "y": 9
         },
         {
-          "x": 8.5,
-          "y": 5.5
-        },
-        {
-          "x": 8.5,
-          "y": 3.5
-        },
-        {
-          "x": 8,
-          "y": 3.5
+          "x": 7.5,
+          "y": 6
         }
       ],
       "payload_ids": [],
@@ -402,19 +382,19 @@
       "route": [
         {
           "x": 6.5,
-          "y": 8
+          "y": 10.5
         },
         {
-          "x": 6.5,
-          "y": 7.5
+          "x": 8.5,
+          "y": 10.5
         },
         {
-          "x": 9.5,
-          "y": 7.5
+          "x": 8.5,
+          "y": 9.5
         },
         {
-          "x": 9.5,
-          "y": 7
+          "x": 9,
+          "y": 9.5
         }
       ],
       "payload_ids": [
@@ -436,24 +416,20 @@
       "label": "partner API dependency",
       "route": [
         {
-          "x": 7,
-          "y": 8.5
+          "x": 5.5,
+          "y": 11
+        },
+        {
+          "x": 4.5,
+          "y": 11
+        },
+        {
+          "x": 4.5,
+          "y": 4.5
         },
         {
           "x": 6,
-          "y": 8.5
-        },
-        {
-          "x": 6,
-          "y": 2.5
-        },
-        {
-          "x": 10.5,
-          "y": 2.5
-        },
-        {
-          "x": 10.5,
-          "y": 2
+          "y": 4.5
         }
       ],
       "payload_ids": [],
