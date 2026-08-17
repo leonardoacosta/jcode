@@ -42,9 +42,13 @@ fn find_wrap_marker_incremental(accumulated: &str, appended_len: usize) -> Optio
         .map(|rel_idx| scan_start + rel_idx)
 }
 
-fn reload_interrupted_tool_result(tc: &ToolCall, elapsed_secs: f64) -> (String, bool) {
+fn reload_interrupted_tool_result(tc: &ToolCall, elapsed_secs: f64) -> (String, bool, ToolOutcome) {
     if tc.name == "selfdev" {
-        return ("Reload initiated. Process restarting...".to_string(), false);
+        return (
+            "Reload initiated. Process restarting...".to_string(),
+            false,
+            ToolOutcome::Success,
+        );
     }
 
     let action = tc
@@ -63,6 +67,7 @@ fn reload_interrupted_tool_result(tc: &ToolCall, elapsed_secs: f64) -> (String, 
                 tc.name, elapsed_secs, input
             ),
             false,
+            ToolOutcome::UserActionRequired,
         );
     }
 
@@ -72,6 +77,7 @@ fn reload_interrupted_tool_result(tc: &ToolCall, elapsed_secs: f64) -> (String, 
             tc.name, elapsed_secs
         ),
         true,
+        ToolOutcome::UserActionRequired,
     )
 }
 
@@ -1224,7 +1230,7 @@ impl Agent {
                             tool_use_id: tc.id.clone(),
                             content: "[Skipped - server reloading]".to_string(),
                             is_error: Some(true),
-                            outcome: None,
+                            outcome: Some(ToolOutcome::UserActionRequired),
                             artifact: None,
                         }],
                     );
@@ -1269,7 +1275,7 @@ impl Agent {
                                 tool_use_id: skipped_tc.id.clone(),
                                 content: "[Skipped: user interrupted]".to_string(),
                                 is_error: Some(true),
-                                outcome: None,
+                                outcome: Some(ToolOutcome::UserActionRequired),
                                 artifact: None,
                             }],
                         );
@@ -1317,7 +1323,7 @@ impl Agent {
                             tool_use_id: tc.id.clone(),
                             content: error_msg,
                             is_error: Some(true),
-                            outcome: None,
+                            outcome: Some(ToolOutcome::ConfigurationError),
                             artifact: None,
                         }],
                     );
@@ -1339,7 +1345,7 @@ impl Agent {
                                 tool_use_id: tc.id.clone(),
                                 content: sdk_content,
                                 is_error: if sdk_is_error { Some(true) } else { None },
-                                outcome: None,
+                                outcome: Some(ToolOutcome::from_legacy_is_error(sdk_is_error)),
                                 artifact: None,
                             }],
                         );
@@ -1496,7 +1502,7 @@ impl Agent {
                                     tool_use_id: tc.id.clone(),
                                     content: error_msg,
                                     is_error: Some(true),
-                                    outcome: None,
+                                    outcome: Some(ToolOutcome::ToolDefect),
                                     artifact: None,
                                 }],
                                 Some(tool_elapsed.as_millis() as u64),
@@ -1516,7 +1522,7 @@ impl Agent {
                     // For selfdev reload and wait-like tools, the interruption is expected:
                     // selfdev initiated the restart, while wait-like tools should be resumed
                     // after reload rather than treated as failed work.
-                    let (interrupted_msg, is_error) =
+                    let (interrupted_msg, is_error, interrupted_outcome) =
                         reload_interrupted_tool_result(tc, tool_elapsed.as_secs_f64());
 
                     let _ = event_tx.send(ServerEvent::ToolDone {
@@ -1536,7 +1542,7 @@ impl Agent {
                             tool_use_id: tc.id.clone(),
                             content: interrupted_msg,
                             is_error: Some(is_error),
-                            outcome: None,
+                            outcome: Some(interrupted_outcome),
                             artifact: None,
                         }],
                         Some(tool_elapsed.as_millis() as u64),
@@ -1551,7 +1557,7 @@ impl Agent {
                                 tool_use_id: remaining_tc.id.clone(),
                                 content: "[Skipped - server reloading]".to_string(),
                                 is_error: Some(true),
-                                outcome: None,
+                                outcome: Some(ToolOutcome::UserActionRequired),
                                 artifact: None,
                             }],
                         );
@@ -1590,7 +1596,7 @@ impl Agent {
                             tool_use_id: tc.id.clone(),
                             content: bg_msg,
                             is_error: None,
-                            outcome: None,
+                            outcome: Some(ToolOutcome::UserActionRequired),
                             artifact: None,
                         }],
                         Some(tool_elapsed.as_millis() as u64),
@@ -1654,9 +1660,10 @@ mod tests {
             json!({"action": "wait", "task_id": "bg-123", "max_wait_seconds": 300}),
         );
 
-        let (message, is_error) = reload_interrupted_tool_result(&tc, 1.2);
+        let (message, is_error, outcome) = reload_interrupted_tool_result(&tc, 1.2);
 
         assert!(!is_error);
+        assert_eq!(outcome, ToolOutcome::UserActionRequired);
         assert!(message.contains("Resume the wait"));
         assert!(message.contains("\"task_id\":\"bg-123\""));
     }
@@ -1665,9 +1672,10 @@ mod tests {
     fn reload_interrupted_non_wait_tool_remains_error() {
         let tc = tool_call("bash", json!({"command": "sleep 10"}));
 
-        let (message, is_error) = reload_interrupted_tool_result(&tc, 1.2);
+        let (message, is_error, outcome) = reload_interrupted_tool_result(&tc, 1.2);
 
         assert!(is_error);
+        assert_eq!(outcome, ToolOutcome::UserActionRequired);
         assert!(message.contains("interrupted by server reload"));
     }
 

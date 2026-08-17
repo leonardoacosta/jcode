@@ -81,8 +81,8 @@ pub(super) fn tool_output_to_content_blocks(
     let mut blocks = vec![ContentBlock::ToolResult {
         tool_use_id,
         content: output.output,
-        is_error: None,
-        outcome: None,
+        is_error: output.outcome.is_error().then_some(true),
+        outcome: Some(output.outcome),
         artifact: output.artifact,
     }];
     for img in output.images {
@@ -161,6 +161,46 @@ mod tests {
                 assert_eq!(content, "fn main() {}");
             }
             other => panic!("expected artifact tool result, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tool_output_to_content_blocks_preserves_semantic_outcome_and_legacy_error() {
+        let blocks = tool_output_to_content_blocks(
+            "call-timeout".to_string(),
+            ToolOutput::new("partial progress")
+                .with_outcome(jcode_message_types::ToolOutcome::TimeoutWithProgress),
+        );
+
+        match &blocks[0] {
+            ContentBlock::ToolResult {
+                is_error, outcome, ..
+            } => {
+                assert_eq!(*is_error, None);
+                assert_eq!(
+                    *outcome,
+                    Some(jcode_message_types::ToolOutcome::TimeoutWithProgress)
+                );
+            }
+            other => panic!("expected semantic tool result, got {other:?}"),
+        }
+
+        let blocks = tool_output_to_content_blocks(
+            "call-error".to_string(),
+            ToolOutput::new("broken")
+                .with_outcome(jcode_message_types::ToolOutcome::ProviderFailure),
+        );
+        match &blocks[0] {
+            ContentBlock::ToolResult {
+                is_error, outcome, ..
+            } => {
+                assert_eq!(*is_error, Some(true));
+                assert_eq!(
+                    *outcome,
+                    Some(jcode_message_types::ToolOutcome::ProviderFailure)
+                );
+            }
+            other => panic!("expected semantic error result, got {other:?}"),
         }
     }
 

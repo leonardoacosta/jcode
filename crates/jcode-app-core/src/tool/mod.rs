@@ -581,11 +581,16 @@ impl Registry {
         match result {
             Ok(output) => {
                 event = event.field("OUTPUT_BYTES", output.output.len().to_string());
+                event = event.field("OUTCOME", output.outcome.as_str());
             }
             Err(error) => {
                 const ERROR_LIMIT: usize = 1000;
                 let message: String = error.to_string().chars().take(ERROR_LIMIT).collect();
                 event = event.field("ERROR", message);
+                event = event.field(
+                    "OUTCOME",
+                    jcode_message_types::ToolOutcome::ToolDefect.as_str(),
+                );
             }
         }
         crate::hooks::dispatch_observer(event);
@@ -715,7 +720,16 @@ impl Registry {
         let result = tool.execute(input.clone(), ctx.clone()).await;
         let latency_ms = started_at.elapsed().as_millis().min(u128::from(u64::MAX)) as u64;
 
-        crate::telemetry::record_tool_execution(resolved_name, &input, result.is_ok(), latency_ms);
+        let semantic_outcome = result
+            .as_ref()
+            .map(|output| output.outcome)
+            .unwrap_or(jcode_message_types::ToolOutcome::ToolDefect);
+        crate::telemetry::record_tool_execution_with_outcome(
+            resolved_name,
+            &input,
+            semantic_outcome.as_str(),
+            latency_ms,
+        );
         Self::fire_post_tool_hook(resolved_name, &ctx, &result, latency_ms);
 
         let mut output = match result {

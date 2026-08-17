@@ -30,6 +30,7 @@ use crate::id;
 use crate::logging;
 use crate::message::{
     ContentBlock, Message, Role, StreamEvent, TOOL_OUTPUT_MISSING_TEXT, ToolCall, ToolDefinition,
+    ToolOutcome,
 };
 use crate::protocol::{HistoryMessage, ServerEvent};
 use crate::provider::{NativeToolResult, Provider, ProviderRuntimeState};
@@ -869,7 +870,7 @@ impl Agent {
                     tool_use_id: id.clone(),
                     content: TOOL_OUTPUT_MISSING_TEXT.to_string(),
                     is_error: Some(true),
-                    outcome: None,
+                    outcome: Some(ToolOutcome::ToolDefect),
                     artifact: None,
                 };
                 let stored_message = StoredMessage {

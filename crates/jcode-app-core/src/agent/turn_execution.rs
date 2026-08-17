@@ -605,7 +605,7 @@ impl Agent {
                 tool_use_id: tool_call_id,
                 content: error,
                 is_error: Some(true),
-                outcome: None,
+                outcome: Some(crate::message::ToolOutcome::ToolDefect),
                 artifact: None,
             }],
             Some(duration_ms),

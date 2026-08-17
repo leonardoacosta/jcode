@@ -607,7 +607,11 @@ impl Agent {
                             crate::telemetry::record_tool_failure();
                         }
                         let native_result = match tool_result {
-                            Ok(output) => NativeToolResult::success(request_id, output.output),
+                            Ok(output) => {
+                                let outcome = output.outcome;
+                                NativeToolResult::success(request_id, output.output)
+                                    .with_outcome(outcome)
+                            }
                             Err(e) => NativeToolResult::error(request_id, e.to_string()),
                         };
                         // Send result back to SDK bridge
@@ -938,7 +942,7 @@ impl Agent {
                             tool_use_id: tc.id,
                             content: error_msg,
                             is_error: Some(true),
-                            outcome: None,
+                            outcome: Some(ToolOutcome::ConfigurationError),
                             artifact: None,
                         }],
                     );
@@ -998,7 +1002,7 @@ impl Agent {
                                 tool_use_id: tc.id,
                                 content: sdk_content,
                                 is_error: if sdk_is_error { Some(true) } else { None },
-                                outcome: None,
+                                outcome: Some(ToolOutcome::from_legacy_is_error(sdk_is_error)),
                                 artifact: None,
                             }],
                         );
@@ -1120,7 +1124,7 @@ impl Agent {
                                 tool_use_id: tc.id,
                                 content: error_msg,
                                 is_error: Some(true),
-                                outcome: None,
+                                outcome: Some(ToolOutcome::ToolDefect),
                                 artifact: None,
                             }],
                             Some(tool_elapsed.as_millis() as u64),
@@ -1203,7 +1207,7 @@ mod tests {
                 tool_use_id: id.to_string(),
                 content: content.to_string(),
                 is_error: None,
-                outcome: None,
+                outcome: Some(ToolOutcome::Success),
                 artifact: None,
             }],
             timestamp: None,

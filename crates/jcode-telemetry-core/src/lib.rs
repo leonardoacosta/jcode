@@ -17,7 +17,7 @@ pub use jcode_usage_types::{ErrorCategory, SessionEndReason};
 use lifecycle::emit_lifecycle_event;
 use serde_json::Value;
 use state_support::*;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{SyncSender, TrySendError, sync_channel};
 use std::sync::{Mutex, OnceLock};
@@ -43,6 +43,11 @@ static TELEMETRY_QUEUE_OVERFLOW_WARNED: AtomicBool = AtomicBool::new(false);
 static TELEMETRY_BACKGROUND_SENDER: OnceLock<SyncSender<Value>> = OnceLock::new();
 static TRANSCRIPT_BACKGROUND_SENDER: OnceLock<SyncSender<Value>> = OnceLock::new();
 static TELEMETRY_HTTP_CLIENT: OnceLock<reqwest::blocking::Client> = OnceLock::new();
+static TOOL_OUTCOME_COUNTS: OnceLock<Mutex<BTreeMap<String, u64>>> = OnceLock::new();
+
+fn tool_outcome_counts() -> &'static Mutex<BTreeMap<String, u64>> {
+    TOOL_OUTCOME_COUNTS.get_or_init(|| Mutex::new(BTreeMap::new()))
+}
 #[cfg(test)]
 static TEST_EMITTED_PAYLOADS: Mutex<Vec<Value>> = Mutex::new(Vec::new());
 
@@ -2738,6 +2743,38 @@ pub fn record_tool_execution(name: &str, input: &Value, succeeded: bool, latency
         }
     }
     maybe_emit_session_start();
+}
+
+/// Record a semantic tool outcome while retaining the legacy boolean-based API.
+/// The counters are intentionally additive and label-based so older telemetry
+/// consumers continue to receive the existing success/failure fields.
+pub fn record_tool_execution_with_outcome(
+    name: &str,
+    input: &Value,
+    outcome: &str,
+    latency_ms: u64,
+) {
+    record_tool_execution(
+        name,
+        input,
+        !matches!(
+            outcome,
+            "configuration_error" | "provider_failure" | "tool_defect"
+        ),
+        latency_ms,
+    );
+    if let Ok(mut counts) = tool_outcome_counts().lock() {
+        let entry = counts.entry(outcome.to_string()).or_default();
+        *entry = entry.saturating_add(1);
+    }
+}
+
+/// Snapshot semantic tool outcome counters for diagnostics and tests.
+pub fn tool_outcome_counts_snapshot() -> BTreeMap<String, u64> {
+    tool_outcome_counts()
+        .lock()
+        .map(|counts| counts.clone())
+        .unwrap_or_default()
 }
 
 pub fn end_session(provider_end: &str, model_end: &str) {

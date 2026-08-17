@@ -548,6 +548,10 @@ pub struct NativeToolResult {
     pub request_id: String,
     pub result: NativeToolResultPayload,
     pub is_error: bool,
+    /// Additive semantic classification. Older provider bridges ignore this
+    /// field and continue to use `is_error`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub outcome: Option<jcode_message_types::ToolOutcome>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -568,6 +572,7 @@ impl NativeToolResult {
                 error: None,
             },
             is_error: false,
+            outcome: Some(jcode_message_types::ToolOutcome::Success),
         }
     }
 
@@ -580,7 +585,31 @@ impl NativeToolResult {
                 error: Some(error),
             },
             is_error: true,
+            outcome: Some(jcode_message_types::ToolOutcome::ToolDefect),
         }
+    }
+
+    pub fn with_outcome(mut self, outcome: jcode_message_types::ToolOutcome) -> Self {
+        self.is_error = outcome.is_error();
+        self.outcome = Some(outcome);
+        self
+    }
+}
+
+#[cfg(test)]
+mod native_tool_result_tests {
+    use super::NativeToolResult;
+    use jcode_message_types::ToolOutcome;
+
+    #[test]
+    fn native_tool_result_preserves_semantic_outcome_and_legacy_error() {
+        let result = NativeToolResult::success("call-1".to_string(), "partial".to_string())
+            .with_outcome(ToolOutcome::TimeoutWithProgress);
+        assert!(!result.is_error);
+        assert_eq!(result.outcome, Some(ToolOutcome::TimeoutWithProgress));
+        let json = serde_json::to_value(result).unwrap();
+        assert_eq!(json["outcome"], "timeout_with_progress");
+        assert_eq!(json["is_error"], false);
     }
 }
 

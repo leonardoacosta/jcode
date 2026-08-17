@@ -45,6 +45,18 @@ impl Default for ToolOutcome {
 }
 
 impl ToolOutcome {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Success => "success",
+            Self::ExpectedNegative => "expected_negative",
+            Self::TimeoutWithProgress => "timeout_with_progress",
+            Self::UserActionRequired => "user_action_required",
+            Self::ConfigurationError => "configuration_error",
+            Self::ProviderFailure => "provider_failure",
+            Self::ToolDefect => "tool_defect",
+        }
+    }
+
     pub const fn is_error(self) -> bool {
         matches!(
             self,
@@ -320,7 +332,27 @@ impl Message {
                 tool_use_id: tool_use_id.to_string(),
                 content: content.to_string(),
                 is_error: if is_error { Some(true) } else { None },
-                outcome: None,
+                outcome: Some(ToolOutcome::from_legacy_is_error(is_error)),
+                artifact: None,
+            }],
+            timestamp: Some(chrono::Utc::now()),
+            tool_duration_ms,
+        }
+    }
+
+    pub fn tool_result_with_outcome(
+        tool_use_id: &str,
+        content: &str,
+        outcome: ToolOutcome,
+        tool_duration_ms: Option<u64>,
+    ) -> Self {
+        Self {
+            role: Role::User,
+            content: vec![ContentBlock::ToolResult {
+                tool_use_id: tool_use_id.to_string(),
+                content: content.to_string(),
+                is_error: outcome.is_error().then_some(true),
+                outcome: Some(outcome),
                 artifact: None,
             }],
             timestamp: Some(chrono::Utc::now()),
@@ -1049,5 +1081,60 @@ mod tests {
             }
             other => panic!("expected tool result, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn tool_result_helpers_preserve_semantic_outcome_and_legacy_error() {
+        let expected = Message::tool_result_with_outcome(
+            "call-timeout",
+            "partial progress",
+            ToolOutcome::TimeoutWithProgress,
+            Some(12),
+        );
+        match &expected.content[0] {
+            ContentBlock::ToolResult {
+                is_error, outcome, ..
+            } => {
+                assert_eq!(is_error, &None);
+                assert_eq!(outcome, &Some(ToolOutcome::TimeoutWithProgress));
+            }
+            other => panic!("expected tool result, got {other:?}"),
+        }
+
+        let legacy = Message::tool_result("call-error", "broken", true);
+        match &legacy.content[0] {
+            ContentBlock::ToolResult {
+                is_error, outcome, ..
+            } => {
+                assert_eq!(is_error, &Some(true));
+                assert_eq!(outcome, &Some(ToolOutcome::ToolDefect));
+            }
+            other => panic!("expected tool result, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn tool_outcome_names_are_stable_for_hooks_and_telemetry() {
+        let outcomes = [
+            ToolOutcome::Success,
+            ToolOutcome::ExpectedNegative,
+            ToolOutcome::TimeoutWithProgress,
+            ToolOutcome::UserActionRequired,
+            ToolOutcome::ConfigurationError,
+            ToolOutcome::ProviderFailure,
+            ToolOutcome::ToolDefect,
+        ];
+        assert_eq!(
+            outcomes.map(ToolOutcome::as_str),
+            [
+                "success",
+                "expected_negative",
+                "timeout_with_progress",
+                "user_action_required",
+                "configuration_error",
+                "provider_failure",
+                "tool_defect",
+            ]
+        );
     }
 }
