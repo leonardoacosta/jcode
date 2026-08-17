@@ -6,6 +6,7 @@ async fn communicate_list_and_await_members_work_end_to_end() {
     let socket_path = runtime_dir.path().join("jcode.sock");
     let _runtime = EnvGuard::set("JCODE_RUNTIME_DIR", runtime_dir.path());
     let _socket = EnvGuard::set("JCODE_SOCKET", &socket_path);
+    let _swarm = EnvGuard::shared_swarm(runtime_dir.path());
     let _debug = EnvGuard::set("JCODE_DEBUG_CONTROL", "1");
 
     let provider: Arc<dyn Provider> = Arc::new(DelayedTestProvider {
@@ -134,6 +135,7 @@ async fn communicate_await_members_background_returns_immediately_and_notifies()
     let socket_path = runtime_dir.path().join("jcode.sock");
     let _runtime = EnvGuard::set("JCODE_RUNTIME_DIR", runtime_dir.path());
     let _socket = EnvGuard::set("JCODE_SOCKET", &socket_path);
+    let _swarm = EnvGuard::shared_swarm(runtime_dir.path());
     let _debug = EnvGuard::set("JCODE_DEBUG_CONTROL", "1");
 
     let provider: Arc<dyn Provider> = Arc::new(DelayedTestProvider {
@@ -292,6 +294,7 @@ async fn communicate_status_returns_busy_snapshot_for_running_member() {
     let socket_path = runtime_dir.path().join("jcode.sock");
     let _runtime = EnvGuard::set("JCODE_RUNTIME_DIR", runtime_dir.path());
     let _socket = EnvGuard::set("JCODE_SOCKET", &socket_path);
+    let _swarm = EnvGuard::shared_swarm(runtime_dir.path());
     let _debug = EnvGuard::set("JCODE_DEBUG_CONTROL", "1");
 
     let provider: Arc<dyn Provider> = Arc::new(DelayedTestProvider {
@@ -554,6 +557,7 @@ async fn communicate_message_routes_as_dm_while_broadcast_targets_swarm() {
     let socket_path = runtime_dir.path().join("jcode.sock");
     let _runtime = EnvGuard::set("JCODE_RUNTIME_DIR", runtime_dir.path());
     let _socket = EnvGuard::set("JCODE_SOCKET", &socket_path);
+    let _swarm = EnvGuard::shared_swarm(runtime_dir.path());
     let _debug = EnvGuard::set("JCODE_DEBUG_CONTROL", "1");
 
     let provider: Arc<dyn Provider> = Arc::new(DelayedTestProvider {

@@ -1327,6 +1327,16 @@ impl EnvGuard {
         crate::env::set_var(key, value);
         Self { key, original }
     }
+
+    fn shared_swarm(runtime_dir: &Path) -> Self {
+        // Independent root sessions intentionally receive distinct swarm ids.
+        // Multi-client E2E tests that exercise peer behavior must explicitly
+        // opt their raw clients into one isolated swarm.
+        Self::set(
+            "JCODE_SWARM_ID",
+            format!("communicate-e2e:{}", runtime_dir.display()),
+        )
+    }
 }
 
 impl Drop for EnvGuard {
