@@ -150,33 +150,41 @@ function WorkspaceRoute() {
     ),
   );
   return (
-    <AppShell snapshot={current()} announcement={store.ui.announcement}>
-      <DecisionInbox snapshot={decisionInbox()} />
-      <Show
-        when={!snapshot.loading}
-        fallback={
-          <StateCard
-            title="Loading authoritative snapshot"
-            message="Jcode is loading a scoped command-center snapshot."
-          />
-        }
-      >
-        <Show when={!loadError()} fallback={<StateCard {...loadFailureState(loadError())} />}>
-          <Show
-            when={current()?.selectedInitiative}
-            fallback={<InitiativeList initiatives={current()?.initiatives ?? []} />}
-            keyed
-          >
-            {(initiative) => (
-              <SplitWorkspace
-                initiative={initiative}
-                run={current()?.selectedRun}
-                onCheckpoint={checkpoint}
-                onUpdateStep={updateStep}
-                pending={pending()}
-                failure={failure()}
-              />
-            )}
+    <AppShell snapshot={current()} announcement={store.ui.announcement} activePath={path()}>
+      <Show when={path() === "/ambient"}>
+        <AmbientRoute />
+      </Show>
+      <Show when={path() === "/find"}>
+        <FindRoute />
+      </Show>
+      <Show when={path() !== "/ambient" && path() !== "/find"}>
+        <DecisionInbox snapshot={decisionInbox()} />
+        <Show
+          when={!snapshot.loading}
+          fallback={
+            <StateCard
+              title="Loading authoritative snapshot"
+              message="Jcode is loading a scoped command-center snapshot."
+            />
+          }
+        >
+          <Show when={!loadError()} fallback={<StateCard {...loadFailureState(loadError())} />}>
+            <Show
+              when={current()?.selectedInitiative}
+              fallback={<InitiativeList initiatives={current()?.initiatives ?? []} />}
+              keyed
+            >
+              {(initiative) => (
+                <SplitWorkspace
+                  initiative={initiative}
+                  run={current()?.selectedRun}
+                  onCheckpoint={checkpoint}
+                  onUpdateStep={updateStep}
+                  pending={pending()}
+                  failure={failure()}
+                />
+              )}
+            </Show>
           </Show>
         </Show>
       </Show>
@@ -184,10 +192,49 @@ function WorkspaceRoute() {
   );
 }
 
+function AmbientRoute() {
+  return (
+    <section class="page" aria-labelledby="ambient-title">
+      <header class="page-bar">
+        <div>
+          <p class="eyebrow">Background work</p>
+          <h1 id="ambient-title">Ambient activity</h1>
+        </div>
+        <p>Stable route boundary for observed cycles and retained wake evidence.</p>
+      </header>
+      <StateCard
+        title="Ambient workflow boundary"
+        message="Ambient cycle details will be added behind this stable route interface."
+      />
+    </section>
+  );
+}
+
+function FindRoute() {
+  return (
+    <section class="page" aria-labelledby="find-route-title">
+      <header class="page-bar">
+        <div>
+          <p class="eyebrow">Global lookup</p>
+          <h1 id="find-route-title">Find run or receipt</h1>
+        </div>
+        <p>Use the global lookup control to search durable initiative and run references.</p>
+      </header>
+      <StateCard
+        title="Find workflow boundary"
+        message="Search results and receipt inspection will be added behind this stable interface."
+      />
+    </section>
+  );
+}
+
 export default function App() {
   return (
     <Router>
       <Route path="/" component={() => <WorkspaceRoute />} />
+      <Route path="/inbox" component={WorkspaceRoute} />
+      <Route path="/ambient" component={WorkspaceRoute} />
+      <Route path="/find" component={WorkspaceRoute} />
       <Route path="/initiatives" component={WorkspaceRoute} />
       <Route path="/initiatives/:initiativeId" component={WorkspaceRoute} />
       <Route path="/initiatives/:initiativeId/runs/:runId" component={WorkspaceRoute} />

@@ -1,11 +1,13 @@
 import { For, Show, createMemo, createSignal } from "solid-js";
 import type {
-  CommandCenterSnapshot,
   DecisionInboxSnapshot,
   InitiativeProjection,
   RunProjection,
   TimelineEvent,
 } from "../generated/command-center-contract";
+
+export { AppShell } from "./shell/AppShell";
+export { FindDrawer } from "./shell/FindDrawer";
 
 const label = (value: string) =>
   value.replaceAll("_", " ").replace(/^./, (first) => first.toUpperCase());
@@ -54,46 +56,6 @@ export function DecisionInbox(props: { snapshot?: DecisionInboxSnapshot }) {
         )}
       </For>
     </section>
-  );
-}
-
-export function AppShell(props: {
-  snapshot?: CommandCenterSnapshot;
-  children: any;
-  announcement?: string;
-}) {
-  return (
-    <div class="app-shell">
-      <a class="skip" href="#main">
-        Skip to command center
-      </a>
-      <header>
-        <h1 class="brand-title">
-          <a href="/initiatives" class="brand">
-            Jcode Command Center
-          </a>
-        </h1>
-        <ConnectionBadge
-          state={props.snapshot?.connection.state ?? "loading"}
-          reason={props.snapshot?.connection.reason}
-        />
-      </header>
-      <div role="status" aria-live="polite" class="sr-only">
-        {props.announcement}
-      </div>
-      <main id="main" tabindex="-1">
-        {props.children}
-      </main>
-    </div>
-  );
-}
-
-export function ConnectionBadge(props: { state: string; reason?: string }) {
-  return (
-    <div class={`badge ${props.state}`} aria-label={`Connection ${props.state}`}>
-      {props.state}
-      {props.reason ? `: ${props.reason}` : ""}
-    </div>
   );
 }
 
