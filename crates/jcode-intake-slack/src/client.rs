@@ -107,7 +107,7 @@ impl SlackTransport for SlackClient {
     fn acknowledge(&mut self, envelope_id: &str) -> Result<(), ApiError> {
         self.socket()?
             .send(Message::Text(
-                json!({"envelope_id": envelope_id}).to_string().into(),
+                json!({"envelope_id": envelope_id}).to_string(),
             ))
             .map_err(|_| {
                 self.socket = None;

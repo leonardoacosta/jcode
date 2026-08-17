@@ -266,6 +266,7 @@ fn result_to_lines_with_capabilities(
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod fallback_note_tests {
     use super::*;
 
