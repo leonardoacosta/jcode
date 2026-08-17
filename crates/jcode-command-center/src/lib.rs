@@ -4,6 +4,7 @@
 //! primitives. It deliberately contains no frontend persistence and is safe to
 //! wire behind a disabled-by-default loopback listener.
 
+pub mod mx_health;
 pub mod orca_operation_store;
 
 use std::collections::{HashMap, VecDeque};
@@ -1962,6 +1963,7 @@ pub struct CommandCenterHttpState {
     config: CommandCenterConfig,
     sessions: BrowserSessionStore,
     api: Arc<dyn CommandCenterApi>,
+    mx_health: Option<Arc<dyn mx_health::MxHealthSource>>,
 }
 
 pub struct CommandCenterHttpHost {
@@ -1984,9 +1986,18 @@ impl CommandCenterHttpHost {
 }
 
 pub async fn spawn_command_center_http_host(
+    config: CommandCenterConfig,
+    sessions: BrowserSessionStore,
+    api: Arc<dyn CommandCenterApi>,
+) -> Result<Option<CommandCenterHttpHost>, CommandCenterError> {
+    spawn_command_center_http_host_with_mx(config, sessions, api, None).await
+}
+
+pub async fn spawn_command_center_http_host_with_mx(
     mut config: CommandCenterConfig,
     sessions: BrowserSessionStore,
     api: Arc<dyn CommandCenterApi>,
+    mx_health: Option<Arc<dyn mx_health::MxHealthSource>>,
 ) -> Result<Option<CommandCenterHttpHost>, CommandCenterError> {
     config.validate()?;
     if !config.enabled {
@@ -2011,6 +2022,7 @@ pub async fn spawn_command_center_http_host(
         config,
         sessions,
         api,
+        mx_health,
     };
     let (tx, rx) = oneshot::channel();
     let app = command_center_router(state);
@@ -2043,6 +2055,7 @@ pub fn command_center_router(state: CommandCenterHttpState) -> Router {
             "/api/command-center/decision-inbox",
             get(decision_inbox_handler),
         )
+        .route("/api/command-center/mx-health", get(mx_health_handler))
         .with_state(state);
     let router = if let Some(asset_dir) = asset_dir {
         let index = asset_dir.join("index.html");
@@ -2205,6 +2218,22 @@ async fn decision_inbox_handler(
     .into_response()
 }
 
+async fn mx_health_handler(
+    State(state): State<CommandCenterHttpState>,
+    headers: HeaderMap,
+) -> Response {
+    // Authenticate before touching the adapter. This keeps an unauthenticated
+    // browser request from probing MX or learning whether it is configured.
+    if let Err(error) = session_from_headers(&state, &headers) {
+        return error_response(error);
+    }
+    let projection = match state.mx_health {
+        Some(source) => source.read().await,
+        None => mx_health::MxHealthProjection::unconfigured(Utc::now()),
+    };
+    Json(projection).into_response()
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct BrowserCommandEnvelope {
@@ -2277,7 +2306,8 @@ pub fn write_typescript_contract(out_dir: &std::path::Path) -> std::io::Result<(
     std::fs::write(
         out_dir.join("command-center-contract.ts"),
         generated_typescript_contract(),
-    )
+    )?;
+    mx_health::write_typescript_contract(out_dir)
 }
 
 #[cfg(test)]
@@ -2684,6 +2714,19 @@ mod tests {
                 "processing": [{"stage": "projected", "attempts": 1}],
                 "deadLetters": []
             }))
+        }
+    }
+
+    struct TestMxHealthSource {
+        calls: Arc<std::sync::atomic::AtomicUsize>,
+        projection: mx_health::MxHealthProjection,
+    }
+
+    #[async_trait]
+    impl mx_health::MxHealthSource for TestMxHealthSource {
+        async fn read(&self) -> mx_health::MxHealthProjection {
+            self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            self.projection.clone()
         }
     }
 
@@ -3332,6 +3375,94 @@ mod tests {
         assert_eq!(snapshot["items"][0]["category"], "work_request");
         assert_eq!(snapshot["items"][0]["status"], "awaiting_approval");
         assert_eq!(snapshot["items"][0]["raw_payload_retained"], true);
+        host.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn authenticated_mx_health_projects_only_safe_data_and_authenticates_first() {
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let projection = mx_health::MxHealthProjection {
+            provenance: mx_health::MxHealthProvenance::default(),
+            adapter_state: mx_health::MxAdapterState::Live,
+            failure_category: None,
+            fetched_at: Utc::now(),
+            health: Some(mx_health::MxHealthSnapshot {
+                version: mx_health::MX_HEALTH_VERSION.to_owned(),
+                generated_at: Utc::now(),
+                overall: mx_health::MxOverallStatus::Degraded,
+                redacted: true,
+                checks: vec![mx_health::MxHealthCheck {
+                    id: "persistence".to_owned(),
+                    layer: "persistence".to_owned(),
+                    status: mx_health::MxCheckStatus::Down,
+                    reason_code: "persistence_unavailable".to_owned(),
+                    summary: "Persistence is unavailable".to_owned(),
+                    depends_on: Vec::new(),
+                }],
+            }),
+            stale: None,
+        };
+        let source = Arc::new(TestMxHealthSource {
+            calls: calls.clone(),
+            projection,
+        });
+        let sessions = BrowserSessionStore::new(Duration::minutes(1));
+        let host = spawn_command_center_http_host_with_mx(
+            CommandCenterConfig {
+                enabled: true,
+                bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
+                allowed_origins: Vec::new(),
+                authenticated_remote: false,
+                asset_dir: None,
+                decision_inbox_db_path: None,
+            },
+            sessions.clone(),
+            runtime(),
+            Some(source),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        let client = reqwest::Client::new();
+        let url = format!("http://{}/api/command-center/mx-health", host.addr());
+
+        let unauthorized = client.get(&url).send().await.unwrap();
+        assert_eq!(unauthorized.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+
+        sessions.insert(BrowserSession {
+            id: "expired-mx-session".to_owned(),
+            csrf_token: "csrf".to_owned(),
+            expires_at: Utc::now() - Duration::minutes(1),
+            scope: Vec::new(),
+        });
+        let expired = client
+            .get(&url)
+            .bearer_auth("expired-mx-session")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(expired.status(), StatusCode::UNAUTHORIZED);
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+
+        let session = bootstrap(&client, &host).await;
+        let body: serde_json::Value = client
+            .get(&url)
+            .bearer_auth(&session.id)
+            .send()
+            .await
+            .unwrap()
+            .error_for_status()
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(body["adapterState"], "live");
+        assert_eq!(body["health"]["overall"], "degraded");
+        assert_eq!(body["health"]["checks"][0]["status"], "down");
+        assert!(body.get("token").is_none());
+        assert!(body.to_string().find("Authorization").is_none());
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
         host.shutdown().await.unwrap();
     }
 

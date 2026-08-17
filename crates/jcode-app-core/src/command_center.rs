@@ -96,15 +96,22 @@ pub(super) async fn spawn_managed_http_host(runtime: &crate::server::runtime::Se
         jcode_command_center::StreamId(format!("daemon-{}", uuid::Uuid::new_v4())),
     ));
     let sessions = jcode_command_center::BrowserSessionStore::new(chrono::Duration::minutes(15));
-    let host =
-        match jcode_command_center::spawn_command_center_http_host(config, sessions, api).await {
-            Ok(Some(host)) => host,
-            Ok(None) => return,
-            Err(error) => {
-                crate::logging::error(&format!("Command Center failed to start: {error}"));
-                return;
-            }
-        };
+    let mx_health = Arc::new(jcode_command_center::mx_health::MxHealthClient::from_env());
+    let host = match jcode_command_center::spawn_command_center_http_host_with_mx(
+        config,
+        sessions,
+        api,
+        Some(mx_health),
+    )
+    .await
+    {
+        Ok(Some(host)) => host,
+        Ok(None) => return,
+        Err(error) => {
+            crate::logging::error(&format!("Command Center failed to start: {error}"));
+            return;
+        }
+    };
     let addr = host.addr();
     crate::logging::info(&format!(
         "Command Center listening on http://{addr} (managed, browser sessions expire after 15m)"
