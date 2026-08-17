@@ -899,6 +899,13 @@
       state.trafficLayerHits = [];
       state.trafficLayerGeometry = [];
       const trafficLayers = SCENE.traffic?.layers || [];
+      // Traffic order is conveyed by the dependency chain. Do not draw a
+      // second incoming arrow from APIM to the external-services layer.
+      const direction = "bottom-left-to-top-right";
+      // direction: "bottom-left-to-top-right"
+      // THEME.drawTrafficDirection(points, traffic, state)
+      // THEME.drawTrafficDirection remains an adapter capability for callers
+      // that explicitly opt into an aggregate direction marker.
       trafficLayers.forEach((layer, index) => {
         const rect = trafficLayerRect(layer);
         const points = [
