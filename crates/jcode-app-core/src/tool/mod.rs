@@ -809,6 +809,7 @@ impl Registry {
                 title: output.title,
                 metadata: output.metadata,
                 artifact: output.artifact,
+                outcome: output.outcome,
                 images: output.images,
             };
         }
@@ -843,6 +844,7 @@ impl Registry {
                 title: output.title,
                 metadata: output.metadata,
                 artifact: output.artifact,
+                outcome: output.outcome,
                 images: output.images,
             };
         }
@@ -883,6 +885,7 @@ impl Registry {
             title: output.title,
             metadata: output.metadata,
             artifact: output.artifact,
+            outcome: output.outcome,
             images: output.images,
         }
     }

@@ -4,6 +4,7 @@ pub struct ToolOutput {
     pub title: Option<String>,
     pub metadata: Option<serde_json::Value>,
     pub artifact: Option<jcode_message_types::RenderedArtifact>,
+    pub outcome: jcode_message_types::ToolOutcome,
     pub images: Vec<ToolImage>,
 }
 
@@ -21,6 +22,7 @@ impl ToolOutput {
             title: None,
             metadata: None,
             artifact: None,
+            outcome: jcode_message_types::ToolOutcome::Success,
             images: Vec::new(),
         }
     }
@@ -37,6 +39,11 @@ impl ToolOutput {
 
     pub fn with_artifact(mut self, artifact: jcode_message_types::RenderedArtifact) -> Self {
         self.artifact = Some(artifact);
+        self
+    }
+
+    pub fn with_outcome(mut self, outcome: jcode_message_types::ToolOutcome) -> Self {
+        self.outcome = outcome;
         self
     }
 
@@ -132,6 +139,20 @@ mod tests {
         let artifact = output.artifact.expect("artifact");
         assert_eq!(artifact.kind, RenderedArtifactKind::Markdown);
         assert_eq!(artifact.title.as_deref(), Some("Notes"));
+    }
+
+    #[test]
+    fn tool_output_defaults_to_success_and_accepts_semantic_outcomes() {
+        assert_eq!(
+            ToolOutput::new("plain").outcome,
+            jcode_message_types::ToolOutcome::Success
+        );
+        assert_eq!(
+            ToolOutput::new("partial")
+                .with_outcome(jcode_message_types::ToolOutcome::TimeoutWithProgress)
+                .outcome,
+            jcode_message_types::ToolOutcome::TimeoutWithProgress
+        );
     }
 
     #[test]

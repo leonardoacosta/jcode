@@ -120,6 +120,10 @@ struct SearchInput {
     /// Scan every available Jcode session instead of the recent indexed subset.
     #[serde(default)]
     exhaustive: Option<bool>,
+    /// Include test, mock, benchmark, synthetic, and debug sessions. Defaults
+    /// to false for public forensics.
+    #[serde(default)]
+    include_non_operational: Option<bool>,
 }
 
 pub struct SessionSearchTool;
@@ -199,6 +203,7 @@ struct SearchOptions {
     include_tools: bool,
     include_system: bool,
     include_external: bool,
+    include_non_operational: bool,
     role_filter: Option<RoleFilter>,
     provider_filter: Option<String>,
     model_filter: Option<String>,
@@ -226,6 +231,9 @@ impl SearchOptions {
             include_tools: false,
             include_system: false,
             include_external: true,
+            // Unit tests call the internal search path directly. Keep its
+            // historical behavior and let the public tool opt into hygiene.
+            include_non_operational: true,
             role_filter: None,
             provider_filter: None,
             model_filter: None,
@@ -376,6 +384,10 @@ impl Tool for SessionSearchTool {
                     "type": "boolean",
                     "description": "Include external session sources discovered by the session picker. Defaults to true."
                 },
+                "include_non_operational": {
+                    "type": "boolean",
+                    "description": "Include test, mock, benchmark, synthetic, and debug sessions. Defaults to false for public forensics."
+                },
                 "context_before": {
                     "type": "integer",
                     "minimum": 0,
@@ -497,6 +509,7 @@ impl Tool for SessionSearchTool {
             include_tools: params.include_tools.unwrap_or(false),
             include_system: params.include_system.unwrap_or(false),
             include_external: params.include_external.unwrap_or(true),
+            include_non_operational: params.include_non_operational.unwrap_or(false),
             role_filter,
             provider_filter: normalize_optional_filter(params.provider),
             model_filter: normalize_optional_filter(params.model),
@@ -1660,6 +1673,9 @@ fn jcode_session_matches_filters(session: &Session, options: &SearchOptions) -> 
     if !provider_matches(session.provider_key.as_deref(), "jcode", options) {
         return false;
     }
+    if !options.include_non_operational && !session.is_operational() {
+        return false;
+    }
     if !field_filter_matches(session.model.as_deref(), options.model_filter.as_deref()) {
         return false;
     }
@@ -1881,6 +1897,7 @@ fn render_options(options: &SearchOptions) -> SessionSearchRenderOptions {
     SessionSearchRenderOptions {
         include_current: options.include_current,
         include_external: options.include_external,
+        include_non_operational: options.include_non_operational,
         include_tools: options.include_tools,
         include_system: options.include_system,
         max_per_session: options.max_per_session,

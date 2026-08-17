@@ -3,7 +3,7 @@
 //! This module handles discovering, parsing, and converting Claude Code sessions
 //! so they can be resumed within jcode.
 
-use crate::message::{ContentBlock, Role};
+use crate::message::{ContentBlock, Role, ToolOutcome};
 use crate::session::{Session, SessionStatus, StoredMessage};
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
@@ -417,6 +417,7 @@ fn convert_content_blocks(content: &ClaudeCodeContent) -> Vec<ContentBlock> {
                     tool_use_id: tool_use_id.clone(),
                     content: content.clone(),
                     is_error: *is_error,
+                    outcome: Some(ToolOutcome::from_legacy_is_error(*is_error)),
                     artifact: None,
                 }),
                 ClaudeCodeContentBlock::Unknown => None,

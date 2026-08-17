@@ -33,6 +33,30 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::path::Path;
+
+/// Durable provenance for a persisted Jcode session.
+///
+/// Only production sessions are operational user history. The other variants
+/// are useful for tests and diagnostics, but should not contaminate public
+/// forensics unless explicitly requested.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SessionOrigin {
+    #[default]
+    Production,
+    Debug,
+    Test,
+    Mock,
+    Benchmark,
+    Synthetic,
+}
+
+impl SessionOrigin {
+    pub const fn is_operational(self) -> bool {
+        matches!(self, Self::Production)
+    }
+}
+
 mod crash;
 mod journal;
 mod load_telemetry;
@@ -168,6 +192,10 @@ pub struct Session {
     /// Whether this is a debug/test session (created via debug socket)
     #[serde(default)]
     pub is_debug: bool,
+    /// Durable provenance used to keep test and diagnostic sessions out of
+    /// public forensics by default.
+    #[serde(default)]
+    pub origin: SessionOrigin,
     /// Whether this session has been saved/bookmarked by the user
     #[serde(default)]
     pub saved: bool,
@@ -246,6 +274,8 @@ struct SessionStartupStub {
     last_active_at: Option<DateTime<Utc>>,
     #[serde(default)]
     is_debug: bool,
+    #[serde(default)]
+    origin: SessionOrigin,
     #[serde(default)]
     saved: bool,
     #[serde(default)]
@@ -342,6 +372,7 @@ impl Session {
         session.last_pid = stub.last_pid;
         session.last_active_at = stub.last_active_at;
         session.is_debug = stub.is_debug;
+        session.origin = stub.origin;
         session.saved = stub.saved;
         session.save_label = stub.save_label;
         session.messages.clear();
@@ -377,6 +408,7 @@ impl Session {
         session.last_pid = snapshot.last_pid;
         session.last_active_at = snapshot.last_active_at;
         session.is_debug = snapshot.is_debug;
+        session.origin = snapshot.origin;
         session.saved = snapshot.saved;
         session.save_label = snapshot.save_label;
         session.replay_events.clear();
@@ -514,6 +546,7 @@ impl Session {
             last_pid: self.last_pid,
             last_active_at: self.last_active_at,
             is_debug: self.is_debug,
+            origin: self.origin,
             saved: self.saved,
             save_label: self.save_label.clone(),
         }
@@ -715,6 +748,7 @@ impl Session {
         self.last_pid = meta.last_pid;
         self.last_active_at = meta.last_active_at;
         self.is_debug = meta.is_debug;
+        self.origin = meta.origin;
         self.saved = meta.saved;
         self.save_label = meta.save_label;
         self.mark_memory_profile_dirty();
@@ -727,6 +761,11 @@ impl Session {
     ) -> Self {
         let now = Utc::now();
         let is_debug = default_is_test_session();
+        let origin = if is_debug {
+            SessionOrigin::Test
+        } else {
+            SessionOrigin::Production
+        };
         // Try to extract short name from ID if it's a memorable ID
         let short_name = extract_session_name(&session_id).map(|s| s.to_string());
         let mut session = Self {
@@ -755,6 +794,7 @@ impl Session {
             last_pid: Some(std::process::id()),
             last_active_at: Some(now),
             is_debug,
+            origin,
             saved: false,
             save_label: None,
             env_snapshots: Vec::new(),
@@ -783,6 +823,11 @@ impl Session {
             .collect::<HashSet<_>>();
         let (id, short_name) = new_memorable_session_id_avoiding(&used_names);
         let is_debug = default_is_test_session();
+        let origin = if is_debug {
+            SessionOrigin::Test
+        } else {
+            SessionOrigin::Production
+        };
         let mut session = Self {
             id,
             parent_id,
@@ -809,6 +854,7 @@ impl Session {
             last_pid: Some(std::process::id()),
             last_active_at: Some(now),
             is_debug,
+            origin,
             saved: false,
             save_label: None,
             env_snapshots: Vec::new(),
@@ -829,11 +875,36 @@ impl Session {
     /// Mark this session as a debug/test session
     pub fn set_debug(&mut self, is_debug: bool) {
         self.is_debug = is_debug;
+        if is_debug && self.origin == SessionOrigin::Production {
+            self.origin = SessionOrigin::Debug;
+        } else if !is_debug && self.origin == SessionOrigin::Debug {
+            self.origin = SessionOrigin::Production;
+        }
         // Debug status can change after activation (e.g. debug-socket created
         // sessions); keep presence UIs in sync when we are the active owner.
         if self.status == SessionStatus::Active {
             self.sync_internal_presence_flag();
         }
+    }
+
+    /// Set explicit durable provenance for this session.
+    pub fn set_origin(&mut self, origin: SessionOrigin) {
+        self.origin = origin;
+    }
+
+    /// Return the effective provenance, including legacy debug sessions that
+    /// predate the durable `origin` field.
+    pub const fn operational_origin(&self) -> SessionOrigin {
+        if self.origin == SessionOrigin::Production && self.is_debug {
+            SessionOrigin::Debug
+        } else {
+            self.origin
+        }
+    }
+
+    /// Whether this session represents operational user history.
+    pub const fn is_operational(&self) -> bool {
+        self.operational_origin().is_operational()
     }
 
     /// Save/bookmark this session with an optional label
@@ -1623,6 +1694,8 @@ struct RemoteStartupSessionSnapshot {
     last_active_at: Option<DateTime<Utc>>,
     #[serde(default)]
     is_debug: bool,
+    #[serde(default)]
+    origin: SessionOrigin,
     #[serde(default)]
     saved: bool,
     #[serde(default)]

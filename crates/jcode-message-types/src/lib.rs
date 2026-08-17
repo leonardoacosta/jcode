@@ -21,6 +21,49 @@ pub struct RenderedArtifact {
     pub language: Option<String>,
 }
 
+/// Normalized semantic outcome for a tool result.
+///
+/// `is_error` remains part of the wire format for compatibility with existing
+/// sessions and provider protocols. The outcome carries the more useful
+/// distinction between an expected negative result, a recoverable timeout, and
+/// an actual failure.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolOutcome {
+    Success,
+    ExpectedNegative,
+    TimeoutWithProgress,
+    UserActionRequired,
+    ConfigurationError,
+    ProviderFailure,
+    ToolDefect,
+}
+
+impl Default for ToolOutcome {
+    fn default() -> Self {
+        Self::Success
+    }
+}
+
+impl ToolOutcome {
+    /// Whether this outcome is an error under the legacy boolean contract.
+    pub const fn is_error(self) -> bool {
+        matches!(
+            self,
+            Self::ConfigurationError | Self::ProviderFailure | Self::ToolDefect
+        )
+    }
+
+    /// Preserve the old boolean-only meaning when importing a legacy result.
+    pub const fn from_legacy_is_error(is_error: bool) -> Self {
+        if is_error {
+            Self::ToolDefect
+        } else {
+            Self::Success
+        }
+    }
+}
+
 impl RenderedArtifact {
     pub fn new(kind: RenderedArtifactKind) -> Self {
         Self {
@@ -206,6 +249,10 @@ pub enum ContentBlock {
         content: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         is_error: Option<bool>,
+        /// Optional on the wire so sessions written before semantic outcomes
+        /// were introduced continue to deserialize unchanged.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        outcome: Option<ToolOutcome>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         artifact: Option<RenderedArtifact>,
     },
@@ -272,12 +319,34 @@ impl Message {
         is_error: bool,
         tool_duration_ms: Option<u64>,
     ) -> Self {
+        let outcome = ToolOutcome::from_legacy_is_error(is_error);
         Self {
             role: Role::User,
             content: vec![ContentBlock::ToolResult {
                 tool_use_id: tool_use_id.to_string(),
                 content: content.to_string(),
                 is_error: if is_error { Some(true) } else { None },
+                outcome: Some(outcome),
+                artifact: None,
+            }],
+            timestamp: Some(chrono::Utc::now()),
+            tool_duration_ms,
+        }
+    }
+
+    pub fn tool_result_with_outcome(
+        tool_use_id: &str,
+        content: &str,
+        outcome: ToolOutcome,
+        tool_duration_ms: Option<u64>,
+    ) -> Self {
+        Self {
+            role: Role::User,
+            content: vec![ContentBlock::ToolResult {
+                tool_use_id: tool_use_id.to_string(),
+                content: content.to_string(),
+                is_error: outcome.is_error().then_some(true),
+                outcome: Some(outcome),
                 artifact: None,
             }],
             timestamp: Some(chrono::Utc::now()),
@@ -958,8 +1027,75 @@ mod tests {
             serde_json::from_str(r#"{"type":"tool_result","tool_use_id":"call-1","content":"ok"}"#)
                 .unwrap();
         match block {
-            ContentBlock::ToolResult { artifact, .. } => assert!(artifact.is_none()),
+            ContentBlock::ToolResult {
+                artifact, outcome, ..
+            } => {
+                assert!(artifact.is_none());
+                assert!(outcome.is_none());
+            }
             other => panic!("expected tool result, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn legacy_tool_result_preserves_boolean_error_when_outcome_is_absent() {
+        let block: ContentBlock = serde_json::from_str(
+            r#"{"type":"tool_result","tool_use_id":"call-legacy","content":"failed","is_error":true}"#,
+        )
+        .unwrap();
+        match block {
+            ContentBlock::ToolResult {
+                is_error, outcome, ..
+            } => {
+                assert_eq!(is_error, Some(true));
+                assert!(outcome.is_none());
+                assert_eq!(ToolOutcome::from_legacy_is_error(true), ToolOutcome::ToolDefect);
+            }
+            other => panic!("expected tool result, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn semantic_tool_outcome_serializes_alongside_legacy_error_flag() {
+        let message = Message::tool_result_with_outcome(
+            "call-timeout",
+            "partial progress",
+            ToolOutcome::TimeoutWithProgress,
+            Some(1250),
+        );
+        let json = serde_json::to_value(&message).unwrap();
+        let result = &json["content"][0];
+        assert_eq!(result["outcome"], "timeout_with_progress");
+        assert_eq!(result.get("is_error"), None);
+
+        let restored: Message = serde_json::from_value(json).unwrap();
+        match &restored.content[0] {
+            ContentBlock::ToolResult {
+                outcome, is_error, ..
+            } => {
+                assert_eq!(*outcome, Some(ToolOutcome::TimeoutWithProgress));
+                assert_eq!(*is_error, None);
+            }
+            other => panic!("expected tool result, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn all_semantic_tool_outcomes_round_trip_as_snake_case() {
+        let outcomes = [
+            ToolOutcome::Success,
+            ToolOutcome::ExpectedNegative,
+            ToolOutcome::TimeoutWithProgress,
+            ToolOutcome::UserActionRequired,
+            ToolOutcome::ConfigurationError,
+            ToolOutcome::ProviderFailure,
+            ToolOutcome::ToolDefect,
+        ];
+
+        for outcome in outcomes {
+            let json = serde_json::to_string(&outcome).unwrap();
+            let restored: ToolOutcome = serde_json::from_str(&json).unwrap();
+            assert_eq!(restored, outcome);
         }
     }
 
@@ -969,6 +1105,7 @@ mod tests {
             tool_use_id: "call-brief".to_string(),
             content: "# Decision Brief\n\nChoose the focused palette.".to_string(),
             is_error: None,
+            outcome: Some(ToolOutcome::Success),
             artifact: Some(
                 RenderedArtifact::new(RenderedArtifactKind::DecisionBrief)
                     .with_title("Decision Brief"),

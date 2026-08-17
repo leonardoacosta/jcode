@@ -706,6 +706,7 @@ pub struct SessionSearchReport {
 pub struct SessionSearchRenderOptions {
     pub include_current: bool,
     pub include_external: bool,
+    pub include_non_operational: bool,
     pub include_tools: bool,
     pub include_system: bool,
     pub max_per_session: usize,
@@ -725,9 +726,10 @@ pub fn format_session_search_results(
     );
 
     output.push_str(&format!(
-        "_Defaults: current session {}, external sources {}, tool calls/results {}, system reminders {}. Max per session: {}._\n\n",
+        "_Defaults: current session {}, external sources {}, non-operational sessions {}, tool calls/results {}, system reminders {}. Max per session: {}._\n\n",
         if options.include_current { "included" } else { "excluded" },
         if options.include_external { "included" } else { "hidden" },
+        if options.include_non_operational { "included" } else { "hidden" },
         if options.include_tools { "included" } else { "hidden" },
         if options.include_system { "included" } else { "hidden" },
         options.max_per_session,
@@ -841,6 +843,11 @@ pub fn format_session_search_no_results(
     }
     if !options.include_system {
         hints.push("system reminders are hidden by default; retry with include_system=true for internal context");
+    }
+    if !options.include_non_operational {
+        hints.push(
+            "non-operational sessions are hidden by default; retry with include_non_operational=true for test and diagnostic history",
+        );
     }
     if options.has_working_dir_filter {
         hints.push("the working_dir filter may be too narrow");

@@ -1,6 +1,6 @@
 use super::*;
 use crate::message::{ContentBlock, Role};
-use crate::session::{Session, StoredDisplayRole};
+use crate::session::{Session, SessionOrigin, StoredDisplayRole};
 use chrono::Duration;
 use serde_json::json;
 use std::path::Path;
@@ -130,6 +130,64 @@ fn public_tool_exhaustive_search_reports_complete_scan_above_normal_cap() {
         );
         assert!(!output.output.contains("scan truncated"));
     });
+}
+
+#[test]
+fn public_search_excludes_non_operational_sessions_by_default_and_can_opt_in() {
+    with_temp_home(|home| {
+        let mut production = save_test_session(
+            "production-origin-session",
+            vec![(Role::Assistant, vec![text("origin hygiene needle")])],
+        );
+        production.set_origin(SessionOrigin::Production);
+        production.save().expect("save production origin");
+
+        let mut test_session = save_test_session(
+            "test-origin-session",
+            vec![(Role::Assistant, vec![text("origin hygiene needle")])],
+        );
+        test_session.set_origin(SessionOrigin::Test);
+        test_session.save().expect("save test origin");
+
+        let runtime = tokio::runtime::Runtime::new().expect("runtime");
+        let default_output = runtime
+            .block_on(SessionSearchTool::new().execute(
+                json!({
+                    "query": "origin hygiene needle",
+                    "source": "jcode",
+                    "include_external": false,
+                    "exhaustive": true
+                }),
+                public_tool_context(home),
+            ))
+            .expect("default public search output");
+        assert!(default_output.output.contains("production-origin-session"));
+        assert!(!default_output.output.contains("test-origin-session"));
+
+        let opt_in_output = runtime
+            .block_on(SessionSearchTool::new().execute(
+                json!({
+                    "query": "origin hygiene needle",
+                    "source": "jcode",
+                    "include_external": false,
+                    "include_non_operational": true,
+                    "exhaustive": true
+                }),
+                public_tool_context(home),
+            ))
+            .expect("opt-in public search output");
+        assert!(opt_in_output.output.contains("production-origin-session"));
+        assert!(opt_in_output.output.contains("test-origin-session"));
+    });
+}
+
+#[test]
+fn public_search_schema_advertises_non_operational_opt_in() {
+    let schema = SessionSearchTool::new().parameters_schema();
+    assert_eq!(
+        schema["properties"]["include_non_operational"]["type"],
+        "boolean"
+    );
 }
 
 #[test]

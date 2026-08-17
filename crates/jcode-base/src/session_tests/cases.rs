@@ -606,9 +606,74 @@ fn test_create_marks_debug_when_test_session_env_enabled() {
 
     let s1 = Session::create(None, None);
     assert!(s1.is_debug);
+    assert_eq!(s1.origin, SessionOrigin::Test);
 
     let s2 = Session::create_with_id("session_test_1".to_string(), None, None);
     assert!(s2.is_debug);
+    assert_eq!(s2.origin, SessionOrigin::Test);
+}
+
+#[test]
+fn session_origin_roundtrips_and_explicit_origin_is_preserved() -> Result<()> {
+    let _env_lock = lock_env();
+    let temp_home = tempfile::Builder::new()
+        .prefix("jcode-session-origin-test-")
+        .tempdir()
+        .map_err(|e| anyhow!(e))?;
+    let _home = EnvVarGuard::set("JCODE_HOME", temp_home.path().as_os_str());
+    let _test_flag = EnvVarGuard::set("JCODE_TEST_SESSION", "0");
+
+    let mut session = Session::create_with_id(
+        "session_origin_roundtrip".to_string(),
+        None,
+        Some("origin".to_string()),
+    );
+    session.set_origin(SessionOrigin::Benchmark);
+    session.save()?;
+
+    let loaded = Session::load("session_origin_roundtrip")?;
+    assert_eq!(loaded.origin, SessionOrigin::Benchmark);
+    assert_eq!(loaded.operational_origin(), SessionOrigin::Benchmark);
+    Ok(())
+}
+
+#[test]
+fn session_origin_classifies_non_operational_variants() {
+    for origin in [
+        SessionOrigin::Debug,
+        SessionOrigin::Test,
+        SessionOrigin::Mock,
+        SessionOrigin::Benchmark,
+        SessionOrigin::Synthetic,
+    ] {
+        assert!(!origin.is_operational());
+    }
+    assert!(SessionOrigin::Production.is_operational());
+}
+
+#[test]
+fn legacy_debug_session_without_origin_remains_non_operational() -> Result<()> {
+    let _env_lock = lock_env();
+    let temp_home = tempfile::Builder::new()
+        .prefix("jcode-session-origin-legacy-test-")
+        .tempdir()
+        .map_err(|e| anyhow!(e))?;
+    let _home = EnvVarGuard::set("JCODE_HOME", temp_home.path().as_os_str());
+    let path = temp_home.path().join("sessions").join("legacy-origin.json");
+    std::fs::create_dir_all(path.parent().expect("session parent"))?;
+    let mut value = serde_json::to_value(Session::create_with_id(
+        "legacy-origin".to_string(),
+        None,
+        Some("legacy".to_string()),
+    ))?;
+    value.as_object_mut().expect("session object").remove("origin");
+    value["is_debug"] = serde_json::Value::Bool(true);
+    std::fs::write(&path, serde_json::to_vec(&value)?)?;
+
+    let loaded = Session::load("legacy-origin")?;
+    assert_eq!(loaded.origin, SessionOrigin::Production);
+    assert_eq!(loaded.operational_origin(), SessionOrigin::Debug);
+    Ok(())
 }
 
 #[test]
