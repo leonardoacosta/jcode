@@ -8,10 +8,10 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
 use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, State};
-use axum::http::{HeaderMap, StatusCode, header};
+use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
@@ -252,7 +252,7 @@ pub struct AttentionEvidence {
     pub resolved_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ProcessingStage {
     Pending,
@@ -267,6 +267,18 @@ pub struct ProcessingRecord {
     pub attempts: u32,
     pub next_attempt_at: DateTime<Utc>,
     pub last_error: Option<String>,
+    pub failure_stage: Option<String>,
+    pub terminal: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeadLetterRecord {
+    pub receipt_id: String,
+    pub failed_at: DateTime<Utc>,
+    pub attempts: u32,
+    pub failure_stage: String,
+    pub error: String,
+    pub replay_count: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -278,9 +290,56 @@ pub struct ExternalSignalStore {
     pub signals: BTreeMap<String, ExternalSignal>,
     pub lifecycles: BTreeMap<String, LifecycleAggregate>,
     pub attention: BTreeMap<String, AttentionEvidence>,
+    pub dead_letters: BTreeMap<String, DeadLetterRecord>,
     pub accepted_count: u64,
     pub deduplicated_count: u64,
     pub rejected_count: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExternalSignalCommandCenterProjection {
+    pub readiness: ExternalSignalReadinessProjection,
+    pub accepted_count: u64,
+    pub rejected_count: u64,
+    pub deduplicated_count: u64,
+    pub lifecycles: Vec<LifecycleAggregate>,
+    pub processing: Vec<ProcessingRecord>,
+    pub dead_letters: Vec<DeadLetterRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExternalSignalReadinessProjection {
+    pub enabled: bool,
+    pub bind_addr: String,
+    pub source_id: String,
+    pub adapter_version: String,
+    pub wakes_enabled: bool,
+}
+
+/// Build the redacted, daemon-owned Command Center view. Raw provider bodies and
+/// annotations are intentionally absent from this DTO.
+pub fn command_center_projection(
+    path: &Path,
+    config: &ExternalSignalConfig,
+) -> Result<ExternalSignalCommandCenterProjection> {
+    let store = load_store(path)?;
+    Ok(ExternalSignalCommandCenterProjection {
+        readiness: ExternalSignalReadinessProjection {
+            enabled: config.enabled,
+            bind_addr: config.bind_addr.to_string(),
+            source_id: config.source_id.clone(),
+            adapter_version: ADAPTER_VERSION.to_string(),
+            wakes_enabled: config.wakes_enabled,
+        },
+        accepted_count: store.accepted_count,
+        rejected_count: store.rejected_count,
+        deduplicated_count: store.deduplicated_count,
+        lifecycles: store.lifecycles.into_values().collect(),
+        processing: store.processing.into_values().collect(),
+        dead_letters: store.dead_letters.into_values().collect(),
+    })
 }
 
 #[derive(Clone)]
@@ -491,16 +550,21 @@ fn admit_inner(
             attempts: 0,
             next_attempt_at: now,
             last_error: None,
+            failure_stage: None,
+            terminal: false,
         },
     );
     store.accepted_count += 1;
-    project_webhook(&mut store, &state.config, &receipt_id, &webhook, now);
     save_store(&state.path, &store)
         .map_err(|_| (StatusCode::SERVICE_UNAVAILABLE, "store_unavailable"))?;
     drop(_guard);
-    if state.config.wakes_enabled {
-        let _ = project_wakes(&state.path, &state.gate);
-    }
+    let path = state.path.clone();
+    let gate = Arc::clone(&state.gate);
+    let config = state.config.clone();
+    let processing_receipt_id = receipt_id.clone();
+    tokio::spawn(async move {
+        let _ = process_receipt(&path, &gate, &config, &processing_receipt_id).await;
+    });
     Ok((
         StatusCode::ACCEPTED,
         ReceiptResponse {
@@ -508,6 +572,147 @@ fn admit_inner(
             outcome: "accepted",
         },
     ))
+}
+
+const MAX_PROCESSING_ATTEMPTS: u32 = 5;
+
+/// Process one accepted receipt. The durable processing record is updated before
+/// work is attempted, so a crash or restart can safely resume it.
+pub async fn process_receipt(
+    path: &Path,
+    gate: &Arc<Mutex<()>>,
+    config: &ExternalSignalConfig,
+    receipt_id: &str,
+) -> Result<ProcessingRecord> {
+    let (envelope, attempt) = {
+        let _guard = gate
+            .lock()
+            .map_err(|_| anyhow::anyhow!("store lock poisoned"))?;
+        let mut store = load_store(path)?;
+        let record = store
+            .processing
+            .get_mut(receipt_id)
+            .context("unknown receipt")?;
+        if record.terminal || matches!(record.stage, ProcessingStage::Projected) {
+            return Ok(record.clone());
+        }
+        record.attempts += 1;
+        record.next_attempt_at = Utc::now();
+        let attempt = record.attempts;
+        let envelope = store
+            .envelopes
+            .get(receipt_id)
+            .cloned()
+            .context("missing envelope")?;
+        save_store(path, &store)?;
+        (envelope, attempt)
+    };
+    let result = (|| -> Result<()> {
+        let webhook: GrafanaWebhook =
+            serde_json::from_str(&envelope.raw_json).context("decode provider envelope")?;
+        let _guard = gate
+            .lock()
+            .map_err(|_| anyhow::anyhow!("store lock poisoned"))?;
+        let mut store = load_store(path)?;
+        project_webhook(
+            &mut store,
+            config,
+            receipt_id,
+            &webhook,
+            envelope.received_at,
+        );
+        save_store(path, &store)?;
+        Ok(())
+    })();
+    let _guard = gate
+        .lock()
+        .map_err(|_| anyhow::anyhow!("store lock poisoned"))?;
+    let mut store = load_store(path)?;
+    let mut terminal_error = None;
+    {
+        let record = store
+            .processing
+            .get_mut(receipt_id)
+            .context("unknown receipt")?;
+        match result {
+            Ok(()) => {
+                record.stage = ProcessingStage::Projected;
+                record.last_error = None;
+                record.failure_stage = None;
+                record.terminal = false;
+            }
+            Err(error) => {
+                let message = error.to_string();
+                record.last_error = Some(message.clone());
+                record.failure_stage = Some("adapt_and_project".to_string());
+                record.terminal = attempt >= MAX_PROCESSING_ATTEMPTS;
+                if record.terminal {
+                    record.stage = ProcessingStage::DeadLetter;
+                    terminal_error = Some(message);
+                } else {
+                    let delay = 2_i64.pow(attempt.min(10));
+                    record.next_attempt_at = Utc::now() + chrono::Duration::seconds(delay);
+                }
+            }
+        }
+    }
+    if let Some(error) = terminal_error {
+        let replay_count = store
+            .dead_letters
+            .get(receipt_id)
+            .map_or(0, |d| d.replay_count);
+        store.dead_letters.insert(
+            receipt_id.to_string(),
+            DeadLetterRecord {
+                receipt_id: receipt_id.to_string(),
+                failed_at: Utc::now(),
+                attempts: attempt,
+                failure_stage: "adapt_and_project".to_string(),
+                error,
+                replay_count,
+            },
+        );
+    }
+    let result_record = store
+        .processing
+        .get(receipt_id)
+        .cloned()
+        .context("unknown receipt")?;
+    save_store(path, &store)?;
+    if config.wakes_enabled && result_record.stage == ProcessingStage::Projected {
+        let wake_path = path.to_path_buf();
+        let wake_gate = Arc::clone(gate);
+        tokio::task::spawn_blocking(move || {
+            let _ = project_wakes(&wake_path, &wake_gate);
+        });
+    }
+    Ok(result_record)
+}
+
+/// Clear terminal state and process a receipt again. Reprojection is idempotent.
+pub async fn replay_receipt(
+    path: &Path,
+    gate: &Arc<Mutex<()>>,
+    config: &ExternalSignalConfig,
+    receipt_id: &str,
+) -> Result<ProcessingRecord> {
+    {
+        let _guard = gate
+            .lock()
+            .map_err(|_| anyhow::anyhow!("store lock poisoned"))?;
+        let mut store = load_store(path)?;
+        let record = store
+            .processing
+            .get_mut(receipt_id)
+            .context("unknown receipt")?;
+        record.stage = ProcessingStage::Pending;
+        record.terminal = false;
+        record.next_attempt_at = Utc::now();
+        if let Some(dlq) = store.dead_letters.get_mut(receipt_id) {
+            dlq.replay_count += 1;
+        }
+    }
+    process_receipt(path, gate, config, receipt_id).await
 }
 
 fn validate_webhook(
