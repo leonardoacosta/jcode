@@ -5,7 +5,7 @@ description: >-
   isometric system-map image or interactive scene. Use when the user asks for an isometric
   architecture map, 3D infrastructure diagram, system city, repository terrain, moving data dots,
   or a visual map of control, data, deployment, network, identity, or telemetry paths. Teaches the
-  reusable projection, building, routing, payload, layout, and evidence grammar independently of
+  reusable projection, cube, routing, payload, layout, and evidence grammar independently of
   visual style, so the same architecture can be rendered as dark technical linework, warm paper,
   Azure semantic resource blocks, editorial minimalism, playful illustration, or the product's own
   design language. Do not use it merely to recreate dashboard chrome around a diagram.
@@ -19,7 +19,7 @@ controls as optional composition requested by the user, never as the map itself.
 
 The skill separates two layers:
 
-1. **Scene grammar**: repository facts, 2:1 projection, building footprints, depth, routes, payloads,
+1. **Scene grammar**: repository facts, 2:1 projection, resource envelopes, cubes, depth, routes, payloads,
    labels, and evidence.
 2. **Design language**: palette, line weight, materials, typography, texture, motion character, and
    optional framing.
@@ -75,7 +75,7 @@ were collapsed:
 | Required fact | Scene representation | Direct evidence |
 | --- | --- | --- |
 | one shared non-prod VNet and one distinct prod VNet | two independently identifiable nodes | exact constants or lookup ranges |
-| separate resource-group or ownership boundaries | evidenced platform/gateway boundary nodes or distinct sourced regions | exact scope declarations |
+| separate resource-group or ownership boundaries | evidenced boundary cubes or distinct sourced regions | exact scope declarations |
 | shared hub plus prod-only overlay | one hub node plus one conditional overlay node and their path | hub and overlay declarations |
 | externally owned import or contract | external node and dependency/control path, never a locally owned runtime flow | ownership and import declarations |
 
@@ -87,13 +87,12 @@ Keep this ledger in `run-notes.md`, then check every row against `scene.json` be
 
 Curate a discussable scene, not a repository inventory:
 
-- 8-24 buildings is the normal range; the contract cap is 28.
+- 8-24 resource cubes is the normal range; the contract cap is 28.
 - 2-5 visual regions is usually enough.
 - 3-6 named flows is ideal when the evidence supports real payload journeys. A static dependency map
   can use no payloads and no flows.
-- Use at least three building forms.
 - Keep deployment dependency separate from runtime data movement.
-- Give important hubs more footprint or height, not just brighter color.
+- Give important hubs clearer placement, route degree, or reserved footprint, not a building silhouette.
 - Do not merge objects whose distinct environment, scope, ownership, contract, or lifecycle is an
   explicit requirement. The normal node target is a readability guide, not permission to erase a
   required distinction.
@@ -120,41 +119,32 @@ copy their surrounding interface.
 
 ### 5. Lay out the isometric terrain
 
-Use a true 2:1 grid: `tile_width = 2 × tile_height`. Place building footprints in grid coordinates,
+Use a true 2:1 grid: `tile_width = 2 × tile_height`. Place resource envelopes in grid coordinates,
 then validate full footprint overlap. Keep high-traffic hubs central, entry/control nodes toward the
 back or left, and sinks/outputs toward the front or right unless the story suggests another reading
 order.
 
 Route paths explicitly as grid points. Prefer lane-like segments along one isometric axis at a time.
 Start and end on a footprint edge or in the outward half-cell beside one edge, never inside a
-building. Do not rely on automatic center-to-center Bézier curves. Routes must avoid unrelated
-building footprints and remain readable after depth sorting.
+cube. Do not rely on automatic center-to-center Bézier curves. Routes must avoid unrelated
+resource envelopes and remain readable after depth sorting.
 
 Read [`references/isometric-grammar.md`](references/isometric-grammar.md) for projection, form, depth,
 and routing rules.
 
-### 6. Build varied architectural forms
+### 6. Build true resource cubes
 
-Compose every building from projected faces. Use form to communicate topology and importance:
+Every node renders as one cube. Do not turn services, pipelines, boundaries, or abstractions into
+towers, slabs, gateways, stacks, hubs, or other architectural silhouettes.
 
-- `tower`: concentrated service or compute;
-- `slab`: broad shared layer;
-- `stack`: storage, data, or staged processing;
-- `cluster`: replicated or fan-out resources;
-- `gateway`: ingress, pipeline, approval, or routing boundary;
-- `hub`: shared network, orchestration, or platform center;
-- `bunker`: protected secrets, policy, or gated resource;
-- `lattice`: observability, messaging, or distributed fabric;
-- `platform`: resource group, subscription, or foundational plane.
+The declared footprint remains the collision and routing envelope. Center one cube inside it using
+`min(footprint.width, footprint.depth, height)` as the cube edge. Derive the projected vertical edge
+from the projected ground edge so width, depth, and height read as one true cube on screen.
 
-These are geometry primitives, not style presets. A tower can be neon glass, ink hatching, flat
-pastel, or corporate monochrome while retaining the same footprint and role.
-
-For the Azure resource-block style, keep concrete Azure resources deliberately simple. Prefer one
-`tower`, `slab`, `stack`, or `platform` mass varied by footprint and height, then place the node's
-line-art `icon` on the highest roof face. Reserve `gateway`, `hub`, `cluster`, and `lattice` for
-orchestration, boundaries, fan-out, or other topology that genuinely benefits from a compound form.
-The roof mark identifies the service. The block mass communicates topology and importance.
+Place the node's line-art `icon` on the top face. Identity comes from the roof mark, semantic palette,
+short code, evidence, and connected paths. Importance comes from placement, route degree, spacing,
+and optional cube scale, never from making a resource look like a building. Design languages may
+change material, linework, corner treatment, shadow, typography, and motion while preserving the cube.
 
 ### 7. Route real paths and payloads
 
@@ -217,7 +207,7 @@ python3 skills/isometric-system-map/scripts/render_canvas.py \
 Use three aligned Canvas layers:
 
 1. terrain: background, material, ground, grid, and quiet zones;
-2. architecture: routes, arrows, buildings, and compact labels;
+2. architecture: routes, arrows, resource cubes, and compact labels;
 3. motion: payloads and interaction highlights.
 
 Retain geometry as `Path2D` objects for drawing, pointer hit testing, focus rings, and selection.
@@ -227,7 +217,7 @@ Use `ResizeObserver` and `devicePixelRatio` for responsive sharp output. Use tim
 controls for a static scene. Composite the three Canvas layers with `toBlob()` for PNG export.
 
 The theme adapter owns linework, materials, typography, arrow shape, texture, icon color, and motion
-cadence. It must not change scene facts, grid coordinates, building footprints, route geometry,
+cadence. It must not change scene facts, grid coordinates, resource envelopes, route geometry,
 payload membership, or evidence. The bundled Azure topology, dark technical, and warm archival-paper
 themes are examples, not mandatory styles. The renderer embeds only the line-art symbols actually
 used by the scene, so the HTML remains self-contained.
@@ -236,8 +226,8 @@ Render order:
 
 1. background and ground plane;
 2. region markings and grid;
-3. routes behind buildings;
-4. buildings sorted back-to-front by footprint far edge;
+3. routes behind resource cubes;
+4. resource cubes sorted back-to-front by envelope far edge;
 5. labels and direction markers;
 6. payloads and interaction highlights on the motion layer;
 7. a compact legend or evidence affordance only if needed;
@@ -251,11 +241,11 @@ language and remain subordinate.
 Inspect the rendered artifact in a browser or image viewer:
 
 1. The scene reads as isometric before any text is read.
-2. Buildings have visible roof and wall faces, varied massing, and no footprint collisions.
-   In the Azure resource-block style, every supported resource mark is visibly projected onto its
-   highest roof face and uses the semantic family palette.
+2. Every node is one true cube with equal projected edges, visible roof and wall faces, and no
+   envelope collisions. Every supported resource mark is visibly projected onto its top face and
+   uses the semantic family palette.
 3. The ground grid uses consistent 2:1 axes.
-4. Directed routes follow the terrain and avoid unrelated buildings.
+4. Directed routes follow the terrain and avoid unrelated resource envelopes.
 5. The main flows can be followed end-to-end without guessing.
 6. Payloads map to named values and pause under reduced-motion preferences.
 7. Pause stops the animation frame loop, and reduced motion starts with no live frame loop.
@@ -270,8 +260,8 @@ Inspect the rendered artifact in a browser or image viewer:
 ## Hard boundaries
 
 - Do not recreate surrounding dashboard chrome unless the user explicitly requests the full UI.
-- Do not make all buildings identical cuboids. Azure resource blocks may be simple, but vary their
-  footprint, height, and justified stack/slab/tower form.
+- Do not vary node silhouettes into architecture. Every node remains one cube; use marks, palette,
+  labels, placement, spacing, and paths for differentiation.
 - Do not fake 3D with arbitrary CSS transforms on flat cards.
 - Do not use generic center-to-center curves when explicit terrain routes are possible.
 - Do not label a manual pipeline as held merely because `trigger: none` or `pr: none` is present.

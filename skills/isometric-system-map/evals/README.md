@@ -14,8 +14,8 @@ maps. The graders should look for:
 - exact ARM `resource_type` metadata where source evidence identifies a concrete Azure service;
 - package-admitted line-art icons embedded into the generated HTML and projected onto the highest roof
   face of each resource block;
-- simple tower, slab, stack, or platform geometry for concrete resources, with compound forms reserved
-  for justified orchestration, fan-out, and boundary topology;
+- one true cube for every node, centered inside its routing envelope, with no architectural silhouettes
+  or compound masses;
 - the Azure semantic family fills and strokes plus connector color, pattern, direction, and arrow
   treatment from `assets/azure-tokens.json`;
 - the isometric terrain as the focal image, without copied dashboard rails, metrics, or fixed panels.

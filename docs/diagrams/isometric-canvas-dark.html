@@ -163,7 +163,7 @@
     }
   </style>
 </head>
-<body data-scene-sha256="32ee5892b07d24f597001273e6e0005717ae83929cefd44b1c0d4a21610fc5f2">
+<body data-scene-sha256="172437d244148636cc05b11f6ed04429a8f4bb0d6b46862b4a4349dd0baadd62">
   <main class="map-shell" aria-labelledby="scene-title" aria-describedby="scene-summary">
     <header class="scene-caption">
       <p class="eyebrow">Isometric system map</p>
@@ -181,10 +181,10 @@
       <button id="export" type="button">PNG</button>
     </div>
 
-    <section class="canvas-stage" data-scene-sha256="32ee5892b07d24f597001273e6e0005717ae83929cefd44b1c0d4a21610fc5f2" aria-label="Interactive isometric terrain">
+    <section class="canvas-stage" data-scene-sha256="172437d244148636cc05b11f6ed04429a8f4bb0d6b46862b4a4349dd0baadd62" aria-label="Interactive isometric terrain">
       <canvas data-layer="terrain" aria-hidden="true"></canvas>
       <canvas data-layer="architecture" aria-hidden="true"></canvas>
-      <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect buildings and paths."></canvas>
+      <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect resource cubes and paths."></canvas>
       <div class="fallback-copy sr-only" role="group" aria-label="Inspectable map elements">
         <button type="button" id="fallback-node-pipeline" data-target-kind="node" data-target-id="pipeline" aria-label="Deploy pipeline" title="Validates and deploys the subscription template. · .azuredevops/deploy.yml:12-44 — The pipeline validates and deploys the Bicep entry point.">Deploy pipeline</button>
         <button type="button" id="fallback-node-app" data-target-kind="node" data-target-id="app" aria-label="Application" title="Hosts the provisioned workload. · infra/modules/app.bicep:1-80 — The app module provisions the workload compute.">Application</button>
@@ -204,7 +204,7 @@
   (() => {
     "use strict";
 
-    const SCENE = {"version":1,"repository":{"name":"sample-infra","ref":"main","commit":"0123456789abcdef0123456789abcdef01234567","scope":"infra/main.bicep","summary":"A small deployment and runtime path rendered as a standalone isometric scene."},"art_direction":{"name":"warm technical paper","principles":["ink-first linework","quiet hierarchy","no interface chrome"],"palette_roles":{"background":"#d9cfaa","grid":"#b9ad82","structure":"#5b553f","control_path":"#4f4936","data_path":"#6d5835","payload":"#28251c","text":"#2c291f"},"medium":"archival drafting paper","linework":"fine sepia technical pen","materials":"flat paper faces with sparse hatching","typography":"compact monospaced labels","motion":"small ink dots moving at a measured pace","path_treatments":{"delivery":{"stroke_pattern":"solid","weight":"medium","marker":"filled terminal arrow","texture":"clean technical ink","motion_cadence":"steady measured travel","reduced_motion":"numbered marker at the step endpoint"},"dependency":{"stroke_pattern":"short dash","weight":"fine","marker":"open terminal chevron","texture":"dry drafting ink","motion_cadence":"none","reduced_motion":"unchanged static dependency"},"telemetry":{"stroke_pattern":"dotted pulse","weight":"fine","marker":"small ring terminal","texture":"stippled ink","motion_cadence":"restrained periodic pulse","reduced_motion":"single marker at the monitoring endpoint"}}},"canvas":{"grid_width":12,"grid_depth":10,"tile_width":64,"tile_height":32},"zones":[{"id":"delivery","label":"Delivery","description":"Build and deployment control plane"},{"id":"runtime","label":"Runtime","description":"Provisioned application resources"}],"nodes":[{"id":"pipeline","code":"CI","label":"Deploy pipeline","role":"pipeline","form":"gateway","zone":"delivery","position":{"x":1,"y":1},"footprint":{"width":2,"depth":1},"height":2.5,"status":"active","resource_type":"Azure DevOps pipeline","icon":"az-release-pipeline","description":"Validates and deploys the subscription template.","evidence":[{"path":".azuredevops/deploy.yml","lines":"12-44","claim":"The pipeline validates and deploys the Bicep entry point."}]},{"id":"app","code":"APP","label":"Application","role":"compute","form":"tower","zone":"runtime","position":{"x":5,"y":2},"footprint":{"width":1,"depth":1},"height":3.5,"status":"active","resource_type":"Microsoft.Web/sites","icon":"az-app-service","description":"Hosts the provisioned workload.","evidence":[{"path":"infra/modules/app.bicep","lines":"1-80","claim":"The app module provisions the workload compute."}]},{"id":"database","code":"SQL","label":"SQL database","role":"data","form":"stack","zone":"runtime","position":{"x":8,"y":4},"footprint":{"width":2,"depth":1},"height":2,"status":"active","resource_type":"Microsoft.Sql/servers/databases","icon":"az-sql-database","description":"Provides the SQL service and its private endpoint.","evidence":[{"path":"infra/modules/sql.bicep","lines":"1-96","claim":"The SQL module creates the data service and private endpoint."}]},{"id":"telemetry","code":"OBS","label":"Telemetry","role":"observability","form":"slab","zone":"runtime","position":{"x":7,"y":7},"footprint":{"width":1,"depth":2},"height":3,"status":"active","resource_type":"Microsoft.OperationalInsights/workspaces","icon":"az-log-analytics","description":"Receives workload diagnostics.","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"10-72","claim":"Diagnostics are connected to the monitoring workspace."}]}],"paths":[{"id":"deploy-app","from":"pipeline","to":"app","kind":"delivery","label":"guarded deployment","route":[{"x":3,"y":1.5},{"x":4,"y":1.5},{"x":4,"y":2.5},{"x":5,"y":2.5}],"payload_ids":["deployment"],"evidence":[{"path":".azuredevops/deploy.yml","lines":"31-44","claim":"The pipeline invokes the app deployment."}]},{"id":"private-sql-dependency","from":"app","to":"database","kind":"dependency","label":"private SQL dependency","route":[{"x":6,"y":2.5},{"x":7,"y":2.5},{"x":7,"y":4.5},{"x":8,"y":4.5}],"payload_ids":[],"evidence":[{"path":"infra/main.bicep","lines":"22-31","claim":"The Bicep entry point wires the application to the private SQL dependency."}]},{"id":"emit-telemetry","from":"app","to":"telemetry","kind":"telemetry","label":"diagnostics","route":[{"x":5.5,"y":3},{"x":5.5,"y":6},{"x":7.5,"y":6},{"x":7.5,"y":7}],"payload_ids":["diagnostic"],"evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"The workload emits diagnostics to monitoring."}]}],"payloads":[{"id":"deployment","label":"ARM deployment","kind":"deployment","description":"Environment parameters and resource outputs.","evidence":[{"path":".azuredevops/deploy.yml","lines":"31-44","claim":"Deployment parameters cross the delivery path."}]},{"id":"diagnostic","label":"Diagnostic envelope","kind":"telemetry","description":"Logs and metrics emitted by the workload.","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"Diagnostic settings forward workload telemetry."}]}],"flows":[{"id":"release-and-observe","label":"Release and observe","description":"Deploy the application and emit evidenced telemetry.","steps":[{"path":"deploy-app","payload":"deployment","label":"Deploy the workload","evidence":[{"path":".azuredevops/deploy.yml","lines":"31-44","claim":"The pipeline performs the guarded deployment."}]},{"path":"emit-telemetry","payload":"diagnostic","label":"Emit diagnostics","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"Diagnostics are forwarded to monitoring."}]}]}]};
+    const SCENE = {"version":1,"repository":{"name":"sample-infra","ref":"main","commit":"0123456789abcdef0123456789abcdef01234567","scope":"infra/main.bicep","summary":"A small deployment and runtime path rendered as a standalone isometric scene."},"art_direction":{"name":"warm technical paper","principles":["ink-first linework","quiet hierarchy","no interface chrome"],"palette_roles":{"background":"#d9cfaa","grid":"#b9ad82","structure":"#5b553f","control_path":"#4f4936","data_path":"#6d5835","payload":"#28251c","text":"#2c291f"},"medium":"archival drafting paper","linework":"fine sepia technical pen","materials":"flat paper faces with sparse hatching","typography":"compact monospaced labels","motion":"small ink dots moving at a measured pace","path_treatments":{"delivery":{"stroke_pattern":"solid","weight":"medium","marker":"filled terminal arrow","texture":"clean technical ink","motion_cadence":"steady measured travel","reduced_motion":"numbered marker at the step endpoint"},"dependency":{"stroke_pattern":"short dash","weight":"fine","marker":"open terminal chevron","texture":"dry drafting ink","motion_cadence":"none","reduced_motion":"unchanged static dependency"},"telemetry":{"stroke_pattern":"dotted pulse","weight":"fine","marker":"small ring terminal","texture":"stippled ink","motion_cadence":"restrained periodic pulse","reduced_motion":"single marker at the monitoring endpoint"}}},"canvas":{"grid_width":12,"grid_depth":10,"tile_width":64,"tile_height":32},"zones":[{"id":"delivery","label":"Delivery","description":"Build and deployment control plane"},{"id":"runtime","label":"Runtime","description":"Provisioned application resources"}],"nodes":[{"id":"pipeline","code":"CI","label":"Deploy pipeline","role":"pipeline","form":"cube","zone":"delivery","position":{"x":1,"y":1},"footprint":{"width":2,"depth":1},"height":2.5,"status":"active","resource_type":"Azure DevOps pipeline","icon":"az-release-pipeline","description":"Validates and deploys the subscription template.","evidence":[{"path":".azuredevops/deploy.yml","lines":"12-44","claim":"The pipeline validates and deploys the Bicep entry point."}]},{"id":"app","code":"APP","label":"Application","role":"compute","form":"cube","zone":"runtime","position":{"x":5,"y":2},"footprint":{"width":1,"depth":1},"height":3.5,"status":"active","resource_type":"Microsoft.Web/sites","icon":"az-app-service","description":"Hosts the provisioned workload.","evidence":[{"path":"infra/modules/app.bicep","lines":"1-80","claim":"The app module provisions the workload compute."}]},{"id":"database","code":"SQL","label":"SQL database","role":"data","form":"cube","zone":"runtime","position":{"x":8,"y":4},"footprint":{"width":2,"depth":1},"height":2,"status":"active","resource_type":"Microsoft.Sql/servers/databases","icon":"az-sql-database","description":"Provides the SQL service and its private endpoint.","evidence":[{"path":"infra/modules/sql.bicep","lines":"1-96","claim":"The SQL module creates the data service and private endpoint."}]},{"id":"telemetry","code":"OBS","label":"Telemetry","role":"observability","form":"cube","zone":"runtime","position":{"x":7,"y":7},"footprint":{"width":1,"depth":2},"height":3,"status":"active","resource_type":"Microsoft.OperationalInsights/workspaces","icon":"az-log-analytics","description":"Receives workload diagnostics.","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"10-72","claim":"Diagnostics are connected to the monitoring workspace."}]}],"paths":[{"id":"deploy-app","from":"pipeline","to":"app","kind":"delivery","label":"guarded deployment","route":[{"x":3,"y":1.5},{"x":4,"y":1.5},{"x":4,"y":2.5},{"x":5,"y":2.5}],"payload_ids":["deployment"],"evidence":[{"path":".azuredevops/deploy.yml","lines":"31-44","claim":"The pipeline invokes the app deployment."}]},{"id":"private-sql-dependency","from":"app","to":"database","kind":"dependency","label":"private SQL dependency","route":[{"x":6,"y":2.5},{"x":7,"y":2.5},{"x":7,"y":4.5},{"x":8,"y":4.5}],"payload_ids":[],"evidence":[{"path":"infra/main.bicep","lines":"22-31","claim":"The Bicep entry point wires the application to the private SQL dependency."}]},{"id":"emit-telemetry","from":"app","to":"telemetry","kind":"telemetry","label":"diagnostics","route":[{"x":5.5,"y":3},{"x":5.5,"y":6},{"x":7.5,"y":6},{"x":7.5,"y":7}],"payload_ids":["diagnostic"],"evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"The workload emits diagnostics to monitoring."}]}],"payloads":[{"id":"deployment","label":"ARM deployment","kind":"deployment","description":"Environment parameters and resource outputs.","evidence":[{"path":".azuredevops/deploy.yml","lines":"31-44","claim":"Deployment parameters cross the delivery path."}]},{"id":"diagnostic","label":"Diagnostic envelope","kind":"telemetry","description":"Logs and metrics emitted by the workload.","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"Diagnostic settings forward workload telemetry."}]}],"flows":[{"id":"release-and-observe","label":"Release and observe","description":"Deploy the application and emit evidenced telemetry.","steps":[{"path":"deploy-app","payload":"deployment","label":"Deploy the workload","evidence":[{"path":".azuredevops/deploy.yml","lines":"31-44","claim":"The pipeline performs the guarded deployment."}]},{"path":"emit-telemetry","payload":"diagnostic","label":"Emit diagnostics","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"Diagnostics are forwarded to monitoring."}]}]}]};
     const ICON_SVGS = {"az-app-service":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003crect x=\"2.5\" y=\"4\" width=\"19\" height=\"16\" rx=\"0\" /\u003e\n  \u003cpath d=\"M2.5 9h19\" /\u003e\n  \u003ccircle cx=\"5.5\" cy=\"6.5\" r=\".7\" fill=\"currentColor\" /\u003e\n  \u003ccircle cx=\"8\" cy=\"6.5\" r=\".7\" fill=\"currentColor\" /\u003e\n  \u003ccircle cx=\"10.5\" cy=\"6.5\" r=\".7\" fill=\"currentColor\" /\u003e\n  \u003cpath d=\"M9 13l2 2 4-4\" /\u003e\n\u003c/svg\u003e","az-log-analytics":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003cline x1=\"3\" y1=\"20\" x2=\"21\" y2=\"20\" /\u003e\n  \u003crect x=\"5\" y=\"12\" width=\"3\" height=\"8\" /\u003e\n  \u003crect x=\"10.5\" y=\"6\" width=\"3\" height=\"14\" /\u003e\n  \u003crect x=\"16\" y=\"14\" width=\"3\" height=\"6\" /\u003e\n\u003c/svg\u003e","az-release-pipeline":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003cpath d=\"M5 12L12 4l7 8-7 8z\" /\u003e\n  \u003cpath d=\"M9 12h6\" /\u003e\n  \u003ccircle cx=\"12\" cy=\"12\" r=\"1.5\" fill=\"currentColor\" /\u003e\n\u003c/svg\u003e","az-sql-database":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003cellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\" /\u003e\n  \u003cpath d=\"M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5\" /\u003e\n  \u003cpath d=\"M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3\" /\u003e\n\u003c/svg\u003e"};
     const THEME = (() => {
   const roleColors = {
@@ -469,6 +469,7 @@
       resizeRaf: null,
       activeFlowId: SCENE.flows[0]?.id || null,
       renderedIcons: [],
+      nodeGeometry: [],
     };
 
     function applyDocumentTheme() {
@@ -596,63 +597,26 @@
       return true;
     }
 
-    function massesFor(node) {
+    function cubeMassFor(node) {
       const width = node.footprint.width;
       const depth = node.footprint.depth;
-      const height = node.height;
-      const inset = Math.min(.22, width * .12, depth * .12);
-      switch (node.form) {
-        case "stack":
-          return [
-            { ox: 0, oy: 0, width, depth, height: height * .42, z: 0 },
-            { ox: inset, oy: inset, width: width - inset * 2, depth: depth - inset * 2, height: height * .34, z: height * .48 },
-            { ox: inset * 1.65, oy: inset * 1.65, width: width - inset * 3.3, depth: depth - inset * 3.3, height: height * .26, z: height * .88 },
-          ];
-        case "cluster":
-          return [
-            { ox: 0, oy: 0, width: width * .43, depth: depth * .43, height: height * .72 },
-            { ox: width * .54, oy: 0, width: width * .43, depth: depth * .43, height },
-            { ox: 0, oy: depth * .54, width: width * .43, depth: depth * .43, height: height * .58 },
-            { ox: width * .54, oy: depth * .54, width: width * .43, depth: depth * .43, height: height * .82 },
-          ];
-        case "gateway":
-          return [
-            { ox: 0, oy: 0, width: width * .28, depth, height },
-            { ox: width * .72, oy: 0, width: width * .28, depth, height },
-            { ox: width * .22, oy: 0, width: width * .56, depth, height: height * .24, z: height * .76 },
-          ];
-        case "lattice": {
-          const postWidth = Math.max(.16, width * .22);
-          const postDepth = Math.max(.16, depth * .16);
-          return [
-            { ox: 0, oy: 0, width: postWidth, depth: postDepth, height },
-            { ox: width - postWidth, oy: 0, width: postWidth, depth: postDepth, height: height * .82 },
-            { ox: 0, oy: depth - postDepth, width: postWidth, depth: postDepth, height: height * .72 },
-            { ox: width - postWidth, oy: depth - postDepth, width: postWidth, depth: postDepth, height: height * .92 },
-            { ox: postWidth * .55, oy: postDepth * .55, width: width - postWidth * 1.1, depth: depth - postDepth * 1.1, height: height * .13, z: height * .78 },
-          ];
-        }
-        case "hub":
-          return [
-            { ox: width * .23, oy: depth * .23, width: width * .54, depth: depth * .54, height },
-            { ox: 0, oy: depth * .34, width: width * .22, depth: depth * .32, height: height * .42 },
-            { ox: width * .78, oy: depth * .34, width: width * .22, depth: depth * .32, height: height * .56 },
-          ];
-        case "bunker":
-          return [
-            { ox: 0, oy: 0, width, depth, height: height * .68 },
-            { ox: width * .18, oy: depth * .18, width: width * .64, depth: depth * .64, height: height * .34, z: height * .67 },
-          ];
-        case "platform":
-          return [
-            { ox: 0, oy: 0, width, depth, height: height * .2 },
-            { ox: inset, oy: inset, width: width - inset * 2, depth: depth - inset * 2, height: height * .42, z: height * .2 },
-          ];
-        case "slab":
-          return [{ ox: 0, oy: 0, width, depth, height: Math.min(height, 1.5) }];
-        default:
-          return [{ ox: 0, oy: 0, width, depth, height }];
-      }
+      const cubeEdge = Math.min(width, depth, node.height);
+      const projectedEdge = Math.hypot(state.tileWidth / 2, state.tileHeight / 2);
+      const projectedHeight = cubeEdge * projectedEdge / state.heightUnit;
+      return {
+        ox: (width - cubeEdge) / 2,
+        oy: (depth - cubeEdge) / 2,
+        width: cubeEdge,
+        depth: cubeEdge,
+        height: projectedHeight,
+        z: 0,
+        cubeEdge,
+        form: "cube",
+      };
+    }
+
+    function massesFor(node) {
+      return [cubeMassFor(node)];
     }
 
     function depthKey(node) {
@@ -770,6 +734,7 @@
       state.nodeHits = [];
       state.routeGeometry.clear();
       state.renderedIcons = [];
+      state.nodeGeometry = [];
 
       SCENE.paths.forEach(item => {
         const points = routePoints(item);
@@ -786,7 +751,8 @@
         let iconRoof = null;
         let iconMass = null;
         let iconHeight = -Infinity;
-        massesFor(node)
+        const nodeMasses = massesFor(node);
+        nodeMasses
           .sort((a, b) => (a.ox + a.oy + (a.z || 0)) - (b.ox + b.oy + (b.z || 0)))
           .forEach((mass, massIndex) => {
             const faces = cuboidFaces(node, mass);
@@ -801,11 +767,21 @@
               hit.addPath(faces[side]);
             });
           });
+        const cube = nodeMasses[0];
+        state.nodeGeometry.push({
+          id: node.id,
+          form: cube.form,
+          massCount: nodeMasses.length,
+          width: cube.width,
+          depth: cube.depth,
+          projectedGroundEdge: cube.cubeEdge * Math.hypot(state.tileWidth / 2, state.tileHeight / 2),
+          projectedVerticalEdge: cube.height * state.heightUnit,
+        });
         if (drawNodeIcon(ctx, node, iconRoof, iconMass)) state.renderedIcons.push(node.id);
         const labelPoint = project(
           node.position.x + node.footprint.width / 2,
           node.position.y + node.footprint.depth / 2,
-          node.height + .4,
+          iconHeight + .4,
         );
         THEME.drawNodeLabel(ctx, node, labelPoint, state);
         state.nodeHits.push({ item: node, path: hit });
@@ -1048,6 +1024,7 @@
         iconCount: Object.keys(ICON_SVGS).length,
         loadedIconCount: iconImages.size,
         renderedIcons: [...state.renderedIcons],
+        nodeGeometry: state.nodeGeometry.map(item => ({ ...item })),
         selected: targetKey(state.selected) || null,
         hovered: targetKey(state.hovered) || null,
         activeFlow: state.activeFlowId,

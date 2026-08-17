@@ -184,7 +184,7 @@
     <section class="canvas-stage" data-scene-sha256="__SCENE_HASH__" aria-label="Interactive isometric terrain">
       <canvas data-layer="terrain" aria-hidden="true"></canvas>
       <canvas data-layer="architecture" aria-hidden="true"></canvas>
-      <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect buildings and paths."></canvas>
+      <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect resource cubes and paths."></canvas>
       <div class="fallback-copy sr-only" role="group" aria-label="Inspectable map elements">
         __FALLBACK_BUTTONS__
       </div>
@@ -247,6 +247,7 @@
       resizeRaf: null,
       activeFlowId: SCENE.flows[0]?.id || null,
       renderedIcons: [],
+      nodeGeometry: [],
     };
 
     function applyDocumentTheme() {
@@ -374,63 +375,26 @@
       return true;
     }
 
-    function massesFor(node) {
+    function cubeMassFor(node) {
       const width = node.footprint.width;
       const depth = node.footprint.depth;
-      const height = node.height;
-      const inset = Math.min(.22, width * .12, depth * .12);
-      switch (node.form) {
-        case "stack":
-          return [
-            { ox: 0, oy: 0, width, depth, height: height * .42, z: 0 },
-            { ox: inset, oy: inset, width: width - inset * 2, depth: depth - inset * 2, height: height * .34, z: height * .48 },
-            { ox: inset * 1.65, oy: inset * 1.65, width: width - inset * 3.3, depth: depth - inset * 3.3, height: height * .26, z: height * .88 },
-          ];
-        case "cluster":
-          return [
-            { ox: 0, oy: 0, width: width * .43, depth: depth * .43, height: height * .72 },
-            { ox: width * .54, oy: 0, width: width * .43, depth: depth * .43, height },
-            { ox: 0, oy: depth * .54, width: width * .43, depth: depth * .43, height: height * .58 },
-            { ox: width * .54, oy: depth * .54, width: width * .43, depth: depth * .43, height: height * .82 },
-          ];
-        case "gateway":
-          return [
-            { ox: 0, oy: 0, width: width * .28, depth, height },
-            { ox: width * .72, oy: 0, width: width * .28, depth, height },
-            { ox: width * .22, oy: 0, width: width * .56, depth, height: height * .24, z: height * .76 },
-          ];
-        case "lattice": {
-          const postWidth = Math.max(.16, width * .22);
-          const postDepth = Math.max(.16, depth * .16);
-          return [
-            { ox: 0, oy: 0, width: postWidth, depth: postDepth, height },
-            { ox: width - postWidth, oy: 0, width: postWidth, depth: postDepth, height: height * .82 },
-            { ox: 0, oy: depth - postDepth, width: postWidth, depth: postDepth, height: height * .72 },
-            { ox: width - postWidth, oy: depth - postDepth, width: postWidth, depth: postDepth, height: height * .92 },
-            { ox: postWidth * .55, oy: postDepth * .55, width: width - postWidth * 1.1, depth: depth - postDepth * 1.1, height: height * .13, z: height * .78 },
-          ];
-        }
-        case "hub":
-          return [
-            { ox: width * .23, oy: depth * .23, width: width * .54, depth: depth * .54, height },
-            { ox: 0, oy: depth * .34, width: width * .22, depth: depth * .32, height: height * .42 },
-            { ox: width * .78, oy: depth * .34, width: width * .22, depth: depth * .32, height: height * .56 },
-          ];
-        case "bunker":
-          return [
-            { ox: 0, oy: 0, width, depth, height: height * .68 },
-            { ox: width * .18, oy: depth * .18, width: width * .64, depth: depth * .64, height: height * .34, z: height * .67 },
-          ];
-        case "platform":
-          return [
-            { ox: 0, oy: 0, width, depth, height: height * .2 },
-            { ox: inset, oy: inset, width: width - inset * 2, depth: depth - inset * 2, height: height * .42, z: height * .2 },
-          ];
-        case "slab":
-          return [{ ox: 0, oy: 0, width, depth, height: Math.min(height, 1.5) }];
-        default:
-          return [{ ox: 0, oy: 0, width, depth, height }];
-      }
+      const cubeEdge = Math.min(width, depth, node.height);
+      const projectedEdge = Math.hypot(state.tileWidth / 2, state.tileHeight / 2);
+      const projectedHeight = cubeEdge * projectedEdge / state.heightUnit;
+      return {
+        ox: (width - cubeEdge) / 2,
+        oy: (depth - cubeEdge) / 2,
+        width: cubeEdge,
+        depth: cubeEdge,
+        height: projectedHeight,
+        z: 0,
+        cubeEdge,
+        form: "cube",
+      };
+    }
+
+    function massesFor(node) {
+      return [cubeMassFor(node)];
     }
 
     function depthKey(node) {
@@ -548,6 +512,7 @@
       state.nodeHits = [];
       state.routeGeometry.clear();
       state.renderedIcons = [];
+      state.nodeGeometry = [];
 
       SCENE.paths.forEach(item => {
         const points = routePoints(item);
@@ -564,7 +529,8 @@
         let iconRoof = null;
         let iconMass = null;
         let iconHeight = -Infinity;
-        massesFor(node)
+        const nodeMasses = massesFor(node);
+        nodeMasses
           .sort((a, b) => (a.ox + a.oy + (a.z || 0)) - (b.ox + b.oy + (b.z || 0)))
           .forEach((mass, massIndex) => {
             const faces = cuboidFaces(node, mass);
@@ -579,11 +545,21 @@
               hit.addPath(faces[side]);
             });
           });
+        const cube = nodeMasses[0];
+        state.nodeGeometry.push({
+          id: node.id,
+          form: cube.form,
+          massCount: nodeMasses.length,
+          width: cube.width,
+          depth: cube.depth,
+          projectedGroundEdge: cube.cubeEdge * Math.hypot(state.tileWidth / 2, state.tileHeight / 2),
+          projectedVerticalEdge: cube.height * state.heightUnit,
+        });
         if (drawNodeIcon(ctx, node, iconRoof, iconMass)) state.renderedIcons.push(node.id);
         const labelPoint = project(
           node.position.x + node.footprint.width / 2,
           node.position.y + node.footprint.depth / 2,
-          node.height + .4,
+          iconHeight + .4,
         );
         THEME.drawNodeLabel(ctx, node, labelPoint, state);
         state.nodeHits.push({ item: node, path: hit });
@@ -826,6 +802,7 @@
         iconCount: Object.keys(ICON_SVGS).length,
         loadedIconCount: iconImages.size,
         renderedIcons: [...state.renderedIcons],
+        nodeGeometry: state.nodeGeometry.map(item => ({ ...item })),
         selected: targetKey(state.selected) || null,
         hovered: targetKey(state.hovered) || null,
         activeFlow: state.activeFlowId,

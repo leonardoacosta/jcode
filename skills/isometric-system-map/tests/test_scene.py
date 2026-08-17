@@ -44,14 +44,14 @@ class SceneContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "tile_width must equal 2 × tile_height"):
             math.project(1, 1, 0, 64, 40, 100, 50)
 
-    def test_collision_detection_uses_full_building_footprints(self):
+    def test_collision_detection_uses_full_resource_envelopes(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_collision")
         broken = copy.deepcopy(self.document)
         broken["nodes"][1]["position"] = {"x": 2, "y": 1}
         errors = validator.validate_scene(broken)
         self.assertTrue(any("overlaps nodes[0]" in error for error in errors), errors)
 
-    def test_grid_routes_cannot_cut_through_unrelated_buildings(self):
+    def test_grid_routes_cannot_cut_through_unrelated_resource_envelopes(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_routes")
         broken = copy.deepcopy(self.document)
         broken["paths"][0]["route"] = [
@@ -140,13 +140,16 @@ class SceneContractTests(unittest.TestCase):
             errors,
         )
 
-    def test_scene_requires_varied_building_forms(self):
+    def test_scene_accepts_only_cube_resource_forms(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_forms")
-        broken = copy.deepcopy(self.document)
-        for node in broken["nodes"]:
-            node["form"] = "tower"
-        errors = validator.validate_scene(broken)
-        self.assertTrue(any("at least 3 distinct building forms" in error for error in errors), errors)
+        document = copy.deepcopy(self.document)
+        for node in document["nodes"]:
+            node["form"] = "cube"
+        self.assertEqual(validator.validate_scene(document), [])
+
+        document["nodes"][0]["form"] = "tower"
+        errors = validator.validate_scene(document)
+        self.assertIn("nodes[0].form: must be one of ['cube']", errors)
 
     def test_nodes_accept_known_azure_resource_metadata(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_azure_metadata")

@@ -7,11 +7,11 @@ Use this renderer architecture for interactive, animated, or strongly art-direct
 Render one scene through four cooperating layers:
 
 1. **Terrain canvas**: background, texture, ground plane, grid, and quiet zone labels.
-2. **Architecture canvas**: routes, arrows, buildings, and compact node codes.
+2. **Architecture canvas**: routes, arrows, resource cubes, and compact node codes.
 3. **Motion canvas**: payloads plus hover, focus, and selected-state highlights.
 4. **DOM semantic mirror**: one native focusable control for every interactive node and path, plus minimal flow, pause, and export controls.
 
-The canvases share identical CSS dimensions and projection state. Only redraw a layer when its content changes. Do not redraw terrain and buildings on every payload frame.
+The canvases share identical CSS dimensions and projection state. Only redraw a layer when its content changes. Do not redraw terrain and cubes on every payload frame.
 
 The bundled implementation follows this architecture:
 
@@ -113,21 +113,29 @@ if (hitContext.isPointInStroke(route.path, x, y)) { /* route */ }
 
 Use a generous invisible route hit width. Do not make users hit a one-pixel line.
 
-## Building forms
+## True resource cubes
 
-Project every visible face from scene coordinates. Forms are geometry recipes independent of style:
+Render every node as one cube. The footprint remains a collision and routing envelope, so a cube may
+be centered inside a wider reserved area. Use the smallest declared dimension as its edge, then derive
+the world-space vertical height from the projected ground edge:
 
-- `tower`: one tall concentrated mass;
-- `slab`: one broad shallow mass;
-- `stack`: two or three inset masses;
-- `cluster`: several separated local masses;
-- `gateway`: two uprights plus a raised crosspiece;
-- `hub`: central mass with smaller side masses;
-- `bunker`: protected low body plus inset cap;
-- `lattice`: posts plus a raised frame or mesh;
-- `platform`: low foundation plus inset upper plane.
+```js
+const cubeEdge = Math.min(node.footprint.width, node.footprint.depth, node.height);
+const projectedEdge = Math.hypot(tileWidth / 2, tileHeight / 2);
+const projectedHeight = cubeEdge * projectedEdge / heightUnit;
 
-Keep every sub-mass inside its declared footprint. Sort nodes by the far footprint edge and sort local masses before drawing left, right, then roof faces.
+const mass = {
+  ox: (node.footprint.width - cubeEdge) / 2,
+  oy: (node.footprint.depth - cubeEdge) / 2,
+  width: cubeEdge,
+  depth: cubeEdge,
+  height: projectedHeight,
+};
+```
+
+This makes the two projected ground edges and the vertical edge equal in screen space. Do not branch
+on role or resource type to create towers, stacks, gateways, or compound masses. Sort cubes by the far
+edge of their declared envelopes, then draw left, right, and roof faces.
 
 ## Project line-art marks onto roof faces
 
@@ -163,8 +171,8 @@ ctx.drawImage(icon, 0, 0, 24, 24);
 ctx.restore();
 ```
 
-Choose the highest local mass by `z + height` and draw one mark after all of that node's faces. Do not
-put a screen-aligned badge over the building; the mark must share the roof plane. Await image loading
+Draw one mark after all of that node's faces. Do not put a screen-aligned badge over the cube; the mark
+must share the roof plane. Await image loading
 before the first final render and expose loaded/rendered icon counts in runtime diagnostics.
 
 The included sprite is self-authored Azure-style stand-in line art. Do not describe it as Microsoft's

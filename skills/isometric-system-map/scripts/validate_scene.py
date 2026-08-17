@@ -49,17 +49,7 @@ NODE_ROLES = {
     "observability",
     "external",
 }
-NODE_FORMS = {
-    "tower",
-    "slab",
-    "stack",
-    "cluster",
-    "gateway",
-    "hub",
-    "bunker",
-    "lattice",
-    "platform",
-}
+NODE_FORMS = {"cube"}
 NODE_STATUSES = {"active", "conditional", "held", "external", "deprecated"}
 PATH_KINDS = {
     "control",
@@ -363,15 +353,14 @@ def validate_scene(document: Any) -> list[str]:
 
     nodes = document.get("nodes")
     if not isinstance(nodes, list) or len(nodes) < 3:
-        errors.append("$.nodes: requires 3-28 architecture buildings")
+        errors.append("$.nodes: requires 3-28 resource cubes")
         nodes = []
     elif len(nodes) > 28:
-        errors.append("$.nodes: maximum 28 architecture buildings")
+        errors.append("$.nodes: maximum 28 resource cubes")
 
     node_ids: set[str] = set()
     node_rects: dict[str, dict[str, float]] = {}
     valid_nodes: list[tuple[int, dict[str, Any], dict[str, float]]] = []
-    forms: set[str] = set()
     for index, node in enumerate(nodes):
         path = f"nodes[{index}]"
         if not isinstance(node, dict):
@@ -407,8 +396,6 @@ def validate_scene(document: Any) -> list[str]:
             errors.append(f"{path}.role: must be one of {sorted(NODE_ROLES)}")
         if node.get("form") not in NODE_FORMS:
             errors.append(f"{path}.form: must be one of {sorted(NODE_FORMS)}")
-        else:
-            forms.add(node["form"])
         if node.get("status") not in NODE_STATUSES:
             errors.append(f"{path}.status: must be one of {sorted(NODE_STATUSES)}")
         if node.get("zone") not in zone_ids:
@@ -462,9 +449,6 @@ def validate_scene(document: Any) -> list[str]:
                         )
                 valid_nodes.append((index, node, rect))
                 node_rects[node_id] = rect
-
-    if len(nodes) >= 3 and len(forms) < 3:
-        errors.append("$.nodes: use at least 3 distinct building forms so the scene reads as varied architecture")
 
     payloads = document.get("payloads")
     if not isinstance(payloads, list):
@@ -667,7 +651,7 @@ def main(argv: list[str] | None = None) -> int:
             print(error, file=sys.stderr)
         return 1
     print(
-        f"valid isometric scene: {len(document['nodes'])} buildings, "
+        f"valid isometric scene: {len(document['nodes'])} cubes, "
         f"{len(document['paths'])} paths, {len(document['flows'])} flows"
     )
     return 0

@@ -1,7 +1,7 @@
 # Separating scene grammar from design language
 
-The supplied examples use different visual systems around the same core idea: varied isometric
-buildings on a projected grid, directed paths, and payload dots. The transferable skill is the scene
+The supplied examples use different visual systems around the same core idea: uniform isometric
+resource cubes on a projected grid, directed paths, and payload dots. The transferable skill is the scene
 grammar. The surrounding interface and exact palette are incidental.
 
 ## Invariants and variables
@@ -11,7 +11,7 @@ grammar. The surrounding interface and exact palette are incidental.
 | repository facts and evidence | palette and contrast |
 | node identities and ownership | face fills, hatching, gradients, texture |
 | grid coordinates and footprints | grid visibility and line weight |
-| building form and relative mass | corner sharpness, roof detail, shadows |
+| one-cube node geometry and relative scale | corner sharpness, roof detail, shadows |
 | route geometry and direction | stroke pattern, color, markers, glow |
 | payload identity and flow order | dot shape, trail, cadence, easing |
 | depth sorting | atmospheric depth and surface treatment |
@@ -40,7 +40,7 @@ Before rendering, write a compact brief with:
 
 - Background: near-black or deep navy.
 - Grid: low-contrast cool linework.
-- Buildings: subtly filled faces with brighter roof edges.
+- Cubes: subtly filled faces with brighter roof edges.
 - Paths: restrained semantic accents, optional low-radius glow.
 - Payloads: small high-contrast points, never large neon blobs.
 - Typography: compact mono or technical grotesk.
@@ -52,7 +52,7 @@ Do not automatically add metric cards, navigation rails, or control panels.
 
 - Background: cream, buff, or muted ochre.
 - Grid: faint pencil or ruled ink.
-- Buildings: paper-colored faces, sepia outlines, sparse hatching.
+- Cubes: paper-colored faces, sepia outlines, sparse hatching.
 - Paths: dark ink with solid, dashed, or double-line distinctions.
 - Payloads: filled ink beads or tiny stamped markers.
 - Typography: typewriter, drafting mono, or small caps.
@@ -64,7 +64,7 @@ Do not imitate a dashboard simply because the reference image was shown inside o
 
 - Background: white with a faint cool Azure wash.
 - Grid: light neutral rules with an Azure-blue terrain boundary.
-- Buildings: simple sharp cuboids, lightly tinted by semantic family and outlined by the family's
+- Cubes: one true cube per resource, lightly tinted by semantic family and outlined by the family's
   stronger stroke color.
 - Roof marks: one package-local line-art resource mark projected onto the highest top face. Keep the
   mark inside the roof and use the family stroke color.
@@ -94,7 +94,7 @@ logo artwork.
 
 - Background: white or a single tinted field.
 - Grid: partial or implied.
-- Buildings: flat two-tone faces with one strong silhouette per role.
+- Cubes: flat two-tone faces with role expressed by marks and paths rather than silhouette.
 - Paths: one dominant ink color plus pattern differences.
 - Payloads: geometric markers.
 - Typography: strong sans-serif hierarchy with sparse labels.
@@ -104,7 +104,7 @@ logo artwork.
 
 - Background: soft color field.
 - Grid: rounded or hand-drawn but still based on exact projection points.
-- Buildings: simplified massing, larger form contrast, friendly materials.
+- Cubes: friendly materials and softened linework while retaining one cubical mass per node.
 - Paths: thicker lanes with clear arrowheads.
 - Payloads: small tokens with distinct shapes.
 - Typography: rounded display face for titles, readable sans for labels.
@@ -169,7 +169,7 @@ The isometric terrain should remain the largest and strongest object in the fram
 ## Style-quality checks
 
 - The requested design language is visible in more than color.
-- Building forms remain distinguishable in grayscale.
+- Cube identity, status, and route relationships remain distinguishable in grayscale.
 - Route kinds remain distinguishable without animation.
 - Texture does not hide labels or evidence targets.
 - Shadows and glow do not distort footprint boundaries.

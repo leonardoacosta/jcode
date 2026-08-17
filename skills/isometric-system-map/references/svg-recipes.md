@@ -51,40 +51,28 @@ function polygonPoints(points) {
 Create SVG elements with `document.createElementNS("http://www.w3.org/2000/svg", tag)` and set
 attributes directly. Do not build source-derived strings with `innerHTML`.
 
-## Complex forms
+## True cube mass
 
-Build forms from multiple cuboids or line structures within the declared footprint:
+Center one cube inside the declared footprint and derive its vertical height from the projected ground
+edge:
 
 ```js
-function massesFor(node) {
+function cubeMassFor(node, projection) {
   const { width: w, depth: d } = node.footprint;
-  switch (node.form) {
-    case "stack":
-      return [
-        { ox: 0, oy: 0, w, d, h: node.height * 0.55 },
-        { ox: 0.15, oy: 0.1, w: w - 0.3, d: d - 0.2, h: node.height * 0.82 },
-        { ox: 0.3, oy: 0.2, w: w - 0.6, d: d - 0.4, h: node.height },
-      ];
-    case "cluster":
-      return [
-        { ox: 0, oy: 0, w: w * 0.45, d: d * 0.45, h: node.height * 0.8 },
-        { ox: w * 0.52, oy: 0, w: w * 0.45, d: d * 0.45, h: node.height },
-        { ox: 0, oy: d * 0.52, w: w * 0.45, d: d * 0.45, h: node.height * 0.65 },
-      ];
-    case "gateway":
-      return [
-        { ox: 0, oy: 0, w: w * 0.3, d, h: node.height },
-        { ox: w * 0.7, oy: 0, w: w * 0.3, d, h: node.height },
-        { ox: w * 0.22, oy: 0, w: w * 0.56, d, h: node.height * 0.3, z: node.height * 0.7 },
-      ];
-    default:
-      return [{ ox: 0, oy: 0, w, d, h: node.height }];
-  }
+  const edge = Math.min(w, d, node.height);
+  const groundEdge = Math.hypot(projection.tileWidth / 2, projection.tileHeight / 2);
+  return {
+    ox: (w - edge) / 2,
+    oy: (d - edge) / 2,
+    w: edge,
+    d: edge,
+    h: edge * groundEdge / projection.heightUnit,
+  };
 }
 ```
 
-Treat this as a pattern, not a mandatory silhouette. `lattice`, `hub`, `bunker`, and `platform`
-benefit from custom linework or multiple masses. Keep all sub-masses inside the node footprint.
+Do not add secondary masses or line structures that turn the resource into a building. Service identity
+belongs on the top face.
 
 ## Back-to-front ordering
 
@@ -98,7 +86,7 @@ const ordered = [...scene.nodes].sort((a, b) => {
 });
 ```
 
-Draw each complex form's sub-masses in local depth order too.
+Each node has one mass, so only node-level depth ordering is required.
 
 ## Grid-routed paths
 
@@ -181,7 +169,7 @@ high contrast in the selected art direction.
 Evidence can be exposed through several patterns:
 
 - `<title>` plus a keyboard-accessible details popover;
-- click/focus tooltip near the selected building;
+- click/focus tooltip near the selected cube;
 - a compact caption below the scene;
 - expandable footnotes;
 - the mandatory scene JSON sidecar;

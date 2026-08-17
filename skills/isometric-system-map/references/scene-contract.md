@@ -122,11 +122,11 @@ Do not treat zones as sourced cloud containment unless the map text and evidence
   "code": "SQL",
   "label": "Shared SQL estate",
   "role": "data",
-  "form": "stack",
+  "form": "cube",
   "zone": "runtime",
   "position": { "x": 8, "y": 4 },
   "footprint": { "width": 2, "depth": 1 },
-  "height": 2.5,
+  "height": 1,
   "status": "active",
   "resource_type": "Microsoft.Sql/servers/databases",
   "icon": "az-sql-database",
@@ -169,14 +169,10 @@ logo artwork. See [`../assets/PROVENANCE.md`](../assets/PROVENANCE.md).
 Omit these fields for non-Azure scenes or when the resource cannot be identified confidently. Never
 choose an icon merely because it looks plausible.
 
-### Forms
+### Form
 
-`tower`, `slab`, `stack`, `cluster`, `gateway`, `hub`, `bunker`, `lattice`, `platform`.
-
-Form describes geometry. Use at least three distinct forms. Compose complex forms from multiple
-cuboids or line structures inside the declared footprint. For an Azure resource-block scene, concrete
-resources should normally use a simple `tower`, `slab`, `stack`, or `platform`; reserve compound forms
-for meaningful orchestration or boundary topology.
+`cube` is the only supported form. Every node is one cubical mass, including delivery, governance,
+boundary, external, and abstract nodes. Do not use architectural silhouettes to encode roles.
 
 ### Status
 
@@ -191,7 +187,10 @@ held.
 
 ### Geometry
 
-`position` is the back-left grid origin of the footprint. Footprints are 1-4 cells on each axis.
+`position` is the back-left grid origin of the footprint. Footprints are 1-4 cells on each axis and
+act as collision and routing envelopes. `height` is the maximum cube edge in grid units. The renderer
+uses the smallest of width, depth, and height, centers that cube inside the envelope, and derives the
+vertical projection required for equal screen-space edges.
 Height is 0.5-6 semantic units. The validator detects positive-area footprint overlap and bounds.
 
 ## Evidence objects
@@ -239,7 +238,7 @@ Kinds: `control`, `data`, `delivery`, `dependency`, `identity`, `network`, `tele
 
 Routes require 2-16 explicit half-grid points. Each segment follows one grid axis, starts on the
 source footprint boundary or in the outward half-cell beside one edge, ends the same way at the
-target, and cannot cross an unrelated building footprint. Interior endpoints and diagonally offset
+target, and cannot cross an unrelated resource envelope. Interior endpoints and diagonally offset
 corner points are invalid. `payload_ids` may be empty only when `kind` is `dependency`.
 
 ## Payloads
@@ -301,9 +300,9 @@ invent a moving token merely to satisfy the visual treatment.
 ## Integrity checklist
 
 - Exact repository ref and commit are recorded.
-- At least three building forms are used.
+- Every node uses `form: "cube"` and renders as one cubical mass.
 - Full footprints do not overlap or leave the grid.
-- Paths are explicit, directed, axis-routed, and avoid unrelated buildings.
+- Paths are explicit, directed, axis-routed, and avoid unrelated resource envelopes.
 - Every used path kind has a structured treatment beyond color.
 - Every reference resolves.
 - Every node, path, payload, and flow step has direct evidence.

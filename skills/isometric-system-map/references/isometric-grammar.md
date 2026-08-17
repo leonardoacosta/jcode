@@ -18,9 +18,9 @@ Require:
 tile_width = 2 * tile_height
 ```
 
-The two ground axes then rise at equal and opposite angles. Keep elevation in screen pixels. Convert
-semantic building height into pixels separately so a paper illustration can feel shallow while a
-technical neon scene can feel taller without moving footprints.
+The two ground axes then rise at equal and opposite angles. Keep elevation in screen pixels. For cube
+nodes, derive the vertical edge from the projected ground-edge length instead of allowing a theme to
+stretch or flatten the geometry.
 
 The bundled [`../scripts/scene_math.py`](../scripts/scene_math.py) implements `project`,
 `cuboid_faces`, `route_points`, and `depth_key`.
@@ -35,9 +35,9 @@ outer margin of at least one cell so shadows, labels, and route arrows do not cl
 
 The grid can be visually absent in the final art direction, but layout still uses it.
 
-## Building massing
+## Resource cube geometry
 
-A basic rectangular mass has four ground corners and four elevated corners. Draw at least:
+A resource cube has four ground corners and four elevated corners. Draw:
 
 - roof face;
 - left visible wall;
@@ -46,34 +46,15 @@ A basic rectangular mass has four ground corners and four elevated corners. Draw
 Do not draw flat rectangles and rotate them with CSS. That creates inconsistent depth and makes route
 anchoring difficult.
 
-### Forms
+### Cube invariant
 
-Forms are compositions of masses inside one declared footprint:
+`cube` is the only node form. Center one cubical mass inside the declared collision envelope. The cube
+edge is the smallest of footprint width, footprint depth, and declared height. Convert that edge into a
+vertical world height whose projected screen length equals one projected ground edge.
 
-- **tower**: one narrow, tall mass; optionally stepped at the roof;
-- **slab**: one broad, low mass with a long readable roof;
-- **stack**: repeated horizontal layers or progressively inset masses;
-- **cluster**: several smaller masses sharing one footprint;
-- **gateway**: two supports with a bridge, arch, or framed opening;
-- **hub**: central low mass with spokes, ports, or attached satellites;
-- **bunker**: low protected block with heavy perimeter or inset core;
-- **lattice**: repeated narrow frames, antennae, or open structural ribs;
-- **platform**: very low plane that other meaning can sit above without implying a building.
-
-Vary width, depth, height, roof rhythm, and internal repetition. Do not vary only color.
-
-### Semantic use
-
-Form can reinforce meaning but should not become a rigid icon library. Use these tendencies:
-
-| Topology | Useful forms |
-| --- | --- |
-| ingress, approval, routing boundary | gateway |
-| concentrated compute or identity authority | tower, bunker |
-| shared network or orchestration center | hub, platform |
-| storage, data, staged processing | stack, slab |
-| replicated resources or fan-out | cluster |
-| messaging or observability fabric | lattice, hub |
+Do not encode service meaning through architectural silhouettes. Use the top-face mark, family palette,
+short code, position, paths, and evidence. A design-language change may alter face treatment, material,
+linework, shadow, and corner character, but it must not stop the node reading as one cube.
 
 ## Footprints and collision
 
@@ -83,7 +64,7 @@ A node position is the back-left origin of its grid footprint. Treat footprints 
 [x, x + width) × [y, y + depth)
 ```
 
-Two buildings collide when those intervals overlap with positive area on both axes. Checking only
+Two resource envelopes collide when those intervals overlap with positive area on both axes. Checking only
 identical anchor points is insufficient. Also reserve visual clearance for labels and high-traffic
 routes.
 
@@ -97,7 +78,7 @@ far_y = y + depth
 sort_key = (far_x + far_y, far_y, far_x)
 ```
 
-Draw ground routes before buildings when paths are meant to run behind architecture. Draw selected
+Draw ground routes before cubes when paths are meant to run behind the nodes. Draw selected
 route highlights and payload dots afterward. For elevated bridges or paths, split them into depth
 segments rather than forcing one layer above everything.
 
@@ -111,7 +92,7 @@ Architecture paths should look embedded in the terrain.
 4. End at or just outside the target footprint.
 5. Avoid the interior of unrelated footprints.
 6. Offset parallel routes by half a grid cell to create lanes.
-7. Keep arrows or terminal markers visible after buildings are drawn.
+7. Keep arrows or terminal markers visible after cubes are drawn.
 
 Automatic center-to-center Bézier curves are acceptable only for a deliberate conceptual overlay.
 They should not be the default for infrastructure or payload routes.
@@ -166,10 +147,10 @@ The isometric image should dominate. A strong default composition is:
 ## Visual verification checklist
 
 - The ground axes use one consistent 2:1 projection.
-- Every building has coherent roof and wall faces.
-- At least three forms differ by massing, not color.
-- Tall buildings do not incorrectly cover nearer buildings.
-- Routes sit on the same projected terrain as buildings.
+- Every node is one cube with coherent roof and wall faces.
+- Each cube's projected vertical and ground edges are equal within rendering tolerance.
+- Farther cubes do not incorrectly cover nearer cubes.
+- Routes sit on the same projected terrain as cubes.
 - Paths do not cut through unrelated footprints.
 - Direction is readable without animation.
 - Payload motion follows the exact route.

@@ -1,6 +1,6 @@
 # Repository extraction for isometric scenes
 
-The visual quality depends on selecting the right semantic graph. Do not choose buildings first and
+The visual quality depends on selecting the right semantic graph. Do not choose visual cubes first and
 then search for facts to justify them.
 
 ## Evidence boundary
@@ -38,7 +38,7 @@ Build a temporary inventory with these columns:
 | representation | Which node, path, status, or evidenced boundary will make this fact visible? |
 | evidence | Exact path, lines, and supported claim? |
 
-Only after this inventory is coherent should you select scene nodes and forms.
+Only after this inventory is coherent should you select scene nodes and cube scales.
 
 ## Bicep and Azure Pipelines
 
@@ -60,7 +60,7 @@ when or why it deploys.
 | Evidence | Likely role or path |
 | --- | --- |
 | pipeline stage/job invoking Bicep | `pipeline` node, `delivery` or `control` path |
-| approval or policy boundary | `governance` node or gateway form |
+| approval or policy boundary | `governance` cube or control path |
 | root/reusable Bicep module | `module` node |
 | VNet, subnet, NSG, route, PE, private DNS | `network` node or network path |
 | App Service, Function, container, VM | `compute` node |
@@ -70,7 +70,7 @@ when or why it deploys.
 | Log Analytics, App Insights, alerts, dashboards | `observability` node or telemetry path |
 | `existing` resource or cross-repo reference | usually `external` status |
 
-Group repetitive resources into one building when the scene story is about the shared module or
+Group repetitive resources into one cube when the scene story is about the shared module or
 fan-out behavior. Split them only when independent ownership, ordering, or payload routes matter.
 Also split them whenever an explicit user requirement depends on environment identity, scope,
 ownership, contract version, or lifecycle. Text inside a generic aggregate node does not preserve a
@@ -160,12 +160,12 @@ Environment mapping often contains architecture that a root module hides. Inspec
 - placeholder or live-scanned network ranges.
 
 If several environments share one object, do not draw one copy per environment. If production has a
-small overlay, do not draw a second full stack.
+small overlay, do not draw a second complete topology.
 
 The inverse matters too: do not collapse a distinct production object into generic non-prod text.
 Represent one shared object once, then add each genuinely distinct object or overlay as its own node.
 When a resource group, subscription, or team boundary is material, use an evidenced boundary
-platform/gateway or a distinct sourced region. A visual zone label or prose mention alone is not proof
+boundary cube or a distinct sourced region. A visual zone label or prose mention alone is not proof
 that the boundary survived curation.
 
 ## Requirement coverage gate
@@ -228,7 +228,7 @@ A payload description names its shape and role, never a secret value.
 
 ## Curation pass
 
-Select buildings that satisfy at least one criterion:
+Select resource cubes that satisfy at least one criterion:
 
 - initiates a named flow;
 - changes ordering or ownership;
@@ -238,8 +238,8 @@ Select buildings that satisfy at least one criterion:
 - explains a surprising environment overlay or gate;
 - is the terminal output of the selected architecture story.
 
-Omit decorative or duplicate nodes. A 14-building scene with four clear flows is usually more useful
-than a 40-building inventory.
+Omit decorative or duplicate nodes. A 14-cube scene with four clear flows is usually more useful
+than a 40-cube inventory.
 
 ## Evidence audit
 

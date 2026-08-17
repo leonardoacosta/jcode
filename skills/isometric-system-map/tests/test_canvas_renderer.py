@@ -153,6 +153,20 @@ class CanvasRendererTests(unittest.TestCase):
             self.assertIn("ctx.transform(", html)
             self.assertIn("renderedIcons", html)
 
+    def test_renderer_resolves_every_node_to_one_true_cube_mass(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "azure-cubes.html"
+            result = self.render(FIXTURE, AZURE_THEME, output)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            html = output.read_text()
+            self.assertIn("function cubeMassFor(node)", html)
+            self.assertIn("const cubeEdge = Math.min(", html)
+            self.assertIn("const projectedEdge = Math.hypot(state.tileWidth / 2, state.tileHeight / 2)", html)
+            self.assertIn("form: \"cube\"", html)
+            self.assertIn("nodeGeometry", html)
+            self.assertNotIn('case "stack":', html)
+            self.assertNotIn('case "gateway":', html)
+
     def test_azure_theme_uses_the_topology_palette_and_semantic_families(self):
         source = AZURE_THEME.read_text()
         self.assertIn('pageBackground: "#ffffff"', source)

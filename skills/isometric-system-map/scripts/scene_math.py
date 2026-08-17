@@ -28,8 +28,8 @@ def project(
 ) -> tuple[float, float]:
     """Project a grid point onto a 2:1 isometric plane.
 
-    ``z_px`` is vertical screen-space elevation. Scene height units should be converted to pixels by
-    the renderer so art direction can control how tall the same semantic building feels.
+    ``z_px`` is vertical screen-space elevation. The renderer derives cube elevation from the
+    projected ground-edge length so themes cannot stretch or flatten node geometry.
     """
 
     assert_two_to_one(tile_width, tile_height)
