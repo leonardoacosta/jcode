@@ -634,6 +634,35 @@ impl SqliteOrcaOperationStore {
         .collect()
     }
 
+    /// Returns whether runtime mutation admission must remain closed after
+    /// startup reconciliation. Active `Ready` operations are safe, but an
+    /// unresolved operation state or resource recovery obligation is not.
+    pub fn has_unresolved_or_recoverable_operations(
+        &self,
+    ) -> Result<bool, OrcaOperationStoreError> {
+        let connection = self.lock()?;
+        let mut statement =
+            connection.prepare(&format!("{SELECT_COLUMNS} ORDER BY created_at, command_id"))?;
+        let rows = statement.query_map([], StoredOperationRow::from_row)?;
+        for row in rows {
+            let record = row?.decode()?;
+            if matches!(
+                record.state,
+                OrcaOperationState::Recorded
+                    | OrcaOperationState::InProgress
+                    | OrcaOperationState::OutcomeUnknown
+                    | OrcaOperationState::RecoveryRequired
+            ) || record
+                .recovery
+                .iter()
+                .any(|obligation| obligation.state != OrcaRecoveryState::Verified)
+            {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     /// Operations that must be reconciled before a mutation can be replayed.
     /// Ready operations remain candidates because Orca runtime state can change
     /// while Jcode is offline. Terminal operations are returned only while they
@@ -1010,3 +1039,87 @@ CREATE INDEX IF NOT EXISTS orca_operations_recovery
 const MIGRATE_V1_TO_V2: &str = r#"
 ALTER TABLE orca_operations ADD COLUMN orca_host_id TEXT;
 "#;
+
+#[cfg(test)]
+mod readiness_tests {
+    use super::*;
+
+    fn operation(command: &str) -> NewOrcaOperation {
+        NewOrcaOperation {
+            command_id: CommandId(command.to_string()),
+            idempotency_scope: "readiness".to_string(),
+            idempotency_key: IdempotencyKey(format!("key-{command}")),
+            correlation_id: CorrelationId(format!("correlation-{command}")),
+            initiative_id: InitiativeId("initiative-readiness".to_string()),
+            jcode_run_id: Some(JcodeRunId(format!("run-{command}"))),
+            kind: OrcaOperationKind::StartInitiativeRun,
+            command_payload: serde_json::json!({"command": command}),
+            created_at: Utc::now(),
+        }
+    }
+
+    #[test]
+    fn readiness_query_allows_only_resolved_operation_and_recovery_state() {
+        let store = SqliteOrcaOperationStore::open_in_memory().expect("store");
+        assert!(!store.has_unresolved_or_recoverable_operations().unwrap());
+
+        let command_id = CommandId("pending".to_string());
+        store.begin(operation("pending")).expect("begin operation");
+        assert!(store.has_unresolved_or_recoverable_operations().unwrap());
+
+        store
+            .update(
+                &command_id,
+                OrcaOperationUpdate {
+                    state: Some(OrcaOperationState::Ready),
+                    updated_at: Utc::now(),
+                    ..OrcaOperationUpdate::default()
+                },
+            )
+            .expect("mark ready");
+        assert!(!store.has_unresolved_or_recoverable_operations().unwrap());
+
+        store
+            .update(
+                &command_id,
+                OrcaOperationUpdate {
+                    state: Some(OrcaOperationState::Completed),
+                    recovery: vec![OrcaRecoveryObligation {
+                        id: "terminal-recovery".to_string(),
+                        resource_kind: "terminal".to_string(),
+                        resource_id: Some("terminal-1".to_string()),
+                        action: "release".to_string(),
+                        state: OrcaRecoveryState::Pending,
+                        evidence: None,
+                        updated_at: Utc::now(),
+                    }],
+                    updated_at: Utc::now(),
+                    ..OrcaOperationUpdate::default()
+                },
+            )
+            .expect("record recovery obligation");
+        assert!(store.has_unresolved_or_recoverable_operations().unwrap());
+    }
+
+    #[test]
+    fn readiness_query_rejects_unknown_durable_state_schema() {
+        let store = SqliteOrcaOperationStore::open_in_memory().expect("store");
+        store
+            .begin(operation("unknown-state"))
+            .expect("begin operation");
+        store
+            .connection
+            .lock()
+            .expect("connection")
+            .execute(
+                "UPDATE orca_operations SET operation_state = 'future_state' WHERE command_id = ?1",
+                params!["unknown-state"],
+            )
+            .expect("corrupt stored state");
+
+        assert!(matches!(
+            store.has_unresolved_or_recoverable_operations(),
+            Err(OrcaOperationStoreError::InvalidData(_))
+        ));
+    }
+}

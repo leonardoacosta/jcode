@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use chrono::Utc;
@@ -123,6 +124,7 @@ pub(super) struct OrcaLifecycleAdapter {
     launcher: OrcaWorkerLauncher,
     timeout: Duration,
     binding: Arc<Mutex<()>>,
+    startup_reconciled: Arc<AtomicBool>,
 }
 
 impl fmt::Debug for OrcaLifecycleAdapter {
@@ -149,7 +151,16 @@ impl OrcaLifecycleAdapter {
             launcher: config.launcher,
             timeout: config.timeout,
             binding: Arc::new(Mutex::new(())),
+            startup_reconciled: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    pub(super) fn runtime_store_is_ready(&self) -> bool {
+        self.startup_reconciled.load(Ordering::Acquire)
+            && self
+                .store
+                .has_unresolved_or_recoverable_operations()
+                .is_ok_and(|unresolved| !unresolved)
     }
 
     pub(super) async fn canonical_placement(
@@ -1097,6 +1108,17 @@ impl OrcaLifecycleAdapter {
     }
 
     pub(super) async fn reconcile_pending_operations(
+        &self,
+    ) -> Result<ReconciliationSummary, CommandCenterError> {
+        self.startup_reconciled.store(false, Ordering::Release);
+        let result = self.reconcile_pending_operations_inner().await;
+        if result.is_ok() {
+            self.startup_reconciled.store(true, Ordering::Release);
+        }
+        result
+    }
+
+    async fn reconcile_pending_operations_inner(
         &self,
     ) -> Result<ReconciliationSummary, CommandCenterError> {
         let records = self.store.list_recoverable().map_err(store_error)?;

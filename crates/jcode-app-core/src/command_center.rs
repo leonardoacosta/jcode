@@ -32,6 +32,10 @@ mod orca_lifecycle_tests;
 #[path = "command_center/orca_lifecycle_acceptance_tests.rs"]
 mod orca_lifecycle_acceptance_tests;
 
+#[cfg(test)]
+#[path = "command_center/orca_runtime_readiness_tests.rs"]
+mod orca_runtime_readiness_tests;
+
 pub(super) async fn spawn_managed_http_host(runtime: &crate::server::runtime::ServerRuntime) {
     let enabled = std::env::var("JCODE_COMMAND_CENTER_ENABLED")
         .ok()
@@ -463,6 +467,9 @@ impl OrcaCliAdapter {
             )
             .await
             .map_err(|_| incompatible_orca_profile())?;
+        if status.exit_code != Some(0) || registry.exit_code != Some(0) {
+            return Err(incompatible_orca_profile());
+        }
         let status: serde_json::Value =
             serde_json::from_slice(&status.stdout).map_err(|_| incompatible_orca_profile())?;
         let registry: serde_json::Value =
@@ -521,9 +528,21 @@ impl OrcaCliAdapter {
 #[async_trait]
 impl OrcaAdapter for OrcaCliAdapter {
     async fn capabilities(&self) -> Result<RuntimeMutationCapabilities, CommandCenterError> {
-        // Lifecycle mutations remain unadvertised until task 4.5e runs the live
-        // acceptance gate. Capability observation is deliberately side-effect free.
-        Ok(RuntimeMutationCapabilities::unavailable())
+        let unavailable = RuntimeMutationCapabilities::unavailable();
+        let Some(lifecycle) = self.lifecycle.as_ref() else {
+            return Ok(unavailable);
+        };
+        if !lifecycle.runtime_store_is_ready()
+            || self.validate_compatibility_profile().await.is_err()
+            || lifecycle.canonical_placement().await.is_err()
+        {
+            return Ok(unavailable);
+        }
+        Ok(RuntimeMutationCapabilities {
+            start_initiative_run: true,
+            retry_linked_run: true,
+            cancel_linked_run: true,
+        })
     }
 
     async fn observe(&self, _id: &InitiativeId) -> Result<OrcaReference, CommandCenterError> {
