@@ -50,6 +50,7 @@ impl LocalChromeTarget {
         }
     }
 
+    #[cfg(test)]
     fn profile_dir(self) -> Result<PathBuf> {
         let data_home = std::env::var_os("XDG_DATA_HOME")
             .map(PathBuf::from)
@@ -63,6 +64,7 @@ impl LocalChromeTarget {
         }))
     }
 
+    #[cfg(test)]
     fn proxy_url(self) -> String {
         let specific = match self {
             Self::BbAdmin => "JCODE_CHROME_BBADMIN_PROXY",
