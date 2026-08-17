@@ -26,9 +26,12 @@ pub struct RenderedArtifact {
 /// `is_error` remains in the wire format for backward compatibility. This
 /// outcome distinguishes expected negative results and recoverable conditions
 /// from actual provider or tool failures.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
+)]
 #[serde(rename_all = "snake_case")]
 pub enum ToolOutcome {
+    #[default]
     Success,
     ExpectedNegative,
     TimeoutWithProgress,
@@ -36,12 +39,6 @@ pub enum ToolOutcome {
     ConfigurationError,
     ProviderFailure,
     ToolDefect,
-}
-
-impl Default for ToolOutcome {
-    fn default() -> Self {
-        Self::Success
-    }
 }
 
 impl ToolOutcome {
@@ -989,8 +986,8 @@ mod tests {
         };
 
         assert_eq!(
-            cache_relevant_message_hashes(&[sent.clone()]),
-            cache_relevant_message_hashes(&[persisted.clone()]),
+            cache_relevant_message_hashes(std::slice::from_ref(&sent)),
+            cache_relevant_message_hashes(std::slice::from_ref(&persisted)),
             "non-transmitted metadata must not change the cache-relevant hash"
         );
         assert_eq!(
