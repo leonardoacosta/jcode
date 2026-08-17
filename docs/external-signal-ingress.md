@@ -35,6 +35,18 @@ Durable attention evidence is written before an ambient schedule projection. Sev
 
 Storage is versioned at `~/.jcode/external-signals/state.json`. Rollback disables the producer route first, then `JCODE_EXTERNAL_SIGNAL_ENABLED`, while preserving the state file for deterministic re-enable and replay.
 
+## Processing, retry, and dead letters
+
+Admission and downstream processing are separate authorities. A receipt starts in `pending`; successful canonical and attention projection advances it to `projected`. Each asynchronous stage owns a bounded attempt counter, redaction-safe last error, and durable `next_attempt_at`. Retryable storage or adapter failures use exponential backoff with jitter and a configured maximum attempt count. Schema, source, project-mapping, and unsupported-version failures are terminal rather than retried blindly. Exhausted records move to a durable dead-letter state without deleting the raw envelope, receipt, canonical evidence, or attempt history.
+
+Operator replay selects one or more receipt IDs after configuration or adapter repair. Replay resets only processing state and is idempotent against the durable delivery, canonical occurrence, lifecycle, attention, and wake identities. It must not create a second raw acceptance, lifecycle transition, attention item, or ambient wake. The producer owns HTTP redelivery after connection failure, timeout, `429`, or `503`; it must reuse `X-Jcode-Delivery-Id`. Jcode owns every retry after durable acceptance.
+
+## Storage migration and compatibility
+
+The top-level store, raw envelope, canonical signal, and adapter contracts carry explicit schema versions. Startup reads the current version and either performs a crash-safe, resumable forward migration or fails closed before binding. Migration writes a new complete state image atomically while retaining the previous readable backup until validation succeeds. Previously accepted raw envelopes, receipts, processing records, lifecycle aggregates, attention evidence, retry state, and dead letters remain readable and replayable after upgrade.
+
+Unknown future critical versions and downgrade-incompatible state fail startup with an operator-facing error. They are never silently discarded or rewritten. Rollback may disable admission and wakes while preserving newer state, but an older binary may start only when it explicitly supports that on-disk version.
+
 ## Homelab counterpart
 
 The exact producer-side initiative is `route-grafana-alert-lifecycle-to-jcode-ambient-inbox`. It owns the Grafana contact point, private route/firewall placement, explicit `jcode_project` labels, reversible enablement, firing/resolved delivery, and real test-alert evidence. It must send no authentication headers. This repository owns the consumer endpoint and all durable lifecycle and attention authority.
