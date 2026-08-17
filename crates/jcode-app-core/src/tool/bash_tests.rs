@@ -1025,26 +1025,16 @@ fn gate_ctx(working_dir: &str) -> ToolContext {
 #[tokio::test]
 async fn bash_refuses_to_delete_the_home_directory() {
     // The #604 incident, at the real tool boundary.
-    let temp = tempfile::tempdir().expect("temp home");
-    let home = temp.path().to_string_lossy().to_string();
-    let previous = std::env::var("HOME").ok();
-    // SAFETY: single-threaded test setup; restored below.
-    unsafe { std::env::set_var("HOME", &home) };
-
-    let canary = temp.path().join("precious.txt");
-    std::fs::write(&canary, "user data").expect("write canary");
+    let temp = tempfile::tempdir().expect("temp dir");
+    let spawn_marker = temp.path().join("command-spawned");
+    let command = format!(
+        "touch {}; if false; then rm -rf ~; fi",
+        shell_single_quote(&spawn_marker.to_string_lossy())
+    );
 
     let result = BashTool::new()
-        .execute(
-            serde_json::json!({ "command": format!("rm -rf {home}") }),
-            gate_ctx("/tmp"),
-        )
+        .execute(serde_json::json!({ "command": command }), gate_ctx("/tmp"))
         .await;
-
-    match previous {
-        Some(value) => unsafe { std::env::set_var("HOME", value) },
-        None => unsafe { std::env::remove_var("HOME") },
-    }
 
     let error = result.expect_err("deleting HOME must be refused");
     assert!(
@@ -1052,8 +1042,8 @@ async fn bash_refuses_to_delete_the_home_directory() {
         "expected an outright block, got: {error}"
     );
     assert!(
-        canary.exists(),
-        "the gate must refuse before the process runs; the file was deleted"
+        !spawn_marker.exists(),
+        "the gate must refuse before the process starts"
     );
 }
 
@@ -1134,32 +1124,29 @@ async fn indirect_dispatch_paths_cannot_bypass_the_gate() {
     // reimplementing it, so the gate lives at the only chokepoint. Assert that
     // directly: calling execute for a background job (the one path that returns
     // early) is still gated.
-    let temp = tempfile::tempdir().expect("temp home");
-    let home = temp.path().to_string_lossy().to_string();
-    let previous = std::env::var("HOME").ok();
-    // SAFETY: single-threaded test setup; restored below.
-    unsafe { std::env::set_var("HOME", &home) };
-    let canary = temp.path().join("precious.txt");
-    std::fs::write(&canary, "user data").expect("canary");
+    let temp = tempfile::tempdir().expect("temp dir");
+    let spawn_marker = temp.path().join("background-command-spawned");
+    let command = format!(
+        "touch {}; if false; then rm -rf ~; fi",
+        shell_single_quote(&spawn_marker.to_string_lossy())
+    );
 
     let result = BashTool::new()
         .execute(
             serde_json::json!({
-                "command": format!("rm -rf {home}"),
+                "command": command,
                 "run_in_background": true,
             }),
             gate_ctx("/tmp"),
         )
         .await;
 
-    match previous {
-        Some(value) => unsafe { std::env::set_var("HOME", value) },
-        None => unsafe { std::env::remove_var("HOME") },
-    }
-
     assert!(
         result.is_err(),
         "background dispatch must be gated too, not just foreground"
     );
-    assert!(canary.exists(), "the file must survive a backgrounded call");
+    assert!(
+        !spawn_marker.exists(),
+        "the gated background command must never start"
+    );
 }

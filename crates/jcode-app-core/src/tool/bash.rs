@@ -581,10 +581,14 @@ fn configure_background_command_stdio(command: &mut TokioCommand) {
 
 #[cfg(unix)]
 fn build_detached_shell_wrapper(command: &str) -> StdCommand {
-    let mut cmd = StdCommand::new(crate::config::config().tools.shell_program());
-    cmd.arg("-lc")
+    let mut cmd = StdCommand::new("sh");
+    cmd.arg("-c")
         .arg(
-            r#"eval "$JCODE_RELOAD_DETACH_COMMAND"; status=$?; printf '\n--- Command finished with exit code: %s ---\n' "$status"; exit "$status""#,
+            r#""$JCODE_RELOAD_SHELL" -lc "$JCODE_RELOAD_DETACH_COMMAND"; status=$?; printf '\n--- Command finished with exit code: %s ---\n' "$status"; exit "$status""#,
+        )
+        .env(
+            "JCODE_RELOAD_SHELL",
+            crate::config::config().tools.shell_program(),
         )
         .env("JCODE_RELOAD_DETACH_COMMAND", command);
     if let Some(dir) = tool_scratch_dir() {
