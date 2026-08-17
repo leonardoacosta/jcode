@@ -68,7 +68,7 @@ These gates are deterministic and safe to run in the repository. They must not u
 | Security fixture sanity | `bash scripts/test-command-center-security.sh --fixture-only` | Exit 0. Fixture contains no secret-looking values and the closed runtime command set is represented. |
 | Repository acceptance fixture sanity | `bash scripts/test-command-center.sh --fixture-only` | Exit 0. Deterministic initiative, schedule, Orca identity, and unsupported-command fixture invariants pass. |
 | Tunnel fixture sanity | `bash scripts/test-command-center-tunnel-fixture.sh --fixture-only` | Exit 0. Stream scope is single-authority and fixture events do not expose host paths. |
-| Full repository acceptance | `bash scripts/test-command-center.sh` | Exit 0 only with an isolated daemon or isolated base URL, Playwright local acceptance, and Orca-unavailable acceptance passing. |
+| Full repository acceptance | `bash scripts/test-command-center.sh` | Builds the SolidStart assets, starts an isolated credential-free Jcode daemon and managed loopback host, then exits 0 only when repository-local and Orca-unavailable Playwright acceptance pass. Set `JCODE_COMMAND_CENTER_JCODE_BIN`, `JCODE_COMMAND_CENTER_DAEMON_CMD`, or `JCODE_COMMAND_CENTER_BASE_URL` only to override the repository defaults. |
 | Strict OpenSpec and diff hygiene | `openspec validate add-solidstart-command-center-vertical-slice --strict --no-interactive && git diff --check` | Exit 0. |
 
 The repository-local gates distinguish deterministic fixture checks from real browser acceptance. Fixture-only modes are pre-implementation sanity checks and are not substitutes for the full vertical-slice acceptance workflow.

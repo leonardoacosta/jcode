@@ -6,13 +6,15 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/test-command-center.sh [--fixture-only]
 
-Runs repository-local command-center acceptance orchestration. The default mode
-requires the implemented app test commands and an isolated daemon command. It
-never uses the shared user daemon. Use --fixture-only only to validate the
-versioned deterministic fixture before implementation lands.
+Runs repository-local command-center acceptance orchestration. By default it
+builds the SolidStart assets and starts an isolated Jcode daemon plus managed
+Command Center host. It never uses the shared user daemon. Use --fixture-only
+only to validate the versioned deterministic fixture.
 
 Environment:
-  JCODE_COMMAND_CENTER_DAEMON_CMD  Required default-mode daemon command.
+  JCODE_COMMAND_CENTER_JCODE_BIN   Optional Jcode binary for the isolated host.
+                                   Defaults to target/selfdev/jcode.
+  JCODE_COMMAND_CENTER_DAEMON_CMD  Optional custom isolated daemon command.
   JCODE_COMMAND_CENTER_BASE_URL    Optional prestarted isolated base URL.
 USAGE
 }
@@ -56,20 +58,68 @@ if [[ "$fixture_only" == true ]]; then
   exit 0
 fi
 
-if [[ -z ${JCODE_COMMAND_CENTER_DAEMON_CMD:-} && -z ${JCODE_COMMAND_CENTER_BASE_URL:-} ]]; then
-  cat >&2 <<'ERR'
-No isolated command-center daemon was supplied.
-Failing closed. Set JCODE_COMMAND_CENTER_DAEMON_CMD to a noninteractive command
-that starts an isolated daemon/web host using JCODE_SOCKET/JCODE_HOME, or set
-JCODE_COMMAND_CENTER_BASE_URL to a prestarted isolated instance.
-ERR
-  exit 1
-fi
-
 if [[ -n ${JCODE_COMMAND_CENTER_DAEMON_CMD:-} ]]; then
   # shellcheck disable=SC2086 # Intentional: daemon command is operator supplied.
   $JCODE_COMMAND_CENTER_DAEMON_CMD &
   daemon_pid=$!
+elif [[ -z ${JCODE_COMMAND_CENTER_BASE_URL:-} ]]; then
+  jcode_bin=${JCODE_COMMAND_CENTER_JCODE_BIN:-$repo_root/target/selfdev/jcode}
+  if [[ ! -x "$jcode_bin" ]]; then
+    cat >&2 <<ERR
+The isolated Command Center launcher requires an executable Jcode binary at:
+  $jcode_bin
+Build it with 'scripts/dev_cargo.sh build --profile selfdev -p jcode --bin jcode'
+or set JCODE_COMMAND_CENTER_JCODE_BIN.
+ERR
+    exit 1
+  fi
+
+  pnpm --dir "$repo_root/apps/command-center" build
+  asset_dir="$repo_root/apps/command-center/.output/public"
+  if [[ ! -f "$asset_dir/index.html" ]]; then
+    echo "Command Center build did not produce $asset_dir/index.html" >&2
+    exit 1
+  fi
+
+  port=$(python3 - <<'PY'
+import socket
+with socket.socket() as sock:
+    sock.bind(("127.0.0.1", 0))
+    print(sock.getsockname()[1])
+PY
+  )
+  mkdir -p "$socket_dir/runtime"
+  chmod 700 "$socket_dir/runtime"
+  export XDG_RUNTIME_DIR="$socket_dir/runtime"
+  export JCODE_SOCKET="$XDG_RUNTIME_DIR/jcode.sock"
+  export JCODE_COMMAND_CENTER_ENABLED=1
+  export JCODE_COMMAND_CENTER_BIND_ADDR="127.0.0.1:$port"
+  export JCODE_COMMAND_CENTER_ASSET_DIR="$asset_dir"
+  export JCODE_COMMAND_CENTER_BASE_URL="http://127.0.0.1:$port"
+
+  "$jcode_bin" serve \
+    --provider ollama \
+    --no-update \
+    --no-selfdev \
+    --socket "$JCODE_SOCKET" \
+    --quiet &
+  daemon_pid=$!
+
+  ready=false
+  for _ in $(seq 1 120); do
+    if curl -fsS "$JCODE_COMMAND_CENTER_BASE_URL/" | grep -q '<title>Jcode Command Center</title>'; then
+      ready=true
+      break
+    fi
+    if ! kill -0 "$daemon_pid" 2>/dev/null; then
+      break
+    fi
+    sleep 0.25
+  done
+  if [[ "$ready" != true ]]; then
+    echo "Isolated Command Center host did not become ready" >&2
+    exit 1
+  fi
 fi
 
 if [[ ! -f "$repo_root/apps/command-center/package.json" ]]; then
