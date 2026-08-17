@@ -25,7 +25,8 @@ use crate::ambient::{AmbientManager, Priority, ScheduleRequest, ScheduleTarget};
 
 pub const INGRESS_PATH: &str = "/v1/external-signals/grafana";
 pub const READY_PATH: &str = "/readyz";
-pub const ADAPTER_VERSION: &str = "grafana/v1";
+pub const DEFAULT_ADAPTER_TYPE: AdapterType = AdapterType::GrafanaWebhook;
+pub const ADAPTER_VERSION: &str = "grafana-webhook/v1";
 pub const SCHEMA_VERSION: u32 = 1;
 pub const DEFAULT_MAX_BODY_BYTES: usize = 256 * 1024;
 
@@ -34,9 +35,95 @@ pub struct ExternalSignalConfig {
     pub enabled: bool,
     pub bind_addr: SocketAddr,
     pub source_id: String,
-    pub projects: BTreeMap<String, PathBuf>,
+    pub adapter_type: AdapterType,
+    pub projects: ProjectRegistry,
     pub max_body_bytes: usize,
     pub wakes_enabled: bool,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum AdapterType {
+    GrafanaWebhook,
+    ConfiguredWebhook,
+}
+
+impl AdapterType {
+    fn from_env_value(value: &str) -> Result<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "" | "grafana" | "grafana-webhook" | "grafana_webhook" => Ok(Self::GrafanaWebhook),
+            "configured" | "configured-webhook" | "configured_webhook" => {
+                Ok(Self::ConfiguredWebhook)
+            }
+            other => bail!("unsupported external signal adapter type: {other}"),
+        }
+    }
+
+    fn version(self) -> &'static str {
+        match self {
+            Self::GrafanaWebhook => ADAPTER_VERSION,
+            Self::ConfiguredWebhook => "configured-webhook/v1",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ProjectRegistry {
+    #[serde(default)]
+    pub projects: BTreeMap<String, ProjectRegistration>,
+}
+
+impl ProjectRegistry {
+    fn is_empty(&self) -> bool {
+        self.projects.is_empty()
+    }
+
+    fn contains_key(&self, project_key: &str) -> bool {
+        self.projects.contains_key(project_key)
+    }
+
+    fn working_dir(&self, project_key: &str) -> Option<&Path> {
+        self.projects
+            .get(project_key)
+            .map(|project| project.working_dir.as_path())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProjectRegistration {
+    pub project_key: String,
+    pub working_dir: PathBuf,
+    #[serde(default)]
+    pub bead: BeadAssociationContract,
+    #[serde(default)]
+    pub deployment_adapters: Vec<DeploymentAdapterConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct BeadAssociationContract {
+    #[serde(default)]
+    pub id_labels: Vec<String>,
+    #[serde(default)]
+    pub url_labels: Vec<String>,
+    #[serde(default)]
+    pub discovery_command: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct DeploymentAdapterConfig {
+    pub adapter_type: DeploymentAdapterType,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum DeploymentAdapterType {
+    StaticConfig,
+    GitRef,
+    HomelabWebhook,
 }
 
 impl ExternalSignalConfig {
@@ -48,6 +135,9 @@ impl ExternalSignalConfig {
             .context("invalid JCODE_EXTERNAL_SIGNAL_BIND_ADDR")?;
         let source_id = std::env::var("JCODE_EXTERNAL_SIGNAL_SOURCE_ID")
             .unwrap_or_else(|_| "grafana-homelab".to_string());
+        let adapter_type = AdapterType::from_env_value(
+            &std::env::var("JCODE_EXTERNAL_SIGNAL_ADAPTER_TYPE").unwrap_or_default(),
+        )?;
         let projects =
             parse_projects(&std::env::var("JCODE_EXTERNAL_SIGNAL_PROJECTS").unwrap_or_default())?;
         let max_body_bytes = std::env::var("JCODE_EXTERNAL_SIGNAL_MAX_BODY_BYTES")
@@ -60,6 +150,7 @@ impl ExternalSignalConfig {
             enabled,
             bind_addr,
             source_id,
+            adapter_type,
             projects,
             max_body_bytes,
             wakes_enabled: env_flag("JCODE_EXTERNAL_SIGNAL_WAKES_ENABLED"),
@@ -83,6 +174,16 @@ impl ExternalSignalConfig {
         if self.projects.is_empty() {
             bail!("external signal ingress requires an explicit project registry");
         }
+        for (key, project) in &self.projects.projects {
+            if key != &project.project_key || key.trim().is_empty() || key.len() > 128 {
+                bail!(
+                    "external signal project registry keys must match bounded project_key values"
+                );
+            }
+            if !project.working_dir.is_absolute() {
+                bail!("external signal project working_dir values must be absolute paths");
+            }
+        }
         if self.max_body_bytes == 0 || self.max_body_bytes > 1024 * 1024 {
             bail!("external signal body limit must be within 1..=1048576 bytes");
         }
@@ -96,7 +197,7 @@ fn env_flag(name: &str) -> bool {
         .is_some_and(|value| matches!(value.to_ascii_lowercase().as_str(), "1" | "true" | "yes"))
 }
 
-fn parse_projects(value: &str) -> Result<BTreeMap<String, PathBuf>> {
+fn parse_projects(value: &str) -> Result<ProjectRegistry> {
     let mut projects = BTreeMap::new();
     for mapping in value
         .split(',')
@@ -110,13 +211,24 @@ fn parse_projects(value: &str) -> Result<BTreeMap<String, PathBuf>> {
             bail!("project mappings require a bounded key and absolute path");
         }
         if projects
-            .insert(key.to_string(), PathBuf::from(path))
+            .insert(
+                key.to_string(),
+                ProjectRegistration {
+                    project_key: key.to_string(),
+                    working_dir: PathBuf::from(path),
+                    bead: BeadAssociationContract::default(),
+                    deployment_adapters: vec![DeploymentAdapterConfig {
+                        adapter_type: DeploymentAdapterType::StaticConfig,
+                        name: "legacy-env".to_string(),
+                    }],
+                },
+            )
             .is_some()
         {
             bail!("duplicate external signal project key: {key}");
         }
     }
-    Ok(projects)
+    Ok(ProjectRegistry { projects })
 }
 
 fn is_provably_private(ip: IpAddr) -> bool {
@@ -181,6 +293,7 @@ pub struct ProviderEnvelope {
     pub receipt_id: String,
     pub delivery_key: String,
     pub source_id: String,
+    pub adapter_type: AdapterType,
     pub adapter_version: String,
     pub project_key: String,
     pub received_at: DateTime<Utc>,
@@ -188,11 +301,68 @@ pub struct ProviderEnvelope {
     pub raw_json: String,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum LifecycleState {
-    Firing,
-    Resolved,
+    Observed,
+    Tracked,
+    RemediationInProgress,
+    Merged,
+    Deployed,
+    Monitoring,
+    Decayed,
+    Regressed,
+}
+
+impl LifecycleState {
+    fn from_provider_status(status: &str) -> Self {
+        match status {
+            "resolved" => Self::Monitoring,
+            _ => Self::Observed,
+        }
+    }
+
+    fn is_active(self) -> bool {
+        matches!(
+            self,
+            Self::Observed | Self::Tracked | Self::RemediationInProgress | Self::Regressed
+        )
+    }
+}
+
+impl<'de> Deserialize<'de> for LifecycleState {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        match value.as_str() {
+            "observed" => Ok(Self::Observed),
+            "tracked" => Ok(Self::Tracked),
+            "remediation_in_progress" => Ok(Self::RemediationInProgress),
+            "merged" => Ok(Self::Merged),
+            "deployed" => Ok(Self::Deployed),
+            "monitoring" => Ok(Self::Monitoring),
+            "decayed" => Ok(Self::Decayed),
+            "regressed" => Ok(Self::Regressed),
+            // Backward compatibility for the original provider-derived lifecycle.
+            "firing" => Ok(Self::Observed),
+            "resolved" => Ok(Self::Monitoring),
+            other => Err(serde::de::Error::unknown_variant(
+                other,
+                &[
+                    "observed",
+                    "tracked",
+                    "remediation_in_progress",
+                    "merged",
+                    "deployed",
+                    "monitoring",
+                    "decayed",
+                    "regressed",
+                ],
+            )),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -231,9 +401,35 @@ pub struct SignalCorrelations {
     pub bead_ids: Vec<String>,
     #[serde(default)]
     pub git_commits: Vec<String>,
+    #[serde(default)]
+    pub introduced: Vec<SignalEvidence>,
+    #[serde(default)]
+    pub remedial: Vec<SignalEvidence>,
+    #[serde(default)]
+    pub merged: Vec<SignalEvidence>,
+    #[serde(default)]
+    pub deployed: Vec<SignalEvidence>,
     pub remedial_commit: Option<String>,
     pub production_commit: Option<String>,
     pub production_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SignalEvidence {
+    pub kind: EvidenceKind,
+    pub value: String,
+    pub adapter_type: Option<DeploymentAdapterType>,
+    pub observed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum EvidenceKind {
+    Bead,
+    Commit,
+    Deployment,
+    Link,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -304,6 +500,10 @@ pub struct IndividualIssueProjection {
     pub links: Vec<SignalLink>,
     pub bead_ids: Vec<String>,
     pub git_commits: Vec<String>,
+    pub introduced_evidence: Vec<SignalEvidence>,
+    pub remedial_evidence: Vec<SignalEvidence>,
+    pub merged_evidence: Vec<SignalEvidence>,
+    pub deployed_evidence: Vec<SignalEvidence>,
     pub remedial_commit: Option<String>,
     pub production_commit: Option<String>,
     pub production_at: Option<DateTime<Utc>>,
@@ -406,7 +606,7 @@ pub fn command_center_projection(
             enabled: config.enabled,
             bind_addr: config.bind_addr.to_string(),
             source_id: config.source_id.clone(),
-            adapter_version: ADAPTER_VERSION.to_string(),
+            adapter_version: config.adapter_type.version().to_string(),
             wakes_enabled: config.wakes_enabled,
         },
         accepted_count: store.accepted_count,
@@ -458,6 +658,10 @@ fn issue_projections(
                 links: correlations.links,
                 bead_ids: correlations.bead_ids,
                 git_commits: correlations.git_commits,
+                introduced_evidence: correlations.introduced,
+                remedial_evidence: correlations.remedial,
+                merged_evidence: correlations.merged,
+                deployed_evidence: correlations.deployed,
                 remedial_commit: correlations.remedial_commit,
                 production_commit: correlations.production_commit,
                 production_at: correlations.production_at,
@@ -610,7 +814,7 @@ pub async fn spawn_external_signal_http_host(
 
 async fn ready(State(state): State<IngressState>) -> impl IntoResponse {
     Json(
-        serde_json::json!({"ready": true, "sourceId": state.config.source_id, "adapterVersion": ADAPTER_VERSION}),
+        serde_json::json!({"ready": true, "sourceId": state.config.source_id, "adapterType": state.config.adapter_type, "adapterVersion": state.config.adapter_type.version()}),
     )
 }
 
@@ -679,7 +883,8 @@ fn admit_inner(
         receipt_id: receipt_id.clone(),
         delivery_key: delivery_key.clone(),
         source_id: state.config.source_id.clone(),
-        adapter_version: ADAPTER_VERSION.to_string(),
+        adapter_type: state.config.adapter_type,
+        adapter_version: state.config.adapter_type.version().to_string(),
         project_key: project_key.to_string(),
         received_at: now,
         content_sha256: digest,
@@ -937,11 +1142,7 @@ fn project_webhook(
 ) {
     let project_key = project_key(webhook).expect("validated project");
     for alert in &webhook.alerts {
-        let lifecycle = if alert.status == "resolved" {
-            LifecycleState::Resolved
-        } else {
-            LifecycleState::Firing
-        };
+        let lifecycle = LifecycleState::from_provider_status(&alert.status);
         let severity = severity(
             alert
                 .labels
@@ -956,12 +1157,12 @@ fn project_webhook(
             )
             .as_bytes(),
         );
-        let occurred_at = if lifecycle == LifecycleState::Resolved && alert.ends_at.timestamp() > 0
-        {
-            alert.ends_at
-        } else {
-            alert.starts_at
-        };
+        let occurred_at =
+            if lifecycle == LifecycleState::Monitoring && alert.ends_at.timestamp() > 0 {
+                alert.ends_at
+            } else {
+                alert.starts_at
+            };
         let signal_id = format!(
             "sig_{}",
             &sha256(format!("{receipt_id}\0{}", alert.fingerprint).as_bytes())[..24]
@@ -972,7 +1173,9 @@ fn project_webhook(
             .or_else(|| alert.labels.get("alertname"))
             .cloned()
             .unwrap_or_else(|| "Grafana alert".to_string());
-        let correlations = extract_correlations(alert, webhook);
+        let correlations =
+            extract_correlations(alert, webhook, config.projects.projects.get(project_key));
+        let lifecycle = evidence_lifecycle(lifecycle, &correlations);
         store
             .signals
             .entry(signal_id.clone())
@@ -981,7 +1184,11 @@ fn project_webhook(
                 signal_id: signal_id.clone(),
                 receipt_id: receipt_id.to_string(),
                 project_key: project_key.to_string(),
-                working_dir: config.projects[project_key].clone(),
+                working_dir: config
+                    .projects
+                    .working_dir(project_key)
+                    .expect("validated project")
+                    .to_path_buf(),
                 source_id: config.source_id.clone(),
                 provider_event_id: webhook.group_key.clone(),
                 fingerprint: alert.fingerprint.clone(),
@@ -1038,7 +1245,7 @@ fn reduce_lifecycle(
             fingerprint: alert.fingerprint.clone(),
             state: incoming,
             severity,
-            generation: u64::from(incoming == LifecycleState::Firing),
+            generation: u64::from(incoming.is_active()),
             occurrence_count: 0,
             first_seen: occurred_at,
             last_seen: occurred_at,
@@ -1059,7 +1266,7 @@ fn reduce_lifecycle(
     aggregate.severity = aggregate.severity.max(severity);
     aggregate.title = title;
     if incoming != aggregate.state {
-        if incoming == LifecycleState::Firing {
+        if incoming.is_active() {
             aggregate.generation += 1;
         }
         aggregate.state = incoming;
@@ -1095,7 +1302,7 @@ fn reduce_lifecycle(
             "s"
         }
     );
-    evidence.resolved_at = (aggregate.state == LifecycleState::Resolved).then_some(now);
+    evidence.resolved_at = (!aggregate.state.is_active()).then_some(now);
 }
 
 fn project_wakes(path: &Path, gate: &Mutex<()>) -> Result<()> {
@@ -1106,7 +1313,7 @@ fn project_wakes(path: &Path, gate: &Mutex<()>) -> Result<()> {
     let mut manager = AmbientManager::new()?;
     let mut changed = false;
     for aggregate in store.lifecycles.values_mut() {
-        if aggregate.state != LifecycleState::Firing || aggregate.scheduled_item_id.is_some() {
+        if !aggregate.state.is_active() || aggregate.scheduled_item_id.is_some() {
             continue;
         }
         let wake_in_minutes = match aggregate.severity {
@@ -1175,7 +1382,11 @@ fn priority_name(value: SignalSeverity) -> &'static str {
     }
 }
 
-fn extract_correlations(alert: &GrafanaAlert, webhook: &GrafanaWebhook) -> SignalCorrelations {
+fn extract_correlations(
+    alert: &GrafanaAlert,
+    webhook: &GrafanaWebhook,
+    project: Option<&ProjectRegistration>,
+) -> SignalCorrelations {
     let mut correlations = SignalCorrelations::default();
     for (key, value) in webhook
         .common_labels
@@ -1185,6 +1396,9 @@ fn extract_correlations(alert: &GrafanaAlert, webhook: &GrafanaWebhook) -> Signa
         .chain(alert.annotations.iter())
     {
         collect_correlation_value(&mut correlations, key, value);
+        if let Some(project) = project {
+            collect_project_bead_value(&mut correlations, &project.bead, key, value);
+        }
     }
     for (label, url) in [
         ("generator", alert.generator_url.as_str()),
@@ -1199,19 +1413,113 @@ fn extract_correlations(alert: &GrafanaAlert, webhook: &GrafanaWebhook) -> Signa
     correlations
 }
 
+fn evidence_lifecycle(
+    provider: LifecycleState,
+    correlations: &SignalCorrelations,
+) -> LifecycleState {
+    if provider == LifecycleState::Monitoring {
+        return if correlations.production_at.is_some() || !correlations.deployed.is_empty() {
+            LifecycleState::Deployed
+        } else {
+            LifecycleState::Monitoring
+        };
+    }
+    if correlations.production_at.is_some() || !correlations.deployed.is_empty() {
+        LifecycleState::Regressed
+    } else if !correlations.merged.is_empty() {
+        LifecycleState::Merged
+    } else if correlations.remedial_commit.is_some() || !correlations.remedial.is_empty() {
+        LifecycleState::RemediationInProgress
+    } else if !correlations.bead_ids.is_empty() {
+        LifecycleState::Tracked
+    } else {
+        provider
+    }
+}
+
+fn collect_project_bead_value(
+    correlations: &mut SignalCorrelations,
+    contract: &BeadAssociationContract,
+    key: &str,
+    value: &str,
+) {
+    let normalized = key.to_ascii_lowercase().replace(['-', '.'], "_");
+    if contract
+        .id_labels
+        .iter()
+        .any(|label| label.to_ascii_lowercase().replace(['-', '.'], "_") == normalized)
+    {
+        push_split_values(&mut correlations.bead_ids, value);
+        push_split_evidence(
+            &mut correlations.introduced,
+            EvidenceKind::Bead,
+            value,
+            None,
+        );
+    }
+    if contract
+        .url_labels
+        .iter()
+        .any(|label| label.to_ascii_lowercase().replace(['-', '.'], "_") == normalized)
+    {
+        push_link(&mut correlations.links, key, value);
+        push_evidence(
+            &mut correlations.introduced,
+            EvidenceKind::Link,
+            value.trim(),
+            None,
+            None,
+        );
+    }
+}
+
 fn collect_correlation_value(correlations: &mut SignalCorrelations, key: &str, value: &str) {
     let normalized = key.to_ascii_lowercase().replace(['-', '.'], "_");
     match normalized.as_str() {
         "bead_id" | "bead_ids" | "jcode_bead_id" | "jcode_bead_ids" => {
-            push_split_values(&mut correlations.bead_ids, value)
+            push_split_values(&mut correlations.bead_ids, value);
+            push_split_evidence(
+                &mut correlations.introduced,
+                EvidenceKind::Bead,
+                value,
+                None,
+            );
         }
         "git_commit" | "git_commits" | "commit" | "commits" | "jcode_git_commit"
-        | "jcode_git_commits" => push_split_values(&mut correlations.git_commits, value),
+        | "jcode_git_commits" => {
+            push_split_values(&mut correlations.git_commits, value);
+            push_split_evidence(
+                &mut correlations.introduced,
+                EvidenceKind::Commit,
+                value,
+                None,
+            );
+        }
         "remedial_commit" | "remediation_commit" | "fix_commit" | "jcode_remedial_commit" => {
             let trimmed = value.trim();
             if !trimmed.is_empty() {
                 correlations.remedial_commit = Some(trimmed.to_string());
                 push_unique(&mut correlations.git_commits, trimmed.to_string());
+                push_evidence(
+                    &mut correlations.remedial,
+                    EvidenceKind::Commit,
+                    trimmed,
+                    None,
+                    None,
+                );
+            }
+        }
+        "merged_commit" | "merge_commit" | "jcode_merged_commit" => {
+            let trimmed = value.trim();
+            if !trimmed.is_empty() {
+                push_unique(&mut correlations.git_commits, trimmed.to_string());
+                push_evidence(
+                    &mut correlations.merged,
+                    EvidenceKind::Commit,
+                    trimmed,
+                    None,
+                    None,
+                );
             }
         }
         "production_commit"
@@ -1222,18 +1530,74 @@ fn collect_correlation_value(correlations: &mut SignalCorrelations, key: &str, v
             if !trimmed.is_empty() {
                 correlations.production_commit = Some(trimmed.to_string());
                 push_unique(&mut correlations.git_commits, trimmed.to_string());
+                push_evidence(
+                    &mut correlations.deployed,
+                    EvidenceKind::Deployment,
+                    trimmed,
+                    Some(DeploymentAdapterType::StaticConfig),
+                    correlations.production_at,
+                );
             }
         }
         "production_at" | "deployed_at" | "jcode_production_at" | "jcode_deployed_at" => {
             if let Ok(timestamp) = DateTime::parse_from_rfc3339(value.trim()) {
-                correlations.production_at = Some(timestamp.with_timezone(&Utc));
+                let observed_at = timestamp.with_timezone(&Utc);
+                correlations.production_at = Some(observed_at);
+                push_evidence(
+                    &mut correlations.deployed,
+                    EvidenceKind::Deployment,
+                    value.trim(),
+                    Some(DeploymentAdapterType::StaticConfig),
+                    Some(observed_at),
+                );
             }
         }
         "issue_url" | "runbook_url" | "bead_url" | "commit_url" | "deployment_url" => {
             push_link(&mut correlations.links, key, value);
+            let bucket = if normalized.contains("deployment") {
+                &mut correlations.deployed
+            } else {
+                &mut correlations.introduced
+            };
+            push_evidence(bucket, EvidenceKind::Link, value.trim(), None, None);
         }
         _ => {}
     }
+}
+
+fn push_split_evidence(
+    target: &mut Vec<SignalEvidence>,
+    kind: EvidenceKind,
+    value: &str,
+    adapter_type: Option<DeploymentAdapterType>,
+) {
+    for item in value.split([',', ' ', '\n']).map(str::trim) {
+        if !item.is_empty() {
+            push_evidence(target, kind, item, adapter_type, None);
+        }
+    }
+}
+
+fn push_evidence(
+    target: &mut Vec<SignalEvidence>,
+    kind: EvidenceKind,
+    value: &str,
+    adapter_type: Option<DeploymentAdapterType>,
+    observed_at: Option<DateTime<Utc>>,
+) {
+    if value.is_empty()
+        || target
+            .iter()
+            .any(|existing| existing.kind == kind && existing.value == value)
+    {
+        return;
+    }
+    target.push(SignalEvidence {
+        kind,
+        value: value.to_string(),
+        adapter_type,
+        observed_at,
+    });
 }
 
 fn push_split_values(target: &mut Vec<String>, value: &str) {
@@ -1265,11 +1629,26 @@ fn merge_correlations(target: &mut SignalCorrelations, incoming: SignalCorrelati
     for commit in incoming.git_commits {
         push_unique(&mut target.git_commits, commit);
     }
+    merge_evidence(&mut target.introduced, incoming.introduced);
+    merge_evidence(&mut target.remedial, incoming.remedial);
+    merge_evidence(&mut target.merged, incoming.merged);
+    merge_evidence(&mut target.deployed, incoming.deployed);
     target.remedial_commit = incoming.remedial_commit.or(target.remedial_commit.take());
     target.production_commit = incoming
         .production_commit
         .or(target.production_commit.take());
     target.production_at = incoming.production_at.or(target.production_at);
+}
+
+fn merge_evidence(target: &mut Vec<SignalEvidence>, incoming: Vec<SignalEvidence>) {
+    for evidence in incoming {
+        if !target
+            .iter()
+            .any(|existing| existing.kind == evidence.kind && existing.value == evidence.value)
+        {
+            target.push(evidence);
+        }
+    }
 }
 
 fn push_unique<T: PartialEq>(target: &mut Vec<T>, value: T) {
@@ -1318,7 +1697,25 @@ mod tests {
             enabled: true,
             bind_addr: "127.0.0.1:0".parse().unwrap(),
             source_id: "grafana-test".into(),
-            projects: BTreeMap::from([("jcode".into(), PathBuf::from("/repo/jcode"))]),
+            adapter_type: DEFAULT_ADAPTER_TYPE,
+            projects: ProjectRegistry {
+                projects: BTreeMap::from([(
+                    "jcode".into(),
+                    ProjectRegistration {
+                        project_key: "jcode".into(),
+                        working_dir: PathBuf::from("/repo/jcode"),
+                        bead: BeadAssociationContract {
+                            id_labels: vec!["owned_bead".into()],
+                            url_labels: vec!["owned_bead_url".into()],
+                            discovery_command: Some("bead list --json".into()),
+                        },
+                        deployment_adapters: vec![DeploymentAdapterConfig {
+                            adapter_type: DeploymentAdapterType::StaticConfig,
+                            name: "test-static".into(),
+                        }],
+                    },
+                )]),
+            },
             max_body_bytes: DEFAULT_MAX_BODY_BYTES,
             wakes_enabled: false,
         }
@@ -1342,6 +1739,15 @@ mod tests {
             "commonLabels":{"jcode_project":"jcode","severity":"high","jcode_bead_id":"jc-123"},
             "commonAnnotations":{"issue_url":"https://beads.local/jc-123","jcode_remedial_commit":"abc1234","jcode_production_commit":"def5678","jcode_production_at":production_at},
             "alerts":[{"status":status,"labels":{"alertname":"DiskFull","jcode_project":"jcode"},"annotations":{"summary":"Disk is full"},"startsAt":starts,"endsAt":ends,"generatorURL":"https://grafana.local/alert","fingerprint":"abc123"}]
+        })).unwrap()
+    }
+
+    fn payload_with_custom_bead_contract() -> Vec<u8> {
+        serde_json::to_vec(&serde_json::json!({
+            "version":"1", "groupKey":"group", "status":"firing", "receiver":"jcode", "groupLabels":{},
+            "commonLabels":{"jcode_project":"jcode","severity":"high","owned_bead":"jc-owned"},
+            "commonAnnotations":{"owned_bead_url":"https://beads.local/jc-owned","jcode_merged_commit":"feed123"},
+            "alerts":[{"status":"firing","labels":{"alertname":"DiskFull","jcode_project":"jcode"},"annotations":{"summary":"Disk is full"},"startsAt":"2026-08-17T04:00:00Z","endsAt":"0001-01-01T00:00:00Z","generatorURL":"","fingerprint":"abc123"}]
         })).unwrap()
     }
 
@@ -1396,7 +1802,7 @@ mod tests {
         project_webhook(&mut store, &cfg, "r2", &firing, Utc::now());
         let aggregate = store.lifecycles.values().next().unwrap();
         assert_eq!(aggregate.occurrence_count, 2);
-        assert_eq!(aggregate.state, LifecycleState::Firing);
+        assert_eq!(aggregate.state, LifecycleState::Observed);
         assert_eq!(store.attention.len(), 1);
         let stale: GrafanaWebhook = serde_json::from_slice(&payload(
             "resolved",
@@ -1408,7 +1814,7 @@ mod tests {
         project_webhook(&mut store, &cfg, "r3", &stale, Utc::now());
         assert_eq!(
             store.lifecycles.values().next().unwrap().state,
-            LifecycleState::Firing
+            LifecycleState::Observed
         );
     }
 
@@ -1433,7 +1839,7 @@ mod tests {
         .unwrap();
         project_webhook(&mut store, &cfg, "r2", &firing, Utc::now());
         let aggregate = store.lifecycles.values().next().unwrap();
-        assert_eq!(aggregate.state, LifecycleState::Firing);
+        assert_eq!(aggregate.state, LifecycleState::Observed);
         assert_eq!(aggregate.generation, 1);
         assert_eq!(aggregate.severity, SignalSeverity::Critical);
     }
@@ -1460,6 +1866,24 @@ mod tests {
         assert_eq!(projections.len(), 1);
         let issue = &projections[0];
         assert_eq!(issue.bead_ids, vec!["jc-123"]);
+        assert!(
+            issue
+                .introduced_evidence
+                .iter()
+                .any(|e| e.kind == EvidenceKind::Bead && e.value == "jc-123")
+        );
+        assert!(
+            issue
+                .remedial_evidence
+                .iter()
+                .any(|e| e.kind == EvidenceKind::Commit && e.value == "abc1234")
+        );
+        assert!(
+            issue
+                .deployed_evidence
+                .iter()
+                .any(|e| e.kind == EvidenceKind::Deployment)
+        );
         assert_eq!(issue.remedial_commit.as_deref(), Some("abc1234"));
         assert_eq!(issue.production_commit.as_deref(), Some("def5678"));
         assert!(issue.git_commits.contains(&"abc1234".to_string()));
@@ -1483,6 +1907,61 @@ mod tests {
             store.lifecycles.values().next().unwrap().signal_ids.len(),
             1
         );
+    }
+
+    #[test]
+    fn project_owned_bead_contract_and_merged_evidence_drive_tracked_state() {
+        let cfg = config();
+        let mut store = ExternalSignalStore::default();
+        let webhook: GrafanaWebhook =
+            serde_json::from_slice(&payload_with_custom_bead_contract()).unwrap();
+
+        project_webhook(&mut store, &cfg, "r1", &webhook, Utc::now());
+
+        let issue = issue_projections(&store, Utc::now()).pop().unwrap();
+        assert_eq!(issue.bead_ids, vec!["jc-owned"]);
+        assert!(
+            issue
+                .links
+                .iter()
+                .any(|link| link.url == "https://beads.local/jc-owned")
+        );
+        assert!(
+            issue
+                .merged_evidence
+                .iter()
+                .any(|e| e.kind == EvidenceKind::Commit && e.value == "feed123")
+        );
+        assert_eq!(issue.state, LifecycleState::Merged);
+    }
+
+    #[test]
+    fn lifecycle_deserializes_legacy_and_new_states() {
+        assert_eq!(
+            serde_json::from_str::<LifecycleState>("\"firing\"").unwrap(),
+            LifecycleState::Observed
+        );
+        assert_eq!(
+            serde_json::from_str::<LifecycleState>("\"resolved\"").unwrap(),
+            LifecycleState::Monitoring
+        );
+        assert_eq!(
+            serde_json::from_str::<LifecycleState>("\"remediation_in_progress\"").unwrap(),
+            LifecycleState::RemediationInProgress
+        );
+    }
+
+    #[test]
+    fn legacy_project_env_builds_registry_with_static_deployment_adapter() {
+        let registry = parse_projects("alpha=/repo/alpha,beta=/repo/beta").unwrap();
+        let alpha = &registry.projects["alpha"];
+        assert_eq!(alpha.project_key, "alpha");
+        assert_eq!(alpha.working_dir, PathBuf::from("/repo/alpha"));
+        assert_eq!(
+            alpha.deployment_adapters[0].adapter_type,
+            DeploymentAdapterType::StaticConfig
+        );
+        assert!(alpha.bead.id_labels.is_empty());
     }
 
     #[test]
@@ -1572,6 +2051,7 @@ mod tests {
                 receipt_id: receipt_id.to_string(),
                 delivery_key: "delivery-dlq".to_string(),
                 source_id: cfg.source_id.clone(),
+                adapter_type: cfg.adapter_type,
                 adapter_version: ADAPTER_VERSION.to_string(),
                 project_key: "jcode".to_string(),
                 received_at: now,
