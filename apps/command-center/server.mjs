@@ -1,4 +1,4 @@
-import { createReadStream } from "node:fs";
+import { createReadStream, realpathSync } from "node:fs";
 import { access, stat } from "node:fs/promises";
 import http from "node:http";
 import path from "node:path";
@@ -22,7 +22,9 @@ function resolvePublicFile(publicDir, pathname) {
 
   const filePath = path.resolve(publicDir, relativePath);
   const publicRoot = path.resolve(publicDir);
-  return filePath === publicRoot || filePath.startsWith(`${publicRoot}${path.sep}`) ? filePath : null;
+  return filePath === publicRoot || filePath.startsWith(`${publicRoot}${path.sep}`)
+    ? filePath
+    : null;
 }
 
 async function serveStatic(request, response, publicDir) {
@@ -63,8 +65,9 @@ async function serveStatic(request, response, publicDir) {
 
 async function proxyApi(request, response, apiUrl) {
   const target = new URL(request.url ?? "/", apiUrl);
-  const headers = { ...request.headers, host: target.host, origin: target.origin };
+  const headers = { ...request.headers, host: target.host };
   delete headers.connection;
+  if (target.pathname === "/api/command-center/bootstrap") delete headers.origin;
 
   try {
     const upstream = await fetch(target, {
@@ -86,7 +89,10 @@ async function proxyApi(request, response, apiUrl) {
   }
 }
 
-export function createCommandCenterServer({ publicDir = path.join(thisDirectory, "dist"), apiUrl } = {}) {
+export function createCommandCenterServer({
+  publicDir = path.join(thisDirectory, "dist"),
+  apiUrl,
+} = {}) {
   if (!apiUrl) throw new Error("apiUrl is required");
 
   return http.createServer((request, response) => {
@@ -102,4 +108,31 @@ export function createCommandCenterServer({ publicDir = path.join(thisDirectory,
     }
     void serveStatic(request, response, publicDir);
   });
+}
+
+function parseBind(value) {
+  const separator = value.lastIndexOf(":");
+  const host = value.slice(0, separator);
+  const port = Number(value.slice(separator + 1));
+  if (!host || !Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`invalid JCODE_COMMAND_CENTER_UI_BIND: ${value}`);
+  }
+  return { host, port };
+}
+
+if (
+  process.argv[1] &&
+  realpathSync.native(process.argv[1]) === realpathSync.native(fileURLToPath(import.meta.url))
+) {
+  const bind = parseBind(process.env.JCODE_COMMAND_CENTER_UI_BIND ?? "127.0.0.1:43119");
+  const server = createCommandCenterServer({
+    publicDir: process.env.JCODE_COMMAND_CENTER_PUBLIC_DIR ?? path.join(thisDirectory, "public"),
+    apiUrl: process.env.JCODE_COMMAND_CENTER_API_URL ?? "http://127.0.0.1:43118",
+  });
+  server.listen(bind.port, bind.host, () => {
+    console.log(`Jcode Command Center listening on http://${bind.host}:${bind.port}`);
+  });
+  const shutdown = () => server.close(() => process.exit(0));
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
 }

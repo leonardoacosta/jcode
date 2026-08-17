@@ -55,6 +55,49 @@ The daemon lifecycle reads these experimental environment variables:
 
 The host is owned by the daemon runtime task scope. Daemon shutdown and reload cancel the lifecycle task, gracefully stop the HTTP listener, and release the port. There is no independently managed Node service in the deployed topology.
 
+## Standalone topology
+
+The preferred deployment separates UI delivery from Jcode domain authority:
+
+```text
+browser -> 127.0.0.1:43119 (Node UI service)
+                         -> /api/command-center/* proxy
+                         -> 127.0.0.1:43118 (Jcode daemon)
+```
+
+The Node service serves only the built SPA, `/healthz`, and the same-origin API
+proxy. Jcode still owns authentication, CSRF, snapshots, commands, events,
+initiatives, schedules, runs, and durable state. The Node service has no domain
+database or credential store. Both listeners remain loopback-only unless an
+operator places an authenticated tunnel or reverse proxy in front of them.
+
+From the repository root, install or upgrade only the UI with:
+
+```bash
+./install-command-center.sh
+```
+
+The installer builds with the pinned lockfile, stages an immutable release under
+`~/.local/lib/jcode-command-center/releases/`, atomically switches `current`,
+writes and enables `jcode-command-center.service`, restarts it, and verifies
+`http://127.0.0.1:43119/healthz`. A failed activation restores the prior release.
+It does not rebuild or replace the Jcode binary.
+
+Operational commands:
+
+```bash
+systemctl --user status jcode-command-center.service
+journalctl --user -u jcode-command-center.service -f
+systemctl --user restart jcode-command-center.service
+curl --fail http://127.0.0.1:43119/healthz
+```
+
+Configuration lives in `~/.config/jcode-command-center.env`. The supported
+installer overrides are `JCODE_COMMAND_CENTER_UI_BIND`,
+`JCODE_COMMAND_CENTER_API_URL`, and `JCODE_COMMAND_CENTER_INSTALL_ROOT`.
+The existing daemon-hosted asset mode remains available as a compatibility
+fallback, but it is no longer the preferred UI deployment path.
+
 ## Browser sessions
 
 Browser sessions are short lived and scoped to command-center routes and commands. Bootstrap tokens must not contain provider credentials and must not be reusable bearer secrets in URLs, local storage, or generated fixtures. State-changing requests require same-origin and CSRF proof plus a client-generated idempotency key.
@@ -166,6 +209,51 @@ Frontend-only commits participate in the same post-commit deployment queue.
 - Do not run acceptance against `~/.jcode/builds/shared-server/jcode` unless the test explicitly targets the managed topology post gate.
 - Store deterministic fixtures under `fixtures/command-center/` rather than in `apps/command-center` so support gates remain independent of frontend implementation churn.
 - Capture logs with command-center security mode, bound address, stream ID, snapshot revision, and command correlation ID. Redact bootstrap tokens, CSRF tokens, provider credentials, and local filesystem secrets.
+
+### Install, enable, inspect, and reload
+
+From the repository root, the normal standalone asset and binary deployment is:
+
+```bash
+./scripts/install_command_center_assets.sh
+./scripts/install_release.sh              # release-lto by default
+# ./scripts/install_release.sh --fast     # use the non-LTO release profile
+```
+
+The asset destination can be overridden with `JCODE_COMMAND_CENTER_ASSET_DEST`.
+The daemon reads the installed bundle through `JCODE_COMMAND_CENTER_ASSET_DIR`
+when an alternate location is required. Enable the experimental host explicitly
+and choose a fixed loopback port when operating it manually:
+
+```bash
+export JCODE_COMMAND_CENTER_ENABLED=1
+export JCODE_COMMAND_CENTER_BIND_ADDR=127.0.0.1:43118
+export JCODE_COMMAND_CENTER_ASSET_DIR="$HOME/.jcode/command-center/public"
+jcode server reload
+```
+
+Useful operational checks are:
+
+```bash
+jcode --version
+readlink -f "$HOME/.local/bin/jcode"
+readlink -f "$HOME/.jcode/builds/current/jcode"
+curl --fail http://127.0.0.1:43118/initiatives
+jcode server reload
+```
+
+The HTTP request is only a listener/route check. Protected API calls still
+require a scoped browser session and must be exercised through the acceptance
+or security gates. If a reload is not desired during an install, set
+`JCODE_SKIP_SERVER_RELOAD=1` and reload explicitly after confirming the binary
+and asset paths.
+
+For commit-driven deployment, `scripts/install_deploy_hook.sh` installs the
+post-commit hook. Build-affecting commits are rebuilt in a detached worktree,
+assets are installed, the release is installed, and the shared daemon is
+reloaded. `JCODE_NO_DEPLOY=1 git commit ...` skips the hook for one commit;
+`JCODE_DEPLOY_FORCE=1 git commit ...` forces the deployment path. Inspect
+`target/deploy.log` when the asynchronous worker reports a failure.
 
 ## Rollback
 
