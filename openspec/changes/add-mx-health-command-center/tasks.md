@@ -1,7 +1,9 @@
 ## 1. Contract Provenance and Baseline
 
-- [ ] 1.1 Record the Jcode base SHA, dirty baseline, active overlapping lanes, and owned paths before implementation. Preserve unrelated edits, especially the existing modification to `apps/command-center/tests/command-center.test.tsx`.
+- [x] 1.1 Record the Jcode base SHA, dirty baseline, active overlapping lanes, and owned paths before implementation. Preserve unrelated edits, especially the existing modification to `apps/command-center/tests/command-center.test.tsx`.
+  - Evidence (2026-08-17): Jcode branch `dev` at `5e1152f2a`; the pre-existing dirty baseline includes Command Center edits in `apps/command-center/src/app.tsx`, `apps/command-center/src/components/CommandCenter.tsx`, and `apps/command-center/tests/command-center.test.tsx`, plus unrelated swarm, TUI, isometric-map, generated-image, external-signal, output, and target artifacts. This apply owns only the MX health change and must preserve those bytes unless explicitly adopted after conflict review.
 - [ ] 1.2 Locate the committed MX `GET /health/v1` authority and record MX repository identity, commit SHA, contract/OpenAPI/schema path, schema version, compatibility rules, and SHA-256 digest. Block if the contract is not committed or not redacted/authenticated.
+  - Blocked (2026-08-17): exhaustive inspection of `/home/nyaptor/dev/personal/mesh` at `d10d80d964bda7e12dc5ddd245f7fc7031c9fea1`, all local refs/history, its two local worktrees, all local MX module roots, and recent session evidence found no `/health/v1` or `mx.health.v1` contract bytes or implementing commit. No adapter or UI implementation may begin until the committed authority is locally inspectable.
 - [ ] 1.3 Copy only a minimal redacted contract fixture into Jcode test data, with provenance metadata and a drift check against the pinned source bytes. Update this proposal first if committed fields materially differ.
 
 ## 2. Daemon Adapter and Projection
