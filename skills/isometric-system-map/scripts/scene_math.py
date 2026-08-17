@@ -4,7 +4,17 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
+from math import isclose
 from typing import Any
+
+
+def assert_two_to_one(tile_width: float, tile_height: float) -> None:
+    """Reject projection dimensions that would distort the isometric terrain."""
+
+    if tile_width <= 0 or tile_height <= 0 or not isclose(
+        float(tile_width), float(tile_height) * 2, rel_tol=0, abs_tol=1e-9
+    ):
+        raise ValueError("tile_width must equal 2 × tile_height")
 
 
 def project(
@@ -22,6 +32,7 @@ def project(
     the renderer so art direction can control how tall the same semantic building feels.
     """
 
+    assert_two_to_one(tile_width, tile_height)
     return (
         float(origin_x + (x - y) * tile_width / 2),
         float(origin_y + (x + y) * tile_height / 2 - z_px),

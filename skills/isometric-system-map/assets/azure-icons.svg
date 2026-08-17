@@ -1,0 +1,270 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+<!--
+  azure-topology-style — icon sprite (v2)
+  Lucide-style stand-ins keyed by Azure resource slug + CI/CD primitives.
+  To upgrade to Microsoft's official Azure Architecture Icons, replace each
+  <symbol> body with the official SVG path while keeping symbol id + viewBox.
+
+  Usage:
+    <svg width="24" height="24" style="color: var(--fam-compute-stroke);">
+      <use href="../assets/azure-icons.svg#az-app-service"/>
+    </svg>
+-->
+<defs>
+
+<!-- ============ COMPUTE ============ -->
+<symbol id="az-app-service" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2.5" y="4" width="19" height="16" rx="0"/>
+  <path d="M2.5 9h19"/>
+  <circle cx="5.5" cy="6.5" r=".7" fill="currentColor"/>
+  <circle cx="8" cy="6.5" r=".7" fill="currentColor"/>
+  <circle cx="10.5" cy="6.5" r=".7" fill="currentColor"/>
+  <path d="M9 13l2 2 4-4"/>
+</symbol>
+<symbol id="az-app-service-plan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2.5" y="3" width="19" height="6" rx="0"/>
+  <rect x="2.5" y="13" width="19" height="8" rx="0"/>
+  <circle cx="5.5" cy="6" r=".7" fill="currentColor"/>
+  <circle cx="8" cy="6" r=".7" fill="currentColor"/>
+  <path d="M5 16h6M5 19h4M15 16h4M15 19h2"/>
+</symbol>
+<symbol id="az-function-app" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z"/>
+</symbol>
+<symbol id="az-static-web-app" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="3" width="18" height="18"/>
+  <circle cx="12" cy="12" r="4"/>
+  <path d="M3 12h4M17 12h4M12 3v4M12 17v4"/>
+</symbol>
+<symbol id="az-logic-app" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="5" cy="7" r="2"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="12" r="2"/>
+  <path d="M7 7h6a3 3 0 0 1 3 3v0a2 2 0 0 0 2 2"/>
+  <path d="M7 17h6a3 3 0 0 0 3-3v0a2 2 0 0 1 2-2"/>
+</symbol>
+<symbol id="az-aks" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z"/>
+  <path d="M12 2v9M12 11l8-4.5M12 11l-8-4.5"/>
+  <circle cx="12" cy="11" r="2"/>
+</symbol>
+<symbol id="az-container-apps" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/>
+  <rect x="8" y="13" width="8" height="8"/>
+</symbol>
+<symbol id="az-vm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2" y="4" width="20" height="14"/>
+  <path d="M2 18l4 4h12l4-4"/>
+  <path d="M7 9l4 4-4 4M13 17h4"/>
+</symbol>
+
+<!-- ============ DATA ============ -->
+<symbol id="az-sql-database" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+  <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+</symbol>
+<symbol id="az-sql-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+  <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
+  <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+  <path d="M9 9l2 2-2 2M15 9l-2 2 2 2"/>
+</symbol>
+<symbol id="az-cosmos-db" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="9"/>
+  <ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(45 12 12)"/>
+  <ellipse cx="12" cy="12" rx="9" ry="3.5" transform="rotate(-45 12 12)"/>
+  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+</symbol>
+<symbol id="az-storage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2" y="5" width="20" height="5"/><rect x="2" y="14" width="20" height="5"/>
+  <circle cx="5.5" cy="7.5" r=".7" fill="currentColor"/>
+  <circle cx="5.5" cy="16.5" r=".7" fill="currentColor"/>
+  <path d="M9 7.5h10M9 16.5h10"/>
+</symbol>
+<symbol id="az-redis" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 6c0-1.5 4-3 9-3s9 1.5 9 3-4 3-9 3-9-1.5-9-3z"/>
+  <path d="M3 6v4c0 1.5 4 3 9 3s9-1.5 9-3V6"/>
+  <path d="M3 12v4c0 1.5 4 3 9 3s9-1.5 9-3v-4"/>
+</symbol>
+
+<!-- ============ IDENTITY ============ -->
+<symbol id="az-key-vault" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="4" width="18" height="16"/>
+  <circle cx="9" cy="13" r="2.5"/>
+  <path d="M11 11l5-5M15 5l2 2M14 6l2 2"/>
+</symbol>
+<symbol id="az-managed-identity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="8" r="3.5"/>
+  <path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/>
+  <path d="M17 4l2 2-2 2M19 6h-4"/>
+</symbol>
+
+<!-- ============ INTEGRATION ============ -->
+<symbol id="az-app-configuration" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="4" width="18" height="16"/>
+  <path d="M3 8h18M7 12h10M7 16h10"/>
+  <circle cx="10" cy="12" r="1" fill="currentColor"/>
+  <circle cx="15" cy="16" r="1" fill="currentColor"/>
+</symbol>
+<symbol id="az-apim" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="3.5"/>
+  <circle cx="12" cy="12" r="8" stroke-dasharray="2 2.5"/>
+  <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+  <path d="M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>
+</symbol>
+<symbol id="az-front-door" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="9"/>
+  <ellipse cx="12" cy="12" rx="4" ry="9"/>
+  <path d="M3 12h18"/>
+</symbol>
+<symbol id="az-app-gateway" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 21V11l9-7 9 7v10"/>
+  <path d="M9 21v-7h6v7"/>
+  <path d="M9 11h6"/>
+</symbol>
+<symbol id="az-service-bus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="5" width="18" height="4"/><rect x="3" y="15" width="18" height="4"/>
+  <path d="M7 9v6M12 9v6M17 9v6"/>
+</symbol>
+<symbol id="az-event-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/>
+  <circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>
+  <circle cx="12" cy="12" r="2.5"/>
+  <path d="M7.5 7.5l3 3M16.5 7.5l-3 3M7.5 16.5l3-3M16.5 16.5l-3-3"/>
+</symbol>
+
+<!-- ============ NETWORK ============ -->
+<symbol id="az-vnet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2.5" y="2.5" width="19" height="19"/>
+  <circle cx="7" cy="7" r="1.5"/><circle cx="17" cy="7" r="1.5"/>
+  <circle cx="7" cy="17" r="1.5"/><circle cx="17" cy="17" r="1.5"/>
+  <circle cx="12" cy="12" r="2"/>
+  <path d="M8.5 8.5l2.5 2.5M15.5 8.5l-2.5 2.5M8.5 15.5l2.5-2.5M15.5 15.5l-2.5-2.5"/>
+</symbol>
+<symbol id="az-subnet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="3" width="18" height="18" stroke-dasharray="3 2"/>
+  <path d="M3 12h18M12 3v18"/>
+  <circle cx="7.5" cy="7.5" r=".7" fill="currentColor"/>
+  <circle cx="16.5" cy="7.5" r=".7" fill="currentColor"/>
+  <circle cx="7.5" cy="16.5" r=".7" fill="currentColor"/>
+  <circle cx="16.5" cy="16.5" r=".7" fill="currentColor"/>
+</symbol>
+<symbol id="az-private-endpoint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2" y="9" width="20" height="10"/>
+  <circle cx="7" cy="14" r="1.5"/>
+  <path d="M10 14h6"/>
+  <path d="M12 4v3M9 5l3-2 3 2"/>
+  <circle cx="18" cy="14" r="1.5" fill="currentColor"/>
+</symbol>
+<symbol id="az-private-dns" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="9"/>
+  <path d="M3 12h18"/>
+  <ellipse cx="12" cy="12" rx="4" ry="9"/>
+</symbol>
+<symbol id="az-nsg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 2L4 5v7c0 4.5 3.5 8 8 10 4.5-2 8-5.5 8-10V5l-8-3z"/>
+  <path d="M9 12l2 2 4-4"/>
+</symbol>
+<symbol id="az-vnet-peer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2" y="4" width="9" height="9"/><rect x="13" y="11" width="9" height="9"/>
+  <path d="M11 6l4 0 -1 -1 1 1 -1 1"/>
+  <path d="M13 18l-4 0 1 1 -1 -1 1 -1"/>
+</symbol>
+<symbol id="az-bastion" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 2L4 5v7c0 4.5 3.5 8 8 10 4.5-2 8-5.5 8-10V5l-8-3z"/>
+  <rect x="8" y="9" width="8" height="6"/>
+  <path d="M8 11h8"/>
+</symbol>
+<symbol id="az-firewall" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="6" width="18" height="12"/>
+  <path d="M3 10h18M3 14h18M7 6v4M11 10v4M15 6v4M19 10v4M7 14v4M11 14v4M15 14v4"/>
+  <circle cx="12" cy="12" r="2" fill="currentColor"/>
+</symbol>
+
+<!-- ============ MONITOR ============ -->
+<symbol id="az-app-insights" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 12h3l3-9 5 18 3-9h4"/>
+</symbol>
+<symbol id="az-log-analytics" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <line x1="3" y1="20" x2="21" y2="20"/>
+  <rect x="5" y="12" width="3" height="8"/>
+  <rect x="10.5" y="6" width="3" height="14"/>
+  <rect x="16" y="14" width="3" height="6"/>
+</symbol>
+<symbol id="az-grafana" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="9"/>
+  <path d="M12 7v5l3.5 2"/>
+</symbol>
+
+<!-- ============ GOVERNANCE ============ -->
+<symbol id="az-subscription" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="2.5" y="3" width="19" height="18" stroke-dasharray="4 2"/>
+  <path d="M7 7h10M7 11h10M7 15h6"/>
+  <circle cx="17" cy="17" r="2.5"/>
+  <path d="M16 17l.8.8L18 16.5"/>
+</symbol>
+<symbol id="az-resource-group" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="3" width="18" height="18"/>
+  <path d="M3 9h18M9 9v12"/>
+  <circle cx="6" cy="6" r=".8" fill="currentColor"/>
+</symbol>
+
+<!-- ============ DEVOPS / CI-CD ============ -->
+<symbol id="az-acr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="6" width="18" height="14"/>
+  <rect x="3" y="6" width="6" height="6"/>
+  <rect x="9" y="6" width="6" height="6"/>
+  <rect x="15" y="6" width="6" height="6"/>
+  <path d="M6 3v3M12 3v3M18 3v3"/>
+</symbol>
+<symbol id="az-ado" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M7 8a4 4 0 1 1 0 8c-2 0-3-1-4-3l4-2 -4-2c1-2 2-3 4-3z"/>
+  <path d="M17 8a4 4 0 1 0 0 8c2 0 3-1 4-3l-4-2 4-2c-1-2-2-3-4-3z"/>
+</symbol>
+<symbol id="az-git-repo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M4 4v15a2 2 0 0 0 2 2h14V7H6a2 2 0 0 1-2-2z"/>
+  <path d="M9 11v6M9 11a2 2 0 0 0 2-2v0a2 2 0 1 1 4 0v0a2 2 0 0 0 2 2v0M9 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+</symbol>
+<symbol id="az-branch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="8" r="2"/>
+  <path d="M6 8v8"/>
+  <path d="M18 10c0 4-6 4-6 8"/>
+</symbol>
+<symbol id="az-pull-request" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>
+  <path d="M6 8v8"/>
+  <path d="M14 6h2a2 2 0 0 1 2 2v8"/>
+  <path d="M12 4l2 2-2 2"/>
+</symbol>
+<symbol id="az-merge" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="6" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>
+  <path d="M6 8c0 6 6 4 12 10"/>
+</symbol>
+<symbol id="az-build-pipeline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="6" cy="12" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/>
+  <path d="M8.5 12h1M14.5 12h1"/>
+  <path d="M6 4v5.5M12 4v5.5M18 4v5.5M6 14.5V20M12 14.5V20M18 14.5V20"/>
+</symbol>
+<symbol id="az-release-pipeline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M5 12L12 4l7 8-7 8z"/>
+  <path d="M9 12h6"/>
+  <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+</symbol>
+<symbol id="az-approval" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M12 2L4 5v7c0 4.5 3.5 8 8 10 4.5-2 8-5.5 8-10V5l-8-3z"/>
+  <path d="M9 12l2 2 4-4"/>
+</symbol>
+<symbol id="az-build-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="9"/>
+  <path d="M8 12l3 3 5-6"/>
+</symbol>
+<symbol id="az-build-failed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="12" cy="12" r="9"/>
+  <path d="M9 9l6 6M15 9l-6 6"/>
+</symbol>
+<symbol id="az-build-running" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M21 12a9 9 0 1 1-3-6.7"/>
+  <path d="M21 3v6h-6"/>
+</symbol>
+
+</defs>
+</svg>

@@ -11,6 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = ROOT / "scripts" / "validate_scene.py"
 MATH = ROOT / "scripts" / "scene_math.py"
 FIXTURE = Path(__file__).parent / "fixtures" / "valid-scene.json"
+AZURE_SPRITE = ROOT / "assets" / "azure-icons.svg"
+AZURE_TOKENS = ROOT / "assets" / "azure-tokens.json"
 
 
 def load_module(path: Path, name: str):
@@ -37,6 +39,11 @@ class SceneContractTests(unittest.TestCase):
         self.assertEqual(math.project(0, 1, 0, 64, 32, 100, 50), (68.0, 66.0))
         self.assertEqual(math.project(1, 1, 2, 64, 32, 100, 50), (100.0, 80.0))
 
+    def test_projection_rejects_non_two_to_one_tiles(self):
+        math = load_module(MATH, "isometric_scene_math_ratio")
+        with self.assertRaisesRegex(ValueError, "tile_width must equal 2 × tile_height"):
+            math.project(1, 1, 0, 64, 40, 100, 50)
+
     def test_collision_detection_uses_full_building_footprints(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_collision")
         broken = copy.deepcopy(self.document)
@@ -55,6 +62,16 @@ class SceneContractTests(unittest.TestCase):
         errors = validator.validate_scene(broken)
         self.assertTrue(any("route intersects node 'database'" in error for error in errors), errors)
 
+    def test_grid_routes_must_start_on_or_just_outside_the_source_boundary(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_endpoint")
+        broken = copy.deepcopy(self.document)
+        broken["paths"][0]["route"][0] = {"x": 2, "y": 1.5}
+        errors = validator.validate_scene(broken)
+        self.assertIn(
+            "paths[0].route[0]: must start on or just outside source node 'pipeline' boundary",
+            errors,
+        )
+
     def test_flow_steps_require_direct_structured_evidence(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_evidence")
         broken = copy.deepcopy(self.document)
@@ -65,6 +82,64 @@ class SceneContractTests(unittest.TestCase):
             errors,
         )
 
+    def test_flow_step_payload_must_travel_on_the_referenced_path(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_payload_route")
+        broken = copy.deepcopy(self.document)
+        broken["flows"][0]["steps"][0]["payload"] = "diagnostic"
+        errors = validator.validate_scene(broken)
+        self.assertIn(
+            "flows[0].steps[0].payload: payload 'diagnostic' is not carried by path 'deploy-app'",
+            errors,
+        )
+
+    def test_static_dependency_scene_can_omit_payloads_and_flows(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_static")
+        static = copy.deepcopy(self.document)
+        static["payloads"] = []
+        static["flows"] = []
+        for path in static["paths"]:
+            path["kind"] = "dependency"
+            path["payload_ids"] = []
+        self.assertEqual(validator.validate_scene(static), [])
+
+    def test_non_dependency_path_requires_a_payload(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_empty_payload")
+        broken = copy.deepcopy(self.document)
+        broken["paths"][0]["payload_ids"] = []
+        errors = validator.validate_scene(broken)
+        self.assertIn(
+            "paths[0].payload_ids: may be empty only when kind is 'dependency'",
+            errors,
+        )
+
+    def test_each_used_path_kind_requires_a_structured_treatment(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_treatments")
+        broken = copy.deepcopy(self.document)
+        broken["art_direction"]["path_treatments"] = {
+            "delivery": self._treatment(),
+            "dependency": self._treatment(),
+        }
+        errors = validator.validate_scene(broken)
+        self.assertIn(
+            "art_direction.path_treatments.telemetry: required for used path kind",
+            errors,
+        )
+
+    def test_path_treatments_require_non_color_channels(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_treatment_fields")
+        broken = copy.deepcopy(self.document)
+        broken["art_direction"]["path_treatments"] = {
+            "delivery": self._treatment(),
+            "dependency": self._treatment(),
+            "telemetry": self._treatment(),
+        }
+        del broken["art_direction"]["path_treatments"]["dependency"]["marker"]
+        errors = validator.validate_scene(broken)
+        self.assertIn(
+            "art_direction.path_treatments.dependency.marker: required non-empty string",
+            errors,
+        )
+
     def test_scene_requires_varied_building_forms(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_forms")
         broken = copy.deepcopy(self.document)
@@ -72,6 +147,34 @@ class SceneContractTests(unittest.TestCase):
             node["form"] = "tower"
         errors = validator.validate_scene(broken)
         self.assertTrue(any("at least 3 distinct building forms" in error for error in errors), errors)
+
+    def test_nodes_accept_known_azure_resource_metadata(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_azure_metadata")
+        document = copy.deepcopy(self.document)
+        document["nodes"][1]["resource_type"] = "Microsoft.Web/sites"
+        document["nodes"][1]["icon"] = "az-app-service"
+        self.assertEqual(validator.validate_scene(document), [])
+
+    def test_nodes_reject_unknown_azure_icon_ids(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_azure_icon")
+        broken = copy.deepcopy(self.document)
+        broken["nodes"][1]["icon"] = "az-made-up-service"
+        errors = validator.validate_scene(broken)
+        self.assertIn(
+            "nodes[1].icon: unsupported Azure topology icon 'az-made-up-service'",
+            errors,
+        )
+
+    def test_vendored_azure_assets_are_complete_and_in_sync(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_azure_assets")
+        self.assertTrue(AZURE_SPRITE.exists())
+        self.assertTrue(AZURE_TOKENS.exists())
+        sprite = AZURE_SPRITE.read_text()
+        tokens = json.loads(AZURE_TOKENS.read_text())
+        self.assertEqual(tokens["canvas"]["azure_blue"], "#0078d4")
+        self.assertEqual(tokens["families"]["compute"], {"stroke": "#c8460e", "fill": "#fde6d4"})
+        for icon_id in validator.AZURE_ICON_IDS:
+            self.assertIn(f'id="{icon_id}"', sprite)
 
     def test_contract_rejects_surrounding_ui_configuration(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_ui")
@@ -89,6 +192,17 @@ class SceneContractTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("valid isometric scene", result.stdout.lower())
+
+    @staticmethod
+    def _treatment():
+        return {
+            "stroke_pattern": "solid",
+            "weight": "medium",
+            "marker": "terminal arrow",
+            "texture": "clean ink",
+            "motion_cadence": "steady",
+            "reduced_motion": "static endpoint marker",
+        }
 
 
 if __name__ == "__main__":

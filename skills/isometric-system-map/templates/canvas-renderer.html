@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>__DOCUMENT_TITLE__</title>
+  <style>
+    :root {
+      --page-bg: #090b11;
+      --text: #f2f4f8;
+      --muted: #9ba6b7;
+      --hairline: rgba(255,255,255,.18);
+      --control-bg: rgba(9,11,17,.82);
+      --control-hover: rgba(255,255,255,.09);
+      --focus: #ffffff;
+      --font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-width: 320px; height: 100%; margin: 0; }
+    body {
+      overflow: hidden;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: var(--font-family);
+    }
+    button { font: inherit; }
+    .map-shell { position: relative; width: 100%; height: 100%; min-height: 520px; isolation: isolate; }
+    .canvas-stage { position: absolute; inset: 0; overflow: hidden; }
+    .canvas-stage canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    canvas[data-layer="terrain"], canvas[data-layer="architecture"] { pointer-events: none; }
+    canvas[data-layer="motion"] { touch-action: manipulation; }
+    .scene-caption {
+      position: absolute;
+      z-index: 5;
+      top: clamp(18px, 3vw, 42px);
+      left: clamp(18px, 3vw, 46px);
+      max-width: min(560px, calc(100vw - 220px));
+      pointer-events: none;
+      text-wrap: balance;
+    }
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 650;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(18px, 2.1vw, 31px);
+      line-height: 1.08;
+      letter-spacing: -.035em;
+    }
+    .subtitle {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: clamp(10px, 1vw, 13px);
+      line-height: 1.55;
+    }
+    .scene-controls {
+      position: absolute;
+      z-index: 6;
+      top: clamp(18px, 3vw, 42px);
+      right: clamp(18px, 3vw, 46px);
+      display: flex;
+      gap: 8px;
+    }
+    .scene-controls button,
+    .scene-controls select {
+      min-width: 42px;
+      min-height: 40px;
+      padding: 9px 12px;
+      border: 1px solid var(--hairline);
+      border-radius: 3px;
+      background: var(--control-bg);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .scene-controls select { max-width: min(260px, 36vw); }
+    .scene-controls button:hover,
+    .scene-controls select:hover { background: var(--control-hover); }
+    .scene-controls button:focus-visible,
+    .scene-controls select:focus-visible,
+    .legend button:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
+    }
+    .legend {
+      position: absolute;
+      z-index: 5;
+      left: clamp(18px, 3vw, 46px);
+      bottom: clamp(16px, 2.7vw, 38px);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px 13px;
+      max-width: calc(100vw - 92px);
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .04em;
+    }
+    .legend button {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 28px;
+      padding: 3px 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+    }
+    .legend-swatch { width: 24px; height: 8px; display: inline-block; }
+    .tooltip {
+      position: fixed;
+      z-index: 9;
+      max-width: min(360px, calc(100vw - 32px));
+      padding: 10px 12px;
+      border: 1px solid var(--hairline);
+      border-radius: 3px;
+      background: var(--control-bg);
+      color: var(--text);
+      box-shadow: 0 12px 40px rgba(0,0,0,.24);
+      font-size: 11px;
+      line-height: 1.45;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(5px);
+      transition: opacity 100ms linear, transform 100ms linear;
+    }
+    .tooltip[data-visible="true"] { opacity: 1; transform: translateY(0); }
+    .tooltip strong { display: block; margin-bottom: 4px; font-size: 12px; }
+    .tooltip span { display: block; color: var(--muted); }
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0,0,0,0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+    @media (max-width: 720px) {
+      .scene-caption { max-width: calc(100vw - 118px); }
+      .subtitle { display: none; }
+      .scene-controls { flex-direction: column; }
+      .legend { right: 18px; max-width: none; }
+      .legend button span:last-child { display: none; }
+    }
+    @media (forced-colors: active) {
+      .scene-controls button { border-color: ButtonText; }
+      .tooltip { border-color: CanvasText; }
+    }
+  </style>
+</head>
+<body data-scene-sha256="__SCENE_HASH__">
+  <main class="map-shell" aria-labelledby="scene-title" aria-describedby="scene-summary">
+    <header class="scene-caption">
+      <p class="eyebrow">Isometric system map</p>
+      <h1 id="scene-title">__SCENE_TITLE__</h1>
+      <p class="subtitle">__SCENE_SUBTITLE__</p>
+      <p id="scene-summary" class="sr-only">__SCENE_SUMMARY__</p>
+    </header>
+
+    <div class="scene-controls" aria-label="Map controls">
+      <label id="flow-control" hidden>
+        <span class="sr-only">Flow</span>
+        <select id="flow" aria-label="Flow"></select>
+      </label>
+      <button id="pause" type="button" aria-pressed="false">Pause</button>
+      <button id="export" type="button">PNG</button>
+    </div>
+
+    <section class="canvas-stage" data-scene-sha256="__SCENE_HASH__" aria-label="Interactive isometric terrain">
+      <canvas data-layer="terrain" aria-hidden="true"></canvas>
+      <canvas data-layer="architecture" aria-hidden="true"></canvas>
+      <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect buildings and paths."></canvas>
+      <div class="fallback-copy sr-only" role="group" aria-label="Inspectable map elements">
+        __FALLBACK_BUTTONS__
+      </div>
+      <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
+    </section>
+
+    <nav class="legend" aria-label="Path legend"></nav>
+  </main>
+
+  <script>
+  (() => {
+    "use strict";
+
+    const SCENE = __SCENE_JSON__;
+    const ICON_SVGS = __ICON_SVGS__;
+    const THEME = __THEME_ADAPTER__;
+    const stage = document.querySelector(".canvas-stage");
+    const canvases = {
+      terrain: stage.querySelector('[data-layer="terrain"]'),
+      architecture: stage.querySelector('[data-layer="architecture"]'),
+      motion: stage.querySelector('[data-layer="motion"]'),
+    };
+    const contexts = {
+      terrain: canvases.terrain.getContext("2d", { alpha: false }),
+      architecture: canvases.architecture.getContext("2d"),
+      motion: canvases.motion.getContext("2d"),
+    };
+    const hitContext = document.createElement("canvas").getContext("2d");
+    const tooltip = document.getElementById("tooltip");
+    const flowControl = document.getElementById("flow-control");
+    const flowSelect = document.getElementById("flow");
+    const pauseButton = document.getElementById("pause");
+    const exportButton = document.getElementById("export");
+    const fallbackButtons = Array.from(stage.querySelectorAll("button[data-target-kind]"));
+    const buttonByTarget = new Map(
+      fallbackButtons.map(button => [`${button.dataset.targetKind}:${button.dataset.targetId}`, button]),
+    );
+    const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+    const iconImages = new Map();
+    const state = {
+      width: 0,
+      height: 0,
+      dpr: 1,
+      tileWidth: 64,
+      tileHeight: 32,
+      originX: 0,
+      originY: 0,
+      heightUnit: 22,
+      nodeHits: [],
+      pathHits: [],
+      routeGeometry: new Map(),
+      selected: null,
+      hovered: null,
+      pointer: null,
+      paused: reducedMotion.matches,
+      raf: null,
+      startedAt: null,
+      lastTimestamp: 0,
+      frameCount: 0,
+      resizeRaf: null,
+      activeFlowId: SCENE.flows[0]?.id || null,
+      renderedIcons: [],
+    };
+
+    function applyDocumentTheme() {
+      const css = THEME.css || {};
+      const root = document.documentElement.style;
+      root.setProperty("--page-bg", css.pageBackground || "#090b11");
+      root.setProperty("--text", css.text || "#f2f4f8");
+      root.setProperty("--muted", css.muted || "#9ba6b7");
+      root.setProperty("--hairline", css.hairline || "rgba(255,255,255,.18)");
+      root.setProperty("--control-bg", css.controlBackground || "rgba(9,11,17,.82)");
+      root.setProperty("--control-hover", css.controlHover || "rgba(255,255,255,.09)");
+      root.setProperty("--focus", css.focus || "#ffffff");
+      root.setProperty("--font-family", css.fontFamily || 'ui-monospace, "Cascadia Code", monospace');
+      document.documentElement.dataset.theme = THEME.id || "custom";
+    }
+
+    function project(x, y, z = 0) {
+      return {
+        x: state.originX + (x - y) * state.tileWidth / 2,
+        y: state.originY + (x + y) * state.tileHeight / 2 - z * state.heightUnit,
+      };
+    }
+
+    function polygonPath(points) {
+      const path = new Path2D();
+      points.forEach((point, index) => {
+        if (index === 0) path.moveTo(point.x, point.y);
+        else path.lineTo(point.x, point.y);
+      });
+      path.closePath();
+      return path;
+    }
+
+    function polylinePath(points) {
+      const path = new Path2D();
+      points.forEach((point, index) => {
+        if (index === 0) path.moveTo(point.x, point.y);
+        else path.lineTo(point.x, point.y);
+      });
+      return path;
+    }
+
+    function cuboidFaces(node, mass) {
+      const x = node.position.x + mass.ox;
+      const y = node.position.y + mass.oy;
+      const z = mass.z || 0;
+      const floor = [
+        project(x, y, z),
+        project(x + mass.width, y, z),
+        project(x + mass.width, y + mass.depth, z),
+        project(x, y + mass.depth, z),
+      ];
+      const roof = [
+        project(x, y, z + mass.height),
+        project(x + mass.width, y, z + mass.height),
+        project(x + mass.width, y + mass.depth, z + mass.height),
+        project(x, y + mass.depth, z + mass.height),
+      ];
+      return {
+        roof: polygonPath(roof),
+        roofPoints: roof,
+        left: polygonPath([roof[3], roof[2], floor[2], floor[3]]),
+        right: polygonPath([roof[1], roof[2], floor[2], floor[1]]),
+      };
+    }
+
+    function iconColor(node) {
+      if (typeof THEME.iconColor === "function") return THEME.iconColor(node, state);
+      return THEME.css?.text || "#212121";
+    }
+
+    function iconDataUrl(svg, color) {
+      const colored = svg.replaceAll("currentColor", color);
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(colored)}`;
+    }
+
+    async function preloadIcons() {
+      const loads = SCENE.nodes
+        .filter(node => node.icon && ICON_SVGS[node.icon])
+        .map(node => new Promise(resolve => {
+          const image = new Image();
+          image.onload = () => {
+            iconImages.set(node.id, image);
+            resolve();
+          };
+          image.onerror = resolve;
+          image.src = iconDataUrl(ICON_SVGS[node.icon], iconColor(node));
+        }));
+      await Promise.all(loads);
+    }
+
+    function drawNodeIcon(ctx, node, roofPoints, mass) {
+      const image = iconImages.get(node.id);
+      if (!image || !roofPoints || !mass) return false;
+      const iconWorldSize = Math.min(mass.width, mass.depth) * .64;
+      if (iconWorldSize <= 0) return false;
+      const uFraction = iconWorldSize / mass.width;
+      const vFraction = iconWorldSize / mass.depth;
+      const uInset = (1 - uFraction) / 2;
+      const vInset = (1 - vFraction) / 2;
+      const u = {
+        x: roofPoints[1].x - roofPoints[0].x,
+        y: roofPoints[1].y - roofPoints[0].y,
+      };
+      const v = {
+        x: roofPoints[3].x - roofPoints[0].x,
+        y: roofPoints[3].y - roofPoints[0].y,
+      };
+      const origin = {
+        x: roofPoints[0].x + u.x * uInset + v.x * vInset,
+        y: roofPoints[0].y + u.y * uInset + v.y * vInset,
+      };
+      ctx.save();
+      ctx.globalAlpha = node.status === "held" ? .58 : .92;
+      ctx.transform(
+        u.x * uFraction / 24,
+        u.y * uFraction / 24,
+        v.x * vFraction / 24,
+        v.y * vFraction / 24,
+        origin.x,
+        origin.y,
+      );
+      ctx.drawImage(image, 0, 0, 24, 24);
+      ctx.restore();
+      return true;
+    }
+
+    function massesFor(node) {
+      const width = node.footprint.width;
+      const depth = node.footprint.depth;
+      const height = node.height;
+      const inset = Math.min(.22, width * .12, depth * .12);
+      switch (node.form) {
+        case "stack":
+          return [
+            { ox: 0, oy: 0, width, depth, height: height * .42, z: 0 },
+            { ox: inset, oy: inset, width: width - inset * 2, depth: depth - inset * 2, height: height * .34, z: height * .48 },
+            { ox: inset * 1.65, oy: inset * 1.65, width: width - inset * 3.3, depth: depth - inset * 3.3, height: height * .26, z: height * .88 },
+          ];
+        case "cluster":
+          return [
+            { ox: 0, oy: 0, width: width * .43, depth: depth * .43, height: height * .72 },
+            { ox: width * .54, oy: 0, width: width * .43, depth: depth * .43, height },
+            { ox: 0, oy: depth * .54, width: width * .43, depth: depth * .43, height: height * .58 },
+            { ox: width * .54, oy: depth * .54, width: width * .43, depth: depth * .43, height: height * .82 },
+          ];
+        case "gateway":
+          return [
+            { ox: 0, oy: 0, width: width * .28, depth, height },
+            { ox: width * .72, oy: 0, width: width * .28, depth, height },
+            { ox: width * .22, oy: 0, width: width * .56, depth, height: height * .24, z: height * .76 },
+          ];
+        case "lattice": {
+          const postWidth = Math.max(.16, width * .22);
+          const postDepth = Math.max(.16, depth * .16);
+          return [
+            { ox: 0, oy: 0, width: postWidth, depth: postDepth, height },
+            { ox: width - postWidth, oy: 0, width: postWidth, depth: postDepth, height: height * .82 },
+            { ox: 0, oy: depth - postDepth, width: postWidth, depth: postDepth, height: height * .72 },
+            { ox: width - postWidth, oy: depth - postDepth, width: postWidth, depth: postDepth, height: height * .92 },
+            { ox: postWidth * .55, oy: postDepth * .55, width: width - postWidth * 1.1, depth: depth - postDepth * 1.1, height: height * .13, z: height * .78 },
+          ];
+        }
+        case "hub":
+          return [
+            { ox: width * .23, oy: depth * .23, width: width * .54, depth: depth * .54, height },
+            { ox: 0, oy: depth * .34, width: width * .22, depth: depth * .32, height: height * .42 },
+            { ox: width * .78, oy: depth * .34, width: width * .22, depth: depth * .32, height: height * .56 },
+          ];
+        case "bunker":
+          return [
+            { ox: 0, oy: 0, width, depth, height: height * .68 },
+            { ox: width * .18, oy: depth * .18, width: width * .64, depth: depth * .64, height: height * .34, z: height * .67 },
+          ];
+        case "platform":
+          return [
+            { ox: 0, oy: 0, width, depth, height: height * .2 },
+            { ox: inset, oy: inset, width: width - inset * 2, depth: depth - inset * 2, height: height * .42, z: height * .2 },
+          ];
+        case "slab":
+          return [{ ox: 0, oy: 0, width, depth, height: Math.min(height, 1.5) }];
+        default:
+          return [{ ox: 0, oy: 0, width, depth, height }];
+      }
+    }
+
+    function depthKey(node) {
+      const farX = node.position.x + node.footprint.width;
+      const farY = node.position.y + node.footprint.depth;
+      return farX + farY;
+    }
+
+    function routePoints(item) {
+      return item.route.map(point => project(point.x, point.y, 0));
+    }
+
+    function pointOnPolyline(points, progress) {
+      const lengths = [];
+      let total = 0;
+      for (let index = 1; index < points.length; index += 1) {
+        const dx = points[index].x - points[index - 1].x;
+        const dy = points[index].y - points[index - 1].y;
+        const length = Math.hypot(dx, dy);
+        lengths.push(length);
+        total += length;
+      }
+      let remaining = Math.max(0, Math.min(1, progress)) * total;
+      for (let index = 0; index < lengths.length; index += 1) {
+        const length = lengths[index];
+        if (remaining <= length || index === lengths.length - 1) {
+          const ratio = length === 0 ? 0 : remaining / length;
+          return {
+            x: points[index].x + (points[index + 1].x - points[index].x) * ratio,
+            y: points[index].y + (points[index + 1].y - points[index].y) * ratio,
+          };
+        }
+        remaining -= length;
+      }
+      return points[points.length - 1];
+    }
+
+    function fitView() {
+      const sum = SCENE.canvas.grid_width + SCENE.canvas.grid_depth;
+      const horizontal = state.width * .82 * 2 / sum;
+      const vertical = state.height * .64 * 4 / sum;
+      state.tileWidth = Math.max(34, Math.min(112, horizontal, vertical));
+      state.tileHeight = state.tileWidth / 2;
+      state.heightUnit = state.tileHeight * .68;
+      state.originX = state.width * .52;
+      state.originY = Math.max(120, state.height * .2);
+    }
+
+    function prepareCanvases() {
+      const rect = stage.getBoundingClientRect();
+      state.width = Math.max(320, Math.round(rect.width));
+      state.height = Math.max(420, Math.round(rect.height));
+      state.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      Object.entries(canvases).forEach(([name, canvas]) => {
+        canvas.width = Math.round(state.width * state.dpr);
+        canvas.height = Math.round(state.height * state.dpr);
+        canvas.style.width = `${state.width}px`;
+        canvas.style.height = `${state.height}px`;
+        contexts[name].setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      });
+      fitView();
+    }
+
+    function clearTransparent(ctx) {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.restore();
+    }
+
+    function drawTerrain() {
+      const ctx = contexts.terrain;
+      ctx.save();
+      ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      THEME.drawBackground(ctx, state, SCENE);
+      const ground = polygonPath([
+        project(0, 0),
+        project(SCENE.canvas.grid_width, 0),
+        project(SCENE.canvas.grid_width, SCENE.canvas.grid_depth),
+        project(0, SCENE.canvas.grid_depth),
+      ]);
+      THEME.drawGround(ctx, ground, state, SCENE);
+      for (let x = 0; x <= SCENE.canvas.grid_width; x += 1) {
+        const path = polylinePath([project(x, 0), project(x, SCENE.canvas.grid_depth)]);
+        THEME.drawGridLine(ctx, path, x === 0 || x === SCENE.canvas.grid_width, state);
+      }
+      for (let y = 0; y <= SCENE.canvas.grid_depth; y += 1) {
+        const path = polylinePath([project(0, y), project(SCENE.canvas.grid_width, y)]);
+        THEME.drawGridLine(ctx, path, y === 0 || y === SCENE.canvas.grid_depth, state);
+      }
+      const nodesByZone = new Map();
+      SCENE.nodes.forEach(node => {
+        if (!nodesByZone.has(node.zone)) nodesByZone.set(node.zone, []);
+        nodesByZone.get(node.zone).push(node);
+      });
+      SCENE.zones.forEach(zone => {
+        const nodes = nodesByZone.get(zone.id) || [];
+        if (!nodes.length) return;
+        const average = nodes.reduce((sum, node) => ({
+          x: sum.x + node.position.x + node.footprint.width / 2,
+          y: sum.y + node.position.y + node.footprint.depth / 2,
+        }), { x: 0, y: 0 });
+        const point = project(average.x / nodes.length, average.y / nodes.length, 0);
+        THEME.drawZone(ctx, zone, point, state);
+      });
+      ctx.restore();
+    }
+
+    function drawArchitecture() {
+      const ctx = contexts.architecture;
+      clearTransparent(ctx);
+      ctx.save();
+      ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      state.pathHits = [];
+      state.nodeHits = [];
+      state.routeGeometry.clear();
+      state.renderedIcons = [];
+
+      SCENE.paths.forEach(item => {
+        const points = routePoints(item);
+        const path = polylinePath(points);
+        state.routeGeometry.set(item.id, points);
+        THEME.drawRoute(ctx, path, item, state);
+        THEME.drawArrow(ctx, points, item, state);
+        THEME.drawPathLabel(ctx, points, item, state);
+        state.pathHits.push({ item, path, points });
+      });
+
+      [...SCENE.nodes].sort((a, b) => depthKey(a) - depthKey(b)).forEach(node => {
+        const hit = new Path2D();
+        let iconRoof = null;
+        let iconMass = null;
+        let iconHeight = -Infinity;
+        massesFor(node)
+          .sort((a, b) => (a.ox + a.oy + (a.z || 0)) - (b.ox + b.oy + (b.z || 0)))
+          .forEach((mass, massIndex) => {
+            const faces = cuboidFaces(node, mass);
+            const massTop = (mass.z || 0) + mass.height;
+            if (massTop > iconHeight) {
+              iconHeight = massTop;
+              iconRoof = faces.roofPoints;
+              iconMass = mass;
+            }
+            ["left", "right", "roof"].forEach(side => {
+              THEME.drawFace(ctx, faces[side], side, node, massIndex, state);
+              hit.addPath(faces[side]);
+            });
+          });
+        if (drawNodeIcon(ctx, node, iconRoof, iconMass)) state.renderedIcons.push(node.id);
+        const labelPoint = project(
+          node.position.x + node.footprint.width / 2,
+          node.position.y + node.footprint.depth / 2,
+          node.height + .4,
+        );
+        THEME.drawNodeLabel(ctx, node, labelPoint, state);
+        state.nodeHits.push({ item: node, path: hit });
+      });
+      ctx.restore();
+    }
+
+    function targetKey(target) {
+      return target ? `${target.kind}:${target.item.id}` : "";
+    }
+
+    function targetButton(target) {
+      return target ? buttonByTarget.get(targetKey(target)) : null;
+    }
+
+    function targetDescription(target) {
+      if (!target) return "";
+      const item = target.item;
+      const evidence = Array.isArray(item.evidence) && item.evidence.length
+        ? `${item.evidence[0].path}:${item.evidence[0].lines}`
+        : "";
+      const relationship = target.kind === "path"
+        ? `${item.from} → ${item.to} · ${item.kind}`
+        : `${item.role} · ${item.status}`;
+      return [relationship, item.description || item.label, evidence].filter(Boolean);
+    }
+
+    function showTooltip(target, point = null) {
+      if (!target) {
+        tooltip.dataset.visible = "false";
+        tooltip.replaceChildren();
+        return;
+      }
+      const [relationship, description, evidence] = targetDescription(target);
+      const title = document.createElement("strong");
+      title.textContent = target.item.label;
+      const relationshipLine = document.createElement("span");
+      relationshipLine.textContent = relationship || "";
+      const descriptionLine = document.createElement("span");
+      descriptionLine.textContent = description || "";
+      const evidenceLine = document.createElement("span");
+      evidenceLine.textContent = evidence || "";
+      tooltip.replaceChildren(title, relationshipLine, descriptionLine, evidenceLine);
+      const x = point ? point.clientX + 16 : Math.min(state.width - 380, 28);
+      const y = point ? point.clientY + 16 : 110;
+      tooltip.style.left = `${Math.max(12, Math.min(window.innerWidth - 380, x))}px`;
+      tooltip.style.top = `${Math.max(12, Math.min(window.innerHeight - 150, y))}px`;
+      tooltip.dataset.visible = "true";
+    }
+
+    function sameTarget(a, b) {
+      return Boolean(a && b && a.kind === b.kind && a.item.id === b.item.id);
+    }
+
+    function drawFocusTarget(ctx, target, mode) {
+      if (!target) return;
+      const record = target.kind === "node"
+        ? state.nodeHits.find(candidate => candidate.item.id === target.item.id)
+        : state.pathHits.find(candidate => candidate.item.id === target.item.id);
+      if (!record) return;
+      THEME.drawSelection(ctx, record.path, target.kind, mode, target.item, state);
+      const button = targetButton(target);
+      if (button && document.activeElement === button) {
+        ctx.drawFocusIfNeeded(record.path, button);
+      }
+    }
+
+    function payloadState(timestamp) {
+      const flow = SCENE.flows.find(item => item.id === state.activeFlowId) || SCENE.flows[0];
+      if (!flow || !flow.steps.length) return null;
+      const duration = Math.max(800, THEME.motion?.stepDuration || 2400);
+      if (state.startedAt === null) state.startedAt = timestamp;
+      const elapsed = Math.max(0, timestamp - state.startedAt);
+      const stepIndex = state.paused || reducedMotion.matches
+        ? Math.min(flow.steps.length - 1, Math.floor(elapsed / duration) % flow.steps.length)
+        : Math.floor(elapsed / duration) % flow.steps.length;
+      const progress = state.paused || reducedMotion.matches
+        ? 1
+        : (elapsed % duration) / duration;
+      const step = flow.steps[stepIndex];
+      const points = state.routeGeometry.get(step.path);
+      if (!points) return null;
+      const payload = SCENE.payloads.find(item => item.id === step.payload);
+      return { flow, step, payload, stepIndex, progress, point: pointOnPolyline(points, progress) };
+    }
+
+    function drawMotion(timestamp = state.lastTimestamp || performance.now()) {
+      state.lastTimestamp = timestamp;
+      const ctx = contexts.motion;
+      clearTransparent(ctx);
+      ctx.save();
+      ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+      drawFocusTarget(ctx, state.hovered, "hover");
+      if (!sameTarget(state.selected, state.hovered)) drawFocusTarget(ctx, state.selected, "selected");
+      const payload = payloadState(timestamp);
+      if (payload) THEME.drawPayload(ctx, payload, state);
+      ctx.restore();
+      state.frameCount += 1;
+    }
+
+    function stopAnimation() {
+      if (state.raf !== null) cancelAnimationFrame(state.raf);
+      state.raf = null;
+    }
+
+    function animationFrame(timestamp) {
+      state.raf = null;
+      drawMotion(timestamp);
+      if (SCENE.flows.length > 0 && !state.paused && !reducedMotion.matches && !document.hidden) {
+        state.raf = requestAnimationFrame(animationFrame);
+      }
+    }
+
+    function startAnimation() {
+      stopAnimation();
+      if (SCENE.flows.length > 0 && !state.paused && !reducedMotion.matches && !document.hidden) {
+        state.raf = requestAnimationFrame(animationFrame);
+      } else {
+        drawMotion();
+      }
+    }
+
+    function updatePauseControl() {
+      const effectivelyPaused = state.paused || reducedMotion.matches;
+      pauseButton.textContent = effectivelyPaused ? "Play" : "Pause";
+      pauseButton.setAttribute("aria-pressed", String(effectivelyPaused));
+      pauseButton.disabled = reducedMotion.matches;
+      pauseButton.title = reducedMotion.matches
+        ? "Motion is disabled by your reduced-motion preference"
+        : effectivelyPaused ? "Resume payload motion" : "Pause payload motion";
+    }
+
+    function canvasPoint(event) {
+      const rect = canvases.motion.getBoundingClientRect();
+      return {
+        x: (event.clientX - rect.left) * state.width / rect.width,
+        y: (event.clientY - rect.top) * state.height / rect.height,
+      };
+    }
+
+    function hitTest(point) {
+      for (let index = state.nodeHits.length - 1; index >= 0; index -= 1) {
+        const candidate = state.nodeHits[index];
+        if (hitContext.isPointInPath(candidate.path, point.x, point.y)) {
+          return { kind: "node", item: candidate.item };
+        }
+      }
+      for (let index = state.pathHits.length - 1; index >= 0; index -= 1) {
+        const candidate = state.pathHits[index];
+        const style = THEME.pathStyle(candidate.item.kind);
+        hitContext.lineWidth = Math.max(14, (style.width || 2) + 10);
+        hitContext.setLineDash(style.dash || []);
+        if (hitContext.isPointInStroke(candidate.path, point.x, point.y)) {
+          return { kind: "path", item: candidate.item };
+        }
+      }
+      return null;
+    }
+
+    function selectTarget(target, options = {}) {
+      state.selected = target;
+      if (target && options.focus) targetButton(target)?.focus();
+      showTooltip(target, options.pointer || null);
+      drawMotion();
+    }
+
+    function buildLegend() {
+      const legend = document.querySelector(".legend");
+      const kinds = [...new Set(SCENE.paths.map(path => path.kind))];
+      kinds.forEach(kind => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.pathKind = kind;
+        button.innerHTML = `<canvas class="legend-swatch" width="48" height="16" aria-hidden="true"></canvas><span>${kind}</span>`;
+        const sample = button.querySelector("canvas");
+        const sampleContext = sample.getContext("2d");
+        const style = THEME.pathStyle(kind);
+        sampleContext.strokeStyle = style.color;
+        sampleContext.lineWidth = Math.max(1, style.width);
+        sampleContext.setLineDash(style.dash || []);
+        sampleContext.beginPath();
+        sampleContext.moveTo(2, 8);
+        sampleContext.lineTo(44, 8);
+        sampleContext.stroke();
+        button.addEventListener("focus", () => {
+          const match = state.pathHits.find(record => record.item.kind === kind);
+          if (match) selectTarget({ kind: "path", item: match.item });
+        });
+        button.addEventListener("click", () => {
+          const match = state.pathHits.find(record => record.item.kind === kind);
+          if (match) selectTarget({ kind: "path", item: match.item }, { focus: true });
+        });
+        legend.append(button);
+      });
+    }
+
+    function buildFlowControl() {
+      pauseButton.hidden = SCENE.flows.length === 0;
+      flowControl.hidden = SCENE.flows.length < 2;
+      SCENE.flows.forEach(flow => {
+        const option = document.createElement("option");
+        option.value = flow.id;
+        option.textContent = flow.label;
+        option.selected = flow.id === state.activeFlowId;
+        flowSelect.append(option);
+      });
+    }
+
+    function exportPng() {
+      const output = document.createElement("canvas");
+      output.width = canvases.terrain.width;
+      output.height = canvases.terrain.height;
+      const ctx = output.getContext("2d", { alpha: false });
+      ctx.drawImage(canvases.terrain, 0, 0);
+      ctx.drawImage(canvases.architecture, 0, 0);
+      ctx.drawImage(canvases.motion, 0, 0);
+      output.toBlob(blob => {
+        if (!blob) return;
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `${SCENE.repository.name}-isometric-map.png`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }, "image/png");
+    }
+
+    function debugSnapshot() {
+      return {
+        theme: THEME.name,
+        sceneHash: document.body.dataset.sceneSha256,
+        nodeCount: state.nodeHits.length,
+        pathCount: state.pathHits.length,
+        fallbackTargetCount: fallbackButtons.length,
+        layerCount: Object.keys(canvases).length,
+        reducedMotion: reducedMotion.matches,
+        paused: state.paused,
+        rafActive: state.raf !== null,
+        frameCount: state.frameCount,
+        iconCount: Object.keys(ICON_SVGS).length,
+        loadedIconCount: iconImages.size,
+        renderedIcons: [...state.renderedIcons],
+        selected: targetKey(state.selected) || null,
+        hovered: targetKey(state.hovered) || null,
+        activeFlow: state.activeFlowId,
+        canvasSizes: Object.fromEntries(Object.entries(canvases).map(([name, canvas]) => [name, {
+          cssWidth: state.width,
+          cssHeight: state.height,
+          pixelWidth: canvas.width,
+          pixelHeight: canvas.height,
+        }])),
+      };
+    }
+
+    Object.defineProperty(window, "__ISO_MAP_DEBUG__", {
+      configurable: true,
+      get: debugSnapshot,
+    });
+
+    function resizeAndRender() {
+      prepareCanvases();
+      drawTerrain();
+      drawArchitecture();
+      drawMotion();
+      stage.dataset.rendered = "true";
+      startAnimation();
+    }
+
+    canvases.motion.addEventListener("pointermove", event => {
+      const target = hitTest(canvasPoint(event));
+      if (!sameTarget(target, state.hovered)) {
+        state.hovered = target;
+        canvases.motion.style.cursor = target ? "pointer" : "default";
+        showTooltip(target, target ? event : null);
+        drawMotion();
+      } else if (target) {
+        showTooltip(target, event);
+      }
+    });
+    canvases.motion.addEventListener("pointerleave", () => {
+      state.hovered = null;
+      showTooltip(state.selected);
+      drawMotion();
+    });
+    canvases.motion.addEventListener("click", event => {
+      const target = hitTest(canvasPoint(event));
+      selectTarget(target, { focus: Boolean(target), pointer: target ? event : null });
+    });
+
+    fallbackButtons.forEach(button => {
+      const kind = button.dataset.targetKind;
+      const item = (kind === "node" ? SCENE.nodes : SCENE.paths)
+        .find(candidate => candidate.id === button.dataset.targetId);
+      const target = { kind, item };
+      button.addEventListener("focus", () => selectTarget(target));
+      button.addEventListener("click", () => selectTarget(target));
+      button.addEventListener("blur", () => drawMotion());
+    });
+
+    pauseButton.addEventListener("click", () => {
+      state.paused = !state.paused;
+      if (!state.paused) state.startedAt = performance.now() - (state.lastTimestamp - (state.startedAt || state.lastTimestamp));
+      updatePauseControl();
+      startAnimation();
+    });
+    flowSelect.addEventListener("change", () => {
+      state.activeFlowId = flowSelect.value;
+      state.startedAt = null;
+      state.lastTimestamp = 0;
+      startAnimation();
+    });
+    exportButton.addEventListener("click", exportPng);
+    reducedMotion.addEventListener("change", () => {
+      state.paused = reducedMotion.matches || state.paused;
+      updatePauseControl();
+      startAnimation();
+    });
+    document.addEventListener("visibilitychange", startAnimation);
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (state.resizeRaf !== null) cancelAnimationFrame(state.resizeRaf);
+      state.resizeRaf = requestAnimationFrame(() => {
+        state.resizeRaf = null;
+        resizeAndRender();
+      });
+    });
+
+    async function initialize() {
+      applyDocumentTheme();
+      buildFlowControl();
+      buildLegend();
+      updatePauseControl();
+      await preloadIcons();
+      resizeObserver.observe(stage);
+      resizeAndRender();
+    }
+
+    initialize();
+  })();
+  </script>
+</body>
+</html>

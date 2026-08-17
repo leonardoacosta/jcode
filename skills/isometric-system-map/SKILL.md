@@ -1,133 +1,292 @@
 ---
 name: isometric-system-map
 description: >-
-  Analyze a real repository and turn its load-bearing architecture into an interactive,
-  self-contained isometric system map with varied 3D buildings, typed directed paths, moving and
-  inspectable payloads, flow controls, a legend, an explainer panel, and exact file citations. Use
-  whenever the user asks for an isometric architecture map, 3D infrastructure map, system city,
-  moving data dots, interactive codebase topology, or a visual map of control/data/deployment paths,
-  even if they only say “make the repo visual” and do not name this skill. Prefer this over repo-map
-  when spatial terrain and inspectable payload motion are the point; prefer blueprint for a classic
-  time-sequenced swimlane diagram.
-compatibility: Python 3.10+ and a modern browser. The renderer has no third-party dependencies.
-allowed-tools: Read, Write, Bash, Glob, Grep
+  Turn a real repository, infrastructure estate, or process topology into an evidence-backed
+  isometric system-map image or interactive scene. Use when the user asks for an isometric
+  architecture map, 3D infrastructure diagram, system city, repository terrain, moving data dots,
+  or a visual map of control, data, deployment, network, identity, or telemetry paths. Teaches the
+  reusable projection, building, routing, payload, layout, and evidence grammar independently of
+  visual style, so the same architecture can be rendered as dark technical linework, warm paper,
+  Azure semantic resource blocks, editorial minimalism, playful illustration, or the product's own
+  design language. Do not use it merely to recreate dashboard chrome around a diagram.
+compatibility: Python 3.10+ for scene validation and rendering; Canvas-capable browser for interactive output.
 ---
 
 # Isometric System Map
 
-Build an evidence-backed system terrain, not decorative architecture art. The fixed renderer owns
-the page, isometric geometry, building silhouettes, color, animation, controls, responsive layout,
-and accessibility. You author only contract JSON from repository evidence.
+Create the isometric scene first. Treat any surrounding product UI, rails, metrics, panels, or
+controls as optional composition requested by the user, never as the map itself.
 
-## Deliverables
+The skill separates two layers:
 
-Unless the caller supplies an output directory, create both files under `docs/diagrams/`:
+1. **Scene grammar**: repository facts, 2:1 projection, building footprints, depth, routes, payloads,
+   labels, and evidence.
+2. **Design language**: palette, line weight, materials, typography, texture, motion character, and
+   optional framing.
+
+A good result can change from luminous black glass to sepia drafting paper without changing the
+architecture or route geometry.
+
+## Default deliverables
+
+Create a reviewable semantic sidecar plus the requested visual:
 
 ```text
-docs/diagrams/<repo>-isometric-map.json
-docs/diagrams/<repo>-isometric-map.html
+docs/diagrams/<repo>-isometric-scene.json
+docs/diagrams/<repo>-isometric-map.html   # Canvas-first interactive or animated output
+docs/diagrams/<repo>-isometric-map.svg    # optional static/vector export
 ```
 
-The JSON is the reviewable source of truth. The HTML is one self-contained artifact with no CDN,
-external font, image, script, or stylesheet dependency.
+Use the bundled three-layer Canvas renderer for the default HTML artifact. It keeps terrain,
+architecture, and motion separate while mirroring nodes and paths to native DOM controls. Use SVG
+only when the user explicitly needs editable vectors, print-oriented output, or a simple static scene.
+Export PNG from the composed Canvas layers when an image file is useful. Do not default to a
+dashboard shell.
 
 ## Workflow
 
 ### 1. Pin the evidence boundary
 
-Record the exact repository, requested ref, commit, and analyzed scope before extracting anything.
-Do not call a local ref “latest” unless freshness was actually proven. If you cannot fetch without
-mutating a read-only source repository, say `local origin/main snapshot` (or the exact supplied ref)
-and record its commit instead.
+Record repository, requested ref, immutable commit, and selected scope before drawing. Do not call a
+local checkout "latest main" unless freshness was proven. Use the exact supplied snapshot wording
+when the source cannot be fetched safely.
 
-For a large estate, select one coherent architecture surface such as a foundation root, one
-application, or one deployment pipeline. Do not compress an entire monorepo into unreadable terrain.
+### 2. Extract a semantic graph
 
-### 2. Trace real behavior before choosing buildings
+Trace entry points and callers before selecting visual forms. Establish:
 
-Read entry points and their callers first. Establish:
+- initiators, pipelines, schedulers, or API entry points;
+- owned modules and runtime resources, including exact ARM `resource_type` where available;
+- a package-supported `icon` for Azure resources or CI/CD primitives when the chosen theme uses roof marks;
+- existing or externally owned dependencies;
+- deployment, dependency, control, data, identity, network, and telemetry paths;
+- environment overlays, conditions, approvals, and true held states;
+- concrete payloads moving along selected paths.
 
-- control plane: CLI, pipeline, scheduler, orchestrator, deployment root;
-- owned runtime resources and reusable modules;
-- externally owned or `existing` resources;
-- data, identity, network, delivery, telemetry, and dependency paths;
-- held, gated, deprecated, or not-yet-deployed surfaces;
-- concrete payloads crossing each selected path.
+Read [`references/repository-extraction.md`](references/repository-extraction.md) for Bicep-specific
+checks, ARM-family mapping, and the supported Azure line-art icon vocabulary. Every represented fact
+needs structured evidence containing `path`, `lines`, and `claim`. Omit uncertain claims instead of
+inventing connective tissue.
 
-Every node, edge, payload, and flow step needs at least one repo-relative citation. Step citations
-must directly support that transition rather than relying only on the referenced edge. Use
-`path/to/file:12-44` when line evidence is stable. Omit a claim rather than guessing it.
+Before curating the scene, build a temporary requirement-to-geometry ledger. Include every explicit
+user requirement and every source-backed distinction that would make the map materially wrong if it
+were collapsed:
 
-For Bicep, read [`references/extraction.md`](references/extraction.md) before authoring the map.
+| Required fact | Scene representation | Direct evidence |
+| --- | --- | --- |
+| one shared non-prod VNet and one distinct prod VNet | two independently identifiable nodes | exact constants or lookup ranges |
+| separate resource-group or ownership boundaries | evidenced platform/gateway boundary nodes or distinct sourced regions | exact scope declarations |
+| shared hub plus prod-only overlay | one hub node plus one conditional overlay node and their path | hub and overlay declarations |
+| externally owned import or contract | external node and dependency/control path, never a locally owned runtime flow | ownership and import declarations |
 
-### 3. Curate the map
+A requirement is not covered merely because its wording appears in a description or evidence claim.
+It must be visible in geometry, a distinct node, a routed path, a status, or an evidenced boundary.
+Keep this ledger in `run-notes.md`, then check every row against `scene.json` before rendering.
 
-Keep the terrain discussable:
+### 3. Choose the architecture story
 
-- 8-22 nodes is the normal range; the hard cap is 24.
-- 2-5 zones is usually enough; the hard cap is 8.
-- 3-6 named flows is ideal.
-- A flow has 2-8 steps in most cases; the hard cap is 12.
-- Use at least three building kinds when the source genuinely contains them.
-- Separate deployment dependency from runtime data movement. A Bicep `dependsOn` is not an
-  application data path.
+Curate a discussable scene, not a repository inventory:
 
-Give each node a unique integer grid position from `0..12` on both axes. Spread adjacent flow nodes
-by roughly two cells and keep the front half of the grid less dense than the rear so labels and
-paths stay legible. Building size and height come from `kind`; never hand-style an individual node.
+- 8-24 buildings is the normal range; the contract cap is 28.
+- 2-5 visual regions is usually enough.
+- 3-6 named flows is ideal when the evidence supports real payload journeys. A static dependency map
+  can use no payloads and no flows.
+- Use at least three building forms.
+- Keep deployment dependency separate from runtime data movement.
+- Give important hubs more footprint or height, not just brighter color.
+- Do not merge objects whose distinct environment, scope, ownership, contract, or lifecycle is an
+  explicit requirement. The normal node target is a readability guide, not permission to erase a
+  required distinction.
 
-### 4. Author contract JSON only
+A visual region can be compositional. Do not imply Azure containment, ownership, or runtime
+co-location unless evidence supports it.
 
-Read [`references/contract.md`](references/contract.md). Start from
-[`tests/fixtures/valid.json`](tests/fixtures/valid.json), replace every sample fact, then validate:
+### 4. Define art direction without changing geometry
+
+If the user supplies a design language, derive a compact art-direction brief from it. Otherwise
+choose one appropriate to the subject. Specify:
+
+- design-language name and 2-4 principles;
+- background, grid, structure, control-path, data-path, payload, and text roles;
+- medium, linework, materials, typography, and motion character;
+- a structured treatment for each used path kind covering pattern, weight, marker, texture, motion
+  cadence, and reduced-motion behavior.
+
+Read [`references/style-separation.md`](references/style-separation.md). For Azure Bicep maps, the
+bundled `azure-topology.js` theme is the preferred starting point: it uses the Azure topology semantic
+families, connector palette, and package-local line-art marks without changing scene geometry. The
+screenshot examples are proof that the same scene grammar supports different skins, not a request to
+copy their surrounding interface.
+
+### 5. Lay out the isometric terrain
+
+Use a true 2:1 grid: `tile_width = 2 × tile_height`. Place building footprints in grid coordinates,
+then validate full footprint overlap. Keep high-traffic hubs central, entry/control nodes toward the
+back or left, and sinks/outputs toward the front or right unless the story suggests another reading
+order.
+
+Route paths explicitly as grid points. Prefer lane-like segments along one isometric axis at a time.
+Start and end on a footprint edge or in the outward half-cell beside one edge, never inside a
+building. Do not rely on automatic center-to-center Bézier curves. Routes must avoid unrelated
+building footprints and remain readable after depth sorting.
+
+Read [`references/isometric-grammar.md`](references/isometric-grammar.md) for projection, form, depth,
+and routing rules.
+
+### 6. Build varied architectural forms
+
+Compose every building from projected faces. Use form to communicate topology and importance:
+
+- `tower`: concentrated service or compute;
+- `slab`: broad shared layer;
+- `stack`: storage, data, or staged processing;
+- `cluster`: replicated or fan-out resources;
+- `gateway`: ingress, pipeline, approval, or routing boundary;
+- `hub`: shared network, orchestration, or platform center;
+- `bunker`: protected secrets, policy, or gated resource;
+- `lattice`: observability, messaging, or distributed fabric;
+- `platform`: resource group, subscription, or foundational plane.
+
+These are geometry primitives, not style presets. A tower can be neon glass, ink hatching, flat
+pastel, or corporate monochrome while retaining the same footprint and role.
+
+For the Azure resource-block style, keep concrete Azure resources deliberately simple. Prefer one
+`tower`, `slab`, `stack`, or `platform` mass varied by footprint and height, then place the node's
+line-art `icon` on the highest roof face. Reserve `gateway`, `hub`, `cluster`, and `lattice` for
+orchestration, boundaries, fan-out, or other topology that genuinely benefits from a compound form.
+The roof mark identifies the service. The block mass communicates topology and importance.
+
+### 7. Route real paths and payloads
+
+Distinguish path kinds through the current design language, using line pattern, weight, markers,
+texture, or restrained color. Keep direction visible.
+
+A moving dot must represent a named payload such as a deployment request, resource ID, command,
+event, record, secret reference, network session, or telemetry envelope. Associate payloads with
+ordered flow steps and direct evidence. Do not add motion as decoration.
+
+Evidence must support the exact source node, target node, path kind, and payload together. Runtime
+evidence for application-to-monitoring telemetry does not justify animation on a deployment-module
+to-monitoring path. If endpoint congruence is not proven, render a static dependency or omit the path.
+
+For a static topology with only non-payload dependencies, use empty `payloads` and `flows` lists.
+For a static image of real payload paths, keep the payload and flow semantics but render numbered or
+repeated markers instead of inventing animation.
+
+For implementation patterns, read [`references/canvas-recipes.md`](references/canvas-recipes.md).
+Read [`references/svg-recipes.md`](references/svg-recipes.md) only for an explicit vector or simple
+static export.
+
+### 8. Author and validate the scene sidecar
+
+Start from [`tests/fixtures/valid-scene.json`](tests/fixtures/valid-scene.json) and read
+[`references/scene-contract.md`](references/scene-contract.md). Validate before rendering:
 
 ```bash
-python3 skills/isometric-system-map/scripts/render.py --validate \
-  docs/diagrams/<repo>-isometric-map.json
+python3 skills/isometric-system-map/scripts/validate_scene.py \
+  docs/diagrams/<repo>-isometric-scene.json
 ```
 
-Fix every reported error. Do not hand-author or patch the generated HTML.
+Fix every collision, dangling reference, uncited claim, invalid route, and projection error. The
+contract intentionally has no fields for dashboards, rails, metric cards, or explainer panels.
 
-### 5. Render and inspect
+Then run a semantic coverage gate against the temporary ledger:
+
+- shared and distinct environment objects are independently identifiable;
+- source-backed resource-group, subscription, and ownership boundaries are geometric, not prose-only;
+- hub-and-overlay topologies contain both the shared hub and the smaller overlay;
+- exact contract names and decisive flags such as `subscriptionRequired` appear on the relevant
+  node/path description with direct evidence;
+- externally owned imports are shown as external dependencies rather than local runtime traffic;
+- every moving payload is supported at its rendered source and target.
+
+Do not render until every required row has a concrete scene element or is explicitly excluded as
+unsupported.
+
+### 9. Render the standalone scene
+
+Render the validated sidecar with a theme adapter:
 
 ```bash
-python3 skills/isometric-system-map/scripts/render.py \
-  docs/diagrams/<repo>-isometric-map.json \
+python3 skills/isometric-system-map/scripts/render_canvas.py \
+  docs/diagrams/<repo>-isometric-scene.json \
+  skills/isometric-system-map/themes/azure-topology.js \
   docs/diagrams/<repo>-isometric-map.html
 ```
 
-Open the HTML and verify all of these in the real browser:
+Use three aligned Canvas layers:
 
-1. The terrain is visible and buildings do not collide.
-2. The flow picker changes the highlighted path.
-3. Pause/resume changes both motion and button text.
-4. `Trace one step` advances through the selected flow.
-5. Clicking a building opens purpose and implementation details.
-6. Clicking the payload pauses it and opens payload details.
-7. `How it is built` exposes exact citations.
-8. Keyboard focus reaches controls, rail nodes, buildings, directed paths, payload, and tabs.
-9. Reduced-motion mode starts paused and still exposes every step.
-10. At mobile width the rail, map, and explainer stack without losing controls.
+1. terrain: background, material, ground, grid, and quiet zones;
+2. architecture: routes, arrows, buildings, and compact labels;
+3. motion: payloads and interaction highlights.
 
-### 6. Report evidence, not vibes
+Retain geometry as `Path2D` objects for drawing, pointer hit testing, focus rings, and selection.
+Mirror every node and path to a native focusable DOM control in the same labelled scene region.
+Use `ResizeObserver` and `devicePixelRatio` for responsive sharp output. Use timestamp-based
+`requestAnimationFrame`, cancel it while paused, hidden, or under reduced motion, and hide motion
+controls for a static scene. Composite the three Canvas layers with `toBlob()` for PNG export.
 
-Deliver the JSON and HTML paths, the analyzed commit, the selected scope, and a short list of named
-flows. Call out any intentionally omitted or uncertain path. Never claim the map is exhaustive.
+The theme adapter owns linework, materials, typography, arrow shape, texture, icon color, and motion
+cadence. It must not change scene facts, grid coordinates, building footprints, route geometry,
+payload membership, or evidence. The bundled Azure topology, dark technical, and warm archival-paper
+themes are examples, not mandatory styles. The renderer embeds only the line-art symbols actually
+used by the scene, so the HTML remains self-contained.
 
-## Renderer boundary
+Render order:
 
-- Never add product-specific CSS, icons, logos, or secrets to the template for one map.
-- Never draw a building that exists only to make the layout look balanced.
-- Never infer live deployment status from the presence of a Bicep file alone.
-- Never expose secret values, connection strings, tenant IDs, subscription IDs, or private payload
-  samples. Name the role and cite the safe source location instead.
-- Use `paper` only when the user asks for a print/blueprint look; otherwise use `midnight`.
+1. background and ground plane;
+2. region markings and grid;
+3. routes behind buildings;
+4. buildings sorted back-to-front by footprint far edge;
+5. labels and direction markers;
+6. payloads and interaction highlights on the motion layer;
+7. a compact legend or evidence affordance only if needed;
+8. native semantic controls visually hidden but present in the accessibility tree.
+
+Let the scene occupy most of the visual. Optional explanatory UI must inherit the chosen design
+language and remain subordinate.
+
+### 10. Verify the actual visual
+
+Inspect the rendered artifact in a browser or image viewer:
+
+1. The scene reads as isometric before any text is read.
+2. Buildings have visible roof and wall faces, varied massing, and no footprint collisions.
+   In the Azure resource-block style, every supported resource mark is visibly projected onto its
+   highest roof face and uses the semantic family palette.
+3. The ground grid uses consistent 2:1 axes.
+4. Directed routes follow the terrain and avoid unrelated buildings.
+5. The main flows can be followed end-to-end without guessing.
+6. Payloads map to named values and pause under reduced-motion preferences.
+7. Pause stops the animation frame loop, and reduced motion starts with no live frame loop.
+8. Every node and path appears as a native focusable control and focus mirrors to the Canvas.
+9. Labels stay legible and do not become the architecture.
+10. The requested design language is visible in material, linework, typography, and motion, not only
+   a palette swap.
+11. Citations are available in tooltips, details, captions, or the sidecar without forcing a fixed
+   panel layout.
+12. At screenshot scale, the isometric image remains the focal point.
+
+## Hard boundaries
+
+- Do not recreate surrounding dashboard chrome unless the user explicitly requests the full UI.
+- Do not make all buildings identical cuboids. Azure resource blocks may be simple, but vary their
+  footprint, height, and justified stack/slab/tower form.
+- Do not fake 3D with arbitrary CSS transforms on flat cards.
+- Do not use generic center-to-center curves when explicit terrain routes are possible.
+- Do not label a manual pipeline as held merely because `trigger: none` or `pr: none` is present.
+- Do not infer ownership, deployment state, or data flow from file presence alone.
+- Do not expose secrets, tenant IDs, subscription IDs, connection strings, or private payload values.
+- Do not make citations part of the decorative texture. Keep them readable and exact.
+- Do not leave a `requestAnimationFrame` loop running while paused or under reduced motion.
+- Do not use a Canvas bitmap as the only interaction surface. Mirror every target to native DOM.
 
 ## Relationship to nearby skills
 
 | Need | Use |
 | --- | --- |
-| Spatial 3D terrain plus moving inspectable payloads | `isometric-system-map` |
-| General repository role graph with cards and rails | `repo-map` |
-| Time-ordered request sequence with actors/swimlanes | `blueprint` |
-| One-off flexible explanatory HTML page | `wayfinder` |
+| Isometric architecture image in any design language | `isometric-system-map` |
+| General repository role graph with card-based UI | `repo-map` |
+| Time-sequenced actor or service swimlanes | `blueprint` |
+| Flexible explanatory page where isometric geometry is not central | `wayfinder` |
+| Low-fidelity text layout | `ascii-wireframe` |

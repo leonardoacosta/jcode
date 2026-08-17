@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "name": "azure-topology-style",
+  "version": "1.0.0",
+  "canvas": {
+    "background": "#ffffff",
+    "text": "#212121",
+    "muted": "#57606a",
+    "boundary": "#7f7f7f",
+    "azure_blue": "#0078d4",
+    "font_display": "Segoe UI, system-ui, sans-serif",
+    "font_mono": "Cascadia Code, Consolas, ui-monospace, monospace"
+  },
+  "families": {
+    "compute": { "stroke": "#c8460e", "fill": "#fde6d4" },
+    "data": { "stroke": "#107c10", "fill": "#d7ebd7" },
+    "identity": { "stroke": "#886200", "fill": "#fbeec7" },
+    "integration": { "stroke": "#5933a3", "fill": "#ece4f7" },
+    "network": { "stroke": "#006da3", "fill": "#d4e9f6" },
+    "monitor": { "stroke": "#3a3d99", "fill": "#dadcf2" },
+    "governance": { "stroke": "#5a6470", "fill": "#ebedf0" },
+    "devops": { "stroke": "#a02763", "fill": "#f6d8e6" }
+  },
+  "containers": {
+    "subscription": { "border": "1px dashed #7f7f7f", "fill": "#ffffff" },
+    "resource_group": { "border": "1px dashed #7f7f7f", "fill": "#fafbfd" },
+    "vnet_hub": { "border": "2px solid #235dc1", "fill": "#eef5fb" },
+    "vnet_spoke": { "border": "2px solid #0078d4", "fill": "#eef5fb" },
+    "subnet": { "border": "1px dashed #0078d4", "fill": "#ffffff" }
+  },
+  "connectors": {
+    "dependency": { "stroke": "#0078d4", "line": "solid", "arrow": "filled", "direction": "one-way" },
+    "network": { "stroke": "#235dc1", "line": "solid", "arrow": "filled", "direction": "bidirectional" },
+    "data": { "stroke": "#107c10", "line": "solid", "arrow": "filled", "direction": "one-way" },
+    "secret": { "stroke": "#886200", "line": "dashed 5 3", "arrow": "open", "direction": "one-way" },
+    "event": { "stroke": "#5933a3", "line": "dotted 2 2", "arrow": "filled", "direction": "one-way" },
+    "telemetry": { "stroke": "#3a3d99", "line": "dashed 5 3", "arrow": "open", "direction": "one-way" },
+    "delivery": { "stroke": "#a02763", "line": "solid", "arrow": "filled", "direction": "one-way" },
+    "approval": { "stroke": "#c87900", "line": "dashed 5 3", "arrow": "filled", "direction": "one-way" }
+  },
+  "status": {
+    "healthy": "#107c10",
+    "warning": "#c87900",
+    "failed": "#d13438",
+    "running": "#0078d4",
+    "unknown": "#8b95a1"
+  },
+  "resource_type_family": {
+    "Microsoft.Web/sites": "compute",
+    "Microsoft.Web/serverFarms": "compute",
+    "Microsoft.App/containerApps": "compute",
+    "Microsoft.ContainerService/managedClusters": "compute",
+    "Microsoft.Compute/virtualMachines": "compute",
+    "Microsoft.Sql/servers": "data",
+    "Microsoft.Sql/servers/databases": "data",
+    "Microsoft.Sql/servers/elasticPools": "data",
+    "Microsoft.DocumentDB/databaseAccounts": "data",
+    "Microsoft.Storage/storageAccounts": "data",
+    "Microsoft.Cache/Redis": "data",
+    "Microsoft.KeyVault/vaults": "identity",
+    "Microsoft.ManagedIdentity/userAssignedIdentities": "identity",
+    "Microsoft.ApiManagement/service": "integration",
+    "Microsoft.ApiManagement/service/apis": "integration",
+    "Microsoft.ApiManagement/service/products": "integration",
+    "Microsoft.AppConfiguration/configurationStores": "integration",
+    "Microsoft.Cdn/profiles": "integration",
+    "Microsoft.Network/applicationGateways": "integration",
+    "Microsoft.ServiceBus/namespaces": "integration",
+    "Microsoft.EventGrid/topics": "integration",
+    "Microsoft.Network/virtualNetworks": "network",
+    "Microsoft.Network/virtualNetworks/subnets": "network",
+    "Microsoft.Network/virtualNetworks/virtualNetworkPeerings": "network",
+    "Microsoft.Network/privateEndpoints": "network",
+    "Microsoft.Network/privateDnsZones": "network",
+    "Microsoft.Network/networkSecurityGroups": "network",
+    "Microsoft.Network/azureFirewalls": "network",
+    "Microsoft.Insights/components": "monitor",
+    "Microsoft.Insights/metricAlerts": "monitor",
+    "Microsoft.Insights/privateLinkScopes": "monitor",
+    "Microsoft.OperationalInsights/workspaces": "monitor",
+    "Microsoft.Resources/resourceGroups": "governance",
+    "Microsoft.Resources/subscriptions/resourceGroups": "governance",
+    "Microsoft.ContainerRegistry/registries": "devops"
+  },
+  "cicd": {
+    "stages": ["source", "validation", "build", "artifact", "approval", "deployment"],
+    "policy": "Use only stages and transition rules supplied by the diagram owner."
+  }
+}

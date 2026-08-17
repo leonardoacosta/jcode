@@ -27,7 +27,33 @@
     "linework": "fine sepia technical pen",
     "materials": "flat paper faces with sparse hatching",
     "typography": "compact monospaced labels",
-    "motion": "small ink dots moving at a measured pace"
+    "motion": "small ink dots moving at a measured pace",
+    "path_treatments": {
+      "delivery": {
+        "stroke_pattern": "solid",
+        "weight": "medium",
+        "marker": "filled terminal arrow",
+        "texture": "clean technical ink",
+        "motion_cadence": "steady measured travel",
+        "reduced_motion": "numbered marker at the step endpoint"
+      },
+      "dependency": {
+        "stroke_pattern": "short dash",
+        "weight": "fine",
+        "marker": "open terminal chevron",
+        "texture": "dry drafting ink",
+        "motion_cadence": "none",
+        "reduced_motion": "unchanged static dependency"
+      },
+      "telemetry": {
+        "stroke_pattern": "dotted pulse",
+        "weight": "fine",
+        "marker": "small ring terminal",
+        "texture": "stippled ink",
+        "motion_cadence": "restrained periodic pulse",
+        "reduced_motion": "single marker at the monitoring endpoint"
+      }
+    }
   },
   "canvas": {
     "grid_width": 12,
@@ -59,6 +85,8 @@
       "footprint": { "width": 2, "depth": 1 },
       "height": 2.5,
       "status": "active",
+      "resource_type": "Azure DevOps pipeline",
+      "icon": "az-release-pipeline",
       "description": "Validates and deploys the subscription template.",
       "evidence": [
         {
@@ -79,7 +107,9 @@
       "footprint": { "width": 1, "depth": 1 },
       "height": 3.5,
       "status": "active",
-      "description": "Serves the workload and writes records.",
+      "resource_type": "Microsoft.Web/sites",
+      "icon": "az-app-service",
+      "description": "Hosts the provisioned workload.",
       "evidence": [
         {
           "path": "infra/modules/app.bicep",
@@ -99,7 +129,9 @@
       "footprint": { "width": 2, "depth": 1 },
       "height": 2,
       "status": "active",
-      "description": "Persists workload records over a private path.",
+      "resource_type": "Microsoft.Sql/servers/databases",
+      "icon": "az-sql-database",
+      "description": "Provides the SQL service and its private endpoint.",
       "evidence": [
         {
           "path": "infra/modules/sql.bicep",
@@ -113,12 +145,14 @@
       "code": "OBS",
       "label": "Telemetry",
       "role": "observability",
-      "form": "lattice",
+      "form": "slab",
       "zone": "runtime",
       "position": { "x": 7, "y": 7 },
       "footprint": { "width": 1, "depth": 2 },
       "height": 3,
       "status": "active",
+      "resource_type": "Microsoft.OperationalInsights/workspaces",
+      "icon": "az-log-analytics",
       "description": "Receives workload diagnostics.",
       "evidence": [
         {
@@ -152,23 +186,23 @@
       ]
     },
     {
-      "id": "write-record",
+      "id": "private-sql-dependency",
       "from": "app",
       "to": "database",
-      "kind": "data",
-      "label": "private SQL write",
+      "kind": "dependency",
+      "label": "private SQL dependency",
       "route": [
         { "x": 6, "y": 2.5 },
         { "x": 7, "y": 2.5 },
         { "x": 7, "y": 4.5 },
         { "x": 8, "y": 4.5 }
       ],
-      "payload_ids": ["record"],
+      "payload_ids": [],
       "evidence": [
         {
           "path": "infra/main.bicep",
           "lines": "22-31",
-          "claim": "The application is connected to the private SQL dependency."
+          "claim": "The Bicep entry point wires the application to the private SQL dependency."
         }
       ]
     },
@@ -209,19 +243,6 @@
       ]
     },
     {
-      "id": "record",
-      "label": "Workload record",
-      "kind": "record",
-      "description": "A runtime record written to SQL.",
-      "evidence": [
-        {
-          "path": "infra/main.bicep",
-          "lines": "22-31",
-          "claim": "The runtime dependency supports application data writes."
-        }
-      ]
-    },
-    {
       "id": "diagnostic",
       "label": "Diagnostic envelope",
       "kind": "telemetry",
@@ -237,9 +258,9 @@
   ],
   "flows": [
     {
-      "id": "release-and-run",
-      "label": "Release and run",
-      "description": "Deploy the app, write a record, and emit telemetry.",
+      "id": "release-and-observe",
+      "label": "Release and observe",
+      "description": "Deploy the application and emit evidenced telemetry.",
       "steps": [
         {
           "path": "deploy-app",
@@ -250,18 +271,6 @@
               "path": ".azuredevops/deploy.yml",
               "lines": "31-44",
               "claim": "The pipeline performs the guarded deployment."
-            }
-          ]
-        },
-        {
-          "path": "write-record",
-          "payload": "record",
-          "label": "Write a private record",
-          "evidence": [
-            {
-              "path": "infra/main.bicep",
-              "lines": "22-31",
-              "claim": "The app uses the private SQL dependency."
             }
           ]
         },
