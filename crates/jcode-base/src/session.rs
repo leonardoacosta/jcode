@@ -94,6 +94,921 @@ pub(crate) use storage_paths::session_path_in_dir;
 use storage_paths::{estimate_json_bytes, persist_vector_mode_label};
 pub use storage_paths::{session_exists, session_journal_path, session_path};
 
+#[cfg(test)]
+mod forensics_tests {
+    use super::forensics::interventions::{
+        AutomatedInterventionKind, InterventionResolution, intervention_report,
+    };
+    use super::forensics::{
+        ForensicsCensusOptions, ForensicsSessionRecord, SessionForensicsCensus, census,
+    };
+    use super::*;
+    use crate::message::Message;
+    use std::ffi::OsString;
+    use std::io::Write;
+
+    fn lock_env() -> std::sync::MutexGuard<'static, ()> {
+        crate::storage::lock_test_env()
+    }
+
+    struct EnvVarGuard {
+        key: &'static str,
+        previous: Option<OsString>,
+    }
+
+    impl EnvVarGuard {
+        fn set(key: &'static str, value: impl AsRef<std::ffi::OsStr>) -> Self {
+            let previous = std::env::var_os(key);
+            crate::env::set_var(key, value);
+            Self { key, previous }
+        }
+    }
+
+    impl Drop for EnvVarGuard {
+        fn drop(&mut self) {
+            match &self.previous {
+                Some(previous) => crate::env::set_var(self.key, previous),
+                None => crate::env::remove_var(self.key),
+            }
+        }
+    }
+
+    fn test_home(prefix: &str) -> tempfile::TempDir {
+        tempfile::Builder::new().prefix(prefix).tempdir().unwrap()
+    }
+
+    fn saved_session(id: &str, messages: &[Message]) -> Session {
+        let mut session = Session::create_with_id(id.to_string(), None, None);
+        for message in messages {
+            session.add_message(message.role.clone(), message.content.clone());
+        }
+        session.save().unwrap();
+        session
+    }
+
+    fn record<'a>(census: &'a SessionForensicsCensus, id: &str) -> &'a ForensicsSessionRecord {
+        census
+            .sessions
+            .iter()
+            .find(|session| session.id == id)
+            .unwrap_or_else(|| panic!("missing census record for {id}"))
+    }
+
+    #[test]
+    fn census_merges_snapshot_and_journal_once_and_survives_malformed_tail() {
+        let _env_lock = lock_env();
+        let home = test_home("jcode-forensics-merged-");
+        let _home = EnvVarGuard::set("JCODE_HOME", home.path());
+        let mut session = saved_session("merged-session", &[Message::user("first")]);
+        let second = Message::assistant_text("second");
+        session.add_message(second.role, second.content);
+        session.save().unwrap();
+
+        let snapshot_path = session_path("merged-session").unwrap();
+        let journal_path = session_journal_path("merged-session").unwrap();
+        let snapshot: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&snapshot_path).unwrap()).unwrap();
+        let mut journal: serde_json::Value = serde_json::from_str(
+            std::fs::read_to_string(&journal_path)
+                .unwrap()
+                .lines()
+                .next()
+                .unwrap(),
+        )
+        .unwrap();
+        journal["append_messages"] = serde_json::json!([snapshot["messages"][0].clone()]);
+        std::fs::write(
+            &journal_path,
+            format!("{}\n", serde_json::to_string(&journal).unwrap()),
+        )
+        .unwrap();
+        std::fs::OpenOptions::new()
+            .append(true)
+            .open(&journal_path)
+            .unwrap()
+            .write_all(b"{malformed journal tail}\n")
+            .unwrap();
+        drop(session);
+
+        let census = census(ForensicsCensusOptions::default()).unwrap();
+        let session = record(&census, "merged-session");
+
+        assert_eq!(session.snapshot_messages, 1);
+        assert_eq!(session.journal_messages, 1);
+        assert_eq!(session.canonical_messages, 1);
+        assert_eq!(session.journal_overlap_messages, 1);
+        assert_eq!(session.duplicate_messages, 1);
+        assert_eq!(session.corrupt_journal_lines, 1);
+        assert_eq!(census.canonical_messages, 1);
+        assert_eq!(census.corrupt_journals, 1);
+    }
+
+    #[test]
+    fn intervention_forensics_counts_only_exact_top_level_messages() {
+        let _env_lock = lock_env();
+        let home = test_home("jcode-forensics-intervention-");
+        let _home = EnvVarGuard::set("JCODE_HOME", home.path());
+        let nested = format!(
+            "Quoted output: {}",
+            crate::todo::TODO_COMPLETION_CONTINUATION_MESSAGE
+        );
+        let mut session = saved_session(
+            "intervention-session",
+            &[
+                Message::user(&nested),
+                Message::user(crate::todo::TODO_COMPLETION_CONTINUATION_MESSAGE),
+                Message::user(crate::todo::TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE),
+                Message::user("Your completion confidence is missing or not high enough."),
+            ],
+        );
+        session.append_stored_message(StoredMessage {
+            id: "assistant-copy".to_string(),
+            role: Role::Assistant,
+            content: vec![ContentBlock::Text {
+                text: crate::todo::TODO_COMPLETION_CONTINUATION_MESSAGE.to_string(),
+                cache_control: None,
+            }],
+            display_role: None,
+            timestamp: None,
+            tool_duration_ms: None,
+            token_usage: None,
+        });
+        session.save().unwrap();
+
+        let report = intervention_report(ForensicsCensusOptions::default()).unwrap();
+
+        assert_eq!(report.total_interventions, 3);
+        assert_eq!(
+            report.count(AutomatedInterventionKind::CompletionConfidence),
+            1
+        );
+        assert_eq!(report.count(AutomatedInterventionKind::ConfidenceSpike), 1);
+        assert_eq!(
+            report.count(AutomatedInterventionKind::LegacyCompletionConfidence),
+            1
+        );
+        assert_eq!(
+            report
+                .session("intervention-session")
+                .unwrap()
+                .nested_mentions,
+            1
+        );
+        assert_eq!(
+            report
+                .session("intervention-session")
+                .unwrap()
+                .interventions[0]
+                .resolution,
+            InterventionResolution::Pending
+        );
+    }
+
+    #[test]
+    fn census_excludes_legacy_debug_sessions_unless_requested() {
+        let _env_lock = lock_env();
+        let home = test_home("jcode-forensics-legacy-");
+        let _home = EnvVarGuard::set("JCODE_HOME", home.path());
+        let _session = saved_session("legacy-origin", &[Message::user("debug")]);
+        let path = session_path("legacy-origin").unwrap();
+        let mut value: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        value.as_object_mut().unwrap().remove("origin");
+        value["is_debug"] = serde_json::Value::Bool(true);
+        std::fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+
+        let operational = census(ForensicsCensusOptions::default()).unwrap();
+        assert_eq!(operational.included_sessions, 0);
+        assert_eq!(operational.excluded_non_operational_sessions, 1);
+
+        let all = census(ForensicsCensusOptions {
+            include_non_operational: true,
+        })
+        .unwrap();
+        assert_eq!(all.included_sessions, 1);
+        assert_eq!(record(&all, "legacy-origin").origin, SessionOrigin::Debug);
+    }
+}
+
+/// Reusable analytics over the persisted jcode session store.
+pub mod forensics {
+    use super::{ContentBlock, Role, Session, SessionOrigin, SessionStatus, StoredMessage};
+    use crate::message::ToolOutcome;
+    use crate::storage;
+    use anyhow::Result;
+    use serde::{Deserialize, Serialize};
+    use std::collections::HashSet;
+    use std::path::Path;
+
+    /// Controls which persisted sessions participate in a census.
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+    pub struct ForensicsCensusOptions {
+        /// Include debug, test, mock, benchmark, synthetic, and legacy-debug
+        /// sessions. The default keeps analytics operational-only.
+        #[serde(default)]
+        pub include_non_operational: bool,
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+    pub struct ForensicsOutcomeCount {
+        pub outcome: ToolOutcome,
+        pub count: usize,
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+    pub struct ForensicsOriginCount {
+        pub origin: SessionOrigin,
+        pub count: usize,
+    }
+
+    /// Canonical analytics for one persisted session.
+    #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+    pub struct ForensicsSessionRecord {
+        pub id: String,
+        pub origin: SessionOrigin,
+        pub status: SessionStatus,
+        pub snapshot_messages: usize,
+        pub journal_messages: usize,
+        pub canonical_messages: usize,
+        pub duplicate_messages: usize,
+        pub journal_overlap_messages: usize,
+        pub tool_results: usize,
+        pub outcomes: Vec<ForensicsOutcomeCount>,
+        pub journal_present: bool,
+        pub corrupt_journal_lines: usize,
+        #[serde(default)]
+        pub interventions: Vec<interventions::InterventionOccurrence>,
+        #[serde(default)]
+        pub nested_intervention_mentions: usize,
+    }
+
+    impl ForensicsSessionRecord {
+        pub fn outcome_count(&self, outcome: ToolOutcome) -> usize {
+            self.outcomes
+                .iter()
+                .find(|entry| entry.outcome == outcome)
+                .map_or(0, |entry| entry.count)
+        }
+    }
+
+    /// Canonical merged-session analytics for the local persisted store.
+    #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+    pub struct SessionForensicsCensus {
+        pub scanned_sessions: usize,
+        pub included_sessions: usize,
+        pub excluded_non_operational_sessions: usize,
+        pub load_errors: usize,
+        pub snapshot_messages: usize,
+        pub journal_messages: usize,
+        pub canonical_messages: usize,
+        pub duplicate_messages: usize,
+        pub journal_overlap_messages: usize,
+        pub corrupt_journals: usize,
+        pub tool_results: usize,
+        pub origins: Vec<ForensicsOriginCount>,
+        pub outcomes: Vec<ForensicsOutcomeCount>,
+        pub sessions: Vec<ForensicsSessionRecord>,
+    }
+
+    impl SessionForensicsCensus {
+        pub fn origin_count(&self, origin: SessionOrigin) -> usize {
+            self.origins
+                .iter()
+                .find(|entry| entry.origin == origin)
+                .map_or(0, |entry| entry.count)
+        }
+
+        pub fn outcome_count(&self, outcome: ToolOutcome) -> usize {
+            self.outcomes
+                .iter()
+                .find(|entry| entry.outcome == outcome)
+                .map_or(0, |entry| entry.count)
+        }
+    }
+
+    /// Count the local session store using the same snapshot-plus-journal load
+    /// path as `Session::load`, then normalize duplicate stable message IDs.
+    pub fn census(options: ForensicsCensusOptions) -> Result<SessionForensicsCensus> {
+        let sessions_dir = storage::jcode_dir()?.join("sessions");
+        let mut paths = if sessions_dir.exists() {
+            std::fs::read_dir(&sessions_dir)?
+                .filter_map(|entry| entry.ok().map(|entry| entry.path()))
+                .filter(|path| {
+                    path.is_file()
+                        && path.extension().is_some_and(|ext| ext == "json")
+                        && !path
+                            .file_name()
+                            .is_some_and(|name| name.to_string_lossy().contains(".pre-wipe-"))
+                })
+                .collect::<Vec<_>>()
+        } else {
+            Vec::new()
+        };
+        paths.sort();
+
+        let mut result = SessionForensicsCensus::default();
+        for path in paths {
+            result.scanned_sessions += 1;
+            let snapshot = read_snapshot_metadata(&path);
+            let Ok(session) = Session::load_from_path(&path) else {
+                result.load_errors += 1;
+                continue;
+            };
+
+            if !options.include_non_operational && !session.is_operational() {
+                result.excluded_non_operational_sessions += 1;
+                continue;
+            }
+
+            let journal_path = super::session_journal_path_from_snapshot(&path);
+            let journal = inspect_journal(&journal_path, snapshot.as_ref());
+            let canonical = canonical_messages(&session.messages);
+            let intervention_analysis = interventions::analyze_messages(&canonical);
+            let mut outcomes = Vec::new();
+            let mut tool_results = 0usize;
+            for message in &canonical {
+                for block in &message.content {
+                    let ContentBlock::ToolResult {
+                        is_error, outcome, ..
+                    } = block
+                    else {
+                        continue;
+                    };
+                    tool_results += 1;
+                    let outcome = outcome.as_ref().copied().unwrap_or_else(|| {
+                        ToolOutcome::from_legacy_is_error(*is_error == Some(true))
+                    });
+                    increment_outcome(&mut outcomes, outcome);
+                }
+            }
+
+            let origin = session.operational_origin();
+            let record = ForensicsSessionRecord {
+                id: session.id,
+                origin,
+                status: session.status,
+                snapshot_messages: snapshot.as_ref().map_or(0, |data| data.message_count),
+                journal_messages: journal.message_count,
+                canonical_messages: canonical.len(),
+                duplicate_messages: session.messages.len().saturating_sub(canonical.len()),
+                journal_overlap_messages: journal.overlap_messages,
+                tool_results,
+                outcomes: outcomes.clone(),
+                journal_present: journal.present,
+                corrupt_journal_lines: journal.corrupt_lines,
+                interventions: intervention_analysis.interventions,
+                nested_intervention_mentions: intervention_analysis.nested_mentions,
+            };
+            result.included_sessions += 1;
+            result.snapshot_messages += record.snapshot_messages;
+            result.journal_messages += record.journal_messages;
+            result.canonical_messages += record.canonical_messages;
+            result.duplicate_messages += record.duplicate_messages;
+            result.journal_overlap_messages += record.journal_overlap_messages;
+            result.corrupt_journals += usize::from(record.corrupt_journal_lines > 0);
+            result.tool_results += record.tool_results;
+            increment_origin(&mut result.origins, origin);
+            for entry in &outcomes {
+                increment_outcome_by(&mut result.outcomes, entry.outcome, entry.count);
+            }
+            result.sessions.push(record);
+        }
+        Ok(result)
+    }
+
+    pub fn operational_census() -> Result<SessionForensicsCensus> {
+        census(ForensicsCensusOptions::default())
+    }
+
+    /// Return the first occurrence of every non-empty stable message ID.
+    /// Messages without IDs are retained because old sessions may lack them.
+    pub fn canonical_messages(messages: &[StoredMessage]) -> Vec<&StoredMessage> {
+        let mut seen = HashSet::new();
+        messages
+            .iter()
+            .filter(|message| message.id.is_empty() || seen.insert(message.id.as_str()))
+            .collect()
+    }
+
+    #[derive(Default)]
+    struct SnapshotMetadata {
+        message_ids: HashSet<String>,
+        message_count: usize,
+    }
+
+    fn read_snapshot_metadata(path: &Path) -> Option<SnapshotMetadata> {
+        let value: serde_json::Value = serde_json::from_slice(&std::fs::read(path).ok()?).ok()?;
+        let messages = value.get("messages")?.as_array()?;
+        let mut metadata = SnapshotMetadata {
+            message_count: messages.len(),
+            ..SnapshotMetadata::default()
+        };
+        for message in messages {
+            if let Some(id) = message.get("id").and_then(serde_json::Value::as_str)
+                && !id.is_empty()
+            {
+                metadata.message_ids.insert(id.to_string());
+            }
+        }
+        Some(metadata)
+    }
+
+    #[derive(Default)]
+    struct JournalMetadata {
+        present: bool,
+        message_count: usize,
+        overlap_messages: usize,
+        corrupt_lines: usize,
+    }
+
+    fn inspect_journal(path: &Path, snapshot: Option<&SnapshotMetadata>) -> JournalMetadata {
+        let Ok(raw) = std::fs::read_to_string(path) else {
+            return JournalMetadata::default();
+        };
+        let mut metadata = JournalMetadata {
+            present: true,
+            ..JournalMetadata::default()
+        };
+        for line in raw.lines().filter(|line| !line.trim().is_empty()) {
+            let Ok(value) = serde_json::from_str::<serde_json::Value>(line) else {
+                metadata.corrupt_lines += 1;
+                continue;
+            };
+            let Some(messages) = value
+                .get("append_messages")
+                .and_then(serde_json::Value::as_array)
+            else {
+                continue;
+            };
+            metadata.message_count += messages.len();
+            for message in messages {
+                if let Some(id) = message.get("id").and_then(serde_json::Value::as_str)
+                    && snapshot.is_some_and(|snapshot| snapshot.message_ids.contains(id))
+                {
+                    metadata.overlap_messages += 1;
+                }
+            }
+        }
+        metadata
+    }
+
+    fn increment_origin(counts: &mut Vec<ForensicsOriginCount>, origin: SessionOrigin) {
+        if let Some(entry) = counts.iter_mut().find(|entry| entry.origin == origin) {
+            entry.count += 1;
+        } else {
+            counts.push(ForensicsOriginCount { origin, count: 1 });
+        }
+    }
+
+    fn increment_outcome(counts: &mut Vec<ForensicsOutcomeCount>, outcome: ToolOutcome) {
+        increment_outcome_by(counts, outcome, 1);
+    }
+
+    fn increment_outcome_by(
+        counts: &mut Vec<ForensicsOutcomeCount>,
+        outcome: ToolOutcome,
+        count: usize,
+    ) {
+        if let Some(entry) = counts.iter_mut().find(|entry| entry.outcome == outcome) {
+            entry.count += count;
+        } else {
+            counts.push(ForensicsOutcomeCount { outcome, count });
+        }
+    }
+
+    /// Structured analytics for synthetic todo interventions in persisted
+    /// session transcripts.
+    pub mod interventions {
+        use super::{Role, SessionForensicsCensus, SessionOrigin, StoredMessage};
+        use crate::message::ContentBlock;
+        pub use crate::todo::AutomatedInterventionKind;
+        use anyhow::Result;
+        use serde::{Deserialize, Serialize};
+
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+        #[serde(rename_all = "snake_case")]
+        pub enum InterventionReason {
+            IncompleteTodos,
+            QualityReview,
+            ExtendedSession,
+            IntentUnderstanding,
+            ClosedFeedbackLoop,
+            FeedbackLoopRelevance,
+            FeedbackLoopCoverage,
+            FeedbackLoopTraceability,
+            Ownership,
+            CompletionConfidence,
+            ConfidenceSpike,
+            LegacyAlignment,
+            LegacyHillClimbability,
+            LegacyOwnership,
+            LegacyCompletionConfidence,
+            LegacyConfidenceSpike,
+            LegacyConfidenceSummary,
+        }
+
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+        #[serde(rename_all = "snake_case")]
+        pub enum InterventionResolution {
+            Pending,
+            Resolved,
+            Unresolved,
+            Exhausted,
+        }
+
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+        pub struct InterventionOccurrence {
+            pub message_id: String,
+            pub kind: AutomatedInterventionKind,
+            pub reason: InterventionReason,
+            pub group: Option<String>,
+            pub resolution: InterventionResolution,
+            pub cycle: u32,
+            pub repeated: bool,
+            pub repeated_cycles: u32,
+        }
+
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+        pub struct InterventionSessionRecord {
+            pub id: String,
+            pub origin: SessionOrigin,
+            pub total: usize,
+            pub nested_mentions: usize,
+            pub repeated: usize,
+            pub resolved: usize,
+            pub unresolved: usize,
+            pub pending: usize,
+            pub interventions: Vec<InterventionOccurrence>,
+        }
+
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+        pub struct InterventionKindCount {
+            pub kind: AutomatedInterventionKind,
+            pub count: usize,
+        }
+
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+        pub struct InterventionReasonCount {
+            pub reason: InterventionReason,
+            pub count: usize,
+        }
+
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+        pub struct InterventionResolutionCount {
+            pub resolution: InterventionResolution,
+            pub count: usize,
+        }
+
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+        pub struct InterventionGroupCount {
+            pub group: String,
+            pub count: usize,
+        }
+
+        #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+        pub struct InterventionReport {
+            pub scanned_sessions: usize,
+            pub included_sessions: usize,
+            pub excluded_non_operational_sessions: usize,
+            pub total_interventions: usize,
+            pub repeated_interventions: usize,
+            pub repeated_cycles: usize,
+            pub resolved_interventions: usize,
+            pub unresolved_interventions: usize,
+            pub pending_interventions: usize,
+            pub nested_mentions: usize,
+            pub by_kind: Vec<InterventionKindCount>,
+            pub by_reason: Vec<InterventionReasonCount>,
+            pub by_resolution: Vec<InterventionResolutionCount>,
+            pub by_group: Vec<InterventionGroupCount>,
+            pub sessions: Vec<InterventionSessionRecord>,
+        }
+
+        #[derive(Debug, Default)]
+        pub(crate) struct MessageInterventionAnalysis {
+            pub(crate) interventions: Vec<InterventionOccurrence>,
+            pub(crate) nested_mentions: usize,
+        }
+
+        impl InterventionReport {
+            pub fn count(&self, kind: AutomatedInterventionKind) -> usize {
+                self.by_kind
+                    .iter()
+                    .find(|entry| entry.kind == kind)
+                    .map_or(0, |entry| entry.count)
+            }
+
+            pub fn count_reason(&self, reason: InterventionReason) -> usize {
+                self.by_reason
+                    .iter()
+                    .find(|entry| entry.reason == reason)
+                    .map_or(0, |entry| entry.count)
+            }
+
+            pub fn count_resolution(&self, resolution: InterventionResolution) -> usize {
+                self.by_resolution
+                    .iter()
+                    .find(|entry| entry.resolution == resolution)
+                    .map_or(0, |entry| entry.count)
+            }
+
+            pub fn session(&self, id: &str) -> Option<&InterventionSessionRecord> {
+                self.sessions.iter().find(|session| session.id == id)
+            }
+        }
+
+        pub(crate) fn analyze_messages(messages: &[&StoredMessage]) -> MessageInterventionAnalysis {
+            let mut result = MessageInterventionAnalysis::default();
+            let mut cycles: Vec<(
+                AutomatedInterventionKind,
+                InterventionReason,
+                Option<String>,
+                u32,
+            )> = Vec::new();
+
+            for message in messages {
+                let Some(text) = top_level_text(message) else {
+                    continue;
+                };
+                let Some(kind) = crate::todo::classify_auto_poke_message(text) else {
+                    if contains_nested_intervention_marker(text) {
+                        result.nested_mentions = result.nested_mentions.saturating_add(1);
+                    }
+                    continue;
+                };
+
+                let reason = reason_for(kind, text);
+                let group = extract_group(kind, text);
+                let cycle = if let Some(entry) = cycles
+                    .iter_mut()
+                    .find(|entry| entry.0 == kind && entry.1 == reason && entry.2 == group)
+                {
+                    entry.3 = entry.3.saturating_add(1);
+                    entry.3
+                } else {
+                    cycles.push((kind, reason, group.clone(), 1));
+                    1
+                };
+                let explicit_cycles = extract_explicit_cycle_count(text).unwrap_or(1);
+                result.interventions.push(InterventionOccurrence {
+                    message_id: message.id.clone(),
+                    kind,
+                    reason,
+                    group,
+                    resolution: resolution_for(kind, text),
+                    cycle,
+                    repeated: cycle > 1 || explicit_cycles > 1,
+                    repeated_cycles: explicit_cycles.max(cycle),
+                });
+            }
+            result
+        }
+
+        pub fn report(census: &SessionForensicsCensus) -> InterventionReport {
+            let mut report = InterventionReport {
+                scanned_sessions: census.scanned_sessions,
+                included_sessions: census.included_sessions,
+                excluded_non_operational_sessions: census.excluded_non_operational_sessions,
+                ..InterventionReport::default()
+            };
+            for source in &census.sessions {
+                let mut session = InterventionSessionRecord {
+                    id: source.id.clone(),
+                    origin: source.origin,
+                    total: source.interventions.len(),
+                    nested_mentions: source.nested_intervention_mentions,
+                    repeated: 0,
+                    resolved: 0,
+                    unresolved: 0,
+                    pending: 0,
+                    interventions: source.interventions.clone(),
+                };
+                report.nested_mentions = report
+                    .nested_mentions
+                    .saturating_add(session.nested_mentions);
+                for intervention in &session.interventions {
+                    report.total_interventions = report.total_interventions.saturating_add(1);
+                    if intervention.repeated {
+                        report.repeated_interventions =
+                            report.repeated_interventions.saturating_add(1);
+                        session.repeated = session.repeated.saturating_add(1);
+                    }
+                    report.repeated_cycles = report
+                        .repeated_cycles
+                        .saturating_add(intervention.repeated_cycles.saturating_sub(1) as usize);
+                    match intervention.resolution {
+                        InterventionResolution::Resolved => {
+                            report.resolved_interventions =
+                                report.resolved_interventions.saturating_add(1);
+                            session.resolved = session.resolved.saturating_add(1);
+                        }
+                        InterventionResolution::Unresolved => {
+                            report.unresolved_interventions =
+                                report.unresolved_interventions.saturating_add(1);
+                            session.unresolved = session.unresolved.saturating_add(1);
+                        }
+                        InterventionResolution::Pending | InterventionResolution::Exhausted => {
+                            report.pending_interventions =
+                                report.pending_interventions.saturating_add(1);
+                            session.pending = session.pending.saturating_add(1);
+                        }
+                    }
+                    increment_kind(&mut report.by_kind, intervention.kind);
+                    increment_reason(&mut report.by_reason, intervention.reason);
+                    increment_resolution(&mut report.by_resolution, intervention.resolution);
+                    if let Some(group) = &intervention.group {
+                        increment_group(&mut report.by_group, group);
+                    }
+                }
+                if session.total > 0 || session.nested_mentions > 0 {
+                    report.sessions.push(session);
+                }
+            }
+            report
+        }
+
+        pub fn intervention_report(
+            options: super::ForensicsCensusOptions,
+        ) -> Result<InterventionReport> {
+            Ok(report(&super::census(options)?))
+        }
+
+        fn top_level_text(message: &StoredMessage) -> Option<&str> {
+            if message.role != Role::User || message.display_role.is_some() {
+                return None;
+            }
+            match message.content.first()? {
+                ContentBlock::Text { text, .. } => Some(text.trim()),
+                _ => None,
+            }
+        }
+
+        fn reason_for(kind: AutomatedInterventionKind, text: &str) -> InterventionReason {
+            match kind {
+                AutomatedInterventionKind::IncompleteTodoPoke => {
+                    InterventionReason::IncompleteTodos
+                }
+                AutomatedInterventionKind::GateDigest => {
+                    if text.contains("understanding of what") {
+                        InterventionReason::IntentUnderstanding
+                    } else if text.contains("feedback loop") && text.contains("closed") {
+                        InterventionReason::ClosedFeedbackLoop
+                    } else if text.contains("representative checks")
+                        || text.contains("directly represent")
+                    {
+                        InterventionReason::FeedbackLoopRelevance
+                    } else if text.contains("too narrow") || text.contains("broader checks") {
+                        InterventionReason::FeedbackLoopCoverage
+                    } else if text.contains("not traced")
+                        || text.contains("requirement-to-check traceability")
+                    {
+                        InterventionReason::FeedbackLoopTraceability
+                    } else {
+                        InterventionReason::QualityReview
+                    }
+                }
+                AutomatedInterventionKind::LongSessionReview => InterventionReason::ExtendedSession,
+                AutomatedInterventionKind::IntentUnderstanding => {
+                    InterventionReason::IntentUnderstanding
+                }
+                AutomatedInterventionKind::ClosedFeedbackLoop => {
+                    InterventionReason::ClosedFeedbackLoop
+                }
+                AutomatedInterventionKind::Ownership => InterventionReason::Ownership,
+                AutomatedInterventionKind::CompletionConfidence => {
+                    InterventionReason::CompletionConfidence
+                }
+                AutomatedInterventionKind::ConfidenceSpike => InterventionReason::ConfidenceSpike,
+                AutomatedInterventionKind::LegacyAlignment => InterventionReason::LegacyAlignment,
+                AutomatedInterventionKind::LegacyHillClimbability => {
+                    InterventionReason::LegacyHillClimbability
+                }
+                AutomatedInterventionKind::LegacyOwnership => InterventionReason::LegacyOwnership,
+                AutomatedInterventionKind::LegacyCompletionConfidence => {
+                    InterventionReason::LegacyCompletionConfidence
+                }
+                AutomatedInterventionKind::LegacyConfidenceSpike => {
+                    InterventionReason::LegacyConfidenceSpike
+                }
+                AutomatedInterventionKind::LegacyConfidenceSummary => {
+                    InterventionReason::LegacyConfidenceSummary
+                }
+            }
+        }
+
+        fn resolution_for(kind: AutomatedInterventionKind, text: &str) -> InterventionResolution {
+            if kind != AutomatedInterventionKind::GateDigest {
+                return InterventionResolution::Pending;
+            }
+            if text.contains("never ") || text.contains("never became") {
+                InterventionResolution::Unresolved
+            } else if text.contains("only settled")
+                || text.contains("only after")
+                || text.contains("was identified only after")
+            {
+                InterventionResolution::Resolved
+            } else {
+                InterventionResolution::Pending
+            }
+        }
+
+        fn extract_group(kind: AutomatedInterventionKind, text: &str) -> Option<String> {
+            if !matches!(
+                kind,
+                AutomatedInterventionKind::Ownership
+                    | AutomatedInterventionKind::LegacyOwnership
+                    | AutomatedInterventionKind::GateDigest
+            ) {
+                return None;
+            }
+            for marker in ["Goal \"", " for \""] {
+                if let Some(start) = text.find(marker) {
+                    let group_start = start + marker.len();
+                    let rest = &text[group_start..];
+                    if let Some(end) = rest.find('"') {
+                        let group = rest[..end].trim();
+                        if !group.is_empty() {
+                            return Some(group.to_string());
+                        }
+                    }
+                }
+            }
+            None
+        }
+
+        fn extract_explicit_cycle_count(text: &str) -> Option<u32> {
+            let marker = "(flagged ";
+            let start = text.find(marker)? + marker.len();
+            let digits = text[start..].split_whitespace().next()?;
+            digits.parse().ok()
+        }
+
+        fn contains_nested_intervention_marker(text: &str) -> bool {
+            let markers = [
+                crate::todo::TODO_GATE_DIGEST_PREFIX,
+                crate::todo::TODO_LONG_SESSION_REVIEW_MESSAGE,
+                crate::todo::TODO_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE,
+                crate::todo::TODO_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE,
+                crate::todo::TODO_OWNERSHIP_CONTINUATION_MESSAGE,
+                crate::todo::TODO_COMPLETION_CONTINUATION_MESSAGE,
+                crate::todo::TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE,
+                "Your completion confidence is missing or not high enough.",
+                "Your completion confidence rose too sharply to count as independently validated.",
+                "All todos are done. Todo confidence summary:",
+            ];
+            !crate::todo::classify_auto_poke_message(text).is_some()
+                && markers.iter().any(|marker| text.contains(marker))
+        }
+
+        fn increment_kind(
+            counts: &mut Vec<InterventionKindCount>,
+            kind: AutomatedInterventionKind,
+        ) {
+            if let Some(entry) = counts.iter_mut().find(|entry| entry.kind == kind) {
+                entry.count += 1;
+            } else {
+                counts.push(InterventionKindCount { kind, count: 1 });
+            }
+        }
+
+        fn increment_reason(counts: &mut Vec<InterventionReasonCount>, reason: InterventionReason) {
+            if let Some(entry) = counts.iter_mut().find(|entry| entry.reason == reason) {
+                entry.count += 1;
+            } else {
+                counts.push(InterventionReasonCount { reason, count: 1 });
+            }
+        }
+
+        fn increment_resolution(
+            counts: &mut Vec<InterventionResolutionCount>,
+            resolution: InterventionResolution,
+        ) {
+            if let Some(entry) = counts
+                .iter_mut()
+                .find(|entry| entry.resolution == resolution)
+            {
+                entry.count += 1;
+            } else {
+                counts.push(InterventionResolutionCount {
+                    resolution,
+                    count: 1,
+                });
+            }
+        }
+
+        fn increment_group(counts: &mut Vec<InterventionGroupCount>, group: &str) {
+            if let Some(entry) = counts.iter_mut().find(|entry| entry.group == group) {
+                entry.count += 1;
+            } else {
+                counts.push(InterventionGroupCount {
+                    group: group.to_string(),
+                    count: 1,
+                });
+            }
+        }
+    }
+}
+
 fn stored_messages_to_messages(messages: &[StoredMessage]) -> Vec<Message> {
     messages.iter().map(StoredMessage::to_message).collect()
 }

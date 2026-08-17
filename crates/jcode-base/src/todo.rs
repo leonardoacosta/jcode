@@ -559,6 +559,83 @@ const LEGACY_TODO_COMPLETION_CONTINUATION_MESSAGE: &str =
 const LEGACY_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE: &str =
     "Your completion confidence rose too sharply to count as independently validated.";
 
+/// Stable top-level categories for synthetic todo interventions persisted in
+/// session transcripts. Legacy variants remain distinct so historical data can
+/// be compared across message migrations.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AutomatedInterventionKind {
+    IncompleteTodoPoke,
+    GateDigest,
+    LongSessionReview,
+    IntentUnderstanding,
+    ClosedFeedbackLoop,
+    Ownership,
+    CompletionConfidence,
+    ConfidenceSpike,
+    LegacyAlignment,
+    LegacyHillClimbability,
+    LegacyOwnership,
+    LegacyCompletionConfidence,
+    LegacyConfidenceSpike,
+    LegacyConfidenceSummary,
+}
+
+/// Classify one complete persisted synthetic intervention message.
+///
+/// The input is deliberately a single top-level message. Matching is anchored
+/// to the trimmed start and known message shape, so quoted prompts, tool output,
+/// and prose that merely mentions an intervention are not counted.
+pub fn classify_auto_poke_message(message: &str) -> Option<AutomatedInterventionKind> {
+    let trimmed = message.trim();
+    if trimmed.starts_with("You have ")
+        && trimmed.contains(" incomplete todo")
+        && trimmed.ends_with("update the todo tool.")
+    {
+        return Some(AutomatedInterventionKind::IncompleteTodoPoke);
+    }
+    if trimmed.starts_with(TODO_GATE_DIGEST_PREFIX) {
+        return Some(AutomatedInterventionKind::GateDigest);
+    }
+    if trimmed.starts_with(TODO_LONG_SESSION_REVIEW_MESSAGE) {
+        return Some(AutomatedInterventionKind::LongSessionReview);
+    }
+    if trimmed.starts_with(TODO_INTENT_UNDERSTANDING_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::IntentUnderstanding);
+    }
+    if trimmed.starts_with(TODO_CLOSED_FEEDBACK_LOOP_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::ClosedFeedbackLoop);
+    }
+    if trimmed.starts_with(TODO_OWNERSHIP_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::Ownership);
+    }
+    if trimmed.starts_with(TODO_COMPLETION_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::CompletionConfidence);
+    }
+    if trimmed.starts_with(TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::ConfidenceSpike);
+    }
+    if trimmed.starts_with(LEGACY_TODO_ALIGNMENT_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::LegacyAlignment);
+    }
+    if trimmed.starts_with(LEGACY_TODO_HILL_CLIMBABILITY_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::LegacyHillClimbability);
+    }
+    if trimmed.starts_with(LEGACY_TODO_OWNERSHIP_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::LegacyOwnership);
+    }
+    if trimmed.starts_with(LEGACY_TODO_COMPLETION_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::LegacyCompletionConfidence);
+    }
+    if trimmed.starts_with(LEGACY_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE) {
+        return Some(AutomatedInterventionKind::LegacyConfidenceSpike);
+    }
+    if trimmed.starts_with(LEGACY_TODO_CONFIDENCE_SUMMARY_PREFIX) {
+        return Some(AutomatedInterventionKind::LegacyConfidenceSummary);
+    }
+    None
+}
+
 fn normalized_group(group: Option<&str>) -> Option<String> {
     group
         .map(str::trim)
