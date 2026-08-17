@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import type {
   DecisionInboxSnapshot,
   DecisionInboxItem,
@@ -8,7 +8,7 @@ import type {
 } from "../generated/command-center-contract";
 
 export { AppShell } from "./shell/AppShell";
-export { FindDrawer } from "./shell/FindDrawer";
+export { FindDrawer, FindPage, referencesFromSnapshot } from "./shell/FindDrawer";
 export { AmbientActivity } from "./AmbientActivity";
 
 const label = (value: string) =>
@@ -59,10 +59,14 @@ function packetEvidence(item: DecisionInboxItem) {
   return delivery.length > 0 ? delivery.join(" · ") : "Single delivery recorded";
 }
 
-export function DecisionInbox(props: { snapshot?: DecisionInboxSnapshot }) {
+export function DecisionInbox(props: {
+  snapshot?: DecisionInboxSnapshot;
+  initialRecordId?: number;
+}) {
   const [filter, setFilter] = createSignal<InboxFilter>("all");
   const [sort, setSort] = createSignal<"newest" | "oldest">("newest");
-  const [selectedId, setSelectedId] = createSignal<number | undefined>();
+  const [selectedId, setSelectedId] = createSignal<number | undefined>(props.initialRecordId);
+  createEffect(() => setSelectedId(props.initialRecordId));
   const items = () => props.snapshot?.items ?? [];
   const visiblePackets = createMemo(() => {
     const filtered = items().filter((item) => filter() === "all" || packetKind(item) === filter());

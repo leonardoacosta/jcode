@@ -1,22 +1,42 @@
 import type { CommandCenterSnapshot } from "../../generated/command-center-contract";
+import type { DecisionInboxSnapshot } from "../../generated/command-center-contract";
 import { FindDrawer } from "./FindDrawer";
 import { ConnectionBadge, MobileNavigation, SideNavigation } from "./navigation";
-import { createSignal } from "solid-js";
+import { createSignal, onCleanup } from "solid-js";
 
 export function AppShell(props: {
   snapshot?: CommandCenterSnapshot;
+  decisionInbox?: DecisionInboxSnapshot;
   children: any;
   announcement?: string;
   activePath?: string;
 }) {
   const [findOpen, setFindOpen] = createSignal(false);
+  const [findTrigger, setFindTrigger] = createSignal<HTMLElement>();
   const activePath = () =>
     props.activePath ?? (typeof window === "undefined" ? "/inbox" : window.location.pathname);
   const connectionState = () => props.snapshot?.connection.state ?? "loading";
-  const openFind = () => {
+  const openFind = (trigger?: HTMLElement) => {
+    setFindTrigger(
+      trigger ??
+        (document.activeElement instanceof HTMLElement ? document.activeElement : undefined),
+    );
     setFindOpen(true);
     document.getElementById("global-find-query")?.focus();
   };
+  const closeFind = () => {
+    setFindOpen(false);
+    findTrigger()?.focus();
+  };
+
+  const onGlobalKeyDown = (event: KeyboardEvent) => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      openFind();
+    }
+  };
+  document.addEventListener("keydown", onGlobalKeyDown);
+  onCleanup(() => document.removeEventListener("keydown", onGlobalKeyDown));
 
   return (
     <div class="app-shell">
@@ -36,7 +56,12 @@ export function AppShell(props: {
         {props.children}
       </main>
       <MobileNavigation activePath={activePath()} />
-      <FindDrawer open={findOpen()} snapshot={props.snapshot} onClose={() => setFindOpen(false)} />
+      <FindDrawer
+        open={findOpen()}
+        snapshot={props.snapshot}
+        decisionInbox={props.decisionInbox}
+        onClose={closeFind}
+      />
     </div>
   );
 }

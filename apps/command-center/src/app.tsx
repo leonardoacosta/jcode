@@ -1,4 +1,4 @@
-import { Router, Route, useLocation } from "@solidjs/router";
+import { Router, Route, useLocation, useSearchParams } from "@solidjs/router";
 import {
   createEffect,
   createResource,
@@ -9,7 +9,7 @@ import {
   Show,
   untrack,
 } from "solid-js";
-import { AmbientActivity, AppShell, DecisionInbox, StateCard } from "./components/CommandCenter";
+import { AmbientActivity, AppShell, DecisionInbox, FindPage } from "./components/CommandCenter";
 import type { CommandCenterSnapshot } from "./generated/command-center-contract";
 import { createProjectionStore } from "./stores/projection";
 import { HttpCommandCenterTransport } from "./transport/client";
@@ -47,6 +47,7 @@ export function loadFailureState(error: unknown) {
 
 function WorkspaceRoute() {
   const location = useLocation();
+  const [searchParams] = useSearchParams<{ packet?: string; entry?: string }>();
   const path = () => location.pathname;
   const [hydrated, setHydrated] = createSignal(false);
   const store = createProjectionStore();
@@ -97,40 +98,37 @@ function WorkspaceRoute() {
     ),
   );
   return (
-    <AppShell snapshot={current()} announcement={store.ui.announcement} activePath={path()}>
+    <AppShell
+      snapshot={current()}
+      decisionInbox={decisionInbox()}
+      announcement={store.ui.announcement}
+      activePath={path()}
+    >
       <Show when={path() === "/ambient"}>
-        <AmbientRoute snapshot={current()} />
+        <AmbientRoute snapshot={current()} initialEntryId={searchParams.entry} />
       </Show>
       <Show when={path() === "/find"}>
-        <FindRoute />
+        <FindRoute snapshot={current()} decisionInbox={decisionInbox()} />
       </Show>
       <Show when={path() !== "/ambient" && path() !== "/find"}>
-        <DecisionInbox snapshot={decisionInbox()} />
+        <DecisionInbox
+          snapshot={decisionInbox()}
+          initialRecordId={searchParams.packet ? Number(searchParams.packet) : undefined}
+        />
       </Show>
     </AppShell>
   );
 }
 
-function AmbientRoute(props: { snapshot?: CommandCenterSnapshot }) {
-  return <AmbientActivity snapshot={props.snapshot} />;
+function AmbientRoute(props: { snapshot?: CommandCenterSnapshot; initialEntryId?: string }) {
+  return <AmbientActivity snapshot={props.snapshot} initialEntryId={props.initialEntryId} />;
 }
 
-function FindRoute() {
-  return (
-    <section class="page" aria-labelledby="find-route-title">
-      <header class="page-bar">
-        <div>
-          <p class="eyebrow">Global lookup</p>
-          <h1 id="find-route-title">Find run or receipt</h1>
-        </div>
-        <p>Use the global lookup control to search durable initiative and run references.</p>
-      </header>
-      <StateCard
-        title="Find workflow boundary"
-        message="Search results and receipt inspection will be added behind this stable interface."
-      />
-    </section>
-  );
+function FindRoute(props: {
+  snapshot?: CommandCenterSnapshot;
+  decisionInbox?: import("./generated/command-center-contract").DecisionInboxSnapshot;
+}) {
+  return <FindPage snapshot={props.snapshot} decisionInbox={props.decisionInbox} />;
 }
 
 export default function App() {

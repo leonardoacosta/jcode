@@ -267,7 +267,10 @@ function AmbientDrawer(props: {
   );
 }
 
-export function AmbientActivity(props: { snapshot?: CommandCenterSnapshot }) {
+export function AmbientActivity(props: {
+  snapshot?: CommandCenterSnapshot;
+  initialEntryId?: string;
+}) {
   const [filter, setFilter] = createSignal<AmbientFilter>("all");
   const [drawer, setDrawer] = createSignal<"create" | AmbientLedgerEntry>();
   const [lastTrigger, setLastTrigger] = createSignal<HTMLElement>();
@@ -285,6 +288,13 @@ export function AmbientActivity(props: { snapshot?: CommandCenterSnapshot }) {
   const selectedEntry = createMemo(() => {
     const current = drawer();
     return typeof current === "object" ? current : undefined;
+  });
+
+  createEffect(() => {
+    const entryId = props.initialEntryId;
+    if (!entryId || drawer() || entries().length === 0) return;
+    const entry = entries().find((candidate) => candidate.id === entryId);
+    if (entry) setDrawer(entry);
   });
 
   const closeDrawer = () => {

@@ -711,6 +711,41 @@ button:focus-visible {
   font-weight: 400;
 }
 
+.find-result > span {
+  display: grid;
+  gap: 4px;
+}
+
+.find-result > span:first-child strong {
+  color: var(--pink);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.find-page-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.find-page-field label {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.find-page-field span {
+  align-self: center;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.find-page .find-results {
+  border-top: 1px solid var(--line);
+}
+
 .mobile-nav {
   display: none;
 }

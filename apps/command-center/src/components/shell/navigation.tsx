@@ -51,7 +51,7 @@ export function SideNavigation(props: {
   activePath: string;
   connectionState: string;
   connectionReason?: string;
-  onFind: () => void;
+  onFind: (trigger: HTMLElement) => void;
 }) {
   return (
     <aside class="side-nav" aria-label="Primary sidebar">
@@ -76,7 +76,7 @@ export function SideNavigation(props: {
           type="button"
           aria-haspopup="dialog"
           aria-controls="find-drawer"
-          onClick={() => props.onFind()}
+          onClick={(event) => props.onFind(event.currentTarget)}
         >
           <span aria-hidden="true">⌕</span>
           <span>Find run or receipt</span>

@@ -45,8 +45,13 @@ async function installFixture(
   );
   await page.route("**/api/command-center/initiatives**", async (route) => {
     const requestPath = new URL(route.request().url()).pathname;
+    const currentPath = new URL(page.url()).pathname;
+    const preserveSelected =
+      currentPath === "/ambient" || currentPath === "/find" || currentPath.includes("/runs/");
     const response =
-      requestPath === "/api/command-center/initiatives" && current.selectedInitiative
+      requestPath === "/api/command-center/initiatives" &&
+      current.selectedInitiative &&
+      !preserveSelected
         ? {
             ...current,
             initiatives: [current.selectedInitiative],
@@ -244,6 +249,37 @@ test("global Find result links preserve initiative and run deep links @fixture-o
     "href",
     "/initiatives/init-command-center/runs/run-1",
   );
+});
+
+test("global Find deep links reopen Inbox decisions and Ambient inspection @fixture-only", async ({
+  page,
+}) => {
+  await page.goto("/initiatives/init-command-center/runs/run-1");
+  await page.getByRole("button", { name: /Find run or receipt/i }).click();
+
+  const drawer = page.getByRole("dialog", { name: "Find run or receipt" });
+  const query = page.getByRole("searchbox", { name: "Search durable references" });
+  await query.fill("Review the Command Center delivery");
+  await drawer
+    .locator("a.find-result")
+    .filter({ hasText: "Review the Command Center delivery" })
+    .click();
+  await expect(page).toHaveURL(/\/inbox\?packet=1$/);
+  await expect(
+    page.getByRole("heading", { name: "Review the Command Center delivery" }),
+  ).toBeVisible();
+
+  await page.goto("/initiatives/init-command-center/runs/run-1");
+  await page.getByRole("button", { name: /Find run or receipt/i }).click();
+  await query.fill("Frontend route established");
+  await page
+    .getByRole("dialog", { name: "Find run or receipt" })
+    .locator("a.find-result")
+    .filter({ hasText: "Frontend route established" })
+    .click();
+  await expect(page).toHaveURL(/\/ambient\?entry=checkpoint-cp-1$/);
+  await expect(page.getByRole("dialog", { name: "Inspect ambient activity" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Retained checkpoint" })).toBeVisible();
 });
 
 test("Decision Inbox filters and sorts packets @fixture-only", async ({ page }) => {

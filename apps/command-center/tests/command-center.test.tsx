@@ -13,6 +13,27 @@ import { createProjectionStore } from "../src/stores/projection";
 import { HttpCommandCenterTransport } from "../src/transport/client";
 import { liveSnapshot, nextEvent, unavailableSnapshot } from "./fixtures/snapshots";
 import type { EventEnvelope } from "../src/generated/command-center-contract";
+import type { DecisionInboxSnapshot } from "../src/generated/command-center-contract";
+
+const findInbox: DecisionInboxSnapshot = {
+  generatedAt: "2026-08-17T05:00:00Z",
+  items: [
+    {
+      recordId: 1,
+      source: { adapter: "telegram", senderIdentity: "operator", conversation: "tg:42" },
+      receivedAt: "2026-08-17T05:00:00Z",
+      content: "Review the Command Center delivery",
+      category: "work_request",
+      status: "awaiting_approval",
+      proposal: { id: 1, state: "awaiting_approval" },
+      dedupeKey: "sha256:find",
+      duplicateDeliveries: 0,
+      retryDeliveries: 0,
+      redacted: false,
+      rawPayloadRetained: true,
+    },
+  ],
+};
 
 describe("command center components", () => {
   it("renders a content-first ambient ledger and filters authoritative activity", () => {
@@ -102,7 +123,9 @@ describe("command center components", () => {
 
     expect(screen.getByText("1 result")).toBeVisible();
     expect(screen.getByRole("link", { name: /run-1/i })).toBeVisible();
-    expect(screen.getByLabelText("Jcode Command Center")).not.toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: /Initiative: Jcode Command Center/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps Find results as stable initiative and run deep links", () => {
@@ -122,6 +145,53 @@ describe("command center components", () => {
       "href",
       "/initiatives/init-command-center/runs/run-1",
     );
+  });
+
+  it("indexes every available durable record with evidence and provenance", () => {
+    render(() => (
+      <AppShell snapshot={liveSnapshot} decisionInbox={findInbox}>
+        <p>Command center content</p>
+      </AppShell>
+    ));
+
+    fireEvent.click(screen.getByRole("button", { name: /Find run or receipt/i }));
+
+    expect(screen.getByText("6 results")).toBeVisible();
+    expect(screen.getByRole("link", { name: /Frontend route established/i })).toHaveAttribute(
+      "href",
+      "/ambient?entry=checkpoint-cp-1",
+    );
+    expect(screen.getByRole("link", { name: /Owner: frontend/i })).toHaveAttribute(
+      "href",
+      "/initiatives/init-command-center/runs/run-1",
+    );
+    expect(screen.getByText(/Jcode initiative store/)).toBeVisible();
+    expect(screen.getByText(/telegram · tg:42/i)).toBeVisible();
+  });
+
+  it("opens from the keyboard, traps focus, restores focus, and exposes no-match state", () => {
+    render(() => (
+      <AppShell snapshot={liveSnapshot} decisionInbox={findInbox}>
+        <button type="button">Underlying action</button>
+      </AppShell>
+    ));
+
+    const underlying = screen.getByRole("button", { name: "Underlying action" });
+    underlying.focus();
+    fireEvent.keyDown(document, { key: "k", ctrlKey: true });
+
+    const dialog = screen.getByRole("dialog", { name: "Find run or receipt" });
+    expect(dialog).toBeVisible();
+    expect(screen.getByRole("searchbox", { name: "Search durable references" })).toHaveFocus();
+
+    fireEvent.input(screen.getByRole("searchbox", { name: "Search durable references" }), {
+      target: { value: "does-not-exist" },
+    });
+    expect(screen.getByText("No durable records match this search.")).toBeVisible();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(dialog).not.toBeVisible();
+    expect(underlying).toHaveFocus();
   });
 
   it("renders the dense Decision queue with durable provenance", () => {
