@@ -1,0 +1,466 @@
+{
+  "orcaVersion": "1.4.176",
+  "schemaVersion": 1,
+  "commandCount": 223,
+  "commands": [
+    {
+      "command": "agent-context",
+      "path": [
+        "agent-context"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Print the machine-readable command schema for agents",
+      "usage": "orca agent-context [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment"
+      ],
+      "positionalArgs": [],
+      "examples": [
+        "orca agent-context --json"
+      ],
+      "notes": [
+        "Pure local read of the command registry — works without a running Orca app, so it is safe over SSH and in headless contexts."
+      ]
+    },
+    {
+      "command": "orchestration dispatch-show",
+      "path": [
+        "orchestration",
+        "dispatch-show"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Show dispatch context for a task",
+      "usage": "orca orchestration dispatch-show --task <task_id> [--preamble] [--from <handle>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "task",
+        "preamble",
+        "from"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": []
+    },
+    {
+      "command": "orchestration run-create",
+      "path": [
+        "orchestration",
+        "run-create"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Create and bind a lightweight orchestration Run",
+      "usage": "orca orchestration run-create --objective <text> [--from <handle>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "objective",
+        "from",
+        "retry-request"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": [
+        "A Run is a namespace and home inbox. It never schedules or places workers.",
+        "--retry-request is only for exact recovery after an unknown mutation result."
+      ]
+    },
+    {
+      "command": "orchestration run-show",
+      "path": [
+        "orchestration",
+        "run-show"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Show one lightweight orchestration Run",
+      "usage": "orca orchestration run-show --id <run_id> [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "id"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": []
+    },
+    {
+      "command": "orchestration run-use",
+      "path": [
+        "orchestration",
+        "run-use"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Bind this coordinator terminal to an existing Run",
+      "usage": "orca orchestration run-use --id <run_id> [--from <handle>] [--takeover-legacy] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "id",
+        "from",
+        "takeover-legacy",
+        "retry-request"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": [
+        "--takeover-legacy must run in the live coordinator agent terminal it binds; it preserves existing worker assignments."
+      ]
+    },
+    {
+      "command": "orchestration task-create",
+      "path": [
+        "orchestration",
+        "task-create"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Create an orchestration task",
+      "usage": "orca orchestration task-create --spec <text> [--task-title <text>] [--display-name <text>] [--deps <json_array>] [--parent <task_id>] [--run <run_id>] [--from <handle>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "spec",
+        "task-title",
+        "display-name",
+        "deps",
+        "parent",
+        "run",
+        "from",
+        "retry-request"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": []
+    },
+    {
+      "command": "orchestration task-list",
+      "path": [
+        "orchestration",
+        "task-list"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "List orchestration tasks",
+      "usage": "orca orchestration task-list [--status <status>] [--ready] [--brief] [--run <run_id>] [--from <handle>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "status",
+        "ready",
+        "brief",
+        "run",
+        "from"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": [
+        "--brief collapses whitespace and caps each spec at 160 characters."
+      ]
+    },
+    {
+      "command": "orchestration worker-abandon",
+      "path": [
+        "orchestration",
+        "worker-abandon"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Fence a worker without claiming its process stopped",
+      "usage": "orca orchestration worker-abandon --dispatch <dispatch_id> [--retry-request <id>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "dispatch",
+        "retry-request"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": [
+        "Retains all possibly-live resources and performs no process or filesystem action."
+      ]
+    },
+    {
+      "command": "orchestration worker-list",
+      "path": [
+        "orchestration",
+        "worker-list"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "List supervised worker terminal resource accounting",
+      "usage": "orca orchestration worker-list [--run <run_id>] [--terminal-state <active|reclaimable|retained|release_pending|release_unknown|released>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "run",
+        "terminal-state"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": [
+        "Terminal state is process accounting and is reported separately from Task status; a completed Task can still own a live terminal."
+      ]
+    },
+    {
+      "command": "orchestration worker-release",
+      "path": [
+        "orchestration",
+        "worker-release"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Release the terminal of one settled supervised worker",
+      "usage": "orca orchestration worker-release --dispatch <dispatch_id> [--retry-request <id>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "dispatch",
+        "retry-request"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": [
+        "Post-completion cleanup for a settled (succeeded or failed) worker; closes only the exact coordinator-owned agent terminal of that worker.",
+        "An inspectable output archive is preserved before the terminal closes, so worker-read still returns output afterwards.",
+        "Never closes setup terminals, configured tabs, reused or pre-existing terminals, user-taken-over terminals, or unproven identities.",
+        "Idempotent: repeating the call reports already_released. Only release_unknown exits 1; retained, release_pending, and already_released exit 0."
+      ]
+    },
+    {
+      "command": "orchestration worker-show",
+      "path": [
+        "orchestration",
+        "worker-show"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Inspect one supervised worker Dispatch",
+      "usage": "orca orchestration worker-show --dispatch <dispatch_id> [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "dispatch"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": []
+    },
+    {
+      "command": "orchestration worker-start",
+      "path": [
+        "orchestration",
+        "worker-start"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Start one supervised worker on the Run home or a connected Orca server",
+      "usage": "orca orchestration worker-start --task <task_id> [--on <saved-environment>] [--worktree <current|selector|new-child|new-top-level>] (--agent <agent> | --terminal <handle>) [--model <id>] [--effort <level>] [--name <name>] [--repo <selector>] [--base-branch <ref>] [--display-name <text>] [--comment <text>] [--setup <run|skip|inherit>] [--retry-of <dispatch_id>] [--timeout-ms <n>] [--run <run_id>] [--from <handle>] [--retry-request <id>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "task",
+        "on",
+        "worktree",
+        "name",
+        "repo",
+        "base-branch",
+        "display-name",
+        "comment",
+        "setup",
+        "agent",
+        "model",
+        "effort",
+        "terminal",
+        "retry-of",
+        "timeout-ms",
+        "run",
+        "from",
+        "retry-request"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": [
+        "Current and existing worktrees never rerun setup; a fresh agent terminal is created unless --terminal is explicit.",
+        "--model supports Claude, Codex, and Cursor opaque provider model ids; --effort requires --model. Neither can combine with --terminal.",
+        "New worktrees use agent-first creation and default --setup to run. Repository start-immediately runs setup beside the agent; wait-for-setup gates agent readiness and task input.",
+        "Creation flags (--name, --repo, --base-branch, --display-name, --comment, --setup) are rejected for current/existing worktrees. Use exact --repo on the selected server; project/host convenience routing remains on worktree create.",
+        "--on selects only the worker server; the Run and this command remain on the current Orca server.",
+        "Remote current and new-child are invalid; discover an exact remote selector or use new-top-level.",
+        "--retry-of links the replacement attempt but does not inherit placement; repeat the intended --on/worktree and --agent/terminal choices.",
+        "The call exits 0 only for ready. Failed or outcome_unknown exits 1 and JSON includes stage/failedStage, setup, effects, residualResources, and recovery commands when needed."
+      ]
+    },
+    {
+      "command": "orchestration worker-stop",
+      "path": [
+        "orchestration",
+        "worker-stop"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Fence and stop only one supervised agent terminal",
+      "usage": "orca orchestration worker-stop --dispatch <dispatch_id> [--retry-request <id>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "dispatch",
+        "retry-request"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": [
+        "Never deletes the worktree, setup terminal, configured tabs, or unrelated processes."
+      ]
+    },
+    {
+      "command": "project list",
+      "path": [
+        "project",
+        "list"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "List durable projects known to Orca",
+      "usage": "orca project list [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment"
+      ],
+      "positionalArgs": [],
+      "examples": [
+        "orca project list",
+        "orca project list --json"
+      ],
+      "notes": []
+    },
+    {
+      "command": "project setups",
+      "path": [
+        "project",
+        "setups"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "List project host setups",
+      "usage": "orca project setups [--project <id>] [--host <host-id>] [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment",
+        "project",
+        "host"
+      ],
+      "positionalArgs": [],
+      "examples": [
+        "orca project setups",
+        "orca project setups --project github:stablyai/orca",
+        "orca project setups --host local"
+      ],
+      "notes": [
+        "A setup means a project is available on a host at a concrete filesystem path."
+      ]
+    },
+    {
+      "command": "repo list",
+      "path": [
+        "repo",
+        "list"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "List repos registered in Orca",
+      "usage": "orca repo list [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment"
+      ],
+      "positionalArgs": [],
+      "examples": [],
+      "notes": []
+    },
+    {
+      "command": "status",
+      "path": [
+        "status"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Show app/runtime/graph readiness",
+      "usage": "orca status [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment"
+      ],
+      "positionalArgs": [],
+      "examples": [
+        "orca status",
+        "orca status --json"
+      ],
+      "notes": []
+    },
+    {
+      "command": "worktree current",
+      "path": [
+        "worktree",
+        "current"
+      ],
+      "aliases": [],
+      "argumentMode": "parsed",
+      "summary": "Show the Orca-managed worktree for the current directory",
+      "usage": "orca worktree current [--json]",
+      "flags": [
+        "help",
+        "json",
+        "pairing-code",
+        "environment"
+      ],
+      "positionalArgs": [],
+      "examples": [
+        "orca worktree current",
+        "orca worktree current --json"
+      ],
+      "notes": [
+        "Resolves the current shell directory to a path: selector so agents can target the enclosing Orca worktree without spelling out $PWD."
+      ]
+    }
+  ]
+}

@@ -7,14 +7,15 @@ use chrono::Utc;
 use jcode_command_center::{
     AuthContext, CommandCenterError, Freshness, IdempotencyKey, InitiativeId, InitiativeRepository,
     JcodeRunId, JcodeRunReference, LinkedScheduleProjection, OrcaAdapter, OrcaProjectId,
-    OrcaReference, OrcaRunId, Revision, RunProjectionSource, ScheduleProjectionSource,
-    ScheduleRefId,
+    OrcaReference, OrcaRunId, Revision, RunProjectionSource, RuntimeMutationCapabilities,
+    ScheduleProjectionSource, ScheduleRefId,
 };
 use jcode_task_types::Goal;
 use serde::{Deserialize, Serialize};
 use tokio::process::Command;
 
 use crate::ambient::AmbientManager;
+use crate::command_center_orca::OrcaCompatibilityProfile;
 
 pub(super) async fn spawn_managed_http_host(runtime: &crate::server::runtime::ServerRuntime) {
     let enabled = std::env::var("JCODE_COMMAND_CENTER_ENABLED")
@@ -329,6 +330,27 @@ impl OrcaCliAdapter {
         serde_json::from_slice(&output).map_err(|_| CommandCenterError::OrcaUnavailable)
     }
 
+    async fn validate_compatibility_profile(&self) -> Result<(), CommandCenterError> {
+        let status = self
+            .runner
+            .run(&self.command, &["status".to_string(), "--json".to_string()])
+            .await?;
+        let registry = self
+            .runner
+            .run(
+                &self.command,
+                &["agent-context".to_string(), "--json".to_string()],
+            )
+            .await?;
+        let status: serde_json::Value =
+            serde_json::from_slice(&status).map_err(|_| incompatible_orca_profile())?;
+        let registry: serde_json::Value =
+            serde_json::from_slice(&registry).map_err(|_| incompatible_orca_profile())?;
+        OrcaCompatibilityProfile::pinned()
+            .and_then(|profile| profile.validate_discovery_values(&status, &registry))
+            .map_err(|_| incompatible_orca_profile())
+    }
+
     async fn canonical_project_id(&self) -> Result<OrcaProjectId, CommandCenterError> {
         let working_dir = self
             .working_dir
@@ -380,6 +402,14 @@ impl OrcaCliAdapter {
 
 #[async_trait]
 impl OrcaAdapter for OrcaCliAdapter {
+    async fn capabilities(&self) -> Result<RuntimeMutationCapabilities, CommandCenterError> {
+        // Task 4.5b validates the compatibility profile but intentionally does not
+        // advertise mutations. Tasks 4.5c and 4.5d must implement and accept-test
+        // each lifecycle command before any of these flags can become true.
+        let _profile_verified = self.validate_compatibility_profile().await.is_ok();
+        Ok(RuntimeMutationCapabilities::unavailable())
+    }
+
     async fn observe(&self, _id: &InitiativeId) -> Result<OrcaReference, CommandCenterError> {
         let status = self.status().await?;
         if !status.ok || !status.result.runtime.reachable {
@@ -546,6 +576,12 @@ fn storage_error(error: impl std::fmt::Display) -> CommandCenterError {
 fn unresolved_orca_identity() -> CommandCenterError {
     CommandCenterError::InvalidCommand {
         reason: "unresolved canonical Orca repository identity".to_string(),
+    }
+}
+
+fn incompatible_orca_profile() -> CommandCenterError {
+    CommandCenterError::UnsupportedCapability {
+        capability: "orca.command_center.compatibility_profile.1.4.176".to_string(),
     }
 }
 
@@ -899,6 +935,150 @@ mod tests {
                 let runtime_id = observed.runtime_id.expect("runtime metadata");
                 assert_ne!(project_id, runtime_id);
                 assert!(!project_id.trim().is_empty());
+            });
+    }
+
+    #[test]
+    fn orca_1_4_176_compatibility_fixtures_are_pinned_and_self_consistent() {
+        let profile = OrcaCompatibilityProfile::pinned().expect("load pinned Orca profile");
+
+        assert_eq!(profile.orca_version(), "1.4.176");
+        profile
+            .validate_pinned_fixtures()
+            .expect("pinned fixtures must describe the complete compatibility profile");
+
+        for command in [
+            "orchestration run-create",
+            "orchestration task-create",
+            "orchestration worker-start",
+            "orchestration worker-stop",
+            "orchestration worker-abandon",
+            "orchestration worker-release",
+        ] {
+            assert!(
+                profile.has_required_command(command),
+                "missing pinned command {command}"
+            );
+        }
+        for fixture in [
+            "worker-start.ready",
+            "worker-start.failed",
+            "worker-start.outcome-unknown",
+            "worker-stop.stopped",
+            "worker-stop.unknown",
+            "worker-abandon.abandoned",
+            "worker-release.released",
+            "worker-release.pending",
+            "worker-release.unknown",
+            "error.typed-rejection",
+        ] {
+            profile
+                .response_fixture(fixture)
+                .unwrap_or_else(|| panic!("missing pinned response fixture {fixture}"));
+        }
+    }
+
+    #[test]
+    fn orca_compatibility_profile_rejects_version_registry_and_json_shape_drift() {
+        let profile = OrcaCompatibilityProfile::pinned().expect("load pinned Orca profile");
+        let status = profile
+            .response_fixture("status.ready")
+            .expect("status fixture")
+            .clone();
+        let registry = profile.command_registry_fixture().clone();
+
+        profile
+            .validate_discovery_values(&status, &registry)
+            .expect("pinned discovery fixtures validate");
+
+        let mut wrong_version = status.clone();
+        wrong_version["result"]["runtime"]["appVersion"] = json!("1.4.177");
+        assert!(
+            profile
+                .validate_discovery_values(&wrong_version, &registry)
+                .is_err(),
+            "an unpinned Orca version must fail closed"
+        );
+
+        let mut wrong_registry = registry.clone();
+        let worker_start = wrong_registry["commands"]
+            .as_array_mut()
+            .expect("registry commands")
+            .iter_mut()
+            .find(|command| command["command"] == "orchestration worker-start")
+            .expect("worker-start command");
+        worker_start["flags"]
+            .as_array_mut()
+            .expect("worker-start flags")
+            .retain(|flag| flag != "retry-of");
+        assert!(
+            profile
+                .validate_discovery_values(&status, &wrong_registry)
+                .is_err(),
+            "command registry drift must fail closed"
+        );
+
+        let mut wrong_shape = profile
+            .response_fixture("worker-start.ready")
+            .expect("worker-start fixture")
+            .clone();
+        wrong_shape["result"]
+            .as_object_mut()
+            .expect("worker-start result")
+            .remove("dispatchId");
+        assert!(
+            profile
+                .validate_response_value("worker-start.ready", &wrong_shape)
+                .is_err(),
+            "JSON response shape drift must fail closed"
+        );
+    }
+
+    #[test]
+    fn orca_cli_validates_profile_read_only_and_keeps_mutations_unavailable() {
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async move {
+                let profile = OrcaCompatibilityProfile::pinned().expect("load pinned profile");
+                let status = profile
+                    .response_fixture("status.ready")
+                    .expect("status fixture")
+                    .clone();
+                let registry = profile.command_registry_fixture().clone();
+                let adapter = OrcaCliAdapter::with_runner(
+                    "orca",
+                    None,
+                    Arc::new(ScriptedRunner::new(vec![
+                        expected_call(&["status", "--json"], status.clone()),
+                        expected_call(&["agent-context", "--json"], registry.clone()),
+                        expected_call(&["status", "--json"], status),
+                        expected_call(&["agent-context", "--json"], registry),
+                    ])),
+                );
+
+                adapter
+                    .validate_compatibility_profile()
+                    .await
+                    .expect("pinned profile validates");
+                let capabilities = adapter.capabilities().await.expect("capabilities");
+                assert!(!capabilities.start_initiative_run);
+                assert!(!capabilities.retry_linked_run);
+                assert!(!capabilities.cancel_linked_run);
+            });
+    }
+
+    #[test]
+    #[ignore = "requires the installed Orca 1.4.176 CLI and a reachable runtime"]
+    fn orca_cli_validates_live_1_4_176_compatibility_profile() {
+        let command = std::env::var("JCODE_TEST_ORCA_1_4_176_CLI")
+            .expect("JCODE_TEST_ORCA_1_4_176_CLI must name the Orca 1.4.176 executable");
+        tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(async move {
+                OrcaCliAdapter::new(command)
+                    .validate_compatibility_profile()
+                    .await
+                    .expect("live Orca 1.4.176 profile must match pinned fixtures");
             });
     }
 }

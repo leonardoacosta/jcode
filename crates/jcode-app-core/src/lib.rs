@@ -32,6 +32,7 @@ pub mod build;
 pub mod catchup;
 pub mod channel;
 pub mod command_center;
+mod command_center_orca;
 pub mod external_auth;
 pub mod external_signal;
 pub mod mission;

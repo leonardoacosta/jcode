@@ -1,0 +1,788 @@
+{
+  "orcaVersion": "1.4.176",
+  "fixtures": [
+    {
+      "name": "status.ready",
+      "command": "status",
+      "response": {
+        "id": "local-status",
+        "ok": true,
+        "result": {
+          "app": {
+            "running": true,
+            "pid": 1234,
+            "desktopWindowStatus": "openable"
+          },
+          "runtime": {
+            "state": "ready",
+            "reachable": true,
+            "runtimeId": "runtime-fixture",
+            "appVersion": "1.4.176",
+            "remoteUpdateSupport": {
+              "installMode": "interactive",
+              "automatic": false,
+              "reason": "updater-unavailable"
+            },
+            "capabilities": [
+              "orchestration.contract.v1"
+            ]
+          },
+          "graph": {
+            "state": "ready"
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "repo-list.success",
+      "command": "repo list",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "repos": [
+            {
+              "id": "repo-fixture",
+              "path": "/fixture/repo",
+              "displayName": "Fixture repo",
+              "badgeColor": "blue",
+              "addedAt": 1,
+              "kind": "git",
+              "externalWorktreeVisibility": "visible",
+              "externalWorktreeVisibilityLegacy": false,
+              "repoIcon": {
+                "type": "generated",
+                "src": "fixture",
+                "source": "generated",
+                "label": "Fixture repo"
+              },
+              "upstream": null,
+              "gitRemoteIdentity": {
+                "canonicalKey": "github:fixture/repo",
+                "remoteName": "origin",
+                "remoteUrl": "https://example.invalid/fixture/repo.git"
+              },
+              "gitUsername": "fixture",
+              "hookSettings": {
+                "mode": "enabled",
+                "setupRunPolicy": "manual",
+                "setupAgentStartupPolicy": "wait-for-setup",
+                "scripts": {
+                  "setup": "",
+                  "archive": ""
+                }
+              }
+            }
+          ]
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "project-list.success",
+      "command": "project list",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "projects": [
+            {
+              "id": "project-fixture",
+              "displayName": "Fixture project",
+              "badgeColor": "blue",
+              "repoIcon": {
+                "type": "generated",
+                "src": "fixture",
+                "source": "generated",
+                "label": "Fixture project"
+              },
+              "kind": "git",
+              "providerIdentity": {
+                "provider": "github",
+                "owner": "fixture",
+                "repo": "repo"
+              },
+              "gitRemoteIdentity": {
+                "canonicalKey": "github:fixture/repo",
+                "remoteName": "origin",
+                "remoteUrl": "https://example.invalid/fixture/repo.git"
+              },
+              "sourceRepoIds": [
+                "repo-fixture"
+              ],
+              "createdAt": 1,
+              "updatedAt": 2
+            }
+          ]
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "project-setups.success",
+      "command": "project setups",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "setups": [
+            {
+              "id": "setup-fixture",
+              "projectId": "project-fixture",
+              "hostId": "host-fixture",
+              "repoId": "repo-fixture",
+              "path": "/fixture/repo",
+              "displayName": "Fixture setup",
+              "kind": "git",
+              "setupState": "ready",
+              "setupMethod": "imported-existing-folder",
+              "createdAt": 1,
+              "updatedAt": 2
+            }
+          ]
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worktree-current.success",
+      "command": "worktree current",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "worktree": {
+            "id": "worktree-fixture",
+            "instanceId": "instance-fixture",
+            "repoId": "repo-fixture",
+            "path": "/fixture/repo",
+            "head": "fixture-head",
+            "branch": "fixture-branch",
+            "isBare": false,
+            "isMainWorktree": true,
+            "displayName": "Fixture worktree",
+            "comment": "",
+            "linkedIssue": null,
+            "linkedPR": null,
+            "linkedLinearIssue": null,
+            "linkedLinearIssueWorkspaceId": null,
+            "linkedLinearIssueOrganizationUrlKey": null,
+            "linkedGitLabMR": null,
+            "linkedGitLabIssue": null,
+            "linkedBitbucketPR": null,
+            "linkedAzureDevOpsPR": null,
+            "linkedGiteaPR": null,
+            "linkedWorkItem": null,
+            "linkedTaskSourceContext": null,
+            "isArchived": false,
+            "isUnread": false,
+            "isPinned": false,
+            "sortOrder": 0,
+            "lastActivityAt": 1,
+            "workspaceStatus": "active",
+            "hostId": "host-fixture",
+            "parentWorktreeId": null,
+            "childWorktreeIds": [],
+            "lineage": null,
+            "git": {
+              "path": "/fixture/repo",
+              "head": "fixture-head",
+              "branch": "fixture-branch",
+              "isBare": false,
+              "isMainWorktree": true
+            }
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "run-create.accepted",
+      "command": "orchestration run-create",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "run": {
+            "id": "run-fixture",
+            "objective": "Fixture objective",
+            "home_database": "/fixture/orchestration.db",
+            "coordinator_handle": "term-coordinator",
+            "coordinator_pane_key": "pane-coordinator",
+            "consumer_generation": 1,
+            "legacy": 0,
+            "created_at": "2026-08-17T00:00:00Z",
+            "updated_at": "2026-08-17T00:00:00Z"
+          },
+          "binding": {
+            "consumerGeneration": 1
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "run-use.accepted",
+      "command": "orchestration run-use",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "run": {
+            "id": "run-fixture",
+            "objective": "Fixture objective",
+            "home_database": "/fixture/orchestration.db",
+            "coordinator_handle": "term-coordinator",
+            "coordinator_pane_key": "pane-coordinator",
+            "consumer_generation": 2,
+            "legacy": 0,
+            "created_at": "2026-08-17T00:00:00Z",
+            "updated_at": "2026-08-17T00:01:00Z"
+          },
+          "binding": {
+            "consumerGeneration": 2
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "run-show.success",
+      "command": "orchestration run-show",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "run": {
+            "id": "run-fixture",
+            "objective": "Fixture objective",
+            "home_database": "/fixture/orchestration.db",
+            "coordinator_handle": "term-coordinator",
+            "coordinator_pane_key": "pane-coordinator",
+            "consumer_generation": 1,
+            "legacy": 0,
+            "created_at": "2026-08-17T00:00:00Z",
+            "updated_at": "2026-08-17T00:00:00Z"
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "task-create.accepted",
+      "command": "orchestration task-create",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "task": {
+            "id": "task-fixture",
+            "run_id": "run-fixture",
+            "parent_id": null,
+            "created_by_terminal_handle": "term-coordinator",
+            "created_by_pane_key": "pane-coordinator",
+            "created_by_process_incarnation": "process-fixture",
+            "created_by_run_generation": 1,
+            "task_title": "Fixture task",
+            "display_name": "Fixture task",
+            "spec": "Fixture task spec",
+            "status": "pending",
+            "deps": "[]",
+            "result": "",
+            "created_at": "2026-08-17T00:00:00Z",
+            "completed_at": null
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "task-list.success",
+      "command": "orchestration task-list",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "runId": "run-fixture",
+          "legacyReadOnly": false,
+          "tasks": [
+            {
+              "id": "task-fixture",
+              "run_id": "run-fixture",
+              "parent_id": null,
+              "created_by_terminal_handle": "term-coordinator",
+              "created_by_pane_key": "pane-coordinator",
+              "created_by_process_incarnation": "process-fixture",
+              "created_by_run_generation": 1,
+              "task_title": "Fixture task",
+              "display_name": "Fixture task",
+              "spec": "Fixture task spec",
+              "status": "pending",
+              "deps": "[]",
+              "result": "",
+              "created_at": "2026-08-17T00:00:00Z",
+              "completed_at": null
+            }
+          ],
+          "count": 1
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "dispatch-show.success",
+      "command": "orchestration dispatch-show",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "dispatch": {
+            "id": "dispatch-fixture",
+            "run_id": "run-fixture",
+            "task_id": "task-fixture",
+            "contract_version": 1,
+            "launch_token_hash": "launch-fixture",
+            "assignee_handle": "term-worker",
+            "assignee_pane_key": "pane-worker",
+            "capability_hash": "capability-fixture",
+            "process_incarnation": "process-fixture",
+            "capability_revoked_at": null,
+            "status": "active",
+            "failure_count": 0,
+            "last_failure": null,
+            "dispatched_at": "2026-08-17T00:00:00Z",
+            "completed_at": null,
+            "created_at": "2026-08-17T00:00:00Z",
+            "last_heartbeat_at": null
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-start.ready",
+      "command": "orchestration worker-start",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "runId": "run-fixture",
+          "taskId": "task-fixture",
+          "dispatchId": "dispatch-fixture",
+          "state": "ready",
+          "stage": "ready",
+          "setup": {
+            "requested": "not_applicable",
+            "effective": "not_applicable",
+            "source": "existing_worktree",
+            "hookFound": false,
+            "startupPolicy": "start-immediately",
+            "state": "not_applicable"
+          },
+          "launch": {
+            "requested": {
+              "agent": "codex",
+              "model": null,
+              "effort": null
+            },
+            "effective": {
+              "agent": "codex",
+              "model": null,
+              "effort": null
+            }
+          },
+          "timeoutMs": 60000,
+          "effects": [
+            {
+              "kind": "terminal",
+              "role": "agent",
+              "action": "created",
+              "id": "term-worker",
+              "surface": "background"
+            }
+          ],
+          "residualResources": []
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-start.failed",
+      "command": "orchestration worker-start",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "runId": "run-fixture",
+          "taskId": "task-fixture",
+          "dispatchId": "dispatch-fixture",
+          "state": "failed",
+          "stage": "failed",
+          "failedStage": "terminal_create",
+          "lastError": "fixture failure",
+          "setup": {
+            "requested": "not_applicable",
+            "effective": "not_applicable",
+            "source": "existing_worktree",
+            "hookFound": false,
+            "startupPolicy": "start-immediately",
+            "state": "not_applicable"
+          },
+          "launch": {
+            "requested": {
+              "agent": "codex",
+              "model": null,
+              "effort": null
+            },
+            "effective": null
+          },
+          "effects": [],
+          "residualResources": []
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-start.outcome-unknown",
+      "command": "orchestration worker-start",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "runId": "run-fixture",
+          "taskId": "task-fixture",
+          "dispatchId": "dispatch-fixture",
+          "state": "outcome_unknown",
+          "stage": "start_unknown",
+          "failedStage": "prompt_send",
+          "lastError": "fixture unknown outcome",
+          "setup": {
+            "requested": "not_applicable",
+            "effective": "not_applicable",
+            "source": "existing_worktree",
+            "hookFound": false,
+            "startupPolicy": "start-immediately",
+            "state": "not_applicable"
+          },
+          "launch": {
+            "requested": {
+              "agent": "codex",
+              "model": null,
+              "effort": null
+            },
+            "effective": {
+              "agent": "codex",
+              "model": null,
+              "effort": null
+            }
+          },
+          "effects": [
+            {
+              "kind": "terminal",
+              "role": "agent",
+              "action": "created",
+              "id": "term-worker",
+              "surface": "background"
+            }
+          ],
+          "residualResources": [
+            {
+              "kind": "terminal",
+              "role": "agent",
+              "action": "created",
+              "id": "term-worker",
+              "surface": "background"
+            }
+          ],
+          "nextCommands": [
+            "orca orchestration worker-show --dispatch dispatch-fixture --json",
+            "orca orchestration worker-abandon --dispatch dispatch-fixture --json"
+          ]
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-show.success",
+      "command": "orchestration worker-show",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "dispatch": {
+            "id": "dispatch-fixture",
+            "run_id": "run-fixture",
+            "task_id": "task-fixture",
+            "contract_version": 1,
+            "launch_token_hash": "launch-fixture",
+            "assignee_handle": "term-worker",
+            "assignee_pane_key": "pane-worker",
+            "capability_hash": "capability-fixture",
+            "process_incarnation": "process-fixture",
+            "capability_revoked_at": null,
+            "status": "active",
+            "failure_count": 0,
+            "last_failure": null,
+            "dispatched_at": "2026-08-17T00:00:00Z",
+            "completed_at": null,
+            "created_at": "2026-08-17T00:00:00Z",
+            "last_heartbeat_at": null
+          },
+          "worker": {
+            "dispatch_id": "dispatch-fixture",
+            "runtime_epoch": "runtime-fixture",
+            "state": "ready",
+            "stage": "ready",
+            "worktree_id": "worktree-fixture",
+            "agent_terminal_handle": "term-worker",
+            "setup_state": "succeeded",
+            "effects": [
+              {
+                "kind": "terminal",
+                "role": "agent",
+                "action": "created",
+                "id": "term-worker",
+                "surface": "background"
+              }
+            ],
+            "residual_resources": "[]",
+            "start_options": "{}",
+            "last_error": null,
+            "created_at": "2026-08-17T00:00:00Z",
+            "updated_at": "2026-08-17T00:00:00Z",
+            "residualResources": [],
+            "startOptions": {
+              "worktree": "current",
+              "resolvedWorktreeId": "worktree-fixture",
+              "name": "fixture-worker",
+              "repo": "repo-fixture",
+              "baseBranch": "main",
+              "terminal": null,
+              "agent": "codex",
+              "launch": {
+                "requested": {
+                  "agent": "codex",
+                  "model": null,
+                  "effort": null
+                },
+                "effective": {
+                  "agent": "codex",
+                  "model": null,
+                  "effort": null
+                }
+              },
+              "timeoutMs": 60000,
+              "setup": "inherit",
+              "setupSource": "existing-worktree"
+            }
+          },
+          "terminal": null,
+          "observation": {
+            "status": "missing",
+            "exactWorker": true
+          },
+          "terminalResource": null
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-stop.stopped",
+      "command": "orchestration worker-stop",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "dispatchId": "dispatch-fixture",
+          "state": "stopped",
+          "alreadySettled": false,
+          "processAction": "closed_agent_terminal",
+          "close": {
+            "handle": "term-worker",
+            "closed": true
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-stop.unknown",
+      "command": "orchestration worker-stop",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "dispatchId": "dispatch-fixture",
+          "state": "stop_unknown",
+          "alreadySettled": false,
+          "processAction": "unknown",
+          "lastError": "fixture unknown stop outcome"
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-abandon.abandoned",
+      "command": "orchestration worker-abandon",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "dispatchId": "dispatch-fixture",
+          "state": "abandoned",
+          "alreadySettled": false,
+          "stale": false,
+          "processAction": "none",
+          "warning": "Possibly-live resources were retained; no process was stopped or deleted.",
+          "residualResources": [
+            {
+              "kind": "terminal",
+              "action": "inspect",
+              "id": "term-worker"
+            }
+          ]
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-release.released",
+      "command": "orchestration worker-release",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "dispatchId": "dispatch-fixture",
+          "state": "released",
+          "processAction": "closed_agent_terminal",
+          "archive": {
+            "source": "terminal",
+            "status": "captured"
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-release.pending",
+      "command": "orchestration worker-release",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "dispatchId": "dispatch-fixture",
+          "state": "release_pending",
+          "processAction": "none",
+          "archive": null,
+          "recovery": "Inspect worker-show before retrying release."
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-release.unknown",
+      "command": "orchestration worker-release",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "dispatchId": "dispatch-fixture",
+          "state": "release_unknown",
+          "processAction": "unknown",
+          "archive": null,
+          "lastError": "fixture unknown release outcome",
+          "recovery": "Inspect worker-show before taking further action."
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "worker-list.success",
+      "command": "orchestration worker-list",
+      "response": {
+        "id": "request-fixture",
+        "ok": true,
+        "result": {
+          "workers": [
+            {
+              "dispatchId": "dispatch-fixture",
+              "taskId": "task-fixture",
+              "runId": "run-fixture",
+              "workerState": "succeeded",
+              "dispatchStatus": "completed",
+              "agentTerminalHandle": "term-worker",
+              "terminalState": "reclaimable",
+              "resource": null
+            }
+          ],
+          "counts": {
+            "retained": 0,
+            "released": 0,
+            "reclaimable": 1
+          }
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    },
+    {
+      "name": "error.typed-rejection",
+      "command": "orchestration worker-show",
+      "response": {
+        "id": "request-fixture",
+        "ok": false,
+        "error": {
+          "code": "dispatch_not_found",
+          "message": "Dispatch dispatch-fixture was not found."
+        },
+        "_meta": {
+          "runtimeId": "runtime-fixture"
+        }
+      }
+    }
+  ]
+}
