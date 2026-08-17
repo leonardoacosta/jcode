@@ -1176,6 +1176,7 @@ fn completion_review_telemetry_captures_trigger_group_concern_cycles_resolution_
     let _guard = lock_telemetry_test_state();
     *SESSION_STATE.lock().unwrap() = None;
     begin_session("test", "test");
+    record_turn();
     record_completion_review(CompletionReviewTelemetry {
         trigger: CompletionReviewTrigger::GateDigest,
         goal_grouped: true,
