@@ -800,6 +800,19 @@ impl BashTool {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
+        if let Some(env) = crate::hooks::current_client_terminal_env() {
+            for key in crate::terminal_launch::CLIENT_TERMINAL_ENV_VARS {
+                command.env_remove(key);
+                command.env_remove(format!("JCODE_CLIENT_{key}"));
+            }
+            for (key, value) in env {
+                if crate::terminal_launch::CLIENT_TERMINAL_ENV_VARS.contains(&key.as_str()) {
+                    command.env(&key, &value);
+                    command.env(format!("JCODE_CLIENT_{key}"), value);
+                }
+            }
+        }
+
         if has_stdin_channel {
             command.stdin(Stdio::piped());
         }

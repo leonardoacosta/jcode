@@ -97,6 +97,44 @@ async fn test_basic_command_with_unused_stdin_channel() {
     assert!(result.output.contains("world"));
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn foreground_bash_command_uses_client_terminal_env_snapshot() {
+    let _guard = crate::storage::lock_test_env();
+    let previous_herdr_env = std::env::var_os("HERDR_ENV");
+    let previous_herdr_pane = std::env::var_os("HERDR_PANE_ID");
+    crate::env::set_var("HERDR_ENV", "daemon-env");
+    crate::env::set_var("HERDR_PANE_ID", "daemon-pane");
+
+    let result = crate::hooks::with_client_terminal_env(
+        vec![
+            ("HERDR_ENV".to_string(), "client-env".to_string()),
+            ("HERDR_PANE_ID".to_string(), "client-pane".to_string()),
+        ],
+        async {
+            BashTool::new()
+                .execute(
+                    json!({"command": "printf '%s|%s' \"$HERDR_ENV\" \"$HERDR_PANE_ID\""}),
+                    make_ctx(None),
+                )
+                .await
+        },
+    )
+    .await
+    .expect("foreground bash command should run");
+
+    match previous_herdr_env {
+        Some(value) => crate::env::set_var("HERDR_ENV", value),
+        None => crate::env::remove_var("HERDR_ENV"),
+    }
+    match previous_herdr_pane {
+        Some(value) => crate::env::set_var("HERDR_PANE_ID", value),
+        None => crate::env::remove_var("HERDR_PANE_ID"),
+    }
+
+    assert_eq!(result.output.trim(), "client-env|client-pane");
+}
+
 #[tokio::test]
 async fn test_stdin_forwarding_single_line() {
     let (tx, mut rx) = mpsc::unbounded_channel::<StdinInputRequest>();

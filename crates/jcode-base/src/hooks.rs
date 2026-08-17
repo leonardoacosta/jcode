@@ -94,6 +94,10 @@ where
     CLIENT_TERMINAL_ENV.scope(env, future).await
 }
 
+pub fn current_client_terminal_env() -> Option<Vec<(String, String)>> {
+    CLIENT_TERMINAL_ENV.try_with(Clone::clone).ok()
+}
+
 /// The configured commands for `event`, in declaration order.
 pub fn hook_commands(event: &str) -> Vec<String> {
     if hooks_suppressed() {
