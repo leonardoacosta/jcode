@@ -4,7 +4,7 @@
 //! explicitly configured loopback/private bind address and private routing.
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::net::{IpAddr, SocketAddr};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -132,7 +132,7 @@ fn is_tailscale_cgnat(ip: Ipv4Addr) -> bool {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 struct GrafanaWebhook {
     version: String,
     group_key: String,
@@ -148,7 +148,7 @@ struct GrafanaWebhook {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 struct GrafanaAlert {
     status: String,
     labels: BTreeMap<String, String>,
@@ -942,5 +942,43 @@ mod tests {
         assert_eq!(aggregate.state, LifecycleState::Firing);
         assert_eq!(aggregate.generation, 1);
         assert_eq!(aggregate.severity, SignalSeverity::Critical);
+    }
+
+    #[test]
+    fn accepts_native_grafana_envelope_with_unconsumed_fields() {
+        let cfg = config();
+        let webhook: GrafanaWebhook = serde_json::from_value(serde_json::json!({
+            "version":"1",
+            "groupKey":"group",
+            "status":"firing",
+            "receiver":"jcode",
+            "externalURL":"http://grafana.local/",
+            "truncatedAlerts":0,
+            "orgId":1,
+            "title":"[FIRING:1] DiskFull",
+            "state":"alerting",
+            "message":"Disk is full",
+            "groupLabels":{},
+            "commonLabels":{"jcode_project":"jcode","severity":"critical"},
+            "commonAnnotations":{},
+            "alerts":[{
+                "status":"firing",
+                "labels":{"alertname":"DiskFull","jcode_project":"jcode","severity":"critical"},
+                "annotations":{"summary":"Disk is full"},
+                "startsAt":"2026-08-17T04:00:00Z",
+                "endsAt":"0001-01-01T00:00:00Z",
+                "generatorURL":"http://grafana.local/alerting/list",
+                "fingerprint":"abc123",
+                "silenceURL":"http://grafana.local/silence/new",
+                "dashboardURL":"http://grafana.local/d/hash",
+                "panelURL":"http://grafana.local/d/hash?viewPanel=1",
+                "values":{"A":1},
+                "valueString":"A=1",
+                "extraNativeField":"ignored"
+            }]
+        }))
+        .unwrap();
+
+        assert!(validate_webhook(&webhook, &cfg).is_ok());
     }
 }
