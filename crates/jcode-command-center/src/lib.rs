@@ -4,6 +4,8 @@
 //! primitives. It deliberately contains no frontend persistence and is safe to
 //! wire behind a disabled-by-default loopback listener.
 
+pub mod orca_operation_store;
+
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
