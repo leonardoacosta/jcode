@@ -28,6 +28,10 @@ mod orca_lifecycle;
 #[path = "command_center/orca_lifecycle_tests.rs"]
 mod orca_lifecycle_tests;
 
+#[cfg(test)]
+#[path = "command_center/orca_lifecycle_acceptance_tests.rs"]
+mod orca_lifecycle_acceptance_tests;
+
 pub(super) async fn spawn_managed_http_host(runtime: &crate::server::runtime::ServerRuntime) {
     let enabled = std::env::var("JCODE_COMMAND_CENTER_ENABLED")
         .ok()
