@@ -1,0 +1,1813 @@
+{
+  "version": 1,
+  "repository": {
+    "name": "brown-wholesale",
+    "ref": "46be8f57ead08d0f957c4af7ff9321224a668f6a",
+    "commit": "46be8f57ead08d0f957c4af7ff9321224a668f6a",
+    "scope": "Approved Decus 537 and Wholesale 346 Bicep traffic audit plus directly cited Bicep and Azure DevOps definitions",
+    "summary": "Wholesale 346 provides the shared Cloudflare and API Management edge and shared application/data foundation. Decus 537 remains a distinct landing-zone foundation with no invented Aggregates or DecusDirect application hosts and held hub peering."
+  },
+  "art_direction": {
+    "name": "Brown private Azure topology",
+    "principles": [
+      "Azure resource topology before decoration",
+      "VNets are terrain boundaries and subnets remain network-view containment",
+      "bottom-left API Management through projects and data access to top-right external services",
+      "direct inferred and held evidence are visually distinct",
+      "APIM configuration, policies, products, named values, subscriptions, and partner relations remain metadata"
+    ],
+    "palette_roles": {
+      "background": "#071624",
+      "grid": "#23415f",
+      "structure": "#77b7ff",
+      "control_path": "#f4c430",
+      "data_path": "#2dd4bf",
+      "payload": "#ffd166",
+      "text": "#e6f2ff"
+    },
+    "medium": "dark Azure technical canvas",
+    "linework": "crisp isometric vector strokes",
+    "materials": "uniform Azure semantic cubes on sourced VNet terrain",
+    "typography": "full Azure resource labels with compact evidence chips",
+    "motion": "restrained evidence payload markers",
+    "path_treatments": {
+      "dependency": {
+        "stroke_pattern": "short dash",
+        "weight": "fine",
+        "marker": "open chevron",
+        "texture": "subtle dependency rail",
+        "motion_cadence": "none",
+        "reduced_motion": "static dashed dependency"
+      },
+      "network": {
+        "stroke_pattern": "double rail",
+        "weight": "medium",
+        "marker": "hollow network arrow",
+        "texture": "private-link trace",
+        "motion_cadence": "slow session dot",
+        "reduced_motion": "single ring marker"
+      },
+      "telemetry": {
+        "stroke_pattern": "dotted pulse",
+        "weight": "fine",
+        "marker": "small ring terminal",
+        "texture": "stippled monitor trace",
+        "motion_cadence": "low-frequency envelope pulse",
+        "reduced_motion": "static dot cluster"
+      },
+      "data": {
+        "stroke_pattern": "solid",
+        "weight": "medium",
+        "marker": "filled data arrow",
+        "texture": "evidence trace",
+        "motion_cadence": "restrained payload pulse",
+        "reduced_motion": "static terminal marker"
+      },
+      "identity": {
+        "stroke_pattern": "paired fine dash",
+        "weight": "fine",
+        "marker": "key terminal",
+        "texture": "evidence trace",
+        "motion_cadence": "restrained payload pulse",
+        "reduced_motion": "static terminal marker"
+      }
+    }
+  },
+  "canvas": {
+    "grid_width": 30,
+    "grid_depth": 24,
+    "tile_width": 64,
+    "tile_height": 32,
+    "cube_size": 1
+  },
+  "zones": [
+    {
+      "id": "runtime",
+      "label": "Focused runtime",
+      "description": "Wholesale API ingress, projects, shared data access, telemetry, and external egress"
+    },
+    {
+      "id": "decus-foundation",
+      "label": "Decus 537 foundation",
+      "description": "Distinct Decus shared PaaS foundation and subnet-contained private endpoints"
+    }
+  ],
+  "areas": [
+    {
+      "id": "wholesale-346-vnet-area",
+      "label": "Wholesale 346 spoke virtual network, Central US development",
+      "kind": "vnet",
+      "status": "active",
+      "member_ids": [
+        "wholesale-api-management",
+        "fireball-event-publisher-function-app",
+        "bridge-epay-function-app",
+        "wholesale-service-bus-private-endpoint",
+        "wholesale-key-vault-private-endpoint",
+        "wholesale-sql-private-endpoint",
+        "function-storage-blob-private-endpoint",
+        "function-storage-file-private-endpoint",
+        "function-storage-queue-private-endpoint",
+        "function-storage-table-private-endpoint"
+      ],
+      "padding": 0.5,
+      "description": "VNet terrain contains only subnet-attached resources. PaaS services remain outside at resource-group scope.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/network/vnets/VNET-WHS-346-CentralUS-DEV.bicep",
+          "lines": "13-17",
+          "claim": "The development VNet declares 10.234.132.0/22 and 10.234.156.0/22 address spaces and its subnets."
+        }
+      ]
+    },
+    {
+      "id": "decus-537-vnet-area",
+      "label": "Decus 537 spoke virtual network, East US 2 development",
+      "kind": "vnet",
+      "status": "active",
+      "member_ids": [
+        "decus-key-vault-private-endpoint",
+        "decus-app-configuration-private-endpoint",
+        "decus-sql-private-endpoint",
+        "decus-managed-devops-pool"
+      ],
+      "padding": 0.5,
+      "description": "Distinct Decus VNet terrain contains DATA-subnet private endpoints and the MDOP-subnet pool only.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "21-23",
+          "claim": "Decus 537 owns a separate landing zone with distinct subnets and private endpoints; hub peering is gated and not deployed."
+        }
+      ]
+    }
+  ],
+  "traffic": {
+    "direction": "bottom-left-to-top-right",
+    "layers": [
+      {
+        "id": "ingress",
+        "label": "Cloudflare and Wholesale API Management ingress",
+        "kind": "ingress",
+        "member_ids": [
+          "cloudflare-apim-proxy",
+          "wholesale-api-management"
+        ],
+        "padding": 0.5,
+        "description": "Shared external hostname and API Management entry edge."
+      },
+      {
+        "id": "projects",
+        "label": "Directly evidenced Function App projects",
+        "kind": "projects",
+        "member_ids": [
+          "fireball-event-publisher-function-app",
+          "bridge-epay-function-app"
+        ],
+        "padding": 0.5,
+        "description": "Only directly evidenced application hosts are shown. Aggregates and DecusDirect are omitted."
+      },
+      {
+        "id": "data-access",
+        "label": "Wholesale private data access and telemetry",
+        "kind": "data-access",
+        "member_ids": [
+          "wholesale-service-bus-private-endpoint",
+          "wholesale-service-bus-namespace",
+          "wholesale-key-vault-private-endpoint",
+          "wholesale-key-vault",
+          "wholesale-sql-private-endpoint",
+          "wholesale-sql-server",
+          "wholesale-elastic-pool",
+          "function-storage-blob-private-endpoint",
+          "function-storage-file-private-endpoint",
+          "function-storage-queue-private-endpoint",
+          "function-storage-table-private-endpoint",
+          "wholesale-function-storage-account",
+          "wholesale-application-insights",
+          "wholesale-log-analytics-workspace"
+        ],
+        "padding": 0.5,
+        "description": "Subnet-contained private endpoints lead to resource-group-scoped PaaS services."
+      },
+      {
+        "id": "external-services",
+        "label": "Enterprise external egress",
+        "kind": "external-services",
+        "member_ids": [
+          "enterprise-network-virtual-appliance"
+        ],
+        "padding": 0.5,
+        "description": "External enterprise next hop shown after the owned runtime layers."
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "cloudflare-apim-proxy",
+      "code": "CF",
+      "label": "Cloudflare proxy for apic.{environment}.bridgespecialty.com",
+      "role": "entry",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 1,
+        "y": 22
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "external",
+      "resource_type": "Externally operated Cloudflare HTTPS proxy",
+      "icon": "az-front-door",
+      "description": "External application host for the shared Wholesale API hostname.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "19-20",
+          "claim": "Cloudflare fronts the environment-specific Wholesale API Management service."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-api-management",
+      "code": "APIM",
+      "label": "Wholesale 346 API Management service",
+      "role": "entry",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 3,
+        "y": 21
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.ApiManagement/service",
+      "icon": "az-apim",
+      "description": "Shared Wholesale 346 API edge. APIM APIs, backend URLs, policies, products, named values, subscriptions, and partner relations are metadata on this resource, not standalone topology nodes.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/routing/apim/index.bicep",
+          "lines": "125-151",
+          "claim": "The routing module deploys API Management and attaches it to the selected integration subnet."
+        },
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "208-215",
+          "claim": "APIM configuration metadata is intentionally kept on the APIM resource; unsupported standalone configuration nodes are omitted."
+        }
+      ]
+    },
+    {
+      "id": "fireball-event-publisher-function-app",
+      "code": "FUNC",
+      "label": "Fireball EventPublisher Function App",
+      "role": "compute",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 4,
+        "y": 17
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Web/sites",
+      "icon": "az-function-app",
+      "description": "Function App backend with a directly declared API Management service URL.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/routing/apim/apis/fireball-eventpublisher.bicep",
+          "lines": "40-70",
+          "claim": "The EventPublisher API sets serviceUrl to the supplied backend URL and declares the backend."
+        }
+      ]
+    },
+    {
+      "id": "bridge-epay-function-app",
+      "code": "FUNC",
+      "label": "Bridge ePay Function App",
+      "role": "compute",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 4,
+        "y": 19
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Web/sites",
+      "icon": "az-function-app",
+      "description": "Function App backend with a directly declared API Management service URL.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/routing/apim/apis/fireball-bridgeepay.bicep",
+          "lines": "44-74",
+          "claim": "The Bridge ePay API sets serviceUrl to the supplied backend URL and declares the backend."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-service-bus-private-endpoint",
+      "code": "PE",
+      "label": "Wholesale Service Bus private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 7,
+        "y": 10
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "Private endpoint placed in the Wholesale DATA subnet.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/messaging/service-bus.bicep",
+          "lines": "62-78",
+          "claim": "The Service Bus private endpoint binds the namespace to dataSubnetResourceId."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-service-bus-namespace",
+      "code": "SB",
+      "label": "Wholesale Service Bus namespace",
+      "role": "messaging",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 11,
+        "y": 8
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.ServiceBus/namespaces",
+      "icon": "az-service-bus",
+      "description": "Shared messaging namespace with public access denied by its module configuration.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/messaging/service-bus.bicep",
+          "lines": "34-78",
+          "claim": "The messaging module deploys the Service Bus namespace and its private endpoint."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-key-vault-private-endpoint",
+      "code": "PE",
+      "label": "Wholesale Key Vault private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 7,
+        "y": 12
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "Private endpoint placed in the Wholesale DATA subnet.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/core/keyvault.bicep",
+          "lines": "55-71",
+          "claim": "The Key Vault private endpoint uses dataSubnetResourceId and targets the deployed vault."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-key-vault",
+      "code": "KV",
+      "label": "Wholesale Key Vault",
+      "role": "identity",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 11,
+        "y": 10
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.KeyVault/vaults",
+      "icon": "az-key-vault",
+      "description": "Shared secrets service at resource-group scope.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/core/keyvault.bicep",
+          "lines": "22-36",
+          "claim": "The core module deploys the Wholesale Key Vault."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-sql-private-endpoint",
+      "code": "PE",
+      "label": "Wholesale SQL Server private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 7,
+        "y": 14
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "Private endpoint placed in the Wholesale DATA subnet.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/data/sql-private-endpoint.bicep",
+          "lines": "18-45",
+          "claim": "The SQL private endpoint binds the SQL server to the DATA subnet and private DNS zone."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-sql-server",
+      "code": "SQL",
+      "label": "Wholesale SQL Server",
+      "role": "data",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 11,
+        "y": 12
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Sql/servers",
+      "icon": "az-sql-server",
+      "description": "Shared SQL logical server at resource-group scope.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/data/main.bicep",
+          "lines": "53-72",
+          "claim": "The data root emits the deployed SQL server and elastic pool resources."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-elastic-pool",
+      "code": "POOL",
+      "label": "Wholesale SQL elastic pool",
+      "role": "data",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 13,
+        "y": 12
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Sql/servers/elasticPools",
+      "icon": "az-sql-database",
+      "description": "Elastic pool owned by the Wholesale data foundation.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/data/main.bicep",
+          "lines": "53-72",
+          "claim": "The data root emits the deployed SQL elastic pool."
+        }
+      ]
+    },
+    {
+      "id": "function-storage-blob-private-endpoint",
+      "code": "PE",
+      "label": "Function storage Blob private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 9,
+        "y": 10
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "Blob private endpoint placed in the Wholesale DATA subnet.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+          "lines": "55-80",
+          "claim": "The function storage module deploys the blob private endpoint into dataSubnetResourceId."
+        }
+      ]
+    },
+    {
+      "id": "function-storage-file-private-endpoint",
+      "code": "PE",
+      "label": "Function storage File private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 9,
+        "y": 12
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "File private endpoint placed in the Wholesale DATA subnet.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+          "lines": "82-107",
+          "claim": "The function storage module deploys the file private endpoint into dataSubnetResourceId."
+        }
+      ]
+    },
+    {
+      "id": "function-storage-queue-private-endpoint",
+      "code": "PE",
+      "label": "Function storage Queue private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 9,
+        "y": 14
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "Queue private endpoint placed in the Wholesale DATA subnet.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+          "lines": "109-134",
+          "claim": "The function storage module deploys the queue private endpoint into dataSubnetResourceId."
+        }
+      ]
+    },
+    {
+      "id": "function-storage-table-private-endpoint",
+      "code": "PE",
+      "label": "Function storage Table private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 9,
+        "y": 16
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "Table private endpoint placed in the Wholesale DATA subnet.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+          "lines": "136-161",
+          "claim": "The function storage module deploys the table private endpoint into dataSubnetResourceId."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-function-storage-account",
+      "code": "ST",
+      "label": "Wholesale function storage account",
+      "role": "data",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 11,
+        "y": 14
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Storage/storageAccounts",
+      "icon": "az-storage",
+      "description": "Shared function host storage account with public network access disabled.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+          "lines": "17-38",
+          "claim": "The function storage account disables public network access and denies network access by default."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-application-insights",
+      "code": "AI",
+      "label": "Wholesale Application Insights component",
+      "role": "observability",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 11,
+        "y": 6
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Insights/components",
+      "icon": "az-log-analytics",
+      "description": "Application Insights target used by the API Management logger.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/routing/apim/loggers.bicep",
+          "lines": "11-33",
+          "claim": "The API Management Application Insights logger targets the existing Application Insights component."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-log-analytics-workspace",
+      "code": "LAW",
+      "label": "Wholesale Log Analytics workspace",
+      "role": "observability",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 13,
+        "y": 6
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.OperationalInsights/workspaces",
+      "icon": "az-log-analytics",
+      "description": "Workspace receiving platform and Application Insights telemetry.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "128-131",
+          "claim": "API Management diagnostics reach Application Insights, which is connected to Log Analytics."
+        }
+      ]
+    },
+    {
+      "id": "enterprise-network-virtual-appliance",
+      "code": "NVA",
+      "label": "Enterprise network virtual appliance at 10.222.252.4",
+      "role": "external",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 16,
+        "y": 1
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "external",
+      "resource_type": "Externally operated network virtual appliance",
+      "icon": "az-firewall",
+      "description": "Enterprise egress next hop represented as an external application host.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "179-180",
+          "claim": "Decus default and CPC route tables send 0.0.0.0/0 toward network virtual appliance 10.222.252.4."
+        }
+      ]
+    },
+    {
+      "id": "decus-key-vault-private-endpoint",
+      "code": "PE",
+      "label": "Decus Key Vault private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "decus-foundation",
+      "position": {
+        "x": 18,
+        "y": 10
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "DATA-subnet private endpoint for the Decus Key Vault.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "182-184",
+          "claim": "DATA-subnet private endpoint for the Decus Key Vault."
+        }
+      ]
+    },
+    {
+      "id": "decus-key-vault",
+      "code": "KV",
+      "label": "Decus Key Vault",
+      "role": "identity",
+      "form": "cube",
+      "zone": "decus-foundation",
+      "position": {
+        "x": 27,
+        "y": 10
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.KeyVault/vaults",
+      "icon": "az-key-vault",
+      "description": "Decus shared secrets service at resource-group scope.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "182-184",
+          "claim": "Decus shared secrets service at resource-group scope."
+        }
+      ]
+    },
+    {
+      "id": "decus-app-configuration-private-endpoint",
+      "code": "PE",
+      "label": "Decus App Configuration private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "decus-foundation",
+      "position": {
+        "x": 18,
+        "y": 12
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "DATA-subnet private endpoint for App Configuration.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "182-184",
+          "claim": "DATA-subnet private endpoint for App Configuration."
+        }
+      ]
+    },
+    {
+      "id": "decus-app-configuration-store",
+      "code": "CFG",
+      "label": "Decus Azure App Configuration store",
+      "role": "module",
+      "form": "cube",
+      "zone": "decus-foundation",
+      "position": {
+        "x": 27,
+        "y": 12
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.AppConfiguration/configurationStores",
+      "icon": "az-app-configuration",
+      "description": "Decus shared configuration service at resource-group scope.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "182-184",
+          "claim": "Decus shared configuration service at resource-group scope."
+        }
+      ]
+    },
+    {
+      "id": "decus-sql-private-endpoint",
+      "code": "PE",
+      "label": "Decus SQL Server private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "decus-foundation",
+      "position": {
+        "x": 18,
+        "y": 14
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "DATA-subnet private endpoint for the Decus SQL Server.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "181-184",
+          "claim": "DATA-subnet private endpoint for the Decus SQL Server."
+        }
+      ]
+    },
+    {
+      "id": "decus-sql-server",
+      "code": "SQL",
+      "label": "Decus SQL Server",
+      "role": "module",
+      "form": "cube",
+      "zone": "decus-foundation",
+      "position": {
+        "x": 27,
+        "y": 14
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Sql/servers",
+      "icon": "az-sql-server",
+      "description": "Decus shared SQL logical server at resource-group scope.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "184-186",
+          "claim": "Decus shared SQL logical server at resource-group scope."
+        }
+      ]
+    },
+    {
+      "id": "decus-elastic-pool",
+      "code": "POOL",
+      "label": "Decus SQL elastic pool",
+      "role": "module",
+      "form": "cube",
+      "zone": "decus-foundation",
+      "position": {
+        "x": 29,
+        "y": 14
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Sql/servers/elasticPools",
+      "icon": "az-sql-database",
+      "description": "Decus shared elastic pool. Application databases are intentionally omitted because the shared root does not own them.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "184-186",
+          "claim": "Decus shared elastic pool. Application databases are intentionally omitted because the shared root does not own them."
+        }
+      ]
+    },
+    {
+      "id": "decus-log-analytics-workspace",
+      "code": "LAW",
+      "label": "Decus Log Analytics workspace",
+      "role": "observability",
+      "form": "cube",
+      "zone": "decus-foundation",
+      "position": {
+        "x": 27,
+        "y": 17
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.OperationalInsights/workspaces",
+      "icon": "az-log-analytics",
+      "description": "Dedicated Decus logging workspace.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "185-186",
+          "claim": "Dedicated Decus logging workspace."
+        }
+      ]
+    },
+    {
+      "id": "decus-managed-devops-pool",
+      "code": "MDOP",
+      "label": "Decus Managed DevOps Pool",
+      "role": "governance",
+      "form": "cube",
+      "zone": "decus-foundation",
+      "position": {
+        "x": 24,
+        "y": 16
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "external",
+      "resource_type": "Microsoft.DevOpsInfrastructure/pools",
+      "icon": "az-ado",
+      "description": "Managed DevOps Pool depicted by the approved audit inside the MDOP subnet; its external deployment pipeline is outside this pinned repository.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "87-89",
+          "claim": "The approved audit depicts a Managed DevOps Pool inside the Decus MDOP subnet."
+        }
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "id": "cloudflare-to-wholesale-api-management",
+      "from": "cloudflare-apim-proxy",
+      "to": "wholesale-api-management",
+      "kind": "network",
+      "label": "HTTPS custom hostname to API Management",
+      "route": [
+        {
+          "x": 2,
+          "y": 22.5
+        },
+        {
+          "x": 2.5,
+          "y": 22.5
+        },
+        {
+          "x": 2.5,
+          "y": 21.5
+        },
+        {
+          "x": 3,
+          "y": 21.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "101-103",
+          "claim": "Cloudflare forwards the custom HTTPS hostname to Wholesale API Management."
+        }
+      ]
+    },
+    {
+      "id": "api-management-to-fireball-event-publisher",
+      "from": "wholesale-api-management",
+      "to": "fireball-event-publisher-function-app",
+      "kind": "dependency",
+      "label": "EventPublisher backend service URL",
+      "route": [
+        {
+          "x": 4,
+          "y": 21.5
+        },
+        {
+          "x": 4.0,
+          "y": 17.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/routing/apim/apis/fireball-eventpublisher.bicep",
+          "lines": "40-70",
+          "claim": "The API serviceUrl and backend target the supplied EventPublisher Function App URL."
+        }
+      ]
+    },
+    {
+      "id": "api-management-to-bridge-epay",
+      "from": "wholesale-api-management",
+      "to": "bridge-epay-function-app",
+      "kind": "dependency",
+      "label": "Bridge ePay backend service URL",
+      "route": [
+        {
+          "x": 4,
+          "y": 21.5
+        },
+        {
+          "x": 4.0,
+          "y": 19.5
+        }
+      ],
+      "payload_ids": [],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/routing/apim/apis/fireball-bridgeepay.bicep",
+          "lines": "44-74",
+          "claim": "The API serviceUrl and backend target the supplied Bridge ePay Function App URL."
+        }
+      ]
+    },
+    {
+      "id": "fireball-to-service-bus-private-endpoint",
+      "from": "fireball-event-publisher-function-app",
+      "to": "wholesale-service-bus-private-endpoint",
+      "kind": "dependency",
+      "label": "AMQP through Service Bus private endpoint",
+      "route": [
+        {
+          "x": 5,
+          "y": 17.5
+        },
+        {
+          "x": 6.0,
+          "y": 17.5
+        },
+        {
+          "x": 6.0,
+          "y": 10.5
+        },
+        {
+          "x": 7,
+          "y": 10.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "inferred",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "200-203",
+          "claim": "Application settings are required to verify each Function App dependency despite network support."
+        }
+      ]
+    },
+    {
+      "id": "fireball-to-key-vault-private-endpoint",
+      "from": "fireball-event-publisher-function-app",
+      "to": "wholesale-key-vault-private-endpoint",
+      "kind": "identity",
+      "label": "Secrets through Key Vault private endpoint",
+      "route": [
+        {
+          "x": 5,
+          "y": 17.5
+        },
+        {
+          "x": 6.0,
+          "y": 17.5
+        },
+        {
+          "x": 6.0,
+          "y": 12.5
+        },
+        {
+          "x": 7,
+          "y": 12.5
+        }
+      ],
+      "payload_ids": [
+        "secret-reference"
+      ],
+      "evidence_level": "inferred",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "200-203",
+          "claim": "Application settings are required to verify each Function App dependency despite network support."
+        }
+      ]
+    },
+    {
+      "id": "fireball-to-sql-private-endpoint",
+      "from": "fireball-event-publisher-function-app",
+      "to": "wholesale-sql-private-endpoint",
+      "kind": "data",
+      "label": "SQL through private endpoint",
+      "route": [
+        {
+          "x": 5,
+          "y": 17.5
+        },
+        {
+          "x": 6.0,
+          "y": 17.5
+        },
+        {
+          "x": 6.0,
+          "y": 14.5
+        },
+        {
+          "x": 7,
+          "y": 14.5
+        }
+      ],
+      "payload_ids": [
+        "data-record"
+      ],
+      "evidence_level": "inferred",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "200-203",
+          "claim": "Application settings are required to verify each Function App dependency despite network support."
+        }
+      ]
+    },
+    {
+      "id": "bridge-epay-to-storage-queue-private-endpoint",
+      "from": "bridge-epay-function-app",
+      "to": "function-storage-queue-private-endpoint",
+      "kind": "dependency",
+      "label": "Azure Functions storage through queue private endpoint",
+      "route": [
+        {
+          "x": 5,
+          "y": 19.5
+        },
+        {
+          "x": 8.5,
+          "y": 19.5
+        },
+        {
+          "x": 8.5,
+          "y": 14.5
+        },
+        {
+          "x": 9,
+          "y": 14.5
+        }
+      ],
+      "payload_ids": [],
+      "evidence_level": "inferred",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "200-203",
+          "claim": "Application settings are required to verify each Function App dependency despite network support."
+        }
+      ]
+    },
+    {
+      "id": "service-bus-private-link-target",
+      "from": "wholesale-service-bus-private-endpoint",
+      "to": "wholesale-service-bus-namespace",
+      "kind": "network",
+      "label": "Service Bus private link target",
+      "route": [
+        {
+          "x": 8,
+          "y": 10.5
+        },
+        {
+          "x": 8.5,
+          "y": 10.5
+        },
+        {
+          "x": 8.5,
+          "y": 8.5
+        },
+        {
+          "x": 11,
+          "y": 8.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/messaging/service-bus.bicep",
+          "lines": "62-78",
+          "claim": "The private endpoint directly targets the represented service bus private link target."
+        }
+      ]
+    },
+    {
+      "id": "key-vault-private-link-target",
+      "from": "wholesale-key-vault-private-endpoint",
+      "to": "wholesale-key-vault",
+      "kind": "network",
+      "label": "Key Vault private link target",
+      "route": [
+        {
+          "x": 8,
+          "y": 12.5
+        },
+        {
+          "x": 8,
+          "y": 9.5
+        },
+        {
+          "x": 11.5,
+          "y": 9.5
+        },
+        {
+          "x": 11.5,
+          "y": 10
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/core/keyvault.bicep",
+          "lines": "55-71",
+          "claim": "The private endpoint directly targets the represented key vault private link target."
+        }
+      ]
+    },
+    {
+      "id": "sql-private-link-target",
+      "from": "wholesale-sql-private-endpoint",
+      "to": "wholesale-sql-server",
+      "kind": "network",
+      "label": "SQL private link target",
+      "route": [
+        {
+          "x": 8,
+          "y": 14.5
+        },
+        {
+          "x": 8,
+          "y": 11.5
+        },
+        {
+          "x": 11.5,
+          "y": 11.5
+        },
+        {
+          "x": 11.5,
+          "y": 12
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/data/sql-private-endpoint.bicep",
+          "lines": "18-45",
+          "claim": "The private endpoint directly targets the represented sql private link target."
+        }
+      ]
+    },
+    {
+      "id": "storage-blob-private-link-target",
+      "from": "function-storage-blob-private-endpoint",
+      "to": "wholesale-function-storage-account",
+      "kind": "network",
+      "label": "Blob private link target",
+      "route": [
+        {
+          "x": 10,
+          "y": 10.5
+        },
+        {
+          "x": 10.5,
+          "y": 10.5
+        },
+        {
+          "x": 10.5,
+          "y": 14.5
+        },
+        {
+          "x": 11,
+          "y": 14.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+          "lines": "55-80",
+          "claim": "The private endpoint directly targets the represented blob private link target."
+        }
+      ]
+    },
+    {
+      "id": "storage-file-private-link-target",
+      "from": "function-storage-file-private-endpoint",
+      "to": "wholesale-function-storage-account",
+      "kind": "network",
+      "label": "File private link target",
+      "route": [
+        {
+          "x": 10,
+          "y": 12.5
+        },
+        {
+          "x": 10.5,
+          "y": 12.5
+        },
+        {
+          "x": 10.5,
+          "y": 14.5
+        },
+        {
+          "x": 11,
+          "y": 14.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+          "lines": "82-107",
+          "claim": "The private endpoint directly targets the represented file private link target."
+        }
+      ]
+    },
+    {
+      "id": "storage-queue-private-link-target",
+      "from": "function-storage-queue-private-endpoint",
+      "to": "wholesale-function-storage-account",
+      "kind": "network",
+      "label": "Queue private link target",
+      "route": [
+        {
+          "x": 10,
+          "y": 14.5
+        },
+        {
+          "x": 10.5,
+          "y": 14.5
+        },
+        {
+          "x": 11,
+          "y": 14.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+          "lines": "109-134",
+          "claim": "The private endpoint directly targets the represented queue private link target."
+        }
+      ]
+    },
+    {
+      "id": "storage-table-private-link-target",
+      "from": "function-storage-table-private-endpoint",
+      "to": "wholesale-function-storage-account",
+      "kind": "network",
+      "label": "Table private link target",
+      "route": [
+        {
+          "x": 10,
+          "y": 16.5
+        },
+        {
+          "x": 10.5,
+          "y": 16.5
+        },
+        {
+          "x": 10.5,
+          "y": 14.5
+        },
+        {
+          "x": 11,
+          "y": 14.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+          "lines": "136-161",
+          "claim": "The private endpoint directly targets the represented table private link target."
+        }
+      ]
+    },
+    {
+      "id": "sql-server-to-elastic-pool",
+      "from": "wholesale-sql-server",
+      "to": "wholesale-elastic-pool",
+      "kind": "data",
+      "label": "SQL Server contains Wholesale elastic pool",
+      "route": [
+        {
+          "x": 12,
+          "y": 12.5
+        },
+        {
+          "x": 12.5,
+          "y": 12.5
+        },
+        {
+          "x": 13,
+          "y": 12.5
+        }
+      ],
+      "payload_ids": [
+        "data-record"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/data/main.bicep",
+          "lines": "53-72",
+          "claim": "The data root composes the SQL Server and elastic pool."
+        }
+      ]
+    },
+    {
+      "id": "api-management-to-application-insights",
+      "from": "wholesale-api-management",
+      "to": "wholesale-application-insights",
+      "kind": "telemetry",
+      "label": "API Management diagnostics",
+      "route": [
+        {
+          "x": 4,
+          "y": 21.5
+        },
+        {
+          "x": 10.5,
+          "y": 21.5
+        },
+        {
+          "x": 10.5,
+          "y": 6.5
+        },
+        {
+          "x": 11,
+          "y": 6.5
+        }
+      ],
+      "payload_ids": [
+        "apim-diagnostic-envelope"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/routing/apim/loggers.bicep",
+          "lines": "17-33",
+          "claim": "API Management creates Azure Monitor and Application Insights loggers."
+        }
+      ]
+    },
+    {
+      "id": "application-insights-to-log-analytics",
+      "from": "wholesale-application-insights",
+      "to": "wholesale-log-analytics-workspace",
+      "kind": "telemetry",
+      "label": "Application telemetry workspace connection",
+      "route": [
+        {
+          "x": 12,
+          "y": 6.5
+        },
+        {
+          "x": 12.5,
+          "y": 6.5
+        },
+        {
+          "x": 13,
+          "y": 6.5
+        }
+      ],
+      "payload_ids": [
+        "apim-diagnostic-envelope"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "128-131",
+          "claim": "Application Insights forwards into Log Analytics."
+        }
+      ]
+    },
+    {
+      "id": "wholesale-applications-to-enterprise-egress",
+      "from": "bridge-epay-function-app",
+      "to": "enterprise-network-virtual-appliance",
+      "kind": "network",
+      "label": "Controlled enterprise egress route",
+      "route": [
+        {
+          "x": 5,
+          "y": 19.5
+        },
+        {
+          "x": 15.5,
+          "y": 19.5
+        },
+        {
+          "x": 15.5,
+          "y": 1.5
+        },
+        {
+          "x": 16,
+          "y": 1.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "inferred",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "172-173",
+          "claim": "Route tables and NSG rules support controlled network virtual appliance routing; live effective routes remain required."
+        }
+      ]
+    },
+    {
+      "id": "decus-key-vault-private-link-target",
+      "from": "decus-key-vault-private-endpoint",
+      "to": "decus-key-vault",
+      "kind": "network",
+      "label": "Decus Key Vault private link target",
+      "route": [
+        {
+          "x": 19,
+          "y": 10.5
+        },
+        {
+          "x": 25.5,
+          "y": 10.5
+        },
+        {
+          "x": 27,
+          "y": 10.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "195-197",
+          "claim": "The audit directly evidences decus key vault private link target."
+        }
+      ]
+    },
+    {
+      "id": "decus-app-configuration-private-link-target",
+      "from": "decus-app-configuration-private-endpoint",
+      "to": "decus-app-configuration-store",
+      "kind": "network",
+      "label": "Decus App Configuration private link target",
+      "route": [
+        {
+          "x": 19,
+          "y": 12.5
+        },
+        {
+          "x": 25.5,
+          "y": 12.5
+        },
+        {
+          "x": 27,
+          "y": 12.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "195-197",
+          "claim": "The audit directly evidences decus app configuration private link target."
+        }
+      ]
+    },
+    {
+      "id": "decus-sql-private-link-target",
+      "from": "decus-sql-private-endpoint",
+      "to": "decus-sql-server",
+      "kind": "network",
+      "label": "Decus SQL private link target",
+      "route": [
+        {
+          "x": 19,
+          "y": 14.5
+        },
+        {
+          "x": 25.5,
+          "y": 14.5
+        },
+        {
+          "x": 27,
+          "y": 14.5
+        }
+      ],
+      "payload_ids": [
+        "private-network-session"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "195-197",
+          "claim": "The audit directly evidences decus sql private link target."
+        }
+      ]
+    },
+    {
+      "id": "decus-sql-server-to-elastic-pool",
+      "from": "decus-sql-server",
+      "to": "decus-elastic-pool",
+      "kind": "data",
+      "label": "Decus SQL Server contains elastic pool",
+      "route": [
+        {
+          "x": 28,
+          "y": 14.5
+        },
+        {
+          "x": 28.5,
+          "y": 14.5
+        },
+        {
+          "x": 29,
+          "y": 14.5
+        }
+      ],
+      "payload_ids": [
+        "data-record"
+      ],
+      "evidence_level": "direct",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "184-185",
+          "claim": "The Decus foundation owns its SQL Server and elastic pool, but not application databases."
+        }
+      ]
+    }
+  ],
+  "payloads": [
+    {
+      "id": "apim-diagnostic-envelope",
+      "label": "API Management diagnostic envelope",
+      "kind": "telemetry",
+      "description": "Directly configured API Management telemetry.",
+      "evidence": [
+        {
+          "path": "bicep/foundation/wholesale/wholesale-rg/routing/apim/loggers.bicep",
+          "lines": "17-33",
+          "claim": "API Management configures Azure Monitor and Application Insights loggers."
+        }
+      ]
+    },
+    {
+      "id": "private-network-session",
+      "label": "Private network session",
+      "kind": "network-session",
+      "description": "Private-link or routed network session.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "8-13",
+          "claim": "Solid and dotted network arrows encode direct and inferred traffic evidence."
+        }
+      ]
+    },
+    {
+      "id": "data-record",
+      "label": "Data record",
+      "kind": "record",
+      "description": "Logical SQL or data-plane record transfer.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "118-126",
+          "claim": "The audit distinguishes SQL and storage data paths through private endpoints."
+        }
+      ]
+    },
+    {
+      "id": "secret-reference",
+      "label": "Secret reference",
+      "kind": "secret-reference",
+      "description": "Secret lookup through Key Vault private access.",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "114-116",
+          "claim": "The audit identifies Key Vault secret access through its private endpoint."
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "wholesale-api-request",
+      "label": "Wholesale API request and shared dependency flow",
+      "description": "Direct APIM backend routing followed by explicitly inferred application dependencies and direct private-link target edges.",
+      "steps": [
+        {
+          "path": "api-management-to-fireball-event-publisher",
+          "label": "Route EventPublisher request",
+          "evidence": [
+            {
+              "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+              "lines": "191-194",
+              "claim": "Wholesale API Management directly routes to the Fireball EventPublisher Function App."
+            }
+          ],
+          "payload": "private-network-session"
+        },
+        {
+          "path": "fireball-to-service-bus-private-endpoint",
+          "label": "Potential messaging dependency",
+          "evidence": [
+            {
+              "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+              "lines": "200-203",
+              "claim": "The Function App dependency remains inferred pending application settings."
+            }
+          ],
+          "payload": "private-network-session"
+        },
+        {
+          "path": "service-bus-private-link-target",
+          "label": "Reach Service Bus namespace",
+          "evidence": [
+            {
+              "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+              "lines": "195-196",
+              "claim": "The DATA-subnet private endpoint directly targets Wholesale Service Bus."
+            }
+          ],
+          "payload": "private-network-session"
+        }
+      ]
+    }
+  ]
+}

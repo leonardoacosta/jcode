@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RENDERER = ROOT / "scripts" / "render_canvas.py"
 FIXTURE = Path(__file__).parent / "fixtures" / "valid-scene.json"
 DIRECTIONAL_FIXTURE = Path(__file__).parent / "fixtures" / "directional-scene.json"
+BICEP_FIXTURE = Path(__file__).parent / "fixtures" / "bicep-scene.json"
 DARK_THEME = ROOT / "themes" / "dark-technical.js"
 PAPER_THEME = ROOT / "themes" / "warm-paper.js"
 AZURE_THEME = ROOT / "themes" / "azure-topology.js"
@@ -172,13 +173,11 @@ class CanvasRendererTests(unittest.TestCase):
             )
             self.assertIsNotNone(match, output)
             embedded_scene = json.loads(match.group("scene"))
-            self.assertEqual(embedded_scene["traffic"]["direction"], "bottom-left-to-top-right")
-            self.assertEqual(
-                [layer["kind"] for layer in embedded_scene["traffic"]["layers"]],
-                ["ingress", "projects", "data-access", "external-services"],
-            )
+            expected_fixture = BICEP_FIXTURE if output.name == "isometric-canvas-dark.html" else DIRECTIONAL_FIXTURE
+            expected_canonical = json.dumps(json.loads(expected_fixture.read_text()), sort_keys=True, separators=(",", ":"))
+            expected_hash = hashlib.sha256(expected_canonical.encode()).hexdigest()
+            self.assertIn(f'data-scene-sha256="{expected_hash}"', html)
             self.assertEqual(len(re.findall(r'data-target-kind="traffic-layer"', html)), 4)
-            self.assertIn(f'data-scene-sha256="{scene_hash}"', html)
 
     def test_renderer_rejects_a_scene_that_fails_geometry_validation(self):
         with tempfile.TemporaryDirectory() as directory:
