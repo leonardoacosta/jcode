@@ -55,16 +55,25 @@ fn age_marker(age: u64) -> String {
 /// status-age hint.
 fn member_body(member: &SwarmMemberStatus) -> Vec<String> {
     // Live streamed output wins: show the worker's in-progress assistant text.
-    if let Some(tail) = member.output_tail.as_ref().filter(|t| !t.trim().is_empty()) {
-        let mut body: Vec<String> = tail.lines().map(|l| l.to_string()).collect();
-        if let Some(age) = member.status_age_secs {
-            body.push(age_marker(age));
+    let mut body: Vec<String> = if let Some(tail) = member
+        .output_tail
+        .as_ref()
+        .filter(|t| !t.trim().is_empty())
+    {
+        tail.lines().map(|l| l.to_string()).collect()
+    } else {
+        let mut body = Vec::new();
+        if let Some(detail) = member.detail.as_ref().filter(|d| !d.trim().is_empty()) {
+            body.push(detail.clone());
         }
-        return body;
-    }
-    let mut body: Vec<String> = Vec::new();
-    if let Some(detail) = member.detail.as_ref().filter(|d| !d.trim().is_empty()) {
-        body.push(detail.clone());
+        body
+    };
+    if let Some(report) = member
+        .latest_completion_report
+        .as_ref()
+        .filter(|report| !report.trim().is_empty())
+    {
+        body.push(format!("Report: {report}"));
     }
     if let Some(age) = member.status_age_secs {
         body.push(age_marker(age));
@@ -649,6 +658,7 @@ mod tests {
             status_age_secs: Some(3),
             output_tail: None,
             report_back_to_session_id: None,
+            latest_completion_report: None,
             todo_progress: None,
             todo_items: Vec::new(),
             runtime: crate::protocol::SwarmMemberRuntime::default(),
@@ -748,6 +758,16 @@ mod tests {
         assert_eq!(body[0], "line one");
         assert_eq!(body[1], "line two");
         assert!(!body.iter().any(|l| l.contains("the detail line")));
+    }
+
+    #[test]
+    fn terminal_completion_report_is_rendered_when_live_tail_is_gone() {
+        let mut m = member("alpha", "completed", Some("finished"), None);
+        m.latest_completion_report = Some("All targeted checks passed.".to_string());
+
+        let body = member_body(&m);
+
+        assert!(body.iter().any(|line| line.contains("All targeted checks passed.")));
     }
 
     #[test]

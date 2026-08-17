@@ -13,6 +13,7 @@ fn chat_swarm_member(session_id: &str) -> crate::protocol::SwarmMemberStatus {
         status_age_secs: Some(0),
         output_tail: None,
         report_back_to_session_id: Some("coordinator".to_string()),
+        latest_completion_report: None,
         todo_progress: Some((1, 3)),
         todo_items: vec![
             crate::protocol::SwarmTodoItem {

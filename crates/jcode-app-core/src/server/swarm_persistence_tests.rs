@@ -85,7 +85,7 @@ fn persisted_swarm_state_round_trips_and_marks_running_stale() {
         detail: Some("writing tests".to_string()),
         friendly_name: Some("fox".to_string()),
         report_back_to_session_id: Some("session-2".to_string()),
-        latest_completion_report: None,
+        latest_completion_report: Some("Recovered after the worker completed its checks.".to_string()),
         role: "agent".to_string(),
         joined_at: Instant::now(),
         last_status_change: Instant::now(),
@@ -128,6 +128,10 @@ fn persisted_swarm_state_round_trips_and_marks_running_stale() {
     assert_eq!(
         recovered_member.report_back_to_session_id.as_deref(),
         Some("session-2")
+    );
+    assert_eq!(
+        recovered_member.latest_completion_report.as_deref(),
+        Some("Recovered after the worker completed its checks.")
     );
     assert_eq!(recovered_member.status, "crashed");
     assert_eq!(

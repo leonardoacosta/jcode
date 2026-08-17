@@ -19,10 +19,6 @@ use std::sync::{Mutex as StdMutex, OnceLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::{Mutex, RwLock, broadcast};
 
-fn status_age_secs(last_status_change: Instant) -> u64 {
-    last_status_change.elapsed().as_secs()
-}
-
 /// Maximum number of live members (agents) in a single swarm. Re-exported from
 /// `jcode_swarm_core` so the server, tools, and prompts all agree on the one
 /// runaway-prevention cap for the task-graph model. Normal and light swarms are
@@ -698,35 +694,7 @@ async fn broadcast_swarm_status_now(
             members_guard
                 .get(sid)
                 .filter(|m| member_in_status_broadcast(m, broadcast_terminal_retention))
-                .map(|m| crate::protocol::SwarmMemberStatus {
-                    session_id: m.session_id.clone(),
-                    friendly_name: m.friendly_name.clone(),
-                    status: m.status.clone(),
-                    detail: m.detail.clone(),
-                    task_label: m.task_label.clone(),
-                    role: Some(m.role.clone()),
-                    is_headless: Some(m.is_headless),
-                    live_attachments: Some(m.event_txs.len()),
-                    status_age_secs: Some(status_age_secs(m.last_status_change)),
-                    output_tail: m.output_tail.clone(),
-                    report_back_to_session_id: m.report_back_to_session_id.clone(),
-                    todo_progress: m.todo_progress,
-                    todo_items: m.todo_items.clone(),
-                    runtime: crate::protocol::SwarmMemberRuntime {
-                        model: m.runtime.model.clone(),
-                        provider: m.runtime.provider.clone(),
-                        auth_method: m.runtime.auth_method.clone(),
-                        effort: m.runtime.effort.clone(),
-                        elapsed_secs: if matches!(
-                            m.status.as_str(),
-                            "running" | "streaming" | "thinking"
-                        ) {
-                            Some(m.joined_at.elapsed().as_secs())
-                        } else {
-                            Some(m.runtime.elapsed_secs.unwrap_or(0))
-                        },
-                    },
-                })
+                .map(SwarmMember::status_snapshot)
         })
         .collect();
 
@@ -2789,6 +2757,29 @@ mod tests {
                 && members[0].status == "busy"
                 && members[0].detail.as_deref() == Some("working")
         ));
+    }
+
+    #[tokio::test]
+    async fn status_broadcast_preserves_terminal_completion_report() {
+        let (mut worker, mut worker_rx) = swarm_member("worker", "agent", false);
+        worker.status = "completed".to_string();
+        worker.latest_completion_report = Some("Validation evidence survives live fanout.".to_string());
+        let swarm_members = Arc::new(RwLock::new(HashMap::from([("worker".to_string(), worker)])));
+        let swarms_by_id = Arc::new(RwLock::new(HashMap::from([(
+            "swarm-1".to_string(),
+            HashSet::from(["worker".to_string()]),
+        )])));
+
+        broadcast_swarm_status("swarm-1", &swarm_members, &swarms_by_id).await;
+
+        let event = worker_rx.recv().await.expect("status event");
+        let ServerEvent::SwarmStatus { members } = event else {
+            panic!("expected SwarmStatus");
+        };
+        assert_eq!(
+            members[0].latest_completion_report.as_deref(),
+            Some("Validation evidence survives live fanout.")
+        );
     }
 
     #[tokio::test]

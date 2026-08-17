@@ -202,6 +202,42 @@ fn test_comm_members_roundtrip_includes_status() -> Result<()> {
 }
 
 #[test]
+fn test_swarm_status_roundtrip_includes_terminal_completion_report() -> Result<()> {
+    let event = ServerEvent::SwarmStatus {
+        members: vec![SwarmMemberStatus {
+            session_id: "sess-worker".to_string(),
+            friendly_name: Some("fox".to_string()),
+            status: "completed".to_string(),
+            detail: Some("finished".to_string()),
+            task_label: Some("protocol audit".to_string()),
+            role: Some("agent".to_string()),
+            is_headless: Some(true),
+            live_attachments: Some(0),
+            status_age_secs: Some(4),
+            output_tail: None,
+            report_back_to_session_id: Some("sess-coord".to_string()),
+            latest_completion_report: Some("All protocol checks passed.".to_string()),
+            todo_progress: None,
+            todo_items: Vec::new(),
+            runtime: SwarmMemberRuntime::default(),
+        }],
+    };
+
+    let json = encode_event(&event);
+    assert!(json.contains("latest_completion_report"));
+    let decoded = parse_event_json(json.trim())?;
+    let ServerEvent::SwarmStatus { members } = decoded else {
+        return Err(anyhow!("expected SwarmStatus"));
+    };
+    assert_eq!(members[0].status, "completed");
+    assert_eq!(
+        members[0].latest_completion_report.as_deref(),
+        Some("All protocol checks passed.")
+    );
+    Ok(())
+}
+
+#[test]
 fn test_session_close_requested_roundtrip() -> Result<()> {
     let event = ServerEvent::SessionCloseRequested {
         reason: "Stopped by coordinator coord".to_string(),

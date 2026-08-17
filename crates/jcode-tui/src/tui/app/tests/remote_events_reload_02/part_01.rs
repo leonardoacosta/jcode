@@ -786,6 +786,7 @@ fn test_swarm_completion_notification_inserts_agent_snapshot_without_report_pros
         status_age_secs: Some(0),
         output_tail: None,
         report_back_to_session_id: Some("coordinator".to_string()),
+        latest_completion_report: None,
         todo_progress: Some((3, 3)),
         todo_items: Vec::new(),
         runtime: crate::protocol::SwarmMemberRuntime {

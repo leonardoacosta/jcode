@@ -1,6 +1,6 @@
 use crate::bus::FileOp;
 use crate::plan::VersionedPlan;
-use crate::protocol::ServerEvent;
+use crate::protocol::{ServerEvent, SwarmMemberStatus};
 use jcode_agent_runtime::{
     InterruptSignal, SoftInterruptMessage, SoftInterruptQueue, SoftInterruptSource,
 };
@@ -240,6 +240,43 @@ pub struct SwarmMember {
 }
 
 impl SwarmMember {
+    /// Build the public live-status snapshot for this member.
+    ///
+    /// Keep this projection next to the durable member state so live broadcasts
+    /// cannot accidentally omit completion evidence that survives persistence.
+    pub fn status_snapshot(&self) -> SwarmMemberStatus {
+        SwarmMemberStatus {
+            session_id: self.session_id.clone(),
+            friendly_name: self.friendly_name.clone(),
+            status: self.status.clone(),
+            detail: self.detail.clone(),
+            task_label: self.task_label.clone(),
+            role: Some(self.role.clone()),
+            is_headless: Some(self.is_headless),
+            live_attachments: Some(self.event_txs.len()),
+            status_age_secs: Some(self.last_status_change.elapsed().as_secs()),
+            output_tail: self.output_tail.clone(),
+            report_back_to_session_id: self.report_back_to_session_id.clone(),
+            latest_completion_report: self.latest_completion_report.clone(),
+            todo_progress: self.todo_progress,
+            todo_items: self.todo_items.clone(),
+            runtime: crate::protocol::SwarmMemberRuntime {
+                model: self.runtime.model.clone(),
+                provider: self.runtime.provider.clone(),
+                auth_method: self.runtime.auth_method.clone(),
+                effort: self.runtime.effort.clone(),
+                elapsed_secs: if matches!(
+                    self.status.as_str(),
+                    "running" | "streaming" | "thinking"
+                ) {
+                    Some(self.joined_at.elapsed().as_secs())
+                } else {
+                    Some(self.runtime.elapsed_secs.unwrap_or(0))
+                },
+            },
+        }
+    }
+
     pub fn durable_record(&self) -> SwarmMemberRecord {
         SwarmMemberRecord {
             session_id: self.session_id.clone(),

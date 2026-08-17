@@ -216,6 +216,39 @@ fn format_members_includes_status_and_detail() {
 }
 
 #[test]
+fn format_members_includes_terminal_completion_report() {
+    let ctx = test_ctx(
+        "session_self_1234567890_deadbeefcafebabe",
+        std::path::Path::new("."),
+    );
+    let output = format_members(
+        &ctx,
+        &[AgentInfo {
+            session_id: "session_worker".to_string(),
+            friendly_name: Some("worker".to_string()),
+            files_touched: vec![],
+            status: Some("completed".to_string()),
+            detail: Some("finished".to_string()),
+            role: Some("agent".to_string()),
+            is_headless: Some(true),
+            report_back_to_session_id: Some(ctx.session_id.clone()),
+            latest_completion_report: Some("Tests passed after the worker finished.".to_string()),
+            live_attachments: Some(0),
+            status_age_secs: Some(2),
+            ..Default::default()
+        }],
+    );
+
+    assert!(
+        output
+            .output
+            .contains("Report: Tests passed after the worker finished."),
+        "output: {}",
+        output.output
+    );
+}
+
+#[test]
 fn format_members_renders_activity_progress_churn_and_turns() {
     let ctx = test_ctx(
         "session_self_1234567890_deadbeefcafebabe",

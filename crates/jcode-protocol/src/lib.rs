@@ -472,6 +472,9 @@ pub struct SwarmMemberStatus {
     /// client scope the inline gallery to the subtree it actually spawned.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub report_back_to_session_id: Option<String>,
+    /// Latest structured completion report submitted by this member, if any.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub latest_completion_report: Option<String>,
     /// Todo/plan progress as (completed, total) for this member, when known.
     /// Surfaced on the inline swarm strip as a compact "C/T" counter.
     #[serde(default, skip_serializing_if = "Option::is_none")]

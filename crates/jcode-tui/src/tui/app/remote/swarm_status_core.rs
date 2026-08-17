@@ -144,6 +144,7 @@ mod tests {
             status_age_secs: Some(1),
             output_tail: None,
             report_back_to_session_id: None,
+            latest_completion_report: None,
             todo_progress: None,
             todo_items: Vec::new(),
             runtime: crate::protocol::SwarmMemberRuntime::default(),
