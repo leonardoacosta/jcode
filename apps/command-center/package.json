@@ -11,7 +11,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint src tests e2e --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "node --test tests/server.test.mjs",
     "test:e2e": "node ./e2e/run-playwright.mjs"
   },
   "dependencies": {
