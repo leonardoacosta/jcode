@@ -101,15 +101,26 @@ Jcode stores stable Orca references and normalized observations. It does not min
 
 If Orca is unavailable, durable initiative editing and checkpointing continue. Runtime panels become stale/unavailable with the last observation timestamp and cannot present destructive actions as successful.
 
-The first slice exposes only this closed runtime-command set:
+The first slice exposes only this closed runtime-command set. For installed Orca `1.4.176`,
+the approved compatibility profile treats an Orca Run as a durable grouping namespace and
+an Orca Dispatch as one executable attempt. Run identity never implies terminal outcome.
+Jcode owns the durable multi-step operation envelope and must reconcile every created Run,
+Task, Dispatch, worktree, and terminal before replaying a mutation.
 
 | Command | Owner and preconditions | Idempotency and Orca call | Success evidence | Orca unavailable |
 |---|---|---|---|---|
-| `start_initiative_run` | Jcode; authorized initiative, canonical `orcaProjectId`, no conflicting active start, server capability present | One Jcode command/result per idempotency key; create a Jcode run record, then request one Orca orchestration run for the selected project/context | Correlated Jcode run ID plus Orca run ID and an accepted/started Orca lifecycle event | Reject before creating an active run; retain a typed unavailable result |
-| `retry_linked_run` | Jcode; selected failed/retryable Jcode run, linked Orca project/run, retry policy allows another attempt | One new attempt per idempotency key; request an Orca retry/new orchestration run using the prior run's approved context | New correlated Jcode attempt and Orca run IDs plus accepted/started evidence | Reject without incrementing retry state |
-| `cancel_linked_run` | Jcode policy gate; selected nonterminal run, server reports cancel capability, caller authorized for the initiative | Repeated identical cancellation keys return the same command result; request cancellation of the exact Orca run ID | Orca cancellation acceptance followed by terminal cancelled/completed evidence; until then UI remains pending | Reject as unavailable and do not claim cancellation |
+| `start_initiative_run` | Jcode; authorized initiative, canonical Orca project/repository/host setup, explicit worktree placement, no conflicting active start, compatibility profile verified | One Jcode command/result per idempotency key; persist the operation envelope, then compose Orca Run creation, Task creation, and one supervised `worker-start` Dispatch | Correlated Jcode run ID, Orca Run/Task/Dispatch IDs, placement identities, and a `ready` worker receipt; partial or unknown outcomes retain effects and recovery obligations | Reject before creating an active attempt; retain a typed unavailable result |
+| `retry_linked_run` | Jcode; selected failed/retryable Jcode attempt, exact prior Orca Dispatch, explicit reconstructed placement, retry policy allows another attempt | One new attempt per idempotency key; call `worker-start --retry-of <dispatchId>` with explicit server, worktree, and agent/terminal choices | New correlated Jcode attempt and distinct Orca Dispatch ID plus `ready`, failed, or outcome-unknown evidence | Reject without incrementing retry state |
+| `cancel_linked_run` | Jcode policy gate; selected nonterminal Jcode attempt, exact active Orca Dispatch, server reports stop/abandon capability, caller authorized | Repeated identical cancellation keys return the same command result; call exact-Dispatch `worker-stop`, or `worker-abandon` when termination cannot be proven | Dispatch fence/stop evidence followed by observed terminal worker state; retained worktree, terminal, or other Run resources remain explicit recovery obligations | Reject as unavailable and do not claim cancellation |
 
 Initiative edits and checkpoints remain Jcode-owned commands and do not call Orca. Approval resolution, handoff, schedule mutation, direct gate mutation, worker/terminal control, worktree operations, and arbitrary Orca commands are excluded from this child change. Unknown, unsupported, stale, unauthorized, or capability-mismatched runtime commands are rejected before adapter invocation.
+
+The compatibility profile does not advertise a whole-Run retry or cancellation capability.
+`retry_linked_run` and `cancel_linked_run` retain their public Jcode names for client
+compatibility, but their exact target is the Dispatch recorded on the selected Jcode attempt.
+Capability negotiation must reject unknown Orca application versions or unrecognized JSON
+schemas. `--retry-request` may recover a recorded Orca mutation request after an unknown
+result, but it does not replace Jcode's caller-owned durable idempotency envelope.
 
 ### 7. Security is explicit and browser credentials are scoped
 

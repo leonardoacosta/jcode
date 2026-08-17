@@ -115,17 +115,25 @@ Jcode SHALL normalize linked Orca lifecycle data into versioned read models whil
 ### Requirement: Closed runtime command capability set
 The first command-center slice SHALL expose only `start_initiative_run`, `retry_linked_run`, and `cancel_linked_run` as Orca-mediated runtime commands, and SHALL validate authorization, entity revision, server capability, canonical Orca references, and command-specific preconditions before adapter invocation.
 
+For the Orca `1.4.176` compatibility profile, an Orca Run SHALL be treated as a grouping namespace and an Orca Dispatch SHALL be treated as one executable attempt. Jcode SHALL durably preserve the Run, Task, Dispatch, placement, correlation, idempotency, receipt, and recovery identities separately and SHALL NOT infer a whole-Run terminal outcome from one Dispatch.
+
 #### Scenario: Start a linked run
 - **WHEN** an authorized initiative with a canonical Orca project reference has no conflicting active start and the server advertises start capability
-- **THEN** Jcode creates one correlated Jcode run attempt per idempotency key, requests one Orca orchestration run, and reports success only with Jcode and Orca IDs plus accepted or started lifecycle evidence
+- **THEN** Jcode persists one correlated operation per idempotency key, composes one Orca Run, Task, and supervised worker Dispatch with explicit placement, and reports acceptance only with the Jcode attempt plus Orca Run, Task, Dispatch, placement, and `ready` receipt identities
+- **AND** a partial, failed, or outcome-unknown composition remains pending or failed with its observed effects and recovery obligations instead of being replayed blindly
 
 #### Scenario: Retry a linked run
 - **WHEN** an authorized failed run is retryable and the retry capability is available
-- **THEN** Jcode creates at most one new attempt per idempotency key and reports the new correlated Jcode and Orca run identities
+- **THEN** Jcode targets the exact prior Orca Dispatch with `worker-start --retry-of`, reconstructs placement explicitly, creates at most one replacement attempt per idempotency key, and reports the new Jcode attempt and distinct Orca Dispatch identity
 
 #### Scenario: Cancel a linked run
 - **WHEN** an authorized nonterminal linked run advertises cancel capability
-- **THEN** Jcode targets the exact Orca run, keeps the command pending after cancellation acceptance, and reports cancellation complete only after terminal lifecycle evidence
+- **THEN** Jcode targets the exact active Orca Dispatch with stop or abandon semantics, keeps the command pending while termination is uncertain, and reports completion only after terminal worker evidence
+- **AND** any retained Run, Task, worktree, terminal, or unrelated process remains an explicit cleanup or recovery obligation
+
+#### Scenario: Compatibility profile cannot be verified
+- **WHEN** the selected Orca runtime version, command registry, or JSON response shape is unknown or does not match the pinned compatibility profile
+- **THEN** Jcode advertises no runtime mutation capability, invokes no lifecycle mutation, and leaves durable state unchanged
 
 #### Scenario: Unsupported runtime command is submitted
 - **WHEN** a browser submits approval, handoff, schedule mutation, direct gate, worker, terminal, worktree, arbitrary Orca, stale, unauthorized, or capability-mismatched runtime behavior

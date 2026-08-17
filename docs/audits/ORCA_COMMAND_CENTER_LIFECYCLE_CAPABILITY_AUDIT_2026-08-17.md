@@ -370,6 +370,13 @@ A newer public release is available, but upgrade is not itself an unblock. In a 
 
 Choose Option B if Orca maintainers can provide a small versioned schema profile quickly. Choose Option A only if Jcode maintainers explicitly accept Dispatch-oriented semantics and the additional durable composition store. Keep the current fail-closed adapter otherwise.
 
+Decision recorded 2026-08-17: Jcode maintainers selected Option A. The authoritative
+Command Center design and protocol now define the installed `1.4.176` compatibility profile
+as Run-grouping plus exact-Dispatch attempt semantics. This decision removes the semantic
+choice blocker. It does not enable mutations by itself: the adapter remains fail closed until
+the durable composition store, pinned schema fixtures, recovery logic, and isolated lifecycle
+acceptance listed in task 4.5 are complete.
+
 Do not keep the initiative blocked merely on “a version newer than `1.4.176`.” Version number alone is not the missing contract, and `1.4.184` already exists. The blocker should be stated as a missing verified semantic and receipt profile, or an unapproved Dispatch-oriented compatibility mapping.
 
 ## Evidence validation and retention
