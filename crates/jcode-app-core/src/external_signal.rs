@@ -8,10 +8,10 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use axum::body::Bytes;
 use axum::extract::{DefaultBodyLimit, State};
-use axum::http::{header, HeaderMap, StatusCode};
+use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
@@ -711,6 +711,7 @@ pub async fn replay_receipt(
         if let Some(dlq) = store.dead_letters.get_mut(receipt_id) {
             dlq.replay_count += 1;
         }
+        save_store(path, &store)?;
     }
     process_receipt(path, gate, config, receipt_id).await
 }
@@ -1185,5 +1186,72 @@ mod tests {
         .unwrap();
 
         assert!(validate_webhook(&webhook, &cfg).is_ok());
+    }
+
+    #[tokio::test]
+    async fn failed_processing_reaches_dlq_and_replay_is_idempotent_after_reload() {
+        let cfg = config();
+        let path = std::env::temp_dir().join(format!(
+            "jcode-external-signal-dlq-{}.json",
+            uuid::Uuid::new_v4()
+        ));
+        let receipt_id = "rcpt_dlq";
+        let mut store = ExternalSignalStore::default();
+        let now = Utc::now();
+        store.envelopes.insert(
+            receipt_id.to_string(),
+            ProviderEnvelope {
+                schema_version: SCHEMA_VERSION,
+                receipt_id: receipt_id.to_string(),
+                delivery_key: "delivery-dlq".to_string(),
+                source_id: cfg.source_id.clone(),
+                adapter_version: ADAPTER_VERSION.to_string(),
+                project_key: "jcode".to_string(),
+                received_at: now,
+                content_sha256: "deadbeef".to_string(),
+                raw_json: "{}".to_string(),
+            },
+        );
+        store.processing.insert(
+            receipt_id.to_string(),
+            ProcessingRecord {
+                receipt_id: receipt_id.to_string(),
+                stage: ProcessingStage::Pending,
+                attempts: 0,
+                next_attempt_at: now,
+                last_error: None,
+                failure_stage: None,
+                terminal: false,
+            },
+        );
+        save_store(&path, &store).unwrap();
+        let gate = Arc::new(Mutex::new(()));
+        for _ in 0..MAX_PROCESSING_ATTEMPTS {
+            process_receipt(&path, &gate, &cfg, receipt_id)
+                .await
+                .unwrap();
+        }
+        let persisted = load_store(&path).unwrap();
+        assert_eq!(
+            persisted.processing[receipt_id].stage,
+            ProcessingStage::DeadLetter
+        );
+        assert_eq!(
+            persisted.processing[receipt_id].attempts,
+            MAX_PROCESSING_ATTEMPTS
+        );
+        assert_eq!(persisted.dead_letters[receipt_id].replay_count, 0);
+
+        let replayed = replay_receipt(&path, &gate, &cfg, receipt_id)
+            .await
+            .unwrap();
+        assert_eq!(replayed.stage, ProcessingStage::DeadLetter);
+        let after_replay = load_store(&path).unwrap();
+        assert_eq!(after_replay.dead_letters[receipt_id].replay_count, 1);
+        assert_eq!(
+            after_replay.processing[receipt_id].attempts,
+            MAX_PROCESSING_ATTEMPTS + 1
+        );
+        std::fs::remove_file(path).ok();
     }
 }

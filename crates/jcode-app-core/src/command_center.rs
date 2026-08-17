@@ -114,6 +114,24 @@ pub fn service_for_working_dir(
         SessionRunProjectionSource::new(),
         OrcaCliAdapter::for_working_dir(working_dir),
     )
+    .with_external_signal_projection(Arc::new(ExternalSignalProjectionSource))
+}
+
+struct ExternalSignalProjectionSource;
+
+#[async_trait]
+impl jcode_command_center::ExternalSignalProjectionSource for ExternalSignalProjectionSource {
+    async fn projection(&self) -> Result<serde_json::Value, String> {
+        let config = crate::external_signal::ExternalSignalConfig::from_env()
+            .map_err(|error| error.to_string())?;
+        let path = crate::storage::jcode_dir()
+            .map_err(|error| error.to_string())?
+            .join("external-signals")
+            .join("state.json");
+        let projection = crate::external_signal::command_center_projection(&path, &config)
+            .map_err(|error| error.to_string())?;
+        serde_json::to_value(projection).map_err(|error| error.to_string())
+    }
 }
 
 #[derive(Debug, Clone)]

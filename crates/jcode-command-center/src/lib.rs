@@ -261,6 +261,8 @@ pub struct CommandCenterSnapshot {
     pub orca: OrcaReference,
     pub freshness: Freshness,
     pub available_actions: AvailableActions,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub external_signals: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -521,6 +523,8 @@ impl Serialize for CommandCenterSnapshot {
             #[serde(skip_serializing_if = "Option::is_none")]
             selected_run: Option<BrowserRun<'a>>,
             connection: BrowserConnection<'a>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            external_signals: Option<&'a serde_json::Value>,
         }
         let selected_run = self.runs.first().map(|run| BrowserRun {
             id: &run.id.0,
@@ -571,6 +575,7 @@ impl Serialize for CommandCenterSnapshot {
                 reason: self.freshness.evidence.as_deref(),
                 last_connected_at: self.freshness.last_success_at,
             },
+            external_signals: self.external_signals.as_ref(),
         }
         .serialize(serializer)
     }
@@ -1199,6 +1204,20 @@ pub trait RunProjectionSource: Send + Sync {
 }
 
 #[async_trait]
+pub trait ExternalSignalProjectionSource: Send + Sync {
+    async fn projection(&self) -> Result<serde_json::Value, String>;
+}
+
+struct EmptyExternalSignalProjection;
+
+#[async_trait]
+impl ExternalSignalProjectionSource for EmptyExternalSignalProjection {
+    async fn projection(&self) -> Result<serde_json::Value, String> {
+        Err("external signal projection unavailable".to_string())
+    }
+}
+
+#[async_trait]
 pub trait OrcaAdapter: Send + Sync {
     async fn capabilities(&self) -> Result<RuntimeMutationCapabilities, CommandCenterError> {
         Ok(RuntimeMutationCapabilities::unavailable())
@@ -1229,6 +1248,7 @@ pub struct CommandCenterService<R, S, P, O> {
     runs: P,
     orca: O,
     idempotency: Arc<Mutex<HashMap<(String, String), CommandResult>>>,
+    external_signals: Arc<dyn ExternalSignalProjectionSource>,
 }
 
 impl<R, S, P, O> CommandCenterService<R, S, P, O> {
@@ -1239,7 +1259,16 @@ impl<R, S, P, O> CommandCenterService<R, S, P, O> {
             runs,
             orca,
             idempotency: Arc::new(Mutex::new(HashMap::new())),
+            external_signals: Arc::new(EmptyExternalSignalProjection),
         }
+    }
+
+    pub fn with_external_signal_projection(
+        mut self,
+        source: Arc<dyn ExternalSignalProjectionSource>,
+    ) -> Self {
+        self.external_signals = source;
+        self
     }
 }
 
@@ -1298,6 +1327,7 @@ where
                 freshness: Freshness::unavailable(err.to_string()),
             });
         let runtime_capabilities = self.orca.capabilities().await.unwrap_or_default();
+        let external_signals = self.external_signals.projection().await.ok();
         Ok(CommandCenterSnapshot {
             metadata: ProtocolMetadata::default(),
             revision,
@@ -1315,6 +1345,7 @@ where
                 retry_linked_run: runtime_capabilities.retry_linked_run,
                 cancel_linked_run: runtime_capabilities.cancel_linked_run,
             },
+            external_signals,
         })
     }
 
@@ -2173,6 +2204,37 @@ mod tests {
             EmptyRuns,
             FakeOrca { unavailable },
         )
+    }
+
+    struct TestExternalSignalProjection;
+
+    #[async_trait]
+    impl ExternalSignalProjectionSource for TestExternalSignalProjection {
+        async fn projection(&self) -> Result<serde_json::Value, String> {
+            Ok(serde_json::json!({
+                "readiness": {"enabled": true, "bindAddr": "127.0.0.1:39994"},
+                "acceptedCount": 2,
+                "processing": [{"stage": "projected", "attempts": 1}],
+                "deadLetters": []
+            }))
+        }
+    }
+
+    #[tokio::test]
+    async fn detail_snapshot_projects_redacted_external_signal_state() {
+        let service =
+            service(false).with_external_signal_projection(Arc::new(TestExternalSignalProjection));
+        let snapshot = service
+            .snapshot(&auth(), &InitiativeId("command-center".into()))
+            .await
+            .unwrap();
+        let value = serde_json::to_value(snapshot).unwrap();
+        assert_eq!(value["externalSignals"]["acceptedCount"], 2);
+        assert_eq!(
+            value["externalSignals"]["readiness"]["bindAddr"],
+            "127.0.0.1:39994"
+        );
+        assert!(value["externalSignals"].get("rawJson").is_none());
     }
 
     fn envelope(payload: CommandPayload, rev: Revision, key: &str) -> CommandEnvelope {
