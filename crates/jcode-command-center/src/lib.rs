@@ -1001,10 +1001,10 @@ impl ReplayBuffer {
         auth: &AuthContext,
         cursor: &ReplayCursor,
     ) -> Result<ReplayBatch, CommandCenterError> {
-        if let Some(scope) = &self.scope {
-            if !scope.is_valid_for(auth, Utc::now()) {
-                return Err(CommandCenterError::ReplayScopeMismatch);
-            }
+        if let Some(scope) = &self.scope
+            && !scope.is_valid_for(auth, Utc::now())
+        {
+            return Err(CommandCenterError::ReplayScopeMismatch);
         }
         self.replay(cursor)
     }

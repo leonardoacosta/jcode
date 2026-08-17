@@ -322,6 +322,7 @@ impl NativeHostSession {
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
+#[allow(clippy::enum_variant_names)]
 enum InternalWireAction {
     ExtensionInventorySnapshot,
     ExtensionDisconnect,
