@@ -57,7 +57,7 @@ function WorkspaceRoute() {
         const next = await transport.loadSnapshot(currentPath);
         store.installSnapshot(next);
         return next;
-      } catch (error) {
+      } catch {
         return undefined;
       }
     },

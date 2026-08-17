@@ -61,14 +61,12 @@ function packetEvidence(item: DecisionInboxItem) {
 export function DecisionInbox(props: { snapshot?: DecisionInboxSnapshot }) {
   const [filter, setFilter] = createSignal<InboxFilter>("all");
   const [sort, setSort] = createSignal<"newest" | "oldest">("newest");
-  const [selectedId, setSelectedId] = createSignal<number | undefined>(
-    props.snapshot?.items[0]?.recordId,
-  );
+  const [selectedId, setSelectedId] = createSignal<number | undefined>();
   const items = () => props.snapshot?.items ?? [];
   const visiblePackets = createMemo(() => {
     const filtered = items().filter((item) => filter() === "all" || packetKind(item) === filter());
+    const direction = sort() === "newest" ? -1 : 1;
     return filtered.sort((left, right) => {
-      const direction = sort() === "newest" ? -1 : 1;
       return direction * (Date.parse(left.receivedAt) - Date.parse(right.receivedAt));
     });
   });

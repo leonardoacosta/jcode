@@ -50,9 +50,7 @@ describe("command center components", () => {
 
     expect(screen.getByText("1 result")).toBeVisible();
     expect(screen.getByRole("link", { name: /run-1/i })).toBeVisible();
-    expect(
-      screen.getByRole("link", { name: /Jcode Command Center$/i, hidden: true }),
-    ).not.toBeVisible();
+    expect(screen.getByLabelText("Jcode Command Center")).not.toBeVisible();
   });
 
   it("keeps Find results as stable initiative and run deep links", () => {
