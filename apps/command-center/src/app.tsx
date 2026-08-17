@@ -50,29 +50,33 @@ function WorkspaceRoute() {
   const [searchParams] = useSearchParams<{ packet?: string; entry?: string }>();
   const path = () => location.pathname;
   const [hydrated, setHydrated] = createSignal(false);
+  const [retryAttempt, setRetryAttempt] = createSignal(0);
   const store = createProjectionStore();
   onMount(() => setHydrated(true));
   const [snapshot] = createResource(
-    () => (hydrated() ? path() : undefined),
-    async (currentPath) => {
-      try {
-        const next = await transport.loadSnapshot(currentPath);
-        store.installSnapshot(next);
-        return next;
-      } catch {
-        return undefined;
-      }
+    () => (hydrated() ? { path: path(), retry: retryAttempt() } : undefined),
+    async ({ path: currentPath }) => {
+      const next = await transport.loadSnapshot(currentPath);
+      store.installSnapshot(next);
+      return next;
     },
   );
-  const [decisionInbox] = createResource(hydrated, async (ready) => {
-    if (!ready) return undefined;
-    try {
-      return await transport.loadDecisionInbox();
-    } catch {
-      return undefined;
-    }
-  });
+  const [decisionInbox] = createResource(
+    () => (hydrated() ? retryAttempt() : undefined),
+    async (attempt) => {
+      if (attempt === undefined) return undefined;
+      return transport.loadDecisionInbox();
+    },
+  );
+  const retry = () => {
+    setRetryAttempt((attempt) => attempt + 1);
+  };
   const current = () => store.snapshot ?? snapshot();
+  const routeState = () => {
+    if (snapshot.error) return loadFailureState(snapshot.error);
+    if (snapshot.loading || !hydrated()) return undefined;
+    return null;
+  };
   createEffect(
     on(
       () => current()?.meta.streamId,
@@ -104,19 +108,60 @@ function WorkspaceRoute() {
       announcement={store.ui.announcement}
       activePath={path()}
     >
-      <Show when={path() === "/ambient"}>
-        <AmbientRoute snapshot={current()} initialEntryId={searchParams.entry} />
-      </Show>
-      <Show when={path() === "/find"}>
-        <FindRoute snapshot={current()} decisionInbox={decisionInbox()} />
-      </Show>
-      <Show when={path() !== "/ambient" && path() !== "/find"}>
-        <DecisionInbox
-          snapshot={decisionInbox()}
-          initialRecordId={searchParams.packet ? Number(searchParams.packet) : undefined}
-        />
+      <Show
+        when={routeState() === null}
+        fallback={
+          <RouteState
+            state={routeState()}
+            loading={snapshot.loading || !hydrated()}
+            onRetry={retry}
+          />
+        }
+      >
+        <Show when={path() === "/ambient"}>
+          <AmbientRoute snapshot={current()} initialEntryId={searchParams.entry} />
+        </Show>
+        <Show when={path() === "/find"}>
+          <FindRoute snapshot={current()} decisionInbox={decisionInbox()} />
+        </Show>
+        <Show when={path() !== "/ambient" && path() !== "/find"}>
+          <DecisionInbox
+            snapshot={decisionInbox()}
+            loading={decisionInbox.loading}
+            error={decisionInbox.error}
+            initialRecordId={searchParams.packet ? Number(searchParams.packet) : undefined}
+          />
+        </Show>
       </Show>
     </AppShell>
+  );
+}
+
+function RouteState(props: {
+  state?: ReturnType<typeof loadFailureState> | null;
+  loading: boolean;
+  onRetry: () => void;
+}) {
+  return (
+    <section class="page state-page" aria-live="polite">
+      <Show
+        when={!props.loading}
+        fallback={
+          <>
+            <p class="eyebrow">Connecting</p>
+            <h1>Loading Command Center</h1>
+            <p>Requesting an authoritative snapshot from Jcode.</p>
+          </>
+        }
+      >
+        <p class="eyebrow">Route unavailable</p>
+        <h1>{props.state?.title ?? "Snapshot failed"}</h1>
+        <p>{props.state?.message ?? "The route could not obtain authoritative data."}</p>
+        <button class="button primary" type="button" onClick={() => props.onRetry()}>
+          Retry snapshot
+        </button>
+      </Show>
+    </section>
   );
 }
 

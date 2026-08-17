@@ -149,22 +149,21 @@ test.beforeEach(async ({ page }, testInfo) => {
 });
 
 test("authenticated bootstrap loads authoritative command center", async ({ page }) => {
-  await page.goto("/initiatives/init-command-center/runs/run-1");
-  await expect(
-    page.getByRole("banner").getByRole("heading", { name: "Jcode Command Center" }),
-  ).toBeVisible();
-  await expect(page.getByLabel(/Connection/)).toBeVisible();
+  await page.goto("/inbox");
   await expect(page.getByRole("heading", { name: "Decision queue" })).toBeVisible();
+  await expect(page.getByLabel(/Connection/)).toBeVisible();
 });
 
 test("Decision Inbox renders durable provider provenance @fixture-only", async ({ page }) => {
-  await page.goto("/initiatives/init-command-center/runs/run-1");
+  await page.goto("/inbox");
   await expect(page.getByText("Telegram · tg:42", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Review the Command Center delivery" }),
   ).toBeVisible();
   await expect(page.getByText("Work request")).toBeVisible();
-  await expect(page.getByText("Awaiting approval")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Review the Command Center delivery packet/i }),
+  ).toContainText("Awaiting approval");
 });
 
 test("live Telegram message reaches the authenticated Decision Inbox", async ({ page }) => {
@@ -188,14 +187,14 @@ test("live Telegram message reaches the authenticated Decision Inbox", async ({ 
 });
 
 test("discovery route opens the Decision Inbox primary view @fixture-only", async ({ page }) => {
-  await page.goto("/initiatives");
+  await page.goto("/inbox");
   await expect(page.getByRole("heading", { name: "Decision queue" })).toBeVisible();
   await expect(page.getByRole("group", { name: "Filter by type" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Durable packets" })).toBeVisible();
 });
 
 test("packet selection opens the evidence detail pane @fixture-only", async ({ page }) => {
-  await page.goto("/initiatives");
+  await page.goto("/inbox");
   await page.getByRole("button", { name: /Review the Command Center delivery packet/i }).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Source" })).toBeVisible();
@@ -229,7 +228,7 @@ test("global Find filters durable references and updates the result count @fixtu
 
   const drawer = page.getByRole("dialog", { name: "Find run or receipt" });
   await expect(page.getByText("1 result")).toBeVisible();
-  await expect(drawer.locator("a.find-result").filter({ hasText: "run-1" })).toBeVisible();
+  await expect(drawer.locator('a.find-result[aria-label="Run: run-1"]')).toBeVisible();
   await expect(
     drawer.locator("a.find-result").filter({ hasText: "Jcode Command Center" }),
   ).toBeHidden();
@@ -245,7 +244,7 @@ test("global Find result links preserve initiative and run deep links @fixture-o
   await expect(
     drawer.locator("a.find-result").filter({ hasText: "Jcode Command Center" }),
   ).toHaveAttribute("href", "/initiatives/init-command-center");
-  await expect(drawer.locator("a.find-result").filter({ hasText: "run-1" })).toHaveAttribute(
+  await expect(drawer.locator('a.find-result[aria-label="Run: run-1"]')).toHaveAttribute(
     "href",
     "/initiatives/init-command-center/runs/run-1",
   );
@@ -283,7 +282,7 @@ test("global Find deep links reopen Inbox decisions and Ambient inspection @fixt
 });
 
 test("Decision Inbox filters and sorts packets @fixture-only", async ({ page }) => {
-  await page.goto("/initiatives");
+  await page.goto("/inbox");
   await page.getByRole("button", { name: "Approvals" }).click();
   await expect(
     page.getByRole("button", { name: /Review the Command Center delivery packet/i }),
@@ -300,7 +299,7 @@ test("Decision Inbox filters and sorts packets @fixture-only", async ({ page }) 
 test("Decision Inbox keeps bounded actions disabled when transport is unsupported @fixture-only", async ({
   page,
 }) => {
-  await page.goto("/initiatives");
+  await page.goto("/inbox");
   await page.getByRole("button", { name: /Review the Command Center delivery packet/i }).click();
   await expect(page.getByRole("button", { name: "Approve delivery" })).toBeDisabled();
   await expect(page.getByText(/unsupported by the current inbox transport/i)).toBeVisible();
@@ -310,7 +309,7 @@ test("Decision Inbox keeps the detail sheet reachable on mobile @fixture-only", 
   page,
 }) => {
   await page.setViewportSize({ width: 520, height: 720 });
-  await page.goto("/initiatives");
+  await page.goto("/inbox");
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("button", { name: "Back to queue" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Durable decision packets" })).toBeVisible();
@@ -324,15 +323,31 @@ test("Ambient activity keeps evidence content ahead of controls @fixture-only", 
   await expect(page.getByRole("heading", { name: "Ambient activity" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Ambient activity ledger" })).toBeVisible();
   await expect(page.getByText("Wake schedule · every 30 minutes")).toBeVisible();
-  await expect(page.getByText("Frontend route established")).toBeVisible();
+  await expect(
+    page
+      .getByRole("list", { name: "Ambient activity ledger" })
+      .getByText("Frontend route established", { exact: true }),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "Receipts" }).click();
   await expect(page.getByText("Wake schedule · every 30 minutes")).toBeVisible();
-  await expect(page.getByText("Frontend route established")).toBeVisible();
-  await expect(page.getByText("Jcode Command Center")).toBeHidden();
+  await expect(
+    page
+      .getByRole("list", { name: "Ambient activity ledger" })
+      .getByText("Frontend route established", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("list", { name: "Ambient activity ledger" })
+      .getByText("Jcode Command Center", { exact: true }),
+  ).toBeHidden();
 
   await page.getByRole("button", { name: "Paused" }).click();
-  await expect(page.getByText("Jcode Command Center")).toBeVisible();
+  await expect(
+    page
+      .getByRole("list", { name: "Ambient activity ledger" })
+      .getByText("Jcode Command Center", { exact: true }),
+  ).toBeVisible();
 });
 
 test("Ambient create and inspect drawers are accessible and fail closed @fixture-only", async ({

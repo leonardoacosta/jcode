@@ -609,6 +609,11 @@ button:focus-visible {
   opacity: 1;
 }
 
+.drawer-backdrop[hidden],
+.drawer[hidden] {
+  display: none;
+}
+
 .drawer {
   position: fixed;
   inset: 12px 12px 12px auto;

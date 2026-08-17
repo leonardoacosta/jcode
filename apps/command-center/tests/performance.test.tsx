@@ -1,6 +1,6 @@
 import { render, screen, cleanup } from "@solidjs/testing-library";
 import { describe, expect, it } from "vitest";
-import { SplitWorkspace } from "../src/components/CommandCenter";
+import { AmbientActivity } from "../src/components/CommandCenter";
 import { createProjectionStore } from "../src/stores/projection";
 import { liveSnapshot, nextEvent } from "./fixtures/snapshots";
 import type { EventEnvelope, RunProjection } from "../src/generated/command-center-contract";
@@ -9,7 +9,7 @@ const thresholds = {
   largeTimelineRenderMs: 750,
   eventUpdateMs: 50,
   reconnectSnapshotMs: 50,
-  maxRenderedTimelineRows: 40,
+  maxRenderedActivityRows: 10,
   maxRetainedChildNodesAfterCleanup: 0,
 };
 
@@ -29,17 +29,18 @@ describe("command center bounded performance envelope", () => {
   it("renders a large timeline within the bounded virtualized row budget", () => {
     const started = performance.now();
     const result = render(() => (
-      <SplitWorkspace
-        initiative={liveSnapshot.selectedInitiative!}
-        run={largeRun(5_000)}
-        onCheckpoint={() => undefined}
+      <AmbientActivity
+        snapshot={{
+          ...liveSnapshot,
+          selectedRun: largeRun(5_000),
+        }}
       />
     ));
     const elapsed = performance.now() - started;
-    const timeline = screen.getByLabelText("Virtualized event timeline");
+    const ledger = screen.getByRole("list", { name: "Ambient activity ledger" });
 
     expect(elapsed).toBeLessThan(thresholds.largeTimelineRenderMs);
-    expect(timeline.children.length).toBeLessThanOrEqual(thresholds.maxRenderedTimelineRows);
+    expect(ledger.children.length).toBeLessThanOrEqual(thresholds.maxRenderedActivityRows);
 
     result.unmount();
     cleanup();

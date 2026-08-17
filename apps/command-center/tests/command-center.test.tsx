@@ -1,13 +1,7 @@
 import { render, screen, fireEvent } from "@solidjs/testing-library";
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import {
-  AppShell,
-  AmbientActivity,
-  DecisionInbox,
-  SplitWorkspace,
-  InitiativeList,
-} from "../src/components/CommandCenter";
+import { AppShell, AmbientActivity, DecisionInbox } from "../src/components/CommandCenter";
 import { loadFailureState } from "../src/app";
 import { createProjectionStore } from "../src/stores/projection";
 import { HttpCommandCenterTransport } from "../src/transport/client";
@@ -342,83 +336,31 @@ describe("command center components", () => {
     );
   });
 
-  it("renders durable and live panes with accessible states", () => {
-    render(() => (
-      <SplitWorkspace
-        initiative={liveSnapshot.selectedInitiative!}
-        run={liveSnapshot.selectedRun}
-        onCheckpoint={vi.fn()}
-      />
-    ));
-    expect(screen.getByRole("heading", { name: "Jcode Command Center" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Live execution" })).toBeInTheDocument();
-    expect(screen.getByText("every 30 minutes")).toBeInTheDocument();
-    expect(screen.getByLabelText("Virtualized event timeline").children.length).toBeLessThanOrEqual(
-      40,
-    );
-  });
+  it("keeps the current primary surface free of the removed legacy workspace", () => {
+    render(() => <DecisionInbox snapshot={findInbox} />);
 
-  it("keeps durable pane usable when Orca is unavailable", () => {
-    render(() => (
-      <SplitWorkspace
-        initiative={unavailableSnapshot.selectedInitiative!}
-        run={unavailableSnapshot.selectedRun}
-        onCheckpoint={vi.fn()}
-      />
-    ));
-    expect(screen.getByText("Orca runtime unavailable")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Retry" })).toBeDisabled();
-    expect(screen.getByLabelText("Checkpoint summary")).toBeEnabled();
-  });
-
-  it("shows pending and failed command recovery affordances", () => {
-    render(() => (
-      <SplitWorkspace
-        initiative={liveSnapshot.selectedInitiative!}
-        run={liveSnapshot.selectedRun}
-        onCheckpoint={vi.fn()}
-        pending
-        failure="Stale revision"
-      />
-    ));
-    expect(screen.getByRole("button", { name: "Checkpoint pending" })).toBeDisabled();
-    expect(screen.getByRole("alert")).toHaveTextContent("Stale revision");
-    expect(screen.getByRole("button", { name: "Inspect" })).toBeInTheDocument();
-  });
-
-  it("renders empty initiative list state", () => {
-    render(() => <InitiativeList initiatives={[]} />);
-    expect(screen.getByText("No initiatives")).toBeInTheDocument();
-  });
-
-  it("resizes split panes through keyboard-operable range input", () => {
-    render(() => (
-      <SplitWorkspace
-        initiative={liveSnapshot.selectedInitiative!}
-        run={liveSnapshot.selectedRun}
-        onCheckpoint={vi.fn()}
-      />
-    ));
-    const slider = screen.getByLabelText("Pane size");
-    fireEvent.input(slider, { target: { value: "60" } });
-    expect(slider).toHaveValue("60");
-  });
-
-  it("keeps skip-link, labeled resizer, status, and action controls accessible", () => {
-    render(() => (
-      <SplitWorkspace
-        initiative={liveSnapshot.selectedInitiative!}
-        run={liveSnapshot.selectedRun}
-        onCheckpoint={vi.fn()}
-      />
-    ));
-    expect(screen.getByLabelText("Split initiative and execution workspace")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Decision queue" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Jcode Command Center" })).not.toBeInTheDocument();
     expect(
-      screen.getAllByRole("status").some((status) => status.textContent?.includes("Run health")),
-    ).toBe(true);
-    screen.getByLabelText("Pane size").focus();
-    expect(screen.getByLabelText("Pane size")).toHaveFocus();
-    expect(screen.getByRole("button", { name: "Cancel" })).toBeEnabled();
+      screen.queryByRole("region", { name: "Split initiative and execution workspace" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders explicit Inbox loading, empty, and error states", () => {
+    const { unmount } = render(() => <DecisionInbox loading />);
+    expect(screen.getByText("Loading durable packets…")).toBeInTheDocument();
+    unmount();
+
+    render(() => <DecisionInbox snapshot={{ generatedAt: "2026-08-17T05:00:00Z", items: [] }} />);
+    expect(screen.getByText("No durable packets are available.")).toBeInTheDocument();
+    screen.getByRole("button", { name: "Back to packet list" }).click();
+    expect(screen.getByRole("dialog", { name: "Decision packet detail" })).toBeInTheDocument();
+
+    unmount();
+    render(() => <DecisionInbox error={new Error("decision_inbox_503")} />);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Decision packets could not be loaded. Retry after the daemon recovers.",
+    );
   });
 
   it("classifies auth expiry, forbidden, not-found, and fallback states explicitly", () => {
@@ -434,6 +376,7 @@ describe("command center components", () => {
     expect(css).toContain("grid-template-columns: 1fr");
     expect(css).toContain("@media (prefers-reduced-motion: reduce)");
     expect(css).toContain("animation: none !important");
+    expect(css).toContain(".drawer[hidden]");
   });
 });
 

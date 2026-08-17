@@ -89,9 +89,9 @@ test("CLI entrypoint listens until terminated", async (t) => {
     await mkdtemp(path.join(os.tmpdir(), "jcode-command-center-link-")),
     "server.mjs",
   );
-  await symlink(path.resolve("apps/command-center/server.mjs"), entrypoint);
+  await symlink(path.resolve(import.meta.dirname, "..", "server.mjs"), entrypoint);
   const child = spawn(process.execPath, [entrypoint], {
-    cwd: path.resolve("../..", import.meta.dirname),
+    cwd: path.resolve(import.meta.dirname, ".."),
     env: {
       ...process.env,
       JCODE_COMMAND_CENTER_PUBLIC_DIR: publicDir,
