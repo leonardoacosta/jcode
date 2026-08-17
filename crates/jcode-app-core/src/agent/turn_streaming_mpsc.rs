@@ -1224,7 +1224,7 @@ impl Agent {
                             tool_use_id: tc.id.clone(),
                             content: "[Skipped - server reloading]".to_string(),
                             is_error: Some(true),
-                            outcome: None,
+                            outcome: Some(ToolOutcome::UserActionRequired),
                             artifact: None,
                         }],
                     );
@@ -1269,7 +1269,7 @@ impl Agent {
                                 tool_use_id: skipped_tc.id.clone(),
                                 content: "[Skipped: user interrupted]".to_string(),
                                 is_error: Some(true),
-                                outcome: None,
+                                outcome: Some(ToolOutcome::UserActionRequired),
                                 artifact: None,
                             }],
                         );
@@ -1317,7 +1317,7 @@ impl Agent {
                             tool_use_id: tc.id.clone(),
                             content: error_msg,
                             is_error: Some(true),
-                            outcome: None,
+                            outcome: Some(ToolOutcome::ConfigurationError),
                             artifact: None,
                         }],
                     );
@@ -1339,7 +1339,7 @@ impl Agent {
                                 tool_use_id: tc.id.clone(),
                                 content: sdk_content,
                                 is_error: if sdk_is_error { Some(true) } else { None },
-                                outcome: None,
+                                outcome: Some(ToolOutcome::from_legacy_is_error(sdk_is_error)),
                                 artifact: None,
                             }],
                         );
@@ -1496,7 +1496,7 @@ impl Agent {
                                     tool_use_id: tc.id.clone(),
                                     content: error_msg,
                                     is_error: Some(true),
-                                    outcome: None,
+                                    outcome: Some(ToolOutcome::ToolDefect),
                                     artifact: None,
                                 }],
                                 Some(tool_elapsed.as_millis() as u64),
@@ -1518,6 +1518,11 @@ impl Agent {
                     // after reload rather than treated as failed work.
                     let (interrupted_msg, is_error) =
                         reload_interrupted_tool_result(tc, tool_elapsed.as_secs_f64());
+                    let interrupted_outcome = if is_error {
+                        ToolOutcome::UserActionRequired
+                    } else {
+                        ToolOutcome::Success
+                    };
 
                     let _ = event_tx.send(ServerEvent::ToolDone {
                         id: tc.id.clone(),
@@ -1536,7 +1541,7 @@ impl Agent {
                             tool_use_id: tc.id.clone(),
                             content: interrupted_msg,
                             is_error: Some(is_error),
-                            outcome: None,
+                            outcome: Some(interrupted_outcome),
                             artifact: None,
                         }],
                         Some(tool_elapsed.as_millis() as u64),
@@ -1551,7 +1556,7 @@ impl Agent {
                                 tool_use_id: remaining_tc.id.clone(),
                                 content: "[Skipped - server reloading]".to_string(),
                                 is_error: Some(true),
-                                outcome: None,
+                                outcome: Some(ToolOutcome::UserActionRequired),
                                 artifact: None,
                             }],
                         );
@@ -1590,7 +1595,7 @@ impl Agent {
                             tool_use_id: tc.id.clone(),
                             content: bg_msg,
                             is_error: None,
-                            outcome: None,
+                            outcome: Some(ToolOutcome::UserActionRequired),
                             artifact: None,
                         }],
                         Some(tool_elapsed.as_millis() as u64),

@@ -506,6 +506,54 @@ pub struct TodoSessionEvent {
     pub end_to_end_ownership_min: Option<u8>,
     pub end_to_end_ownership_mean: Option<f64>,
     pub end_to_end_ownership_count: u32,
+    #[serde(default)]
+    pub completion_review_count: u32,
+    #[serde(default)]
+    pub completion_review_grouped_goal_count: u32,
+    #[serde(default)]
+    pub completion_review_ungrouped_goal_count: u32,
+    #[serde(default)]
+    pub completion_review_continuation_cycles: u32,
+    #[serde(default)]
+    pub completion_review_repeated_prompt_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_gate_digest_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_long_session_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_ownership_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_completion_confidence_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_confidence_spike_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_auto_poke_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_intent_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_closed_feedback_loop_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_feedback_loop_relevance_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_feedback_loop_coverage_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_feedback_loop_traceability_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_ownership_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_completion_confidence_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_incomplete_todo_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_stale_assessment_count: u32,
+    #[serde(default)]
+    pub completion_review_resolution_pending_count: u32,
+    #[serde(default)]
+    pub completion_review_resolution_resolved_count: u32,
+    #[serde(default)]
+    pub completion_review_resolution_unresolved_count: u32,
+    #[serde(default)]
+    pub completion_review_resolution_exhausted_count: u32,
     pub schema_version: u32,
     pub build_channel: String,
     pub is_git_checkout: bool,
@@ -750,6 +798,54 @@ pub struct TurnEndEvent {
     pub todo_gate_completion_count: u32,
     #[serde(default)]
     pub todo_gate_spike_count: u32,
+    #[serde(default)]
+    pub completion_review_count: u32,
+    #[serde(default)]
+    pub completion_review_grouped_goal_count: u32,
+    #[serde(default)]
+    pub completion_review_ungrouped_goal_count: u32,
+    #[serde(default)]
+    pub completion_review_continuation_cycles: u32,
+    #[serde(default)]
+    pub completion_review_repeated_prompt_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_gate_digest_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_long_session_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_ownership_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_completion_confidence_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_confidence_spike_count: u32,
+    #[serde(default)]
+    pub completion_review_trigger_auto_poke_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_intent_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_closed_feedback_loop_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_feedback_loop_relevance_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_feedback_loop_coverage_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_feedback_loop_traceability_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_ownership_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_completion_confidence_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_incomplete_todo_count: u32,
+    #[serde(default)]
+    pub completion_review_concern_stale_assessment_count: u32,
+    #[serde(default)]
+    pub completion_review_resolution_pending_count: u32,
+    #[serde(default)]
+    pub completion_review_resolution_resolved_count: u32,
+    #[serde(default)]
+    pub completion_review_resolution_unresolved_count: u32,
+    #[serde(default)]
+    pub completion_review_resolution_exhausted_count: u32,
     pub workflow_chat_only: bool,
     pub workflow_coding_used: bool,
     pub workflow_research_used: bool,

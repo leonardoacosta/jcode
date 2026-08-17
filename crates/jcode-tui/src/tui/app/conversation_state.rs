@@ -823,7 +823,6 @@ impl App {
         new_session.is_canary = old_session.is_canary;
         new_session.testing_build = old_session.testing_build.clone();
         new_session.is_debug = old_session.is_debug;
-        new_session.origin = old_session.origin;
         new_session.saved = old_session.saved;
         new_session.save_label = old_session.save_label.clone();
         new_session.working_dir = old_session.working_dir.clone();
