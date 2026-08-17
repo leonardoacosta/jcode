@@ -1035,6 +1035,44 @@ fn todo_session_payload_has_no_unapproved_string_fields() {
 }
 
 #[test]
+fn completion_review_telemetry_captures_trigger_group_concern_cycles_resolution_and_repeats() {
+    let _guard = lock_telemetry_test_state();
+    *SESSION_STATE.lock().unwrap() = None;
+    begin_session("test", "test");
+    record_completion_review(CompletionReviewTelemetry {
+        trigger: CompletionReviewTrigger::GateDigest,
+        goal_grouped: true,
+        unresolved_concern: CompletionReviewConcern::FeedbackLoopCoverage,
+        continuation_cycles: 3,
+        resolution: CompletionReviewResolution::Unresolved,
+        repeated_prompt: true,
+    });
+
+    let payload = current_todo_payload(SessionEndReason::NormalExit);
+    assert_eq!(payload["completion_review_count"], 1);
+    assert_eq!(payload["completion_review_grouped_goal_count"], 1);
+    assert_eq!(payload["completion_review_continuation_cycles"], 3);
+    assert_eq!(payload["completion_review_repeated_prompt_count"], 1);
+    assert_eq!(payload["completion_review_trigger_gate_digest_count"], 1);
+    assert_eq!(
+        payload["completion_review_concern_feedback_loop_coverage_count"],
+        1
+    );
+    assert_eq!(payload["completion_review_resolution_unresolved_count"], 1);
+
+    let state = SESSION_STATE.lock().unwrap();
+    let turn = state
+        .as_ref()
+        .and_then(|session| session.current_turn.as_ref())
+        .expect("active turn telemetry");
+    assert_eq!(turn.completion_review_count, 1);
+    assert_eq!(turn.completion_review_continuation_cycles, 3);
+    assert_eq!(turn.completion_review_repeated_prompt_count, 1);
+    drop(state);
+    *SESSION_STATE.lock().unwrap() = None;
+}
+
+#[test]
 fn todo_correlation_id_is_fresh_for_each_session() {
     let _guard = lock_telemetry_test_state();
     *SESSION_STATE.lock().unwrap() = None;

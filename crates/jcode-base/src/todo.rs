@@ -1258,6 +1258,32 @@ mod tests {
     }
 
     #[test]
+    fn gate_observation_summary_preserves_group_concern_resolution_cycles_and_repeats() {
+        let observations = vec![
+            loop_observation(Some("render"), Some(FeedbackLoopState::Usable)),
+            loop_observation(Some("render"), Some(FeedbackLoopState::Usable)),
+            intent_observation(Some(IntentUnderstanding::Partial)),
+        ];
+        let plan = TodoPlan {
+            understands_user_intent: Some(IntentUnderstanding::Clear),
+            ..Default::default()
+        };
+        let summaries = summarize_gate_observations(&observations, &plan, &[]);
+
+        assert_eq!(summaries.len(), 2);
+        assert_eq!(summaries[0].kind, GateObservationKind::ClosedFeedbackLoop);
+        assert_eq!(summaries[0].group.as_deref(), Some("render"));
+        assert_eq!(summaries[0].continuation_cycles, 2);
+        assert!(summaries[0].repeated_prompt);
+        assert!(!summaries[0].resolved);
+        assert_eq!(summaries[1].kind, GateObservationKind::IntentUnderstanding);
+        assert!(summaries[1].group.is_none());
+        assert_eq!(summaries[1].continuation_cycles, 1);
+        assert!(!summaries[1].repeated_prompt);
+        assert!(summaries[1].resolved);
+    }
+
+    #[test]
     fn gate_observations_round_trip_and_clear() {
         let _guard = crate::storage::lock_test_env();
         let previous_home = std::env::var_os("JCODE_HOME");
