@@ -510,12 +510,12 @@ fn admit_inner(
         .gate
         .lock()
         .map_err(|_| (StatusCode::SERVICE_UNAVAILABLE, "store_unavailable"))?;
-    let mut store = load_store(&state.path)
-        .map_err(|_| (StatusCode::SERVICE_UNAVAILABLE, "store_unavailable"))?;
+    let mut store =
+        load_store(&state.path).map_err(|error| store_unavailable(&state.path, "load", error))?;
     if let Some(receipt_id) = store.delivery_receipts.get(&delivery_key).cloned() {
         store.deduplicated_count += 1;
         save_store(&state.path, &store)
-            .map_err(|_| (StatusCode::SERVICE_UNAVAILABLE, "store_unavailable"))?;
+            .map_err(|error| store_unavailable(&state.path, "deduplication save", error))?;
         return Ok((
             StatusCode::ACCEPTED,
             ReceiptResponse {
@@ -556,7 +556,7 @@ fn admit_inner(
     );
     store.accepted_count += 1;
     save_store(&state.path, &store)
-        .map_err(|_| (StatusCode::SERVICE_UNAVAILABLE, "store_unavailable"))?;
+        .map_err(|error| store_unavailable(&state.path, "admission save", error))?;
     drop(_guard);
     let path = state.path.clone();
     let gate = Arc::clone(&state.gate);
@@ -1034,6 +1034,18 @@ fn save_store(path: &Path, store: &ExternalSignalStore) -> Result<()> {
     crate::storage::write_json(path, store)
 }
 
+fn store_unavailable(
+    path: &Path,
+    operation: &str,
+    error: anyhow::Error,
+) -> (StatusCode, &'static str) {
+    crate::logging::warn(&format!(
+        "External signal store {operation} failed for {}: {error:#}",
+        path.display()
+    ));
+    (StatusCode::SERVICE_UNAVAILABLE, "store_unavailable")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1253,5 +1265,44 @@ mod tests {
             MAX_PROCESSING_ATTEMPTS + 1
         );
         std::fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn admission_persists_when_existing_store_has_backup() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("state.json");
+        let cfg = config();
+        let mut existing = ExternalSignalStore::default();
+        existing.schema_version = SCHEMA_VERSION;
+        save_store(&path, &existing).unwrap();
+        let mut prior = existing.clone();
+        prior.accepted_count = 1;
+        save_store(&path, &prior).unwrap();
+
+        let state = IngressState {
+            config: cfg,
+            path,
+            gate: Arc::new(Mutex::new(())),
+        };
+        let headers = HeaderMap::from_iter([
+            (header::CONTENT_TYPE, "application/json".parse().unwrap()),
+            (
+                header::HeaderName::from_static("x-jcode-delivery-id"),
+                "regression-existing-store".parse().unwrap(),
+            ),
+        ]);
+        let body = payload(
+            "firing",
+            "high",
+            "2026-08-17T04:00:00Z",
+            "0001-01-01T00:00:00Z",
+        );
+
+        let (status, receipt) = admit_inner(&state, &headers, &body).unwrap();
+        assert_eq!(status, StatusCode::ACCEPTED);
+        assert_eq!(receipt.outcome, "accepted");
+        let persisted = load_store(&state.path).unwrap();
+        assert_eq!(persisted.accepted_count, 2);
+        assert!(state.path.with_extension("bak").exists());
     }
 }
