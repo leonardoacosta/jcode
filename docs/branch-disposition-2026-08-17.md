@@ -10,9 +10,9 @@ This manifest is the recovery ledger for pruning the writable repository's histo
 ## Canonical state before pruning
 
 - Upstream mirror target: `4c58869beeb3885e5d772054fd763176c992465c`
-- Integrated dev tip at manifest generation: `8ca250aa0f9376bc25d8891baf64b52283dc9530`
+- Integrated dev tip after salvage: `7ef8c7f2639da08c683b221bf703697cbdff864c`
 - Computer observability salvage: `e7fdddf74`
-- iOS selective salvage: `8ca250aa0`
+- iOS selective salvage: `8ca250aa0` through `7ef8c7f26`
 
 Every deleted remote ref remains recoverable by the full object ID below as long as the object is retained locally or fetched from another clone. This manifest also provides the evidence needed to recreate a branch from an archived object ID.
 
@@ -87,7 +87,7 @@ Every deleted remote ref remains recoverable by the full object ID below as long
 
 - `fork/main` was integrated as an upstream sync into `dev`; root `main` is reset only to the exact upstream commit, never to local feature work.
 - Computer observability had unique value and was ported with its focused tests.
-- The active iOS lane received the interaction-graph improvements that applied meaningfully to the newer implementation. Subsequent production-readiness commits were empty or conflicted only with newer current behavior, so they were not replayed wholesale.
+- The active iOS lane received the complete audited non-equivalent sequence. Conflicts were resolved in favor of newer `dev` implementations while clean App Store, demo, notification, test-harness, and release-readiness changes were retained.
 - The triage, Windows lifecycle, and menubar branches were already represented in `dev`.
 - ScrollWM integration was intentionally rejected because its external contract is not approved. Its exact tip is retained above for future recovery.
 - The legacy desktop2 state-graph option was intentionally rejected because the current desktop architecture supersedes it.
@@ -101,3 +101,9 @@ Every deleted remote ref remains recoverable by the full object ID below as long
 4. Verify GitHub's default branch is `dev`.
 5. Verify `main == upstream/master` and `upstream/master` is an ancestor of `dev`.
 6. Verify the read-only source checkout is clean and unchanged.
+
+## Validation evidence
+
+- `cargo check --workspace --all-targets` passed after the upstream sync and again after the iOS port.
+- All iOS TestHarness Python files compiled. Reward determinism checked 16 scorers successfully in an isolated environment.
+- The production checklist passed 15 repository-level checks. Eleven Apple-platform checks are acceptance-blocked on Linux because Swift, `plutil`, PlistBuddy, `sips`, XcodeGen, and Xcode are unavailable.
