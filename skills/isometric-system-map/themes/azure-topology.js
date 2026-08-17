@@ -158,6 +158,22 @@
       ctx.stroke(path);
     },
 
+    drawArea(ctx, path, area, labelPoint) {
+      ctx.save();
+      ctx.fillStyle = area.status === "held" ? "rgba(0,120,212,.035)" : "rgba(0,120,212,.075)";
+      ctx.fill(path);
+      ctx.strokeStyle = area.status === "held" ? "rgba(0,109,163,.56)" : "rgba(0,109,163,.88)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash(area.status === "held" ? [6, 4] : []);
+      ctx.stroke(path);
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#006da3";
+      ctx.font = '700 10px "Segoe UI", system-ui, sans-serif';
+      ctx.textAlign = "center";
+      ctx.fillText(area.label.toUpperCase(), labelPoint.x, labelPoint.y - 10);
+      ctx.restore();
+    },
+
     drawZone(ctx, zone, point) {
       ctx.save();
       ctx.fillStyle = "#57606a";

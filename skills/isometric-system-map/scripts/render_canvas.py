@@ -98,7 +98,11 @@ def _evidence_text(item: dict[str, Any]) -> str:
 
 def _fallback_buttons(scene: dict[str, Any]) -> str:
     rows: list[str] = []
-    for kind, items in (("node", scene.get("nodes", [])), ("path", scene.get("paths", []))):
+    for kind, items in (
+        ("area", scene.get("areas", [])),
+        ("node", scene.get("nodes", [])),
+        ("path", scene.get("paths", [])),
+    ):
         for item in items:
             item_id = str(item["id"])
             label = str(item.get("label", item_id))

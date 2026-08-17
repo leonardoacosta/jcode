@@ -160,12 +160,51 @@ class CanvasRendererTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             html = output.read_text()
             self.assertIn("function cubeMassFor(node)", html)
-            self.assertIn("const cubeEdge = Math.min(", html)
+            self.assertIn("const cubeEdge = SCENE.canvas.cube_size;", html)
+            self.assertNotIn("Math.min(width, depth, node.height)", html)
             self.assertIn("const projectedEdge = Math.hypot(state.tileWidth / 2, state.tileHeight / 2)", html)
             self.assertIn("form: \"cube\"", html)
+            self.assertIn("cubeEdge: cube.cubeEdge", html)
             self.assertIn("nodeGeometry", html)
             self.assertNotIn('case "stack":', html)
             self.assertNotIn('case "gateway":', html)
+
+    def test_renderer_draws_vnet_areas_and_exposes_semantic_area_controls(self):
+        scene = json.loads(FIXTURE.read_text())
+        scene["canvas"]["cube_size"] = 1
+        for node in scene["nodes"]:
+            node.pop("height", None)
+        scene["areas"] = [
+            {
+                "id": "runtime-vnet",
+                "label": "Runtime VNet",
+                "kind": "vnet",
+                "status": "active",
+                "member_ids": ["app", "database", "telemetry"],
+                "padding": 0.5,
+                "description": "Private runtime attachment area.",
+                "evidence": [
+                    {
+                        "path": "infra/network/main.bicep",
+                        "lines": "1-72",
+                        "claim": "The runtime resources attach to the application VNet.",
+                    }
+                ],
+            }
+        ]
+
+        with tempfile.TemporaryDirectory() as directory:
+            scene_path = Path(directory) / "vnet-area.json"
+            output = Path(directory) / "vnet-area.html"
+            scene_path.write_text(json.dumps(scene))
+            result = self.render(scene_path, AZURE_THEME, output)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            html = output.read_text()
+            self.assertIn("function areaRect(area)", html)
+            self.assertIn("SCENE.areas.forEach", html)
+            self.assertIn("THEME.drawArea", html)
+            self.assertIn("areaGeometry", html)
+            self.assertEqual(len(re.findall(r'data-target-kind="area"', html)), 1)
 
     def test_azure_theme_uses_the_topology_palette_and_semantic_families(self):
         source = AZURE_THEME.read_text()

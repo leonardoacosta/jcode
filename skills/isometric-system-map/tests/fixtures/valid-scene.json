@@ -59,7 +59,8 @@
     "grid_width": 12,
     "grid_depth": 10,
     "tile_width": 64,
-    "tile_height": 32
+    "tile_height": 32,
+    "cube_size": 1
   },
   "zones": [
     {
@@ -73,6 +74,28 @@
       "description": "Provisioned application resources"
     }
   ],
+  "areas": [
+    {
+      "id": "runtime-vnet",
+      "label": "Runtime VNet",
+      "kind": "vnet",
+      "status": "active",
+      "member_ids": [
+        "app",
+        "database",
+        "telemetry"
+      ],
+      "padding": 0.5,
+      "description": "Private runtime attachment area.",
+      "evidence": [
+        {
+          "path": "infra/network/main.bicep",
+          "lines": "1-72",
+          "claim": "The runtime resources attach to the application VNet."
+        }
+      ]
+    }
+  ],
   "nodes": [
     {
       "id": "pipeline",
@@ -81,9 +104,14 @@
       "role": "pipeline",
       "form": "cube",
       "zone": "delivery",
-      "position": { "x": 1, "y": 1 },
-      "footprint": { "width": 2, "depth": 1 },
-      "height": 2.5,
+      "position": {
+        "x": 1,
+        "y": 1
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 1
+      },
       "status": "active",
       "resource_type": "Azure DevOps pipeline",
       "icon": "az-release-pipeline",
@@ -103,9 +131,14 @@
       "role": "compute",
       "form": "cube",
       "zone": "runtime",
-      "position": { "x": 5, "y": 2 },
-      "footprint": { "width": 1, "depth": 1 },
-      "height": 3.5,
+      "position": {
+        "x": 5,
+        "y": 2
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
       "status": "active",
       "resource_type": "Microsoft.Web/sites",
       "icon": "az-app-service",
@@ -125,9 +158,14 @@
       "role": "data",
       "form": "cube",
       "zone": "runtime",
-      "position": { "x": 8, "y": 4 },
-      "footprint": { "width": 2, "depth": 1 },
-      "height": 2,
+      "position": {
+        "x": 8,
+        "y": 4
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 1
+      },
       "status": "active",
       "resource_type": "Microsoft.Sql/servers/databases",
       "icon": "az-sql-database",
@@ -147,9 +185,14 @@
       "role": "observability",
       "form": "cube",
       "zone": "runtime",
-      "position": { "x": 7, "y": 7 },
-      "footprint": { "width": 1, "depth": 2 },
-      "height": 3,
+      "position": {
+        "x": 7,
+        "y": 7
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 2
+      },
       "status": "active",
       "resource_type": "Microsoft.OperationalInsights/workspaces",
       "icon": "az-log-analytics",
@@ -171,12 +214,26 @@
       "kind": "delivery",
       "label": "guarded deployment",
       "route": [
-        { "x": 3, "y": 1.5 },
-        { "x": 4, "y": 1.5 },
-        { "x": 4, "y": 2.5 },
-        { "x": 5, "y": 2.5 }
+        {
+          "x": 3,
+          "y": 1.5
+        },
+        {
+          "x": 4,
+          "y": 1.5
+        },
+        {
+          "x": 4,
+          "y": 2.5
+        },
+        {
+          "x": 5,
+          "y": 2.5
+        }
       ],
-      "payload_ids": ["deployment"],
+      "payload_ids": [
+        "deployment"
+      ],
       "evidence": [
         {
           "path": ".azuredevops/deploy.yml",
@@ -192,10 +249,22 @@
       "kind": "dependency",
       "label": "private SQL dependency",
       "route": [
-        { "x": 6, "y": 2.5 },
-        { "x": 7, "y": 2.5 },
-        { "x": 7, "y": 4.5 },
-        { "x": 8, "y": 4.5 }
+        {
+          "x": 6,
+          "y": 2.5
+        },
+        {
+          "x": 7,
+          "y": 2.5
+        },
+        {
+          "x": 7,
+          "y": 4.5
+        },
+        {
+          "x": 8,
+          "y": 4.5
+        }
       ],
       "payload_ids": [],
       "evidence": [
@@ -213,12 +282,26 @@
       "kind": "telemetry",
       "label": "diagnostics",
       "route": [
-        { "x": 5.5, "y": 3 },
-        { "x": 5.5, "y": 6 },
-        { "x": 7.5, "y": 6 },
-        { "x": 7.5, "y": 7 }
+        {
+          "x": 5.5,
+          "y": 3
+        },
+        {
+          "x": 5.5,
+          "y": 6
+        },
+        {
+          "x": 7.5,
+          "y": 6
+        },
+        {
+          "x": 7.5,
+          "y": 7
+        }
       ],
-      "payload_ids": ["diagnostic"],
+      "payload_ids": [
+        "diagnostic"
+      ],
       "evidence": [
         {
           "path": "infra/modules/monitoring.bicep",

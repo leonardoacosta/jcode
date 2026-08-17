@@ -19,8 +19,8 @@ controls as optional composition requested by the user, never as the map itself.
 
 The skill separates two layers:
 
-1. **Scene grammar**: repository facts, 2:1 projection, resource envelopes, cubes, depth, routes, payloads,
-   labels, and evidence.
+1. **Scene grammar**: repository facts, 2:1 projection, resource envelopes, sourced containment areas,
+   uniform cubes, depth, routes, payloads, labels, and evidence.
 2. **Design language**: palette, line weight, materials, typography, texture, motion character, and
    optional framing.
 
@@ -59,6 +59,7 @@ Trace entry points and callers before selecting visual forms. Establish:
 - owned modules and runtime resources, including exact ARM `resource_type` where available;
 - a package-supported `icon` for Azure resources or CI/CD primitives when the chosen theme uses roof marks;
 - existing or externally owned dependencies;
+- evidenced containment such as resources attached to one VNet;
 - deployment, dependency, control, data, identity, network, and telemetry paths;
 - environment overlays, conditions, approvals, and true held states;
 - concrete payloads moving along selected paths.
@@ -74,7 +75,7 @@ were collapsed:
 
 | Required fact | Scene representation | Direct evidence |
 | --- | --- | --- |
-| one shared non-prod VNet and one distinct prod VNet | two independently identifiable nodes | exact constants or lookup ranges |
+| one shared non-prod VNet and one distinct prod VNet | two evidenced VNet terrain areas, each with its own VNet cube and member resources | exact constants, lookup ranges, and attachment evidence |
 | separate resource-group or ownership boundaries | evidenced boundary cubes or distinct sourced regions | exact scope declarations |
 | shared hub plus prod-only overlay | one hub node plus one conditional overlay node and their path | hub and overlay declarations |
 | externally owned import or contract | external node and dependency/control path, never a locally owned runtime flow | ownership and import declarations |
@@ -97,8 +98,8 @@ Curate a discussable scene, not a repository inventory:
   explicit requirement. The normal node target is a readability guide, not permission to erase a
   required distinction.
 
-A visual region can be compositional. Do not imply Azure containment, ownership, or runtime
-co-location unless evidence supports it.
+A visual `zone` can be compositional. A scene `area` is sourced containment. Do not imply Azure
+containment, ownership, or runtime co-location with either one unless evidence supports it.
 
 ### 4. Define art direction without changing geometry
 
@@ -119,10 +120,18 @@ copy their surrounding interface.
 
 ### 5. Lay out the isometric terrain
 
-Use a true 2:1 grid: `tile_width = 2 × tile_height`. Place resource envelopes in grid coordinates,
-then validate full footprint overlap. Keep high-traffic hubs central, entry/control nodes toward the
-back or left, and sinks/outputs toward the front or right unless the story suggests another reading
-order.
+Use a true 2:1 grid: `tile_width = 2 × tile_height`. Choose one scene-wide `canvas.cube_size`, then
+place resource envelopes in grid coordinates and validate full footprint overlap. Every envelope must
+be large enough to contain that same cube. Keep high-traffic hubs central, entry/control nodes toward
+the back or left, and sinks/outputs toward the front or right unless the story suggests another
+reading order.
+
+When evidence says resources are network-contained, declare a sourced `area` with `kind: "vnet"`,
+the contained node IDs in `member_ids`, half-grid `padding`, status, description, and direct evidence.
+Include the VNet itself as one cube in the area's membership when it is represented. The renderer
+derives the terrain boundary from the complete member footprints, so place every network-attached
+resource inside the VNet area rather than leaving containment as a label or path-only implication.
+Keep ordinary visual grouping in `zones`; use `areas` only for proven containment.
 
 Route paths explicitly as grid points. Prefer lane-like segments along one isometric axis at a time.
 Start and end on a footprint edge or in the outward half-cell beside one edge, never inside a
@@ -134,17 +143,20 @@ and routing rules.
 
 ### 6. Build true resource cubes
 
-Every node renders as one cube. Do not turn services, pipelines, boundaries, or abstractions into
-towers, slabs, gateways, stacks, hubs, or other architectural silhouettes.
+Every node renders as one cube of exactly the same scene-wide size. Do not turn services, pipelines,
+boundaries, or abstractions into towers, slabs, gateways, stacks, hubs, or other architectural
+silhouettes. Do not vary cube size by role, importance, resource type, footprint, or status.
 
-The declared footprint remains the collision and routing envelope. Center one cube inside it using
-`min(footprint.width, footprint.depth, height)` as the cube edge. Derive the projected vertical edge
-from the projected ground edge so width, depth, and height read as one true cube on screen.
+The declared footprint remains only the collision and routing envelope. Center one cube with edge
+`canvas.cube_size` inside every footprint. Derive the projected vertical edge from that projected
+ground edge so width, depth, and height read as one true cube on screen. Nodes do not declare their own
+height or scale.
 
 Place the node's line-art `icon` on the top face. Identity comes from the roof mark, semantic palette,
-short code, evidence, and connected paths. Importance comes from placement, route degree, spacing,
-and optional cube scale, never from making a resource look like a building. Design languages may
-change material, linework, corner treatment, shadow, typography, and motion while preserving the cube.
+short code, evidence, and connected paths. Importance comes from placement, route degree, reserved
+footprint, spacing, and labels, never from cube scale or from making a resource look like a building.
+Design languages may change material, linework, corner treatment, shadow, typography, and motion while
+preserving the uniform cube geometry.
 
 ### 7. Route real paths and payloads
 
@@ -183,6 +195,7 @@ contract intentionally has no fields for dashboards, rails, metric cards, or exp
 Then run a semantic coverage gate against the temporary ledger:
 
 - shared and distinct environment objects are independently identifiable;
+- resources proven to share a VNet are members of the same sourced VNet area and visibly fall inside it;
 - source-backed resource-group, subscription, and ownership boundaries are geometric, not prose-only;
 - hub-and-overlay topologies contain both the shared hub and the smaller overlay;
 - exact contract names and decisive flags such as `subscriptionRequired` appear on the relevant
@@ -206,7 +219,7 @@ python3 skills/isometric-system-map/scripts/render_canvas.py \
 
 Use three aligned Canvas layers:
 
-1. terrain: background, material, ground, grid, and quiet zones;
+1. terrain: background, material, ground, grid, sourced containment areas, and quiet zones;
 2. architecture: routes, arrows, resource cubes, and compact labels;
 3. motion: payloads and interaction highlights.
 
@@ -241,27 +254,31 @@ language and remain subordinate.
 Inspect the rendered artifact in a browser or image viewer:
 
 1. The scene reads as isometric before any text is read.
-2. Every node is one true cube with equal projected edges, visible roof and wall faces, and no
-   envelope collisions. Every supported resource mark is visibly projected onto its top face and
-   uses the semantic family palette.
+2. Every node is one true cube with the same scene-wide cube edge, equal projected edges, visible roof
+   and wall faces, and no envelope collisions. Every supported resource mark is visibly projected onto
+   its top face and uses the semantic family palette.
 3. The ground grid uses consistent 2:1 axes.
-4. Directed routes follow the terrain and avoid unrelated resource envelopes.
-5. The main flows can be followed end-to-end without guessing.
-6. Payloads map to named values and pause under reduced-motion preferences.
-7. Pause stops the animation frame loop, and reduced motion starts with no live frame loop.
-8. Every node and path appears as a native focusable control and focus mirrors to the Canvas.
-9. Labels stay legible and do not become the architecture.
-10. The requested design language is visible in material, linework, typography, and motion, not only
+4. Every sourced VNet area visibly encloses the complete footprints of all declared member resources,
+   exposes its evidence, and appears as a native focusable control.
+5. Directed routes follow the terrain and avoid unrelated resource envelopes.
+6. The main flows can be followed end-to-end without guessing.
+7. Payloads map to named values and pause under reduced-motion preferences.
+8. Pause stops the animation frame loop, and reduced motion starts with no live frame loop.
+9. Every node and path appears as a native focusable control and focus mirrors to the Canvas.
+10. Labels stay legible and do not become the architecture.
+11. The requested design language is visible in material, linework, typography, and motion, not only
    a palette swap.
-11. Citations are available in tooltips, details, captions, or the sidecar without forcing a fixed
+12. Citations are available in tooltips, details, captions, or the sidecar without forcing a fixed
    panel layout.
-12. At screenshot scale, the isometric image remains the focal point.
+13. At screenshot scale, the isometric image remains the focal point.
 
 ## Hard boundaries
 
 - Do not recreate surrounding dashboard chrome unless the user explicitly requests the full UI.
-- Do not vary node silhouettes into architecture. Every node remains one cube; use marks, palette,
-  labels, placement, spacing, and paths for differentiation.
+- Do not vary node silhouettes or cube size. Every node remains one identically sized cube; use marks,
+  palette, labels, placement, reserved footprints, spacing, and paths for differentiation.
+- Do not show proven VNet containment only as a VNet cube, zone label, or network path. Use a sourced
+  VNet area whose members include the contained resources.
 - Do not fake 3D with arbitrary CSS transforms on flat cards.
 - Do not use generic center-to-center curves when explicit terrain routes are possible.
 - Do not label a manual pipeline as held merely because `trigger: none` or `pr: none` is present.

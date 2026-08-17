@@ -151,6 +151,58 @@ class SceneContractTests(unittest.TestCase):
         errors = validator.validate_scene(document)
         self.assertIn("nodes[0].form: must be one of ['cube']", errors)
 
+    def test_scene_uses_one_global_cube_size_instead_of_per_node_heights(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_uniform_cube_size")
+        document = copy.deepcopy(self.document)
+        document["canvas"]["cube_size"] = 1
+        for node in document["nodes"]:
+            node.pop("height", None)
+        self.assertEqual(validator.validate_scene(document), [])
+
+        del document["canvas"]["cube_size"]
+        errors = validator.validate_scene(document)
+        self.assertIn("canvas.cube_size: half-grid number from 0.5 to 2 required", errors)
+
+    def test_vnet_areas_require_real_members_and_fit_inside_the_canvas(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_vnet_areas")
+        document = copy.deepcopy(self.document)
+        document["canvas"]["cube_size"] = 1
+        for node in document["nodes"]:
+            node.pop("height", None)
+        document["areas"] = [
+            {
+                "id": "runtime-vnet",
+                "label": "Runtime VNet",
+                "kind": "vnet",
+                "status": "active",
+                "member_ids": ["app", "database", "telemetry"],
+                "padding": 0.5,
+                "description": "Private runtime attachment area.",
+                "evidence": [
+                    {
+                        "path": "infra/network/main.bicep",
+                        "lines": "1-72",
+                        "claim": "The runtime resources attach to the application VNet.",
+                    }
+                ],
+            }
+        ]
+        self.assertEqual(validator.validate_scene(document), [])
+
+        broken_member = copy.deepcopy(document)
+        broken_member["areas"][0]["member_ids"].append("missing-resource")
+        errors = validator.validate_scene(broken_member)
+        self.assertIn(
+            "areas[0].member_ids[3]: references unknown node 'missing-resource'",
+            errors,
+        )
+
+        outside = copy.deepcopy(document)
+        outside["areas"][0]["member_ids"] = ["pipeline"]
+        outside["areas"][0]["padding"] = 2
+        errors = validator.validate_scene(outside)
+        self.assertIn("areas[0]: padded member bounds extend beyond the canvas", errors)
+
     def test_nodes_accept_known_azure_resource_metadata(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_azure_metadata")
         document = copy.deepcopy(self.document)

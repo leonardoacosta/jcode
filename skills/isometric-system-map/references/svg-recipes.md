@@ -21,9 +21,12 @@ Assert `tileWidth === 2 * tileHeight` before rendering.
 ## Cuboid faces
 
 ```js
-function cuboidFaces(node, p, heightPx) {
-  const { x, y } = node.position;
-  const { width, depth } = node.footprint;
+function cuboidFaces(node, mass, p) {
+  const x = node.position.x + mass.ox;
+  const y = node.position.y + mass.oy;
+  const width = mass.w;
+  const depth = mass.d;
+  const heightPx = mass.h * p.heightUnit;
   const floor = [
     project(x, y, 0, p),
     project(x + width, y, 0, p),
@@ -57,9 +60,9 @@ Center one cube inside the declared footprint and derive its vertical height fro
 edge:
 
 ```js
-function cubeMassFor(node, projection) {
+function cubeMassFor(node, scene, projection) {
   const { width: w, depth: d } = node.footprint;
-  const edge = Math.min(w, d, node.height);
+  const edge = scene.canvas.cube_size;
   const groundEdge = Math.hypot(projection.tileWidth / 2, projection.tileHeight / 2);
   return {
     ox: (w - edge) / 2,
@@ -71,8 +74,14 @@ function cubeMassFor(node, projection) {
 }
 ```
 
-Do not add secondary masses or line structures that turn the resource into a building. Service identity
-belongs on the top face.
+Do not vary `edge` per node or add secondary masses or line structures that turn the resource into a
+building. Service identity belongs on the top face.
+
+## VNet area polygons
+
+Derive a VNet area's world rectangle from its member footprints plus padding, project the four corners,
+and draw it before routes and cubes. Give the polygon a focusable semantic peer with the area's label,
+status, description, and evidence. Never hand-place an area boundary independently of its members.
 
 ## Back-to-front ordering
 

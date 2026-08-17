@@ -48,9 +48,10 @@ anchoring difficult.
 
 ### Cube invariant
 
-`cube` is the only node form. Center one cubical mass inside the declared collision envelope. The cube
-edge is the smallest of footprint width, footprint depth, and declared height. Convert that edge into a
-vertical world height whose projected screen length equals one projected ground edge.
+`cube` is the only node form. Choose one `canvas.cube_size` for the scene and center one cubical mass
+with exactly that edge inside every declared collision envelope. Convert the shared edge into a
+vertical world height whose projected screen length equals one projected ground edge. A node's role,
+importance, footprint, status, or resource type must never change its cube size.
 
 Do not encode service meaning through architectural silhouettes. Use the top-face mark, family palette,
 short code, position, paths, and evidence. A design-language change may alter face treatment, material,
@@ -67,6 +68,17 @@ A node position is the back-left origin of its grid footprint. Treat footprints 
 Two resource envelopes collide when those intervals overlap with positive area on both axes. Checking only
 identical anchor points is insufficient. Also reserve visual clearance for labels and high-traffic
 routes.
+
+## Evidence-backed containment areas
+
+Use a VNet area when source evidence says several represented resources attach to the same virtual
+network. The area boundary is the bounding rectangle of every member's complete footprint plus the
+declared padding. Include the represented VNet cube and each proven contained resource in
+`member_ids`. The padded boundary must stay inside the ground plane.
+
+Draw areas on the terrain below routes and cubes. Give active and held areas distinguishable boundary
+treatments without relying only on color. Do not substitute a compositional zone, a VNet label, or a
+network path for containment geometry. Do not add a member merely because it is visually nearby.
 
 ## Depth order
 
@@ -147,8 +159,9 @@ The isometric image should dominate. A strong default composition is:
 ## Visual verification checklist
 
 - The ground axes use one consistent 2:1 projection.
-- Every node is one cube with coherent roof and wall faces.
+- Every node is one cube with the same scene-wide edge and coherent roof and wall faces.
 - Each cube's projected vertical and ground edges are equal within rendering tolerance.
+- Every sourced VNet area encloses the full footprints of all declared members.
 - Farther cubes do not incorrectly cover nearer cubes.
 - Routes sit on the same projected terrain as cubes.
 - Paths do not cut through unrelated footprints.

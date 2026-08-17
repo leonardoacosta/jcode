@@ -11,7 +11,8 @@ grammar. The surrounding interface and exact palette are incidental.
 | repository facts and evidence | palette and contrast |
 | node identities and ownership | face fills, hatching, gradients, texture |
 | grid coordinates and footprints | grid visibility and line weight |
-| one-cube node geometry and relative scale | corner sharpness, roof detail, shadows |
+| one global cube size and one-cube node geometry | corner sharpness, roof detail, shadows |
+| VNet area membership and derived bounds | area fill, line pattern, label treatment |
 | route geometry and direction | stroke pattern, color, markers, glow |
 | payload identity and flow order | dot shape, trail, cadence, easing |
 | depth sorting | atmospheric depth and surface treatment |

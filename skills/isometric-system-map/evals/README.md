@@ -12,10 +12,12 @@ Both Bicep cases now exercise the Azure topology resource-block adapter requeste
 maps. The graders should look for:
 
 - exact ARM `resource_type` metadata where source evidence identifies a concrete Azure service;
-- package-admitted line-art icons embedded into the generated HTML and projected onto the highest roof
-  face of each resource block;
-- one true cube for every node, centered inside its routing envelope, with no architectural silhouettes
-  or compound masses;
+- package-admitted line-art icons embedded into the generated HTML and projected onto the roof face of
+  each resource cube;
+- one required `canvas.cube_size` shared by every node, with one true cube centered inside each routing
+  envelope and no per-node scale, architectural silhouette, or compound mass;
+- sourced VNet terrain areas whose `member_ids` include the represented VNet cube and every evidenced
+  contained resource, with the complete member envelopes visibly inside the derived area bounds;
 - the Azure semantic family fills and strokes plus connector color, pattern, direction, and arrow
   treatment from `assets/azure-tokens.json`;
 - the isometric terrain as the focal image, without copied dashboard rails, metrics, or fixed panels.
@@ -28,7 +30,9 @@ more specific Bicep resource-identification and roof-mark behavior.
 Both cases use the same Canvas-first rendering architecture. Verify three separate scene layers,
 stable scene identity across theme logic, native DOM mirrors for Canvas targets, timestamp-based
 payload motion, and no live animation frame while paused or under reduced motion. Runtime diagnostics
-must report the expected icon count, loaded icon count, and rendered node IDs.
+must report the expected icon count, loaded icon count, rendered node IDs, one identical cube edge for
+all nodes, and each VNet area's member IDs plus derived bounds. Native semantic controls must cover
+areas as well as nodes and paths.
 
 Because both fixtures are infrastructure repositories, graders also check semantic restraint. Bicep
 module wiring can support deployment, dependency, network, identity, and telemetry claims, but it must
@@ -38,8 +42,10 @@ support the rendered source, target, path kind, and payload together.
 
 The executor should keep the skill's requirement-to-geometry ledger in its run notes. Graders should
 reject prose-only coverage when the prompt requires distinct environment objects, sourced scope or
-ownership boundaries, a hub plus a smaller overlay, an external prerequisite, or an exact contract
-name/flag such as `subscriptionRequired` or `decus-partners`.
+ownership boundaries, VNet containment, a hub plus a smaller overlay, an external prerequisite, or an
+exact contract name/flag such as `subscriptionRequired` or `decus-partners`. A VNet cube or network
+path alone does not satisfy a containment requirement; the contained resources must be members of a
+sourced VNet area.
 
 Run each prompt once with the skill and once without it in the same evaluation wave. Save full
 artifacts, screenshots, transcripts, timing, and citation-level grading outside the public repository.

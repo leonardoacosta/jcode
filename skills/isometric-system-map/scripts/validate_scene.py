@@ -51,6 +51,7 @@ NODE_ROLES = {
 }
 NODE_FORMS = {"cube"}
 NODE_STATUSES = {"active", "conditional", "held", "external", "deprecated"}
+AREA_KINDS = {"vnet"}
 PATH_KINDS = {
     "control",
     "data",
@@ -219,6 +220,7 @@ def validate_scene(document: Any) -> list[str]:
             "art_direction",
             "canvas",
             "zones",
+            "areas",
             "nodes",
             "paths",
             "payloads",
@@ -300,12 +302,13 @@ def validate_scene(document: Any) -> list[str]:
 
     canvas = document.get("canvas")
     grid_width = grid_depth = 0
+    cube_size = 0.0
     if not isinstance(canvas, dict):
         errors.append("$.canvas: required object")
     else:
         _unknown_keys(
             canvas,
-            {"grid_width", "grid_depth", "tile_width", "tile_height"},
+            {"grid_width", "grid_depth", "tile_width", "tile_height", "cube_size"},
             "canvas",
             errors,
         )
@@ -322,6 +325,10 @@ def validate_scene(document: Any) -> list[str]:
             grid_width = canvas["grid_width"]
         if isinstance(canvas.get("grid_depth"), int):
             grid_depth = canvas["grid_depth"]
+        if not _is_half_step(canvas.get("cube_size")) or not 0.5 <= float(canvas["cube_size"]) <= 2:
+            errors.append("canvas.cube_size: half-grid number from 0.5 to 2 required")
+        else:
+            cube_size = float(canvas["cube_size"])
         if (
             isinstance(canvas.get("tile_width"), int)
             and isinstance(canvas.get("tile_height"), int)
@@ -377,7 +384,6 @@ def validate_scene(document: Any) -> list[str]:
                 "zone",
                 "position",
                 "footprint",
-                "height",
                 "status",
                 "description",
                 "evidence",
@@ -428,9 +434,9 @@ def validate_scene(document: Any) -> list[str]:
                 value = footprint.get(key)
                 if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= 4:
                     errors.append(f"{path}.footprint.{key}: integer from 1 to 4 required")
-        height = node.get("height")
-        if not _is_number(height) or not 0.5 <= float(height) <= 6:
-            errors.append(f"{path}.height: number from 0.5 to 6 required")
+            if cube_size and all(isinstance(footprint.get(key), int) for key in ("width", "depth")):
+                if min(footprint["width"], footprint["depth"]) < cube_size:
+                    errors.append(f"{path}.footprint: must contain canvas.cube_size {cube_size:g}")
 
         node_id = node.get("id")
         if isinstance(node_id, str):
@@ -449,6 +455,72 @@ def validate_scene(document: Any) -> list[str]:
                         )
                 valid_nodes.append((index, node, rect))
                 node_rects[node_id] = rect
+
+    areas = document.get("areas")
+    if not isinstance(areas, list):
+        errors.append("$.areas: required list with at most 8 sourced containment areas")
+        areas = []
+    elif len(areas) > 8:
+        errors.append("$.areas: maximum 8 sourced containment areas")
+    area_ids: set[str] = set()
+    for index, area in enumerate(areas):
+        path = f"areas[{index}]"
+        if not isinstance(area, dict):
+            errors.append(f"{path}: must be an object")
+            continue
+        _unknown_keys(
+            area,
+            {"id", "label", "kind", "status", "member_ids", "padding", "description", "evidence"},
+            path,
+            errors,
+        )
+        _validate_id(area.get("id"), f"{path}.id", errors)
+        for key in ("label", "description"):
+            _required_string(area, key, path, errors)
+        if area.get("kind") not in AREA_KINDS:
+            errors.append(f"{path}.kind: must be one of {sorted(AREA_KINDS)}")
+        if area.get("status") not in NODE_STATUSES:
+            errors.append(f"{path}.status: must be one of {sorted(NODE_STATUSES)}")
+        _validate_evidence(area.get("evidence"), f"{path}.evidence", errors)
+
+        area_id = area.get("id")
+        if isinstance(area_id, str):
+            if area_id in area_ids:
+                errors.append(f"{path}.id: duplicate area id '{area_id}'")
+            area_ids.add(area_id)
+
+        padding = area.get("padding")
+        valid_padding = _is_half_step(padding) and 0 <= float(padding) <= 2
+        if not valid_padding:
+            errors.append(f"{path}.padding: half-grid number from 0 to 2 required")
+
+        member_ids = area.get("member_ids")
+        member_rects: list[dict[str, float]] = []
+        if not isinstance(member_ids, list) or not member_ids:
+            errors.append(f"{path}.member_ids: requires 1-20 node ids")
+        elif len(member_ids) > 20:
+            errors.append(f"{path}.member_ids: maximum 20 node ids")
+        else:
+            seen_members: set[str] = set()
+            for member_index, member_id in enumerate(member_ids):
+                member_path = f"{path}.member_ids[{member_index}]"
+                if member_id in seen_members:
+                    errors.append(f"{member_path}: duplicate node id '{member_id}'")
+                seen_members.add(member_id)
+                rect = node_rects.get(member_id)
+                if rect is None:
+                    errors.append(f"{member_path}: references unknown node '{member_id}'")
+                else:
+                    member_rects.append(rect)
+
+        if member_rects and valid_padding and grid_width and grid_depth:
+            pad = float(padding)
+            left = min(rect["x"] for rect in member_rects) - pad
+            back = min(rect["y"] for rect in member_rects) - pad
+            right = max(rect["x"] + rect["width"] for rect in member_rects) + pad
+            front = max(rect["y"] + rect["depth"] for rect in member_rects) + pad
+            if left < 0 or back < 0 or right > grid_width or front > grid_depth:
+                errors.append(f"{path}: padded member bounds extend beyond the canvas")
 
     payloads = document.get("payloads")
     if not isinstance(payloads, list):

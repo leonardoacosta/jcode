@@ -184,7 +184,7 @@
     <section class="canvas-stage" data-scene-sha256="__SCENE_HASH__" aria-label="Interactive isometric terrain">
       <canvas data-layer="terrain" aria-hidden="true"></canvas>
       <canvas data-layer="architecture" aria-hidden="true"></canvas>
-      <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect resource cubes and paths."></canvas>
+      <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect VNet areas, resource cubes, and paths."></canvas>
       <div class="fallback-copy sr-only" role="group" aria-label="Inspectable map elements">
         __FALLBACK_BUTTONS__
       </div>
@@ -233,6 +233,7 @@
       originX: 0,
       originY: 0,
       heightUnit: 22,
+      areaHits: [],
       nodeHits: [],
       pathHits: [],
       routeGeometry: new Map(),
@@ -247,6 +248,7 @@
       resizeRaf: null,
       activeFlowId: SCENE.flows[0]?.id || null,
       renderedIcons: [],
+      areaGeometry: [],
       nodeGeometry: [],
     };
 
@@ -378,7 +380,7 @@
     function cubeMassFor(node) {
       const width = node.footprint.width;
       const depth = node.footprint.depth;
-      const cubeEdge = Math.min(width, depth, node.height);
+      const cubeEdge = SCENE.canvas.cube_size;
       const projectedEdge = Math.hypot(state.tileWidth / 2, state.tileHeight / 2);
       const projectedHeight = cubeEdge * projectedEdge / state.heightUnit;
       return {
@@ -395,6 +397,16 @@
 
     function massesFor(node) {
       return [cubeMassFor(node)];
+    }
+
+    function areaRect(area) {
+      const members = area.member_ids.map(id => SCENE.nodes.find(node => node.id === id));
+      const padding = area.padding;
+      const left = Math.min(...members.map(node => node.position.x)) - padding;
+      const back = Math.min(...members.map(node => node.position.y)) - padding;
+      const right = Math.max(...members.map(node => node.position.x + node.footprint.width)) + padding;
+      const front = Math.max(...members.map(node => node.position.y + node.footprint.depth)) + padding;
+      return { x: left, y: back, width: right - left, depth: front - back };
     }
 
     function depthKey(node) {
@@ -485,6 +497,28 @@
         const path = polylinePath([project(0, y), project(SCENE.canvas.grid_width, y)]);
         THEME.drawGridLine(ctx, path, y === 0 || y === SCENE.canvas.grid_depth, state);
       }
+      state.areaHits = [];
+      state.areaGeometry = [];
+      SCENE.areas.forEach(area => {
+        const rect = areaRect(area);
+        const points = [
+          project(rect.x, rect.y),
+          project(rect.x + rect.width, rect.y),
+          project(rect.x + rect.width, rect.y + rect.depth),
+          project(rect.x, rect.y + rect.depth),
+        ];
+        const path = polygonPath(points);
+        const labelPoint = project(rect.x + rect.width / 2, rect.y, 0);
+        THEME.drawArea(ctx, path, area, labelPoint, state);
+        state.areaHits.push({ item: area, path, points });
+        state.areaGeometry.push({
+          id: area.id,
+          kind: area.kind,
+          status: area.status,
+          memberIds: [...area.member_ids],
+          bounds: { ...rect },
+        });
+      });
       const nodesByZone = new Map();
       SCENE.nodes.forEach(node => {
         if (!nodesByZone.has(node.zone)) nodesByZone.set(node.zone, []);
@@ -554,6 +588,7 @@
           depth: cube.depth,
           projectedGroundEdge: cube.cubeEdge * Math.hypot(state.tileWidth / 2, state.tileHeight / 2),
           projectedVerticalEdge: cube.height * state.heightUnit,
+          cubeEdge: cube.cubeEdge,
         });
         if (drawNodeIcon(ctx, node, iconRoof, iconMass)) state.renderedIcons.push(node.id);
         const labelPoint = project(
@@ -583,7 +618,9 @@
         : "";
       const relationship = target.kind === "path"
         ? `${item.from} → ${item.to} · ${item.kind}`
-        : `${item.role} · ${item.status}`;
+        : target.kind === "area"
+          ? `${item.kind} area · ${item.status}`
+          : `${item.role} · ${item.status}`;
       return [relationship, item.description || item.label, evidence].filter(Boolean);
     }
 
@@ -616,9 +653,12 @@
 
     function drawFocusTarget(ctx, target, mode) {
       if (!target) return;
-      const record = target.kind === "node"
-        ? state.nodeHits.find(candidate => candidate.item.id === target.item.id)
-        : state.pathHits.find(candidate => candidate.item.id === target.item.id);
+      const records = target.kind === "node"
+        ? state.nodeHits
+        : target.kind === "area"
+          ? state.areaHits
+          : state.pathHits;
+      const record = records.find(candidate => candidate.item.id === target.item.id);
       if (!record) return;
       THEME.drawSelection(ctx, record.path, target.kind, mode, target.item, state);
       const button = targetButton(target);
@@ -716,6 +756,12 @@
           return { kind: "path", item: candidate.item };
         }
       }
+      for (let index = state.areaHits.length - 1; index >= 0; index -= 1) {
+        const candidate = state.areaHits[index];
+        if (hitContext.isPointInPath(candidate.path, point.x, point.y)) {
+          return { kind: "area", item: candidate.item };
+        }
+      }
       return null;
     }
 
@@ -791,6 +837,7 @@
       return {
         theme: THEME.name,
         sceneHash: document.body.dataset.sceneSha256,
+        areaCount: state.areaHits.length,
         nodeCount: state.nodeHits.length,
         pathCount: state.pathHits.length,
         fallbackTargetCount: fallbackButtons.length,
@@ -802,6 +849,11 @@
         iconCount: Object.keys(ICON_SVGS).length,
         loadedIconCount: iconImages.size,
         renderedIcons: [...state.renderedIcons],
+        areaGeometry: state.areaGeometry.map(item => ({
+          ...item,
+          memberIds: [...item.memberIds],
+          bounds: { ...item.bounds },
+        })),
         nodeGeometry: state.nodeGeometry.map(item => ({ ...item })),
         selected: targetKey(state.selected) || null,
         hovered: targetKey(state.hovered) || null,
@@ -852,7 +904,8 @@
 
     fallbackButtons.forEach(button => {
       const kind = button.dataset.targetKind;
-      const item = (kind === "node" ? SCENE.nodes : SCENE.paths)
+      const items = kind === "node" ? SCENE.nodes : kind === "area" ? SCENE.areas : SCENE.paths;
+      const item = items
         .find(candidate => candidate.id === button.dataset.targetId);
       const target = { kind, item };
       button.addEventListener("focus", () => selectTarget(target));

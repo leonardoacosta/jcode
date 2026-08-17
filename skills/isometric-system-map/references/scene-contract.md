@@ -15,6 +15,7 @@ Unknown fields are rejected so dashboard chrome cannot leak into the reusable sc
   "art_direction": {},
   "canvas": {},
   "zones": [],
+  "areas": [],
   "nodes": [],
   "paths": [],
   "payloads": [],
@@ -92,13 +93,15 @@ semantics legible in grayscale and static exports.
   "grid_width": 16,
   "grid_depth": 12,
   "tile_width": 64,
-  "tile_height": 32
+  "tile_height": 32,
+  "cube_size": 1
 }
 ```
 
 `tile_width` must be exactly twice `tile_height`. Node positions and route points use grid
 coordinates. A route may use half-grid points. The renderer chooses the screen origin and how many
-pixels one semantic height unit represents.
+pixels one semantic height unit represents. `cube_size` is one required half-grid value from 0.5 to 2.
+It is the edge of every node cube in the scene. Cube size cannot vary per node.
 
 ## Zones
 
@@ -114,6 +117,37 @@ A zone is a visual grouping aid:
 
 Do not treat zones as sourced cloud containment unless the map text and evidence say so.
 
+## Areas
+
+An area is an evidence-backed containment surface, not a loose compositional region. The current
+contract admits VNet areas:
+
+```json
+{
+  "id": "runtime-vnet",
+  "label": "Runtime VNet",
+  "kind": "vnet",
+  "status": "active",
+  "member_ids": ["runtime-vnet-node", "app", "database"],
+  "padding": 0.5,
+  "description": "Private runtime attachment area.",
+  "evidence": [
+    {
+      "path": "infra/network/main.bicep",
+      "lines": "1-72",
+      "claim": "The application and database attach to the runtime VNet."
+    }
+  ]
+}
+```
+
+`areas` is required and may be empty. A scene can contain at most eight areas. Each VNet area has one
+to twenty unique node IDs, half-grid padding from 0 to 2, a normal node status, and direct evidence.
+The renderer derives the area rectangle from the complete footprints of all members plus padding. The
+padded rectangle must remain inside the canvas. Include the represented VNet cube itself in
+`member_ids`, then add only resources whose network containment is supported by evidence. Every area
+is mirrored to a native semantic control and included in runtime geometry diagnostics.
+
 ## Nodes
 
 ```json
@@ -126,7 +160,6 @@ Do not treat zones as sourced cloud containment unless the map text and evidence
   "zone": "runtime",
   "position": { "x": 8, "y": 4 },
   "footprint": { "width": 2, "depth": 1 },
-  "height": 1,
   "status": "active",
   "resource_type": "Microsoft.Sql/servers/databases",
   "icon": "az-sql-database",
@@ -162,8 +195,8 @@ concrete Azure resource or a CI/CD primitive:
   `compute`, `data`, `identity`, `integration`, `network`, `monitor`, `governance`, or `devops`
   family.
 
-The Azure Canvas theme projects the selected line-art mark onto the highest roof face of the node's
-simple block. The sprite is package-local self-authored stand-in line art, not official Microsoft
+The Azure Canvas theme projects the selected line-art mark onto the roof face of the node's uniform
+cube. The sprite is package-local self-authored stand-in line art, not official Microsoft
 logo artwork. See [`../assets/PROVENANCE.md`](../assets/PROVENANCE.md).
 
 Omit these fields for non-Azure scenes or when the resource cannot be identified confidently. Never
@@ -188,10 +221,10 @@ held.
 ### Geometry
 
 `position` is the back-left grid origin of the footprint. Footprints are 1-4 cells on each axis and
-act as collision and routing envelopes. `height` is the maximum cube edge in grid units. The renderer
-uses the smallest of width, depth, and height, centers that cube inside the envelope, and derives the
-vertical projection required for equal screen-space edges.
-Height is 0.5-6 semantic units. The validator detects positive-area footprint overlap and bounds.
+act only as collision, routing, and spacing envelopes. Every footprint must contain
+`canvas.cube_size`. The renderer centers one cube of exactly that global edge inside the envelope and
+derives the vertical projection required for equal screen-space edges. Per-node `height` and scale
+fields are rejected. The validator detects positive-area footprint overlap and bounds.
 
 ## Evidence objects
 

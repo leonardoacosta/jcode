@@ -36,10 +36,10 @@ python3 skills/isometric-system-map/scripts/render_canvas.py \
 
 ## Keep scene facts out of drawing code
 
-The renderer may calculate projected points, faces, local masses, hit regions, and animation positions. It must not infer repository facts or silently rewrite:
+The renderer may calculate projected points, cube faces, area polygons, hit regions, and animation positions. It must not infer repository facts or silently rewrite:
 
 - node identity, role, status, ownership, or evidence;
-- grid position, footprint, or semantic height;
+- grid position, footprint, scene-wide cube size, or containment membership;
 - path endpoints, kind, explicit route, or payload membership;
 - flow order or step evidence;
 - art-direction principles and path treatments.
@@ -94,7 +94,8 @@ roof.closePath();
 nodeHits.push({ item: node, path: roof });
 ```
 
-Build one combined `Path2D` per node from all visible masses and one `Path2D` per explicit route. Reuse the same objects for:
+Build one combined `Path2D` per node from its three visible cube faces, one per sourced area, and one
+per explicit route. Reuse the same objects for:
 
 - drawing;
 - hover and click hit testing;
@@ -115,12 +116,12 @@ Use a generous invisible route hit width. Do not make users hit a one-pixel line
 
 ## True resource cubes
 
-Render every node as one cube. The footprint remains a collision and routing envelope, so a cube may
-be centered inside a wider reserved area. Use the smallest declared dimension as its edge, then derive
-the world-space vertical height from the projected ground edge:
+Render every node as one identically sized cube. The footprint remains a collision and routing
+envelope, so the shared cube may be centered inside a wider reserved area. Read its edge only from
+`scene.canvas.cube_size`, then derive the world-space vertical height from the projected ground edge:
 
 ```js
-const cubeEdge = Math.min(node.footprint.width, node.footprint.depth, node.height);
+const cubeEdge = scene.canvas.cube_size;
 const projectedEdge = Math.hypot(tileWidth / 2, tileHeight / 2);
 const projectedHeight = cubeEdge * projectedEdge / heightUnit;
 
@@ -133,9 +134,30 @@ const mass = {
 };
 ```
 
-This makes the two projected ground edges and the vertical edge equal in screen space. Do not branch
-on role or resource type to create towers, stacks, gateways, or compound masses. Sort cubes by the far
-edge of their declared envelopes, then draw left, right, and roof faces.
+This makes the two projected ground edges and the vertical edge equal in screen space. The validator
+ensures every footprint can contain the shared edge. Do not branch on role, resource type, footprint,
+status, or importance to change cube size or create towers, stacks, gateways, or compound masses. Sort
+cubes by the far edge of their declared envelopes, then draw left, right, and roof faces.
+
+## VNet containment areas
+
+Render each sourced VNet area on the terrain layer before routes and cubes. Derive its rectangle from
+the full member envelopes so the visible boundary proves containment:
+
+```js
+function areaRect(area, scene) {
+  const members = area.member_ids.map(id => scene.nodes.find(node => node.id === id));
+  const left = Math.min(...members.map(node => node.position.x)) - area.padding;
+  const back = Math.min(...members.map(node => node.position.y)) - area.padding;
+  const right = Math.max(...members.map(node => node.position.x + node.footprint.width)) + area.padding;
+  const front = Math.max(...members.map(node => node.position.y + node.footprint.depth)) + area.padding;
+  return { x: left, y: back, width: right - left, depth: front - back };
+}
+```
+
+Retain one `Path2D` per area for pointer hit testing and focus outlines. Mirror every area to a native
+button just like nodes and paths. Runtime diagnostics should report each area's ID, kind, status,
+member IDs, and derived bounds.
 
 ## Project line-art marks onto roof faces
 

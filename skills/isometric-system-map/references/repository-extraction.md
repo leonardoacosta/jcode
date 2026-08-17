@@ -38,7 +38,8 @@ Build a temporary inventory with these columns:
 | representation | Which node, path, status, or evidenced boundary will make this fact visible? |
 | evidence | Exact path, lines, and supported claim? |
 
-Only after this inventory is coherent should you select scene nodes and cube scales.
+Only after this inventory is coherent should you select scene nodes, one global cube size, reserved
+footprints, and sourced containment areas.
 
 ## Bicep and Azure Pipelines
 
@@ -62,7 +63,8 @@ when or why it deploys.
 | pipeline stage/job invoking Bicep | `pipeline` node, `delivery` or `control` path |
 | approval or policy boundary | `governance` cube or control path |
 | root/reusable Bicep module | `module` node |
-| VNet, subnet, NSG, route, PE, private DNS | `network` node or network path |
+| VNet plus attached resources | sourced `vnet` area with the VNet cube and attached resources in `member_ids` |
+| subnet, NSG, route, PE, private DNS | `network` node or network path; also a VNet-area member when attachment is directly evidenced |
 | App Service, Function, container, VM | `compute` node |
 | SQL, storage, cache, analytics | `data` node |
 | Service Bus, topic, queue, event service | `messaging` node |
