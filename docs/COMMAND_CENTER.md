@@ -2,11 +2,12 @@
 
 Status: experimental vertical-slice implementation for OpenSpec change `add-solidstart-command-center-vertical-slice`.
 
-The Command Center is the browser-first supervision surface for Jcode initiatives. The approved first slice is a Jcode-daemon-hosted SolidStart application that shows durable initiative intent beside linked live execution state.
+The Command Center is the browser-first supervision surface for Jcode initiatives. The approved deployment is an API-only Jcode daemon on `43118` plus a standalone React/Vite UI service on `43119` that shows durable initiative intent beside linked live execution state.
 
 ## Authority model
 
-- The Jcode daemon owns authentication, browser hosting, snapshots, commands, ordered events, durable initiatives, linked schedules, Jcode run records, permissions, and rollback.
+- The Jcode daemon owns the `/api/command-center/*` surface, authentication, snapshots, commands, ordered events, durable initiatives, linked schedules, Jcode run records, permissions, and rollback. It does not serve UI assets or browser routes.
+- The standalone UI service owns only immutable built assets, SPA fallback, `/healthz`, and the same-origin API proxy. It has no domain database or lifecycle authority.
 - Orca owns executable project identity and live runtime identity. Jcode stores canonical Orca references, normalized observations, correlations, evidence, and outcomes.
 - The SolidStart client owns only layout, focus, filters, selections, scroll position, transient drafts, and other reversible interface state.
 - The terminal Context Control Room remains a lightweight inspector. It is not a second command-center implementation.
@@ -47,13 +48,12 @@ The daemon lifecycle reads these experimental environment variables:
 |---|---|---|
 | `JCODE_COMMAND_CENTER_ENABLED` | unset/disabled | Set to `1`, `true`, or `yes` to start the managed host. |
 | `JCODE_COMMAND_CENTER_BIND_ADDR` | `127.0.0.1:0` | Loopback listener address. Use a fixed port for acceptance or SSH forwarding. |
-| `JCODE_COMMAND_CENTER_ASSET_DIR` | unset | Path to the built SolidStart `.output/public` directory. |
 | `JCODE_COMMAND_CENTER_ALLOWED_ORIGINS` | empty | Comma-separated browser origins. The bound loopback origin is added automatically when empty. |
 | `JCODE_COMMAND_CENTER_AUTHENTICATED_REMOTE` | disabled | Required together with an allowlist before any non-loopback bind is accepted. |
 | `JCODE_DECISION_INBOX_DB` | `$JCODE_HOME/intake/decision-inbox.sqlite` | Optional override for the provider-neutral durable Inbox store shared by Telegram, Slack, and the Command Center read model. |
 | `JCODE_ORCA_CLI` | `orca` | Orca CLI executable. On the managed Linux host this is normally `/home/nyaptor/.local/bin/orca-ide`. |
 
-The host is owned by the daemon runtime task scope. Daemon shutdown and reload cancel the lifecycle task, gracefully stop the HTTP listener, and release the port. There is no independently managed Node service in the deployed topology.
+The API host is owned by the daemon runtime task scope. Daemon shutdown and reload cancel the lifecycle task, gracefully stop the HTTP listener, and release port `43118`. UI lifecycle is independently owned by `jcode-command-center.service` on port `43119`.
 
 ## Standalone topology
 
@@ -95,8 +95,7 @@ curl --fail http://127.0.0.1:43119/healthz
 Configuration lives in `~/.config/jcode-command-center.env`. The supported
 installer overrides are `JCODE_COMMAND_CENTER_UI_BIND`,
 `JCODE_COMMAND_CENTER_API_URL`, and `JCODE_COMMAND_CENTER_INSTALL_ROOT`.
-The existing daemon-hosted asset mode remains available as a compatibility
-fallback, but it is no longer the preferred UI deployment path.
+The daemon no longer accepts embedded/static UI configuration. Requests for `/`, client-side routes, and legacy asset paths on `43118` return `404`; only `/api/command-center/*` is served there. The standalone UI service is the only UI deployment path.
 
 ## Browser sessions
 
@@ -126,7 +125,7 @@ The following matrix records the observed result for each changed public boundar
 |---|---|---|
 | Rust protocol metadata, owned IDs, snapshots, commands, typed errors, scoped replay, and generated TypeScript | `cargo test -p jcode-command-center --lib` and `bash scripts/check-command-center-contracts.sh` | 20 Rust tests passed. Generated TypeScript matched the Rust DTO generator with no drift. Unknown events, cursor scope, replay gaps, serialization, and ID ownership were covered. |
 | Disabled-by-default, loopback-only listener posture, remote-bind rejection, browser sessions, CSRF, origin, expiry, content type, and security headers | Command Center HTTP host tests plus `bash scripts/test-command-center-security.sh` against the isolated managed daemon | Host tests passed. The real protected API rejected unauthenticated access and the security script passed without exposing provider credentials or reusable browser secrets. |
-| Daemon-owned startup, static SPA hosting, deep-route fallback, shutdown, and port release | Start an isolated `target/selfdev/jcode` with unique `XDG_RUNTIME_DIR`, `JCODE_HOME`, `JCODE_SOCKET`, fixed loopback port, and built `.output/public`; request `/initiatives`; stop the daemon; probe the port | The daemon served the SolidStart route from the managed listener. Shutdown terminated the host and released the configured port. No independent Node listener was used. |
+| API-only daemon startup, Command Center API routes, legacy-route rejection, shutdown, and port release | Start an isolated `target/selfdev/jcode` with unique `XDG_RUNTIME_DIR`, `JCODE_HOME`, `JCODE_SOCKET`, and fixed loopback port; call `/api/command-center/bootstrap`, request `/` and `/initiatives`, stop the daemon, and probe the port | The daemon preserved `/api/command-center/*`, rejected embedded/static UI routes with `404`, and released the configured port on shutdown. |
 | Durable initiative list/detail/update/checkpoint and revision/idempotency behavior | `cargo test -p jcode-app-core command_center --lib`, Command Center domain tests, Solid interaction tests, and Playwright update/checkpoint workflows | Goal-backed reads and revision-checked saves passed. The UI showed pending state and installed the authoritative replacement snapshot after step and checkpoint commands. |
 | Telegram and Slack Decision Inbox projection | Focused tests for `jcode-intake-types`, `jcode-intake-telegram`, `jcode-intake-slack`, and `jcode-command-center`; Solid component tests; deterministic Playwright content acceptance; isolated managed-host acceptance | Provider-neutral normalization, source identity, restart persistence, deduplication, reconnect redelivery, credential redaction, authenticated HTTP projection, responsive UI rendering, and empty/failure behavior passed. Live provider ingestion remains credential-gated and is not claimed by repository fixtures. |
 | Linked ambient schedule and persisted Jcode run projections | App-core Command Center tests and Playwright schedule/run deep-link workflows | Matching ambient evidence and persisted run references were projected without moving schedule or run authority into the frontend. Schedule evidence and stable run links rendered. |
@@ -187,7 +186,7 @@ If a threshold is exceeded, keep the feature behind the experimental flag and do
 
 Repository-local functional measurements are recorded, but task 7.6 remains open until the complete threshold suite runs on the managed homelab hardware. The current evidence is:
 
-- Production SolidStart packaging succeeds and is served directly from `.output/public` by the Rust-managed host. There is no independently exposed Node listener or second workflow authority.
+- Production SolidStart packaging succeeds and is served by the standalone UI service. The Rust-managed host exposes only the Command Center API, so there is no embedded asset copy or second domain authority.
 - The real isolated daemon reached the protected API and rendered an authenticated browser deep link successfully.
 - Listener shutdown released the configured port and left no managed Command Center child process.
 - The 10,000-event client fixture remains bounded to 40 rendered timeline rows through virtualization.
@@ -196,12 +195,13 @@ Repository-local functional measurements are recorded, but task 7.6 remains open
 - The live systemd-managed endpoint returned 100 initiative-route requests at 0.344 ms P95 HTTP latency. This is transport evidence, not a substitute for daemon-event-to-render latency.
 - Event-to-render P95 and reconnect-to-authoritative-state P95 remain unmeasured on the managed topology. Task 7.6 therefore remains open rather than inferring those results from fixture timing.
 
-The rejected alternative is a daemon-supervised SolidStart server process. It would add a second private listener, extra packaging and shutdown state, and no benefit for this client-rendered slice. The selected topology builds static assets once and keeps all HTTP, authentication, commands, events, and lifecycle ownership in the Rust daemon.
+The rejected alternative is daemon-hosted static UI serving. It coupled UI releases to the Jcode binary and made the API listener serve two unrelated responsibilities. The selected topology builds static assets in the standalone service, keeps API authentication and durable state in the Rust daemon, and gives each listener one clear responsibility.
 
-Release deployment runs `scripts/install_command_center_assets.sh` from the exact
-detached commit, installs regular asset files at
-`~/.jcode/command-center/public`, and only then reloads the managed Jcode daemon.
-Frontend-only commits participate in the same post-commit deployment queue.
+Release deployment runs `install-command-center.sh` from the exact detached
+commit to build and atomically activate the standalone UI release, then installs
+the Jcode binary. No asset bundle is copied into the daemon's home or binary
+release. Frontend-only commits participate in the same post-commit deployment
+queue.
 
 ## Operations
 
@@ -212,23 +212,20 @@ Frontend-only commits participate in the same post-commit deployment queue.
 
 ### Install, enable, inspect, and reload
 
-From the repository root, the normal standalone asset and binary deployment is:
+From the repository root, the normal standalone UI and binary deployment is:
 
 ```bash
-./scripts/install_command_center_assets.sh
+./install-command-center.sh
 ./scripts/install_release.sh              # release-lto by default
 # ./scripts/install_release.sh --fast     # use the non-LTO release profile
 ```
 
-The asset destination can be overridden with `JCODE_COMMAND_CENTER_ASSET_DEST`.
-The daemon reads the installed bundle through `JCODE_COMMAND_CENTER_ASSET_DIR`
-when an alternate location is required. Enable the experimental host explicitly
-and choose a fixed loopback port when operating it manually:
+Enable the experimental API host explicitly and choose a fixed loopback port
+when operating it manually:
 
 ```bash
 export JCODE_COMMAND_CENTER_ENABLED=1
 export JCODE_COMMAND_CENTER_BIND_ADDR=127.0.0.1:43118
-export JCODE_COMMAND_CENTER_ASSET_DIR="$HOME/.jcode/command-center/public"
 jcode server reload
 ```
 
@@ -238,20 +235,22 @@ Useful operational checks are:
 jcode --version
 readlink -f "$HOME/.local/bin/jcode"
 readlink -f "$HOME/.jcode/builds/current/jcode"
-curl --fail http://127.0.0.1:43118/initiatives
+curl --fail http://127.0.0.1:43118/api/command-center/bootstrap \
+  -H 'content-type: application/json' -d '{}'
 jcode server reload
 ```
 
 The HTTP request is only a listener/route check. Protected API calls still
 require a scoped browser session and must be exercised through the acceptance
-or security gates. If a reload is not desired during an install, set
+or security gates. The daemon's `/` and client-side routes intentionally return
+`404`. If a reload is not desired during an install, set
 `JCODE_SKIP_SERVER_RELOAD=1` and reload explicitly after confirming the binary
 and asset paths.
 
 For commit-driven deployment, `scripts/install_deploy_hook.sh` installs the
 post-commit hook. Build-affecting commits are rebuilt in a detached worktree,
-assets are installed, the release is installed, and the shared daemon is
-reloaded. `JCODE_NO_DEPLOY=1 git commit ...` skips the hook for one commit;
+the standalone UI release is installed, the Jcode release is installed, and the
+shared daemon is reloaded. `JCODE_NO_DEPLOY=1 git commit ...` skips the hook for one commit;
 `JCODE_DEPLOY_FORCE=1 git commit ...` forces the deployment path. Inspect
 `target/deploy.log` when the asynchronous worker reports a failure.
 

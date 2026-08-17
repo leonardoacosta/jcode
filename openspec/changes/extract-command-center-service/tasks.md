@@ -13,12 +13,13 @@
 
 ## 3. Compatibility and documentation
 
-- [x] 3.1 Keep the daemon-hosted asset mode available as an explicit fallback and document the standalone service as the preferred deployment topology.
+- [x] 3.1 Make the Jcode listener API-only, reject legacy/static UI routes, and document the standalone service as the only UI deployment topology.
 - [x] 3.2 Document configuration, status/log commands, upgrades, rollback behavior, and uninstall steps.
 
 ## 4. Verification
 
-- [ ] 4.1 Run Command Center formatting, lint, typecheck, component tests, server tests, and production build. Formatting, typecheck, server tests, and build pass; the pre-existing component suite currently has four failures in concurrently modified UI files outside this change.
+- [ ] 4.1 Run Command Center formatting, lint, typecheck, component tests, server tests, production build, daemon API checks, legacy-route rejection, standalone service checks, and public UI acceptance.
 - [x] 4.2 Run installer contract tests and strict OpenSpec validation.
 - [x] 4.3 Install the real user service and verify enabled/active state, `/healthz`, SPA loading, API bridge behavior, failed-process restart, and re-run upgrade behavior.
 - [x] 4.4 Verify the Jcode binary checksum is unchanged across a UI-only install.
+- [x] 4.5 Remove the obsolete daemon asset installer and post-commit asset-copy path after verifying no tracked deployment consumer remains.

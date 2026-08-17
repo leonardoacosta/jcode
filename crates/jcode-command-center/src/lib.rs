@@ -25,7 +25,6 @@ use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
-use tower_http::services::{ServeDir, ServeFile};
 use tower_http::set_header::SetResponseHeaderLayer;
 use uuid::Uuid;
 
@@ -1253,8 +1252,6 @@ pub struct CommandCenterConfig {
     pub bind_addr: SocketAddr,
     pub allowed_origins: Vec<String>,
     pub authenticated_remote: bool,
-    /// Built SolidStart output served by the daemon. API-only test hosts may omit it.
-    pub asset_dir: Option<PathBuf>,
     /// Durable intake authority projected read-only into the browser UI.
     pub decision_inbox_db_path: Option<PathBuf>,
 }
@@ -1266,7 +1263,6 @@ impl Default for CommandCenterConfig {
             bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
             allowed_origins: Vec::new(),
             authenticated_remote: false,
-            asset_dir: None,
             decision_inbox_db_path: None,
         }
     }
@@ -2041,8 +2037,7 @@ pub async fn spawn_command_center_http_host_with_mx(
 }
 
 pub fn command_center_router(state: CommandCenterHttpState) -> Router {
-    let asset_dir = state.config.asset_dir.clone();
-    let router = Router::new()
+    Router::new()
         .route("/api/command-center/bootstrap", post(bootstrap_handler))
         .route("/api/command-center/initiatives", get(list_handler))
         .route(
@@ -2056,18 +2051,7 @@ pub fn command_center_router(state: CommandCenterHttpState) -> Router {
             get(decision_inbox_handler),
         )
         .route("/api/command-center/mx-health", get(mx_health_handler))
-        .with_state(state);
-    let router = if let Some(asset_dir) = asset_dir {
-        let index = asset_dir.join("index.html");
-        router.fallback_service(
-            ServeDir::new(asset_dir)
-                .append_index_html_on_directories(true)
-                .fallback(ServeFile::new(index)),
-        )
-    } else {
-        router
-    };
-    router
+        .with_state(state)
         .layer(SetResponseHeaderLayer::if_not_present(
             header::X_FRAME_OPTIONS,
             HeaderValue::from_static("DENY"),
@@ -2914,7 +2898,6 @@ mod tests {
             bind_addr: SocketAddr::from(([0, 0, 0, 0], 8080)),
             allowed_origins: vec![],
             authenticated_remote: false,
-            asset_dir: None,
             decision_inbox_db_path: None,
         };
         assert_eq!(
@@ -2930,7 +2913,6 @@ mod tests {
             bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
             allowed_origins: vec!["http://127.0.0.1".into()],
             authenticated_remote: false,
-            asset_dir: None,
             decision_inbox_db_path: None,
         };
         let session = BrowserSessionIssuer::new(Duration::minutes(1)).issue(vec![]);
@@ -3310,7 +3292,6 @@ mod tests {
                 bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
                 allowed_origins: Vec::new(),
                 authenticated_remote: false,
-                asset_dir: None,
                 decision_inbox_db_path,
             },
             BrowserSessionStore::new(ttl),
@@ -3413,7 +3394,6 @@ mod tests {
                 bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
                 allowed_origins: Vec::new(),
                 authenticated_remote: false,
-                asset_dir: None,
                 decision_inbox_db_path: None,
             },
             sessions.clone(),
@@ -3467,22 +3447,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn http_host_serves_static_spa_routes_from_managed_asset_dir() {
-        let asset_dir =
-            std::env::temp_dir().join(format!("jcode-command-center-assets-{}", Uuid::new_v4()));
-        std::fs::create_dir_all(&asset_dir).unwrap();
-        std::fs::write(
-            asset_dir.join("index.html"),
-            "<main>managed command center</main>",
-        )
-        .unwrap();
+    async fn http_host_rejects_legacy_static_routes() {
         let host = spawn_command_center_http_host(
             CommandCenterConfig {
                 enabled: true,
                 bind_addr: SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
                 allowed_origins: Vec::new(),
                 authenticated_remote: false,
-                asset_dir: Some(asset_dir.clone()),
                 decision_inbox_db_path: None,
             },
             BrowserSessionStore::new(Duration::minutes(1)),
@@ -3498,17 +3469,14 @@ mod tests {
         ))
         .await
         .unwrap();
-        assert_eq!(response.status(), StatusCode::OK);
-        assert!(
-            response
-                .text()
-                .await
-                .unwrap()
-                .contains("managed command center")
-        );
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+        let legacy_asset = reqwest::get(format!("http://{}/assets/app.js", host.addr()))
+            .await
+            .unwrap();
+        assert_eq!(legacy_asset.status(), StatusCode::NOT_FOUND);
 
         host.shutdown().await.unwrap();
-        std::fs::remove_dir_all(asset_dir).unwrap();
     }
 
     async fn bootstrap(client: &reqwest::Client, host: &CommandCenterHttpHost) -> BrowserSession {
@@ -3536,7 +3504,6 @@ mod tests {
                 bind_addr: SocketAddr::from(([0, 0, 0, 0], 0)),
                 allowed_origins: Vec::new(),
                 authenticated_remote: false,
-                asset_dir: None,
                 decision_inbox_db_path: None,
             },
             BrowserSessionStore::new(Duration::minutes(5)),

@@ -52,3 +52,16 @@ The service SHALL bind to loopback by default and SHALL NOT introduce a second c
 - **WHEN** no bind or upstream overrides are supplied
 - **THEN** the UI listens on `127.0.0.1:43119`
 - **AND** proxies to Jcode on `127.0.0.1:43118`
+
+### Requirement: API-only Jcode daemon
+The Jcode daemon SHALL expose the authenticated `/api/command-center/*` routes
+without serving embedded or static UI assets.
+
+#### Scenario: Legacy UI route rejection
+- **WHEN** a client requests `/`, a client-side route, or an asset path from the daemon listener on `43118`
+- **THEN** the daemon returns `404`
+- **AND** the standalone UI service remains responsible for serving the React/Vite application
+
+#### Scenario: Command Center API compatibility
+- **WHEN** a browser or standalone UI proxy requests `/api/command-center/bootstrap` or another existing Command Center API route
+- **THEN** the daemon preserves the existing authentication and response contract

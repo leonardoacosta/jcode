@@ -63,6 +63,10 @@ async function serveStatic(request, response, publicDir) {
   createReadStream(filePath).pipe(response);
 }
 
+function isCommandCenterApi(pathname) {
+  return pathname === "/api/command-center" || pathname.startsWith("/api/command-center/");
+}
+
 async function proxyApi(request, response, apiUrl) {
   const target = new URL(request.url ?? "/", apiUrl);
   const headers = { ...request.headers, host: target.host };
@@ -102,8 +106,13 @@ export function createCommandCenterServer({
       response.end(JSON.stringify({ status: "ok" }));
       return;
     }
-    if (pathname.startsWith("/api/")) {
+    if (isCommandCenterApi(pathname)) {
       void proxyApi(request, response, apiUrl);
+      return;
+    }
+    if (pathname.startsWith("/api/")) {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not found");
       return;
     }
     void serveStatic(request, response, publicDir);

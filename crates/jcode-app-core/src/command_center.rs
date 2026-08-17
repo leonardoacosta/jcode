@@ -67,7 +67,6 @@ pub(super) async fn spawn_managed_http_host(runtime: &crate::server::runtime::Se
     let authenticated_remote = std::env::var("JCODE_COMMAND_CENTER_AUTHENTICATED_REMOTE")
         .ok()
         .is_some_and(|value| matches!(value.as_str(), "1" | "true" | "yes"));
-    let asset_dir = std::env::var_os("JCODE_COMMAND_CENTER_ASSET_DIR").map(PathBuf::from);
     let decision_inbox_db_path = std::env::var_os("JCODE_DECISION_INBOX_DB")
         .map(PathBuf::from)
         .or_else(|| {
@@ -80,7 +79,6 @@ pub(super) async fn spawn_managed_http_host(runtime: &crate::server::runtime::Se
         bind_addr,
         allowed_origins,
         authenticated_remote,
-        asset_dir,
         decision_inbox_db_path,
     };
     let working_dir = std::env::current_dir().ok();

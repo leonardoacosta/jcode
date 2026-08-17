@@ -86,7 +86,7 @@ fi
 
         if (
             cd "$worktree"
-            ./scripts/install_command_center_assets.sh
+            ./install-command-center.sh
             CARGO_TARGET_DIR="$target_dir" ./scripts/install_release.sh --fast
         ) >> "$log" 2>&1; then
             echo "$(date -Is) deploy finished (HEAD=$short)" >> "$log"

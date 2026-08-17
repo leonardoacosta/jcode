@@ -8,7 +8,7 @@ The Command Center frontend is currently built as static assets and hosted by th
 - Proxy `/api/command-center/*` to the existing Jcode daemon so browser requests remain same-origin.
 - Add one concise repository-root installer that builds, atomically installs, writes a systemd user unit, enables restart persistence, starts the service, and verifies health.
 - Keep Jcode as the only domain backend. The standalone service owns no database or lifecycle state.
-- Retain the daemon-hosted asset path as a compatibility fallback until a later cleanup explicitly removes it.
+- Remove the daemon-hosted/static UI path so the Jcode listener is API-only on `43118`.
 
 ## Decisions
 
@@ -29,5 +29,5 @@ The Command Center frontend is currently built as static assets and hosted by th
 ## Impact
 
 - Adds a standalone UI deployment boundary without moving domain authority out of Jcode.
-- Changes the preferred production topology documented by the existing Command Center vertical slice, while preserving its daemon-hosted fallback.
+- Makes the standalone UI service the only UI deployment topology and leaves Jcode as an API-only daemon.
 - Requires Node.js, pnpm for build time, and systemd user services on the deployment host.

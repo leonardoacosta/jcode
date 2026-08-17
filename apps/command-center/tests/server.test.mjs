@@ -128,3 +128,15 @@ test("returns 502 when Jcode is unavailable while health remains available", asy
   assert.match(await response.text(), /Jcode Command Center API is unavailable/);
   assert.equal((await fetch(`${base}/healthz`)).status, 200);
 });
+
+test("rejects non-Command-Center API routes instead of proxying them", async (t) => {
+  const server = createCommandCenterServer({
+    publicDir: await fixture(),
+    apiUrl: "http://127.0.0.1:9",
+  });
+  t.after(() => server.close());
+  const base = await listen(server);
+
+  const response = await fetch(`${base}/api/legacy/status`);
+  assert.equal(response.status, 404);
+});

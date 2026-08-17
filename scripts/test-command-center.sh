@@ -31,6 +31,10 @@ esac
 runtime_dir=${XDG_RUNTIME_DIR:-${TMPDIR:-/tmp}}
 socket_dir=$(mktemp -d "$runtime_dir/jcode-command-center.XXXXXX")
 cleanup() {
+  if [[ -n ${ui_pid:-} ]]; then
+    kill "$ui_pid" 2>/dev/null || true
+    wait "$ui_pid" 2>/dev/null || true
+  fi
   if [[ -n ${daemon_pid:-} ]]; then
     kill "$daemon_pid" 2>/dev/null || true
     wait "$daemon_pid" 2>/dev/null || true
@@ -81,7 +85,14 @@ ERR
     exit 1
   fi
 
-  port=$(python3 - <<'PY'
+  api_port=$(python3 - <<'PY'
+import socket
+with socket.socket() as sock:
+    sock.bind(("127.0.0.1", 0))
+    print(sock.getsockname()[1])
+PY
+  )
+  ui_port=$(python3 - <<'PY'
 import socket
 with socket.socket() as sock:
     sock.bind(("127.0.0.1", 0))
@@ -93,9 +104,9 @@ PY
   export XDG_RUNTIME_DIR="$socket_dir/runtime"
   export JCODE_SOCKET="$XDG_RUNTIME_DIR/jcode.sock"
   export JCODE_COMMAND_CENTER_ENABLED=1
-  export JCODE_COMMAND_CENTER_BIND_ADDR="127.0.0.1:$port"
-  export JCODE_COMMAND_CENTER_ASSET_DIR="$asset_dir"
-  export JCODE_COMMAND_CENTER_BASE_URL="http://127.0.0.1:$port"
+  export JCODE_COMMAND_CENTER_BIND_ADDR="127.0.0.1:$api_port"
+  export JCODE_COMMAND_CENTER_API_BASE_URL="http://127.0.0.1:$api_port"
+  export JCODE_COMMAND_CENTER_BASE_URL="http://127.0.0.1:$ui_port"
   export JCODE_COMMAND_CENTER_ALLOWED_ORIGINS="$JCODE_COMMAND_CENTER_BASE_URL"
 
   "$jcode_bin" serve \
@@ -106,9 +117,21 @@ PY
     --quiet &
   daemon_pid=$!
 
+  JCODE_COMMAND_CENTER_UI_BIND="127.0.0.1:$ui_port" \
+    JCODE_COMMAND_CENTER_API_URL="$JCODE_COMMAND_CENTER_API_BASE_URL" \
+    JCODE_COMMAND_CENTER_PUBLIC_DIR="$asset_dir" \
+    node "$repo_root/apps/command-center/server.mjs" &
+  ui_pid=$!
+
   ready=false
   for _ in $(seq 1 120); do
-    if curl -fsS "$JCODE_COMMAND_CENTER_BASE_URL/" | grep -q '<title>Jcode Command Center</title>'; then
+    if node -e '
+      const [url, needle] = process.argv.slice(1);
+      fetch(url).then(async (response) => {
+        const body = await response.text();
+        process.exit(response.ok && body.includes(needle) ? 0 : 1);
+      }).catch(() => process.exit(1));
+    ' "$JCODE_COMMAND_CENTER_BASE_URL/" '<title>Jcode Command Center</title>'; then
       ready=true
       break
     fi

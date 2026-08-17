@@ -1,6 +1,6 @@
 ## Context
 
-`apps/command-center` is a client-only SolidStart application (`ssr: false`). Jcode currently hosts `.output/public` and the Command Center API on one origin. Separation must therefore preserve same-origin browser behavior without creating a second backend authority.
+`apps/command-center` is a client-only SolidStart application (`ssr: false`). The Jcode daemon must expose the Command Center API on `43118` without serving `.output/public`; the standalone UI service on `43119` preserves same-origin browser behavior without creating a second backend authority.
 
 ## Architecture
 
@@ -12,7 +12,12 @@ The Node service:
 2. Serves `/healthz` directly.
 3. Proxies `/api/command-center/*` to `JCODE_COMMAND_CENTER_API_URL`, default `http://127.0.0.1:43118`.
 4. Serves immutable assets from the active release and falls back to `index.html` for client routes.
-5. Rejects path traversal, unsupported proxy upgrade requests, and malformed upstream URLs.
+5. Proxies only `/api/command-center/*`; unrelated `/api/*` paths and malformed upstream URLs fail closed.
+
+The Jcode daemon serves the authenticated `/api/command-center/*` routes only. It
+does not read `JCODE_COMMAND_CENTER_ASSET_DIR`, serve `index.html`, or expose
+legacy client-side and asset routes. This makes `43118` an API-only listener and
+keeps all UI packaging under the standalone systemd service.
 
 Jcode remains responsible for authentication, CSRF, commands, events, projections, and durable state. The proxy forwards method, body, and safe headers and preserves streaming responses. It omits `Origin` only for the bootstrap request because the existing bootstrap contract accepts the same-origin request without an Origin header; authenticated mutation requests retain the browser Origin so Jcode's allowlist and CSRF checks remain authoritative.
 
@@ -28,7 +33,8 @@ Both UI and upstream bind to loopback by default. The service does not terminate
 
 ## Testing
 
-- Unit/integration test the server against a temporary mock upstream for static routes, SPA fallback, health, proxy methods, bodies, streaming, error handling, and traversal rejection.
+- Unit/integration test the standalone server against a temporary mock upstream for static routes, SPA fallback, health, proxy methods, bodies, streaming, error handling, traversal rejection, and unrelated API rejection.
+- Test the daemon HTTP host for `/api/command-center/*` compatibility and `404` rejection of `/`, client-side routes, and legacy asset paths.
 - Test the installer with isolated HOME and mocked systemctl/loginctl to verify unit content, atomic activation, idempotent upgrades, and rollback.
 - Run the actual build and app test gates.
 - Install to the real user service, verify enabled/active status, browser-facing health, API bootstrap behavior, forced process failure recovery, and restart persistence.

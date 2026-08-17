@@ -50,6 +50,9 @@
 /ambient/
 /presentation/jcode-feature-tour/
 command-center/
+!fixtures/command-center/
+!fixtures/command-center/mx-health/
+!fixtures/command-center/mx-health/**
 reload-info
 --full-page
 telemetry_install_sent
