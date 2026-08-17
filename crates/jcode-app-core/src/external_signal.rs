@@ -268,6 +268,7 @@ pub struct ProcessingRecord {
     pub next_attempt_at: DateTime<Utc>,
     pub last_error: Option<String>,
     pub failure_stage: Option<String>,
+    #[serde(default)]
     pub terminal: bool,
 }
 
@@ -1338,5 +1339,64 @@ mod tests {
         let persisted = load_store(&state.path).unwrap();
         assert_eq!(persisted.accepted_count, 1);
         assert!(persisted.dead_letters.is_empty());
+    }
+
+    #[tokio::test]
+    async fn admission_loads_legacy_primary_and_backup_without_terminal_field() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("state.json");
+        let cfg = config();
+        let mut legacy = serde_json::to_value(ExternalSignalStore::default()).unwrap();
+        let processing = legacy
+            .as_object_mut()
+            .unwrap()
+            .get_mut("processing")
+            .unwrap()
+            .as_object_mut()
+            .unwrap();
+        processing.insert(
+            "rcpt_legacy".to_string(),
+            serde_json::json!({
+                "receipt_id": "rcpt_legacy",
+                "stage": "pending",
+                "attempts": 0,
+                "next_attempt_at": "2026-08-17T04:00:00Z",
+                "last_error": null,
+                "failure_stage": null
+            }),
+        );
+        legacy.as_object_mut().unwrap().remove("dead_letters");
+        let legacy_bytes = serde_json::to_vec(&legacy).unwrap();
+        std::fs::write(&path, &legacy_bytes).unwrap();
+        std::fs::write(path.with_extension("bak"), &legacy_bytes).unwrap();
+        assert!(!load_store(&path).unwrap().processing["rcpt_legacy"].terminal);
+        std::fs::write(&path, b"{\"broken\":").unwrap();
+
+        let state = IngressState {
+            config: cfg,
+            path,
+            gate: Arc::new(Mutex::new(())),
+        };
+        let headers = HeaderMap::from_iter([
+            (header::CONTENT_TYPE, "application/json".parse().unwrap()),
+            (
+                header::HeaderName::from_static("x-jcode-delivery-id"),
+                "legacy-primary-backup".parse().unwrap(),
+            ),
+        ]);
+        let body = payload(
+            "firing",
+            "high",
+            "2026-08-17T04:00:00Z",
+            "0001-01-01T00:00:00Z",
+        );
+
+        let (status, receipt) = admit_inner(&state, &headers, &body).unwrap();
+        assert_eq!(status, StatusCode::ACCEPTED);
+        assert_eq!(receipt.outcome, "accepted");
+        let persisted = load_store(&state.path).unwrap();
+        assert!(!persisted.processing["rcpt_legacy"].terminal);
+        assert_eq!(persisted.accepted_count, 1);
+        assert_eq!(persisted.delivery_receipts.len(), 1);
     }
 }
