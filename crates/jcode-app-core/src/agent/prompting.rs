@@ -114,12 +114,13 @@ impl Agent {
         // Roadmap P1: build the assembly, then freeze the static layers into
         // the session on first build. Later turns reuse the frozen static text
         // (new-session semantics for file changes); dynamic parts rebuild.
-        let (assembly, _context_info) = crate::prompt::build_prompt_assembly(
+        let (assembly, _context_info) = crate::prompt::build_prompt_assembly_with_agents_md(
             skill_prompt.as_deref(),
             &available_skills,
             self.session.is_canary,
             memory_prompt,
             working_dir.as_deref(),
+            self.agents_md_snapshot.clone(),
         );
         let frozen = self.prompt_snapshot.get_or_init(|| {
             crate::prompt::FrozenPromptAssembly::capture(&assembly, &_context_info)

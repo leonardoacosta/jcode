@@ -31,7 +31,7 @@ pub const ZAI_PROFILE: OpenAiCompatibleProfile = OpenAiCompatibleProfile {
     api_base: "https://api.z.ai/api/coding/paas/v4",
     api_key_env: "ZHIPU_API_KEY",
     env_file: "zai.env",
-    setup_url: "https://docs.z.ai/guides/develop/openai/introduction",
+    setup_url: "https://docs.z.ai/devpack/quick-start",
     default_model: Some("glm-4.5"),
     requires_api_key: true,
 };
@@ -92,6 +92,17 @@ pub const OPENROUTER_OPENAI_COMPAT_PROFILE: OpenAiCompatibleProfile = OpenAiComp
     api_key_env: "OPENROUTER_API_KEY",
     env_file: "openrouter.env",
     setup_url: "https://openrouter.ai/keys",
+    default_model: None,
+    requires_api_key: true,
+};
+
+pub const ORCAROUTER_PROFILE: OpenAiCompatibleProfile = OpenAiCompatibleProfile {
+    id: "orcarouter",
+    display_name: "OrcaRouter",
+    api_base: "https://api.orcarouter.ai/v1",
+    api_key_env: "ORCAROUTER_API_KEY",
+    env_file: "orcarouter.env",
+    setup_url: "https://www.orcarouter.ai",
     default_model: None,
     requires_api_key: true,
 };
@@ -443,7 +454,7 @@ pub const OPENAI_COMPAT_PROFILE: OpenAiCompatibleProfile = OpenAiCompatibleProfi
     requires_api_key: true,
 };
 
-pub(crate) const OPENAI_COMPAT_PROFILES: [OpenAiCompatibleProfile; 38] = [
+pub(crate) const OPENAI_COMPAT_PROFILES: [OpenAiCompatibleProfile; 39] = [
     OPENCODE_PROFILE,
     OPENCODE_GO_PROFILE,
     ZAI_PROFILE,
@@ -455,6 +466,7 @@ pub(crate) const OPENAI_COMPAT_PROFILES: [OpenAiCompatibleProfile; 38] = [
     BASETEN_PROFILE,
     CORTECS_PROFILE,
     OPENROUTER_OPENAI_COMPAT_PROFILE,
+    ORCAROUTER_PROFILE,
     ANTHROPIC_OPENAI_COMPAT_PROFILE,
     OPENAI_NATIVE_OPENAI_COMPAT_PROFILE,
     GEMINI_OPENAI_COMPAT_PROFILE,
@@ -580,6 +592,19 @@ pub const OPENROUTER_LOGIN_PROVIDER: LoginProviderDescriptor = LoginProviderDesc
     order: LoginProviderSurfaceOrder::new(Some(4), Some(3), Some(4), Some(3), Some(3)),
 };
 
+pub const ORCAROUTER_LOGIN_PROVIDER: LoginProviderDescriptor = LoginProviderDescriptor {
+    id: "orcarouter",
+    display_name: "OrcaRouter",
+    auth_kind: LoginProviderAuthKind::ApiKey,
+    auth_state_key: LoginProviderAuthStateKey::OpenRouterLike,
+    auth_status_method: "API key",
+    aliases: &["orca-router"],
+    menu_detail: "API key, OpenAI-compatible gateway",
+    recommended: false,
+    target: LoginProviderTarget::OpenAiCompatible(ORCAROUTER_PROFILE),
+    order: LoginProviderSurfaceOrder::new(Some(39), Some(39), Some(39), Some(39), Some(39)),
+};
+
 pub const BEDROCK_LOGIN_PROVIDER: LoginProviderDescriptor = LoginProviderDescriptor {
     id: "bedrock",
     display_name: "AWS Bedrock",
@@ -639,7 +664,7 @@ pub const ZAI_LOGIN_PROVIDER: LoginProviderDescriptor = LoginProviderDescriptor 
     auth_state_key: LoginProviderAuthStateKey::OpenRouterLike,
     auth_status_method: "API key",
     aliases: &["z.ai", "z-ai", "zai-coding", "zhipu"],
-    menu_detail: "API key",
+    menu_detail: "Coding Plan subscription API key",
     recommended: false,
     target: LoginProviderTarget::OpenAiCompatible(ZAI_PROFILE),
     order: LoginProviderSurfaceOrder::new(Some(7), Some(6), Some(7), Some(6), Some(6)),
@@ -963,17 +988,16 @@ pub const XAI_LOGIN_PROVIDER: LoginProviderDescriptor = LoginProviderDescriptor 
     order: LoginProviderSurfaceOrder::new(Some(33), Some(33), Some(33), Some(33), Some(33)),
 };
 
-/// Grok Build is intentionally a separate identity from `xai`: it delegates
-/// OAuth/token ownership to the installed Grok CLI and never consumes
-/// `XAI_API_KEY`.
+/// Grok Build is intentionally a separate identity from `xai`: Jcode manages
+/// its subscription backend and never consumes `XAI_API_KEY`.
 pub const GROK_BUILD_LOGIN_PROVIDER: LoginProviderDescriptor = LoginProviderDescriptor {
     id: "grok-build",
     display_name: "Grok Build",
     auth_kind: LoginProviderAuthKind::Cli,
     auth_state_key: LoginProviderAuthStateKey::GrokBuild,
-    auth_status_method: "Grok CLI cached login",
+    auth_status_method: "Grok Build subscription login",
     aliases: &[],
-    menu_detail: "Grok Build subscription via installed Grok CLI",
+    menu_detail: "Grok Build subscription managed by Jcode",
     recommended: false,
     target: LoginProviderTarget::GrokBuild,
     order: LoginProviderSurfaceOrder::new(Some(100), Some(100), Some(100), Some(100), Some(100)),
@@ -1153,7 +1177,7 @@ pub const GOOGLE_LOGIN_PROVIDER: LoginProviderDescriptor = LoginProviderDescript
     order: LoginProviderSurfaceOrder::new(Some(13), None, None, None, None),
 };
 
-pub(crate) const LOGIN_PROVIDERS: [LoginProviderDescriptor; 50] = [
+pub(crate) const LOGIN_PROVIDERS: [LoginProviderDescriptor; 51] = [
     AUTO_IMPORT_LOGIN_PROVIDER,
     CLAUDE_LOGIN_PROVIDER,
     ANTHROPIC_API_LOGIN_PROVIDER,
@@ -1161,6 +1185,7 @@ pub(crate) const LOGIN_PROVIDERS: [LoginProviderDescriptor; 50] = [
     OPENAI_API_LOGIN_PROVIDER,
     JCODE_LOGIN_PROVIDER,
     OPENROUTER_LOGIN_PROVIDER,
+    ORCAROUTER_LOGIN_PROVIDER,
     BEDROCK_LOGIN_PROVIDER,
     AZURE_LOGIN_PROVIDER,
     OPENCODE_LOGIN_PROVIDER,

@@ -526,7 +526,6 @@ impl CliOutputParser {
                                 tool_use_id,
                                 content: content_str,
                                 is_error: is_error.unwrap_or(false),
-                                outcome: None,
                             });
                         }
                         _ => {}

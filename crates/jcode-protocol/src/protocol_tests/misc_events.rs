@@ -416,6 +416,7 @@ fn test_message_request_roundtrip_preserves_images_and_system_reminder() -> Resu
             ("image/jpeg".to_string(), "BBB".to_string()),
         ],
         system_reminder: Some("be concise".to_string()),
+        active_skill: Some("verification".to_string()),
         no_reply: true,
     };
     let json = serde_json::to_string(&req)?;
@@ -425,6 +426,7 @@ fn test_message_request_roundtrip_preserves_images_and_system_reminder() -> Resu
         content,
         images,
         system_reminder,
+        active_skill,
         no_reply,
     } = decoded
     else {
@@ -436,6 +438,7 @@ fn test_message_request_roundtrip_preserves_images_and_system_reminder() -> Resu
     assert_eq!(images[0].0, "image/png");
     assert_eq!(images[1].0, "image/jpeg");
     assert_eq!(system_reminder.as_deref(), Some("be concise"));
+    assert_eq!(active_skill.as_deref(), Some("verification"));
     assert!(no_reply);
     Ok(())
 }

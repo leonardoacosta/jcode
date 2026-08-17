@@ -24,6 +24,7 @@ use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 const TELEMETRY_ENDPOINT: &str = "https://telemetry.jcode.sh/v1/event";
+const TRANSCRIPT_ENDPOINT: &str = "https://telemetry.jcode.sh/v1/transcript";
 const ASYNC_SEND_TIMEOUT: Duration = Duration::from_secs(5);
 const BACKGROUND_QUEUE_CAPACITY: usize = 2048;
 const BLOCKING_INSTALL_TIMEOUT: Duration = Duration::from_millis(1200);
@@ -40,6 +41,7 @@ const OTLP_ORCA_PROJECT_ID_MAX_LEN: usize = 128;
 static TELEMETRY_PERMANENTLY_REJECTED: AtomicBool = AtomicBool::new(false);
 static TELEMETRY_QUEUE_OVERFLOW_WARNED: AtomicBool = AtomicBool::new(false);
 static TELEMETRY_BACKGROUND_SENDER: OnceLock<SyncSender<Value>> = OnceLock::new();
+static TRANSCRIPT_BACKGROUND_SENDER: OnceLock<SyncSender<Value>> = OnceLock::new();
 static TELEMETRY_HTTP_CLIENT: OnceLock<reqwest::blocking::Client> = OnceLock::new();
 #[cfg(test)]
 static TEST_EMITTED_PAYLOADS: Mutex<Vec<Value>> = Mutex::new(Vec::new());
@@ -108,6 +110,131 @@ pub struct TodoTelemetryUpdate {
     pub feedback_loop_relevance: TelemetryScoreSummary,
     pub feedback_loop_coverage: TelemetryScoreSummary,
     pub end_to_end_ownership: TelemetryScoreSummary,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CompletionReviewTrigger {
+    GateDigest,
+    LongSession,
+    Ownership,
+    CompletionConfidence,
+    ConfidenceSpike,
+    AutoPoke,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CompletionReviewConcern {
+    Intent,
+    ClosedFeedbackLoop,
+    FeedbackLoopRelevance,
+    FeedbackLoopCoverage,
+    FeedbackLoopTraceability,
+    Ownership,
+    CompletionConfidence,
+    IncompleteTodo,
+    StaleAssessment,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CompletionReviewResolution {
+    Pending,
+    Resolved,
+    Unresolved,
+    Exhausted,
+}
+
+/// Numeric-only completion-review observation. The goal/group is represented
+/// as a grouped-vs-ungrouped bit, never as user-authored text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CompletionReviewTelemetry {
+    pub trigger: CompletionReviewTrigger,
+    pub goal_grouped: bool,
+    pub unresolved_concern: CompletionReviewConcern,
+    pub continuation_cycles: u32,
+    pub resolution: CompletionReviewResolution,
+    pub repeated_prompt: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+struct CompletionReviewTelemetryState {
+    count: u32,
+    grouped_goal_count: u32,
+    ungrouped_goal_count: u32,
+    continuation_cycles: u32,
+    repeated_prompt_count: u32,
+    trigger_gate_digest_count: u32,
+    trigger_long_session_count: u32,
+    trigger_ownership_count: u32,
+    trigger_completion_confidence_count: u32,
+    trigger_confidence_spike_count: u32,
+    trigger_auto_poke_count: u32,
+    concern_intent_count: u32,
+    concern_closed_feedback_loop_count: u32,
+    concern_feedback_loop_relevance_count: u32,
+    concern_feedback_loop_coverage_count: u32,
+    concern_feedback_loop_traceability_count: u32,
+    concern_ownership_count: u32,
+    concern_completion_confidence_count: u32,
+    concern_incomplete_todo_count: u32,
+    concern_stale_assessment_count: u32,
+    resolution_pending_count: u32,
+    resolution_resolved_count: u32,
+    resolution_unresolved_count: u32,
+    resolution_exhausted_count: u32,
+}
+
+impl CompletionReviewTelemetryState {
+    fn record(&mut self, update: CompletionReviewTelemetry) {
+        self.count = self.count.saturating_add(1);
+        if update.goal_grouped {
+            self.grouped_goal_count = self.grouped_goal_count.saturating_add(1);
+        } else {
+            self.ungrouped_goal_count = self.ungrouped_goal_count.saturating_add(1);
+        }
+        self.continuation_cycles = self
+            .continuation_cycles
+            .saturating_add(update.continuation_cycles);
+        if update.repeated_prompt {
+            self.repeated_prompt_count = self.repeated_prompt_count.saturating_add(1);
+        }
+        match update.trigger {
+            CompletionReviewTrigger::GateDigest => self.trigger_gate_digest_count += 1,
+            CompletionReviewTrigger::LongSession => self.trigger_long_session_count += 1,
+            CompletionReviewTrigger::Ownership => self.trigger_ownership_count += 1,
+            CompletionReviewTrigger::CompletionConfidence => {
+                self.trigger_completion_confidence_count += 1
+            }
+            CompletionReviewTrigger::ConfidenceSpike => self.trigger_confidence_spike_count += 1,
+            CompletionReviewTrigger::AutoPoke => self.trigger_auto_poke_count += 1,
+        }
+        match update.unresolved_concern {
+            CompletionReviewConcern::Intent => self.concern_intent_count += 1,
+            CompletionReviewConcern::ClosedFeedbackLoop => {
+                self.concern_closed_feedback_loop_count += 1
+            }
+            CompletionReviewConcern::FeedbackLoopRelevance => {
+                self.concern_feedback_loop_relevance_count += 1
+            }
+            CompletionReviewConcern::FeedbackLoopCoverage => {
+                self.concern_feedback_loop_coverage_count += 1
+            }
+            CompletionReviewConcern::FeedbackLoopTraceability => {
+                self.concern_feedback_loop_traceability_count += 1
+            }
+            CompletionReviewConcern::Ownership => self.concern_ownership_count += 1,
+            CompletionReviewConcern::CompletionConfidence => {
+                self.concern_completion_confidence_count += 1
+            }
+            CompletionReviewConcern::IncompleteTodo => self.concern_incomplete_todo_count += 1,
+            CompletionReviewConcern::StaleAssessment => self.concern_stale_assessment_count += 1,
+        }
+        match update.resolution {
+            CompletionReviewResolution::Pending => self.resolution_pending_count += 1,
+            CompletionReviewResolution::Resolved => self.resolution_resolved_count += 1,
+            CompletionReviewResolution::Unresolved => self.resolution_unresolved_count += 1,
+            CompletionReviewResolution::Exhausted => self.resolution_exhausted_count += 1,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -221,6 +348,7 @@ struct TurnTelemetry {
     todo_gate_intent_count: u32,
     todo_gate_completion_count: u32,
     todo_gate_spike_count: u32,
+    completion_review: CompletionReviewTelemetryState,
 }
 
 #[derive(Debug, Clone)]
@@ -337,6 +465,7 @@ struct SessionTelemetry {
     provider_switches: u32,
     model_switches: u32,
     todo: TodoSessionTelemetry,
+    completion_review: CompletionReviewTelemetryState,
 }
 
 impl TurnTelemetry {
@@ -404,6 +533,7 @@ impl TurnTelemetry {
             todo_gate_intent_count: 0,
             todo_gate_completion_count: 0,
             todo_gate_spike_count: 0,
+            completion_review: CompletionReviewTelemetryState::default(),
         }
     }
 }
@@ -414,16 +544,62 @@ enum DeliveryMode {
     Blocking(Duration),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TelemetryOptOutSource {
+    Environment,
+    MarkerFile,
+}
+
+impl TelemetryOptOutSource {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Environment => "environment",
+            Self::MarkerFile => "marker_file",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TelemetryStatus {
+    pub enabled: bool,
+    pub content_sharing_enabled: bool,
+    pub opt_out_source: Option<TelemetryOptOutSource>,
+    pub telemetry_id: Option<String>,
+}
+
+pub fn opt_out_source() -> Option<TelemetryOptOutSource> {
+    if opt_out_forced_by_env() {
+        return Some(TelemetryOptOutSource::Environment);
+    }
+    opt_out_marker_path()
+        .is_some_and(|path| path.exists())
+        .then_some(TelemetryOptOutSource::MarkerFile)
+}
+
+/// Return the current telemetry state without creating a telemetry identity or
+/// changing any persisted state.
+pub fn status() -> TelemetryStatus {
+    let opt_out_source = opt_out_source();
+    TelemetryStatus {
+        enabled: opt_out_source.is_none(),
+        content_sharing_enabled: content_sharing_enabled(),
+        opt_out_source,
+        telemetry_id: read_existing_id(),
+    }
+}
+
 pub fn is_enabled() -> bool {
-    if std::env::var("JCODE_NO_TELEMETRY").is_ok() || std::env::var("DO_NOT_TRACK").is_ok() {
-        logging::debug("telemetry disabled by environment");
-        return false;
+    match opt_out_source() {
+        Some(TelemetryOptOutSource::Environment) => {
+            logging::debug("telemetry disabled by environment");
+            false
+        }
+        Some(TelemetryOptOutSource::MarkerFile) => {
+            logging::debug("telemetry disabled by no_telemetry marker");
+            false
+        }
+        None => true,
     }
-    if opt_out_marker_path().map(|p| p.exists()).unwrap_or(false) {
-        logging::debug("telemetry disabled by no_telemetry marker");
-        return false;
-    }
-    true
 }
 
 /// Marker file recording that the user opted out of anonymous usage telemetry.
@@ -482,7 +658,9 @@ pub fn set_usage_telemetry_enabled(enabled: bool) -> bool {
 fn share_content_marker_path() -> Option<std::path::PathBuf> {
     storage::jcode_dir()
         .ok()
-        .map(|d| d.join("telemetry_share_content"))
+        // Version the marker so introducing actual uploads cannot silently turn
+        // an older, pre-upload UI choice into consent for the new program.
+        .map(|d| d.join("telemetry_share_transcripts_v1"))
 }
 
 /// Whether the user has opted in to sharing prompt/transcript content.
@@ -529,6 +707,50 @@ pub fn set_content_sharing_enabled(enabled: bool) -> bool {
             }
         }
     }
+}
+
+/// Queue one complete conversation transcript for the separately consented
+/// content-sharing program. This path is intentionally distinct from anonymous
+/// usage telemetry: it has its own endpoint, queue, backend storage, and an
+/// explicit opt-in gate that is off by default.
+pub fn record_transcript(
+    provider: &str,
+    model: &str,
+    end_reason: SessionEndReason,
+    messages: Value,
+) -> bool {
+    if !content_sharing_enabled() {
+        return false;
+    }
+    let Some(id) = get_or_create_id() else {
+        return false;
+    };
+    let message_count = messages.as_array().map_or(0, Vec::len);
+    if message_count == 0 {
+        return false;
+    }
+    let (schema_version, build_channel, is_git_checkout, is_ci, ran_from_cargo) =
+        telemetry_envelope();
+    let payload = serde_json::json!({
+        "id": id,
+        "event": "transcript",
+        "upload_id": uuid::Uuid::new_v4().to_string(),
+        "consent_version": 1,
+        "schema_version": schema_version,
+        "version": env!("CARGO_PKG_VERSION"),
+        "os": std::env::consts::OS,
+        "arch": std::env::consts::ARCH,
+        "build_channel": build_channel,
+        "is_git_checkout": is_git_checkout,
+        "is_ci": is_ci,
+        "ran_from_cargo": ran_from_cargo,
+        "provider": sanitize_telemetry_label(provider),
+        "model": sanitize_telemetry_label(model),
+        "end_reason": end_reason.as_str(),
+        "message_count": message_count,
+        "messages": messages,
+    });
+    send_transcript_payload(payload)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1305,6 +1527,34 @@ fn client_for_grafana() -> &'static reqwest::blocking::Client {
     })
 }
 
+fn post_transcript_payload(payload: serde_json::Value, timeout: Duration) -> bool {
+    let client = TELEMETRY_HTTP_CLIENT.get_or_init(|| {
+        reqwest::blocking::Client::builder()
+            .user_agent(jcode_provider_core::JCODE_USER_AGENT)
+            .build()
+            .expect("telemetry HTTP client should build")
+    });
+    match client
+        .post(TRANSCRIPT_ENDPOINT)
+        .timeout(timeout)
+        .json(&payload)
+        .send()
+    {
+        Ok(response) if response.status().is_success() => true,
+        Ok(response) => {
+            logging::warn(&format!(
+                "transcript endpoint rejected upload with HTTP {}",
+                response.status()
+            ));
+            false
+        }
+        Err(err) => {
+            logging::warn(&format!("transcript upload failed: {err}"));
+            false
+        }
+    }
+}
+
 fn telemetry_status_is_permanent(status: u16) -> bool {
     (400..500).contains(&status) && !matches!(status, 408 | 425 | 429)
 }
@@ -1331,6 +1581,37 @@ fn background_sender() -> &'static SyncSender<Value> {
         })
         .expect("telemetry background worker should start")
     })
+}
+
+fn transcript_background_sender() -> &'static SyncSender<Value> {
+    TRANSCRIPT_BACKGROUND_SENDER.get_or_init(|| {
+        spawn_background_worker(64, |payload| {
+            let _ = post_transcript_payload(payload, ASYNC_SEND_TIMEOUT);
+        })
+        .expect("transcript telemetry background worker should start")
+    })
+}
+
+fn send_transcript_payload(payload: Value) -> bool {
+    #[cfg(test)]
+    {
+        if let Ok(mut emitted) = TEST_EMITTED_PAYLOADS.lock() {
+            emitted.push(payload);
+        }
+        return true;
+    }
+    #[cfg(not(test))]
+    match transcript_background_sender().try_send(payload) {
+        Ok(()) => true,
+        Err(TrySendError::Full(_)) => {
+            logging::warn("transcript upload queue is full; dropping transcript");
+            false
+        }
+        Err(TrySendError::Disconnected(_)) => {
+            logging::warn("transcript upload worker stopped; dropping transcript");
+            false
+        }
+    }
 }
 
 fn send_payload(payload: serde_json::Value, mode: DeliveryMode) -> bool {
@@ -1559,6 +1840,58 @@ fn finalize_current_turn(
         todo_gate_intent_count: turn.todo_gate_intent_count,
         todo_gate_completion_count: turn.todo_gate_completion_count,
         todo_gate_spike_count: turn.todo_gate_spike_count,
+        completion_review_count: turn.completion_review.count,
+        completion_review_grouped_goal_count: turn.completion_review.grouped_goal_count,
+        completion_review_ungrouped_goal_count: turn.completion_review.ungrouped_goal_count,
+        completion_review_continuation_cycles: turn.completion_review.continuation_cycles,
+        completion_review_repeated_prompt_count: turn.completion_review.repeated_prompt_count,
+        completion_review_trigger_gate_digest_count: turn
+            .completion_review
+            .trigger_gate_digest_count,
+        completion_review_trigger_long_session_count: turn
+            .completion_review
+            .trigger_long_session_count,
+        completion_review_trigger_ownership_count: turn.completion_review.trigger_ownership_count,
+        completion_review_trigger_completion_confidence_count: turn
+            .completion_review
+            .trigger_completion_confidence_count,
+        completion_review_trigger_confidence_spike_count: turn
+            .completion_review
+            .trigger_confidence_spike_count,
+        completion_review_trigger_auto_poke_count: turn.completion_review.trigger_auto_poke_count,
+        completion_review_concern_intent_count: turn.completion_review.concern_intent_count,
+        completion_review_concern_closed_feedback_loop_count: turn
+            .completion_review
+            .concern_closed_feedback_loop_count,
+        completion_review_concern_feedback_loop_relevance_count: turn
+            .completion_review
+            .concern_feedback_loop_relevance_count,
+        completion_review_concern_feedback_loop_coverage_count: turn
+            .completion_review
+            .concern_feedback_loop_coverage_count,
+        completion_review_concern_feedback_loop_traceability_count: turn
+            .completion_review
+            .concern_feedback_loop_traceability_count,
+        completion_review_concern_ownership_count: turn.completion_review.concern_ownership_count,
+        completion_review_concern_completion_confidence_count: turn
+            .completion_review
+            .concern_completion_confidence_count,
+        completion_review_concern_incomplete_todo_count: turn
+            .completion_review
+            .concern_incomplete_todo_count,
+        completion_review_concern_stale_assessment_count: turn
+            .completion_review
+            .concern_stale_assessment_count,
+        completion_review_resolution_pending_count: turn.completion_review.resolution_pending_count,
+        completion_review_resolution_resolved_count: turn
+            .completion_review
+            .resolution_resolved_count,
+        completion_review_resolution_unresolved_count: turn
+            .completion_review
+            .resolution_unresolved_count,
+        completion_review_resolution_exhausted_count: turn
+            .completion_review
+            .resolution_exhausted_count,
         workflow_chat_only,
         workflow_coding_used,
         workflow_research_used,
@@ -1989,6 +2322,7 @@ fn begin_session_with_mode(
         provider_switches: 0,
         model_switches: 0,
         todo: TodoSessionTelemetry::default(),
+        completion_review: CompletionReviewTelemetryState::default(),
     };
     // A live session in the slot means the process is switching sessions
     // without anyone calling end_session (agent create/attach both call

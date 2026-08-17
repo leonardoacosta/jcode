@@ -14,6 +14,7 @@ mod debug_socket;
 mod discover;
 mod discover_secrets;
 mod edit;
+mod feedback;
 mod gmail;
 mod goal;
 pub mod inflight;
@@ -249,17 +250,17 @@ impl Registry {
             Self::insert_tool_timed(
                 &mut m,
                 &mut timings,
+                "maintainer_feedback",
+                feedback::MaintainerFeedbackTool::new,
+            );
+            Self::insert_tool_timed(
+                &mut m,
+                &mut timings,
                 "jcode_docs",
                 jcode_docs::JcodeDocsTool::new,
             );
             Self::insert_tool_timed(&mut m, &mut timings, "todo", todo::TodoTool::new);
             Self::insert_tool_timed(&mut m, &mut timings, "bg", bg::BgTool::new);
-            Self::insert_tool_timed(
-                &mut m,
-                &mut timings,
-                "swarm",
-                communicate::CommunicateTool::new,
-            );
             Self::insert_tool_timed(
                 &mut m,
                 &mut timings,
@@ -296,6 +297,12 @@ impl Registry {
             "skill_manage",
             skill::SkillTool::new(skills.clone()),
         );
+        // The swarm tool captures the user-editable swarm prompt in its
+        // description. Construct it once per session rather than sharing the
+        // process-wide instance. Existing sessions keep their stable tool
+        // definition (and provider KV cache), while newly created agents see
+        // prompt edits immediately.
+        Self::insert_tool(&mut tools, "swarm", communicate::CommunicateTool::new());
         tools
     }
 

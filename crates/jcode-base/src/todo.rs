@@ -284,6 +284,11 @@ pub const TODO_COMPLETION_CONTINUATION_MESSAGE: &str = "[automated follow-up - n
 /// why the private evaluator selected it.
 pub const TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE: &str = "[automated follow-up - not a user message] Independently recheck the work below. Keep the todo up to date; do not reply or wait for the user.";
 
+/// Final synthetic turn after every todo completion check has passed. Gate
+/// continuations tell the model not to reply, so without this handoff a cycle
+/// can end on a bare tool call or an internal-looking validation response.
+pub const TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE: &str = "[automated follow-up - not a user message] All work and quality checks are complete. Give the user the final response now. Default to fewer than 5 lines unless the user's request requires more detail. Summarize the outcome clearly; do not call the todo tool or perform more work.";
+
 /// A completed todo is considered spike-finished when its final recorded
 /// confidence step jumps this many levels or more (e.g. speculative straight
 /// to validated) instead of climbing through evidence-backed states.
@@ -369,6 +374,43 @@ fn observation_score_later_cleared(
             .find(|goal| normalized_group(goal.group.as_deref()) == observation.group)
             .is_some_and(feedback_loop_traceability_passes),
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GateObservationSummary {
+    pub kind: GateObservationKind,
+    pub group: Option<String>,
+    pub continuation_cycles: u32,
+    pub resolved: bool,
+    pub repeated_prompt: bool,
+}
+
+/// Collapse identical gate observations without exposing their text to
+/// telemetry. The caller can use the group only as a grouped/ungrouped bit.
+pub fn summarize_gate_observations(
+    observations: &[GateObservation],
+    plan: &TodoPlan,
+    goals: &[TodoGoal],
+) -> Vec<GateObservationSummary> {
+    let mut summaries: Vec<GateObservationSummary> = Vec::new();
+    for observation in observations {
+        if let Some(summary) = summaries
+            .iter_mut()
+            .find(|summary| summary.kind == observation.kind && summary.group == observation.group)
+        {
+            summary.continuation_cycles = summary.continuation_cycles.saturating_add(1);
+            summary.repeated_prompt = true;
+            continue;
+        }
+        summaries.push(GateObservationSummary {
+            kind: observation.kind,
+            group: observation.group.clone(),
+            continuation_cycles: 1,
+            resolved: observation_score_later_cleared(observation, plan, goals),
+            repeated_prompt: false,
+        });
+    }
+    summaries
 }
 
 /// Build the turn-end reminder from this turn's recorded observations.
@@ -738,6 +780,7 @@ pub fn is_auto_poke_message(message: &str) -> bool {
         || trimmed.starts_with(LEGACY_TODO_OWNERSHIP_CONTINUATION_MESSAGE)
         || trimmed.starts_with(TODO_COMPLETION_CONTINUATION_MESSAGE)
         || trimmed.starts_with(TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE)
+        || trimmed.starts_with(TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE)
         || trimmed.starts_with(LEGACY_TODO_COMPLETION_CONTINUATION_MESSAGE)
         || trimmed.starts_with(LEGACY_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE)
         || trimmed.starts_with(LEGACY_TODO_CONFIDENCE_SUMMARY_PREFIX)
@@ -760,6 +803,9 @@ pub fn auto_poke_display_summary(message: &str) -> Option<&'static str> {
         || trimmed.starts_with(LEGACY_TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE)
     {
         return Some("🔍 Double-checking a confidence jump for you...");
+    }
+    if trimmed.starts_with(TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE) {
+        return Some("✅ Preparing the final response...");
     }
     if trimmed.starts_with(TODO_COMPLETION_CONTINUATION_MESSAGE)
         || trimmed.starts_with(LEGACY_TODO_COMPLETION_CONTINUATION_MESSAGE)
@@ -1369,6 +1415,13 @@ mod tests {
         assert!(is_auto_poke_message(
             TODO_CONFIDENCE_SPIKE_CONTINUATION_MESSAGE
         ));
+        assert!(is_auto_poke_message(
+            TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE
+        ));
+        assert_eq!(
+            auto_poke_display_summary(TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE),
+            Some("✅ Preparing the final response...")
+        );
         assert!(is_auto_poke_message(LEGACY_TODO_CONFIDENCE_SUMMARY_PREFIX));
     }
 

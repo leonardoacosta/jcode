@@ -11,21 +11,22 @@ use std::sync::OnceLock;
 pub use jcode_message_types::{
     CacheControl, ConnectionPhase, ContentBlock, InputShellResult, Message, RenderedArtifact,
     RenderedArtifactKind, Role, StreamEvent, TOOL_OUTPUT_MISSING_TEXT, ToolCall, ToolDefinition,
-    ToolOutcome,
-    cache_relevant_message_hashes, cache_relevant_message_value, cache_relevant_messages,
-    ends_with_fresh_user_turn, extend_stable_hash, messages_with_dynamic_system_context,
-    sanitize_tool_id, stable_message_hash,
+    ToolOutcome, cache_relevant_message_hashes, cache_relevant_message_value,
+    cache_relevant_messages, ends_with_fresh_user_turn, extend_stable_hash,
+    messages_with_dynamic_system_context, sanitize_tool_id, stable_message_hash,
 };
 
 mod notifications;
 
 pub use notifications::{
     ParsedBackgroundTaskNotification, ParsedBackgroundTaskProgressNotification,
-    background_task_display_label, background_task_status_notice,
-    format_background_task_notification_markdown, format_background_task_progress_markdown,
+    ParsedBackgroundTaskStartedNotification, background_task_display_label,
+    background_task_status_notice, format_background_task_notification_markdown,
+    format_background_task_progress_markdown, format_background_task_stalled_markdown,
     format_input_shell_result_markdown, format_model_refresh_progress_markdown,
     input_shell_status_notice, parse_background_task_notification_markdown,
-    parse_background_task_progress_notification_markdown, strip_ansi_escape_sequences,
+    parse_background_task_progress_notification_markdown,
+    parse_background_task_started_notification_markdown, strip_ansi_escape_sequences,
 };
 
 fn compile_static_regex(pattern: &str) -> Option<Regex> {
@@ -61,8 +62,16 @@ pub fn redact_secrets(text: &str) -> String {
         && !text.contains("AIza")
         && !text.contains("ya29.")
         && !text.contains("xox")
+        && !text.contains("AKIA")
+        && !text.contains("-----BEGIN ")
+        && !text.contains("eyJ")
         && !lower.contains("api_key")
         && !lower.contains("token")
+        && !lower.contains("bearer ")
+        && !lower.contains("password")
+        && !lower.contains("secret")
+        && !lower.contains("authorization")
+        && !lower.contains("cookie")
     {
         logging::debug("secret redaction fast path skipped regex scan");
         return text.to_string();
@@ -85,6 +94,10 @@ pub fn redact_secrets(text: &str) -> String {
             r"ya29\.[A-Za-z0-9._-]{20,}",
             r"AIza[0-9A-Za-z_-]{20,}",
             r"xox[baprs]-[A-Za-z0-9-]{10,}",
+            r"AKIA[0-9A-Z]{16}",
+            r"(?i)Bearer\s+[A-Za-z0-9._~+/=-]{20,}",
+            r"eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}",
+            r"(?s)-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----.*?-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
         ])
     });
 
@@ -121,6 +134,8 @@ pub fn redact_secrets(text: &str) -> String {
             r"(?m)^\s*(AZURE_OPENAI_API_KEY\s*=\s*)[^\r\n]+",
             r"(?m)^\s*(CURSOR_API_KEY\s*=\s*)[^\r\n]+",
             r"(?m)^\s*(GITHUB_TOKEN\s*=\s*)[^\r\n]+",
+            r"(?im)^\s*([A-Z][A-Z0-9_]*(?:API_KEY|TOKEN|SECRET|PASSWORD|COOKIE)\s*=\s*)[^\r\n]+",
+            r"(?im)^\s*(AUTHORIZATION\s*[:=]\s*)[^\r\n]+",
         ])
     });
 

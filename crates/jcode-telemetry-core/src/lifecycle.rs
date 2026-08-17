@@ -419,9 +419,7 @@ pub(super) fn todo_session_event(
         completion_review_trigger_long_session_count: state
             .completion_review
             .trigger_long_session_count,
-        completion_review_trigger_ownership_count: state
-            .completion_review
-            .trigger_ownership_count,
+        completion_review_trigger_ownership_count: state.completion_review.trigger_ownership_count,
         completion_review_trigger_completion_confidence_count: state
             .completion_review
             .trigger_completion_confidence_count,

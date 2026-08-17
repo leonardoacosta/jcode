@@ -21,6 +21,46 @@ pub struct RenderedArtifact {
     pub language: Option<String>,
 }
 
+/// Normalized semantic outcome for a tool result.
+///
+/// `is_error` remains in the wire format for backward compatibility. This
+/// outcome distinguishes expected negative results and recoverable conditions
+/// from actual provider or tool failures.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolOutcome {
+    Success,
+    ExpectedNegative,
+    TimeoutWithProgress,
+    UserActionRequired,
+    ConfigurationError,
+    ProviderFailure,
+    ToolDefect,
+}
+
+impl Default for ToolOutcome {
+    fn default() -> Self {
+        Self::Success
+    }
+}
+
+impl ToolOutcome {
+    pub const fn is_error(self) -> bool {
+        matches!(
+            self,
+            Self::ConfigurationError | Self::ProviderFailure | Self::ToolDefect
+        )
+    }
+
+    pub const fn from_legacy_is_error(is_error: bool) -> Self {
+        if is_error {
+            Self::ToolDefect
+        } else {
+            Self::Success
+        }
+    }
+}
+
 impl RenderedArtifact {
     pub fn new(kind: RenderedArtifactKind) -> Self {
         Self {
@@ -206,6 +246,8 @@ pub enum ContentBlock {
         content: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         is_error: Option<bool>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        outcome: Option<ToolOutcome>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         artifact: Option<RenderedArtifact>,
     },

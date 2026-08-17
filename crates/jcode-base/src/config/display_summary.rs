@@ -27,6 +27,7 @@ impl Config {
 - Prompt up: `{}`
 - Prompt down: `{}`
 - Scroll bookmark: `{}`
+- Auto-poke toggle: `{}`
 - Workspace left: `{}`
 - Workspace down: `{}`
 - Workspace up: `{}`
@@ -68,6 +69,7 @@ impl Config {
 - Custom colors: {}
 
 **Features:**
+- Check updates: {}
 - Memory: {}
 - Swarm: {}
 - Auto-poke: {}
@@ -144,6 +146,11 @@ impl Config {
             self.keybindings.scroll_prompt_up,
             self.keybindings.scroll_prompt_down,
             self.keybindings.scroll_bookmark,
+            if self.keybindings.auto_poke_toggle.trim().is_empty() {
+                "disabled"
+            } else {
+                self.keybindings.auto_poke_toggle.trim()
+            },
             self.keybindings.workspace_left,
             self.keybindings.workspace_down,
             self.keybindings.workspace_up,
@@ -217,6 +224,7 @@ impl Config {
                         .join(", ")
                 )
             },
+            self.features.check_updates,
             self.features.memory,
             self.features.swarm,
             self.features.auto_poke,

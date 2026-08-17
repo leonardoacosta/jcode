@@ -208,7 +208,6 @@ pub fn export_timeline(session: &Session) -> Vec<TimelineEvent> {
                                 name: tool_name,
                                 output: truncate_for_timeline(content),
                                 is_error: is_error.unwrap_or(false),
-                                outcome: None,
                             },
                         });
                         t += duration_ms.min(100); // Small gap after tool result

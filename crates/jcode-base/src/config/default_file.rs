@@ -56,6 +56,9 @@ scroll_prompt_down = "ctrl+]"
 # Scroll bookmark toggle (stash position, jump to bottom, press again to return)
 scroll_bookmark = "ctrl+g"
 
+# Auto-poke toggle. Set "" to disable.
+auto_poke_toggle = "ctrl+p"
+
 # Optional fallback scroll bindings (useful on macOS terminals that forward Command)
 # Leave unset by default; on macOS Cmd+K / Cmd+J move up / down by prompt instead.
 scroll_up_fallback = ""
@@ -161,6 +164,9 @@ debug_socket = false
 # Set false here or set JCODE_NO_EMOJI=1 for ASCII fallbacks.
 emoji = true
 
+# Usage percentage wording: "left" (default) or "used".
+usage_display = "left"
+
 # Show thinking/reasoning content (default: false)
 show_thinking = false
 
@@ -194,6 +200,10 @@ prompt_entry_animation = true
 # the one-line summary (default: false). Useful when you want to read search
 # results directly in the chat.
 # show_agentgrep_output = false
+
+# Show up to the last three non-empty lines of bash output beneath the tool
+# summary (default: false).
+# show_bash_output = false
 
 # Show the dimmed technical detail (command, file path, args) next to the
 # model-provided intent on tool rows (default: false). When false, tool rows
@@ -268,6 +278,9 @@ prompt_entry_animation = true
 # error = "#ff6464"
 
 [features]
+# Check for and install updates during startup. Set to false for the persistent
+# equivalent of passing --no-update on every invocation.
+check_updates = true
 # Memory: retrieval + extraction sidecar features
 memory = true
 # Swarm: multi-session coordination features
@@ -394,6 +407,11 @@ cross_provider_failover = "countdown"
 # This is the base budget: high reasoning efforts scale it up automatically
 # (high 2x, xhigh 3x, max/swarm 4x) since they think silently for much longer.
 # stream_idle_timeout_secs = 600
+# Maximum attempts for transient 429/5xx/network failures, including the first
+# request. Retries honor Retry-After and use capped exponential backoff.
+# Env overrides: JCODE_MAX_RETRIES, JCODE_RETRY_BACKOFF_CAP_SECS.
+# max_retries = 8
+# retry_backoff_cap_secs = 30
 
 [agents]
 # Defaults for spawned helper agents (swarm workers, subagents, sidecars).

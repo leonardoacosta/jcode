@@ -8,6 +8,22 @@ pub struct ContextSnapshot {
     pub fresh: bool,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BackgroundTaskRowStatus {
+    Running,
+    Completed,
+    Failed,
+}
+
+/// Compact presentation state for one retained background task.
+#[derive(Clone, Debug, PartialEq)]
+pub struct BackgroundTaskRow {
+    pub task_id: String,
+    pub label: String,
+    pub percent: Option<f32>,
+    pub status: BackgroundTaskRowStatus,
+}
+
 pub mod backend;
 pub(crate) mod color_support;
 pub mod control_room;
@@ -99,6 +115,7 @@ fn keyboard_enhancement_flags() -> crossterm::event::KeyboardEnhancementFlags {
 
     KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
         | KeyboardEnhancementFlags::REPORT_EVENT_TYPES
+        | KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS
 }
 
 /// Enable Kitty keyboard protocol for unambiguous key reporting.
@@ -211,6 +228,14 @@ pub trait TuiState {
     /// is off or the session has no todos.
     fn pinned_todos_payload(&self) -> Option<&str> {
         None
+    }
+    /// Whether the pinned todo band is temporarily expanded to show every row.
+    fn pinned_todos_expanded(&self) -> bool {
+        false
+    }
+    /// Running and recently completed background tasks rendered beneath pinned todos.
+    fn background_task_rows(&self) -> &[BackgroundTaskRow] {
+        &[]
     }
 
     // ---- Input ----
@@ -1905,6 +1930,7 @@ mod tests {
 
         assert!(flags.contains(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES));
         assert!(flags.contains(KeyboardEnhancementFlags::REPORT_EVENT_TYPES));
+        assert!(flags.contains(KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS));
         assert!(!flags.contains(KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES));
     }
 }
