@@ -451,6 +451,101 @@ describe("projection store", () => {
 });
 
 describe("transport event cursor", () => {
+  it("reports replay latency and poll metrics without changing delivered events", async () => {
+    vi.setSystemTime(new Date("2026-08-17T05:00:01.250Z"));
+    const metrics: ReturnType<typeof vi.fn> = vi.fn();
+    const event = {
+      protocol_version: "command-center.v1",
+      stream_id: "stream-1",
+      sequence: 1,
+      timestamp: "2026-08-17T05:00:00.000Z",
+      source: "jcode",
+      entity_refs: [],
+      payload: { type: "snapshot_required", reason: "gap" },
+    };
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/bootstrap")) {
+        return new Response(
+          JSON.stringify({ id: "session", csrf_token: "csrf", expires_at: "2099-01-01T00:00:00Z" }),
+        );
+      }
+      return new Response(JSON.stringify({ events: [event], snapshot_required: true }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const received: EventEnvelope[] = [];
+    const unsubscribe = new HttpCommandCenterTransport("", { onMetrics: metrics }).subscribe(
+      "stream-1",
+      0,
+      (value) => received.push(value),
+      vi.fn(),
+    );
+    await vi.waitFor(() => expect(received).toHaveLength(1));
+    unsubscribe();
+    expect(received).toHaveLength(1);
+    const latestMetrics = metrics.mock.calls.at(-1)?.[0];
+    expect(latestMetrics).toMatchObject({
+      disconnectedCount: 0,
+      reconnectCount: 0,
+      replayPollCount: 1,
+      snapshotRequiredCount: 1,
+    });
+    expect(latestMetrics.lastEventLatencyMs).toBeGreaterThanOrEqual(1250);
+    vi.useRealTimers();
+  });
+
+  it("counts one disconnect and one reconnect across replay poll failures", async () => {
+    vi.useFakeTimers();
+    const metrics: ReturnType<typeof vi.fn> = vi.fn();
+    let replayAttempt = 0;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/bootstrap")) {
+        return new Response(
+          JSON.stringify({ id: "session", csrf_token: "csrf", expires_at: "2099-01-01T00:00:00Z" }),
+        );
+      }
+      replayAttempt += 1;
+      return replayAttempt === 1
+        ? new Response("failed", { status: 503 })
+        : new Response(JSON.stringify({ events: [] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const statuses: string[] = [];
+    const unsubscribe = new HttpCommandCenterTransport("", { onMetrics: metrics }).subscribe(
+      "stream-1",
+      0,
+      vi.fn(),
+      (status) => statuses.push(status),
+    );
+    await vi.runOnlyPendingTimersAsync();
+    await vi.advanceTimersByTimeAsync(1_000);
+    unsubscribe();
+    expect(statuses.slice(0, 2)).toEqual(["disconnected", "live"]);
+    expect(metrics).toHaveBeenCalledWith({
+      disconnectedCount: 1,
+      reconnectCount: 1,
+      replayPollCount: 2,
+      snapshotRequiredCount: 0,
+    });
+    vi.useRealTimers();
+  });
+
+  it("keeps instrumentation disabled by default", async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.endsWith("/bootstrap")) {
+        return new Response(
+          JSON.stringify({ id: "session", csrf_token: "csrf", expires_at: "2099-01-01T00:00:00Z" }),
+        );
+      }
+      return new Response(JSON.stringify({ events: [] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const onEvent = vi.fn();
+    const unsubscribe = new HttpCommandCenterTransport().subscribe("stream-1", 0, onEvent, vi.fn());
+    await Promise.resolve();
+    unsubscribe();
+    expect(onEvent).not.toHaveBeenCalled();
+  });
+
   it("rejects scoped cursor escapes before opening an event stream", () => {
     const original = globalThis.EventSource;
     const eventSource = vi.fn();

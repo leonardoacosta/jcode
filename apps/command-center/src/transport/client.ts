@@ -5,10 +5,12 @@ import type {
   DecisionInboxSnapshot,
   EventEnvelope,
 } from "../generated/command-center-contract";
+import type { MxHealthProjection } from "../generated/mx-health-contract";
 
 export interface CommandCenterTransport {
   loadSnapshot(path: string): Promise<CommandCenterSnapshot>;
   loadDecisionInbox(): Promise<DecisionInboxSnapshot>;
+  loadMxHealth(): Promise<MxHealthProjection>;
   sendCommand(command: CommandEnvelope): Promise<CommandResult>;
   subscribe(
     streamId: string,
@@ -27,6 +29,28 @@ interface BrowserSession {
 interface ReplayBatch {
   events: EventEnvelope[];
   snapshot_required?: boolean;
+  snapshotRequired?: boolean;
+}
+
+export interface CommandCenterTransportMetrics {
+  disconnectedCount: number;
+  reconnectCount: number;
+  replayPollCount: number;
+  lastEventLatencyMs?: number;
+  snapshotRequiredCount: number;
+}
+
+export interface CommandCenterTransportOptions {
+  onMetrics?: (metrics: CommandCenterTransportMetrics) => void;
+}
+
+function transportMetrics(): CommandCenterTransportMetrics {
+  return {
+    disconnectedCount: 0,
+    reconnectCount: 0,
+    replayPollCount: 0,
+    snapshotRequiredCount: 0,
+  };
 }
 
 interface RustCommandResult {
@@ -99,8 +123,34 @@ function browserCommandResult(value: unknown): CommandResult {
 export class HttpCommandCenterTransport implements CommandCenterTransport {
   private session?: BrowserSession;
   private sessionRequest?: Promise<BrowserSession>;
+  private readonly onMetrics?: (metrics: CommandCenterTransportMetrics) => void;
+  private readonly metrics = transportMetrics();
 
-  constructor(private readonly baseUrl = "") {}
+  constructor(
+    private readonly baseUrl = "",
+    options: CommandCenterTransportOptions = {},
+  ) {
+    this.onMetrics = options.onMetrics;
+  }
+
+  private updateMetrics(update: Partial<CommandCenterTransportMetrics>): void {
+    Object.assign(this.metrics, update);
+    this.onMetrics?.({ ...this.metrics });
+  }
+
+  private reportStatus(status: "live" | "disconnected", state: { disconnected: boolean }): void {
+    if (status === "disconnected") {
+      if (!state.disconnected) {
+        state.disconnected = true;
+        this.updateMetrics({ disconnectedCount: this.metrics.disconnectedCount + 1 });
+      }
+      return;
+    }
+    if (state.disconnected) {
+      state.disconnected = false;
+      this.updateMetrics({ reconnectCount: this.metrics.reconnectCount + 1 });
+    }
+  }
 
   private async authenticatedHeaders(mutating = false): Promise<Record<string, string>> {
     if (!this.session || Date.parse(this.session.expires_at) <= Date.now()) {
@@ -145,6 +195,15 @@ export class HttpCommandCenterTransport implements CommandCenterTransport {
     });
     if (!response.ok) throw new Error(`decision_inbox_${response.status}`);
     return camelize(await response.json()) as DecisionInboxSnapshot;
+  }
+
+  async loadMxHealth(): Promise<MxHealthProjection> {
+    const response = await fetch(`${this.baseUrl}/api/command-center/mx-health`, {
+      credentials: "same-origin",
+      headers: await this.authenticatedHeaders(),
+    });
+    if (!response.ok) throw new Error(`mx_health_${response.status}`);
+    return camelize(await response.json()) as MxHealthProjection;
   }
 
   async sendCommand(command: CommandEnvelope): Promise<CommandResult> {
@@ -205,8 +264,10 @@ export class HttpCommandCenterTransport implements CommandCenterTransport {
     }
     let canceled = false;
     let sequence = after;
+    const state = { disconnected: false };
     const poll = async () => {
       try {
+        this.updateMetrics({ replayPollCount: this.metrics.replayPollCount + 1 });
         const headers = await this.authenticatedHeaders();
         const response = await fetch(
           `${this.baseUrl}/api/command-center/replay?stream_id=${encodeURIComponent(streamId)}&sequence=${sequence}`,
@@ -214,13 +275,22 @@ export class HttpCommandCenterTransport implements CommandCenterTransport {
         );
         if (!response.ok) throw new Error(`replay_${response.status}`);
         const batch = camelize(await response.json()) as ReplayBatch;
+        if (batch.snapshot_required || batch.snapshotRequired) {
+          this.updateMetrics({ snapshotRequiredCount: this.metrics.snapshotRequiredCount + 1 });
+        }
         for (const event of batch.events ?? []) {
           if (canceled) return;
           sequence = event.sequence;
+          const eventTimestamp = Date.parse(event.timestamp);
+          if (Number.isFinite(eventTimestamp)) {
+            this.updateMetrics({ lastEventLatencyMs: Math.max(0, Date.now() - eventTimestamp) });
+          }
           onEvent(event);
         }
+        this.reportStatus("live", state);
         onStatus("live");
       } catch {
+        this.reportStatus("disconnected", state);
         onStatus("disconnected");
       }
       if (!canceled) window.setTimeout(poll, 1_000);
