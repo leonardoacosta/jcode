@@ -82,6 +82,33 @@
     return families[familyFor(node)];
   }
 
+  function rectanglesOverlap(first, second) {
+    return first.left < second.right && first.right > second.left
+      && first.top < second.bottom && first.bottom > second.top;
+  }
+
+  function resolveLabelOverlap(rect, state) {
+    const existing = state.labelPlates || [];
+    const offsets = [0, -24, 24, -48, 48, -72, 72];
+    for (const offset of offsets) {
+      const candidate = {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top + offset,
+        bottom: rect.bottom + offset,
+        offset,
+      };
+      if (!existing.some(other => rectanglesOverlap(candidate, other))) {
+        existing.push(candidate);
+        state.labelPlates = existing;
+        return candidate;
+      }
+    }
+    existing.push(rect);
+    state.labelPlates = existing;
+    return rect;
+  }
+
   function arrowHead(ctx, point, angle, style, reverse = false) {
     const size = 7 + style.width;
     ctx.save();
@@ -125,6 +152,11 @@
 
     iconColor(node) {
       return colorsFor(node).stroke;
+    },
+
+    iconWorldSize(mass) {
+      const iconWorldSize = Math.min(mass.width, mass.depth) * .78;
+      return iconWorldSize;
     },
 
     drawBackground(ctx, state) {
@@ -243,7 +275,8 @@
       ctx.save();
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.setLineDash(style.dash);
+      ctx.setLineDash(item.evidence_level === "inferred" ? [10, 5] : item.evidence_level === "held" ? [3, 5] : style.dash);
+      ctx.globalAlpha = item.evidence_level === "held" ? .48 : 1;
       ctx.strokeStyle = "rgba(255,255,255,.94)";
       ctx.lineWidth = style.width + 4;
       ctx.stroke(path);
@@ -276,7 +309,12 @@
         if (!best || length > best.length) best = { start, end, length };
       }
       if (!best || best.length < 72) return;
-      const label = item.kind.toUpperCase();
+      const evidenceLabel = item.evidence_level === "inferred"
+        ? "INFERRED"
+        : item.evidence_level === "held"
+          ? "HELD · NOT DEPLOYED"
+          : "";
+      const label = evidenceLabel || item.kind.toUpperCase();
       const x = (best.start.x + best.end.x) / 2;
       const y = (best.start.y + best.end.y) / 2 - 7;
       ctx.save();
@@ -308,20 +346,42 @@
       ctx.restore();
     },
 
-    drawNodeLabel(ctx, node, point) {
+    drawNodeLabel(ctx, node, point, state) {
       const colors = colorsFor(node);
+      const label = node.label || node.code;
+      const resourceType = node.resource_type || node.role;
+      const status = node.status || "unknown";
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = '700 9px "Cascadia Code", Consolas, monospace';
-      const codeWidth = ctx.measureText(node.code).width + 12;
+      ctx.font = '700 10px "Segoe UI", system-ui, sans-serif';
+      const labelWidth = ctx.measureText(label).width;
+      ctx.font = '600 7px "Segoe UI", system-ui, sans-serif';
+      const typeWidth = ctx.measureText(resourceType).width;
+      const statusWidth = ctx.measureText(status).width;
+      const labelBoxWidth = Math.max(labelWidth, typeWidth, statusWidth) + 14;
+      // Keep full labels visible and move their plates instead of abbreviating.
+      const labelRect = resolveLabelOverlap({
+        left: point.x - labelBoxWidth / 2,
+        right: point.x + labelBoxWidth / 2,
+        top: point.y - 18,
+        bottom: point.y + 17,
+      }, state);
+      const labelOffset = labelRect.offset || 0;
+      const labelPoint = { x: point.x, y: point.y + labelOffset };
       ctx.fillStyle = "rgba(255,255,255,.95)";
-      ctx.fillRect(point.x - codeWidth / 2, point.y - 12, codeWidth, 16);
+      ctx.fillRect(labelPoint.x - labelBoxWidth / 2, labelPoint.y - 18, labelBoxWidth, 35);
       ctx.strokeStyle = colors.stroke;
       ctx.lineWidth = 1;
-      ctx.strokeRect(point.x - codeWidth / 2 + .5, point.y - 11.5, codeWidth - 1, 15);
+      ctx.strokeRect(labelPoint.x - labelBoxWidth / 2 + .5, labelPoint.y - 17.5, labelBoxWidth - 1, 34);
       ctx.fillStyle = "#212121";
-      ctx.fillText(node.code, point.x, point.y - 4);
+      ctx.font = '700 10px "Segoe UI", system-ui, sans-serif';
+      ctx.fillText(node.label || node.code, labelPoint.x, labelPoint.y - 10);
+      ctx.fillStyle = "#57606a";
+      ctx.font = '600 7px "Segoe UI", system-ui, sans-serif';
+      ctx.fillText(node.resource_type || node.role, labelPoint.x, labelPoint.y + 1);
+      ctx.fillStyle = colors.stroke;
+      ctx.fillText(status, labelPoint.x, labelPoint.y + 11);
       ctx.restore();
     },
 

@@ -295,6 +295,97 @@ class CanvasRendererTests(unittest.TestCase):
                 self.assertIn("drawTrafficLayer", source)
                 self.assertIn("drawTrafficDirection", source)
 
+    def test_renderer_supports_optional_views_sidecar_without_regressing_scene_only_cli(self):
+        views_fixture = Path(__file__).parent / "fixtures" / "directional-views.json"
+        scene = json.loads(DIRECTIONAL_FIXTURE.read_text())
+        views = json.loads(views_fixture.read_text())
+        canonical_scene = json.dumps(scene, sort_keys=True, separators=(",", ":"))
+        canonical_views = json.dumps(views, sort_keys=True, separators=(",", ":"))
+        scene_hash = hashlib.sha256(canonical_scene.encode()).hexdigest()
+        views_hash = hashlib.sha256(canonical_views.encode()).hexdigest()
+
+        with tempfile.TemporaryDirectory() as directory:
+            directory_path = Path(directory)
+            views_output = directory_path / "directional-with-views.html"
+            mismatch_views_path = directory_path / "directional-views-mismatched.json"
+            mismatch_output = directory_path / "mismatch.html"
+            scene_only_a = directory_path / "scene-only-a.html"
+            scene_only_b = directory_path / "scene-only-b.html"
+
+            with self.subTest("views sidecar renders native semantic tabs and static content"):
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(RENDERER),
+                        str(DIRECTIONAL_FIXTURE),
+                        str(AZURE_THEME),
+                        str(views_output),
+                        "--views",
+                        str(views_fixture),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                html = views_output.read_text()
+                self.assertIn(f'data-scene-sha256="{scene_hash}"', html)
+                self.assertIn(f'data-views-sha256="{views_hash}"', html)
+                self.assertIn('role="tablist"', html)
+                for view_id, label in (("runtime", "Runtime"), ("network", "Network"), ("ado", "ADO")):
+                    self.assertRegex(
+                        html,
+                        rf'<button[^>]+role="tab"[^>]+aria-controls="{view_id}"[^>]*>\s*{label}\s*</button>',
+                    )
+                    self.assertRegex(html, rf'<(?:section|div)[^>]+id="{view_id}"[^>]+role="tabpanel"')
+                    self.assertRegex(html, rf'<(?:a|section|div)[^>]+(?:id|href)="#{view_id}"|id="{view_id}"')
+                self.assertIn("const VIEWS_SIDECAR =", html)
+                self.assertIn('"default_view":"network"', html)
+                non_canvas_html = re.sub(r"<canvas\b[^>]*>.*?</canvas>", "", html, flags=re.DOTALL)
+                for static_text in (
+                    "sample-directional-infra subscription",
+                    "The runtime resources attach to the application VNet.",
+                    "Validate Bicep",
+                    "The deployment workflow is sourced from the represented repository.",
+                ):
+                    self.assertIn(static_text, non_canvas_html)
+
+            with self.subTest("mismatched repository identity fails before writing output"):
+                mismatched_views = copy.deepcopy(views)
+                mismatched_views["repository"]["commit"] = "ffffffffffffffffffffffffffffffffffffffff"
+                mismatch_views_path.write_text(json.dumps(mismatched_views))
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(RENDERER),
+                        str(DIRECTIONAL_FIXTURE),
+                        str(AZURE_THEME),
+                        str(mismatch_output),
+                        "--views",
+                        str(mismatch_views_path),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("repository", result.stderr.lower())
+                self.assertIn("commit", result.stderr.lower())
+                self.assertFalse(mismatch_output.exists())
+
+            with self.subTest("existing three positional argument scene-only path stays deterministic"):
+                first = self.render(DIRECTIONAL_FIXTURE, AZURE_THEME, scene_only_a)
+                second = self.render(DIRECTIONAL_FIXTURE, AZURE_THEME, scene_only_b)
+                self.assertEqual(first.returncode, 0, first.stderr)
+                self.assertEqual(second.returncode, 0, second.stderr)
+                first_html = scene_only_a.read_text()
+                second_html = scene_only_b.read_text()
+                self.assertEqual(first_html, second_html)
+                self.assertIn(f'data-scene-sha256="{scene_hash}"', first_html)
+                self.assertNotIn('role="tablist"', first_html)
+                self.assertNotIn('role="tabpanel"', first_html)
+                self.assertNotIn('data-views-sha256=', first_html)
+
     def test_azure_theme_uses_the_topology_palette_and_semantic_families(self):
         source = AZURE_THEME.read_text()
         self.assertIn('pageBackground: "#ffffff"', source)

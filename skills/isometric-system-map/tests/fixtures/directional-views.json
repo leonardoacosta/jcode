@@ -1,0 +1,410 @@
+{
+  "version": 1,
+  "repository": {
+    "name": "sample-directional-infra",
+    "ref": "main",
+    "commit": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "default_view": "network",
+  "runtime": {
+    "node_ids": [
+      "apim",
+      "app",
+      "sql-private-endpoint",
+      "database",
+      "telemetry",
+      "partner-api"
+    ],
+    "path_ids": [
+      "ingress-request",
+      "private-sql-dependency",
+      "private-endpoint-to-sql",
+      "emit-telemetry",
+      "partner-dependency"
+    ],
+    "flow_ids": [
+      "observe-runtime"
+    ]
+  },
+  "network": {
+    "containers": [
+      {
+        "id": "subscription-main",
+        "kind": "subscription",
+        "label": "sample-directional-infra subscription",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "infra/main.bicep",
+            "lines": "1-18",
+            "claim": "The represented resources deploy into the subscription-scoped entry point."
+          }
+        ]
+      },
+      {
+        "id": "resource-group-runtime",
+        "kind": "resource-group",
+        "label": "runtime-resource-group",
+        "parent_id": "subscription-main",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "infra/main.bicep",
+            "lines": "19-40",
+            "claim": "The runtime resources are organized under the represented resource group."
+          }
+        ]
+      },
+      {
+        "id": "vnet-runtime",
+        "kind": "vnet",
+        "label": "runtime-vnet",
+        "parent_id": "resource-group-runtime",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "infra/network/main.bicep",
+            "lines": "1-72",
+            "claim": "The runtime resources attach to the application VNet."
+          }
+        ]
+      },
+      {
+        "id": "subnet-runtime",
+        "kind": "subnet",
+        "label": "runtime-subnet",
+        "parent_id": "vnet-runtime",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "infra/network/main.bicep",
+            "lines": "18-54",
+            "claim": "The app integration and private endpoint share the represented runtime subnet boundary."
+          }
+        ],
+        "cidr": "10.42.1.0/24"
+      }
+    ],
+    "memberships": [
+      {
+        "container_id": "subnet-runtime",
+        "node_id": "app",
+        "evidence": [
+          {
+            "path": "infra/modules/app.bicep",
+            "lines": "1-80",
+            "claim": "The workload app integrates with the represented subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "subnet-runtime",
+        "node_id": "sql-private-endpoint",
+        "evidence": [
+          {
+            "path": "infra/modules/sql.bicep",
+            "lines": "36-96",
+            "claim": "The private endpoint is deployed into the represented subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "resource-group-runtime",
+        "node_id": "apim",
+        "evidence": [
+          {
+            "path": "infra/modules/apim.bicep",
+            "lines": "1-72",
+            "claim": "API Management is represented as a resource-group scoped service, with policies left as metadata."
+          }
+        ]
+      },
+      {
+        "container_id": "resource-group-runtime",
+        "node_id": "database",
+        "evidence": [
+          {
+            "path": "infra/modules/sql.bicep",
+            "lines": "1-96",
+            "claim": "The SQL database is a PaaS resource at resource-group scope, not a subnet member."
+          }
+        ]
+      },
+      {
+        "container_id": "resource-group-runtime",
+        "node_id": "telemetry",
+        "evidence": [
+          {
+            "path": "infra/modules/monitoring.bicep",
+            "lines": "10-72",
+            "claim": "The monitoring workspace is represented as a resource-group scoped PaaS resource."
+          }
+        ]
+      }
+    ],
+    "links": [
+      {
+        "id": "link-private-endpoint",
+        "kind": "private-endpoint",
+        "source_id": "app",
+        "target_id": "sql-private-endpoint",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "App to SQL private endpoint",
+        "evidence": [
+          {
+            "path": "infra/modules/sql.bicep",
+            "lines": "36-96",
+            "claim": "The subnet hosts a private endpoint connection used by the app for SQL access."
+          }
+        ]
+      },
+      {
+        "id": "link-private-link-target",
+        "kind": "private-endpoint",
+        "source_id": "sql-private-endpoint",
+        "target_id": "database",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Private link target",
+        "evidence": [
+          {
+            "path": "infra/modules/sql.bicep",
+            "lines": "36-96",
+            "claim": "The private endpoint targets the represented SQL PaaS resource."
+          }
+        ]
+      },
+      {
+        "id": "link-partner-dns",
+        "kind": "dns",
+        "source_id": "app",
+        "target_id": "partner-api",
+        "direction": "forward",
+        "evidence_level": "inferred",
+        "label": "Partner DNS resolution",
+        "evidence": [
+          {
+            "path": "infra/main.bicep",
+            "lines": "33-40",
+            "claim": "The application resolves and reaches the represented external partner endpoint."
+          }
+        ]
+      },
+      {
+        "id": "link-private-data",
+        "kind": "data",
+        "source_id": "app",
+        "target_id": "database",
+        "direction": "forward",
+        "evidence_level": "held",
+        "label": "Private SQL data dependency",
+        "evidence": [
+          {
+            "path": "infra/modules/sql.bicep",
+            "lines": "1-96",
+            "claim": "The application data dependency is held as a logical SQL edge through the private endpoint."
+          }
+        ]
+      }
+    ]
+  },
+  "pipelines": [
+    {
+      "id": "foundation-release",
+      "label": "Foundation release",
+      "stages": [
+        {
+          "id": "repo",
+          "label": "Infrastructure repository",
+          "stage_type": "repository",
+          "icon": "az-git-repo",
+          "status": "active",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "1-12",
+              "claim": "The deployment workflow is sourced from the represented repository."
+            }
+          ]
+        },
+        {
+          "id": "validate",
+          "label": "Validate Bicep",
+          "stage_type": "validation",
+          "icon": "az-build-check",
+          "status": "active",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "12-24",
+              "claim": "The pipeline runs validation before any release artifact is published."
+            }
+          ]
+        },
+        {
+          "id": "build",
+          "label": "Build release package",
+          "stage_type": "build",
+          "icon": "az-build-pipeline",
+          "status": "active",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "18-30",
+              "claim": "The workflow builds the deployable infrastructure package."
+            }
+          ]
+        },
+        {
+          "id": "artifact",
+          "label": "Publish template artifact",
+          "stage_type": "artifact",
+          "icon": "az-ado",
+          "status": "active",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "24-30",
+              "claim": "The validated build is published as the deployment artifact."
+            }
+          ]
+        },
+        {
+          "id": "gate",
+          "label": "Production approval gate",
+          "stage_type": "gate",
+          "icon": "az-approval",
+          "status": "active",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "30-36",
+              "claim": "A manual approval gate protects the production release."
+            }
+          ]
+        },
+        {
+          "id": "deploy-app",
+          "label": "Deploy application",
+          "stage_type": "deployment",
+          "icon": "az-release-pipeline",
+          "status": "active",
+          "parallel_group": "prod-release",
+          "lane": 0,
+          "target_node_id": "app",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "31-44",
+              "claim": "The release pipeline deploys the represented application target."
+            }
+          ]
+        },
+        {
+          "id": "deploy-telemetry",
+          "label": "Deploy telemetry wiring",
+          "stage_type": "deployment",
+          "icon": "az-release-pipeline",
+          "status": "active",
+          "parallel_group": "prod-release",
+          "lane": 1,
+          "target_node_id": "telemetry",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "31-44",
+              "claim": "The release pipeline deploys the represented telemetry target in parallel."
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge-repo-validate",
+          "source_id": "repo",
+          "target_id": "validate",
+          "label": "automatic validation",
+          "kind": "automatic",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "1-24",
+              "claim": "Repository updates automatically enter validation."
+            }
+          ]
+        },
+        {
+          "id": "edge-validate-build",
+          "source_id": "validate",
+          "target_id": "build",
+          "label": "build when valid",
+          "kind": "automatic",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "18-24",
+              "claim": "A successful validation transitions into the build step."
+            }
+          ]
+        },
+        {
+          "id": "edge-build-artifact",
+          "source_id": "build",
+          "target_id": "artifact",
+          "label": "publish artifact",
+          "kind": "automatic",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "24-30",
+              "claim": "The build output is published as the release artifact."
+            }
+          ]
+        },
+        {
+          "id": "edge-artifact-gate",
+          "source_id": "artifact",
+          "target_id": "gate",
+          "label": "approval required",
+          "kind": "approval",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "30-36",
+              "claim": "The artifact awaits the manual production approval gate."
+            }
+          ]
+        },
+        {
+          "id": "edge-gate-deploy-app",
+          "source_id": "gate",
+          "target_id": "deploy-app",
+          "label": "deploy app",
+          "kind": "manual",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "31-44",
+              "claim": "Approval opens the application deployment stage."
+            }
+          ]
+        },
+        {
+          "id": "edge-gate-deploy-telemetry",
+          "source_id": "gate",
+          "target_id": "deploy-telemetry",
+          "label": "deploy telemetry",
+          "kind": "manual",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "31-44",
+              "claim": "Approval also opens the telemetry deployment stage in parallel."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

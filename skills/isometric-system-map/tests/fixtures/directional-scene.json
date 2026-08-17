@@ -5,7 +5,7 @@
     "ref": "main",
     "commit": "0123456789abcdef0123456789abcdef01234567",
     "scope": "infra/main.bicep, infra/modules/apim.bicep",
-    "summary": "A compact request topology that reads from APIM ingress through an owned application and private data access to an external partner, alongside deployment and telemetry support paths."
+    "summary": "A compact request topology that reads from APIM ingress through an owned application and private data access to an external partner, with telemetry support paths."
   },
   "art_direction": {
     "name": "warm technical paper",
@@ -30,14 +30,6 @@
     "typography": "compact monospaced labels",
     "motion": "small ink dots moving at a measured pace",
     "path_treatments": {
-      "delivery": {
-        "stroke_pattern": "solid",
-        "weight": "medium",
-        "marker": "filled terminal arrow",
-        "texture": "clean technical ink",
-        "motion_cadence": "steady measured travel",
-        "reduced_motion": "numbered marker at the step endpoint"
-      },
       "dependency": {
         "stroke_pattern": "short dash",
         "weight": "fine",
@@ -65,11 +57,6 @@
   },
   "zones": [
     {
-      "id": "delivery",
-      "label": "Delivery",
-      "description": "Build and deployment control plane"
-    },
-    {
       "id": "runtime",
       "label": "Runtime",
       "description": "Provisioned application resources"
@@ -83,16 +70,15 @@
       "status": "active",
       "member_ids": [
         "app",
-        "database",
-        "telemetry"
+        "sql-private-endpoint"
       ],
       "padding": 0.5,
-      "description": "Private runtime attachment area.",
+      "description": "Private runtime VNet area for subnet-attached deployables.",
       "evidence": [
         {
           "path": "infra/network/main.bicep",
           "lines": "1-72",
-          "claim": "The runtime resources attach to the application VNet."
+          "claim": "The application integration and SQL private endpoint attach to the application VNet."
         }
       ]
     }
@@ -125,10 +111,11 @@
         "label": "Data access",
         "kind": "data-access",
         "member_ids": [
+          "sql-private-endpoint",
           "database"
         ],
         "padding": 0.5,
-        "description": "The application reaches its private data dependency."
+        "description": "The application reaches SQL through the subnet-contained private endpoint and RG-scoped PaaS database."
       },
       {
         "id": "external-services",
@@ -143,33 +130,6 @@
     ]
   },
   "nodes": [
-    {
-      "id": "pipeline",
-      "code": "CI",
-      "label": "Deploy pipeline",
-      "role": "pipeline",
-      "form": "cube",
-      "zone": "delivery",
-      "position": {
-        "x": 1,
-        "y": 9
-      },
-      "footprint": {
-        "width": 2,
-        "depth": 1
-      },
-      "status": "active",
-      "resource_type": "Azure DevOps pipeline",
-      "icon": "az-release-pipeline",
-      "description": "Validates and deploys the subscription template.",
-      "evidence": [
-        {
-          "path": ".azuredevops/deploy.yml",
-          "lines": "12-44",
-          "claim": "The pipeline validates and deploys the Bicep entry point."
-        }
-      ]
-    },
     {
       "id": "apim",
       "code": "APIM",
@@ -225,6 +185,33 @@
       ]
     },
     {
+      "id": "sql-private-endpoint",
+      "code": "PE",
+      "label": "SQL private endpoint",
+      "role": "network",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 6,
+        "y": 5
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Network/privateEndpoints",
+      "icon": "az-private-endpoint",
+      "description": "Subnet-contained private endpoint for the SQL database.",
+      "evidence": [
+        {
+          "path": "infra/modules/sql.bicep",
+          "lines": "36-96",
+          "claim": "The SQL module creates a private endpoint in the runtime subnet."
+        }
+      ]
+    },
+    {
       "id": "database",
       "code": "SQL",
       "label": "SQL database",
@@ -232,8 +219,8 @@
       "form": "cube",
       "zone": "runtime",
       "position": {
-        "x": 6,
-        "y": 5
+        "x": 8,
+        "y": 3
       },
       "footprint": {
         "width": 2,
@@ -242,12 +229,12 @@
       "status": "active",
       "resource_type": "Microsoft.Sql/servers/databases",
       "icon": "az-sql-database",
-      "description": "Provides the SQL service and its private endpoint.",
+      "description": "Provides the RG-scoped SQL PaaS database reached through a private endpoint.",
       "evidence": [
         {
           "path": "infra/modules/sql.bicep",
           "lines": "1-96",
-          "claim": "The SQL module creates the data service and private endpoint."
+          "claim": "The SQL module creates the PaaS database while the private endpoint is modeled separately."
         }
       ]
     },
@@ -286,8 +273,8 @@
       "form": "cube",
       "zone": "runtime",
       "position": {
-        "x": 8,
-        "y": 2
+        "x": 10,
+        "y": 1
       },
       "footprint": {
         "width": 1,
@@ -341,46 +328,11 @@
       ]
     },
     {
-      "id": "deploy-app",
-      "from": "pipeline",
-      "to": "app",
-      "kind": "delivery",
-      "label": "guarded deployment",
-      "route": [
-        {
-          "x": 3,
-          "y": 9.5
-        },
-        {
-          "x": 3.5,
-          "y": 9.5
-        },
-        {
-          "x": 3.5,
-          "y": 8.5
-        },
-        {
-          "x": 4,
-          "y": 8.5
-        }
-      ],
-      "payload_ids": [
-        "deployment"
-      ],
-      "evidence": [
-        {
-          "path": ".azuredevops/deploy.yml",
-          "lines": "31-44",
-          "claim": "The pipeline invokes the app deployment."
-        }
-      ]
-    },
-    {
       "id": "private-sql-dependency",
       "from": "app",
-      "to": "database",
+      "to": "sql-private-endpoint",
       "kind": "dependency",
-      "label": "private SQL dependency",
+      "label": "private endpoint handoff",
       "route": [
         {
           "x": 5,
@@ -404,7 +356,40 @@
         {
           "path": "infra/main.bicep",
           "lines": "22-31",
-          "claim": "The Bicep entry point wires the application to the private SQL dependency."
+          "claim": "The application reaches SQL through the represented private endpoint."
+        }
+      ]
+    },
+    {
+      "id": "private-endpoint-to-sql",
+      "from": "sql-private-endpoint",
+      "to": "database",
+      "kind": "dependency",
+      "label": "SQL private link target",
+      "route": [
+        {
+          "x": 7,
+          "y": 5.5
+        },
+        {
+          "x": 7.5,
+          "y": 5.5
+        },
+        {
+          "x": 7.5,
+          "y": 3.5
+        },
+        {
+          "x": 8,
+          "y": 3.5
+        }
+      ],
+      "payload_ids": [],
+      "evidence": [
+        {
+          "path": "infra/modules/sql.bicep",
+          "lines": "36-96",
+          "claim": "The private endpoint connects to the SQL PaaS resource as its private link target."
         }
       ]
     },
@@ -460,15 +445,15 @@
         },
         {
           "x": 5.5,
-          "y": 3.5
+          "y": 2.5
         },
         {
-          "x": 8.5,
-          "y": 3.5
+          "x": 10.5,
+          "y": 2.5
         },
         {
-          "x": 8.5,
-          "y": 3
+          "x": 10.5,
+          "y": 2
         }
       ],
       "payload_ids": [],
@@ -482,19 +467,6 @@
     }
   ],
   "payloads": [
-    {
-      "id": "deployment",
-      "label": "ARM deployment",
-      "kind": "deployment",
-      "description": "Environment parameters and resource outputs.",
-      "evidence": [
-        {
-          "path": ".azuredevops/deploy.yml",
-          "lines": "31-44",
-          "claim": "Deployment parameters cross the delivery path."
-        }
-      ]
-    },
     {
       "id": "diagnostic",
       "label": "Diagnostic envelope",
@@ -511,22 +483,10 @@
   ],
   "flows": [
     {
-      "id": "release-and-observe",
-      "label": "Release and observe",
-      "description": "Deploy the application and emit evidenced telemetry.",
+      "id": "observe-runtime",
+      "label": "Observe runtime",
+      "description": "Emit evidenced runtime telemetry.",
       "steps": [
-        {
-          "path": "deploy-app",
-          "payload": "deployment",
-          "label": "Deploy the workload",
-          "evidence": [
-            {
-              "path": ".azuredevops/deploy.yml",
-              "lines": "31-44",
-              "claim": "The pipeline performs the guarded deployment."
-            }
-          ]
-        },
         {
           "path": "emit-telemetry",
           "payload": "diagnostic",

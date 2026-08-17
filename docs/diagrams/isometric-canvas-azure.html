@@ -14,6 +14,9 @@
       --control-bg: rgba(9,11,17,.82);
       --control-hover: rgba(255,255,255,.09);
       --focus: #ffffff;
+      --network-direct: #0078d4;
+      --network-inferred: #886200;
+      --network-held: #5933a3;
       --font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, monospace;
     }
     * { box-sizing: border-box; }
@@ -150,12 +153,192 @@
       white-space: nowrap !important;
       border: 0 !important;
     }
+    .views-shell {
+      position: absolute;
+      z-index: 7;
+      inset: 0;
+      overflow: auto;
+      padding: 24px;
+      background: var(--page-bg);
+    }
+    .views-tablist {
+      position: sticky;
+      z-index: 1;
+      top: 0;
+      display: flex;
+      gap: 8px;
+      padding-bottom: 16px;
+      background: var(--page-bg);
+    }
+    .views-tab {
+      min-height: 40px;
+      padding: 8px 12px;
+      border: 1px solid var(--hairline);
+      border-radius: 3px;
+      background: var(--control-bg);
+      color: var(--text);
+    }
+    .views-tab[aria-selected="true"] { border-color: var(--focus); }
+    .views-tab:focus-visible,
+    .network-relationship:focus-visible,
+    .ado-stage-card:focus-visible,
+    .ado-transition:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
+    }
+    .views-panel { max-width: 1120px; margin: 0 auto 32px; scroll-margin-top: 88px; }
+    .network-container {
+      min-width: 0;
+      margin: 12px 0;
+      padding: 16px;
+      border: 1px solid var(--hairline);
+      overflow-wrap: anywhere;
+    }
+    .network-resource-card {
+      min-width: 0;
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid var(--hairline);
+    }
+    .network-resource-card svg { display: block; width: 32px; height: 32px; }
+    .container-fields,
+    .resource-fields { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 4px 12px; }
+    .container-fields dd,
+    .resource-fields dd { margin: 0; overflow-wrap: anywhere; }
+    .network-relationships { display: grid; gap: 12px; }
+    .network-diagram { position: relative; isolation: isolate; }
+    .network-connectors-overlay {
+      position: absolute;
+      z-index: 2;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      color: var(--network-direct);
+      pointer-events: none;
+    }
+    .network-connectors-overlay > .network-relationship {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      max-width: none;
+      overflow: visible;
+      pointer-events: auto;
+    }
+    .network-hierarchy { position: relative; z-index: 1; }
+    .network-connectors-overlay .network-relationship text { display: none; }
+    .network-relationship { width: min(100%, 360px); max-width: 100%; color: var(--network-direct); opacity: .92; }
+    .network-relationship.evidence-direct { color: var(--network-direct); opacity: .92; }
+    .network-relationship.evidence-inferred { color: var(--network-inferred); opacity: .78; }
+    .network-relationship.evidence-held { color: var(--network-held); opacity: .58; }
+    .network-relationship path[data-connector-shape] { vector-effect: non-scaling-stroke; }
+    .network-relationship text { fill: currentColor; font: 11px var(--font-family); }
+    .network-relationship.evidence-held path[data-connector-shape] { opacity: .65; }
+    .ado-pipeline {
+      min-width: 0;
+      margin: 16px 0 28px;
+      overflow-wrap: anywhere;
+    }
+    .ado-stage-graph {
+      display: grid;
+      grid-auto-columns: minmax(170px, 1fr);
+      grid-auto-rows: max-content;
+      gap: 16px;
+      align-items: start;
+      margin: 16px 0 24px;
+      overflow-x: auto;
+      padding: 4px 4px 12px;
+    }
+    .ado-stage-card {
+      grid-column-start: var(--ado-column);
+      grid-row-start: var(--ado-lane);
+      min-width: 0;
+      padding: 14px;
+      border: 1px solid var(--hairline);
+      border-top-width: 4px;
+      background: var(--control-bg);
+    }
+    .ado-stage-card.stage-gate { border-top-style: double; }
+    .ado-stage-card.stage-held,
+    .ado-stage-card.status-held { border-style: dashed; }
+    .ado-stage-card svg { display: block; width: 32px; height: 32px; }
+    .ado-stage-card h4 { margin: 10px 0; }
+    .ado-stage-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .ado-stage-badges span {
+      padding: 3px 6px;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .ado-stage-fields {
+      display: grid;
+      grid-template-columns: minmax(64px, .8fr) minmax(0, 1.2fr);
+      gap: 4px 10px;
+      margin: 0 0 12px;
+    }
+    .ado-stage-fields dd { margin: 0; overflow-wrap: anywhere; }
+    .ado-stage-card > ul { padding-left: 18px; }
+    .ado-stage-evidence { margin-top: 12px; }
+    .ado-stage-evidence summary { cursor: pointer; font-weight: 700; }
+    .ado-stage-evidence ul { margin-bottom: 0; padding-left: 18px; }
+    .ado-target-type { color: var(--muted); }
+    .manual-state,
+    .held-state {
+      padding: 8px;
+      border: 1px dashed currentColor;
+      font-weight: 700;
+    }
+    .ado-transitions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .ado-transition {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      color: var(--text);
+      border: 1px solid var(--hairline);
+      background: var(--control-bg);
+    }
+    .ado-transition text { fill: currentColor; font: 11px var(--font-family); }
+    .ado-transition.transition-dependency path[data-transition-shape],
+    .ado-transition.transition-approval path[data-transition-shape],
+    .ado-transition.transition-manual path[data-transition-shape] { stroke-dasharray: 10 5; }
+    .ado-transition.transition-held path[data-transition-shape] {
+      stroke-dasharray: 2 6;
+      opacity: .65;
+    }
+    .ado-transition-evidence {
+      color: var(--text);
+      font: 10px/1.45 var(--font-family);
+      overflow-wrap: anywhere;
+    }
+    .ado-transition-evidence ul { margin: 6px 0 0; padding-left: 18px; }
+    body[data-views-sha256]:has(#runtime:not([hidden])) .views-shell {
+      inset: auto 18px 18px auto;
+      width: min(420px, calc(100% - 36px));
+      max-height: min(70vh, 640px);
+      border: 1px solid var(--hairline);
+      border-radius: 3px;
+      background: var(--control-bg);
+    }
+    body[data-views-sha256]:has(#runtime:not([hidden])) .views-tablist { background: var(--control-bg); }
     @media (max-width: 720px) {
       .scene-caption { max-width: calc(100vw - 118px); }
       .subtitle { display: none; }
       .scene-controls { flex-direction: column; }
       .legend { right: 18px; max-width: none; }
       .legend button span:last-child { display: none; }
+      .views-shell { padding: 16px; }
+      .ado-stage-graph { display: flex; flex-direction: column; overflow-x: visible; }
+      .ado-stage-card { width: 100%; }
+      body[data-views-sha256]:has(#runtime:not([hidden])) .views-shell { inset: auto 8px 8px 8px; width: auto; max-height: 52vh; }
     }
     @media (forced-colors: active) {
       .scene-controls button { border-color: ButtonText; }
@@ -163,13 +346,13 @@
     }
   </style>
 </head>
-<body data-scene-sha256="b4cff062ef26067a8b40b3e728b3eb94f074a87ec0665f1fa2de652999ea8be6">
+<body data-scene-sha256="9b5fc81221cacc5bce2f6edabdaacfb38a4bfbf4e0f19e23cd4d67b787e197db">
   <main class="map-shell" aria-labelledby="scene-title" aria-describedby="scene-summary">
     <header class="scene-caption">
       <p class="eyebrow">Isometric system map</p>
       <h1 id="scene-title">sample-directional-infra</h1>
       <p class="subtitle">main · 0123456789ab · Azure topology resource blocks</p>
-      <p id="scene-summary" class="sr-only">A compact request topology that reads from APIM ingress through an owned application and private data access to an external partner, alongside deployment and telemetry support paths.</p>
+      <p id="scene-summary" class="sr-only">A compact request topology that reads from APIM ingress through an owned application and private data access to an external partner, with telemetry support paths.</p>
     </header>
 
     <div class="scene-controls" aria-label="Map controls">
@@ -181,40 +364,43 @@
       <button id="export" type="button">PNG</button>
     </div>
 
-    <section class="canvas-stage" data-scene-sha256="b4cff062ef26067a8b40b3e728b3eb94f074a87ec0665f1fa2de652999ea8be6" aria-label="Interactive isometric terrain">
+    <section class="canvas-stage" data-scene-sha256="9b5fc81221cacc5bce2f6edabdaacfb38a4bfbf4e0f19e23cd4d67b787e197db" aria-label="Interactive isometric terrain">
       <canvas data-layer="terrain" aria-hidden="true"></canvas>
       <canvas data-layer="architecture" aria-hidden="true"></canvas>
       <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect traffic layers, VNet areas, resource cubes, and paths."></canvas>
-      <div class="fallback-copy sr-only" role="group" aria-label="Inspectable map elements">
-        <button type="button" id="fallback-traffic-layer-ingress" data-target-kind="traffic-layer" data-target-id="ingress" aria-label="APIM ingress" title="Incoming requests enter at API Management.">APIM ingress</button>
-        <button type="button" id="fallback-traffic-layer-projects" data-target-kind="traffic-layer" data-target-id="projects" aria-label="Projects" title="The owned application handles the request next.">Projects</button>
-        <button type="button" id="fallback-traffic-layer-data-access" data-target-kind="traffic-layer" data-target-id="data-access" aria-label="Data access" title="The application reaches its private data dependency.">Data access</button>
-        <button type="button" id="fallback-traffic-layer-external-services" data-target-kind="traffic-layer" data-target-id="external-services" aria-label="External services" title="The external partner service forms the final request layer.">External services</button>
-        <button type="button" id="fallback-area-runtime-vnet" data-target-kind="area" data-target-id="runtime-vnet" aria-label="Runtime VNet" title="Private runtime attachment area. · infra/network/main.bicep:1-72 — The runtime resources attach to the application VNet.">Runtime VNet</button>
-        <button type="button" id="fallback-node-pipeline" data-target-kind="node" data-target-id="pipeline" aria-label="Deploy pipeline" title="Validates and deploys the subscription template. · .azuredevops/deploy.yml:12-44 — The pipeline validates and deploys the Bicep entry point.">Deploy pipeline</button>
-        <button type="button" id="fallback-node-apim" data-target-kind="node" data-target-id="apim" aria-label="API Management ingress" title="Receives incoming requests before the owned application layer. · infra/modules/apim.bicep:1-72 — The API Management service is the represented incoming request front door.">API Management ingress</button>
-        <button type="button" id="fallback-node-app" data-target-kind="node" data-target-id="app" aria-label="Application" title="Hosts the provisioned workload. · infra/modules/app.bicep:1-80 — The app module provisions the workload compute.">Application</button>
-        <button type="button" id="fallback-node-database" data-target-kind="node" data-target-id="database" aria-label="SQL database" title="Provides the SQL service and its private endpoint. · infra/modules/sql.bicep:1-96 — The SQL module creates the data service and private endpoint.">SQL database</button>
-        <button type="button" id="fallback-node-telemetry" data-target-kind="node" data-target-id="telemetry" aria-label="Telemetry" title="Receives workload diagnostics. · infra/modules/monitoring.bicep:10-72 — Diagnostics are connected to the monitoring workspace.">Telemetry</button>
-        <button type="button" id="fallback-node-partner-api" data-target-kind="node" data-target-id="partner-api" aria-label="Partner API" title="Represents an externally operated service reached after data access. · infra/main.bicep:33-40 — The application depends on the represented external partner endpoint.">Partner API</button>
-        <button type="button" id="fallback-path-ingress-request" data-target-kind="path" data-target-id="ingress-request" aria-label="incoming request handoff" title="infra/modules/apim.bicep:44-58 — API Management forwards represented requests to the owned application.">incoming request handoff</button>
-        <button type="button" id="fallback-path-deploy-app" data-target-kind="path" data-target-id="deploy-app" aria-label="guarded deployment" title=".azuredevops/deploy.yml:31-44 — The pipeline invokes the app deployment.">guarded deployment</button>
-        <button type="button" id="fallback-path-private-sql-dependency" data-target-kind="path" data-target-id="private-sql-dependency" aria-label="private SQL dependency" title="infra/main.bicep:22-31 — The Bicep entry point wires the application to the private SQL dependency.">private SQL dependency</button>
-        <button type="button" id="fallback-path-emit-telemetry" data-target-kind="path" data-target-id="emit-telemetry" aria-label="diagnostics" title="infra/modules/monitoring.bicep:36-72 — The workload emits diagnostics to monitoring.">diagnostics</button>
-        <button type="button" id="fallback-path-partner-dependency" data-target-kind="path" data-target-id="partner-dependency" aria-label="partner API dependency" title="infra/main.bicep:33-40 — The application has the represented external partner dependency.">partner API dependency</button>
+      <div class="fallback-copy sr-only" role="group" aria-label="Inspectable map elements" data-semantic-id="runtime:fallback:show-all" data-selectable="true" tabindex="0">
+        <button type="button" id="fallback-traffic-layer-ingress" data-target-kind="traffic-layer" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="ingress" aria-label="APIM ingress" title="Incoming requests enter at API Management.">APIM ingress</button>
+        <button type="button" id="fallback-traffic-layer-projects" data-target-kind="traffic-layer" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="projects" aria-label="Projects" title="The owned application handles the request next.">Projects</button>
+        <button type="button" id="fallback-traffic-layer-data-access" data-target-kind="traffic-layer" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="data-access" aria-label="Data access" title="The application reaches SQL through the subnet-contained private endpoint and RG-scoped PaaS database.">Data access</button>
+        <button type="button" id="fallback-traffic-layer-external-services" data-target-kind="traffic-layer" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="external-services" aria-label="External services" title="The external partner service forms the final request layer.">External services</button>
+        <button type="button" id="fallback-area-runtime-vnet" data-target-kind="area" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="runtime-vnet" aria-label="Runtime VNet" title="Private runtime VNet area for subnet-attached deployables. · infra/network/main.bicep:1-72 — The application integration and SQL private endpoint attach to the application VNet.">Runtime VNet</button>
+        <button type="button" id="fallback-node-apim" data-target-kind="node" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="apim" aria-label="API Management ingress" title="Receives incoming requests before the owned application layer. · infra/modules/apim.bicep:1-72 — The API Management service is the represented incoming request front door.">API Management ingress</button>
+        <button type="button" id="fallback-node-app" data-target-kind="node" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="app" aria-label="Application" title="Hosts the provisioned workload. · infra/modules/app.bicep:1-80 — The app module provisions the workload compute.">Application</button>
+        <button type="button" id="fallback-node-sql-private-endpoint" data-target-kind="node" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="sql-private-endpoint" aria-label="SQL private endpoint" title="Subnet-contained private endpoint for the SQL database. · infra/modules/sql.bicep:36-96 — The SQL module creates a private endpoint in the runtime subnet.">SQL private endpoint</button>
+        <button type="button" id="fallback-node-database" data-target-kind="node" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="database" aria-label="SQL database" title="Provides the RG-scoped SQL PaaS database reached through a private endpoint. · infra/modules/sql.bicep:1-96 — The SQL module creates the PaaS database while the private endpoint is modeled separately.">SQL database</button>
+        <button type="button" id="fallback-node-telemetry" data-target-kind="node" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="telemetry" aria-label="Telemetry" title="Receives workload diagnostics. · infra/modules/monitoring.bicep:10-72 — Diagnostics are connected to the monitoring workspace.">Telemetry</button>
+        <button type="button" id="fallback-node-partner-api" data-target-kind="node" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="partner-api" aria-label="Partner API" title="Represents an externally operated service reached after data access. · infra/main.bicep:33-40 — The application depends on the represented external partner endpoint.">Partner API</button>
+        <button type="button" id="fallback-path-ingress-request" data-target-kind="path" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="ingress-request" aria-label="incoming request handoff" title="infra/modules/apim.bicep:44-58 — API Management forwards represented requests to the owned application.">incoming request handoff</button>
+        <button type="button" id="fallback-path-private-sql-dependency" data-target-kind="path" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="private-sql-dependency" aria-label="private endpoint handoff" title="infra/main.bicep:22-31 — The application reaches SQL through the represented private endpoint.">private endpoint handoff</button>
+        <button type="button" id="fallback-path-private-endpoint-to-sql" data-target-kind="path" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="private-endpoint-to-sql" aria-label="SQL private link target" title="infra/modules/sql.bicep:36-96 — The private endpoint connects to the SQL PaaS resource as its private link target.">SQL private link target</button>
+        <button type="button" id="fallback-path-emit-telemetry" data-target-kind="path" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="emit-telemetry" aria-label="diagnostics" title="infra/modules/monitoring.bicep:36-72 — The workload emits diagnostics to monitoring.">diagnostics</button>
+        <button type="button" id="fallback-path-partner-dependency" data-target-kind="path" data-semantic-id="runtime:fallback:show-all" data-selectable="true" data-target-id="partner-dependency" aria-label="partner API dependency" title="infra/main.bicep:33-40 — The application has the represented external partner dependency.">partner API dependency</button>
       </div>
       <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
     </section>
 
     <nav class="legend" aria-label="Path legend"></nav>
+
   </main>
 
   <script>
   (() => {
     "use strict";
 
-    const SCENE = {"version":1,"repository":{"name":"sample-directional-infra","ref":"main","commit":"0123456789abcdef0123456789abcdef01234567","scope":"infra/main.bicep, infra/modules/apim.bicep","summary":"A compact request topology that reads from APIM ingress through an owned application and private data access to an external partner, alongside deployment and telemetry support paths."},"art_direction":{"name":"warm technical paper","principles":["ink-first linework","quiet hierarchy","no interface chrome","bottom-left-to-top-right request reading"],"palette_roles":{"background":"#d9cfaa","grid":"#b9ad82","structure":"#5b553f","control_path":"#4f4936","data_path":"#6d5835","payload":"#28251c","text":"#2c291f"},"medium":"archival drafting paper","linework":"fine sepia technical pen","materials":"flat paper cubes on numbered traffic and sourced VNet terrain","typography":"compact monospaced labels","motion":"small ink dots moving at a measured pace","path_treatments":{"delivery":{"stroke_pattern":"solid","weight":"medium","marker":"filled terminal arrow","texture":"clean technical ink","motion_cadence":"steady measured travel","reduced_motion":"numbered marker at the step endpoint"},"dependency":{"stroke_pattern":"short dash","weight":"fine","marker":"open terminal chevron","texture":"dry drafting ink","motion_cadence":"none","reduced_motion":"unchanged static dependency"},"telemetry":{"stroke_pattern":"dotted pulse","weight":"fine","marker":"small ring terminal","texture":"stippled ink","motion_cadence":"restrained periodic pulse","reduced_motion":"single marker at the monitoring endpoint"}}},"canvas":{"grid_width":12,"grid_depth":14,"tile_width":64,"tile_height":32,"cube_size":1},"zones":[{"id":"delivery","label":"Delivery","description":"Build and deployment control plane"},{"id":"runtime","label":"Runtime","description":"Provisioned application resources"}],"areas":[{"id":"runtime-vnet","label":"Runtime VNet","kind":"vnet","status":"active","member_ids":["app","database","telemetry"],"padding":0.5,"description":"Private runtime attachment area.","evidence":[{"path":"infra/network/main.bicep","lines":"1-72","claim":"The runtime resources attach to the application VNet."}]}],"traffic":{"direction":"bottom-left-to-top-right","layers":[{"id":"ingress","label":"APIM ingress","kind":"ingress","member_ids":["apim"],"padding":0.5,"description":"Incoming requests enter at API Management."},{"id":"projects","label":"Projects","kind":"projects","member_ids":["app"],"padding":0.5,"description":"The owned application handles the request next."},{"id":"data-access","label":"Data access","kind":"data-access","member_ids":["database"],"padding":0.5,"description":"The application reaches its private data dependency."},{"id":"external-services","label":"External services","kind":"external-services","member_ids":["partner-api"],"padding":0.5,"description":"The external partner service forms the final request layer."}]},"nodes":[{"id":"pipeline","code":"CI","label":"Deploy pipeline","role":"pipeline","form":"cube","zone":"delivery","position":{"x":1,"y":9},"footprint":{"width":2,"depth":1},"status":"active","resource_type":"Azure DevOps pipeline","icon":"az-release-pipeline","description":"Validates and deploys the subscription template.","evidence":[{"path":".azuredevops/deploy.yml","lines":"12-44","claim":"The pipeline validates and deploys the Bicep entry point."}]},{"id":"apim","code":"APIM","label":"API Management ingress","role":"entry","form":"cube","zone":"runtime","position":{"x":1,"y":12},"footprint":{"width":1,"depth":1},"status":"active","resource_type":"Microsoft.ApiManagement/service","icon":"az-apim","description":"Receives incoming requests before the owned application layer.","evidence":[{"path":"infra/modules/apim.bicep","lines":"1-72","claim":"The API Management service is the represented incoming request front door."}]},{"id":"app","code":"APP","label":"Application","role":"compute","form":"cube","zone":"runtime","position":{"x":4,"y":8},"footprint":{"width":1,"depth":1},"status":"active","resource_type":"Microsoft.Web/sites","icon":"az-app-service","description":"Hosts the provisioned workload.","evidence":[{"path":"infra/modules/app.bicep","lines":"1-80","claim":"The app module provisions the workload compute."}]},{"id":"database","code":"SQL","label":"SQL database","role":"data","form":"cube","zone":"runtime","position":{"x":6,"y":5},"footprint":{"width":2,"depth":1},"status":"active","resource_type":"Microsoft.Sql/servers/databases","icon":"az-sql-database","description":"Provides the SQL service and its private endpoint.","evidence":[{"path":"infra/modules/sql.bicep","lines":"1-96","claim":"The SQL module creates the data service and private endpoint."}]},{"id":"telemetry","code":"OBS","label":"Telemetry","role":"observability","form":"cube","zone":"runtime","position":{"x":9,"y":5},"footprint":{"width":1,"depth":2},"status":"active","resource_type":"Microsoft.OperationalInsights/workspaces","icon":"az-log-analytics","description":"Receives workload diagnostics.","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"10-72","claim":"Diagnostics are connected to the monitoring workspace."}]},{"id":"partner-api","code":"EXT","label":"Partner API","role":"external","form":"cube","zone":"runtime","position":{"x":8,"y":2},"footprint":{"width":1,"depth":1},"status":"external","resource_type":"Externally operated HTTPS API","icon":"az-front-door","description":"Represents an externally operated service reached after data access.","evidence":[{"path":"infra/main.bicep","lines":"33-40","claim":"The application depends on the represented external partner endpoint."}]}],"paths":[{"id":"ingress-request","from":"apim","to":"app","kind":"dependency","label":"incoming request handoff","route":[{"x":2,"y":12.5},{"x":3.5,"y":12.5},{"x":3.5,"y":8.5},{"x":4,"y":8.5}],"payload_ids":[],"evidence":[{"path":"infra/modules/apim.bicep","lines":"44-58","claim":"API Management forwards represented requests to the owned application."}]},{"id":"deploy-app","from":"pipeline","to":"app","kind":"delivery","label":"guarded deployment","route":[{"x":3,"y":9.5},{"x":3.5,"y":9.5},{"x":3.5,"y":8.5},{"x":4,"y":8.5}],"payload_ids":["deployment"],"evidence":[{"path":".azuredevops/deploy.yml","lines":"31-44","claim":"The pipeline invokes the app deployment."}]},{"id":"private-sql-dependency","from":"app","to":"database","kind":"dependency","label":"private SQL dependency","route":[{"x":5,"y":8.5},{"x":5.5,"y":8.5},{"x":5.5,"y":5.5},{"x":6,"y":5.5}],"payload_ids":[],"evidence":[{"path":"infra/main.bicep","lines":"22-31","claim":"The Bicep entry point wires the application to the private SQL dependency."}]},{"id":"emit-telemetry","from":"app","to":"telemetry","kind":"telemetry","label":"diagnostics","route":[{"x":4.5,"y":8},{"x":4.5,"y":7.5},{"x":9.5,"y":7.5},{"x":9.5,"y":7}],"payload_ids":["diagnostic"],"evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"The workload emits diagnostics to monitoring."}]},{"id":"partner-dependency","from":"app","to":"partner-api","kind":"dependency","label":"partner API dependency","route":[{"x":5,"y":8.5},{"x":5.5,"y":8.5},{"x":5.5,"y":3.5},{"x":8.5,"y":3.5},{"x":8.5,"y":3}],"payload_ids":[],"evidence":[{"path":"infra/main.bicep","lines":"33-40","claim":"The application has the represented external partner dependency."}]}],"payloads":[{"id":"deployment","label":"ARM deployment","kind":"deployment","description":"Environment parameters and resource outputs.","evidence":[{"path":".azuredevops/deploy.yml","lines":"31-44","claim":"Deployment parameters cross the delivery path."}]},{"id":"diagnostic","label":"Diagnostic envelope","kind":"telemetry","description":"Logs and metrics emitted by the workload.","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"Diagnostic settings forward workload telemetry."}]}],"flows":[{"id":"release-and-observe","label":"Release and observe","description":"Deploy the application and emit evidenced telemetry.","steps":[{"path":"deploy-app","payload":"deployment","label":"Deploy the workload","evidence":[{"path":".azuredevops/deploy.yml","lines":"31-44","claim":"The pipeline performs the guarded deployment."}]},{"path":"emit-telemetry","payload":"diagnostic","label":"Emit diagnostics","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"Diagnostics are forwarded to monitoring."}]}]}]};
-    const ICON_SVGS = {"az-apim":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003ccircle cx=\"12\" cy=\"12\" r=\"3.5\" /\u003e\n  \u003ccircle cx=\"12\" cy=\"12\" r=\"8\" stroke-dasharray=\"2 2.5\" /\u003e\n  \u003cpath d=\"M12 2v3M12 19v3M2 12h3M19 12h3\" /\u003e\n  \u003cpath d=\"M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2\" /\u003e\n\u003c/svg\u003e","az-app-service":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003crect x=\"2.5\" y=\"4\" width=\"19\" height=\"16\" rx=\"0\" /\u003e\n  \u003cpath d=\"M2.5 9h19\" /\u003e\n  \u003ccircle cx=\"5.5\" cy=\"6.5\" r=\".7\" fill=\"currentColor\" /\u003e\n  \u003ccircle cx=\"8\" cy=\"6.5\" r=\".7\" fill=\"currentColor\" /\u003e\n  \u003ccircle cx=\"10.5\" cy=\"6.5\" r=\".7\" fill=\"currentColor\" /\u003e\n  \u003cpath d=\"M9 13l2 2 4-4\" /\u003e\n\u003c/svg\u003e","az-front-door":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003ccircle cx=\"12\" cy=\"12\" r=\"9\" /\u003e\n  \u003cellipse cx=\"12\" cy=\"12\" rx=\"4\" ry=\"9\" /\u003e\n  \u003cpath d=\"M3 12h18\" /\u003e\n\u003c/svg\u003e","az-log-analytics":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003cline x1=\"3\" y1=\"20\" x2=\"21\" y2=\"20\" /\u003e\n  \u003crect x=\"5\" y=\"12\" width=\"3\" height=\"8\" /\u003e\n  \u003crect x=\"10.5\" y=\"6\" width=\"3\" height=\"14\" /\u003e\n  \u003crect x=\"16\" y=\"14\" width=\"3\" height=\"6\" /\u003e\n\u003c/svg\u003e","az-release-pipeline":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003cpath d=\"M5 12L12 4l7 8-7 8z\" /\u003e\n  \u003cpath d=\"M9 12h6\" /\u003e\n  \u003ccircle cx=\"12\" cy=\"12\" r=\"1.5\" fill=\"currentColor\" /\u003e\n\u003c/svg\u003e","az-sql-database":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003cellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\" /\u003e\n  \u003cpath d=\"M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5\" /\u003e\n  \u003cpath d=\"M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3\" /\u003e\n\u003c/svg\u003e"};
+    const SCENE = {"version":1,"repository":{"name":"sample-directional-infra","ref":"main","commit":"0123456789abcdef0123456789abcdef01234567","scope":"infra/main.bicep, infra/modules/apim.bicep","summary":"A compact request topology that reads from APIM ingress through an owned application and private data access to an external partner, with telemetry support paths."},"art_direction":{"name":"warm technical paper","principles":["ink-first linework","quiet hierarchy","no interface chrome","bottom-left-to-top-right request reading"],"palette_roles":{"background":"#d9cfaa","grid":"#b9ad82","structure":"#5b553f","control_path":"#4f4936","data_path":"#6d5835","payload":"#28251c","text":"#2c291f"},"medium":"archival drafting paper","linework":"fine sepia technical pen","materials":"flat paper cubes on numbered traffic and sourced VNet terrain","typography":"compact monospaced labels","motion":"small ink dots moving at a measured pace","path_treatments":{"dependency":{"stroke_pattern":"short dash","weight":"fine","marker":"open terminal chevron","texture":"dry drafting ink","motion_cadence":"none","reduced_motion":"unchanged static dependency"},"telemetry":{"stroke_pattern":"dotted pulse","weight":"fine","marker":"small ring terminal","texture":"stippled ink","motion_cadence":"restrained periodic pulse","reduced_motion":"single marker at the monitoring endpoint"}}},"canvas":{"grid_width":12,"grid_depth":14,"tile_width":64,"tile_height":32,"cube_size":1},"zones":[{"id":"runtime","label":"Runtime","description":"Provisioned application resources"}],"areas":[{"id":"runtime-vnet","label":"Runtime VNet","kind":"vnet","status":"active","member_ids":["app","sql-private-endpoint"],"padding":0.5,"description":"Private runtime VNet area for subnet-attached deployables.","evidence":[{"path":"infra/network/main.bicep","lines":"1-72","claim":"The application integration and SQL private endpoint attach to the application VNet."}]}],"traffic":{"direction":"bottom-left-to-top-right","layers":[{"id":"ingress","label":"APIM ingress","kind":"ingress","member_ids":["apim"],"padding":0.5,"description":"Incoming requests enter at API Management."},{"id":"projects","label":"Projects","kind":"projects","member_ids":["app"],"padding":0.5,"description":"The owned application handles the request next."},{"id":"data-access","label":"Data access","kind":"data-access","member_ids":["sql-private-endpoint","database"],"padding":0.5,"description":"The application reaches SQL through the subnet-contained private endpoint and RG-scoped PaaS database."},{"id":"external-services","label":"External services","kind":"external-services","member_ids":["partner-api"],"padding":0.5,"description":"The external partner service forms the final request layer."}]},"nodes":[{"id":"apim","code":"APIM","label":"API Management ingress","role":"entry","form":"cube","zone":"runtime","position":{"x":1,"y":12},"footprint":{"width":1,"depth":1},"status":"active","resource_type":"Microsoft.ApiManagement/service","icon":"az-apim","description":"Receives incoming requests before the owned application layer.","evidence":[{"path":"infra/modules/apim.bicep","lines":"1-72","claim":"The API Management service is the represented incoming request front door."}]},{"id":"app","code":"APP","label":"Application","role":"compute","form":"cube","zone":"runtime","position":{"x":4,"y":8},"footprint":{"width":1,"depth":1},"status":"active","resource_type":"Microsoft.Web/sites","icon":"az-app-service","description":"Hosts the provisioned workload.","evidence":[{"path":"infra/modules/app.bicep","lines":"1-80","claim":"The app module provisions the workload compute."}]},{"id":"sql-private-endpoint","code":"PE","label":"SQL private endpoint","role":"network","form":"cube","zone":"runtime","position":{"x":6,"y":5},"footprint":{"width":1,"depth":1},"status":"active","resource_type":"Microsoft.Network/privateEndpoints","icon":"az-private-endpoint","description":"Subnet-contained private endpoint for the SQL database.","evidence":[{"path":"infra/modules/sql.bicep","lines":"36-96","claim":"The SQL module creates a private endpoint in the runtime subnet."}]},{"id":"database","code":"SQL","label":"SQL database","role":"data","form":"cube","zone":"runtime","position":{"x":8,"y":3},"footprint":{"width":2,"depth":1},"status":"active","resource_type":"Microsoft.Sql/servers/databases","icon":"az-sql-database","description":"Provides the RG-scoped SQL PaaS database reached through a private endpoint.","evidence":[{"path":"infra/modules/sql.bicep","lines":"1-96","claim":"The SQL module creates the PaaS database while the private endpoint is modeled separately."}]},{"id":"telemetry","code":"OBS","label":"Telemetry","role":"observability","form":"cube","zone":"runtime","position":{"x":9,"y":5},"footprint":{"width":1,"depth":2},"status":"active","resource_type":"Microsoft.OperationalInsights/workspaces","icon":"az-log-analytics","description":"Receives workload diagnostics.","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"10-72","claim":"Diagnostics are connected to the monitoring workspace."}]},{"id":"partner-api","code":"EXT","label":"Partner API","role":"external","form":"cube","zone":"runtime","position":{"x":10,"y":1},"footprint":{"width":1,"depth":1},"status":"external","resource_type":"Externally operated HTTPS API","icon":"az-front-door","description":"Represents an externally operated service reached after data access.","evidence":[{"path":"infra/main.bicep","lines":"33-40","claim":"The application depends on the represented external partner endpoint."}]}],"paths":[{"id":"ingress-request","from":"apim","to":"app","kind":"dependency","label":"incoming request handoff","route":[{"x":2,"y":12.5},{"x":3.5,"y":12.5},{"x":3.5,"y":8.5},{"x":4,"y":8.5}],"payload_ids":[],"evidence":[{"path":"infra/modules/apim.bicep","lines":"44-58","claim":"API Management forwards represented requests to the owned application."}],"evidence_level":"direct"},{"id":"private-sql-dependency","from":"app","to":"sql-private-endpoint","kind":"dependency","label":"private endpoint handoff","route":[{"x":5,"y":8.5},{"x":5.5,"y":8.5},{"x":5.5,"y":5.5},{"x":6,"y":5.5}],"payload_ids":[],"evidence":[{"path":"infra/main.bicep","lines":"22-31","claim":"The application reaches SQL through the represented private endpoint."}],"evidence_level":"direct"},{"id":"private-endpoint-to-sql","from":"sql-private-endpoint","to":"database","kind":"dependency","label":"SQL private link target","route":[{"x":7,"y":5.5},{"x":7.5,"y":5.5},{"x":7.5,"y":3.5},{"x":8,"y":3.5}],"payload_ids":[],"evidence":[{"path":"infra/modules/sql.bicep","lines":"36-96","claim":"The private endpoint connects to the SQL PaaS resource as its private link target."}],"evidence_level":"direct"},{"id":"emit-telemetry","from":"app","to":"telemetry","kind":"telemetry","label":"diagnostics","route":[{"x":4.5,"y":8},{"x":4.5,"y":7.5},{"x":9.5,"y":7.5},{"x":9.5,"y":7}],"payload_ids":["diagnostic"],"evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"The workload emits diagnostics to monitoring."}],"evidence_level":"direct"},{"id":"partner-dependency","from":"app","to":"partner-api","kind":"dependency","label":"partner API dependency","route":[{"x":5,"y":8.5},{"x":5.5,"y":8.5},{"x":5.5,"y":2.5},{"x":10.5,"y":2.5},{"x":10.5,"y":2}],"payload_ids":[],"evidence":[{"path":"infra/main.bicep","lines":"33-40","claim":"The application has the represented external partner dependency."}],"evidence_level":"direct"}],"payloads":[{"id":"diagnostic","label":"Diagnostic envelope","kind":"telemetry","description":"Logs and metrics emitted by the workload.","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"Diagnostic settings forward workload telemetry."}]}],"flows":[{"id":"observe-runtime","label":"Observe runtime","description":"Emit evidenced runtime telemetry.","steps":[{"path":"emit-telemetry","payload":"diagnostic","label":"Emit diagnostics","evidence":[{"path":"infra/modules/monitoring.bicep","lines":"36-72","claim":"Diagnostics are forwarded to monitoring."}],"evidence_level":"direct"}]}]};
+    const ICON_SVGS = {"az-apim":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003ccircle cx=\"12\" cy=\"12\" r=\"3.5\" /\u003e\n  \u003ccircle cx=\"12\" cy=\"12\" r=\"8\" stroke-dasharray=\"2 2.5\" /\u003e\n  \u003cpath d=\"M12 2v3M12 19v3M2 12h3M19 12h3\" /\u003e\n  \u003cpath d=\"M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2\" /\u003e\n\u003c/svg\u003e","az-app-service":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003crect x=\"2.5\" y=\"4\" width=\"19\" height=\"16\" rx=\"0\" /\u003e\n  \u003cpath d=\"M2.5 9h19\" /\u003e\n  \u003ccircle cx=\"5.5\" cy=\"6.5\" r=\".7\" fill=\"currentColor\" /\u003e\n  \u003ccircle cx=\"8\" cy=\"6.5\" r=\".7\" fill=\"currentColor\" /\u003e\n  \u003ccircle cx=\"10.5\" cy=\"6.5\" r=\".7\" fill=\"currentColor\" /\u003e\n  \u003cpath d=\"M9 13l2 2 4-4\" /\u003e\n\u003c/svg\u003e","az-front-door":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003ccircle cx=\"12\" cy=\"12\" r=\"9\" /\u003e\n  \u003cellipse cx=\"12\" cy=\"12\" rx=\"4\" ry=\"9\" /\u003e\n  \u003cpath d=\"M3 12h18\" /\u003e\n\u003c/svg\u003e","az-log-analytics":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003cline x1=\"3\" y1=\"20\" x2=\"21\" y2=\"20\" /\u003e\n  \u003crect x=\"5\" y=\"12\" width=\"3\" height=\"8\" /\u003e\n  \u003crect x=\"10.5\" y=\"6\" width=\"3\" height=\"14\" /\u003e\n  \u003crect x=\"16\" y=\"14\" width=\"3\" height=\"6\" /\u003e\n\u003c/svg\u003e","az-private-endpoint":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003crect x=\"2\" y=\"9\" width=\"20\" height=\"10\" /\u003e\n  \u003ccircle cx=\"7\" cy=\"14\" r=\"1.5\" /\u003e\n  \u003cpath d=\"M10 14h6\" /\u003e\n  \u003cpath d=\"M12 4v3M9 5l3-2 3 2\" /\u003e\n  \u003ccircle cx=\"18\" cy=\"14\" r=\"1.5\" fill=\"currentColor\" /\u003e\n\u003c/svg\u003e","az-sql-database":"\u003csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"\u003e\u003cellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\" /\u003e\n  \u003cpath d=\"M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5\" /\u003e\n  \u003cpath d=\"M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3\" /\u003e\n\u003c/svg\u003e"};
+    const PATH_EVIDENCE = [{"id":"ingress-request","evidence_level":"direct"},{"id":"private-sql-dependency","evidence_level":"direct"},{"id":"private-endpoint-to-sql","evidence_level":"direct"},{"id":"emit-telemetry","evidence_level":"direct"},{"id":"partner-dependency","evidence_level":"direct"}];
+
     const THEME = (() => {
   const azureBlue = "#0078d4";
   const families = {
@@ -299,6 +485,33 @@
     return families[familyFor(node)];
   }
 
+  function rectanglesOverlap(first, second) {
+    return first.left < second.right && first.right > second.left
+      && first.top < second.bottom && first.bottom > second.top;
+  }
+
+  function resolveLabelOverlap(rect, state) {
+    const existing = state.labelPlates || [];
+    const offsets = [0, -24, 24, -48, 48, -72, 72];
+    for (const offset of offsets) {
+      const candidate = {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top + offset,
+        bottom: rect.bottom + offset,
+        offset,
+      };
+      if (!existing.some(other => rectanglesOverlap(candidate, other))) {
+        existing.push(candidate);
+        state.labelPlates = existing;
+        return candidate;
+      }
+    }
+    existing.push(rect);
+    state.labelPlates = existing;
+    return rect;
+  }
+
   function arrowHead(ctx, point, angle, style, reverse = false) {
     const size = 7 + style.width;
     ctx.save();
@@ -342,6 +555,11 @@
 
     iconColor(node) {
       return colorsFor(node).stroke;
+    },
+
+    iconWorldSize(mass) {
+      const iconWorldSize = Math.min(mass.width, mass.depth) * .78;
+      return iconWorldSize;
     },
 
     drawBackground(ctx, state) {
@@ -460,7 +678,8 @@
       ctx.save();
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.setLineDash(style.dash);
+      ctx.setLineDash(item.evidence_level === "inferred" ? [10, 5] : item.evidence_level === "held" ? [3, 5] : style.dash);
+      ctx.globalAlpha = item.evidence_level === "held" ? .48 : 1;
       ctx.strokeStyle = "rgba(255,255,255,.94)";
       ctx.lineWidth = style.width + 4;
       ctx.stroke(path);
@@ -493,7 +712,12 @@
         if (!best || length > best.length) best = { start, end, length };
       }
       if (!best || best.length < 72) return;
-      const label = item.kind.toUpperCase();
+      const evidenceLabel = item.evidence_level === "inferred"
+        ? "INFERRED"
+        : item.evidence_level === "held"
+          ? "HELD · NOT DEPLOYED"
+          : "";
+      const label = evidenceLabel || item.kind.toUpperCase();
       const x = (best.start.x + best.end.x) / 2;
       const y = (best.start.y + best.end.y) / 2 - 7;
       ctx.save();
@@ -525,20 +749,42 @@
       ctx.restore();
     },
 
-    drawNodeLabel(ctx, node, point) {
+    drawNodeLabel(ctx, node, point, state) {
       const colors = colorsFor(node);
+      const label = node.label || node.code;
+      const resourceType = node.resource_type || node.role;
+      const status = node.status || "unknown";
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = '700 9px "Cascadia Code", Consolas, monospace';
-      const codeWidth = ctx.measureText(node.code).width + 12;
+      ctx.font = '700 10px "Segoe UI", system-ui, sans-serif';
+      const labelWidth = ctx.measureText(label).width;
+      ctx.font = '600 7px "Segoe UI", system-ui, sans-serif';
+      const typeWidth = ctx.measureText(resourceType).width;
+      const statusWidth = ctx.measureText(status).width;
+      const labelBoxWidth = Math.max(labelWidth, typeWidth, statusWidth) + 14;
+      // Keep full labels visible and move their plates instead of abbreviating.
+      const labelRect = resolveLabelOverlap({
+        left: point.x - labelBoxWidth / 2,
+        right: point.x + labelBoxWidth / 2,
+        top: point.y - 18,
+        bottom: point.y + 17,
+      }, state);
+      const labelOffset = labelRect.offset || 0;
+      const labelPoint = { x: point.x, y: point.y + labelOffset };
       ctx.fillStyle = "rgba(255,255,255,.95)";
-      ctx.fillRect(point.x - codeWidth / 2, point.y - 12, codeWidth, 16);
+      ctx.fillRect(labelPoint.x - labelBoxWidth / 2, labelPoint.y - 18, labelBoxWidth, 35);
       ctx.strokeStyle = colors.stroke;
       ctx.lineWidth = 1;
-      ctx.strokeRect(point.x - codeWidth / 2 + .5, point.y - 11.5, codeWidth - 1, 15);
+      ctx.strokeRect(labelPoint.x - labelBoxWidth / 2 + .5, labelPoint.y - 17.5, labelBoxWidth - 1, 34);
       ctx.fillStyle = "#212121";
-      ctx.fillText(node.code, point.x, point.y - 4);
+      ctx.font = '700 10px "Segoe UI", system-ui, sans-serif';
+      ctx.fillText(node.label || node.code, labelPoint.x, labelPoint.y - 10);
+      ctx.fillStyle = "#57606a";
+      ctx.font = '600 7px "Segoe UI", system-ui, sans-serif';
+      ctx.fillText(node.resource_type || node.role, labelPoint.x, labelPoint.y + 1);
+      ctx.fillStyle = colors.stroke;
+      ctx.fillText(status, labelPoint.x, labelPoint.y + 11);
       ctx.restore();
     },
 
@@ -569,6 +815,194 @@
     },
   };
 })();
+
+    function enhanceViewsTabs() {
+      if (typeof VIEWS_SIDECAR === "undefined") return;
+      const viewIds = ["runtime", "network", "ado"];
+      const tabs = viewIds
+        .map(view => document.getElementById(`tab-${view}`))
+        .filter(Boolean);
+      const panels = viewIds
+        .map(view => document.getElementById(view))
+        .filter(Boolean);
+      const viewsShell = document.querySelector(".views-shell");
+      const selectionDetails = document.querySelector("[data-testid=views-selection-details]");
+      const selectedSemanticId = localStorage.getItem("jcode:selectedSemanticId") || "";
+      if (tabs.length !== viewIds.length || panels.length !== viewIds.length) return;
+
+      const validView = view => viewIds.includes(view) ? view : null;
+      const hashView = () => validView(location.hash.replace(/^#/, ""));
+      const selectedInitialView = hashView() || validView(VIEWS_SIDECAR.default_view) || "runtime";
+
+      function setActiveView(activeView, options = {}) {
+        const selectedView = validView(activeView) || "runtime";
+        tabs.forEach(tab => {
+          const view = tab.getAttribute("aria-controls");
+          const active = view === selectedView;
+          tab.setAttribute("aria-selected", String(active));
+          tab.tabIndex = active ? 0 : -1;
+        });
+        panels.forEach(panel => {
+          panel.hidden = panel.id !== selectedView;
+        });
+        if (selectedSemanticId) {
+          document.querySelector(`[data-semantic-id="${CSS.escape(selectedSemanticId)}"]`)?.setAttribute("aria-current", "true");
+        }
+        viewsShell?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        if (selectedView === "network") requestAnimationFrame(rerouteNetworkConnectors);
+        if (!options.skipHistory && location.hash !== `#${selectedView}`) {
+          history.replaceState(null, "", `#${selectedView}`);
+        }
+      }
+
+      document.querySelectorAll("[data-selectable=true][data-semantic-id]").forEach(element => {
+        element.addEventListener("click", () => {
+          localStorage.setItem("jcode:selectedSemanticId", element.dataset.semanticId);
+          element.setAttribute("aria-current", "true");
+          if (selectionDetails) {
+            selectionDetails.querySelector("[data-selection-empty]")?.setAttribute("hidden", "true");
+            const content = selectionDetails.querySelector("[data-selection-content]");
+            if (content) { content.hidden = false; content.textContent = element.textContent.trim(); }
+          }
+        });
+      });
+
+      function focusRelativeTab(currentTab, delta) {
+        const index = tabs.indexOf(currentTab);
+        const next = tabs[(index + delta + tabs.length) % tabs.length];
+        next.focus();
+      }
+
+      tabs.forEach(tab => {
+        tab.addEventListener("click", () => setActiveView(tab.getAttribute("aria-controls")));
+        tab.addEventListener("keydown", event => {
+          if (event.key === "ArrowLeft") {
+            event.preventDefault();
+            focusRelativeTab(tab, -1);
+          } else if (event.key === "ArrowRight") {
+            event.preventDefault();
+            focusRelativeTab(tab, 1);
+          } else if (event.key === "Home") {
+            event.preventDefault();
+            tabs[0].focus();
+          } else if (event.key === "End") {
+            event.preventDefault();
+            tabs[tabs.length - 1].focus();
+          } else if (event.key === "Enter" || event.key === " " || event.code === "Space") {
+            event.preventDefault();
+            setActiveView(tab.getAttribute("aria-controls"));
+          }
+        });
+      });
+
+      window.addEventListener("hashchange", () => {
+        const view = hashView();
+        if (view) setActiveView(view, { skipHistory: true });
+      });
+      setActiveView(VIEWS_SIDECAR.default_view ? selectedInitialView : selectedInitialView, { skipHistory: Boolean(hashView()) });
+    }
+
+    enhanceViewsTabs();
+
+    function rerouteNetworkConnectors() {
+      const overlay = document.querySelector('[data-network-connectors]');
+      if (!overlay) return;
+      const overlayRect = overlay.getBoundingClientRect();
+      const width = Math.max(1, Math.round(overlayRect.width));
+      const height = Math.max(1, Math.round(overlayRect.height));
+      const endpointGap = 8;
+      const laneSpacing = 9;
+      overlay.setAttribute("width", String(width));
+      overlay.setAttribute("height", String(height));
+      overlay.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      const center = rect => ({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+      const point = (x, y) => ({ x: Math.round(x - overlayRect.left), y: Math.round(y - overlayRect.top) });
+      const manhattanDistance = (first, second) => Math.abs(first.x - second.x) + Math.abs(first.y - second.y);
+      const resourceRects = [...document.querySelectorAll("#network .network-resource-card")].map(card => ({
+        id: card.getAttribute("data-scene-node-id"),
+        rect: card.getBoundingClientRect(),
+      }));
+      overlay.querySelectorAll('[data-link-id]').forEach(relationship => {
+        const sourceId = relationship.getAttribute("data-source-node-id");
+        const targetId = relationship.getAttribute("data-target-node-id");
+        const source = document.querySelector(`[data-scene-node-id="${CSS.escape(sourceId || "")}"]`);
+        const target = document.querySelector(`[data-scene-node-id="${CSS.escape(targetId || "")}"]`);
+        const path = relationship.querySelector('[data-connector-shape="orthogonal"]');
+        if (!source || !target || !path) return;
+        relationship.setAttribute("width", String(width));
+        relationship.setAttribute("height", String(height));
+        relationship.setAttribute("viewBox", `0 0 ${width} ${height}`);
+        const sourceRect = source.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const sourceCenter = center(sourceRect);
+        const targetCenter = center(targetRect);
+        const horizontalForward = targetCenter.x >= sourceCenter.x;
+        const verticalForward = targetCenter.y >= sourceCenter.y;
+        const horizontal = {
+          sourceEdge: horizontalForward ? "right" : "left",
+          targetEdge: horizontalForward ? "left" : "right",
+          start: point(horizontalForward ? sourceRect.right + endpointGap : sourceRect.left - endpointGap, sourceCenter.y),
+          end: point(horizontalForward ? targetRect.left - endpointGap : targetRect.right + endpointGap, targetCenter.y),
+        };
+        const vertical = {
+          sourceEdge: verticalForward ? "bottom" : "top",
+          targetEdge: verticalForward ? "top" : "bottom",
+          start: point(sourceCenter.x, verticalForward ? sourceRect.bottom + endpointGap : sourceRect.top - endpointGap),
+          end: point(targetCenter.x, verticalForward ? targetRect.top - endpointGap : targetRect.bottom + endpointGap),
+        };
+        horizontal.score = manhattanDistance(horizontal.start, horizontal.end);
+        vertical.score = manhattanDistance(vertical.start, vertical.end);
+        const routeLane = Number.parseInt(relationship.getAttribute("data-route-lane") || "0", 10) || 0;
+        const laneOffset = routeLane * laneSpacing;
+        let d;
+        if (vertical.score <= horizontal.score) {
+          const start = { ...vertical.start, x: vertical.start.x + laneOffset };
+          const end = { ...vertical.end, x: vertical.end.x + laneOffset };
+          const midY = Math.round(start.y + (end.y - start.y) / 2);
+          const pageX = sourceCenter.x + laneOffset;
+          const pageTop = Math.min(sourceCenter.y, targetCenter.y);
+          const pageBottom = Math.max(sourceCenter.y, targetCenter.y);
+          const blocked = resourceRects.some(({ id, rect }) => id !== sourceId && id !== targetId
+            && pageX > rect.left && pageX < rect.right && pageBottom > rect.top && pageTop < rect.bottom);
+          if (blocked && resourceRects.length) {
+            const leftGutter = Math.max(overlayRect.left + endpointGap, Math.min(...resourceRects.map(({ rect }) => rect.left)) - endpointGap);
+            const rightGutter = Math.min(overlayRect.right - endpointGap, Math.max(...resourceRects.map(({ rect }) => rect.right)) + endpointGap);
+            const useRightGutter = routeLane >= 0;
+            const gutterX = useRightGutter ? rightGutter : leftGutter;
+            const gutter = point(gutterX, 0).x;
+            const midGutter = gutter + (useRightGutter ? -4 : 4);
+            d = `M${start.x} ${start.y} H${gutter} V${midY} H${midGutter} V${end.y} H${end.x}`;
+          } else {
+            const midX = Math.round((start.x + end.x) / 2 + laneOffset);
+            d = `M${start.x} ${start.y} V${midY} H${midX} V${end.y} H${end.x}`;
+          }
+          relationship.dataset.routeAxis = "vertical";
+          relationship.dataset.routeSourceEdge = vertical.sourceEdge;
+          relationship.dataset.routeTargetEdge = vertical.targetEdge;
+          relationship.dataset.routeObstructed = String(blocked);
+        } else {
+          const start = { ...horizontal.start, y: horizontal.start.y + laneOffset };
+          const end = { ...horizontal.end, y: horizontal.end.y + laneOffset };
+          const midX = Math.round(start.x + (end.x - start.x) / 2);
+          const midY = Math.round((start.y + end.y) / 2 + laneOffset);
+          d = `M${start.x} ${start.y} H${midX} V${midY} H${end.x} V${end.y}`;
+          relationship.dataset.routeAxis = "horizontal";
+          relationship.dataset.routeSourceEdge = horizontal.sourceEdge;
+          relationship.dataset.routeTargetEdge = horizontal.targetEdge;
+        }
+        relationship.dataset.routeEndpointGap = String(endpointGap);
+        path.setAttribute("d", d);
+      });
+    }
+
+    const networkAnchorResizeObserver = typeof ResizeObserver === "function"
+      ? new ResizeObserver(() => requestAnimationFrame(rerouteNetworkConnectors))
+      : null;
+    document.querySelectorAll('[data-network-anchor]').forEach(anchor => networkAnchorResizeObserver?.observe(anchor));
+    window.addEventListener("resize", rerouteNetworkConnectors);
+    window.addEventListener("load", rerouteNetworkConnectors);
+    rerouteNetworkConnectors();
+
     const stage = document.querySelector(".canvas-stage");
     const canvases = {
       terrain: stage.querySelector('[data-layer="terrain"]'),
@@ -621,6 +1055,14 @@
       areaGeometry: [],
       nodeGeometry: [],
     };
+
+    function pathEvidenceLevel(path) {
+      return path?.evidence_level || "direct";
+    }
+
+    function pathById(id) {
+      return SCENE.paths.find(path => path.id === id) || null;
+    }
 
     function applyDocumentTheme() {
       const css = THEME.css || {};
@@ -711,10 +1153,15 @@
       await Promise.all(loads);
     }
 
+    function iconWorldSizeFor(mass) {
+      if (typeof THEME.iconWorldSize === "function") return THEME.iconWorldSize(mass, state);
+      return Math.min(mass.width, mass.depth) * .64;
+    }
+
     function drawNodeIcon(ctx, node, roofPoints, mass) {
       const image = iconImages.get(node.id);
       if (!image || !roofPoints || !mass) return false;
-      const iconWorldSize = Math.min(mass.width, mass.depth) * .64;
+      const iconWorldSize = iconWorldSizeFor(mass);
       if (iconWorldSize <= 0) return false;
       const uFraction = iconWorldSize / mass.width;
       const vFraction = iconWorldSize / mass.depth;
@@ -959,6 +1406,9 @@
       state.routeGeometry.clear();
       state.renderedIcons = [];
       state.nodeGeometry = [];
+      // Label plate geometry is rebuilt on every resize so responsive layouts use
+      // the same deterministic overlap avoidance as the initial render.
+      state.labelPlates = [];
 
       SCENE.paths.forEach(item => {
         const points = routePoints(item);
@@ -1087,17 +1537,18 @@
 
     function payloadState(timestamp) {
       const flow = SCENE.flows.find(item => item.id === state.activeFlowId) || SCENE.flows[0];
-      if (!flow || !flow.steps.length) return null;
+      const steps = (flow?.steps || []).filter(step => step.evidence_level !== "held");
+      if (!flow || !steps.length) return null;
       const duration = Math.max(800, THEME.motion?.stepDuration || 2400);
       if (state.startedAt === null) state.startedAt = timestamp;
       const elapsed = Math.max(0, timestamp - state.startedAt);
       const stepIndex = state.paused || reducedMotion.matches
-        ? Math.min(flow.steps.length - 1, Math.floor(elapsed / duration) % flow.steps.length)
-        : Math.floor(elapsed / duration) % flow.steps.length;
+        ? Math.min(steps.length - 1, Math.floor(elapsed / duration) % steps.length)
+        : Math.floor(elapsed / duration) % steps.length;
       const progress = state.paused || reducedMotion.matches
         ? 1
         : (elapsed % duration) / duration;
-      const step = flow.steps[stepIndex];
+      const step = steps[stepIndex];
       const points = state.routeGeometry.get(step.path);
       if (!points) return null;
       const payload = SCENE.payloads.find(item => item.id === step.payload);
@@ -1287,6 +1738,7 @@
           bounds: { ...item.bounds },
         })),
         nodeGeometry: state.nodeGeometry.map(item => ({ ...item })),
+        pathEvidence: PATH_EVIDENCE.map(path => ({ ...path })),
         selected: targetKey(state.selected) || null,
         hovered: targetKey(state.hovered) || null,
         activeFlow: state.activeFlowId,
@@ -1306,9 +1758,12 @@
 
     function resizeAndRender() {
       prepareCanvases();
+      // drawArchitecture recomputes label geometry and collision avoidance after
+      // every responsive resize, before the motion layer is painted.
       drawTerrain();
       drawArchitecture();
       drawMotion();
+      rerouteNetworkConnectors();
       stage.dataset.rendered = "true";
       startAnimation();
     }
