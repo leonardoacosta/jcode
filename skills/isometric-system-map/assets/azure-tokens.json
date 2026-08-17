@@ -21,6 +21,16 @@
     "governance": { "stroke": "#5a6470", "fill": "#ebedf0" },
     "devops": { "stroke": "#a02763", "fill": "#f6d8e6" }
   },
+  "family_icon_fallbacks": {
+    "compute": "az-vm",
+    "data": "az-sql-database",
+    "identity": "az-key-vault",
+    "integration": "az-service-bus",
+    "network": "az-vnet",
+    "monitor": "az-app-insights",
+    "governance": "az-subscription",
+    "devops": "az-acr"
+  },
   "containers": {
     "subscription": { "border": "1px dashed #7f7f7f", "fill": "#ffffff" },
     "resource_group": { "border": "1px dashed #7f7f7f", "fill": "#fafbfd" },

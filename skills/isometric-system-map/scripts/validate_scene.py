@@ -64,6 +64,7 @@ PATH_KINDS = {
     "network",
     "telemetry",
 }
+PATH_EVIDENCE_LEVELS = ("direct", "inferred", "held")
 PAYLOAD_KINDS = {
     "command",
     "deployment",
@@ -733,7 +734,7 @@ def validate_scene(document: Any) -> list[str]:
             continue
         _unknown_keys(
             item,
-            {"id", "from", "to", "kind", "label", "route", "payload_ids", "evidence"},
+            {"id", "from", "to", "kind", "label", "route", "payload_ids", "evidence", "evidence_level"},
             path,
             errors,
         )
@@ -750,6 +751,9 @@ def validate_scene(document: Any) -> list[str]:
             errors.append(f"{path}.kind: must be one of {sorted(PATH_KINDS)}")
         else:
             used_path_kinds.add(path_kind)
+        evidence_level = item.get("evidence_level")
+        if evidence_level is not None and evidence_level not in PATH_EVIDENCE_LEVELS:
+            errors.append(f"{path}.evidence_level: must be one of {list(PATH_EVIDENCE_LEVELS)}")
         _validate_evidence(item.get("evidence"), f"{path}.evidence", errors)
 
         listed_payloads = item.get("payload_ids")

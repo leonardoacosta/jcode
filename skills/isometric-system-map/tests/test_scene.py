@@ -287,10 +287,11 @@ class SceneContractTests(unittest.TestCase):
         )
 
         duplicate = copy.deepcopy(document)
+        duplicate_index = len(duplicate["traffic"]["layers"][2]["member_ids"])
         duplicate["traffic"]["layers"][2]["member_ids"].append("app")
         errors = validator.validate_scene(duplicate)
         self.assertIn(
-            "traffic.layers[2].member_ids[1]: node 'app' already belongs to traffic layer 'projects'",
+            f"traffic.layers[2].member_ids[{duplicate_index}]: node 'app' already belongs to traffic layer 'projects'",
             errors,
         )
 
@@ -339,6 +340,24 @@ class SceneContractTests(unittest.TestCase):
         broken["panels"] = {"metrics": True, "rail": True}
         errors = validator.validate_scene(broken)
         self.assertIn("$.panels: unknown field", errors)
+
+    def test_path_evidence_level_accepts_optional_enum_and_rejects_invalid_values(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_path_evidence_level")
+        document = self.traffic_document()
+        self.assertEqual(validator.validate_scene(document), [])
+
+        for level in ("direct", "inferred", "held"):
+            with self.subTest(evidence_level=level):
+                explicit = copy.deepcopy(document)
+                explicit["paths"][0]["evidence_level"] = level
+                self.assertEqual(validator.validate_scene(explicit), [])
+
+        invalid = copy.deepcopy(document)
+        invalid["paths"][0]["evidence_level"] = "rumored"
+        self.assertEqual(
+            validator.validate_scene(invalid),
+            ["paths[0].evidence_level: must be one of ['direct', 'inferred', 'held']"],
+        )
 
     def test_cli_validates_fixture(self):
         result = subprocess.run(
