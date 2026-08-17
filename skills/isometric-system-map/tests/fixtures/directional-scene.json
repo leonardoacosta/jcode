@@ -1,0 +1,545 @@
+{
+  "version": 1,
+  "repository": {
+    "name": "sample-directional-infra",
+    "ref": "main",
+    "commit": "0123456789abcdef0123456789abcdef01234567",
+    "scope": "infra/main.bicep, infra/modules/apim.bicep",
+    "summary": "A compact request topology that reads from APIM ingress through an owned application and private data access to an external partner, alongside deployment and telemetry support paths."
+  },
+  "art_direction": {
+    "name": "warm technical paper",
+    "principles": [
+      "ink-first linework",
+      "quiet hierarchy",
+      "no interface chrome",
+      "bottom-left-to-top-right request reading"
+    ],
+    "palette_roles": {
+      "background": "#d9cfaa",
+      "grid": "#b9ad82",
+      "structure": "#5b553f",
+      "control_path": "#4f4936",
+      "data_path": "#6d5835",
+      "payload": "#28251c",
+      "text": "#2c291f"
+    },
+    "medium": "archival drafting paper",
+    "linework": "fine sepia technical pen",
+    "materials": "flat paper cubes on numbered traffic and sourced VNet terrain",
+    "typography": "compact monospaced labels",
+    "motion": "small ink dots moving at a measured pace",
+    "path_treatments": {
+      "delivery": {
+        "stroke_pattern": "solid",
+        "weight": "medium",
+        "marker": "filled terminal arrow",
+        "texture": "clean technical ink",
+        "motion_cadence": "steady measured travel",
+        "reduced_motion": "numbered marker at the step endpoint"
+      },
+      "dependency": {
+        "stroke_pattern": "short dash",
+        "weight": "fine",
+        "marker": "open terminal chevron",
+        "texture": "dry drafting ink",
+        "motion_cadence": "none",
+        "reduced_motion": "unchanged static dependency"
+      },
+      "telemetry": {
+        "stroke_pattern": "dotted pulse",
+        "weight": "fine",
+        "marker": "small ring terminal",
+        "texture": "stippled ink",
+        "motion_cadence": "restrained periodic pulse",
+        "reduced_motion": "single marker at the monitoring endpoint"
+      }
+    }
+  },
+  "canvas": {
+    "grid_width": 12,
+    "grid_depth": 14,
+    "tile_width": 64,
+    "tile_height": 32,
+    "cube_size": 1
+  },
+  "zones": [
+    {
+      "id": "delivery",
+      "label": "Delivery",
+      "description": "Build and deployment control plane"
+    },
+    {
+      "id": "runtime",
+      "label": "Runtime",
+      "description": "Provisioned application resources"
+    }
+  ],
+  "areas": [
+    {
+      "id": "runtime-vnet",
+      "label": "Runtime VNet",
+      "kind": "vnet",
+      "status": "active",
+      "member_ids": [
+        "app",
+        "database",
+        "telemetry"
+      ],
+      "padding": 0.5,
+      "description": "Private runtime attachment area.",
+      "evidence": [
+        {
+          "path": "infra/network/main.bicep",
+          "lines": "1-72",
+          "claim": "The runtime resources attach to the application VNet."
+        }
+      ]
+    }
+  ],
+  "traffic": {
+    "direction": "bottom-left-to-top-right",
+    "layers": [
+      {
+        "id": "ingress",
+        "label": "APIM ingress",
+        "kind": "ingress",
+        "member_ids": [
+          "apim"
+        ],
+        "padding": 0.5,
+        "description": "Incoming requests enter at API Management."
+      },
+      {
+        "id": "projects",
+        "label": "Projects",
+        "kind": "projects",
+        "member_ids": [
+          "app"
+        ],
+        "padding": 0.5,
+        "description": "The owned application handles the request next."
+      },
+      {
+        "id": "data-access",
+        "label": "Data access",
+        "kind": "data-access",
+        "member_ids": [
+          "database"
+        ],
+        "padding": 0.5,
+        "description": "The application reaches its private data dependency."
+      },
+      {
+        "id": "external-services",
+        "label": "External services",
+        "kind": "external-services",
+        "member_ids": [
+          "partner-api"
+        ],
+        "padding": 0.5,
+        "description": "The external partner service forms the final request layer."
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "id": "pipeline",
+      "code": "CI",
+      "label": "Deploy pipeline",
+      "role": "pipeline",
+      "form": "cube",
+      "zone": "delivery",
+      "position": {
+        "x": 1,
+        "y": 9
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Azure DevOps pipeline",
+      "icon": "az-release-pipeline",
+      "description": "Validates and deploys the subscription template.",
+      "evidence": [
+        {
+          "path": ".azuredevops/deploy.yml",
+          "lines": "12-44",
+          "claim": "The pipeline validates and deploys the Bicep entry point."
+        }
+      ]
+    },
+    {
+      "id": "apim",
+      "code": "APIM",
+      "label": "API Management ingress",
+      "role": "entry",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 1,
+        "y": 12
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.ApiManagement/service",
+      "icon": "az-apim",
+      "description": "Receives incoming requests before the owned application layer.",
+      "evidence": [
+        {
+          "path": "infra/modules/apim.bicep",
+          "lines": "1-72",
+          "claim": "The API Management service is the represented incoming request front door."
+        }
+      ]
+    },
+    {
+      "id": "app",
+      "code": "APP",
+      "label": "Application",
+      "role": "compute",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 4,
+        "y": 8
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Web/sites",
+      "icon": "az-app-service",
+      "description": "Hosts the provisioned workload.",
+      "evidence": [
+        {
+          "path": "infra/modules/app.bicep",
+          "lines": "1-80",
+          "claim": "The app module provisions the workload compute."
+        }
+      ]
+    },
+    {
+      "id": "database",
+      "code": "SQL",
+      "label": "SQL database",
+      "role": "data",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 6,
+        "y": 5
+      },
+      "footprint": {
+        "width": 2,
+        "depth": 1
+      },
+      "status": "active",
+      "resource_type": "Microsoft.Sql/servers/databases",
+      "icon": "az-sql-database",
+      "description": "Provides the SQL service and its private endpoint.",
+      "evidence": [
+        {
+          "path": "infra/modules/sql.bicep",
+          "lines": "1-96",
+          "claim": "The SQL module creates the data service and private endpoint."
+        }
+      ]
+    },
+    {
+      "id": "telemetry",
+      "code": "OBS",
+      "label": "Telemetry",
+      "role": "observability",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 9,
+        "y": 5
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 2
+      },
+      "status": "active",
+      "resource_type": "Microsoft.OperationalInsights/workspaces",
+      "icon": "az-log-analytics",
+      "description": "Receives workload diagnostics.",
+      "evidence": [
+        {
+          "path": "infra/modules/monitoring.bicep",
+          "lines": "10-72",
+          "claim": "Diagnostics are connected to the monitoring workspace."
+        }
+      ]
+    },
+    {
+      "id": "partner-api",
+      "code": "EXT",
+      "label": "Partner API",
+      "role": "external",
+      "form": "cube",
+      "zone": "runtime",
+      "position": {
+        "x": 8,
+        "y": 2
+      },
+      "footprint": {
+        "width": 1,
+        "depth": 1
+      },
+      "status": "external",
+      "resource_type": "Externally operated HTTPS API",
+      "icon": "az-front-door",
+      "description": "Represents an externally operated service reached after data access.",
+      "evidence": [
+        {
+          "path": "infra/main.bicep",
+          "lines": "33-40",
+          "claim": "The application depends on the represented external partner endpoint."
+        }
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "id": "ingress-request",
+      "from": "apim",
+      "to": "app",
+      "kind": "dependency",
+      "label": "incoming request handoff",
+      "route": [
+        {
+          "x": 2,
+          "y": 12.5
+        },
+        {
+          "x": 3.5,
+          "y": 12.5
+        },
+        {
+          "x": 3.5,
+          "y": 8.5
+        },
+        {
+          "x": 4,
+          "y": 8.5
+        }
+      ],
+      "payload_ids": [],
+      "evidence": [
+        {
+          "path": "infra/modules/apim.bicep",
+          "lines": "44-58",
+          "claim": "API Management forwards represented requests to the owned application."
+        }
+      ]
+    },
+    {
+      "id": "deploy-app",
+      "from": "pipeline",
+      "to": "app",
+      "kind": "delivery",
+      "label": "guarded deployment",
+      "route": [
+        {
+          "x": 3,
+          "y": 9.5
+        },
+        {
+          "x": 3.5,
+          "y": 9.5
+        },
+        {
+          "x": 3.5,
+          "y": 8.5
+        },
+        {
+          "x": 4,
+          "y": 8.5
+        }
+      ],
+      "payload_ids": [
+        "deployment"
+      ],
+      "evidence": [
+        {
+          "path": ".azuredevops/deploy.yml",
+          "lines": "31-44",
+          "claim": "The pipeline invokes the app deployment."
+        }
+      ]
+    },
+    {
+      "id": "private-sql-dependency",
+      "from": "app",
+      "to": "database",
+      "kind": "dependency",
+      "label": "private SQL dependency",
+      "route": [
+        {
+          "x": 5,
+          "y": 8.5
+        },
+        {
+          "x": 5.5,
+          "y": 8.5
+        },
+        {
+          "x": 5.5,
+          "y": 5.5
+        },
+        {
+          "x": 6,
+          "y": 5.5
+        }
+      ],
+      "payload_ids": [],
+      "evidence": [
+        {
+          "path": "infra/main.bicep",
+          "lines": "22-31",
+          "claim": "The Bicep entry point wires the application to the private SQL dependency."
+        }
+      ]
+    },
+    {
+      "id": "emit-telemetry",
+      "from": "app",
+      "to": "telemetry",
+      "kind": "telemetry",
+      "label": "diagnostics",
+      "route": [
+        {
+          "x": 4.5,
+          "y": 8
+        },
+        {
+          "x": 4.5,
+          "y": 7.5
+        },
+        {
+          "x": 9.5,
+          "y": 7.5
+        },
+        {
+          "x": 9.5,
+          "y": 7
+        }
+      ],
+      "payload_ids": [
+        "diagnostic"
+      ],
+      "evidence": [
+        {
+          "path": "infra/modules/monitoring.bicep",
+          "lines": "36-72",
+          "claim": "The workload emits diagnostics to monitoring."
+        }
+      ]
+    },
+    {
+      "id": "partner-dependency",
+      "from": "app",
+      "to": "partner-api",
+      "kind": "dependency",
+      "label": "partner API dependency",
+      "route": [
+        {
+          "x": 5,
+          "y": 8.5
+        },
+        {
+          "x": 5.5,
+          "y": 8.5
+        },
+        {
+          "x": 5.5,
+          "y": 3.5
+        },
+        {
+          "x": 8.5,
+          "y": 3.5
+        },
+        {
+          "x": 8.5,
+          "y": 3
+        }
+      ],
+      "payload_ids": [],
+      "evidence": [
+        {
+          "path": "infra/main.bicep",
+          "lines": "33-40",
+          "claim": "The application has the represented external partner dependency."
+        }
+      ]
+    }
+  ],
+  "payloads": [
+    {
+      "id": "deployment",
+      "label": "ARM deployment",
+      "kind": "deployment",
+      "description": "Environment parameters and resource outputs.",
+      "evidence": [
+        {
+          "path": ".azuredevops/deploy.yml",
+          "lines": "31-44",
+          "claim": "Deployment parameters cross the delivery path."
+        }
+      ]
+    },
+    {
+      "id": "diagnostic",
+      "label": "Diagnostic envelope",
+      "kind": "telemetry",
+      "description": "Logs and metrics emitted by the workload.",
+      "evidence": [
+        {
+          "path": "infra/modules/monitoring.bicep",
+          "lines": "36-72",
+          "claim": "Diagnostic settings forward workload telemetry."
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "release-and-observe",
+      "label": "Release and observe",
+      "description": "Deploy the application and emit evidenced telemetry.",
+      "steps": [
+        {
+          "path": "deploy-app",
+          "payload": "deployment",
+          "label": "Deploy the workload",
+          "evidence": [
+            {
+              "path": ".azuredevops/deploy.yml",
+              "lines": "31-44",
+              "claim": "The pipeline performs the guarded deployment."
+            }
+          ]
+        },
+        {
+          "path": "emit-telemetry",
+          "payload": "diagnostic",
+          "label": "Emit diagnostics",
+          "evidence": [
+            {
+              "path": "infra/modules/monitoring.bicep",
+              "lines": "36-72",
+              "claim": "Diagnostics are forwarded to monitoring."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

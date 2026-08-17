@@ -55,7 +55,8 @@ when the source cannot be fetched safely.
 
 Trace entry points and callers before selecting visual forms. Establish:
 
-- initiators, pipelines, schedulers, or API entry points;
+- initiators, pipelines, schedulers, or API entry points, especially the APIM or equivalent ingress
+  front door for request-oriented maps;
 - owned modules and runtime resources, including exact ARM `resource_type` where available;
 - a package-supported `icon` for Azure resources or CI/CD primitives when the chosen theme uses roof marks;
 - existing or externally owned dependencies;
@@ -93,6 +94,8 @@ Curate a discussable scene, not a repository inventory:
 - 3-6 named flows is ideal when the evidence supports real payload journeys. A static dependency map
   can use no payloads and no flows.
 - Keep deployment dependency separate from runtime data movement.
+- For request-oriented maps, make the traffic reading order explicit: APIM or equivalent ingress,
+  project services, data access, then third-party or externally owned services.
 - Give important hubs clearer placement, route degree, or reserved footprint, not a building silhouette.
 - Do not merge objects whose distinct environment, scope, ownership, contract, or lifecycle is an
   explicit requirement. The normal node target is a readability guide, not permission to erase a
@@ -122,16 +125,30 @@ copy their surrounding interface.
 
 Use a true 2:1 grid: `tile_width = 2 × tile_height`. Choose one scene-wide `canvas.cube_size`, then
 place resource envelopes in grid coordinates and validate full footprint overlap. Every envelope must
-be large enough to contain that same cube. Keep high-traffic hubs central, entry/control nodes toward
-the back or left, and sinks/outputs toward the front or right unless the story suggests another
-reading order.
+be large enough to contain that same cube.
+
+For every topology that represents incoming request traffic, declare a `traffic` story with
+`direction: "bottom-left-to-top-right"` and exactly four ordered terrain layers:
+
+1. `ingress`: APIM or the equivalent front door, marked with node role `entry`;
+2. `projects`: all owned project or application services participating in the request path;
+3. `data-access`: databases, configuration, identity, messaging, and private data dependencies;
+4. `external-services`: third-party or externally owned services.
+
+Place the padded center of each layer visibly farther right and higher on screen than the preceding
+layer. The validator uses the 2:1 projection to reject reversed or flat ordering. The renderer draws
+numbered layer surfaces and one bottom-left-to-top-right reading arrow. Keep deployment pipelines,
+governance, and other support-plane nodes outside the main corridor when they do not participate in
+incoming request traffic. The reading arrow is compositional guidance, not evidence of a runtime
+payload; retain only source-backed paths and animation.
 
 When evidence says resources are network-contained, declare a sourced `area` with `kind: "vnet"`,
 the contained node IDs in `member_ids`, half-grid `padding`, status, description, and direct evidence.
 Include the VNet itself as one cube in the area's membership when it is represented. The renderer
 derives the terrain boundary from the complete member footprints, so place every network-attached
 resource inside the VNet area rather than leaving containment as a label or path-only implication.
-Keep ordinary visual grouping in `zones`; use `areas` only for proven containment.
+Place unrelated resources outside the derived rectangle so the area cannot visually claim unsupported
+containment. Keep ordinary visual grouping in `zones`; use `areas` only for proven containment.
 
 Route paths explicitly as grid points. Prefer lane-like segments along one isometric axis at a time.
 Start and end on a footprint edge or in the outward half-cell beside one edge, never inside a
@@ -181,7 +198,9 @@ static export.
 
 ### 8. Author and validate the scene sidecar
 
-Start from [`tests/fixtures/valid-scene.json`](tests/fixtures/valid-scene.json) and read
+Start from [`tests/fixtures/valid-scene.json`](tests/fixtures/valid-scene.json), or from
+[`tests/fixtures/directional-scene.json`](tests/fixtures/directional-scene.json) for an incoming request
+map, and read
 [`references/scene-contract.md`](references/scene-contract.md). Validate before rendering:
 
 ```bash
@@ -189,7 +208,8 @@ python3 skills/isometric-system-map/scripts/validate_scene.py \
   docs/diagrams/<repo>-isometric-scene.json
 ```
 
-Fix every collision, dangling reference, uncited claim, invalid route, and projection error. The
+Fix every collision, dangling reference, uncited claim, invalid route, traffic-layer order error, and
+projection error. A scene with an `entry` node must declare the four-layer `traffic` story. The
 contract intentionally has no fields for dashboards, rails, metric cards, or explainer panels.
 
 Then run a semantic coverage gate against the temporary ledger:
@@ -201,6 +221,9 @@ Then run a semantic coverage gate against the temporary ledger:
 - exact contract names and decisive flags such as `subscriptionRequired` appear on the relevant
   node/path description with direct evidence;
 - externally owned imports are shown as external dependencies rather than local runtime traffic;
+- APIM or the equivalent entry node is in the first traffic layer, all role `data` nodes are in the
+  third layer, all role `external` nodes are in the fourth layer, and the four layer centers progress
+  from bottom left to top right;
 - every moving payload is supported at its rendered source and target.
 
 Do not render until every required row has a concrete scene element or is explicitly excluded as
@@ -219,12 +242,14 @@ python3 skills/isometric-system-map/scripts/render_canvas.py \
 
 Use three aligned Canvas layers:
 
-1. terrain: background, material, ground, grid, sourced containment areas, and quiet zones;
+1. terrain: background, material, ground, numbered traffic layers and reading arrow, sourced
+   containment areas, and quiet zones;
 2. architecture: routes, arrows, resource cubes, and compact labels;
 3. motion: payloads and interaction highlights.
 
 Retain geometry as `Path2D` objects for drawing, pointer hit testing, focus rings, and selection.
-Mirror every node and path to a native focusable DOM control in the same labelled scene region.
+Mirror every traffic layer, VNet area, node, and path to a native focusable DOM control in the same
+labelled scene region.
 Use `ResizeObserver` and `devicePixelRatio` for responsive sharp output. Use timestamp-based
 `requestAnimationFrame`, cancel it while paused, hidden, or under reduced motion, and hide motion
 controls for a static scene. Composite the three Canvas layers with `toBlob()` for PNG export.
@@ -238,7 +263,7 @@ used by the scene, so the HTML remains self-contained.
 Render order:
 
 1. background and ground plane;
-2. region markings and grid;
+2. numbered traffic layers, the bottom-left-to-top-right reading arrow, region markings, and grid;
 3. routes behind resource cubes;
 4. resource cubes sorted back-to-front by envelope far edge;
 5. labels and direction markers;
@@ -258,19 +283,21 @@ Inspect the rendered artifact in a browser or image viewer:
    and wall faces, and no envelope collisions. Every supported resource mark is visibly projected onto
    its top face and uses the semantic family palette.
 3. The ground grid uses consistent 2:1 axes.
-4. Every sourced VNet area visibly encloses the complete footprints of all declared member resources,
+4. Request-oriented maps visibly read APIM ingress → projects → data access → external services from
+   bottom left to top right. Each numbered layer appears as a native focusable control.
+5. Every sourced VNet area visibly encloses the complete footprints of all declared member resources,
    exposes its evidence, and appears as a native focusable control.
-5. Directed routes follow the terrain and avoid unrelated resource envelopes.
-6. The main flows can be followed end-to-end without guessing.
-7. Payloads map to named values and pause under reduced-motion preferences.
-8. Pause stops the animation frame loop, and reduced motion starts with no live frame loop.
-9. Every node and path appears as a native focusable control and focus mirrors to the Canvas.
-10. Labels stay legible and do not become the architecture.
-11. The requested design language is visible in material, linework, typography, and motion, not only
+6. Directed routes follow the terrain and avoid unrelated resource envelopes.
+7. The main flows can be followed end-to-end without guessing.
+8. Payloads map to named values and pause under reduced-motion preferences.
+9. Pause stops the animation frame loop, and reduced motion starts with no live frame loop.
+10. Every node and path appears as a native focusable control and focus mirrors to the Canvas.
+11. Labels stay legible and do not become the architecture.
+12. The requested design language is visible in material, linework, typography, and motion, not only
    a palette swap.
-12. Citations are available in tooltips, details, captions, or the sidecar without forcing a fixed
+13. Citations are available in tooltips, details, captions, or the sidecar without forcing a fixed
    panel layout.
-13. At screenshot scale, the isometric image remains the focal point.
+14. At screenshot scale, the isometric image remains the focal point.
 
 ## Hard boundaries
 
@@ -278,7 +305,11 @@ Inspect the rendered artifact in a browser or image viewer:
 - Do not vary node silhouettes or cube size. Every node remains one identically sized cube; use marks,
   palette, labels, placement, reserved footprints, spacing, and paths for differentiation.
 - Do not show proven VNet containment only as a VNet cube, zone label, or network path. Use a sourced
-  VNet area whose members include the contained resources.
+  VNet area whose members include the contained resources, and keep unrelated resource footprints
+  outside its derived bounds.
+- Do not place APIM behind project, data, or external layers in a request-oriented map. Incoming
+  traffic starts at the bottom-left ingress layer and the ordered topology progresses toward the top
+  right.
 - Do not fake 3D with arbitrary CSS transforms on flat cards.
 - Do not use generic center-to-center curves when explicit terrain routes are possible.
 - Do not label a manual pipeline as held merely because `trigger: none` or `pr: none` is present.

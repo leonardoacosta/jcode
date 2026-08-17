@@ -72,6 +72,7 @@
     telemetry: { color: "#3a3d99", width: 2, dash: [5, 3], arrow: "open" },
     delivery: { color: "#a02763", width: 2.4, dash: [], arrow: "filled" },
   };
+  const trafficColors = ["#0078d4", "#5933a3", "#107c10", "#c8460e"];
 
   function familyFor(node) {
     return resourceTypeFamilies[node.resource_type] || roleFamilies[node.role] || "governance";
@@ -156,6 +157,60 @@
       ctx.lineWidth = boundary ? 1 : .75;
       ctx.setLineDash([]);
       ctx.stroke(path);
+    },
+
+    drawTrafficLayer(ctx, path, layer, index, labelPoint) {
+      const color = trafficColors[index] || azureBlue;
+      ctx.save();
+      ctx.globalAlpha = .08;
+      ctx.fillStyle = color;
+      ctx.fill(path);
+      ctx.globalAlpha = .72;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.15;
+      ctx.setLineDash([3, 5]);
+      ctx.stroke(path);
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = color;
+      ctx.font = '700 9px "Segoe UI", system-ui, sans-serif';
+      ctx.textAlign = "center";
+      ctx.fillText(`${index + 1} · ${layer.label.toUpperCase()}`, labelPoint.x, labelPoint.y + 4);
+      ctx.restore();
+    },
+
+    drawTrafficDirection(ctx, points, traffic) {
+      if (points.length < 2) return;
+      const [start, end] = points;
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      const midpoint = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+      ctx.save();
+      ctx.strokeStyle = "rgba(0,120,212,.56)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.translate(end.x, end.y);
+      ctx.rotate(angle);
+      ctx.fillStyle = azureBlue;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-11, -5);
+      ctx.lineTo(-11, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,.92)";
+      ctx.fillRect(midpoint.x - 52, midpoint.y - 20, 104, 15);
+      ctx.fillStyle = azureBlue;
+      ctx.font = '700 8px "Cascadia Code", Consolas, monospace';
+      ctx.textAlign = "center";
+      ctx.fillText(traffic.label, midpoint.x, midpoint.y - 10);
+      ctx.restore();
     },
 
     drawArea(ctx, path, area, labelPoint) {

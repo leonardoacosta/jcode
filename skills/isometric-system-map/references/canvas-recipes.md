@@ -6,10 +6,12 @@ Use this renderer architecture for interactive, animated, or strongly art-direct
 
 Render one scene through four cooperating layers:
 
-1. **Terrain canvas**: background, texture, ground plane, grid, and quiet zone labels.
+1. **Terrain canvas**: background, texture, ground plane, grid, numbered traffic layers, reading
+   arrow, VNet areas, and quiet zone labels.
 2. **Architecture canvas**: routes, arrows, resource cubes, and compact node codes.
 3. **Motion canvas**: payloads plus hover, focus, and selected-state highlights.
-4. **DOM semantic mirror**: one native focusable control for every interactive node and path, plus minimal flow, pause, and export controls.
+4. **DOM semantic mirror**: one native focusable control for every traffic layer, VNet area, node, and
+   path, plus minimal flow, pause, and export controls.
 
 The canvases share identical CSS dimensions and projection state. Only redraw a layer when its content changes. Do not redraw terrain and cubes on every payload frame.
 
@@ -36,10 +38,11 @@ python3 skills/isometric-system-map/scripts/render_canvas.py \
 
 ## Keep scene facts out of drawing code
 
-The renderer may calculate projected points, cube faces, area polygons, hit regions, and animation positions. It must not infer repository facts or silently rewrite:
+The renderer may calculate projected points, cube faces, traffic-layer and area polygons, hit regions,
+and animation positions. It must not infer repository facts or silently rewrite:
 
 - node identity, role, status, ownership, or evidence;
-- grid position, footprint, scene-wide cube size, or containment membership;
+- grid position, footprint, scene-wide cube size, traffic-layer membership, or containment membership;
 - path endpoints, kind, explicit route, or payload membership;
 - flow order or step evidence;
 - art-direction principles and path treatments.
@@ -94,8 +97,8 @@ roof.closePath();
 nodeHits.push({ item: node, path: roof });
 ```
 
-Build one combined `Path2D` per node from its three visible cube faces, one per sourced area, and one
-per explicit route. Reuse the same objects for:
+Build one combined `Path2D` per node from its three visible cube faces, one per traffic layer, one per
+sourced area, and one per explicit route. Reuse the same objects for:
 
 - drawing;
 - hover and click hit testing;
@@ -138,6 +141,19 @@ This makes the two projected ground edges and the vertical edge equal in screen 
 ensures every footprint can contain the shared edge. Do not branch on role, resource type, footprint,
 status, or importance to change cube size or create towers, stacks, gateways, or compound masses. Sort
 cubes by the far edge of their declared envelopes, then draw left, right, and roof faces.
+
+## Directional traffic layers
+
+For `scene.traffic.layers`, derive one padded member rectangle with the same bounding calculation used
+for areas. Project its four corners, draw a quiet numbered terrain surface, and retain its `Path2D` for
+selection. Draw these compositional layers before sourced VNet areas so containment remains the more
+specific visual fact.
+
+Project each layer center and draw one dashed reading arrow from the first to the fourth. Its label may
+say `INCOMING TRAFFIC`, but it is not an architecture path and must not participate in payload motion.
+Expose `trafficLayerCount`, `trafficDirection`, and `trafficLayerGeometry` in runtime diagnostics.
+Mirror every layer to a native `button[data-target-kind="traffic-layer"]` whose focus selects the same
+terrain path.
 
 ## VNet containment areas
 
@@ -248,10 +264,13 @@ Listen for preference changes because a user can change the setting while the ar
 
 ## Accessible semantic mirror
 
-A Canvas bitmap has no object-level semantics. Create a one-to-one native control for every node and path:
+A Canvas bitmap has no object-level semantics. Create a one-to-one native control for every traffic
+layer, VNet area, node, and path:
 
 ```html
 <div class="sr-only" role="group" aria-label="Inspectable map elements">
+  <button data-target-kind="traffic-layer" data-target-id="ingress">APIM ingress</button>
+  <button data-target-kind="area" data-target-id="runtime-vnet">Runtime VNet</button>
   <button data-target-kind="node" data-target-id="sql">SQL data tier</button>
   <button data-target-kind="path" data-target-id="deploy-sql">Deploy SQL</button>
 </div>

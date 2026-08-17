@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 VALIDATOR = ROOT / "scripts" / "validate_scene.py"
 MATH = ROOT / "scripts" / "scene_math.py"
 FIXTURE = Path(__file__).parent / "fixtures" / "valid-scene.json"
+DIRECTIONAL_FIXTURE = Path(__file__).parent / "fixtures" / "directional-scene.json"
 AZURE_SPRITE = ROOT / "assets" / "azure-icons.svg"
 AZURE_TOKENS = ROOT / "assets" / "azure-tokens.json"
 
@@ -28,6 +29,9 @@ class SceneContractTests(unittest.TestCase):
     def setUp(self):
         self.document = json.loads(FIXTURE.read_text())
 
+    def traffic_document(self):
+        return json.loads(DIRECTIONAL_FIXTURE.read_text())
+
     def test_valid_scene_has_no_errors(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator")
         self.assertEqual(validator.validate_scene(self.document), [])
@@ -43,6 +47,23 @@ class SceneContractTests(unittest.TestCase):
         math = load_module(MATH, "isometric_scene_math_ratio")
         with self.assertRaisesRegex(ValueError, "tile_width must equal 2 × tile_height"):
             math.project(1, 1, 0, 64, 40, 100, 50)
+
+    def test_non_finite_numeric_values_return_validation_errors(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_finite_numbers")
+        for value in (float("nan"), float("inf"), float("-inf")):
+            traffic = self.traffic_document()
+            traffic["traffic"]["layers"][0]["padding"] = value
+            self.assertIn(
+                "traffic.layers[0].padding: half-grid number from 0 to 2 required",
+                validator.validate_scene(traffic),
+            )
+
+            cube = copy.deepcopy(self.document)
+            cube["canvas"]["cube_size"] = value
+            self.assertIn(
+                "canvas.cube_size: half-grid number from 0.5 to 2 required",
+                validator.validate_scene(cube),
+            )
 
     def test_collision_detection_uses_full_resource_envelopes(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_collision")
@@ -101,6 +122,14 @@ class SceneContractTests(unittest.TestCase):
             path["kind"] = "dependency"
             path["payload_ids"] = []
         self.assertEqual(validator.validate_scene(static), [])
+
+    def test_non_request_scene_can_omit_traffic_without_an_entry_node(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_optional_traffic")
+        document = copy.deepcopy(self.document)
+        document["nodes"][3]["role"] = "external"
+        document["nodes"][3]["status"] = "external"
+        self.assertNotIn("traffic", document)
+        self.assertEqual(validator.validate_scene(document), [])
 
     def test_non_dependency_path_requires_a_payload(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_empty_payload")
@@ -197,11 +226,84 @@ class SceneContractTests(unittest.TestCase):
             errors,
         )
 
+        malformed_member = copy.deepcopy(document)
+        malformed_member["areas"][0]["member_ids"] = [["app"]]
+        errors = validator.validate_scene(malformed_member)
+        self.assertIn(
+            "areas[0].member_ids[0]: requires a non-empty node id string",
+            errors,
+        )
+
+        ambiguous = copy.deepcopy(document)
+        ambiguous["areas"][0]["member_ids"] = ["app", "telemetry"]
+        errors = validator.validate_scene(ambiguous)
+        self.assertIn(
+            "areas[0]: derived bounds intersect unrelated node 'database'",
+            errors,
+        )
+
         outside = copy.deepcopy(document)
         outside["areas"][0]["member_ids"] = ["pipeline"]
         outside["areas"][0]["padding"] = 2
         errors = validator.validate_scene(outside)
         self.assertIn("areas[0]: padded member bounds extend beyond the canvas", errors)
+
+    def test_traffic_story_requires_four_ordered_layers_and_entry_role(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_traffic_layers")
+        document = self.traffic_document()
+        self.assertEqual(validator.validate_scene(document), [])
+
+        missing = copy.deepcopy(document)
+        del missing["traffic"]
+        errors = validator.validate_scene(missing)
+        self.assertIn("traffic: required when a node uses role 'entry'", errors)
+
+        wrong_order = copy.deepcopy(document)
+        wrong_order["traffic"]["layers"][1], wrong_order["traffic"]["layers"][2] = (
+            wrong_order["traffic"]["layers"][2],
+            wrong_order["traffic"]["layers"][1],
+        )
+        errors = validator.validate_scene(wrong_order)
+        self.assertIn(
+            "traffic.layers: kinds must be ordered ['ingress', 'projects', 'data-access', 'external-services']",
+            errors,
+        )
+
+        no_entry = copy.deepcopy(document)
+        next(node for node in no_entry["nodes"] if node["id"] == "apim")["role"] = "module"
+        errors = validator.validate_scene(no_entry)
+        self.assertIn("traffic.layers[0]: ingress must include at least one role 'entry' node", errors)
+
+    def test_traffic_layers_require_unique_members_and_bottom_left_to_top_right_progress(self):
+        validator = load_module(VALIDATOR, "isometric_scene_validator_traffic_geometry")
+        document = self.traffic_document()
+
+        malformed_member = copy.deepcopy(document)
+        malformed_member["traffic"]["layers"][1]["member_ids"] = [["app"]]
+        errors = validator.validate_scene(malformed_member)
+        self.assertIn(
+            "traffic.layers[1].member_ids[0]: requires a non-empty node id string",
+            errors,
+        )
+
+        duplicate = copy.deepcopy(document)
+        duplicate["traffic"]["layers"][2]["member_ids"].append("app")
+        errors = validator.validate_scene(duplicate)
+        self.assertIn(
+            "traffic.layers[2].member_ids[1]: node 'app' already belongs to traffic layer 'projects'",
+            errors,
+        )
+
+        reversed_x = copy.deepcopy(document)
+        next(node for node in reversed_x["nodes"] if node["id"] == "partner-api")["position"] = {
+            "x": 1,
+            "y": 1,
+        }
+        errors = validator.validate_scene(reversed_x)
+        self.assertTrue(
+            any("must progress toward the top right" in error for error in errors),
+            errors,
+        )
 
     def test_nodes_accept_known_azure_resource_metadata(self):
         validator = load_module(VALIDATOR, "isometric_scene_validator_azure_metadata")

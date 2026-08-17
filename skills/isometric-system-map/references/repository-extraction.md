@@ -32,6 +32,7 @@ Build a temporary inventory with these columns:
 | boundary | Subscription, resource group, service, process, or ownership boundary? |
 | dependency | What must exist first? Is it compile/deploy/runtime? |
 | runtime path | What value or request actually moves? |
+| traffic layer | Is this APIM ingress, an owned project service, data access, or an external service? |
 | external | Which resource is existing, cross-repo, or owned by another team? |
 | status | Active, conditional, held, external, deprecated? What line proves it? |
 | environment | Shared, per-environment, or overlay-only? |
@@ -60,6 +61,7 @@ when or why it deploys.
 
 | Evidence | Likely role or path |
 | --- | --- |
+| API Management or equivalent public/private request gateway | `entry` node in traffic layer 1 `ingress` |
 | pipeline stage/job invoking Bicep | `pipeline` node, `delivery` or `control` path |
 | approval or policy boundary | `governance` cube or control path |
 | root/reusable Bicep module | `module` node |
@@ -71,6 +73,19 @@ when or why it deploys.
 | UAMI, Key Vault, role assignment, auth authority | `identity` node or identity path |
 | Log Analytics, App Insights, alerts, dashboards | `observability` node or telemetry path |
 | `existing` resource or cross-repo reference | usually `external` status |
+
+For incoming-request topologies, classify the visible corridor before placing coordinates:
+
+1. APIM or the equivalent gateway is the `entry` node in `ingress`.
+2. Every owned project or application service that handles the request belongs to `projects`.
+3. Every represented role `data` node, plus directly used configuration, identity, messaging, and
+   private data dependencies, belongs to `data-access`.
+4. Every represented role `external` node belongs to `external-services`.
+
+Do not put a deployment pipeline in ingress merely because it starts a release. Do not put APIM in the
+external-services layer merely because the selected repository does not own it; request position and
+ownership status are separate facts, so an externally owned APIM can have role `entry` and status
+`external`. Support-plane nodes can remain outside the corridor.
 
 Group repetitive resources into one cube when the scene story is about the shared module or
 fan-out behavior. Split them only when independent ownership, ordering, or payload routes matter.
@@ -183,6 +198,8 @@ Use these rules when checking it:
 - preserve exact names and flags when they carry architecture meaning, such as API versions, product
   names, `subscriptionRequired`, environment selectors, or placeholder CIDRs;
 - model external imports and cross-team prerequisites as external nodes and dependency/control paths;
+- for request-oriented maps, check that APIM, projects, data access, and external services are assigned
+  to the four ordered traffic layers and that their projected centers progress bottom left to top right;
 - model central hubs and environment overlays separately without duplicating the whole stack;
 - model shared versus distinct environment objects as independently identifiable nodes;
 - require route-claim congruence: the cited evidence must support the rendered source, target, kind,

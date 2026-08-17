@@ -12,6 +12,7 @@ grammar. The surrounding interface and exact palette are incidental.
 | node identities and ownership | face fills, hatching, gradients, texture |
 | grid coordinates and footprints | grid visibility and line weight |
 | one global cube size and one-cube node geometry | corner sharpness, roof detail, shadows |
+| four traffic-layer kinds, membership, order, and projected centers | layer tint, boundary pattern, number treatment, reading-arrow style |
 | VNet area membership and derived bounds | area fill, line pattern, label treatment |
 | route geometry and direction | stroke pattern, color, markers, glow |
 | payload identity and flow order | dot shape, trail, cadence, easing |
@@ -41,6 +42,7 @@ Before rendering, write a compact brief with:
 
 - Background: near-black or deep navy.
 - Grid: low-contrast cool linework.
+- Traffic layers: faint numbered cool-color surfaces with one restrained luminous reading arrow.
 - Cubes: subtly filled faces with brighter roof edges.
 - Paths: restrained semantic accents, optional low-radius glow.
 - Payloads: small high-contrast points, never large neon blobs.
@@ -53,6 +55,7 @@ Do not automatically add metric cards, navigation rails, or control panels.
 
 - Background: cream, buff, or muted ochre.
 - Grid: faint pencil or ruled ink.
+- Traffic layers: light numbered washes with a dashed ink reading arrow.
 - Cubes: paper-colored faces, sepia outlines, sparse hatching.
 - Paths: dark ink with solid, dashed, or double-line distinctions.
 - Payloads: filled ink beads or tiny stamped markers.
@@ -65,6 +68,8 @@ Do not imitate a dashboard simply because the reference image was shown inside o
 
 - Background: white with a faint cool Azure wash.
 - Grid: light neutral rules with an Azure-blue terrain boundary.
+- Traffic layers: restrained semantic washes labelled APIM ingress, projects, data access, and external
+  services, plus one Azure-blue bottom-left-to-top-right reading arrow.
 - Cubes: one true cube per resource, lightly tinted by semantic family and outlined by the family's
   stronger stroke color.
 - Roof marks: one package-local line-art resource mark projected onto the highest top face. Keep the

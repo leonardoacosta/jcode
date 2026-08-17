@@ -16,6 +16,7 @@ Unknown fields are rejected so dashboard chrome cannot leak into the reusable sc
   "canvas": {},
   "zones": [],
   "areas": [],
+  "traffic": {},
   "nodes": [],
   "paths": [],
   "payloads": [],
@@ -23,7 +24,9 @@ Unknown fields are rejected so dashboard chrome cannot leak into the reusable sc
 }
 ```
 
-Start from [`../tests/fixtures/valid-scene.json`](../tests/fixtures/valid-scene.json), then run:
+Start from [`../tests/fixtures/valid-scene.json`](../tests/fixtures/valid-scene.json), or use
+[`../tests/fixtures/directional-scene.json`](../tests/fixtures/directional-scene.json) for a request map
+and the bundled theme examples, then run:
 
 ```bash
 python3 skills/isometric-system-map/scripts/validate_scene.py path/to/scene.json
@@ -144,9 +147,71 @@ contract admits VNet areas:
 `areas` is required and may be empty. A scene can contain at most eight areas. Each VNet area has one
 to twenty unique node IDs, half-grid padding from 0 to 2, a normal node status, and direct evidence.
 The renderer derives the area rectangle from the complete footprints of all members plus padding. The
-padded rectangle must remain inside the canvas. Include the represented VNet cube itself in
-`member_ids`, then add only resources whose network containment is supported by evidence. Every area
-is mirrored to a native semantic control and included in runtime geometry diagnostics.
+padded rectangle must remain inside the canvas and cannot intersect the footprint of an unrelated node.
+Include the represented VNet cube itself in `member_ids`, then add only resources whose network
+containment is supported by evidence. Every area is mirrored to a native semantic control and included
+in runtime geometry diagnostics.
+
+## Traffic story
+
+Request-oriented maps declare one compositional traffic story:
+
+```json
+{
+  "direction": "bottom-left-to-top-right",
+  "layers": [
+    {
+      "id": "ingress",
+      "label": "APIM ingress",
+      "kind": "ingress",
+      "member_ids": ["apim"],
+      "padding": 0.5,
+      "description": "Incoming requests enter through API Management."
+    },
+    {
+      "id": "projects",
+      "label": "Projects",
+      "kind": "projects",
+      "member_ids": ["project-api"],
+      "padding": 0.5,
+      "description": "Owned project services process the request."
+    },
+    {
+      "id": "data-access",
+      "label": "Data access",
+      "kind": "data-access",
+      "member_ids": ["project-sql"],
+      "padding": 0.5,
+      "description": "Project data dependencies sit behind the services."
+    },
+    {
+      "id": "external-services",
+      "label": "External services",
+      "kind": "external-services",
+      "member_ids": ["third-party-api"],
+      "padding": 0.5,
+      "description": "Third-party and externally owned services form the final layer."
+    }
+  ]
+}
+```
+
+`traffic` is optional for maps with no incoming request story. It becomes required when any node uses
+role `entry`; data or external roles alone do not imply an incoming request story. `direction` has one
+admitted value: `bottom-left-to-top-right`. `layers` has exactly four objects in the shown kind order.
+IDs are unique, each member list contains one to twenty real node IDs, members cannot appear in more
+than one traffic layer, and half-grid padding stays inside the canvas.
+
+The ingress layer contains every role `entry` node and at least one such node. The data-access layer
+contains every role `data` node and at least one such node. The external-services layer contains every
+role `external` node and at least one such node. Other support-plane nodes may remain outside the
+traffic corridor.
+
+For each layer, the validator derives a padded member rectangle and projects its center. Each
+successive center must move right and up on screen. This makes APIM the visible bottom-left front door,
+then projects, data access, and external services toward the top right. The renderer draws numbered
+layer surfaces, a reading-direction arrow, native semantic controls, and `trafficLayerGeometry`
+diagnostics. The reading arrow is compositional and never substitutes for source-backed runtime paths.
 
 ## Nodes
 
@@ -179,7 +244,9 @@ is mirrored to a native semantic control and included in runtime geometry diagno
 `entry`, `pipeline`, `governance`, `module`, `network`, `compute`, `data`, `identity`, `messaging`,
 `observability`, `external`.
 
-Role describes architecture. It does not force a color or silhouette.
+Role describes architecture. It does not force a color or silhouette. In a request-oriented map,
+`entry` identifies APIM or the equivalent ingress front door and activates the traffic-story
+requirement.
 
 ### Azure resource identity
 

@@ -21,6 +21,7 @@
     observability: "#b29d72",
     external: "#aaa58f",
   };
+  const trafficColors = ["#705737", "#725a69", "#496655", "#80582f"];
   let paperPattern = null;
   let hatchPattern = null;
 
@@ -113,6 +114,60 @@
       ctx.lineWidth = boundary ? 1 : .75;
       ctx.setLineDash([]);
       ctx.stroke(path);
+    },
+
+    drawTrafficLayer(ctx, path, layer, index, labelPoint) {
+      const color = trafficColors[index] || trafficColors[0];
+      ctx.save();
+      ctx.globalAlpha = .09;
+      ctx.fillStyle = color;
+      ctx.fill(path);
+      ctx.globalAlpha = .66;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.05;
+      ctx.setLineDash([3, 5]);
+      ctx.stroke(path);
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = color;
+      ctx.font = "700 9px Courier New, ui-monospace, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(`${index + 1} · ${layer.label.toUpperCase()}`, labelPoint.x, labelPoint.y + 4);
+      ctx.restore();
+    },
+
+    drawTrafficDirection(ctx, points, traffic) {
+      if (points.length < 2) return;
+      const [start, end] = points;
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      const midpoint = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+      ctx.save();
+      ctx.strokeStyle = "rgba(80,70,45,.66)";
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.translate(end.x, end.y);
+      ctx.rotate(angle);
+      ctx.strokeStyle = "#514936";
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      ctx.moveTo(-11, -5);
+      ctx.lineTo(0, 0);
+      ctx.lineTo(-11, 5);
+      ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = "rgba(224,215,180,.9)";
+      ctx.fillRect(midpoint.x - 52, midpoint.y - 20, 104, 15);
+      ctx.fillStyle = "#514936";
+      ctx.font = "700 8px Courier New, ui-monospace, monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(traffic.label, midpoint.x, midpoint.y - 10);
+      ctx.restore();
     },
 
     drawArea(ctx, path, area, labelPoint) {

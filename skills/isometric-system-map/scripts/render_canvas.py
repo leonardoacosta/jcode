@@ -98,7 +98,10 @@ def _evidence_text(item: dict[str, Any]) -> str:
 
 def _fallback_buttons(scene: dict[str, Any]) -> str:
     rows: list[str] = []
+    traffic = scene.get("traffic")
+    traffic_layers = traffic.get("layers", []) if isinstance(traffic, dict) else []
     for kind, items in (
+        ("traffic-layer", traffic_layers),
         ("area", scene.get("areas", [])),
         ("node", scene.get("nodes", [])),
         ("path", scene.get("paths", [])),

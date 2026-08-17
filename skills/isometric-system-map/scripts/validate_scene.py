@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -52,6 +53,8 @@ NODE_ROLES = {
 NODE_FORMS = {"cube"}
 NODE_STATUSES = {"active", "conditional", "held", "external", "deprecated"}
 AREA_KINDS = {"vnet"}
+TRAFFIC_DIRECTION = "bottom-left-to-top-right"
+TRAFFIC_LAYER_KINDS = ("ingress", "projects", "data-access", "external-services")
 PATH_KINDS = {
     "control",
     "data",
@@ -95,7 +98,11 @@ def _is_string(value: Any) -> bool:
 
 
 def _is_number(value: Any) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool)
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    )
 
 
 def _is_half_step(value: Any) -> bool:
@@ -221,6 +228,7 @@ def validate_scene(document: Any) -> list[str]:
             "canvas",
             "zones",
             "areas",
+            "traffic",
             "nodes",
             "paths",
             "payloads",
@@ -496,14 +504,17 @@ def validate_scene(document: Any) -> list[str]:
 
         member_ids = area.get("member_ids")
         member_rects: list[dict[str, float]] = []
+        seen_members: set[str] = set()
         if not isinstance(member_ids, list) or not member_ids:
             errors.append(f"{path}.member_ids: requires 1-20 node ids")
         elif len(member_ids) > 20:
             errors.append(f"{path}.member_ids: maximum 20 node ids")
         else:
-            seen_members: set[str] = set()
             for member_index, member_id in enumerate(member_ids):
                 member_path = f"{path}.member_ids[{member_index}]"
+                if not _is_string(member_id):
+                    errors.append(f"{member_path}: requires a non-empty node id string")
+                    continue
                 if member_id in seen_members:
                     errors.append(f"{member_path}: duplicate node id '{member_id}'")
                 seen_members.add(member_id)
@@ -521,6 +532,165 @@ def validate_scene(document: Any) -> list[str]:
             front = max(rect["y"] + rect["depth"] for rect in member_rects) + pad
             if left < 0 or back < 0 or right > grid_width or front > grid_depth:
                 errors.append(f"{path}: padded member bounds extend beyond the canvas")
+            area_rect = {
+                "x": left,
+                "y": back,
+                "width": right - left,
+                "depth": front - back,
+            }
+            for node_id, node_rect in node_rects.items():
+                if node_id not in seen_members and footprints_overlap(area_rect, node_rect):
+                    errors.append(f"{path}: derived bounds intersect unrelated node '{node_id}'")
+
+    entry_node_ids = {
+        node.get("id")
+        for node in nodes
+        if isinstance(node, dict) and node.get("role") == "entry" and isinstance(node.get("id"), str)
+    }
+    traffic = document.get("traffic")
+    if traffic is None:
+        if entry_node_ids:
+            errors.append("traffic: required when a node uses role 'entry'")
+    elif not isinstance(traffic, dict):
+        errors.append("traffic: must be an object when provided")
+    else:
+        _unknown_keys(traffic, {"direction", "layers"}, "traffic", errors)
+        if traffic.get("direction") != TRAFFIC_DIRECTION:
+            errors.append(f"traffic.direction: must equal '{TRAFFIC_DIRECTION}'")
+
+        traffic_layers = traffic.get("layers")
+        if not isinstance(traffic_layers, list) or len(traffic_layers) != len(TRAFFIC_LAYER_KINDS):
+            errors.append("traffic.layers: requires exactly four ordered traffic layers")
+            traffic_layers = []
+        else:
+            actual_kinds = [
+                layer.get("kind") if isinstance(layer, dict) else None for layer in traffic_layers
+            ]
+            if actual_kinds != list(TRAFFIC_LAYER_KINDS):
+                errors.append(
+                    f"traffic.layers: kinds must be ordered {list(TRAFFIC_LAYER_KINDS)}"
+                )
+
+        traffic_layer_ids: set[str] = set()
+        traffic_member_owner: dict[str, str] = {}
+        traffic_geometry: list[tuple[int, float, float]] = []
+        ingress_members: set[str] = set()
+        data_members: set[str] = set()
+        external_members: set[str] = set()
+        nodes_by_id = {
+            node.get("id"): node
+            for node in nodes
+            if isinstance(node, dict) and isinstance(node.get("id"), str)
+        }
+
+        for index, layer in enumerate(traffic_layers):
+            path = f"traffic.layers[{index}]"
+            if not isinstance(layer, dict):
+                errors.append(f"{path}: must be an object")
+                continue
+            _unknown_keys(
+                layer,
+                {"id", "label", "kind", "member_ids", "padding", "description"},
+                path,
+                errors,
+            )
+            _validate_id(layer.get("id"), f"{path}.id", errors)
+            for key in ("label", "description"):
+                _required_string(layer, key, path, errors)
+            if layer.get("kind") not in TRAFFIC_LAYER_KINDS:
+                errors.append(f"{path}.kind: must be one of {list(TRAFFIC_LAYER_KINDS)}")
+
+            layer_id = layer.get("id")
+            if isinstance(layer_id, str):
+                if layer_id in traffic_layer_ids:
+                    errors.append(f"{path}.id: duplicate traffic layer id '{layer_id}'")
+                traffic_layer_ids.add(layer_id)
+
+            padding = layer.get("padding")
+            valid_padding = _is_half_step(padding) and 0 <= float(padding) <= 2
+            if not valid_padding:
+                errors.append(f"{path}.padding: half-grid number from 0 to 2 required")
+
+            member_ids = layer.get("member_ids")
+            member_rects: list[dict[str, float]] = []
+            valid_member_ids: set[str] = set()
+            if not isinstance(member_ids, list) or not member_ids:
+                errors.append(f"{path}.member_ids: requires 1-20 node ids")
+            elif len(member_ids) > 20:
+                errors.append(f"{path}.member_ids: maximum 20 node ids")
+            else:
+                seen_members: set[str] = set()
+                for member_index, member_id in enumerate(member_ids):
+                    member_path = f"{path}.member_ids[{member_index}]"
+                    if not _is_string(member_id):
+                        errors.append(f"{member_path}: requires a non-empty node id string")
+                        continue
+                    if member_id in seen_members:
+                        errors.append(f"{member_path}: duplicate node id '{member_id}'")
+                    seen_members.add(member_id)
+                    owner = traffic_member_owner.get(member_id)
+                    if owner is not None:
+                        errors.append(
+                            f"{member_path}: node '{member_id}' already belongs to traffic layer '{owner}'"
+                        )
+                    elif isinstance(layer_id, str) and isinstance(member_id, str):
+                        traffic_member_owner[member_id] = layer_id
+                    rect = node_rects.get(member_id)
+                    if rect is None:
+                        errors.append(f"{member_path}: references unknown node '{member_id}'")
+                    else:
+                        member_rects.append(rect)
+                        valid_member_ids.add(member_id)
+
+            kind = layer.get("kind")
+            if kind == "ingress":
+                ingress_members = valid_member_ids
+                if not any(nodes_by_id[member_id].get("role") == "entry" for member_id in valid_member_ids):
+                    errors.append(f"{path}: ingress must include at least one role 'entry' node")
+            elif kind == "data-access":
+                data_members = valid_member_ids
+                if not any(nodes_by_id[member_id].get("role") == "data" for member_id in valid_member_ids):
+                    errors.append(f"{path}: data-access must include at least one role 'data' node")
+            elif kind == "external-services":
+                external_members = valid_member_ids
+                if not any(nodes_by_id[member_id].get("role") == "external" for member_id in valid_member_ids):
+                    errors.append(f"{path}: external-services must include at least one role 'external' node")
+
+            if member_rects and valid_padding and grid_width and grid_depth:
+                pad = float(padding)
+                left = min(rect["x"] for rect in member_rects) - pad
+                back = min(rect["y"] for rect in member_rects) - pad
+                right = max(rect["x"] + rect["width"] for rect in member_rects) + pad
+                front = max(rect["y"] + rect["depth"] for rect in member_rects) + pad
+                if left < 0 or back < 0 or right > grid_width or front > grid_depth:
+                    errors.append(f"{path}: padded member bounds extend beyond the canvas")
+                center_x = (left + right) / 2
+                center_y = (back + front) / 2
+                traffic_geometry.append((index, center_x - center_y, center_x + center_y))
+
+        for entry_id in sorted(entry_node_ids - ingress_members):
+            errors.append(f"traffic.layers[0].member_ids: entry node '{entry_id}' must be in ingress")
+        data_node_ids = {
+            node_id for node_id, node in nodes_by_id.items() if node.get("role") == "data"
+        }
+        for data_id in sorted(data_node_ids - data_members):
+            errors.append(f"traffic.layers[2].member_ids: data node '{data_id}' must be in data-access")
+        external_node_ids = {
+            node_id for node_id, node in nodes_by_id.items() if node.get("role") == "external"
+        }
+        for external_id in sorted(external_node_ids - external_members):
+            errors.append(
+                f"traffic.layers[3].member_ids: external node '{external_id}' must be in external-services"
+            )
+
+        for previous, current in zip(traffic_geometry, traffic_geometry[1:]):
+            previous_index, previous_x, previous_y = previous
+            current_index, current_x, current_y = current
+            if current_x <= previous_x or current_y >= previous_y:
+                errors.append(
+                    f"traffic.layers[{current_index}]: center must progress toward the top right "
+                    f"after traffic.layers[{previous_index}]"
+                )
 
     payloads = document.get("payloads")
     if not isinstance(payloads, list):

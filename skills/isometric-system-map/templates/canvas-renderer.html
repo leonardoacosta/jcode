@@ -184,7 +184,7 @@
     <section class="canvas-stage" data-scene-sha256="__SCENE_HASH__" aria-label="Interactive isometric terrain">
       <canvas data-layer="terrain" aria-hidden="true"></canvas>
       <canvas data-layer="architecture" aria-hidden="true"></canvas>
-      <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect VNet areas, resource cubes, and paths."></canvas>
+      <canvas data-layer="motion" role="img" aria-label="Interactive repository topology. Use Tab to inspect traffic layers, VNet areas, resource cubes, and paths."></canvas>
       <div class="fallback-copy sr-only" role="group" aria-label="Inspectable map elements">
         __FALLBACK_BUTTONS__
       </div>
@@ -233,6 +233,7 @@
       originX: 0,
       originY: 0,
       heightUnit: 22,
+      trafficLayerHits: [],
       areaHits: [],
       nodeHits: [],
       pathHits: [],
@@ -248,6 +249,7 @@
       resizeRaf: null,
       activeFlowId: SCENE.flows[0]?.id || null,
       renderedIcons: [],
+      trafficLayerGeometry: [],
       areaGeometry: [],
       nodeGeometry: [],
     };
@@ -409,6 +411,16 @@
       return { x: left, y: back, width: right - left, depth: front - back };
     }
 
+    function trafficLayerRect(layer) {
+      const members = layer.member_ids.map(id => SCENE.nodes.find(node => node.id === id));
+      const padding = layer.padding;
+      const left = Math.min(...members.map(node => node.position.x)) - padding;
+      const back = Math.min(...members.map(node => node.position.y)) - padding;
+      const right = Math.max(...members.map(node => node.position.x + node.footprint.width)) + padding;
+      const front = Math.max(...members.map(node => node.position.y + node.footprint.depth)) + padding;
+      return { x: left, y: back, width: right - left, depth: front - back };
+    }
+
     function depthKey(node) {
       const farX = node.position.x + node.footprint.width;
       const farY = node.position.y + node.footprint.depth;
@@ -496,6 +508,38 @@
       for (let y = 0; y <= SCENE.canvas.grid_depth; y += 1) {
         const path = polylinePath([project(0, y), project(SCENE.canvas.grid_width, y)]);
         THEME.drawGridLine(ctx, path, y === 0 || y === SCENE.canvas.grid_depth, state);
+      }
+      state.trafficLayerHits = [];
+      state.trafficLayerGeometry = [];
+      const trafficLayers = SCENE.traffic?.layers || [];
+      trafficLayers.forEach((layer, index) => {
+        const rect = trafficLayerRect(layer);
+        const points = [
+          project(rect.x, rect.y),
+          project(rect.x + rect.width, rect.y),
+          project(rect.x + rect.width, rect.y + rect.depth),
+          project(rect.x, rect.y + rect.depth),
+        ];
+        const path = polygonPath(points);
+        const center = project(rect.x + rect.width / 2, rect.y + rect.depth / 2, 0);
+        THEME.drawTrafficLayer(ctx, path, layer, index, center, state);
+        state.trafficLayerHits.push({ item: layer, path, points });
+        state.trafficLayerGeometry.push({
+          id: layer.id,
+          kind: layer.kind,
+          order: index + 1,
+          memberIds: [...layer.member_ids],
+          bounds: { ...rect },
+          center: { x: center.x, y: center.y },
+        });
+      });
+      if (trafficLayers.length > 1) {
+        const first = state.trafficLayerGeometry[0].center;
+        const last = state.trafficLayerGeometry[state.trafficLayerGeometry.length - 1].center;
+        THEME.drawTrafficDirection(ctx, [first, last], {
+          direction: "bottom-left-to-top-right",
+          label: "INCOMING TRAFFIC",
+        }, state);
       }
       state.areaHits = [];
       state.areaGeometry = [];
@@ -618,6 +662,8 @@
         : "";
       const relationship = target.kind === "path"
         ? `${item.from} → ${item.to} · ${item.kind}`
+        : target.kind === "traffic-layer"
+          ? `traffic layer ${SCENE.traffic.layers.findIndex(layer => layer.id === item.id) + 1} · ${item.kind}`
         : target.kind === "area"
           ? `${item.kind} area · ${item.status}`
           : `${item.role} · ${item.status}`;
@@ -655,6 +701,8 @@
       if (!target) return;
       const records = target.kind === "node"
         ? state.nodeHits
+        : target.kind === "traffic-layer"
+          ? state.trafficLayerHits
         : target.kind === "area"
           ? state.areaHits
           : state.pathHits;
@@ -762,6 +810,12 @@
           return { kind: "area", item: candidate.item };
         }
       }
+      for (let index = state.trafficLayerHits.length - 1; index >= 0; index -= 1) {
+        const candidate = state.trafficLayerHits[index];
+        if (hitContext.isPointInPath(candidate.path, point.x, point.y)) {
+          return { kind: "traffic-layer", item: candidate.item };
+        }
+      }
       return null;
     }
 
@@ -837,6 +891,7 @@
       return {
         theme: THEME.name,
         sceneHash: document.body.dataset.sceneSha256,
+        trafficLayerCount: state.trafficLayerHits.length,
         areaCount: state.areaHits.length,
         nodeCount: state.nodeHits.length,
         pathCount: state.pathHits.length,
@@ -849,6 +904,13 @@
         iconCount: Object.keys(ICON_SVGS).length,
         loadedIconCount: iconImages.size,
         renderedIcons: [...state.renderedIcons],
+        trafficDirection: SCENE.traffic?.direction || null,
+        trafficLayerGeometry: state.trafficLayerGeometry.map(item => ({
+          ...item,
+          memberIds: [...item.memberIds],
+          bounds: { ...item.bounds },
+          center: { ...item.center },
+        })),
         areaGeometry: state.areaGeometry.map(item => ({
           ...item,
           memberIds: [...item.memberIds],
@@ -904,7 +966,13 @@
 
     fallbackButtons.forEach(button => {
       const kind = button.dataset.targetKind;
-      const items = kind === "node" ? SCENE.nodes : kind === "area" ? SCENE.areas : SCENE.paths;
+      const items = kind === "node"
+        ? SCENE.nodes
+        : kind === "area"
+          ? SCENE.areas
+          : kind === "traffic-layer"
+            ? SCENE.traffic.layers
+            : SCENE.paths;
       const item = items
         .find(candidate => candidate.id === button.dataset.targetId);
       const target = { kind, item };

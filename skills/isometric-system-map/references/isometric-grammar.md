@@ -35,6 +35,27 @@ outer margin of at least one cell so shadows, labels, and route arrows do not cl
 
 The grid can be visually absent in the final art direction, but layout still uses it.
 
+## Incoming traffic layers
+
+Request-oriented maps use one ordered traffic corridor. The four semantic groups are APIM or the
+equivalent `ingress`, owned `projects`, `data-access`, and `external-services`. Compute each group's
+padded member bounds and its grid center `(center_x, center_y)`, then compare projected center terms:
+
+```text
+projected_x_term = center_x - center_y
+projected_y_term = center_x + center_y
+```
+
+For each successive layer, `projected_x_term` must increase and `projected_y_term` must decrease. The
+center therefore moves visibly right and up under the scene's 2:1 projection. This makes incoming
+traffic enter at the bottom left and the topology read toward the top right.
+
+Draw the four padded regions as quiet numbered terrain surfaces below VNet containment areas, routes,
+and cubes. Connect the first and last layer centers with one labelled reading arrow. The arrow explains
+composition only; it is not a runtime path and must not carry an invented payload. Keep pipelines,
+governance, and other support-plane nodes outside the corridor when they are not part of request
+handling.
+
 ## Resource cube geometry
 
 A resource cube has four ground corners and four elevated corners. Draw:
@@ -74,7 +95,8 @@ routes.
 Use a VNet area when source evidence says several represented resources attach to the same virtual
 network. The area boundary is the bounding rectangle of every member's complete footprint plus the
 declared padding. Include the represented VNet cube and each proven contained resource in
-`member_ids`. The padded boundary must stay inside the ground plane.
+`member_ids`. The padded boundary must stay inside the ground plane and must not intersect an unrelated
+resource footprint.
 
 Draw areas on the terrain below routes and cubes. Give active and held areas distinguishable boundary
 treatments without relying only on color. Do not substitute a compositional zone, a VNet label, or a
@@ -161,6 +183,7 @@ The isometric image should dominate. A strong default composition is:
 - The ground axes use one consistent 2:1 projection.
 - Every node is one cube with the same scene-wide edge and coherent roof and wall faces.
 - Each cube's projected vertical and ground edges are equal within rendering tolerance.
+- APIM ingress, projects, data access, and external services progress from bottom left to top right.
 - Every sourced VNet area encloses the full footprints of all declared members.
 - Farther cubes do not incorrectly cover nearer cubes.
 - Routes sit on the same projected terrain as cubes.

@@ -12,9 +12,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RENDERER = ROOT / "scripts" / "render_canvas.py"
 FIXTURE = Path(__file__).parent / "fixtures" / "valid-scene.json"
+DIRECTIONAL_FIXTURE = Path(__file__).parent / "fixtures" / "directional-scene.json"
 DARK_THEME = ROOT / "themes" / "dark-technical.js"
 PAPER_THEME = ROOT / "themes" / "warm-paper.js"
 AZURE_THEME = ROOT / "themes" / "azure-topology.js"
+EXAMPLE_OUTPUTS = (
+    ROOT.parents[1] / "docs" / "diagrams" / "isometric-canvas-azure.html",
+    ROOT.parents[1] / "docs" / "diagrams" / "isometric-canvas-dark.html",
+    ROOT.parents[1] / "docs" / "diagrams" / "isometric-canvas-paper.html",
+)
+
+
+def traffic_scene():
+    return json.loads(DIRECTIONAL_FIXTURE.read_text())
 
 
 class CanvasRendererTests(unittest.TestCase):
@@ -112,6 +122,30 @@ class CanvasRendererTests(unittest.TestCase):
             self.assertIn('name: "Warm archival paper"', paper_html)
             self.assertNotEqual(dark_html, paper_html)
 
+    def test_checked_in_theme_examples_embed_the_directional_fixture(self):
+        canonical = json.dumps(
+            json.loads(DIRECTIONAL_FIXTURE.read_text()),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        scene_hash = hashlib.sha256(canonical.encode()).hexdigest()
+        for output in EXAMPLE_OUTPUTS:
+            html = output.read_text()
+            match = re.search(
+                r"const SCENE = (?P<scene>\{.*?\});\s*const ICON_SVGS =",
+                html,
+                re.DOTALL,
+            )
+            self.assertIsNotNone(match, output)
+            embedded_scene = json.loads(match.group("scene"))
+            self.assertEqual(embedded_scene["traffic"]["direction"], "bottom-left-to-top-right")
+            self.assertEqual(
+                [layer["kind"] for layer in embedded_scene["traffic"]["layers"]],
+                ["ingress", "projects", "data-access", "external-services"],
+            )
+            self.assertEqual(len(re.findall(r'data-target-kind="traffic-layer"', html)), 4)
+            self.assertIn(f'data-scene-sha256="{scene_hash}"', html)
+
     def test_renderer_rejects_a_scene_that_fails_geometry_validation(self):
         with tempfile.TemporaryDirectory() as directory:
             broken_path = Path(directory) / "broken.json"
@@ -205,6 +239,27 @@ class CanvasRendererTests(unittest.TestCase):
             self.assertIn("THEME.drawArea", html)
             self.assertIn("areaGeometry", html)
             self.assertEqual(len(re.findall(r'data-target-kind="area"', html)), 1)
+
+    def test_renderer_draws_directional_traffic_layers_and_exposes_semantic_controls(self):
+        scene = traffic_scene()
+        with tempfile.TemporaryDirectory() as directory:
+            scene_path = Path(directory) / "traffic-scene.json"
+            output = Path(directory) / "traffic-map.html"
+            scene_path.write_text(json.dumps(scene))
+            result = self.render(scene_path, AZURE_THEME, output)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            html = output.read_text()
+            traffic_buttons = re.findall(r'<button[^>]+data-target-kind="traffic-layer"', html)
+            self.assertEqual(len(traffic_buttons), 4)
+            self.assertIn("function trafficLayerRect", html)
+            self.assertIn("THEME.drawTrafficLayer", html)
+            self.assertIn("THEME.drawTrafficDirection", html)
+            self.assertIn("trafficLayerGeometry", html)
+            self.assertIn('direction: "bottom-left-to-top-right"', html)
+            for theme in (DARK_THEME, PAPER_THEME, AZURE_THEME):
+                source = theme.read_text()
+                self.assertIn("drawTrafficLayer", source)
+                self.assertIn("drawTrafficDirection", source)
 
     def test_azure_theme_uses_the_topology_palette_and_semantic_families(self):
         source = AZURE_THEME.read_text()

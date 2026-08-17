@@ -77,6 +77,14 @@ function cubeMassFor(node, scene, projection) {
 Do not vary `edge` per node or add secondary masses or line structures that turn the resource into a
 building. Service identity belongs on the top face.
 
+## Directional traffic layer polygons
+
+Derive each traffic layer's padded world rectangle from `member_ids`, project its four corners, and
+draw the four numbered surfaces before VNet areas. Project the first and fourth layer centers, then
+draw one dashed arrow from APIM ingress at the bottom left toward external services at the top right.
+Treat the arrow as a reading guide, not a payload path. Give every layer polygon a focusable semantic
+peer and preserve the contract's ordered kinds and membership.
+
 ## VNet area polygons
 
 Derive a VNet area's world rectangle from its member footprints plus padding, project the four corners,
