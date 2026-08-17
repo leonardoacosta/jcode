@@ -135,6 +135,93 @@ async fn foreground_bash_command_uses_client_terminal_env_snapshot() {
     assert_eq!(result.output.trim(), "client-env|client-pane");
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn background_bash_command_uses_client_terminal_env_snapshot_after_dispatch() {
+    let _guard = crate::storage::lock_test_env();
+    let previous_herdr_env = std::env::var_os("HERDR_ENV");
+    let previous_herdr_pane = std::env::var_os("HERDR_PANE_ID");
+    crate::env::set_var("HERDR_ENV", "daemon-env");
+    crate::env::set_var("HERDR_PANE_ID", "daemon-pane");
+
+    let result = crate::hooks::with_client_terminal_env(
+        vec![
+            ("HERDR_ENV".to_string(), "client-env".to_string()),
+            ("HERDR_PANE_ID".to_string(), "client-pane".to_string()),
+        ],
+        async {
+            BashTool::new()
+                .execute(
+                    json!({
+                        "command": "printf '%s|%s\\n' \"$HERDR_ENV\" \"$HERDR_PANE_ID\"",
+                        "run_in_background": true,
+                        "notify": false,
+                        "wake": false,
+                    }),
+                    make_ctx(None),
+                )
+                .await
+        },
+    )
+    .await
+    .expect("background bash command should start");
+
+    let metadata = result.metadata.expect("expected background metadata");
+    let task_id = metadata["task_id"]
+        .as_str()
+        .expect("task id should be present")
+        .to_string();
+    let output_file = std::path::PathBuf::from(
+        metadata["output_file"]
+            .as_str()
+            .expect("output file should be present"),
+    );
+    let status_file = std::path::PathBuf::from(
+        metadata["status_file"]
+            .as_str()
+            .expect("status file should be present"),
+    );
+
+    let mut final_status = None;
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    while std::time::Instant::now() < deadline {
+        if let Some(status) = crate::background::global().status(&task_id).await
+            && status.status != BackgroundTaskStatus::Running
+        {
+            final_status = Some(status);
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+    let status = final_status.expect("background task should finish");
+    assert_eq!(status.status, BackgroundTaskStatus::Completed);
+
+    let output = crate::background::global()
+        .output(&task_id)
+        .await
+        .expect("output should exist");
+
+    match previous_herdr_env {
+        Some(value) => crate::env::set_var("HERDR_ENV", value),
+        None => crate::env::remove_var("HERDR_ENV"),
+    }
+    match previous_herdr_pane {
+        Some(value) => crate::env::set_var("HERDR_PANE_ID", value),
+        None => crate::env::remove_var("HERDR_PANE_ID"),
+    }
+    let _ = tokio::fs::remove_file(output_file).await;
+    let _ = tokio::fs::remove_file(status_file).await;
+
+    assert!(
+        output.contains("client-env|client-pane"),
+        "background command should use client HERDR snapshot instead of daemon env; output was: {output}"
+    );
+    assert!(
+        !output.contains("daemon-env|daemon-pane"),
+        "background command inherited stale daemon HERDR env; output was: {output}"
+    );
+}
+
 #[tokio::test]
 async fn test_stdin_forwarding_single_line() {
     let (tx, mut rx) = mpsc::unbounded_channel::<StdinInputRequest>();

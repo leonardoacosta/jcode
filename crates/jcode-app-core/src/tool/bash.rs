@@ -83,6 +83,23 @@ fn timeout_message(timeout_ms: u64) -> String {
     msg
 }
 
+fn apply_client_terminal_env(command: &mut TokioCommand, env: Option<&[(String, String)]>) {
+    let Some(env) = env else {
+        return;
+    };
+
+    for key in crate::terminal_launch::CLIENT_TERMINAL_ENV_VARS {
+        command.env_remove(key);
+        command.env_remove(format!("JCODE_CLIENT_{key}"));
+    }
+    for (key, value) in env {
+        if crate::terminal_launch::CLIENT_TERMINAL_ENV_VARS.contains(&key.as_str()) {
+            command.env(key, value);
+            command.env(format!("JCODE_CLIENT_{key}"), value);
+        }
+    }
+}
+
 fn progress_ratio_regex() -> Result<&'static regex::Regex> {
     static REGEX: LazyLock<Result<regex::Regex, regex::Error>> = LazyLock::new(|| {
         regex::Regex::new(
@@ -800,18 +817,8 @@ impl BashTool {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
-        if let Some(env) = crate::hooks::current_client_terminal_env() {
-            for key in crate::terminal_launch::CLIENT_TERMINAL_ENV_VARS {
-                command.env_remove(key);
-                command.env_remove(format!("JCODE_CLIENT_{key}"));
-            }
-            for (key, value) in env {
-                if crate::terminal_launch::CLIENT_TERMINAL_ENV_VARS.contains(&key.as_str()) {
-                    command.env(&key, &value);
-                    command.env(format!("JCODE_CLIENT_{key}"), value);
-                }
-            }
-        }
+        let client_terminal_env = crate::hooks::current_client_terminal_env();
+        apply_client_terminal_env(&mut command, client_terminal_env.as_deref());
 
         if has_stdin_channel {
             command.stdin(Stdio::piped());
@@ -1163,6 +1170,7 @@ impl BashTool {
         let working_dir = ctx.working_dir.clone();
         let timeout_ms = params.timeout.map(|timeout| timeout.min(600000));
         let timeout_duration = timeout_ms.map(Duration::from_millis);
+        let client_terminal_env = crate::hooks::current_client_terminal_env();
 
         let wake = params.wake;
         let notify = params.notify || wake;
@@ -1173,17 +1181,18 @@ impl BashTool {
                 &ctx.session_id,
                 notify,
                 wake,
-				move |output_path| async move {
-					let mut cmd = build_shell_command(&command);
-					#[cfg(unix)]
-					unsafe {
-						cmd.pre_exec(|| {
-							if libc::setpgid(0, 0) == -1 {
-								return Err(std::io::Error::last_os_error());
-							}
-							Ok(())
-						});
-					}
+                move |output_path| async move {
+                    let mut cmd = build_shell_command(&command);
+                    apply_client_terminal_env(&mut cmd, client_terminal_env.as_deref());
+                    #[cfg(unix)]
+                    unsafe {
+                        cmd.pre_exec(|| {
+                            if libc::setpgid(0, 0) == -1 {
+                                return Err(std::io::Error::last_os_error());
+                            }
+                            Ok(())
+                        });
+                    }
                     cmd.kill_on_drop(true);
                     configure_background_command_stdio(&mut cmd);
                     if let Some(ref dir) = working_dir {
