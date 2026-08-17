@@ -119,6 +119,14 @@ Rank every finding, then fix structural first — never polish a broken foundati
 | "It's faster to use the default AI-generated look/copy" | Fast slop is still slop. Quality needs considered editing. |
 | "This doesn't need to be unique, it just needs to work" | Distinctiveness IS part of working — it builds trust and memorability. |
 
+### Card-semantic gate
+
+Do not turn status, metrics, or summary copy into a rounded card by reflex. A card must earn its
+container through meaningful containment, elevation, or whole-card interaction. A colored left
+border is reserved for a real alert or state distinction; on an ordinary card it is decorative
+"alert-card cosplay." Prefer headings, rows, dividers, or whitespace when the content does not need
+a container.
+
 ## File Output
 
 All generated HTML, CSS, and standalone frontend files MUST be written to `docs/diagrams/` in the

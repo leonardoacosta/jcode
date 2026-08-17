@@ -33,6 +33,17 @@
         "Uses the corpus for retrieval support such as accessibility, responsive behavior, or design-system mechanics.",
         "Derives at least one structural decision from the warehouse exception-management job."
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "Audit this operations dashboard: every metric and status is in a rounded tile with a colored stripe on its left edge, including ordinary summaries that are not alerts.",
+      "expected_output": "Names decorative alert-card semantics, distinguishes real alerts from ordinary summaries, and removes containers that do not earn card treatment.",
+      "files": [],
+      "assertions": [
+        "Names alert-card cosplay or the rounded-card plus colored-side-stripe pattern.",
+        "Allows a side stripe when it communicates a real alert or state distinction.",
+        "Replaces ordinary status cards with rows, dividers, headings, or whitespace."
+      ]
     }
   ]
 }

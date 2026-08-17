@@ -48,10 +48,17 @@ The 2024–2026 AI-generated design monoculture. Name the pattern before fixing 
 | 32 | Full SaaS template | hero → logo cloud → 3-col features → testimonials → pricing → FAQ → CTA slab, in that order | Let the actual product/audience decide section order and presence; cut what doesn't earn its place |
 | 33 | Saturated accent color everywhere | one bright accent hue at full saturation across buttons/links/icons/badges | A tonal system — vary saturation/lightness by role instead of one loud hue everywhere |
 | 34 | Hard seams between sections | abrupt background-color cut at every section boundary | Continuous page color/gradient across sections, or an intentional, designed seam |
+| 35 | Alert-card cosplay | ordinary status, metric, or summary content put in a rounded card with a colored left border, borrowing alert semantics as decoration | Use a card only when containment, elevation, or the whole-card interaction is meaningful. Otherwise use headings, rows, dividers, or whitespace. Reserve a side stripe for a real alert/status distinction. |
 
 Rows 17–34 adapted from pols.dev's slop catalog (Interaction Tells, Cards & Boxes, Slop Layouts
 sections; no verbatim reuse, no SPDX on source). Compositor-only-animation and z-index-scale
 rules are covered under Mechanics Deslop below — not restated here.
+
+Row 35 consolidates a strong active signal independently documented by `nexu-io/open-design`,
+`febbhav/signs-of-ai-design`, `educlopez/ui-craft`, `Leonxlnx/taste-skill`, and
+`garrytan/gstack`: the colored side stripe is semantic on a real alert, but becomes a high-signal
+AI dashboard tell when sprayed across ordinary cards. The rule targets the reflex, not all cards or
+all left borders.
 
 ### What to do instead (the discipline)
 
