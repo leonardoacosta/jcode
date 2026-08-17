@@ -16,6 +16,7 @@ DIRECTIONAL_FIXTURE = Path(__file__).parent / "fixtures" / "directional-scene.js
 DARK_THEME = ROOT / "themes" / "dark-technical.js"
 PAPER_THEME = ROOT / "themes" / "warm-paper.js"
 AZURE_THEME = ROOT / "themes" / "azure-topology.js"
+CANVAS_RECIPES = ROOT / "references" / "canvas-recipes.md"
 EXAMPLE_OUTPUTS = (
     ROOT.parents[1] / "docs" / "diagrams" / "isometric-canvas-azure.html",
     ROOT.parents[1] / "docs" / "diagrams" / "isometric-canvas-dark.html",
@@ -67,6 +68,39 @@ class CanvasRendererTests(unittest.TestCase):
                 "toBlob",
             ):
                 self.assertIn(capability, html)
+
+    def test_canvas_recipe_documents_directional_theme_adapter_methods(self):
+        recipe = CANVAS_RECIPES.read_text()
+        for method in ("drawTrafficLayer", "drawTrafficDirection", "drawArea"):
+            self.assertRegex(recipe, rf"(?m)^\s*{method}\(")
+
+    def test_tooltips_include_the_structured_evidence_claim(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "map.html"
+            result = self.render(DIRECTIONAL_FIXTURE, AZURE_THEME, output)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            html = output.read_text()
+            self.assertIn(
+                "const evidenceItems = Array.isArray(item.evidence) ? item.evidence : [];",
+                html,
+            )
+            self.assertIn(
+                'evidenceItems.map(entry => `${entry.path}:${entry.lines}`).join("; ")',
+                html,
+            )
+            self.assertIn(
+                'evidenceItems.map(entry => entry.claim).filter(Boolean).join("; ")',
+                html,
+            )
+            self.assertIn(
+                "const [relationship, description, evidence, claim] = targetDescription(target);",
+                html,
+            )
+            self.assertIn("claimLine.textContent = claim || \"\";", html)
+            self.assertIn(
+                "tooltip.replaceChildren(title, relationshipLine, descriptionLine, evidenceLine, claimLine);",
+                html,
+            )
 
     def test_renderer_supports_named_flow_selection_and_static_scenes(self):
         with tempfile.TemporaryDirectory() as directory:

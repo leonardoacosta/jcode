@@ -959,9 +959,9 @@
     function targetDescription(target) {
       if (!target) return "";
       const item = target.item;
-      const evidence = Array.isArray(item.evidence) && item.evidence.length
-        ? `${item.evidence[0].path}:${item.evidence[0].lines}`
-        : "";
+      const evidenceItems = Array.isArray(item.evidence) ? item.evidence : [];
+      const evidence = evidenceItems.map(entry => `${entry.path}:${entry.lines}`).join("; ");
+      const claim = evidenceItems.map(entry => entry.claim).filter(Boolean).join("; ");
       const relationship = target.kind === "path"
         ? `${item.from} → ${item.to} · ${item.kind}`
         : target.kind === "traffic-layer"
@@ -969,7 +969,7 @@
         : target.kind === "area"
           ? `${item.kind} area · ${item.status}`
           : `${item.role} · ${item.status}`;
-      return [relationship, item.description || item.label, evidence].filter(Boolean);
+      return [relationship, item.description || item.label, evidence, claim];
     }
 
     function showTooltip(target, point = null) {
@@ -978,7 +978,7 @@
         tooltip.replaceChildren();
         return;
       }
-      const [relationship, description, evidence] = targetDescription(target);
+      const [relationship, description, evidence, claim] = targetDescription(target);
       const title = document.createElement("strong");
       title.textContent = target.item.label;
       const relationshipLine = document.createElement("span");
@@ -987,7 +987,9 @@
       descriptionLine.textContent = description || "";
       const evidenceLine = document.createElement("span");
       evidenceLine.textContent = evidence || "";
-      tooltip.replaceChildren(title, relationshipLine, descriptionLine, evidenceLine);
+      const claimLine = document.createElement("span");
+      claimLine.textContent = claim || "";
+      tooltip.replaceChildren(title, relationshipLine, descriptionLine, evidenceLine, claimLine);
       const x = point ? point.clientX + 16 : Math.min(state.width - 380, 28);
       const y = point ? point.clientY + 16 : 110;
       tooltip.style.left = `${Math.max(12, Math.min(window.innerWidth - 380, x))}px`;
