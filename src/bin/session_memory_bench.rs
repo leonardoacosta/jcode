@@ -193,6 +193,7 @@ fn build_synthetic_session(turns: usize, tool_input_kib: usize, tool_output_kib:
                 tool_use_id: format!("tool_{idx}"),
                 content: make_blob(&format!("tool output {idx} - "), tool_output_bytes),
                 is_error: None,
+                artifact: None,
             }],
         );
     }
