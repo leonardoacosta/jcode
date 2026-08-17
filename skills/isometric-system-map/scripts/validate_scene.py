@@ -37,6 +37,46 @@ def _load_azure_icon_ids() -> frozenset[str]:
 
 AZURE_ICON_IDS = _load_azure_icon_ids()
 
+
+def _load_azure_tokens() -> dict[str, Any]:
+    tokens_path = SKILL_DIR / "assets" / "azure-tokens.json"
+    if not tokens_path.exists():
+        return {}
+    try:
+        tokens = json.loads(tokens_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    return tokens if isinstance(tokens, dict) else {}
+
+
+AZURE_TOKENS = _load_azure_tokens()
+
+
+def azure_icon_fallback_for_resource_type(resource_type: Any) -> str | None:
+    """Return the admitted sprite fallback for an exact Azure resource type, if deterministic."""
+
+    if not _is_string(resource_type):
+        return None
+    resource_type_family = AZURE_TOKENS.get("resource_type_family")
+    family_icon_fallbacks = AZURE_TOKENS.get("family_icon_fallbacks")
+    if not isinstance(resource_type_family, dict) or not isinstance(family_icon_fallbacks, dict):
+        return None
+    family = resource_type_family.get(resource_type)
+    if not _is_string(family):
+        return None
+    icon = family_icon_fallbacks.get(family)
+    if _is_string(icon) and icon in AZURE_ICON_IDS:
+        return icon
+    return None
+
+
+def azure_missing_icon_diagnostic(path: str, resource_type: Any) -> str:
+    return (
+        f"{path}.icon: required when resource_type '{resource_type}' "
+        "does not resolve through azure-tokens.json resource_type_family "
+        "and family_icon_fallbacks"
+    )
+
 NODE_ROLES = {
     "entry",
     "pipeline",
@@ -423,6 +463,8 @@ def validate_scene(document: Any) -> list[str]:
                 errors.append(f"{path}.icon: must be a non-empty string when provided")
             elif icon not in AZURE_ICON_IDS:
                 errors.append(f"{path}.icon: unsupported Azure topology icon '{icon}'")
+        elif "resource_type" in node and azure_icon_fallback_for_resource_type(node.get("resource_type")) is None:
+            errors.append(azure_missing_icon_diagnostic(path, node.get("resource_type")))
         _validate_evidence(node.get("evidence"), f"{path}.evidence", errors)
 
         position = node.get("position")
