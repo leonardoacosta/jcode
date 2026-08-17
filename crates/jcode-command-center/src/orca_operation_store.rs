@@ -15,11 +15,13 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    CommandId, IdempotencyKey, InitiativeId, JcodeRunId, OrcaDispatchId, OrcaProjectId, OrcaRunId,
-    OrcaTaskId, OrcaTerminalId, OrcaWorktreeId,
+    CancelLinkedRunRequest, CommandId, CorrelationId, IdempotencyKey, InitiativeId, JcodeRunId,
+    OrcaDispatchId, OrcaHostId, OrcaHostSetupId, OrcaProjectId, OrcaRepositoryId, OrcaRequestId,
+    OrcaRunId, OrcaTaskId, OrcaTerminalId, OrcaWorktreeId, RetryLinkedRunRequest,
+    StartInitiativeRunRequest,
 };
 
-const SCHEMA_VERSION: i64 = 1;
+const SCHEMA_VERSION: i64 = 2;
 
 #[derive(Debug)]
 pub enum OrcaOperationStoreError {
@@ -165,8 +167,9 @@ pub struct OrcaRequestRecord {
     /// Jcode-owned stable step identity, recorded before process invocation.
     pub id: String,
     pub stage: String,
-    /// Orca request identity when the CLI exposes one.
-    pub orca_request_id: Option<String>,
+    /// Stable Orca request identity persisted before the CLI invocation.
+    #[serde(default)]
+    pub orca_request_id: Option<OrcaRequestId>,
     pub command: String,
     pub arguments: Vec<String>,
     pub payload: serde_json::Value,
@@ -208,7 +211,7 @@ pub struct NewOrcaOperation {
     pub command_id: CommandId,
     pub idempotency_scope: String,
     pub idempotency_key: IdempotencyKey,
-    pub correlation_id: String,
+    pub correlation_id: CorrelationId,
     pub initiative_id: InitiativeId,
     pub jcode_run_id: Option<JcodeRunId>,
     pub kind: OrcaOperationKind,
@@ -216,12 +219,57 @@ pub struct NewOrcaOperation {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", content = "request", rename_all = "snake_case")]
+pub enum OrcaTypedOperationRequest {
+    StartInitiativeRun(StartInitiativeRunRequest),
+    RetryLinkedRun(RetryLinkedRunRequest),
+    CancelLinkedRun(CancelLinkedRunRequest),
+}
+
+impl NewOrcaOperation {
+    pub fn from_typed_request(
+        idempotency_scope: impl Into<String>,
+        request: OrcaTypedOperationRequest,
+        created_at: DateTime<Utc>,
+    ) -> Result<Self, OrcaOperationStoreError> {
+        let (context, kind, jcode_run_id) = match &request {
+            OrcaTypedOperationRequest::StartInitiativeRun(request) => (
+                &request.context,
+                OrcaOperationKind::StartInitiativeRun,
+                Some(request.context.jcode_attempt_id.clone()),
+            ),
+            OrcaTypedOperationRequest::RetryLinkedRun(request) => (
+                &request.context,
+                OrcaOperationKind::RetryLinkedRun,
+                Some(request.context.jcode_attempt_id.clone()),
+            ),
+            OrcaTypedOperationRequest::CancelLinkedRun(request) => (
+                &request.context,
+                OrcaOperationKind::CancelLinkedRun,
+                Some(request.target_jcode_attempt_id.clone()),
+            ),
+        };
+        Ok(Self {
+            command_id: context.command_id.clone(),
+            idempotency_scope: idempotency_scope.into(),
+            idempotency_key: context.idempotency_key.clone(),
+            correlation_id: context.correlation_id.clone(),
+            initiative_id: context.initiative_id.clone(),
+            jcode_run_id,
+            kind,
+            command_payload: serde_json::to_value(request)?,
+            created_at,
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrcaOperationRecord {
     pub command_id: CommandId,
     pub idempotency_scope: String,
     pub idempotency_key: IdempotencyKey,
-    pub correlation_id: String,
+    pub correlation_id: CorrelationId,
     pub initiative_id: InitiativeId,
     pub jcode_run_id: Option<JcodeRunId>,
     pub kind: OrcaOperationKind,
@@ -232,8 +280,9 @@ pub struct OrcaOperationRecord {
     pub orca_task_id: Option<OrcaTaskId>,
     pub orca_dispatch_id: Option<OrcaDispatchId>,
     pub orca_project_id: Option<OrcaProjectId>,
-    pub orca_repository_id: Option<String>,
-    pub orca_host_setup_id: Option<String>,
+    pub orca_repository_id: Option<OrcaRepositoryId>,
+    pub orca_host_setup_id: Option<OrcaHostSetupId>,
+    pub orca_host_id: Option<OrcaHostId>,
     pub orca_worktree_id: Option<OrcaWorktreeId>,
     pub orca_terminal_id: Option<OrcaTerminalId>,
     pub receipts: Vec<OrcaReceiptRecord>,
@@ -262,6 +311,7 @@ impl From<NewOrcaOperation> for OrcaOperationRecord {
             orca_project_id: None,
             orca_repository_id: None,
             orca_host_setup_id: None,
+            orca_host_id: None,
             orca_worktree_id: None,
             orca_terminal_id: None,
             receipts: Vec::new(),
@@ -298,8 +348,9 @@ pub struct OrcaOperationUpdate {
     pub orca_task_id: Option<OrcaTaskId>,
     pub orca_dispatch_id: Option<OrcaDispatchId>,
     pub orca_project_id: Option<OrcaProjectId>,
-    pub orca_repository_id: Option<String>,
-    pub orca_host_setup_id: Option<String>,
+    pub orca_repository_id: Option<OrcaRepositoryId>,
+    pub orca_host_setup_id: Option<OrcaHostSetupId>,
+    pub orca_host_id: Option<OrcaHostId>,
     pub orca_worktree_id: Option<OrcaWorktreeId>,
     pub orca_terminal_id: Option<OrcaTerminalId>,
     pub requests: Vec<OrcaRequestRecord>,
@@ -307,6 +358,12 @@ pub struct OrcaOperationUpdate {
     pub partial_effects: Vec<OrcaPartialEffect>,
     pub recovery: Vec<OrcaRecoveryObligation>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OrcaOperationEvidence {
+    Request(OrcaRequestRecord),
+    Receipt(OrcaReceiptRecord),
 }
 
 /// SQLite-backed operation authority shared by the Command Center service and
@@ -346,6 +403,11 @@ impl SqliteOrcaOperationStore {
             0 => {
                 connection.execute_batch(SCHEMA)?;
                 connection.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+            }
+            1 => {
+                connection.execute_batch(MIGRATE_V1_TO_V2)?;
+                connection.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+                connection.execute_batch(SCHEMA)?;
             }
             SCHEMA_VERSION => connection.execute_batch(SCHEMA)?,
             other => {
@@ -434,6 +496,11 @@ impl SqliteOrcaOperationStore {
             "orca_host_setup_id",
         )?;
         set_once(
+            &mut record.orca_host_id,
+            update.orca_host_id,
+            "orca_host_id",
+        )?;
+        set_once(
             &mut record.orca_worktree_id,
             update.orca_worktree_id,
             "orca_worktree_id",
@@ -476,6 +543,47 @@ impl SqliteOrcaOperationStore {
         Ok(record)
     }
 
+    pub fn append_evidence(
+        &self,
+        command_id: &CommandId,
+        evidence: OrcaOperationEvidence,
+        mut update: OrcaOperationUpdate,
+    ) -> Result<OrcaOperationRecord, OrcaOperationStoreError> {
+        if !update.requests.is_empty() || !update.receipts.is_empty() {
+            return Err(OrcaOperationStoreError::InvalidData(
+                "append_evidence update must not contain additional requests or receipts".into(),
+            ));
+        }
+        match evidence {
+            OrcaOperationEvidence::Request(request) => update.requests.push(request),
+            OrcaOperationEvidence::Receipt(receipt) => update.receipts.push(receipt),
+        }
+        self.update(command_id, update)
+    }
+
+    pub fn append_request(
+        &self,
+        command_id: &CommandId,
+        request: OrcaRequestRecord,
+        update: OrcaOperationUpdate,
+    ) -> Result<OrcaOperationRecord, OrcaOperationStoreError> {
+        if request.orca_request_id.is_none() {
+            return Err(OrcaOperationStoreError::InvalidData(
+                "Orca request evidence must include its persisted request ID".into(),
+            ));
+        }
+        self.append_evidence(command_id, OrcaOperationEvidence::Request(request), update)
+    }
+
+    pub fn append_receipt(
+        &self,
+        command_id: &CommandId,
+        receipt: OrcaReceiptRecord,
+        update: OrcaOperationUpdate,
+    ) -> Result<OrcaOperationRecord, OrcaOperationStoreError> {
+        self.append_evidence(command_id, OrcaOperationEvidence::Receipt(receipt), update)
+    }
+
     pub fn get_by_command(
         &self,
         command_id: &CommandId,
@@ -503,6 +611,27 @@ impl SqliteOrcaOperationStore {
 
     pub fn is_empty(&self) -> Result<bool, OrcaOperationStoreError> {
         Ok(self.len()? == 0)
+    }
+
+    pub fn list_recoverable(&self) -> Result<Vec<OrcaOperationRecord>, OrcaOperationStoreError> {
+        let connection = self.lock()?;
+        let mut statement = connection.prepare(&format!(
+            "{SELECT_COLUMNS} WHERE operation_state IN (?1, ?2, ?3, ?4) ORDER BY created_at, command_id"
+        ))?;
+        let rows = statement.query_map(
+            params![
+                OrcaOperationState::Recorded.as_str(),
+                OrcaOperationState::InProgress.as_str(),
+                OrcaOperationState::OutcomeUnknown.as_str(),
+                OrcaOperationState::RecoveryRequired.as_str(),
+            ],
+            StoredOperationRow::from_row,
+        )?;
+        rows.map(|row| {
+            row.map_err(OrcaOperationStoreError::from)
+                .and_then(StoredOperationRow::decode)
+        })
+        .collect()
     }
 
     /// Operations that must be reconciled before a mutation can be replayed.
@@ -670,11 +799,11 @@ fn insert_record(
             command_id, idempotency_scope, idempotency_key, correlation_id, initiative_id,
             jcode_run_id, operation_kind, operation_state, command_payload_json,
             requests_json, orca_run_id, orca_task_id, orca_dispatch_id, orca_project_id,
-            orca_repository_id, orca_host_setup_id, orca_worktree_id, orca_terminal_id,
-            receipts_json, partial_effects_json, recovery_json, created_at, updated_at
+            orca_repository_id, orca_host_setup_id, orca_host_id, orca_worktree_id,
+            orca_terminal_id, receipts_json, partial_effects_json, recovery_json, created_at, updated_at
         ) VALUES (
             ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15,
-            ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23
+            ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24
         )"#,
         record_params(record)?,
     )?;
@@ -692,9 +821,9 @@ fn update_record(
             operation_state = ?8, command_payload_json = ?9, requests_json = ?10,
             orca_run_id = ?11, orca_task_id = ?12, orca_dispatch_id = ?13,
             orca_project_id = ?14, orca_repository_id = ?15, orca_host_setup_id = ?16,
-            orca_worktree_id = ?17, orca_terminal_id = ?18, receipts_json = ?19,
-            partial_effects_json = ?20, recovery_json = ?21, created_at = ?22,
-            updated_at = ?23
+            orca_host_id = ?17, orca_worktree_id = ?18, orca_terminal_id = ?19,
+            receipts_json = ?20, partial_effects_json = ?21, recovery_json = ?22,
+            created_at = ?23, updated_at = ?24
         WHERE command_id = ?1"#,
         record_params(record)?,
     )?;
@@ -703,7 +832,7 @@ fn update_record(
 
 fn record_params(
     record: &OrcaOperationRecord,
-) -> Result<[rusqlite::types::Value; 23], OrcaOperationStoreError> {
+) -> Result<[rusqlite::types::Value; 24], OrcaOperationStoreError> {
     use rusqlite::types::Value;
     let optional = |value: Option<&str>| match value {
         Some(value) => Value::Text(value.to_string()),
@@ -713,7 +842,7 @@ fn record_params(
         Value::Text(record.command_id.0.clone()),
         Value::Text(record.idempotency_scope.clone()),
         Value::Text(record.idempotency_key.0.clone()),
-        Value::Text(record.correlation_id.clone()),
+        Value::Text(record.correlation_id.0.clone()),
         Value::Text(record.initiative_id.0.clone()),
         optional(record.jcode_run_id.as_ref().map(|id| id.0.as_str())),
         Value::Text(record.kind.as_str().to_string()),
@@ -724,8 +853,9 @@ fn record_params(
         optional(record.orca_task_id.as_ref().map(|id| id.0.as_str())),
         optional(record.orca_dispatch_id.as_ref().map(|id| id.0.as_str())),
         optional(record.orca_project_id.as_ref().map(|id| id.0.as_str())),
-        optional(record.orca_repository_id.as_deref()),
-        optional(record.orca_host_setup_id.as_deref()),
+        optional(record.orca_repository_id.as_ref().map(|id| id.0.as_str())),
+        optional(record.orca_host_setup_id.as_ref().map(|id| id.0.as_str())),
+        optional(record.orca_host_id.as_ref().map(|id| id.0.as_str())),
         optional(record.orca_worktree_id.as_ref().map(|id| id.0.as_str())),
         optional(record.orca_terminal_id.as_ref().map(|id| id.0.as_str())),
         Value::Text(serde_json::to_string(&record.receipts)?),
@@ -753,6 +883,7 @@ struct StoredOperationRow {
     orca_project_id: Option<String>,
     orca_repository_id: Option<String>,
     orca_host_setup_id: Option<String>,
+    orca_host_id: Option<String>,
     orca_worktree_id: Option<String>,
     orca_terminal_id: Option<String>,
     receipts_json: String,
@@ -781,13 +912,14 @@ impl StoredOperationRow {
             orca_project_id: row.get(13)?,
             orca_repository_id: row.get(14)?,
             orca_host_setup_id: row.get(15)?,
-            orca_worktree_id: row.get(16)?,
-            orca_terminal_id: row.get(17)?,
-            receipts_json: row.get(18)?,
-            partial_effects_json: row.get(19)?,
-            recovery_json: row.get(20)?,
-            created_at: row.get(21)?,
-            updated_at: row.get(22)?,
+            orca_host_id: row.get(16)?,
+            orca_worktree_id: row.get(17)?,
+            orca_terminal_id: row.get(18)?,
+            receipts_json: row.get(19)?,
+            partial_effects_json: row.get(20)?,
+            recovery_json: row.get(21)?,
+            created_at: row.get(22)?,
+            updated_at: row.get(23)?,
         })
     }
 
@@ -796,7 +928,7 @@ impl StoredOperationRow {
             command_id: CommandId(self.command_id),
             idempotency_scope: self.idempotency_scope,
             idempotency_key: IdempotencyKey(self.idempotency_key),
-            correlation_id: self.correlation_id,
+            correlation_id: CorrelationId(self.correlation_id),
             initiative_id: InitiativeId(self.initiative_id),
             jcode_run_id: self.jcode_run_id.map(JcodeRunId),
             kind: OrcaOperationKind::parse(&self.operation_kind)?,
@@ -807,8 +939,9 @@ impl StoredOperationRow {
             orca_task_id: self.orca_task_id.map(OrcaTaskId),
             orca_dispatch_id: self.orca_dispatch_id.map(OrcaDispatchId),
             orca_project_id: self.orca_project_id.map(OrcaProjectId),
-            orca_repository_id: self.orca_repository_id,
-            orca_host_setup_id: self.orca_host_setup_id,
+            orca_repository_id: self.orca_repository_id.map(OrcaRepositoryId),
+            orca_host_setup_id: self.orca_host_setup_id.map(OrcaHostSetupId),
+            orca_host_id: self.orca_host_id.map(OrcaHostId),
             orca_worktree_id: self.orca_worktree_id.map(OrcaWorktreeId),
             orca_terminal_id: self.orca_terminal_id.map(OrcaTerminalId),
             receipts: decode_json(&self.receipts_json)?,
@@ -836,7 +969,7 @@ const SELECT_COLUMNS: &str = r#"SELECT
     command_id, idempotency_scope, idempotency_key, correlation_id, initiative_id,
     jcode_run_id, operation_kind, operation_state, command_payload_json, requests_json,
     orca_run_id, orca_task_id, orca_dispatch_id, orca_project_id, orca_repository_id,
-    orca_host_setup_id, orca_worktree_id, orca_terminal_id, receipts_json,
+    orca_host_setup_id, orca_host_id, orca_worktree_id, orca_terminal_id, receipts_json,
     partial_effects_json, recovery_json, created_at, updated_at
 FROM orca_operations"#;
 
@@ -858,6 +991,7 @@ CREATE TABLE IF NOT EXISTS orca_operations (
     orca_project_id TEXT,
     orca_repository_id TEXT,
     orca_host_setup_id TEXT,
+    orca_host_id TEXT,
     orca_worktree_id TEXT,
     orca_terminal_id TEXT,
     receipts_json TEXT NOT NULL DEFAULT '[]',
@@ -871,4 +1005,8 @@ CREATE INDEX IF NOT EXISTS orca_operations_initiative
     ON orca_operations(initiative_id, updated_at);
 CREATE INDEX IF NOT EXISTS orca_operations_recovery
     ON orca_operations(operation_state, updated_at);
+"#;
+
+const MIGRATE_V1_TO_V2: &str = r#"
+ALTER TABLE orca_operations ADD COLUMN orca_host_id TEXT;
 "#;

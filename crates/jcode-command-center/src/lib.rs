@@ -50,11 +50,15 @@ id_type!(InitiativeId);
 id_type!(ScheduleRefId);
 id_type!(JcodeRunId);
 id_type!(OrcaProjectId);
+id_type!(OrcaRepositoryId);
+id_type!(OrcaHostSetupId);
+id_type!(OrcaHostId);
 id_type!(OrcaRunId);
 id_type!(OrcaTaskId);
 id_type!(OrcaDispatchId);
 id_type!(OrcaWorktreeId);
 id_type!(OrcaTerminalId);
+id_type!(OrcaRequestId);
 id_type!(CorrelationId);
 id_type!(StreamId);
 id_type!(CommandId);
@@ -222,9 +226,131 @@ pub struct JcodeRunReference {
     pub id: JcodeRunId,
     pub initiative_id: InitiativeId,
     pub orca_run_id: Option<OrcaRunId>,
+    #[serde(default)]
+    pub orca_task_id: Option<OrcaTaskId>,
+    #[serde(default)]
+    pub orca_dispatch_id: Option<OrcaDispatchId>,
+    #[serde(default)]
+    pub retry_of_jcode_run_id: Option<JcodeRunId>,
+    #[serde(default)]
+    pub retry_of_dispatch_id: Option<OrcaDispatchId>,
+    #[serde(default)]
+    pub worktree_id: Option<OrcaWorktreeId>,
+    #[serde(default)]
+    pub terminal_id: Option<OrcaTerminalId>,
     pub status: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaCanonicalPlacement {
+    pub project_id: OrcaProjectId,
+    pub repository_id: OrcaRepositoryId,
+    pub host_setup_id: OrcaHostSetupId,
+    pub host_id: OrcaHostId,
+    pub worktree_id: OrcaWorktreeId,
+    pub worktree_selector: String,
+    pub coordinator_terminal_id: OrcaTerminalId,
+    pub environment: Option<String>,
+    pub launcher: OrcaWorkerLauncher,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum OrcaWorkerLauncher {
+    Agent {
+        agent: String,
+        model: Option<String>,
+        effort: Option<String>,
+    },
+    ExistingTerminal {
+        terminal_id: OrcaTerminalId,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaMutationContext {
+    pub command_id: CommandId,
+    pub idempotency_key: IdempotencyKey,
+    pub correlation_id: CorrelationId,
+    pub initiative_id: InitiativeId,
+    pub jcode_attempt_id: JcodeRunId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct StartInitiativeRunRequest {
+    pub context: OrcaMutationContext,
+    pub objective: String,
+    pub task_spec: String,
+    pub placement: OrcaCanonicalPlacement,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RetryLinkedRunRequest {
+    pub context: OrcaMutationContext,
+    pub prior_jcode_attempt_id: JcodeRunId,
+    pub orca_run_id: OrcaRunId,
+    pub orca_task_id: OrcaTaskId,
+    pub retry_of_dispatch_id: OrcaDispatchId,
+    pub placement: OrcaCanonicalPlacement,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CancelLinkedRunRequest {
+    pub context: OrcaMutationContext,
+    pub target_jcode_attempt_id: JcodeRunId,
+    pub orca_run_id: OrcaRunId,
+    pub orca_task_id: OrcaTaskId,
+    pub target_dispatch_id: OrcaDispatchId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaAttemptIdentity {
+    pub run_id: OrcaRunId,
+    pub task_id: OrcaTaskId,
+    pub dispatch_id: OrcaDispatchId,
+    pub retry_of_dispatch_id: Option<OrcaDispatchId>,
+    pub worktree_id: OrcaWorktreeId,
+    pub terminal_id: Option<OrcaTerminalId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaEffectReceipt {
+    pub kind: String,
+    #[serde(default)]
+    pub role: Option<String>,
+    pub action: String,
+    #[serde(default)]
+    pub id: Option<String>,
+    #[serde(default)]
+    pub surface: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OrcaMutationOutcome {
+    Ready,
+    Failed,
+    OutcomeUnknown,
+    Stopped,
+    Abandoned,
+    AlreadySettled,
+    Rejected,
+    RecoveryRequired,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrcaLifecycleReceipt {
+    pub outcome: OrcaMutationOutcome,
+    pub attempt: Option<OrcaAttemptIdentity>,
+    pub stage: String,
+    pub failed_stage: Option<String>,
+    pub last_error: Option<String>,
+    pub effects: Vec<OrcaEffectReceipt>,
+    pub residual_resources: Vec<OrcaEffectReceipt>,
+    pub cleanup: Vec<CleanupResourceProjection>,
+    pub observed_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -629,7 +755,7 @@ impl BrowserSessionIssuer {
 pub struct CommandEnvelope {
     pub id: CommandId,
     pub idempotency_key: IdempotencyKey,
-    pub correlation_id: String,
+    pub correlation_id: CorrelationId,
     pub auth: AuthContext,
     pub expected_revision: Revision,
     pub payload: CommandPayload,
@@ -717,7 +843,7 @@ pub enum CommandState {
 pub struct CommandResult {
     pub command_id: CommandId,
     pub idempotency_key: IdempotencyKey,
-    pub correlation_id: String,
+    pub correlation_id: CorrelationId,
     pub state: CommandState,
     pub authoritative: Option<CommandResultPayload>,
     pub error: Option<CommandCenterError>,
@@ -731,8 +857,72 @@ pub enum CommandResultPayload {
     },
     RunAccepted {
         run: JcodeRunReference,
+        #[serde(default)]
         orca_run_id: Option<OrcaRunId>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        receipt: Option<Box<OrcaLifecycleReceipt>>,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RuntimeCommandExecution {
+    pub state: CommandState,
+    pub payload: Option<CommandResultPayload>,
+    pub error: Option<CommandCenterError>,
+}
+
+impl RuntimeCommandExecution {
+    pub fn failed(error: CommandCenterError) -> Self {
+        Self {
+            state: CommandState::Failed,
+            payload: None,
+            error: Some(error),
+        }
+    }
+
+    pub fn from_lifecycle(run: JcodeRunReference, receipt: OrcaLifecycleReceipt) -> Self {
+        let state = match receipt.outcome {
+            OrcaMutationOutcome::Ready
+            | OrcaMutationOutcome::OutcomeUnknown
+            | OrcaMutationOutcome::RecoveryRequired => CommandState::Pending,
+            OrcaMutationOutcome::Stopped
+            | OrcaMutationOutcome::Abandoned
+            | OrcaMutationOutcome::AlreadySettled => CommandState::Completed,
+            OrcaMutationOutcome::Failed | OrcaMutationOutcome::Rejected => CommandState::Failed,
+        };
+        let error = match receipt.outcome {
+            OrcaMutationOutcome::OutcomeUnknown => {
+                Some(CommandCenterError::OrcaOperationOutcomeUnknown {
+                    stage: receipt.stage.clone(),
+                })
+            }
+            OrcaMutationOutcome::RecoveryRequired => {
+                Some(CommandCenterError::OrcaOperationRecoveryRequired {
+                    stage: receipt.stage.clone(),
+                })
+            }
+            OrcaMutationOutcome::Rejected => Some(CommandCenterError::OrcaPreconditionFailed {
+                reason: receipt
+                    .last_error
+                    .clone()
+                    .unwrap_or_else(|| "Orca rejected the lifecycle mutation".to_string()),
+            }),
+            _ => None,
+        };
+        let orca_run_id = receipt
+            .attempt
+            .as_ref()
+            .map(|attempt| attempt.run_id.clone());
+        Self {
+            state,
+            payload: Some(CommandResultPayload::RunAccepted {
+                run,
+                orca_run_id,
+                receipt: Some(Box::new(receipt)),
+            }),
+            error,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -755,6 +945,31 @@ pub enum CommandCenterError {
         capability: String,
     },
     OrcaUnavailable,
+    OrcaProfileMismatch {
+        reason: String,
+    },
+    OrcaSchemaMismatch {
+        reason: String,
+    },
+    OrcaIdentityUnresolved {
+        reason: String,
+    },
+    OrcaIdentityDrift {
+        reason: String,
+    },
+    OrcaCoordinatorUnavailable,
+    OrcaPreconditionFailed {
+        reason: String,
+    },
+    OrcaOperationOutcomeUnknown {
+        stage: String,
+    },
+    OrcaOperationRecoveryRequired {
+        stage: String,
+    },
+    OrcaReceiptIdentityConflict {
+        field: String,
+    },
     ReplayScopeMismatch,
     ReplayGap,
     CsrfRejected,
@@ -1223,23 +1438,16 @@ pub trait OrcaAdapter: Send + Sync {
         Ok(RuntimeMutationCapabilities::unavailable())
     }
     async fn observe(&self, id: &InitiativeId) -> Result<OrcaReference, CommandCenterError>;
+    async fn canonical_placement(
+        &self,
+        id: &InitiativeId,
+    ) -> Result<OrcaCanonicalPlacement, CommandCenterError>;
     async fn start_initiative_run(
         &self,
-        id: &InitiativeId,
-        key: &IdempotencyKey,
-    ) -> Result<(JcodeRunReference, OrcaRunId), CommandCenterError>;
-    async fn retry_linked_run(
-        &self,
-        id: &InitiativeId,
-        run_id: &JcodeRunId,
-        key: &IdempotencyKey,
-    ) -> Result<(JcodeRunReference, OrcaRunId), CommandCenterError>;
-    async fn cancel_linked_run(
-        &self,
-        id: &InitiativeId,
-        run_id: &JcodeRunId,
-        key: &IdempotencyKey,
-    ) -> Result<JcodeRunReference, CommandCenterError>;
+        request: StartInitiativeRunRequest,
+    ) -> RuntimeCommandExecution;
+    async fn retry_linked_run(&self, request: RetryLinkedRunRequest) -> RuntimeCommandExecution;
+    async fn cancel_linked_run(&self, request: CancelLinkedRunRequest) -> RuntimeCommandExecution;
 }
 
 pub struct CommandCenterService<R, S, P, O> {
@@ -1398,10 +1606,8 @@ where
             );
         }
         if envelope.payload.is_runtime_command() {
-            return match self.execute_runtime_command(&envelope).await {
-                Ok(payload) => base(CommandState::Pending, Some(payload), None),
-                Err(error) => base(CommandState::Failed, None, Some(error)),
-            };
+            let execution = self.execute_runtime_command(&envelope).await;
+            return base(execution.state, execution.payload, execution.error);
         }
         match self.apply_initiative_command(&envelope).await {
             Ok(initiative) => base(
@@ -1413,64 +1619,163 @@ where
         }
     }
 
-    async fn execute_runtime_command(
-        &self,
-        envelope: &CommandEnvelope,
-    ) -> Result<CommandResultPayload, CommandCenterError> {
-        let capabilities = self.orca.capabilities().await?;
+    async fn execute_runtime_command(&self, envelope: &CommandEnvelope) -> RuntimeCommandExecution {
+        let initiative_id = envelope.payload.initiative_id();
+        let (goal, actual) = match self.initiatives.get(&envelope.auth, initiative_id).await {
+            Ok(value) => value,
+            Err(error) => return RuntimeCommandExecution::failed(error),
+        };
+        if actual != envelope.expected_revision {
+            return RuntimeCommandExecution::failed(CommandCenterError::StaleRevision {
+                expected: envelope.expected_revision,
+                actual,
+            });
+        }
+        let capabilities = match self.orca.capabilities().await {
+            Ok(value) => value,
+            Err(error) => return RuntimeCommandExecution::failed(error),
+        };
+        let context = |jcode_attempt_id| OrcaMutationContext {
+            command_id: envelope.id.clone(),
+            idempotency_key: envelope.idempotency_key.clone(),
+            correlation_id: envelope.correlation_id.clone(),
+            initiative_id: initiative_id.clone(),
+            jcode_attempt_id,
+        };
         match &envelope.payload {
             CommandPayload::StartInitiativeRun { initiative_id } => {
                 if !capabilities.start_initiative_run {
-                    return Err(CommandCenterError::UnsupportedCapability {
-                        capability: "orca.command_center.start_initiative_run".to_string(),
-                    });
+                    return RuntimeCommandExecution::failed(
+                        CommandCenterError::UnsupportedCapability {
+                            capability: "orca.command_center.start_initiative_run".to_string(),
+                        },
+                    );
                 }
+                let placement = match self.orca.canonical_placement(initiative_id).await {
+                    Ok(value) => value,
+                    Err(error) => return RuntimeCommandExecution::failed(error),
+                };
                 self.orca
-                    .start_initiative_run(initiative_id, &envelope.idempotency_key)
-                    .await
-                    .map(|(run, orca_run_id)| CommandResultPayload::RunAccepted {
-                        run,
-                        orca_run_id: Some(orca_run_id),
+                    .start_initiative_run(StartInitiativeRunRequest {
+                        context: context(JcodeRunId(envelope.id.0.clone())),
+                        objective: goal.title,
+                        task_spec: goal.description,
+                        placement,
                     })
+                    .await
             }
             CommandPayload::RetryLinkedRun {
                 initiative_id,
                 run_id,
             } => {
                 if !capabilities.retry_linked_run {
-                    return Err(CommandCenterError::UnsupportedCapability {
-                        capability: "orca.command_center.retry_linked_run".to_string(),
-                    });
+                    return RuntimeCommandExecution::failed(
+                        CommandCenterError::UnsupportedCapability {
+                            capability: "orca.command_center.retry_linked_run".to_string(),
+                        },
+                    );
                 }
+                let prior = match self.runtime_run(initiative_id, run_id).await {
+                    Ok(value) => value,
+                    Err(error) => return RuntimeCommandExecution::failed(error),
+                };
+                let placement = match self.orca.canonical_placement(initiative_id).await {
+                    Ok(value) => value,
+                    Err(error) => return RuntimeCommandExecution::failed(error),
+                };
+                if prior.worktree_id.as_ref() != Some(&placement.worktree_id) {
+                    return RuntimeCommandExecution::failed(
+                        CommandCenterError::OrcaIdentityDrift {
+                            reason: "retry placement no longer matches the prior attempt worktree"
+                                .to_string(),
+                        },
+                    );
+                }
+                let Some(orca_run_id) = prior.orca_run_id else {
+                    return RuntimeCommandExecution::failed(missing_attempt_identity(
+                        "orca_run_id",
+                    ));
+                };
+                let Some(orca_task_id) = prior.orca_task_id else {
+                    return RuntimeCommandExecution::failed(missing_attempt_identity(
+                        "orca_task_id",
+                    ));
+                };
+                let Some(retry_of_dispatch_id) = prior.orca_dispatch_id else {
+                    return RuntimeCommandExecution::failed(missing_attempt_identity(
+                        "orca_dispatch_id",
+                    ));
+                };
                 self.orca
-                    .retry_linked_run(initiative_id, run_id, &envelope.idempotency_key)
-                    .await
-                    .map(|(run, orca_run_id)| CommandResultPayload::RunAccepted {
-                        run,
-                        orca_run_id: Some(orca_run_id),
+                    .retry_linked_run(RetryLinkedRunRequest {
+                        context: context(JcodeRunId(envelope.id.0.clone())),
+                        prior_jcode_attempt_id: run_id.clone(),
+                        orca_run_id,
+                        orca_task_id,
+                        retry_of_dispatch_id,
+                        placement,
                     })
+                    .await
             }
             CommandPayload::CancelLinkedRun {
                 initiative_id,
                 run_id,
             } => {
                 if !capabilities.cancel_linked_run {
-                    return Err(CommandCenterError::UnsupportedCapability {
-                        capability: "orca.command_center.cancel_linked_run".to_string(),
-                    });
+                    return RuntimeCommandExecution::failed(
+                        CommandCenterError::UnsupportedCapability {
+                            capability: "orca.command_center.cancel_linked_run".to_string(),
+                        },
+                    );
                 }
+                let target = match self.runtime_run(initiative_id, run_id).await {
+                    Ok(value) => value,
+                    Err(error) => return RuntimeCommandExecution::failed(error),
+                };
+                let Some(orca_run_id) = target.orca_run_id else {
+                    return RuntimeCommandExecution::failed(missing_attempt_identity(
+                        "orca_run_id",
+                    ));
+                };
+                let Some(orca_task_id) = target.orca_task_id else {
+                    return RuntimeCommandExecution::failed(missing_attempt_identity(
+                        "orca_task_id",
+                    ));
+                };
+                let Some(target_dispatch_id) = target.orca_dispatch_id else {
+                    return RuntimeCommandExecution::failed(missing_attempt_identity(
+                        "orca_dispatch_id",
+                    ));
+                };
                 self.orca
-                    .cancel_linked_run(initiative_id, run_id, &envelope.idempotency_key)
-                    .await
-                    .map(|run| CommandResultPayload::RunAccepted {
-                        run,
-                        orca_run_id: None,
+                    .cancel_linked_run(CancelLinkedRunRequest {
+                        context: context(run_id.clone()),
+                        target_jcode_attempt_id: run_id.clone(),
+                        orca_run_id,
+                        orca_task_id,
+                        target_dispatch_id,
                     })
+                    .await
             }
-            _ => Err(CommandCenterError::UnsupportedCapability {
+            _ => RuntimeCommandExecution::failed(CommandCenterError::UnsupportedCapability {
                 capability: "not_runtime".to_string(),
             }),
         }
+    }
+
+    async fn runtime_run(
+        &self,
+        initiative_id: &InitiativeId,
+        run_id: &JcodeRunId,
+    ) -> Result<JcodeRunReference, CommandCenterError> {
+        self.runs
+            .runs_for(initiative_id)
+            .await?
+            .into_iter()
+            .find(|run| &run.id == run_id)
+            .ok_or_else(|| CommandCenterError::NotFound {
+                entity: format!("Jcode run {}", run_id.0),
+            })
     }
 
     async fn apply_initiative_command(
@@ -1525,6 +1830,12 @@ where
             .save(&envelope.auth, goal, envelope.expected_revision)
             .await
             .map(InitiativeProjection::from)
+    }
+}
+
+fn missing_attempt_identity(field: &str) -> CommandCenterError {
+    CommandCenterError::OrcaPreconditionFailed {
+        reason: format!("selected Jcode attempt has no authoritative {field}"),
     }
 }
 
@@ -1926,7 +2237,7 @@ async fn command_handler(
     let envelope = CommandEnvelope {
         id: CommandId(Uuid::new_v4().to_string()),
         idempotency_key: IdempotencyKey(body.idempotency_key),
-        correlation_id: Uuid::new_v4().to_string(),
+        correlation_id: CorrelationId(Uuid::new_v4().to_string()),
         auth: AuthContext::from(&session),
         expected_revision,
         payload: body.payload,
@@ -1981,6 +2292,12 @@ mod tests {
         assert_ne!(TypeId::of::<InitiativeId>(), TypeId::of::<JcodeRunId>());
         assert_ne!(TypeId::of::<JcodeRunId>(), TypeId::of::<OrcaRunId>());
         assert_ne!(TypeId::of::<CommandId>(), TypeId::of::<IdempotencyKey>());
+        assert_ne!(
+            TypeId::of::<OrcaProjectId>(),
+            TypeId::of::<OrcaRepositoryId>()
+        );
+        assert_ne!(TypeId::of::<OrcaHostId>(), TypeId::of::<OrcaHostSetupId>());
+        assert_ne!(TypeId::of::<OrcaRequestId>(), TypeId::of::<CommandId>());
 
         let initiative = InitiativeId("initiative-1".into());
         assert_eq!(serde_json::to_value(&initiative).unwrap(), "initiative-1");
@@ -1991,6 +2308,38 @@ mod tests {
     }
 
     #[test]
+    fn canonical_placement_and_launcher_use_typed_scalar_ids() {
+        let value = serde_json::to_value(test_placement()).unwrap();
+
+        assert_eq!(value["project_id"], "project-1");
+        assert_eq!(value["repository_id"], "repository-1");
+        assert_eq!(value["host_setup_id"], "host-setup-1");
+        assert_eq!(value["host_id"], "host-1");
+        assert_eq!(value["launcher"]["type"], "agent");
+        assert_eq!(value["launcher"]["agent"], "codex");
+    }
+
+    #[test]
+    fn legacy_jcode_run_reference_defaults_new_attempt_fields() {
+        let run: JcodeRunReference = serde_json::from_value(serde_json::json!({
+            "id": "run-legacy",
+            "initiative_id": "initiative-1",
+            "orca_run_id": "orca-run-1",
+            "status": "ready",
+            "created_at": "2026-08-17T13:00:00Z",
+            "updated_at": "2026-08-17T13:00:01Z"
+        }))
+        .unwrap();
+
+        assert_eq!(run.orca_task_id, None);
+        assert_eq!(run.orca_dispatch_id, None);
+        assert_eq!(run.retry_of_jcode_run_id, None);
+        assert_eq!(run.retry_of_dispatch_id, None);
+        assert_eq!(run.worktree_id, None);
+        assert_eq!(run.terminal_id, None);
+    }
+
+    #[test]
     fn generated_contract_preserves_id_ownership() {
         let contract = generated_typescript_contract();
 
@@ -1998,6 +2347,10 @@ mod tests {
             "export type InitiativeId = Brand<string, \"InitiativeId\">;",
             "export type JcodeRunId = Brand<string, \"JcodeRunId\">;",
             "export type OrcaRunId = Brand<string, \"OrcaRunId\">;",
+            "export type OrcaRepositoryId = Brand<string, \"OrcaRepositoryId\">;",
+            "export type OrcaHostSetupId = Brand<string, \"OrcaHostSetupId\">;",
+            "export type OrcaHostId = Brand<string, \"OrcaHostId\">;",
+            "export type OrcaRequestId = Brand<string, \"OrcaRequestId\">;",
             "export type StreamId = Brand<string, \"StreamId\">;",
             "export type IdempotencyKey = Brand<string, \"IdempotencyKey\">;",
         ] {
@@ -2078,18 +2431,36 @@ mod tests {
     impl RunProjectionSource for EmptyRuns {
         async fn runs_for(
             &self,
-            _id: &InitiativeId,
+            id: &InitiativeId,
         ) -> Result<Vec<JcodeRunReference>, CommandCenterError> {
-            Ok(vec![])
+            let now = Utc::now();
+            Ok(vec![JcodeRunReference {
+                id: JcodeRunId("run-1".into()),
+                initiative_id: id.clone(),
+                orca_run_id: Some(OrcaRunId("orca-run-1".into())),
+                orca_task_id: Some(OrcaTaskId("orca-task-1".into())),
+                orca_dispatch_id: Some(OrcaDispatchId("orca-dispatch-1".into())),
+                retry_of_jcode_run_id: None,
+                retry_of_dispatch_id: None,
+                worktree_id: Some(OrcaWorktreeId("worktree-1".into())),
+                terminal_id: Some(OrcaTerminalId("terminal-1".into())),
+                status: "ready".into(),
+                created_at: now,
+                updated_at: now,
+            }])
         }
     }
 
     struct FakeOrca {
         unavailable: bool,
+        calls: Arc<std::sync::atomic::AtomicUsize>,
+        start_outcome: OrcaMutationOutcome,
+        cancel_outcome: OrcaMutationOutcome,
     }
     #[async_trait]
     impl OrcaAdapter for FakeOrca {
         async fn capabilities(&self) -> Result<RuntimeMutationCapabilities, CommandCenterError> {
+            self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             if self.unavailable {
                 return Err(CommandCenterError::OrcaUnavailable);
             }
@@ -2120,53 +2491,123 @@ mod tests {
                 freshness: Freshness::fresh(),
             })
         }
+        async fn canonical_placement(
+            &self,
+            _id: &InitiativeId,
+        ) -> Result<OrcaCanonicalPlacement, CommandCenterError> {
+            Ok(test_placement())
+        }
         async fn start_initiative_run(
             &self,
-            id: &InitiativeId,
-            _key: &IdempotencyKey,
-        ) -> Result<(JcodeRunReference, OrcaRunId), CommandCenterError> {
+            request: StartInitiativeRunRequest,
+        ) -> RuntimeCommandExecution {
             if self.unavailable {
-                return Err(CommandCenterError::OrcaUnavailable);
+                return RuntimeCommandExecution::failed(CommandCenterError::OrcaUnavailable);
             }
             let now = Utc::now();
-            Ok((
+            let attempt = test_attempt(None);
+            RuntimeCommandExecution::from_lifecycle(
                 JcodeRunReference {
-                    id: JcodeRunId("run-1".into()),
-                    initiative_id: id.clone(),
-                    orca_run_id: Some(OrcaRunId("orca-run-1".into())),
+                    id: request.context.jcode_attempt_id,
+                    initiative_id: request.context.initiative_id,
+                    orca_run_id: Some(attempt.run_id.clone()),
+                    orca_task_id: Some(attempt.task_id.clone()),
+                    orca_dispatch_id: Some(attempt.dispatch_id.clone()),
+                    retry_of_jcode_run_id: None,
+                    retry_of_dispatch_id: None,
+                    worktree_id: Some(attempt.worktree_id.clone()),
+                    terminal_id: attempt.terminal_id.clone(),
                     status: "accepted".into(),
                     created_at: now,
                     updated_at: now,
                 },
-                OrcaRunId("orca-run-1".into()),
-            ))
+                test_receipt(self.start_outcome.clone(), attempt),
+            )
         }
         async fn retry_linked_run(
             &self,
-            id: &InitiativeId,
-            _run_id: &JcodeRunId,
-            key: &IdempotencyKey,
-        ) -> Result<(JcodeRunReference, OrcaRunId), CommandCenterError> {
-            self.start_initiative_run(id, key).await
+            request: RetryLinkedRunRequest,
+        ) -> RuntimeCommandExecution {
+            self.start_initiative_run(StartInitiativeRunRequest {
+                context: request.context,
+                objective: "retry".into(),
+                task_spec: "retry".into(),
+                placement: request.placement,
+            })
+            .await
         }
         async fn cancel_linked_run(
             &self,
-            id: &InitiativeId,
-            run_id: &JcodeRunId,
-            _key: &IdempotencyKey,
-        ) -> Result<JcodeRunReference, CommandCenterError> {
+            request: CancelLinkedRunRequest,
+        ) -> RuntimeCommandExecution {
             if self.unavailable {
-                return Err(CommandCenterError::OrcaUnavailable);
+                return RuntimeCommandExecution::failed(CommandCenterError::OrcaUnavailable);
             }
             let now = Utc::now();
-            Ok(JcodeRunReference {
-                id: run_id.clone(),
-                initiative_id: id.clone(),
-                orca_run_id: Some(OrcaRunId("orca-run-1".into())),
-                status: "cancel_accepted".into(),
-                created_at: now,
-                updated_at: now,
-            })
+            let attempt = test_attempt(None);
+            RuntimeCommandExecution::from_lifecycle(
+                JcodeRunReference {
+                    id: request.target_jcode_attempt_id,
+                    initiative_id: request.context.initiative_id,
+                    orca_run_id: Some(request.orca_run_id),
+                    orca_task_id: Some(request.orca_task_id),
+                    orca_dispatch_id: Some(request.target_dispatch_id),
+                    retry_of_jcode_run_id: None,
+                    retry_of_dispatch_id: None,
+                    worktree_id: Some(attempt.worktree_id.clone()),
+                    terminal_id: attempt.terminal_id.clone(),
+                    status: "stopped".into(),
+                    created_at: now,
+                    updated_at: now,
+                },
+                test_receipt(self.cancel_outcome.clone(), attempt),
+            )
+        }
+    }
+
+    fn test_placement() -> OrcaCanonicalPlacement {
+        OrcaCanonicalPlacement {
+            project_id: OrcaProjectId("project-1".into()),
+            repository_id: OrcaRepositoryId("repository-1".into()),
+            host_setup_id: OrcaHostSetupId("host-setup-1".into()),
+            host_id: OrcaHostId("host-1".into()),
+            worktree_id: OrcaWorktreeId("worktree-1".into()),
+            worktree_selector: "id:worktree-1".into(),
+            coordinator_terminal_id: OrcaTerminalId("coordinator-1".into()),
+            environment: None,
+            launcher: OrcaWorkerLauncher::Agent {
+                agent: "codex".into(),
+                model: None,
+                effort: None,
+            },
+        }
+    }
+
+    fn test_attempt(retry_of_dispatch_id: Option<OrcaDispatchId>) -> OrcaAttemptIdentity {
+        OrcaAttemptIdentity {
+            run_id: OrcaRunId("orca-run-1".into()),
+            task_id: OrcaTaskId("orca-task-1".into()),
+            dispatch_id: OrcaDispatchId("orca-dispatch-1".into()),
+            retry_of_dispatch_id,
+            worktree_id: OrcaWorktreeId("worktree-1".into()),
+            terminal_id: Some(OrcaTerminalId("terminal-1".into())),
+        }
+    }
+
+    fn test_receipt(
+        outcome: OrcaMutationOutcome,
+        attempt: OrcaAttemptIdentity,
+    ) -> OrcaLifecycleReceipt {
+        OrcaLifecycleReceipt {
+            outcome,
+            attempt: Some(attempt),
+            stage: "verified".into(),
+            failed_stage: None,
+            last_error: None,
+            effects: vec![],
+            residual_resources: vec![],
+            cleanup: vec![],
+            observed_at: Utc::now(),
         }
     }
 
@@ -2198,11 +2639,37 @@ mod tests {
     fn service(
         unavailable: bool,
     ) -> CommandCenterService<MemoryRepo, EmptySchedules, EmptyRuns, FakeOrca> {
-        CommandCenterService::new(
-            MemoryRepo(Arc::new(Mutex::new((goal(), Revision(1))))),
-            EmptySchedules,
-            EmptyRuns,
-            FakeOrca { unavailable },
+        service_with_outcomes(
+            unavailable,
+            OrcaMutationOutcome::Ready,
+            OrcaMutationOutcome::Stopped,
+        )
+        .0
+    }
+
+    fn service_with_outcomes(
+        unavailable: bool,
+        start_outcome: OrcaMutationOutcome,
+        cancel_outcome: OrcaMutationOutcome,
+    ) -> (
+        CommandCenterService<MemoryRepo, EmptySchedules, EmptyRuns, FakeOrca>,
+        Arc<std::sync::atomic::AtomicUsize>,
+    ) {
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let adapter_calls = calls.clone();
+        (
+            CommandCenterService::new(
+                MemoryRepo(Arc::new(Mutex::new((goal(), Revision(1))))),
+                EmptySchedules,
+                EmptyRuns,
+                FakeOrca {
+                    unavailable,
+                    calls: adapter_calls,
+                    start_outcome,
+                    cancel_outcome,
+                },
+            ),
+            calls,
         )
     }
 
@@ -2241,7 +2708,7 @@ mod tests {
         CommandEnvelope {
             id: CommandId(format!("cmd-{key}")),
             idempotency_key: IdempotencyKey(key.into()),
-            correlation_id: "corr".into(),
+            correlation_id: CorrelationId("corr".into()),
             auth: auth(),
             expected_revision: rev,
             payload,
@@ -2640,6 +3107,90 @@ mod tests {
             result.authoritative,
             Some(CommandResultPayload::RunAccepted { .. })
         ));
+    }
+
+    #[tokio::test]
+    async fn runtime_command_rejects_stale_revision_before_adapter_invocation() {
+        let (service, calls) = service_with_outcomes(
+            false,
+            OrcaMutationOutcome::Ready,
+            OrcaMutationOutcome::Stopped,
+        );
+        let result = service
+            .execute(envelope(
+                CommandPayload::StartInitiativeRun {
+                    initiative_id: InitiativeId("command-center".into()),
+                },
+                Revision(0),
+                "stale-runtime",
+            ))
+            .await;
+
+        assert_eq!(result.state, CommandState::Failed);
+        assert!(matches!(
+            result.error,
+            Some(CommandCenterError::StaleRevision {
+                expected: Revision(0),
+                actual: Revision(1)
+            })
+        ));
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    async fn failed_and_outcome_unknown_runtime_commands_preserve_authoritative_receipts() {
+        for (outcome, expected_state) in [
+            (OrcaMutationOutcome::Failed, CommandState::Failed),
+            (OrcaMutationOutcome::OutcomeUnknown, CommandState::Pending),
+            (OrcaMutationOutcome::RecoveryRequired, CommandState::Pending),
+        ] {
+            let (service, _) =
+                service_with_outcomes(false, outcome.clone(), OrcaMutationOutcome::Stopped);
+            let result = service
+                .execute(envelope(
+                    CommandPayload::StartInitiativeRun {
+                        initiative_id: InitiativeId("command-center".into()),
+                    },
+                    Revision(1),
+                    match outcome {
+                        OrcaMutationOutcome::Failed => "failed-receipt",
+                        _ => "unknown-receipt",
+                    },
+                ))
+                .await;
+
+            assert_eq!(result.state, expected_state);
+            match result.authoritative {
+                Some(CommandResultPayload::RunAccepted {
+                    receipt: Some(receipt),
+                    ..
+                }) => assert_eq!(receipt.outcome, outcome),
+                other => panic!("missing authoritative lifecycle receipt: {other:?}"),
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn stopped_cancel_settlement_completes_the_command() {
+        let result = service(false)
+            .execute(envelope(
+                CommandPayload::CancelLinkedRun {
+                    initiative_id: InitiativeId("command-center".into()),
+                    run_id: JcodeRunId("run-1".into()),
+                },
+                Revision(1),
+                "cancel-stopped",
+            ))
+            .await;
+
+        assert_eq!(result.state, CommandState::Completed);
+        match result.authoritative {
+            Some(CommandResultPayload::RunAccepted {
+                receipt: Some(receipt),
+                ..
+            }) => assert_eq!(receipt.outcome, OrcaMutationOutcome::Stopped),
+            other => panic!("missing authoritative stopped receipt: {other:?}"),
+        }
     }
 
     #[tokio::test]
