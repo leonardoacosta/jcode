@@ -36,6 +36,7 @@
 /side_panel/
 /browser/
 /hotkey/
+/.superpowers/
 /cache/
 /logs/
 /builds/
@@ -45,8 +46,14 @@
 /private/
 /quarantine/
 /migrations/
+/ambient/
+/presentation/jcode-feature-tour/
 command-center/
 reload-info
+--full-page
+telemetry_install_sent
+telemetry_version_sent
+vercel-prod-env-check
 prompt-history.jsonl
 presentation-http.log
 presentation-http-audio.mp3
