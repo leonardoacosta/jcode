@@ -173,10 +173,7 @@ impl Agent {
     /// spawned session (swarm worker, subagent). `PARENT_SESSION_ID` carries
     /// the spawner's id for children. Notification integrations use these to
     /// speak only at the end of a user-facing turn instead of once per worker.
-    fn with_session_role_fields(
-        &self,
-        event: crate::hooks::HookEvent,
-    ) -> crate::hooks::HookEvent {
+    fn with_session_role_fields(&self, event: crate::hooks::HookEvent) -> crate::hooks::HookEvent {
         match self.session.parent_id.as_deref() {
             Some(parent_id) => event
                 .field("SESSION_ROLE", "child")

@@ -865,7 +865,9 @@ pub enum ModelRouteApiMethod {
     OpenAIOAuth,
     OpenAIApiKey,
     OpenRouter,
-    OpenAiCompatible { profile_id: Option<String> },
+    OpenAiCompatible {
+        profile_id: Option<String>,
+    },
     Copilot,
     Cursor,
     Bedrock,
@@ -1408,7 +1410,10 @@ mod tests {
             ModelRouteApiMethod::parse("chatgpt-web"),
             ModelRouteApiMethod::ChatgptWeb
         );
-        assert_eq!(ModelRouteApiMethod::ChatgptWeb.display_label(), "chatgpt-web");
+        assert_eq!(
+            ModelRouteApiMethod::ChatgptWeb.display_label(),
+            "chatgpt-web"
+        );
     }
 
     #[test]
