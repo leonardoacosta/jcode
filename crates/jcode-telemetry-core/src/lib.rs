@@ -110,131 +110,6 @@ pub struct TodoTelemetryUpdate {
     pub end_to_end_ownership: TelemetryScoreSummary,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CompletionReviewTrigger {
-    GateDigest,
-    LongSession,
-    Ownership,
-    CompletionConfidence,
-    ConfidenceSpike,
-    AutoPoke,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CompletionReviewConcern {
-    Intent,
-    ClosedFeedbackLoop,
-    FeedbackLoopRelevance,
-    FeedbackLoopCoverage,
-    FeedbackLoopTraceability,
-    Ownership,
-    CompletionConfidence,
-    IncompleteTodo,
-    StaleAssessment,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CompletionReviewResolution {
-    Pending,
-    Resolved,
-    Unresolved,
-    Exhausted,
-}
-
-/// Numeric-only completion-review observation. The goal/group is represented
-/// as a grouped-vs-ungrouped bit, never as user-authored text.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CompletionReviewTelemetry {
-    pub trigger: CompletionReviewTrigger,
-    pub goal_grouped: bool,
-    pub unresolved_concern: CompletionReviewConcern,
-    pub continuation_cycles: u32,
-    pub resolution: CompletionReviewResolution,
-    pub repeated_prompt: bool,
-}
-
-#[derive(Debug, Clone, Default)]
-struct CompletionReviewTelemetryState {
-    count: u32,
-    grouped_goal_count: u32,
-    ungrouped_goal_count: u32,
-    continuation_cycles: u32,
-    repeated_prompt_count: u32,
-    trigger_gate_digest_count: u32,
-    trigger_long_session_count: u32,
-    trigger_ownership_count: u32,
-    trigger_completion_confidence_count: u32,
-    trigger_confidence_spike_count: u32,
-    trigger_auto_poke_count: u32,
-    concern_intent_count: u32,
-    concern_closed_feedback_loop_count: u32,
-    concern_feedback_loop_relevance_count: u32,
-    concern_feedback_loop_coverage_count: u32,
-    concern_feedback_loop_traceability_count: u32,
-    concern_ownership_count: u32,
-    concern_completion_confidence_count: u32,
-    concern_incomplete_todo_count: u32,
-    concern_stale_assessment_count: u32,
-    resolution_pending_count: u32,
-    resolution_resolved_count: u32,
-    resolution_unresolved_count: u32,
-    resolution_exhausted_count: u32,
-}
-
-impl CompletionReviewTelemetryState {
-    fn record(&mut self, update: CompletionReviewTelemetry) {
-        self.count = self.count.saturating_add(1);
-        if update.goal_grouped {
-            self.grouped_goal_count = self.grouped_goal_count.saturating_add(1);
-        } else {
-            self.ungrouped_goal_count = self.ungrouped_goal_count.saturating_add(1);
-        }
-        self.continuation_cycles = self
-            .continuation_cycles
-            .saturating_add(update.continuation_cycles);
-        if update.repeated_prompt {
-            self.repeated_prompt_count = self.repeated_prompt_count.saturating_add(1);
-        }
-        match update.trigger {
-            CompletionReviewTrigger::GateDigest => self.trigger_gate_digest_count += 1,
-            CompletionReviewTrigger::LongSession => self.trigger_long_session_count += 1,
-            CompletionReviewTrigger::Ownership => self.trigger_ownership_count += 1,
-            CompletionReviewTrigger::CompletionConfidence => {
-                self.trigger_completion_confidence_count += 1
-            }
-            CompletionReviewTrigger::ConfidenceSpike => self.trigger_confidence_spike_count += 1,
-            CompletionReviewTrigger::AutoPoke => self.trigger_auto_poke_count += 1,
-        }
-        match update.unresolved_concern {
-            CompletionReviewConcern::Intent => self.concern_intent_count += 1,
-            CompletionReviewConcern::ClosedFeedbackLoop => {
-                self.concern_closed_feedback_loop_count += 1
-            }
-            CompletionReviewConcern::FeedbackLoopRelevance => {
-                self.concern_feedback_loop_relevance_count += 1
-            }
-            CompletionReviewConcern::FeedbackLoopCoverage => {
-                self.concern_feedback_loop_coverage_count += 1
-            }
-            CompletionReviewConcern::FeedbackLoopTraceability => {
-                self.concern_feedback_loop_traceability_count += 1
-            }
-            CompletionReviewConcern::Ownership => self.concern_ownership_count += 1,
-            CompletionReviewConcern::CompletionConfidence => {
-                self.concern_completion_confidence_count += 1
-            }
-            CompletionReviewConcern::IncompleteTodo => self.concern_incomplete_todo_count += 1,
-            CompletionReviewConcern::StaleAssessment => self.concern_stale_assessment_count += 1,
-        }
-        match update.resolution {
-            CompletionReviewResolution::Pending => self.resolution_pending_count += 1,
-            CompletionReviewResolution::Resolved => self.resolution_resolved_count += 1,
-            CompletionReviewResolution::Unresolved => self.resolution_unresolved_count += 1,
-            CompletionReviewResolution::Exhausted => self.resolution_exhausted_count += 1,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Default)]
 struct TodoSessionTelemetry {
     todo_updates: u32,
@@ -346,7 +221,6 @@ struct TurnTelemetry {
     todo_gate_intent_count: u32,
     todo_gate_completion_count: u32,
     todo_gate_spike_count: u32,
-    completion_review: CompletionReviewTelemetryState,
 }
 
 #[derive(Debug, Clone)]
@@ -463,7 +337,6 @@ struct SessionTelemetry {
     provider_switches: u32,
     model_switches: u32,
     todo: TodoSessionTelemetry,
-    completion_review: CompletionReviewTelemetryState,
 }
 
 impl TurnTelemetry {
@@ -531,7 +404,6 @@ impl TurnTelemetry {
             todo_gate_intent_count: 0,
             todo_gate_completion_count: 0,
             todo_gate_spike_count: 0,
-            completion_review: CompletionReviewTelemetryState::default(),
         }
     }
 }
@@ -876,6 +748,20 @@ pub fn record_todo_update(update: TodoTelemetryUpdate) {
         && let Some(state) = guard.as_mut()
     {
         state.todo.record(update);
+    }
+}
+
+pub fn record_completion_review(update: CompletionReviewTelemetry) {
+    if !is_enabled() {
+        return;
+    }
+    if let Ok(mut guard) = SESSION_STATE.lock()
+        && let Some(state) = guard.as_mut()
+    {
+        state.completion_review.record(update);
+        if let Some(turn) = state.current_turn.as_mut() {
+            turn.completion_review.record(update);
+        }
     }
 }
 
@@ -2103,7 +1989,6 @@ fn begin_session_with_mode(
         provider_switches: 0,
         model_switches: 0,
         todo: TodoSessionTelemetry::default(),
-        completion_review: CompletionReviewTelemetryState::default(),
     };
     // A live session in the slot means the process is switching sessions
     // without anyone calling end_session (agent create/attach both call

@@ -136,6 +136,7 @@ pub(super) fn emit_lifecycle_event(
                 provider_switches: s.provider_switches,
                 model_switches: s.model_switches,
                 todo: s.todo.clone(),
+                completion_review: s.completion_review.clone(),
             },
             None => return,
         };
@@ -407,6 +408,62 @@ pub(super) fn todo_session_event(
         end_to_end_ownership_min: todo.end_to_end_ownership.min,
         end_to_end_ownership_mean: todo.end_to_end_ownership.mean,
         end_to_end_ownership_count: todo.end_to_end_ownership.count,
+        completion_review_count: state.completion_review.count,
+        completion_review_grouped_goal_count: state.completion_review.grouped_goal_count,
+        completion_review_ungrouped_goal_count: state.completion_review.ungrouped_goal_count,
+        completion_review_continuation_cycles: state.completion_review.continuation_cycles,
+        completion_review_repeated_prompt_count: state.completion_review.repeated_prompt_count,
+        completion_review_trigger_gate_digest_count: state
+            .completion_review
+            .trigger_gate_digest_count,
+        completion_review_trigger_long_session_count: state
+            .completion_review
+            .trigger_long_session_count,
+        completion_review_trigger_ownership_count: state
+            .completion_review
+            .trigger_ownership_count,
+        completion_review_trigger_completion_confidence_count: state
+            .completion_review
+            .trigger_completion_confidence_count,
+        completion_review_trigger_confidence_spike_count: state
+            .completion_review
+            .trigger_confidence_spike_count,
+        completion_review_trigger_auto_poke_count: state.completion_review.trigger_auto_poke_count,
+        completion_review_concern_intent_count: state.completion_review.concern_intent_count,
+        completion_review_concern_closed_feedback_loop_count: state
+            .completion_review
+            .concern_closed_feedback_loop_count,
+        completion_review_concern_feedback_loop_relevance_count: state
+            .completion_review
+            .concern_feedback_loop_relevance_count,
+        completion_review_concern_feedback_loop_coverage_count: state
+            .completion_review
+            .concern_feedback_loop_coverage_count,
+        completion_review_concern_feedback_loop_traceability_count: state
+            .completion_review
+            .concern_feedback_loop_traceability_count,
+        completion_review_concern_ownership_count: state.completion_review.concern_ownership_count,
+        completion_review_concern_completion_confidence_count: state
+            .completion_review
+            .concern_completion_confidence_count,
+        completion_review_concern_incomplete_todo_count: state
+            .completion_review
+            .concern_incomplete_todo_count,
+        completion_review_concern_stale_assessment_count: state
+            .completion_review
+            .concern_stale_assessment_count,
+        completion_review_resolution_pending_count: state
+            .completion_review
+            .resolution_pending_count,
+        completion_review_resolution_resolved_count: state
+            .completion_review
+            .resolution_resolved_count,
+        completion_review_resolution_unresolved_count: state
+            .completion_review
+            .resolution_unresolved_count,
+        completion_review_resolution_exhausted_count: state
+            .completion_review
+            .resolution_exhausted_count,
         schema_version,
         build_channel,
         is_git_checkout,
