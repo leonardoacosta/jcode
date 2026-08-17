@@ -39,6 +39,40 @@ Azure topology outputs SHALL make admitted package-local SVG marks and full reso
 - **WHEN** a scene or sidecar references an icon outside the admitted sprite and declared mappings
 - **THEN** validation fails instead of rendering an abbreviation or guessed service mark
 
+#### Scenario: Use a declared family fallback
+- **WHEN** an evidenced service has no service-specific admitted mark but has an explicit admitted family mapping
+- **THEN** the mapped family SVG is rendered with the full service name and resource type
+- **AND** the family mark never replaces or abbreviates the visible textual identity
+- **AND** `azure-tokens.json` supplies both the ARM-resource-type-to-family mapping and family-to-admitted-symbol mapping without a sidecar override
+
+### Requirement: Canonical Azure topology ontology
+Azure topology outputs SHALL follow the approved pinned Bicep traffic-audit ontology and SHALL NOT promote configuration, network boundaries, or unevidenced infrastructure into resource cubes.
+
+#### Scenario: Represent deployable resources and network boundaries
+- **WHEN** a topology includes deployable Azure services, application hosts, VNets, subnets, CIDRs, or peerings
+- **THEN** only the deployable services and evidenced application hosts render as uniform resource cubes or resource cards
+- **AND** VNets and subnets render as containment areas, CIDRs render as fields on those areas, and peerings render as labeled edges
+
+#### Scenario: Represent a private endpoint and its PaaS service
+- **WHEN** source evidence binds a private endpoint to a subnet and a PaaS service
+- **THEN** the private endpoint resource renders inside the subnet
+- **AND** the PaaS resource remains outside the subnet unless direct evidence proves the service itself is integrated there
+
+#### Scenario: Keep configuration as metadata
+- **WHEN** APIM APIs, products, policies, named values, subscriptions, configurations, or partner relations are discovered
+- **THEN** they enrich the owning APIM resource's metadata and evidence details
+- **AND** they do not render as standalone topology nodes
+
+#### Scenario: Distinguish evidence strength and deployment state
+- **WHEN** a relationship is directly evidenced, inferred, or gated/not deployed
+- **THEN** a direct relationship is solid, an inferred relationship is visibly non-solid and labeled, and a gated/not-deployed relationship is non-animated and explicitly marked
+- **AND** an unsupported relationship is omitted rather than implied by proximity
+
+#### Scenario: Preserve legacy Runtime path compatibility
+- **WHEN** a core scene path omits `evidence_level`
+- **THEN** the renderer and validator treat it as `direct`
+- **AND** explicit `inferred` or `held` values use the same non-solid, labeled, and non-animated semantics as Network links
+
 ### Requirement: Focused Runtime projection
 The Runtime view SHALL retain the isometric request-flow language while excluding support-plane elements that do not participate in the declared runtime story.
 
@@ -59,11 +93,13 @@ The Network view SHALL render explicit Azure containment and network relationshi
 - **WHEN** evidence supports Subscription, Resource Group, VNet, Subnet, and resource membership
 - **THEN** the view nests the corresponding containers in that order
 - **AND** every resource card appears inside its declared parent container
+- **AND** subnet CIDRs appear as fields on the subnet container rather than resource nodes
 
 #### Scenario: Render a network relationship
 - **WHEN** the sidecar declares a peering, private endpoint, DNS link, or network data path
 - **THEN** the view renders a directed or bidirectional orthogonal connector with a visible intent label
 - **AND** the relationship exposes its structured evidence
+- **AND** its direct, inferred, or held evidence level determines a text-redundant line treatment
 
 #### Scenario: Reject invalid containment
 - **WHEN** container parents form a cycle, a member is unknown, or a link target is missing
@@ -149,6 +185,12 @@ Views-enabled artifacts SHALL be reproducible, self-contained, and protected by 
 - **AND** the gallery links directly to every view and previews the configured default Network view
 - **AND** desktop and narrow browser acceptance checks complete without console errors, clipped controls, or inaccessible content
 
+#### Scenario: Preserve the audited Brown and Decus estate boundary
+- **WHEN** the private Brown and Decus review artifacts are generated from the pinned audit snapshot
+- **THEN** Wholesale 346 is shown as the shared Cloudflare and APIM edge and Decus 537 is shown as a separate landing-zone and data foundation
+- **AND** Aggregates and DecusDirect compute hosts are absent until deployment evidence is supplied
+- **AND** Decus hub peering is held/not deployed rather than shown as an active resource or solid traffic path
+
 #### Scenario: Deliver a reproducible private review bundle
 - **WHEN** a Brown or Decus private artifact is published to the private gallery
 - **THEN** its directory contains `scene.json`, `views.json`, `map.html`, `generation-receipt.json`, and `run-notes.md`
@@ -158,4 +200,6 @@ Views-enabled artifacts SHALL be reproducible, self-contained, and protected by 
 #### Scenario: Run canonical browser acceptance
 - **WHEN** the tracked Chromium acceptance command runs against the generic, Brown, and Decus artifacts
 - **THEN** it exercises file and loopback-HTTP loading, all direct view fragments, keyboard tab operation, selection retention, desktop, 320 CSS-pixel, 200-percent zoom, reduced-motion, and JavaScript-disabled modes
+- **AND** it verifies direct/inferred/held line treatment and labels in Runtime and Network
+- **AND** it opens the private gallery and verifies every deep link plus each default Network preview
 - **AND** it fails on console or page errors, horizontal clipping, inaccessible controls, missing document-order fallback content, or unexpected network requests

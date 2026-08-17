@@ -4,6 +4,8 @@ The existing Canvas renderer embeds the package-local Azure SVG sprite and proje
 
 The approved direction is intentionally iterative rather than visually final. It establishes stable information architecture and acceptance constraints while leaving spacing, card density, and connector routing open to browser-based refinement. The core `scene.json` remains the authority for isometric facts and must not acquire dashboard or tab configuration.
 
+The canonical modeling reference is the approved Decus and Wholesale Bicep traffic audit at `brown/wholesale@46be8f57:docs/diagrams/decus-wholesale-bicep-traffic-audit.md` (SHA-256 `e65616d1b6728561e8ac8f60eae8bce5c841f06323e72fa1465d0c66a7cd13f5`). It is a read-only evidence input. Its ontology is normative for this change: VNets and subnets are containment areas, CIDRs are fields, peerings are edges, and only deployable Azure resources or evidenced application hosts become uniform cubes.
+
 ## Goals / Non-Goals
 
 **Goals:**
@@ -15,6 +17,8 @@ The approved direction is intentionally iterative rather than visually final. It
 - Show Azure network nesting and ADO stage ordering explicitly rather than through proximity.
 - Preserve standalone, local-only, accessible, responsive, and deterministic artifacts.
 - Keep existing scene-only rendering backward compatible.
+- Encode the approved distinction between directly evidenced, inferred, held/not-deployed, and unsupported relationships.
+- Keep private endpoints inside their evidenced subnet while keeping the connected PaaS resource outside the subnet unless source evidence proves direct integration.
 
 **Non-Goals:**
 
@@ -23,6 +27,8 @@ The approved direction is intentionally iterative rather than visually final. It
 - Infer missing VNets, subnets, pipeline stages, approvals, or runtime traffic without direct evidence.
 - Modify Brown, Decus, Azure, or Azure DevOps infrastructure.
 - Turn every Bicep module or pipeline parameter into a visible card.
+- Render APIM APIs, products, policies, named values, subscriptions, configuration, or partner relations as standalone infrastructure nodes.
+- Invent application hosts, active peerings, or data ownership absent from the audited source tree.
 - Freeze the final spacing or illustration polish before browser iteration.
 
 ## Decisions
@@ -71,6 +77,8 @@ The implementation adds `references/topology-views.schema.json` as the machine-r
 
 Network containers have a unique `id`, `kind` in `subscription | resource-group | vnet | subnet`, full `label`, optional `parent_id`, textual `status`, and direct structured `evidence`. Membership objects pair one `container_id` with one scene `node_id` and carry direct structured evidence. Network links have a unique `id`, `kind` in `peering | private-endpoint | dns | data`, `source_id`, `target_id`, `direction` in `forward | reverse | both`, full `label`, and direct structured evidence.
 
+Subnet containers may carry an optional non-empty string `cidr` field. CIDR and address-space values belong on their network containers, never in a resource-cube label. Network links declare `evidence_level` in `direct | inferred | held`; direct links render solid, inferred links render visibly dashed and labeled, and held links render non-animated with explicit not-deployed text. Every level still carries evidence explaining the exact supported or unsupported claim.
+
 Pipeline stages have a unique `id`, full `label`, `stage_type` in `repository | validation | build | artifact | gate | deployment | held`, an admitted `icon`, textual `status`, optional `parallel_group`, optional non-negative integer `lane`, optional scene `target_node_id`, and direct structured evidence. Pipeline edges have a unique `id`, source and target stage IDs, full `label`, `kind` in `automatic | dependency | approval | manual | held`, and direct structured evidence. Stage graphs must be acyclic and deterministic rank ties are resolved by declared lane and then input order.
 
 Every evidence entry is exactly `{ "path": string, "lines": string, "claim": string }`, with three non-empty values. Containers, memberships, network links, stages, and pipeline edges must each cite their own direct evidence; evidence is never inherited from a parent, adjacent node, or implied relationship. Runtime references reuse the already validated scene-node, scene-path, and flow evidence. The validator rejects identity drift, duplicate IDs, duplicate membership, containment cycles, unknown references, omitted traffic-layer members, unsupported icons, missing direct evidence, and cyclic or dangling pipeline edges with stable field paths.
@@ -92,7 +100,9 @@ For Network and ADO cards:
 - the same admitted SVG is at least 24 CSS pixels in the primary desktop layout;
 - full name and service/stage type are always visible;
 - unsupported icon IDs fail validation;
-- an evidenced resource without a service-specific mark uses an admitted neutral family-appropriate mark only when that mapping is declared in the sidecar or token catalog; otherwise rendering fails rather than inventing identity.
+- an evidenced resource without a service-specific mark uses an admitted family-appropriate mark only when that fallback mapping is declared in the sidecar or token catalog and the full service name remains visible; otherwise rendering fails rather than inventing identity.
+
+The version 1 fallback vocabulary is package-owned, not sidecar-authored. `assets/azure-tokens.json` defines `resource_type_family` as a mapping from full ARM resource type to one of the declared family IDs and `family_icon_fallbacks` as a mapping from each family ID to one admitted sprite symbol. A node may omit `icon` only when both mappings resolve deterministically; otherwise validation fails at the node's icon field. A sidecar cannot override either mapping. Stable diagnostics identify the unmapped resource type, family, or missing sprite symbol.
 
 ### 4. Curate each projection rather than hiding clutter cosmetically
 
@@ -100,7 +110,11 @@ Runtime renders only declared runtime node and path IDs. Brown and Decus Runtime
 
 Network renders only sourced containment, network attachments, peerings, DNS, private endpoints, and the resources needed to understand those relationships. Pipeline delivery edges do not appear.
 
+Configuration-only objects remain metadata on the owning deployable resource. In particular, APIM APIs, products, policies, named values, subscriptions, configurations, and partner relations may enrich APIM evidence/details but never become cubes or Network resource cards. Shared infrastructure is decomposed into its constituent evidenced Bicep resources instead of a generic shared-infrastructure node.
+
 ADO renders source, build/validation, artifact, parallel jobs/stages, approvals or held gates, and deployment targets. Runtime dependency and network data paths do not appear.
+
+Core scene paths may carry optional `evidence_level` in `direct | inferred | held`. Omission means `direct` for backward compatibility with existing scene-only artifacts. Runtime path rendering uses the same text-redundant semantics as Network links: direct is solid, inferred is visibly non-solid and includes an `INFERRED` label, and held is non-animated and includes a `HELD · NOT DEPLOYED` label.
 
 ### 5. Use explicit containment and deterministic layout for Network
 
@@ -109,6 +123,8 @@ The Network view nests containers in this order when evidenced:
 `Subscription → Resource Group → VNet → Subnet → Resource card`
 
 Hub/spoke and held/future modifiers are textual and semantic. Resource cards are placed by declared membership in responsive CSS grids. An SVG overlay draws orthogonal, labeled links after layout measurement. The renderer rejects cycles in the containment tree, duplicate membership within one projection, missing parent containers, and links to unknown targets.
+
+Private endpoint resources are members of their evidenced subnet. Their connected PaaS services remain at resource-group scope unless direct source evidence places the service itself in a network integration boundary. VNet and subnet containers, CIDRs, peerings, and gated network declarations never render as resource cubes.
 
 On narrow screens, top-level containers stack vertically and links reroute from measured anchors. Text summaries remain available if SVG overlay geometry cannot be measured.
 
@@ -139,12 +155,13 @@ The tracked, dependency-free command is:
 ```text
 python3 skills/isometric-system-map/scripts/verify_views_browser.py \
   --chromium "$(command -v chromium)" \
+  --gallery output/system-maps/index.html \
   --artifact docs/diagrams/isometric-canvas-azure.html \
   --artifact output/system-maps/brown-decus-dashboard-map/map.html \
   --artifact output/system-maps/brown-decus-portal-ecosystem/map.html
 ```
 
-The harness starts its own loopback static server, launches Chromium headlessly through the DevTools protocol, and fails with artifact- and assertion-specific diagnostics. For every artifact it exercises direct `#runtime`, `#network`, and `#ado` URLs; Arrow/Home/End plus Enter/Space tab operation; selection retention; desktop, 320 CSS-pixel, and 200-percent zoom layouts; reduced motion; JavaScript-disabled document-order content; console and page errors; horizontal clipping; focusability; and unexpected network requests. It also opens the artifact through `file://` and HTTP. No package download or externally hosted browser driver is permitted.
+The harness starts its own loopback static server, launches Chromium headlessly through the DevTools protocol, and fails with artifact- and assertion-specific diagnostics. For every artifact it exercises direct `#runtime`, `#network`, and `#ado` URLs; Arrow/Home/End plus Enter/Space tab operation; selection retention; desktop, 320 CSS-pixel, and 200-percent zoom layouts; reduced motion; JavaScript-disabled document-order content; direct/inferred/held line treatment and labels; console and page errors; horizontal clipping; focusability; and unexpected network requests. It also opens each artifact through `file://` and HTTP. The gallery assertion opens the supplied gallery, verifies every Runtime/Network/ADO deep link, and verifies each preview targets the declared default Network view. No package download or externally hosted browser driver is permitted.
 
 ## Uncertainty Disposition
 
@@ -156,6 +173,7 @@ The harness starts its own loopback static server, launches Chromium headlessly 
 | Approved icon source | Discoverable fact | Use the package-local admitted Azure sprite and provenance-approved extensions only | Remote icons; untracked Microsoft artwork; arbitrary text glyphs |
 | Exact spacing and label density | Safe reversible default | Start with 78% roof icons, 24px card icons, and two-line labels, then browser-tune | Freeze current density; allow abbreviations |
 | Missing icon behavior | Later evidence-dependent action | Require an admitted mapping or fail validation | Guess a service icon |
+| Canonical Azure topology ontology | Discoverable fact, user-approved | Follow the pinned Bicep traffic audit and its direct/inferred/held distinctions | Preserve aggregate cubes or configuration-as-node shortcuts |
 
 ## Risks / Trade-offs
 
@@ -166,6 +184,7 @@ The harness starts its own loopback static server, launches Chromium headlessly 
 - **Private acceptance output can become irreproducible** → Deliver its scene, sidecar, deterministic receipt, run notes, and exact generation command as one private bundle.
 - **Ad hoc browser probing can miss regressions** → Make the tracked Chromium DevTools harness the named acceptance gate and keep screenshots as supplemental evidence only.
 - **An icon may be semantically wrong despite being visually attractive** → Validate admitted IDs and explicit mappings; fail unsupported resources instead of guessing.
+- **A diagram may imply infrastructure that the source does not deploy** → Reject metadata-as-node representations, keep missing hosts absent, and render gated or inferred relationships with explicit non-solid semantics.
 - **The design is approved but not visually final** → Treat browser screenshots as iterative acceptance evidence and retain reversible spacing tokens.
 
 ## Migration Plan
@@ -174,7 +193,7 @@ The harness starts its own loopback static server, launches Chromium headlessly 
 2. Add optional views rendering while preserving byte-identical scene-only generation where intended.
 3. Update the Azure theme's icon and label treatment.
 4. Add a generic views fixture and tracked Azure example.
-5. Author Brown and Decus sidecars, regenerate private pages and gallery, then browser-tune.
+5. Remodel Brown and Decus inputs against the pinned audit, author sidecars, regenerate private pages and gallery, then browser-tune.
 6. Keep the previous committed renderer available through scene-only invocation; rollback is removal of `--views` usage and restoration of the prior Azure theme commit.
 
 ## Open Questions
