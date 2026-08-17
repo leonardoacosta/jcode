@@ -103,3 +103,4 @@
 - [x] 9.2 Render source provenance, category, approval state, and delivery evidence in SolidStart with responsive and fail-soft behavior.
 - [x] 9.3 Verify focused Rust suites, 19 Solid tests, TypeScript compilation, production packaging, 11 deterministic Playwright workflows, both real isolated-host browser projects, strict OpenSpec validation, and the intake architecture boundary.
 - [ ] 9.4 Run credential-gated live Telegram and Slack ingestion acceptance. Repository fixtures do not satisfy this operational gate.
+  - 2026-08-17 Telegram evidence: fixed the long-poll timeout race, ingested a genuine operator reply, observed it through the authenticated managed host, and rendered it in both real Playwright projects. Slack Socket Mode remains outstanding, so 9.4 stays open.
