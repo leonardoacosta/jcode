@@ -920,14 +920,6 @@
           center: { x: center.x, y: center.y },
         });
       });
-      if (trafficLayers.length > 1) {
-        const first = state.trafficLayerGeometry[0].center;
-        const last = state.trafficLayerGeometry[state.trafficLayerGeometry.length - 1].center;
-        THEME.drawTrafficDirection(ctx, [first, last], {
-          direction: "bottom-left-to-top-right",
-          label: "INCOMING TRAFFIC",
-        }, state);
-      }
       state.areaHits = [];
       state.areaGeometry = [];
       SCENE.areas.forEach(area => {
