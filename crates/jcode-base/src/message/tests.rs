@@ -355,6 +355,7 @@ fn with_timestamps_adds_tool_timing_header_with_duration() -> Result<()> {
             tool_use_id: "call_1".to_string(),
             content: "ok".to_string(),
             is_error: None,
+            outcome: None,
             artifact: None,
         }],
         timestamp: Some(ts),

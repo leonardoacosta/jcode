@@ -1245,6 +1245,7 @@ impl App {
                             tool_use_id: tc.id.clone(),
                             content: sdk_content,
                             is_error: if sdk_is_error { Some(true) } else { None },
+                            outcome: None,
                             artifact: None,
                         }],
                         timestamp: Some(chrono::Utc::now()),
@@ -1256,6 +1257,7 @@ impl App {
                             tool_use_id: tc.id.clone(),
                             content: String::new(), // Already added to messages above
                             is_error: if sdk_is_error { Some(true) } else { None },
+                            outcome: None,
                             artifact: None,
                         }],
                     );
@@ -1465,6 +1467,7 @@ impl App {
                         tool_use_id: tc.id.clone(),
                         content: output.clone(),
                         is_error: if is_error { Some(true) } else { None },
+                        outcome: None,
                         artifact: None,
                     }],
                     Some(tool_duration_ms),

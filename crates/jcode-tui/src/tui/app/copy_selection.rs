@@ -195,6 +195,7 @@ impl App {
                             tool_use_id,
                             content: markdown.clone(),
                             is_error: None,
+                            outcome: None,
                             artifact: Some(artifact.clone()),
                         }],
                         timestamp: Some(chrono::Utc::now()),

@@ -89,6 +89,7 @@ pub fn format_messages(messages: &[Message], is_oauth: bool) -> Vec<ApiMessage> 
                             "[Session interrupted before tool execution completed]".to_string(),
                         ),
                         is_error: true,
+                        outcome: None,
                     });
                 }
             }
@@ -207,6 +208,7 @@ pub fn format_messages(messages: &[Message], is_oauth: bool) -> Vec<ApiMessage> 
 /// Returns true when a tool_result body is one of the synthetic placeholders
 /// injected by the missing tool-output repair paths rather than real output.
 fn is_placeholder_tool_result(content: &str, is_error: Option<bool>) -> bool {
+outcome: None,
     is_error.unwrap_or(false)
         && (content.contains(TOOL_OUTPUT_MISSING_TEXT)
             || content.contains("[Session interrupted before tool execution completed]"))
@@ -356,6 +358,7 @@ pub fn format_content_blocks(blocks: &[ContentBlock], is_oauth: bool) -> Vec<Api
                     tool_use_id: sanitize_tool_id(tool_use_id),
                     content: ToolResultContent::Text(content.clone()),
                     is_error: is_error.unwrap_or(false),
+                    outcome: None,
                 });
             }
             ContentBlock::Image { media_type, data } => {
@@ -849,6 +852,7 @@ pub enum ApiContentBlock {
         content: ToolResultContent,
         #[serde(skip_serializing_if = "std::ops::Not::not")]
         is_error: bool,
+        outcome: None,
     },
     #[serde(rename = "thinking")]
     Thinking { thinking: String, signature: String },

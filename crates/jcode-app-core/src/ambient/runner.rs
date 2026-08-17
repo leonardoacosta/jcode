@@ -434,6 +434,7 @@ impl AmbientRunnerHandle {
                 child.is_canary = parent.is_canary;
                 child.testing_build = parent.testing_build.clone();
                 child.is_debug = parent.is_debug;
+                child.origin = parent.origin;
                 child.memory_injections = parent.memory_injections.clone();
                 child.replay_events = parent.replay_events.clone();
                 child.working_dir = item.working_dir.clone().or(parent.working_dir.clone());

@@ -486,6 +486,7 @@ fn cached_imported_session_preserves_existing_history_verbatim() {
             tool_use_id: "legacy/call".to_string(),
             content: "done".to_string(),
             is_error: Some(false),
+            outcome: None,
             artifact: None,
         }],
         display_role: None,

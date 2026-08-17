@@ -222,6 +222,7 @@ impl Agent {
         let preserve_canary = self.session.is_canary;
         let preserve_testing_build = self.session.testing_build.clone();
         let preserve_debug = self.session.is_debug;
+        let preserve_origin = self.session.origin;
         let preserve_working_dir = self.session.working_dir.clone();
 
         self.session.mark_closed();
@@ -234,6 +235,7 @@ impl Agent {
         new_session.is_canary = preserve_canary;
         new_session.testing_build = preserve_testing_build;
         new_session.is_debug = preserve_debug;
+        new_session.origin = preserve_origin;
         new_session.working_dir = preserve_working_dir;
         new_session.ensure_initial_session_context_message();
 
@@ -604,6 +606,7 @@ impl Agent {
                 tool_use_id: tool_call_id,
                 content: error,
                 is_error: Some(true),
+                outcome: None,
                 artifact: None,
             }],
             Some(duration_ms),

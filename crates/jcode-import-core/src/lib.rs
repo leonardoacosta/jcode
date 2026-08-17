@@ -1395,6 +1395,7 @@ mod tests {
                 tool_use_id: "tool".into(),
                 content: " result ".into(),
                 is_error: None,
+                outcome: None,
                 artifact: None,
             },
             ClaudeCodeContentBlock::Unknown,

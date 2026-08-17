@@ -376,6 +376,7 @@ mod tests {
                     tool_use_id: "tool_1".to_string(),
                     content: "hello from tool".to_string(),
                     is_error: None,
+                    outcome: None,
                     artifact: None,
                 },
             ],

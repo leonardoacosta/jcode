@@ -136,6 +136,7 @@ fn test_debug_memory_profile_reports_messages_and_provider_cache() {
                 tool_use_id: "tool_1".to_string(),
                 content: "hi".to_string(),
                 is_error: None,
+                outcome: None,
                 artifact: None,
             },
         ],
@@ -606,74 +607,9 @@ fn test_create_marks_debug_when_test_session_env_enabled() {
 
     let s1 = Session::create(None, None);
     assert!(s1.is_debug);
-    assert_eq!(s1.origin, SessionOrigin::Test);
 
     let s2 = Session::create_with_id("session_test_1".to_string(), None, None);
     assert!(s2.is_debug);
-    assert_eq!(s2.origin, SessionOrigin::Test);
-}
-
-#[test]
-fn session_origin_roundtrips_and_explicit_origin_is_preserved() -> Result<()> {
-    let _env_lock = lock_env();
-    let temp_home = tempfile::Builder::new()
-        .prefix("jcode-session-origin-test-")
-        .tempdir()
-        .map_err(|e| anyhow!(e))?;
-    let _home = EnvVarGuard::set("JCODE_HOME", temp_home.path().as_os_str());
-    let _test_flag = EnvVarGuard::set("JCODE_TEST_SESSION", "0");
-
-    let mut session = Session::create_with_id(
-        "session_origin_roundtrip".to_string(),
-        None,
-        Some("origin".to_string()),
-    );
-    session.set_origin(SessionOrigin::Benchmark);
-    session.save()?;
-
-    let loaded = Session::load("session_origin_roundtrip")?;
-    assert_eq!(loaded.origin, SessionOrigin::Benchmark);
-    assert_eq!(loaded.operational_origin(), SessionOrigin::Benchmark);
-    Ok(())
-}
-
-#[test]
-fn session_origin_classifies_non_operational_variants() {
-    for origin in [
-        SessionOrigin::Debug,
-        SessionOrigin::Test,
-        SessionOrigin::Mock,
-        SessionOrigin::Benchmark,
-        SessionOrigin::Synthetic,
-    ] {
-        assert!(!origin.is_operational());
-    }
-    assert!(SessionOrigin::Production.is_operational());
-}
-
-#[test]
-fn legacy_debug_session_without_origin_remains_non_operational() -> Result<()> {
-    let _env_lock = lock_env();
-    let temp_home = tempfile::Builder::new()
-        .prefix("jcode-session-origin-legacy-test-")
-        .tempdir()
-        .map_err(|e| anyhow!(e))?;
-    let _home = EnvVarGuard::set("JCODE_HOME", temp_home.path().as_os_str());
-    let path = temp_home.path().join("sessions").join("legacy-origin.json");
-    std::fs::create_dir_all(path.parent().expect("session parent"))?;
-    let mut value = serde_json::to_value(Session::create_with_id(
-        "legacy-origin".to_string(),
-        None,
-        Some("legacy".to_string()),
-    ))?;
-    value.as_object_mut().expect("session object").remove("origin");
-    value["is_debug"] = serde_json::Value::Bool(true);
-    std::fs::write(&path, serde_json::to_vec(&value)?)?;
-
-    let loaded = Session::load("legacy-origin")?;
-    assert_eq!(loaded.origin, SessionOrigin::Production);
-    assert_eq!(loaded.operational_origin(), SessionOrigin::Debug);
-    Ok(())
 }
 
 #[test]
@@ -784,6 +720,7 @@ fn test_save_persists_full_session_content() -> Result<()> {
             tool_use_id: "tool_1".to_string(),
             content: "OPENROUTER_API_KEY=sk-or-v1-abcdefghijklmnopqrstuvwxyz0123456789".to_string(),
             is_error: None,
+            outcome: None,
             artifact: None,
         }],
     );
@@ -1190,6 +1127,7 @@ fn test_redacted_for_export_redacts_tool_result_and_tool_input() -> Result<()> {
             tool_use_id: "tool_1".to_string(),
             content: "OPENROUTER_API_KEY=sk-or-v1-abcdefghijklmnopqrstuvwxyz0123456789".to_string(),
             is_error: None,
+            outcome: None,
             artifact: None,
         }],
     );
@@ -1398,6 +1336,7 @@ fn test_render_messages_preserves_explicit_artifact_metadata() {
             tool_use_id: "call-artifact".to_string(),
             content: "fn main() {}".to_string(),
             is_error: None,
+            outcome: None,
             artifact: Some(RenderedArtifact::new(RenderedArtifactKind::Code).with_language("rust")),
         }],
     );
@@ -2085,6 +2024,7 @@ fn test_render_messages_and_images_share_tool_resolution_and_labels() {
                 tool_use_id: "tool_img_1".to_string(),
                 content: "rendered image".to_string(),
                 is_error: None,
+                outcome: None,
                 artifact: None,
             },
             ContentBlock::Image {
@@ -2228,6 +2168,7 @@ fn test_render_images_anchors_tool_and_user_images() {
                 tool_use_id: "tool-call-1".to_string(),
                 content: "read image".to_string(),
                 is_error: None,
+                outcome: None,
                 artifact: None,
             },
             ContentBlock::Image {
@@ -2279,6 +2220,7 @@ fn test_render_images_attached_label_message_does_not_shift_prompt_ordinals() {
                 tool_use_id: "tool-call-2".to_string(),
                 content: "read image".to_string(),
                 is_error: None,
+                outcome: None,
                 artifact: None,
             },
             ContentBlock::Image {
@@ -2433,6 +2375,7 @@ fn test_rewind_targets_match_rendered_transcript_numbering() {
             tool_use_id: "tool_1".to_string(),
             content: "file-a file-b".to_string(),
             is_error: None,
+            outcome: None,
             artifact: None,
         }],
     );

@@ -851,6 +851,7 @@ async fn test_no_repair_when_tool_results_present() {
                 tool_use_id: "tool_123".to_string(),
                 content: "file1.txt\nfile2.txt".to_string(),
                 is_error: Some(false),
+                outcome: None,
                 artifact: None,
             }],
             timestamp: None,
@@ -893,6 +894,7 @@ async fn test_parallel_image_tool_results_stay_contiguous() {
                 tool_use_id: id.to_string(),
                 content: format!("Image: {label}"),
                 is_error: None,
+                outcome: None,
                 artifact: None,
             },
             ContentBlock::Image {
@@ -1476,6 +1478,7 @@ async fn test_sanitize_tool_ids_with_dots() {
                 tool_use_id: "chatcmpl-BF2xX.tool_call.0".to_string(),
                 content: "file1.txt".to_string(),
                 is_error: None,
+                outcome: None,
                 artifact: None,
             }],
             timestamp: None,

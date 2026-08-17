@@ -198,6 +198,7 @@ enum CliOutput {
     Result {
         #[serde(default)]
         is_error: bool,
+        outcome: None,
         #[serde(default)]
         usage: Option<UsageInfo>,
         #[serde(default)]
@@ -233,6 +234,7 @@ enum SdkContentBlock {
         content: Option<Value>,
         #[serde(default)]
         is_error: Option<bool>,
+        outcome: None,
     },
     #[serde(other)]
     Other,
@@ -526,6 +528,7 @@ impl CliOutputParser {
                                 tool_use_id,
                                 content: content_str,
                                 is_error: is_error.unwrap_or(false),
+                                outcome: None,
                             });
                         }
                         _ => {}
@@ -562,6 +565,7 @@ impl CliOutputParser {
                             tool_use_id,
                             content: content_str,
                             is_error: is_error.unwrap_or(false),
+                            outcome: None,
                         });
                     }
                 }

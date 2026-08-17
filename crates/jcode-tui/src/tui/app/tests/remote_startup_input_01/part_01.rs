@@ -219,6 +219,7 @@ fn test_prepare_review_spawned_session_uses_visible_transcript_for_judge_session
                     tool_use_id: tool_id.clone(),
                     content: "SECRET_TOOL_OUTPUT_SHOULD_NOT_APPEAR".to_string(),
                     is_error: None,
+                    outcome: None,
                     artifact: None,
                 }],
             );
