@@ -33,6 +33,7 @@ pub mod catchup;
 pub mod channel;
 pub mod command_center;
 pub mod external_auth;
+pub mod external_signal;
 pub mod mission;
 pub mod network_retry;
 pub mod notifications;

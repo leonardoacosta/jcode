@@ -1199,6 +1199,7 @@ impl Server {
         let debug_handle = runtime.spawn_debug_accept_loop(debug_listener, server_start_time);
 
         crate::command_center::spawn_managed_http_host(&runtime).await;
+        crate::external_signal::spawn_managed_http_host(&runtime).await;
 
         crate::logging::info("Accept loop tasks spawned");
 
