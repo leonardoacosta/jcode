@@ -1267,8 +1267,8 @@ mod tests {
         std::fs::remove_file(path).ok();
     }
 
-    #[test]
-    fn admission_persists_when_existing_store_has_backup() {
+    #[tokio::test]
+    async fn admission_persists_when_existing_store_has_backup() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("state.json");
         let cfg = config();
