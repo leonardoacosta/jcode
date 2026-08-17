@@ -64,6 +64,26 @@ Before coding, understand the context and commit to a BOLD aesthetic direction:
 **CRITICAL**: Choose a clear conceptual direction and execute it with precision. Bold maximalism and
 refined minimalism both work - the key is intentionality, not intensity.
 
+### Product-specificity gates
+
+Before implementation, prove the direction belongs to this product rather than merely looking
+polished:
+
+- **Logo-swap test:** mentally replace the name, logo, and accent color with a neighboring product.
+  If the page still reads as equally plausible, the direction fails. Change at least one structural
+  choice (content hierarchy, interaction model, information density, or signature artifact) that
+  follows from this product's users and job.
+- **Reference-transfer ledger:** when using references, record `reference → principle transferred →
+  product-specific transformation`. Transfer a principle, never a recognizable composition. If the
+  transformation column is vague ("make it modern"), do not use that reference yet.
+- **Surface-grammar check:** do not give unrelated regions the same card shell, radius, padding,
+  icon-title-copy stack, and hover behavior. Repetition is allowed only when it communicates the
+  same role. Group by shared function, not by one reusable visual wrapper.
+
+The bundled `references/ui-ux-pro-max/` corpus is retrieval support for mechanics, accessibility,
+responsive behavior, charts, and design-system options. It cannot establish product specificity or
+pass the gates above; its product/style matches are prompts to investigate, not aesthetic evidence.
+
 ## Operating Modes
 
 This skill is not just a generator — it is a diagnostic. Three modes:
@@ -400,8 +420,9 @@ content, not decision-shaping knowledge — see each file's header note for the 
   React component catalogs (shadcn-compatible); componentry's README covers when to reach for
   one vs the other.
 - **[`references/ui-ux-pro-max/README.md`](references/ui-ux-pro-max/README.md)** — searchable
-  design-intelligence database (161 color palettes, 57 font pairings, 99 UX guidelines, 25 chart
-  types across 10 stacks).
+  mechanics/accessibility/design-system retrieval database (161 color palettes, 57 font pairings,
+  99 UX guidelines, 25 chart types across 10 stacks). Do not use its product/style matches as a
+  product-specificity detector.
 - **[`references/ai-media-generation.md`](references/ai-media-generation.md)** — generating
   raster images/video via the `ai` CLI, for assets mermaid/wayfinder/excalidraw (all vector)
   cannot produce.

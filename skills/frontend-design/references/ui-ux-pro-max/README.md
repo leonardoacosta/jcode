@@ -8,6 +8,12 @@
 > `~/.agents/skills@2026-07-13`. See sibling `data/`, `references/`, and `scripts/` in this
 > directory for the searchable rule set.
 
+> **Boundary:** Use this corpus to retrieve implementation mechanics, accessibility checks,
+> responsive/interaction guidance, chart conventions, and design-system options. Its `product`,
+> `style`, palette, and font matches do **not** prove that a direction is specific to the product.
+> Apply `frontend-design`'s logo-swap test, reference-transfer ledger, and surface-grammar check
+> independently. Treat matches here as candidates to evaluate, never as aesthetic authority.
+
 161 rules across 10 categories, searchable via Python CLI. Rules extracted to `references/` for on-demand loading.
 
 ## When to Apply
@@ -28,7 +34,9 @@
 **Skip:**
 - Pure backend logic, API/DB design, non-UI performance, infra/DevOps, non-visual scripts
 
-**Decision criteria**: If the task changes how a feature **looks, feels, moves, or is interacted with**, use this skill.
+**Decision criteria**: If the task changes how a feature **looks, feels, moves, or is interacted
+with**, use this corpus for retrieval after the parent `frontend-design` skill has established the
+product-specific direction.
 
 ## UX Triage
 
@@ -92,7 +100,7 @@ UI problem?
 |----------|-----------------|------------|
 | **New project / page** | "Build a landing page", "Build a dashboard" | Step 1 then Step 2 (design system) |
 | **New component** | "Create a pricing card", "Add a modal" | Step 3 (domain search: style, ux) |
-| **Choose style / color / font** | "What style fits a fintech app?" | Step 2 (design system) |
+| **Explore style / color / font mechanics** | "What options fit this established direction?" | Step 2 (design-system candidates, then apply the parent skill's specificity gates) |
 | **Review existing UI** | "Review this page for UX issues" | Top 10 Rules + Triage tree |
 | **Fix a UI bug** | "Button hover is broken", "Layout shifts" | Triage tree to reference file |
 | **Improve / optimize** | "Make this faster", "Improve mobile UX" | Step 3 (domain search: ux, react) |

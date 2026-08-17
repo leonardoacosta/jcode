@@ -62,6 +62,20 @@ rules are covered under Mechanics Deslop below — not restated here.
 - **Reference real design movements.** Swiss grid, Bauhaus, Emigre, brutalist web, Dutch
   constructivism, Tschichold. Pick one and execute with intent.
 
+### Product-specificity checks
+
+These checks catch generic work that can evade a pattern-by-pattern visual audit:
+
+| Check | Failure signal | Required correction |
+|---|---|---|
+| Logo-swap test | Replacing the logo, name, and accent color with a competitor leaves an equally plausible interface | Add a structural decision derived from the product's actual job, audience, data, or interaction model |
+| Reference-transfer ledger | A reference is cited without `principle transferred → product-specific transformation`, or the transformation is only a style adjective | Transfer the principle, document the transformation, and reject recognizable composition copying |
+| Repeated surface grammar | Unrelated content types all use the same card shell, radius, spacing, icon-title-copy stack, or hover treatment | Repeat a surface grammar only for a repeated semantic role; give distinct roles distinct structures |
+
+Do not treat palette/font/style lookup results as proof of specificity. In particular,
+`ui-ux-pro-max` is a mechanics, accessibility, and design-system retrieval corpus; its product labels
+are search facets, not a product-specificity detector.
+
 ---
 
 ## Mechanics Deslop

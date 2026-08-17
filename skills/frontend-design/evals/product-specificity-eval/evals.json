@@ -1,0 +1,38 @@
+{
+  "skill_name": "frontend-design",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Design a landing page for a veterinary triage service. You found a polished fintech landing page you want to use as the reference.",
+      "expected_output": "Rejects direct composition transfer, records a reference-to-principle-to-product-transformation ledger, and introduces a structural choice specific to veterinary triage.",
+      "files": [],
+      "assertions": [
+        "Applies the logo-swap test and treats an interchangeable result as failure.",
+        "Records reference, transferred principle, and product-specific transformation.",
+        "Does not present ui-ux-pro-max product/style matches as evidence of specificity."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Audit this dashboard where alerts, account details, tutorials, invoices, and team members all use the same rounded card with an icon, title, body copy, and hover lift.",
+      "expected_output": "Names repeated surface grammar as a structural issue and preserves repetition only for components with the same semantic role.",
+      "files": [],
+      "assertions": [
+        "Names repeated surface grammar or structural uniformity, not merely rounded cards.",
+        "Distinguishes semantic repetition from visual-wrapper reuse.",
+        "Recommends different structures for unrelated roles."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Use the bundled ui-ux-pro-max data to decide what makes our warehouse exception-management UI unique, then design it.",
+      "expected_output": "Uses ui-ux-pro-max only for mechanics, accessibility, and design-system retrieval while deriving specificity from warehouse users, data, and workflows.",
+      "files": [],
+      "assertions": [
+        "Explicitly refuses to use ui-ux-pro-max as a product-specificity detector.",
+        "Uses the corpus for retrieval support such as accessibility, responsive behavior, or design-system mechanics.",
+        "Derives at least one structural decision from the warehouse exception-management job."
+      ]
+    }
+  ]
+}
