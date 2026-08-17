@@ -1,0 +1,172 @@
+{
+  "_comment": "Fleet registry: the single source of truth for (a) which app owns which host-port block, and (b) which subdomain every homelab service is reached at. Allocate T3 apps via scripts/port-registry.py; hand-edit infra_services. See SKILL.md \u00a7 Port Allocation and \u00a7 Ingress & DNS.",
+  "scheme": {
+    "dev_base": 5000,
+    "prod_base": 6000,
+    "block_size": 10,
+    "prod_offset": 1000,
+    "_container_note": "Container-internal port = the service's PROD host port (1:1 host:container, e.g. 6000:6000) EXCEPT for services listed in container_ports below. We do NOT use 3000 for web \u2014 Grafana owns 3000 on the homelab. Postgres always binds 5432 internally (it's network-internal only), so it is the one fixed override.",
+    "container_ports": {
+      "postgres": 5432
+    },
+    "service_offsets": {
+      "web": 0,
+      "postgres": 1
+    }
+  },
+  "ingress": {
+    "_comment": "How services are exposed. PRIMARY path is the preference; serve is the fallback.",
+    "domain": "leonardoacosta.dev",
+    "primary": {
+      "mechanism": "traefik",
+      "summary": "Traefik owns host 0.0.0.0:443 (covers LAN AND the tailnet IP in one bind), terminates *.leonardoacosta.dev with a Cloudflare DNS-01 wildcard cert, and Host-routes to each backend. tailscaled MUST NOT hold :443 or it shadows Traefik.",
+      "cert": "Cloudflare DNS-01 wildcard via Traefik certResolver 'cloudflare' (CF_DNS_API_TOKEN). Cloudflare stays the cert authority \u2014 do not replace.",
+      "routes_file": "homelab/traefik/dynamic/routes.yml",
+      "host_native_backend": "http://172.20.0.1:<port> (docker gateway) for services not in a container (homebridge, t3code)"
+    },
+    "dns": {
+      "authority": "Cloudflare (zone owner) \u2014 keep central.",
+      "tailnet_record": "Public Cloudflare A record *.leonardoacosta.dev -> host tailnet IP (100.73.182.4), GREY-CLOUD / DNS-only (Cloudflare cannot proxy a 100.x CGNAT address). Only tailnet peers can route there; the wildcard cert + tailnet ACL gate access.",
+      "lan_record": "AdGuard manifest (homelab/adguardhome/rewrites.yaml) rewrites *.leonardoacosta.dev -> tailnet IP for LAN clients. Coexists with the public record.",
+      "apex": "leonardoacosta.dev apex stays on Vercel (public site); never wildcard-captured."
+    },
+    "fallback": {
+      "mechanism": "tailscale-serve",
+      "summary": "tailscale serve --https=<port> for host-native daemons or a quick HTTPS URL when a Traefik route isn't wired. URL is <host>.ts.net:<port>, NOT a custom domain (tailscaled has no leonardoacosta.dev cert). If the app binds *:<port> it shadows serve on that same port \u2014 serve on a distinct free port. See SKILL.md \u00a7 Exposing a service over Tailscale."
+    }
+  },
+  "infra_services": [
+    {
+      "code": "traefik",
+      "name": "Traefik dashboard",
+      "subdomain": "traefik.leonardoacosta.dev",
+      "backend": "api@internal",
+      "ingress": "traefik",
+      "status": "active",
+      "notes": "homelab-admin middleware"
+    },
+    {
+      "code": "dns",
+      "name": "AdGuard Home",
+      "subdomain": "dns.leonardoacosta.dev",
+      "backend": "http://172.20.0.53:80",
+      "ingress": "traefik",
+      "status": "active",
+      "notes": "homelab-admin middleware; also the LAN DNS authority"
+    },
+    {
+      "code": "photos",
+      "name": "Immich",
+      "subdomain": "photos.leonardoacosta.dev",
+      "backend": "http://172.20.0.130:2283",
+      "ingress": "traefik",
+      "status": "active"
+    },
+    {
+      "code": "grafana",
+      "name": "Grafana",
+      "subdomain": "grafana.leonardoacosta.dev",
+      "backend": "http://172.20.0.192:3000",
+      "ingress": "traefik",
+      "status": "active",
+      "notes": "Behind Traefik since :443 ingress restored 2026-06-20 (was tailscale serve homelab.ts.net:443)."
+    },
+    {
+      "code": "homebridge",
+      "name": "Homebridge UI",
+      "subdomain": "homebridge.leonardoacosta.dev",
+      "backend": "http://172.20.0.1:8581",
+      "ingress": "traefik",
+      "status": "active",
+      "notes": "Host-native daemon (*:8581) via docker gateway; live behind Traefik 2026-06-20. tailscale serve :8443 still up as fallback."
+    },
+    {
+      "code": "t3code",
+      "name": "t3 Code Server",
+      "subdomain": "t3.leonardoacosta.dev",
+      "backend": "http://172.20.0.1:3773",
+      "ingress": "traefik",
+      "status": "active",
+      "notes": "Host-native pm2; needs iptables ACCEPT 172.20.0.0/16 dpt:3773"
+    },
+    {
+      "code": "ha",
+      "name": "Home Assistant",
+      "subdomain": "ha.leonardoacosta.dev",
+      "backend": "http://172.20.0.123:8123",
+      "ingress": "traefik",
+      "status": "off",
+      "notes": "Stopped + restart=no (2026-06-20); being replaced by Homebridge (homebridge-migration). Route removed at cutover."
+    }
+  ],
+  "apps": [
+    {
+      "code": "ap",
+      "name": "Apothecary",
+      "index": 0,
+      "domain": "apothecary.leonardoacosta.dev",
+      "dev_block": [
+        5000,
+        5009
+      ],
+      "prod_block": [
+        6000,
+        6009
+      ],
+      "services": {
+        "web": {
+          "dev": 5000,
+          "prod": 6000,
+          "container": 6000
+        },
+        "postgres": {
+          "dev": 5001,
+          "prod": 6001,
+          "container": 5432
+        }
+      }
+    },
+    {
+      "code": "harness",
+      "name": "Claude Session Hub",
+      "index": 1,
+      "domain": "harness.leonardoacosta.dev",
+      "dev_block": [
+        5010,
+        5019
+      ],
+      "prod_block": [
+        6010,
+        6019
+      ],
+      "services": {
+        "web": {
+          "dev": 5010,
+          "prod": 6010,
+          "container": 6010
+        }
+      }
+    },
+    {
+      "code": "cardscope-checkout",
+      "name": "Card Scope Checkout Server",
+      "index": 2,
+      "domain": "checkout.leonardoacosta.dev",
+      "dev_block": [
+        5020,
+        5029
+      ],
+      "prod_block": [
+        6020,
+        6029
+      ],
+      "services": {
+        "web": {
+          "dev": 5020,
+          "prod": 6020,
+          "container": 6020
+        }
+      }
+    }
+  ]
+}

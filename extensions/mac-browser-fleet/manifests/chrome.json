@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Jcode Mac Browser Fleet for Chrome",
+  "description": "Connects approved Chrome tabs to the local Jcode Mac browser fleet broker.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "120",
+  "incognito": "not_allowed",
+  "background": {
+    "service_worker": "src/background.mjs",
+    "type": "module"
+  },
+  "permissions": [
+    "alarms",
+    "nativeMessaging",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ]
+}

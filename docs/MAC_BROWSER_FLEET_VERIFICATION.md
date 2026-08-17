@@ -1,0 +1,170 @@
+# Mac Browser Fleet Verification Report
+
+Date: 2026-08-11
+Commit under verification: `6da6f4f` plus durable setup commit `864dd0f`
+Environment: Linux homelab source checkout plus the configured `mac` SSH host, an arm64 macOS machine with Chrome and Edge installed.
+
+## Interpreted acceptance boundary
+
+The implementation follows the user-approved design: ordinary Mac Chrome and Edge tabs use a Manifest V3 extension and native messaging, explicitly managed instances may use loopback CDP, homelab Jcode selects the fleet only with `browser: "mac"`, transport is a reverse SSH Unix socket, and the Mac remains the authority for approval, leases, hard denies, and emergency stop. Before approval, the only implementation choice inferred was using a dedicated provider rather than changing local `browser: "chrome"` behavior. The approved OpenSpec subsequently made that choice explicit.
+
+## Requirement traceability
+
+| Requirement | Concrete check and observed result | Status |
+|---|---|---|
+| Mac browser fleet discovery | Extension inventory/action suites passed as part of all 37 Node tests. Broker generation handling passed in `protocol_broker_cdp.rs`. Through the real public Jcode `browser: "mac"` interface, `list_tabs` returned 15 managed Chrome page targets from the Mac with normalized browser, window, tab, and generation references. Ordinary-profile extension discovery remains pending browser approval. | Managed Chrome live pass, ordinary-profile approval pending |
+| Explicit remote fleet routing | `scripts/dev_cargo.sh test -p jcode-app-core browser_tests:: --no-default-features` passed 15 tests with one opt-in live smoke ignored. Tests proved explicit `mac` routing, local Chrome profile preservation, schema fields, bounded request mapping, and stale/approval error meaning. | Pass |
+| Private authenticated SSH transport | The built `jcode-mac-browser-fleet` binary was started through its public CLI and contacted over its public Unix-socket protocol. Authenticated health succeeded, invalid authentication failed without revealing the secret, and `stat` reported socket mode `600`. On the real Mac, launchd ran the broker and both the Mac socket and homelab forwarded socket reported mode `600`. Jcode queried the broker through SSH before and after a launchd broker restart. | Installed boundary pass |
+| Mac-owned confirmation policy | `cargo test --manifest-path crates/jcode-mac-browser-policy/Cargo.toml` passed 10 table-driven policy tests. Broker tests proved read-only health succeeds while mutation requests return `approvalRequired`. The Mac-local approval UI is not implemented. | Engine pass, UI incomplete |
+| Scoped expiring autonomy leases | Policy tests cover scope matching, the 15-minute maximum, monotonic expiration, restart/policy/target invalidation, and emergency-stop revocation. No installed Mac lease workflow was available. | Engine pass, live blocked |
+| Immutable hard-deny boundaries | Policy table tests cover incognito, password managers, settings, extensions, privileged URLs, payment/banking confirmation, account security, authentication/recovery, and emergency stop. Category-level errors are secret-safe. | Pass |
+| Capability-faithful hybrid control | All 37 extension tests passed. `cargo test -p jcode-mac-browser-fleet --test protocol_broker_cdp` passed six managed-CDP trust, framing, loopback restriction, multi-source merge, generation, and replay tests. On the real Mac, the loopback Chrome endpoint reported Chrome 151 and Jcode returned 15 filtered page targets through the broker and SSH Unix-socket bridge. A public navigation request returned `approval required` rather than bypassing Mac authority. | Managed read-only routing live, approved mutation incomplete |
+| Safe Mac lifecycle and setup | `cargo test -p jcode-mac-browser-setup` passed 4 lifecycle/rendering tests covering install/status/remove, mode-0600 secret, operator-file backup, managed CDP launch arguments, XML escaping, manifest and SSH rendering, profile preservation, and unrelated SSH preservation. On the real arm64 Mac, the native broker and setup binaries were rebuilt from the exact current sources, launchd ran the broker with a loopback-only Chrome CDP endpoint, and both broker and forwarded sockets reported mode `600`. | Installed managed-CDP pass, extension approval pending |
+| Browser fleet verification | Package formatting, policy/broker/setup tests, all extension tests, Jcode browser-provider tests and checks, `git diff --check`, and strict OpenSpec validation passed. Through Jcode's public `browser: "mac"` interface, status reported ready and `list_tabs` returned 15 real managed Chrome page targets. A targeted navigation remained blocked with `approval required`, proving the policy boundary was preserved. Ordinary Chrome/Edge extension attachment and approved mutation execution remain incomplete. | Real read-only acceptance pass, controlled mutation blocked |
+
+## Public-interface observation
+
+The real broker executable accepted this public invocation shape:
+
+```bash
+jcode-mac-browser-fleet broker \
+  --socket PATH \
+  --peer-secret PATH \
+  --policy PATH
+```
+
+Observed protocol results:
+
+- Correct secret and `listBrowsers`: `ok: true`, health generation `1`, 15 filtered managed Chrome page targets.
+- Jcode `browser: "mac"`, `list_tabs`: returned those 15 targets with normalized `browser_ref`, `window_ref`, `tab_ref`, and `generation` fields.
+- Jcode navigation against a current target: rejected with `Mac browser fleet approval required on the Mac`.
+- A separate Mac-local authority socket was installed with mode `600`; it is not part of the SSH-forwarded peer socket.
+- A two-minute `navigate` lease was granted locally for a dedicated ordinary-origin target. Jcode navigation through the public `browser: "mac"` path returned `accepted` and changed that target through CDP.
+- A subsequent real Chrome `/json/list` observation found the same target at the expected `https://example.org` origin, confirming the accepted response represented an actual browser-state change rather than only protocol acknowledgement.
+- Revoking the lease immediately restored `approval required` for the same target.
+- Emergency stop overrode a newly granted lease. Releasing emergency stop left no active elevated authority.
+- After a Jcode server reload removed the ephemeral forward, the SSH StreamLocal socket was recreated at mode `600`; `browser list_tabs browser=mac` returned 17 live targets and a mutation still returned approval-required, confirming bridge recovery and no residual authority.
+- A forged `grantLease` authority envelope sent through the SSH-forwarded peer socket was rejected as `malformed`; the separate Mac-local authority status remained unchanged, proving remote peers cannot mint leases through the forwarded channel.
+- Incorrect secret: `ok: false`, error kind `unauthenticated`, diagnostic `fleet authentication failed`.
+- The rejected response contained no peer secret.
+- The bound Unix socket mode was `600`.
+
+This proves the executable, argument parser, filesystem boundary, authentication boundary, response encoding, real arm64 launchd lifecycle, Unix-socket SSH forwarding, public Jcode provider routing, live managed Chrome target discovery, normalization, approved navigation, immediate lease revocation, emergency-stop precedence, approval-required behavior, stale-generation behavior, and read-only recovery after broker restart. It does not prove ordinary-profile extension attachment, selector-based interactions, or Edge target routing.
+
+## Remaining acceptance handoff
+
+A Mac-attached session must still:
+
+1. Approve and load the unpacked Chrome/Edge extension, then install native-host manifests with the real extension ID.
+2. Complete or supply the Mac-local approval, lease, revocation, and emergency-stop surface.
+3. Exercise ordinary-profile Chrome and Edge independently through Jcode's public `browser: "mac"` interface.
+4. Verify approved mutation, lease use and revocation, hard denial, cleanup, and no remaining lease or process.
+
+Until those steps pass, the repository and installed Mac broker provide a live, secure read-only managed Chrome fleet plus a verified foundation for explicitly approved automation. They are not yet a completed unrestricted browser-steering product.
+
+## Runtime deployment findings (2026-08-11)
+
+Deploying the extension-bridge build to the real Mac exposed four defects that the deterministic suites could not see, because each only manifests against a real macOS kernel, a real sshd, or a real launchd lifecycle. Each was fixed test-first, with a regression test that fails against the old behavior.
+
+| Defect | Symptom on the Mac | Fix |
+| --- | --- | --- |
+| Socket path over the `sun_path` limit | Broker exited with `could not bind authority socket` while every installed file looked correct | Sockets moved to `~/.jcode/mac-fleet/`; `rendered_socket_paths_stay_within_the_unix_domain_socket_limit` pins the 103-byte budget |
+| `~` in the `RemoteForward` listen path | Every reverse tunnel failed with `remote port forwarding failed for listen path` | Render an absolute `/home/<user>/...` path; `ssh_include_forwards_to_an_absolute_remote_socket_path` forbids tilde paths |
+| Stale native-host defaults | Chrome launches the host with no arguments, so it silently targeted the old socket and secret | Shared `default_broker_socket_path` and `default_native_secret_path` helpers; `native_host_defaults_match_the_installed_broker_socket_layout` keeps both crates aligned |
+| Unsupervised reverse tunnel | A manual `ssh -N` died on sleep, network loss, or session reload, leaving a stale socket and a dead bridge | `dev.jcode.mac-browser-fleet-tunnel` LaunchAgent with `KeepAlive`; `tunnel_launch_agent_keeps_the_reverse_forward_alive` pins the supervision flags |
+| Chrome launch arguments rejected | Chrome starts a host as `<binary> <manifest-path> <origin>`; the binary treated the manifest path as an unknown subcommand and exited instantly, so every extension reload silently failed | `classify_invocation` treats any non-subcommand launch as native-messaging; `chrome_style_native_host_launch_is_not_a_usage_error` pins Chrome's exact argv shape |
+| Manifest missing from the active user-data-dir | The extension was loaded in a secondary `--user-data-dir` profile whose `NativeMessagingHosts` directory was empty, so Chrome never launched the host at all | Manifests are written to every discovered user-data-dir; `native_host_manifests_reach_alternate_user_data_dirs` pins the behavior |
+
+Observed after the fixes, through Jcode's public interface:
+
+- `browser list_tabs browser=mac` returned 10 live managed Chrome targets.
+- Killing the broker: launchd relaunched it and discovery recovered.
+- Killing the tunnel: the forwarded socket was rebound automatically within 15 seconds and discovery recovered.
+
+## Ordinary-profile acceptance (2026-08-11)
+
+After the launch-argument and per-profile manifest fixes, the extension bridge attached and ordinary Chrome tabs became visible through Jcode's public interface:
+
+- `browser list_tabs browser=mac` returned nine `ordinary-chrome` targets from the operator's real profile, alongside the `managed-chrome` CDP targets, each carrying opaque `tab_*` and `win_*` references rather than raw Chrome identifiers.
+- The inventory generation advanced on its own (10, then 36, then 47) as real tabs changed, confirming the extension keeps pushing live snapshots rather than a single stale one.
+- `browser open browser=mac` against a real ordinary tab was refused with `approval required on the Mac`, so ordinary profiles are read-only until a Mac-local human approves.
+- A request carrying an out-of-date generation was refused with `stale generation; refresh inventory`.
+- `jcode-mac-browser-fleet authority grant` issued a scoped, time-bounded lease from the Mac-local authority socket, which is not reachable through the SSH-forwarded peer socket.
+
+Still unproven and deliberately not claimed: hard-deny categories against ordinary targets, selector-based interaction on ordinary tabs, and any Edge ordinary-profile routing.
+
+## Approval lifecycle on a real ordinary tab (2026-08-11)
+
+Run end to end against the operator's real Chrome profile, through the broker's peer socket and the Mac-local authority socket:
+
+1. `navigate` on an ordinary target: `approvalRequired`, `local approval is required`.
+2. Mac-local `authority grant --capability navigate --duration-seconds 300`: `ok`, returning a scoped `leaseId`.
+3. Same `navigate` with the lease active: `ok`, `accepted`.
+4. Mac-local `authority revoke --lease-id <id>`: `ok`, `revoked: true`.
+5. Same `navigate` after revocation: `approvalRequired` again.
+
+`revoke` without a `leaseId` is rejected as `malformed` rather than silently revoking everything. The lease is scoped to one target, one capability, and a bounded duration, and can only be issued from the Mac-local authority socket, which is never forwarded over SSH.
+
+After removing the temporary diagnostic shim and reinstalling with `jcode-mac-browser-setup install`, both native-host manifests point directly at `~/.local/bin/jcode-mac-browser-fleet`, and `browser list_tabs browser=mac` still returns ordinary-profile targets. The verified path uses no debug wrapper.
+
+Operator note: `jcode-mac-browser-setup install` writes the SSH include file but deliberately does not edit `~/.ssh/config`. The `Include ~/.ssh/jcode-mac-browser-fleet.conf` line must be present in that config, and an unrelated rewrite of the file will silently drop the tunnel.
+
+## Security boundary re-verification (2026-08-11)
+
+Run against the live Mac through the forwarded peer socket after all fixes:
+
+| Check | Result |
+| --- | --- |
+| Wrong secret | `unauthenticated`, no secret echoed in the error |
+| Native secret replayed on the peer wire | `unauthenticated` (the two secrets are not interchangeable) |
+| `grantLease` attempted through the forwarded peer socket | rejected; leases are mintable only on the Mac-local authority socket |
+| Stale generation | `staleGeneration` |
+| Navigate to `chrome://settings/`, `chrome://extensions/`, `about:config` under an active lease | `hardDenied` |
+| Navigate to `https://example.com/` under an active lease | `accepted` on three ordinary tabs |
+| Tab already sitting on a privileged URL | `hardDenied` regardless of destination |
+
+### Hard-deny gap found and fixed
+
+`Context::hard_deny` classified only the tab a request targeted, never the
+navigation *destination*. `context_for_url` existed but had no callers, so with
+a valid navigate lease an ordinary tab could be driven into `chrome://settings`
+or `chrome://extensions`. This was observed live before the fix: all three
+privileged destinations returned `accepted`.
+
+`navigation_hard_deny` now classifies the destination and the broker refuses it
+before consulting leases, because a lease authorizes acting on a target and
+never authorizes navigating that target somewhere privileged. Pinned by
+`navigation_destination_is_hard_denied_even_under_an_active_lease`.
+
+
+## Resume verification (2026-08-12)
+
+Resumed `add-mac-browser-fleet` on Linux at commit `8e065803d` plus local working-tree formatting changes. Locally provable checks were run again after a Jcode server reload interrupted the first full verification attempt.
+
+Passed locally:
+
+- `cargo test -p jcode-mac-browser-fleet`: 22 broker/protocol/CDP/native-host tests passed.
+- `cargo fmt --check`, `cargo test -p jcode-mac-browser-policy`, `cargo test -p jcode-mac-browser-setup`, `cargo test -p jcode-mac-browser-fleet`, `scripts/dev_cargo.sh test -p jcode-app-core browser_tests:: --no-default-features`, and `git diff --check` all completed before the targeted TUI filter step failed because the filter matched zero integration-test binaries under the repository cargo wrapper policy.
+- Corrected targeted follow-up: `JCODE_DEV_CARGO_ALLOW_ZERO_TESTS=1 cargo test -p jcode-tui artifact_action_palette_captures_typed_target_and_stable_actions && cargo test -p jcode-harness-api dynamic_tool_done_matches_typescript_sdk_fixture` passed.
+
+
+## Linux revalidation (2026-08-12)
+
+Resumed `add-mac-browser-fleet` in a Linux homelab session at the current `dev...mine/dev` checkout. No model-routing files or unrelated lanes were intentionally modified. The Mac fleet browser provider reported the Mac fleet bridge as configured, but live acceptance through `browser: "mac"` was blocked because the forwarded broker socket was unavailable at `/home/nyaptor/.jcode/browser/mac-fleet.sock`.
+
+Passed locally in this session:
+
+- `cargo test -p jcode-mac-browser-fleet --locked`: 22 broker/protocol/CDP/native-host tests passed.
+- `cargo test -p jcode-mac-browser-policy --locked`: 10 policy tests passed.
+- `cargo test -p jcode-app-core mac_fleet --locked`: 5 Mac fleet provider tests passed. The crate emitted two pre-existing unused-import warnings in unrelated test modules.
+- `node --test tests/*.test.mjs test/*.test.mjs` from `extensions/mac-browser-fleet`: 47 extension, native-host, manifest, inventory, protocol, reconnect, and action-handler tests passed.
+- `cargo fmt --check`: passed.
+- `cargo test -p jcode-mac-browser-setup --locked`: 12 setup, launch-agent, SSH include, manifest, socket-path, and preservation tests passed.
+- `git diff --check`: passed.
+- `openspec validate add-mac-browser-fleet --strict`: passed.
+
+Blocked or not claimed from this Linux session:
+
+- `browser list_tabs browser=mac` through the public Jcode interface failed with `Mac browser fleet socket is unavailable at /home/nyaptor/.jcode/browser/mac-fleet.sock`.
+- Real Mac Chrome acceptance tasks 5.2, Edge acceptance task 5.3, and installed exact-commit deployment/reload task 5.4 remain blocked until the Mac launch agent, SSH reverse socket, browser profiles, and Mac-local authority surface are available.
+- The Mac-local approval/status UI in task 2.4 remains incomplete, so the change is not ready to archive despite deterministic local validation passing.

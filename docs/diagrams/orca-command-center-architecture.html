@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b1720" />
+  <title>Jcode × Orca Command Center Architecture</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f3f0e7;
+      --muted: #a9b7bd;
+      --deep: #071118;
+      --panel: #0e1d26;
+      --panel-2: #122832;
+      --line: #31505c;
+      --jcode: #ffb454;
+      --orca: #69d5c5;
+      --signal: #f5df7a;
+      --danger: #ff8175;
+      --radius-sm: 10px;
+      --radius-md: 18px;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .26);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--deep); }
+    body {
+      margin: 0;
+      min-width: 320px;
+      background:
+        radial-gradient(circle at 100% 0%, rgba(105, 213, 197, .12), transparent 35rem),
+        linear-gradient(180deg, #0b1720 0%, var(--deep) 65%);
+      color: var(--ink);
+      font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+      font-size: 18px;
+      line-height: 1.62;
+      font-synthesis: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; text-underline-position: from-font; text-decoration-thickness: from-font; }
+    button, summary { font: inherit; }
+    ::selection { background: var(--signal); color: var(--deep); }
+
+    .shell { width: min(100% - 32px, 760px); margin-inline: auto; padding-block: 24px 110px; }
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--orca);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      letter-spacing: -.025em;
+      line-height: 1.08;
+      text-wrap: balance;
+    }
+    h1 { max-width: 12ch; font-size: clamp(42px, 13vw, 74px); font-weight: 700; }
+    h2 { font-size: clamp(31px, 9vw, 46px); }
+    h3 { font-size: 25px; }
+    p { max-width: 65ch; }
+
+    .hero { padding: 18px 0 44px; }
+    .hero-copy { margin: 22px 0 0; color: #d5dcd9; font-size: clamp(19px, 5vw, 23px); line-height: 1.5; }
+    .verdict {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      margin-top: 28px;
+      padding: 18px;
+      border-inline-start: 4px solid var(--signal);
+      background: rgba(245, 223, 122, .08);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+    .verdict strong { display: block; color: var(--signal); }
+    .verdict p { margin: 2px 0 0; color: #d8d4bc; font-size: 16px; }
+
+    .section { margin-top: 64px; }
+    .section-intro { margin: 14px 0 26px; color: var(--muted); }
+
+    .plane {
+      position: relative;
+      overflow: hidden;
+      margin-top: 18px;
+      padding: 24px 22px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(145deg, rgba(18, 40, 50, .98), rgba(10, 25, 34, .98));
+      box-shadow: var(--shadow);
+    }
+    .plane::before {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: 0;
+      width: 5px;
+      background: var(--accent);
+    }
+    .plane.jcode { --accent: var(--jcode); }
+    .plane.orca { --accent: var(--orca); }
+    .plane-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 16px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 750;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    .plane-label::before { content: ""; width: 22px; height: 2px; background: currentColor; }
+    .plane h3 { margin-bottom: 12px; }
+    .plane p { margin: 0; color: #c6d0d1; }
+    .plane ul { display: grid; gap: 10px; margin: 20px 0 0; padding: 0; list-style: none; }
+    .plane li { position: relative; padding-inline-start: 22px; color: #e0e5e2; }
+    .plane li::before { content: ""; position: absolute; inset-inline-start: 0; top: .72em; width: 8px; height: 8px; border: 2px solid var(--accent); border-radius: 50%; }
+
+    .bridge {
+      display: grid;
+      place-items: center;
+      gap: 6px;
+      margin: 18px 0;
+      color: var(--signal);
+      text-align: center;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: .03em;
+    }
+    .bridge::before, .bridge::after { content: ""; width: 2px; height: 22px; background: linear-gradient(var(--jcode), var(--orca)); }
+
+    .flow { display: grid; gap: 12px; margin-top: 26px; counter-reset: step; }
+    .flow-step {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      padding: 18px 0;
+      border-top: 1px solid rgba(169, 183, 189, .22);
+      counter-increment: step;
+    }
+    .flow-step:last-child { border-bottom: 1px solid rgba(169, 183, 189, .22); }
+    .flow-step::before {
+      content: counter(step, decimal-leading-zero);
+      display: grid;
+      place-items: center;
+      width: 42px;
+      aspect-ratio: 1;
+      border: 1px solid var(--line);
+      color: var(--orca);
+      background: var(--panel);
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .flow-step h3 { margin-top: 4px; font-family: "Avenir Next", Avenir, sans-serif; font-size: 18px; letter-spacing: 0; line-height: 1.35; }
+    .flow-step p { margin: 6px 0 0; color: var(--muted); font-size: 16px; }
+
+    .identity-grid { display: grid; gap: 10px; margin-top: 24px; }
+    .identity-row { padding: 17px 18px; background: var(--panel); border-inline-start: 3px solid var(--line); }
+    .identity-row strong { display: block; color: var(--signal); font-size: 15px; }
+    .identity-row span { display: block; margin-top: 4px; color: #d5dddb; }
+
+    details {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      background: rgba(14, 29, 38, .85);
+    }
+    summary {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      min-height: 58px;
+      padding: 14px 18px;
+      cursor: pointer;
+      color: var(--ink);
+      font-weight: 700;
+      list-style: none;
+      user-select: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--orca); font-size: 25px; line-height: 1; }
+    details[open] summary::after { content: "−"; }
+    details p { margin: 0; padding: 0 18px 20px; color: var(--muted); font-size: 16px; }
+
+    .guardrail {
+      margin-top: 22px;
+      padding: 20px;
+      border: 1px solid rgba(255, 129, 117, .45);
+      border-radius: var(--radius-sm);
+      background: rgba(255, 129, 117, .07);
+    }
+    .guardrail strong { color: var(--danger); }
+    .guardrail p { margin: 7px 0 0; color: #dec7c3; font-size: 16px; }
+
+    .sticky {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      width: min(calc(100% - 32px), 736px);
+      margin: 24px auto max(20px, env(safe-area-inset-bottom));
+      padding: 13px 16px;
+      border: 1px solid #4c6a73;
+      border-radius: 14px;
+      background: #10232df2;
+      box-shadow: 0 10px 34px rgba(0, 0, 0, .42);
+    }
+    .sticky strong { display: block; color: var(--signal); font-size: 14px; }
+    .sticky span { display: block; color: var(--muted); font-size: 12px; }
+    .sticky a {
+      flex: 0 0 auto;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      padding-inline: 16px;
+      border-radius: 8px;
+      background: var(--signal);
+      color: #192027;
+      font-size: 14px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    @media (min-width: 700px) {
+      .shell { padding-top: 56px; }
+      .planes { display: grid; grid-template-columns: 1fr 58px 1fr; align-items: stretch; }
+      .bridge { margin: 0; }
+      .bridge::before, .bridge::after { width: 22px; height: 2px; background: linear-gradient(90deg, var(--jcode), var(--orca)); }
+      .identity-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="hero" id="top">
+      <p class="eyebrow">Command Center architecture · decision brief</p>
+      <h1>Durable intent meets live execution.</h1>
+      <p class="hero-copy">Jcode should remain the system that decides what work means. Orca should become the system that proves where and how that work is running.</p>
+      <div class="verdict">
+        <div>
+          <strong>Recommended: layered projection bridge</strong>
+          <p>Generic Orca skills teach mechanics. A focused Jcode skill teaches the policy boundary and the Command Center projection model.</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="section" aria-labelledby="ownership-title">
+      <p class="eyebrow">01 · authority</p>
+      <h2 id="ownership-title">Two planes. One coherent view.</h2>
+      <p class="section-intro">Neither system duplicates the other. Command Center composes both through typed Jcode commands and normalized Orca observations.</p>
+
+      <div class="planes">
+        <article class="plane jcode">
+          <div class="plane-label">Durable plane</div>
+          <h3>Jcode owns meaning and policy</h3>
+          <p>The long-lived record survives workers, terminals, restarts, and UI sessions.</p>
+          <ul>
+            <li>Initiatives, milestones, blockers, checkpoints</li>
+            <li>Scheduling intent, retries, outcomes, recovery</li>
+            <li>Permissions, approvals, idempotency, rollback</li>
+            <li>Cross-run evidence and normalized history</li>
+          </ul>
+        </article>
+
+        <div class="bridge">typed commands<br />normalized projections</div>
+
+        <article class="plane orca">
+          <div class="plane-label">Execution plane</div>
+          <h3>Orca owns runtime truth</h3>
+          <p>The live graph says which project, worktree, task, and worker actually exist.</p>
+          <ul>
+            <li>Canonical repository and worktree identity</li>
+            <li>Runs, tasks, dependencies, dispatch attempts</li>
+            <li>Workers, terminals, gates, messages</li>
+            <li>Handoffs, retention, release, runtime health</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="flow-title">
+      <p class="eyebrow">02 · lifecycle</p>
+      <h2 id="flow-title">What Command Center actually orchestrates</h2>
+      <p class="section-intro">The UI asks Jcode for an outcome. Jcode chooses an approved Orca pattern, records correlation, then projects evidence back into the same initiative.</p>
+      <div class="flow">
+        <article class="flow-step"><div><h3>Resolve executable identity</h3><p>Map the initiative to Orca’s canonical repository or project ID. Never substitute the Orca runtime ID.</p></div></article>
+        <article class="flow-step"><div><h3>Select ownership mode</h3><p>Choose a full handoff for true ownership transfer, or a supervised Run/Task/Dispatch when Jcode must monitor a DAG.</p></div></article>
+        <article class="flow-step"><div><h3>Launch with provenance</h3><p>Create or reuse the correct worktree and terminal, preserving model, setup, dependency, and mutation ownership rules.</p></div></article>
+        <article class="flow-step"><div><h3>Observe structured lifecycle</h3><p>Project messages, questions, heartbeats, worker completion, escalations, gates, and terminal health as ordered evidence.</p></div></article>
+        <article class="flow-step"><div><h3>Settle durable outcome</h3><p>Update Jcode’s initiative and schedule record only from verified Orca receipts. Retain or release runtime resources intentionally.</p></div></article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="identity-title">
+      <p class="eyebrow">03 · identity</p>
+      <h2 id="identity-title">The identifiers Command Center must preserve</h2>
+      <div class="identity-grid">
+        <div class="identity-row"><strong>Orca repository/project ID</strong><span>Executable project authority</span></div>
+        <div class="identity-row"><strong>Orca Run ID</strong><span>Coordinator namespace and inbox</span></div>
+        <div class="identity-row"><strong>Task + Dispatch IDs</strong><span>Work contract and one concrete attempt</span></div>
+        <div class="identity-row"><strong>Worktree + terminal handles</strong><span>Placement and live routing metadata</span></div>
+        <div class="identity-row"><strong>Jcode initiative + run IDs</strong><span>Durable intent and outcome history</span></div>
+        <div class="identity-row"><strong>Correlation + idempotency IDs</strong><span>Safe retries and evidence stitching</span></div>
+      </div>
+      <div class="guardrail"><strong>Current defect to remove</strong><p>The existing adapter maps Orca’s runtime ID into the project ID field. The improved skill must prohibit this and require canonical repository/project lookup.</p></div>
+    </section>
+
+    <section class="section" aria-labelledby="skills-title">
+      <p class="eyebrow">04 · skill architecture</p>
+      <h2 id="skills-title">Three skills, three clear jobs</h2>
+      <details open><summary>orca-cli · runtime mechanics</summary><p>Version-matched worktrees, terminals, comments, browser control, automation, and full handoffs. No Jcode-specific policy.</p></details>
+      <details open><summary>orchestration · supervised coordination</summary><p>Runs, tasks, dispatches, messaging, ask/reply, decision gates, worker retention, release, and recovery. Remove obsolete llmtrim guidance.</p></details>
+      <details open><summary>jcode-command-center-orchestration · policy bridge</summary><p>Pattern selection, authority matrix, identifier mapping, lifecycle projection, safe mutation capability table, schedule interactions, error states, and acceptance evidence.</p></details>
+    </section>
+
+    <section class="section" aria-labelledby="alternatives-title">
+      <p class="eyebrow">05 · alternatives</p>
+      <h2 id="alternatives-title">Why not the simpler options?</h2>
+      <details><summary>Patch only the generic Orca skills</summary><p>Fast initially, but Jcode policy would leak into version-matched generic guidance. Command Center behavior would be scattered and harder to test.</p></details>
+      <details><summary>Make Command Center an Orca-native control surface</summary><p>It exposes deeper runtime mutation quickly, but conflicts with the approved authority model for initiatives, schedules, permissions, idempotency, and rollback.</p></details>
+    </section>
+  </main>
+
+  <aside class="sticky" aria-label="Current recommendation">
+    <div><strong>Direction B</strong><span>Layered projection bridge</span></div>
+    <a href="#top">Review again</a>
+  </aside>
+</body>
+</html>

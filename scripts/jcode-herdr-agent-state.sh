@@ -1,0 +1,247 @@
+#!/bin/sh
+# Jcode -> Herdr lifecycle hook adapter.
+#
+# Intended config:
+#   [hooks]
+#   session_start = ["/path/to/jcode-herdr-agent-state.sh session"]
+#   turn_start = ["/path/to/jcode-herdr-agent-state.sh session"]
+#   turn_end = ["/path/to/jcode-herdr-agent-state.sh session"]
+#   session_end = ["/path/to/jcode-herdr-agent-state.sh session"]
+#
+# Herdr supports custom harnesses through semantic lifecycle reports. This
+# adapter uses the custom source for visible agent-panel state while carrying
+# the native Jcode session id when available.
+
+set -eu
+
+action="${1:-session}"
+case "$action" in
+  session|hook) ;;
+  *) exit 0 ;;
+esac
+
+[ "${HERDR_ENV:-}" = "1" ] || exit 0
+[ -n "${HERDR_SOCKET_PATH:-}" ] || exit 0
+[ -n "${HERDR_PANE_ID:-}" ] || exit 0
+command -v python3 >/dev/null 2>&1 || exit 0
+
+python3 - <<'PY'
+import json
+import os
+import random
+import socket
+import time
+
+SOURCE = "custom:jcode"
+AGENT = "jcode"
+
+pane_id = os.environ.get("HERDR_PANE_ID")
+socket_path = os.environ.get("HERDR_SOCKET_PATH")
+event = os.environ.get("JCODE_HOOK_EVENT", "")
+session_id = os.environ.get("JCODE_HOOK_SESSION_ID") or None
+hook_source = os.environ.get("JCODE_HOOK_SOURCE") or None
+cwd = os.environ.get("JCODE_HOOK_CWD") or None
+session_name = os.environ.get("JCODE_HOOK_SESSION_NAME") or None
+status = os.environ.get("JCODE_HOOK_STATUS") or None
+model = os.environ.get("JCODE_HOOK_MODEL") or None
+error = os.environ.get("JCODE_HOOK_ERROR") or None
+
+if not pane_id or not socket_path:
+    raise SystemExit(0)
+
+try:
+    payload_raw = os.environ.get("JCODE_HOOK_PAYLOAD") or "{}"
+    payload = json.loads(payload_raw) if payload_raw.strip() else {}
+except Exception:
+    payload = {}
+
+def count_field(*names):
+    for name in names:
+        value = os.environ.get(name)
+        if value is None:
+            value = payload.get(name.lower())
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            continue
+    return 0
+
+if not event:
+    event = str(payload.get("event") or "")
+if not session_id:
+    candidate = payload.get("session_id")
+    session_id = candidate if isinstance(candidate, str) and candidate else None
+if not hook_source:
+    candidate = payload.get("source")
+    hook_source = candidate if isinstance(candidate, str) and candidate else None
+if not status:
+    candidate = payload.get("status")
+    status = candidate if isinstance(candidate, str) and candidate else None
+if not model:
+    candidate = payload.get("model")
+    model = candidate if isinstance(candidate, str) and candidate else None
+if not error:
+    candidate = payload.get("error")
+    error = candidate if isinstance(candidate, str) and candidate else None
+if not session_name:
+    candidate = payload.get("session_name")
+    session_name = candidate if isinstance(candidate, str) and candidate else None
+
+def project_name():
+    if not cwd:
+        return "jcode"
+    name = os.path.basename(os.path.normpath(cwd))
+    return name or "jcode"
+
+def row_message(indicator):
+    project = project_name()
+    custom_name = session_name or session_id or "jcode session"
+    return f"{indicator} {project}\n  {custom_name}"
+
+
+def metadata_request():
+    """Put the project name where the sidebar can actually render it.
+
+    `pane.report_agent`'s `message` is state-transition prose; Herdr's agent
+    panel renders configured tokens (`agent`, `tab`, `terminal_title`, ...),
+    never `message`. Row one resolves the `agent` token from the pane's
+    effective display agent, so the project name has to arrive as presentation
+    metadata. `applies_to_source`/`agent` scope the patch to our own report so
+    it cannot repaint another integration's pane.
+    """
+    return {
+        "id": f"{SOURCE}:metadata:{seq}",
+        "method": "pane.report_metadata",
+        "params": {
+            "pane_id": pane_id,
+            "source": f"{SOURCE}-metadata",
+            "agent": AGENT,
+            "applies_to_source": SOURCE,
+            "display_agent": project_name(),
+            "seq": seq,
+        },
+    }
+
+working_subagents = count_field("JCODE_HOOK_SUBAGENTS_WORKING", "subagents_working")
+blocking_subagents = count_field(
+    "JCODE_HOOK_SUBAGENTS_BLOCKING", "subagents_working_blocking", "subagents_blocking"
+)
+nonblocking_subagents = count_field(
+    "JCODE_HOOK_SUBAGENTS_NON_BLOCKING",
+    "JCODE_HOOK_SUBAGENTS_WORKING_NON_BLOCKING",
+    "subagents_working_non_blocking",
+    "subagents_non_blocking",
+)
+if working_subagents == 0:
+    working_subagents = blocking_subagents + nonblocking_subagents
+
+seq = time.time_ns()
+request_id = f"{SOURCE}:{seq}:{random.randrange(1_000_000):06d}"
+
+
+def socket_request(request):
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    client.settimeout(0.5)
+    client.connect(socket_path)
+    client.sendall((json.dumps(request, separators=(",", ":")) + "\n").encode("utf-8"))
+    chunks = []
+    try:
+        while True:
+            chunk = client.recv(65536)
+            if not chunk:
+                break
+            chunks.append(chunk)
+            if b"\n" in chunk:
+                break
+    except Exception:
+        pass
+    client.close()
+    response_raw = b"".join(chunks).split(b"\n", 1)[0]
+    if not response_raw:
+        return None
+    try:
+        return json.loads(response_raw.decode("utf-8", "replace"))
+    except Exception:
+        return None
+
+
+def pane_not_found(response):
+    return isinstance(response, dict) and response.get("error", {}).get("code") == "pane_not_found"
+
+
+def fallback_pane_for_cwd():
+    if not cwd:
+        return None
+    response = socket_request({"id": f"{SOURCE}:snapshot:{time.time_ns()}", "method": "session.snapshot", "params": {}})
+    snapshot = response.get("result", {}).get("snapshot") if isinstance(response, dict) else None
+    panes = snapshot.get("panes", []) if isinstance(snapshot, dict) else []
+    matches = []
+    for pane in panes:
+        if not isinstance(pane, dict):
+            continue
+        if pane.get("cwd") == cwd or pane.get("foreground_cwd") == cwd:
+            candidate = pane.get("pane_id")
+            if isinstance(candidate, str) and candidate:
+                matches.append(candidate)
+    unique = sorted(set(matches))
+    return unique[0] if len(unique) == 1 else None
+
+
+def report_agent(state, message=None):
+    params = {
+        "pane_id": pane_id,
+        "source": SOURCE,
+        "agent": AGENT,
+        "seq": seq,
+        "state": state,
+    }
+    if session_id:
+        params["agent_session_id"] = session_id
+    if message:
+        params["message"] = message[:500]
+    return {"id": request_id, "method": "pane.report_agent", "params": params}
+
+
+request = None
+if event == "session_start":
+    if not session_id:
+        raise SystemExit(0)
+    request = report_agent("unknown", row_message("○"))
+elif event == "turn_start":
+    request = report_agent("working", row_message("●"))
+elif event == "turn_end":
+    message = "jcode ready"
+    if status == "error" and error:
+        message = f"jcode turn ended with error: {error}"
+    request = report_agent("idle", row_message("○"))
+elif event == "session_end":
+    request = {
+        "id": request_id,
+        "method": "pane.release_agent",
+        "params": {
+            "pane_id": pane_id,
+            "source": SOURCE,
+            "agent": AGENT,
+            "seq": seq,
+        },
+    }
+else:
+    # Explicit no-op for pre_tool and post_tool. Tool boundaries are not whole
+    # agent-state transitions.
+    raise SystemExit(0)
+
+try:
+    response = socket_request(request)
+    if pane_not_found(response):
+        fallback_pane = fallback_pane_for_cwd()
+        if fallback_pane:
+            pane_id = fallback_pane
+            request["params"]["pane_id"] = fallback_pane
+            socket_request(request)
+    # Presentation follows state. `session_end` releases the agent, so a
+    # metadata patch there would re-decorate a pane we just handed back.
+    if event != "session_end":
+        socket_request(metadata_request())
+except Exception:
+    pass
+PY

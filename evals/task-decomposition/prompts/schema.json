@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Jcode task decomposition eval prompt catalog",
+  "type": "object",
+  "required": ["version", "prompts"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "type": "integer", "const": 1 },
+    "prompts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fixture_id", "kind", "confidence", "source", "prompt", "notes"],
+        "additionalProperties": false,
+        "properties": {
+          "fixture_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "kind": { "type": "string", "enum": ["original", "reconstructed"] },
+          "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+          "source": { "type": "string", "minLength": 1 },
+          "prompt": { "type": "string", "minLength": 1 },
+          "notes": { "type": "string" }
+        }
+      }
+    }
+  }
+}

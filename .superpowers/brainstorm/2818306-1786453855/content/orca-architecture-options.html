@@ -1,0 +1,68 @@
+<h2>Orca integration architecture for Jcode Command Center</h2>
+<p class="subtitle">Three approaches, with the approved layered skill direction highlighted as the recommended foundation.</p>
+
+<div class="cards">
+  <div class="card" data-choice="thin" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A · Thin skill patches</div>
+        <div class="mockup-body" style="display:grid;gap:10px">
+          <div class="placeholder">Command Center</div>
+          <div style="text-align:center">↕ many direct CLI decisions</div>
+          <div class="split"><div class="placeholder">Jcode</div><div class="placeholder">Orca</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Patch generic skills only</h3>
+      <p>Fast, but Command Center policy leaks into generic Orca guidance and drifts with the CLI.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="layered" onclick="toggleSelect(this)" style="outline:2px solid var(--accent, #6ea8fe)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B · Layered projection bridge · Recommended</div>
+        <div class="mockup-body" style="display:grid;gap:10px">
+          <div class="placeholder">SolidStart Command Center</div>
+          <div style="text-align:center">typed Jcode commands + ordered projections</div>
+          <div class="placeholder">Jcode policy / initiative / schedule authority</div>
+          <div style="text-align:center">canonical references + normalized events</div>
+          <div class="placeholder">Orca runtime: repo · worktree · run · task · dispatch · worker · gate · terminal</div>
+          <div class="split"><div class="placeholder">Generic orca-cli</div><div class="placeholder">Generic orchestration</div></div>
+          <div class="placeholder">New jcode-command-center-orchestration skill</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Generic mechanics, Jcode-specific policy</h3>
+      <p>Preserves authority boundaries, uses version-matched Orca guides, and gives Command Center a stable lifecycle vocabulary.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="orca-native" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C · Orca-native control surface</div>
+        <div class="mockup-body" style="display:grid;gap:10px">
+          <div class="placeholder">Command Center</div>
+          <div style="text-align:center">direct Orca mutation + Jcode side data</div>
+          <div class="placeholder">Orca as workflow authority</div>
+          <div class="placeholder">Jcode reduced to durable notes</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Make Orca the primary backend</h3>
+      <p>Deep lifecycle access, but conflicts with the approved Jcode authority model and weakens initiative, scheduling, permission, and rollback guarantees.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>What B adds to the Command Center</h3>
+  <div class="split">
+    <div class="pros"><h4>Durable plane · Jcode</h4><ul><li>Initiatives and milestones</li><li>Scheduling intent and outcomes</li><li>Permissions, idempotency, rollback</li><li>Cross-run evidence and recovery policy</li></ul></div>
+    <div class="pros"><h4>Execution plane · Orca</h4><ul><li>Canonical repo/project identity</li><li>Runs, tasks, dependencies, dispatch attempts</li><li>Workers, terminals, gates, messages</li><li>Worktrees, handoffs, retention and release</li></ul></div>
+  </div>
+</div>

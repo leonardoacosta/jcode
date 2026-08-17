@@ -1,0 +1,43 @@
+<h2>What should the first interactive screen optimize for?</h2>
+<p class="subtitle">All three are SolidStart routes. This choice determines the product's center of gravity.</p>
+
+<div class="cards" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:stretch">
+  <div class="card" data-choice="initiative-cockpit" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:13px;background:#0c111b;min-height:430px;color:#e8edf5;font-family:Inter,system-ui,sans-serif">
+      <div style="display:flex;gap:8px;align-items:center;border-bottom:1px solid #293244;padding-bottom:10px"><strong>Command Center</strong><span style="color:#77869d">/ Initiative</span><span style="margin-left:auto;color:#72d6b1;font-size:11px">LIVE</span></div>
+      <div style="margin-top:13px"><div style="font-size:11px;color:#7e8ca3">JCODE COMMAND CENTER</div><div style="font-size:18px;font-weight:700">Build the unified control plane</div><div style="display:flex;gap:12px;color:#8997ab;font-size:11px;margin-top:5px"><span>jcode-home</span><span>Milestone 2 of 6</span><span>3 blockers</span></div></div>
+      <div style="height:5px;background:#283245;margin:11px 0 14px"><div style="width:34%;height:100%;background:#786dea"></div></div>
+      <div style="display:grid;grid-template-columns:1fr .75fr;gap:9px">
+        <div>
+          <div style="background:#151d29;padding:10px;border-radius:6px;margin-bottom:8px"><div style="font-size:10px;color:#8492a7">MILESTONES</div><p style="font-size:12px">✓ Architecture consolidation<br><b style="color:#a9a2ff">● SolidStart foundation</b><br>○ Scheduling integration<br>○ Desktop embedding</p></div>
+          <div style="background:#151d29;padding:10px;border-radius:6px"><div style="font-size:10px;color:#8492a7">CHILD CHANGES</div><p style="font-size:11px">jcode/api-contract <span style="color:#72d6b1">running</span><br>jcode/web-command-center <span style="color:#f0bd68">planned</span><br>orca/lifecycle-projection <span style="color:#8290a5">blocked</span></p></div>
+        </div>
+        <div style="background:#151d29;padding:10px;border-radius:6px"><div style="font-size:10px;color:#8492a7">NEXT ACTIONS</div><button style="width:100%;background:#7065dc;color:white;border:0;border-radius:4px;padding:7px;margin:8px 0">Start next milestone</button><p style="font-size:11px;color:#8e9bb0">Review architecture decision<br>Resolve Orca contract<br>Schedule nightly verification</p></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A. Initiative cockpit</h3><p>Outcome, milestones, child changes, schedules, blockers, and evidence are the primary object. Runs are opened from their owning work.</p></div>
+  </div>
+
+  <div class="card" data-choice="operations-room" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:13px;background:#0c111b;min-height:430px;color:#e8edf5;font-family:Inter,system-ui,sans-serif">
+      <div style="display:flex;gap:8px;align-items:center;border-bottom:1px solid #293244;padding-bottom:10px"><strong>Command Center</strong><span style="color:#77869d">/ Live</span><span style="margin-left:auto;color:#72d6b1;font-size:11px">6 RUNNING</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:12px 0"><div style="background:#151d29;padding:8px"><b>12</b><br><small>workers</small></div><div style="background:#151d29;padding:8px"><b>3</b><br><small>blocked</small></div><div style="background:#151d29;padding:8px"><b>2</b><br><small>approvals</small></div></div>
+      <div style="background:#151d29;padding:10px;border-radius:6px;height:180px"><div style="font-size:10px;color:#8492a7">ORCHESTRATION GRAPH</div><div style="display:flex;justify-content:center;align-items:center;gap:9px;height:130px"><span style="border:1px solid #786dea;padding:9px;border-radius:5px">frog</span><span style="color:#536178">→</span><div style="display:grid;gap:8px"><span style="border:1px solid #4a9b82;padding:7px;border-radius:5px">UI</span><span style="border:1px solid #d19d4b;padding:7px;border-radius:5px">API</span><span style="border:1px solid #4a9b82;padding:7px;border-radius:5px">Review</span></div></div></div>
+      <div style="background:#151d29;padding:10px;border-radius:6px;margin-top:8px"><div style="font-size:10px;color:#8492a7">EVENT STREAM</div><p style="font-size:11px">04:55 worker UI completed checkpoint<br>04:54 schedule nightly-audit claimed<br>04:52 approval requested for deploy</p></div>
+    </div>
+    <div class="card-body"><h3>B. Operations room</h3><p>Live runs, worker graphs, approvals, resource use, and event streams dominate. Initiative context is secondary.</p></div>
+  </div>
+
+  <div class="card" data-choice="split-command-center" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:13px;background:#0c111b;min-height:430px;color:#e8edf5;font-family:Inter,system-ui,sans-serif">
+      <div style="display:flex;gap:8px;align-items:center;border-bottom:1px solid #293244;padding-bottom:10px"><strong>Command Center</strong><span style="color:#77869d">/ Command Center Initiative</span><span style="margin-left:auto;color:#72d6b1;font-size:11px">LIVE</span></div>
+      <div style="display:grid;grid-template-columns:.8fr 1.2fr;gap:8px;margin-top:10px;height:365px">
+        <div style="display:grid;grid-template-rows:auto 1fr;gap:8px"><div style="background:#151d29;padding:9px;border-radius:6px"><div style="font-size:10px;color:#8492a7">OUTCOME</div><b>Unified control plane</b><div style="height:4px;background:#30394a;margin-top:8px"><div style="width:34%;height:100%;background:#786dea"></div></div></div><div style="background:#151d29;padding:9px;border-radius:6px"><div style="font-size:10px;color:#8492a7">WORK</div><p style="font-size:11px"><b style="color:#aaa3ff">● SolidStart foundation</b><br>○ API contract<br>○ Scheduling integration<br>○ Orca projection<br>○ Desktop surface</p><div style="font-size:10px;color:#8492a7;margin-top:14px">BLOCKERS</div><p style="font-size:11px;color:#e1ad5d">Orca event schema<br>Desktop auth handoff</p></div></div>
+        <div style="display:grid;grid-template-rows:1.2fr .8fr;gap:8px"><div style="background:#151d29;padding:9px;border-radius:6px"><div style="display:flex"><div style="font-size:10px;color:#8492a7">LIVE EXECUTION</div><span style="margin-left:auto;font-size:10px;color:#72d6b1">3 workers</span></div><div style="display:flex;justify-content:center;align-items:center;gap:7px;height:120px"><span style="border:1px solid #786dea;padding:7px;border-radius:5px">Coordinator</span><span>→</span><div style="display:grid;gap:6px"><span style="border:1px solid #4a9b82;padding:5px;border-radius:4px">UI</span><span style="border:1px solid #d19d4b;padding:5px;border-radius:4px">API</span></div></div></div><div style="background:#151d29;padding:9px;border-radius:6px"><div style="font-size:10px;color:#8492a7">ATTENTION</div><p style="font-size:11px">2 approvals · 1 failed schedule<br>Latest checkpoint 42s ago</p><button style="background:#7065dc;color:#fff;border:0;border-radius:4px;padding:6px 9px">Open active run</button></div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C. Split initiative + live execution</h3><p>Durable intent stays visible beside the active Orca graph. This connects why the work exists to what is happening now.</p></div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:22px;padding:14px;border-left:3px solid #7c6ff2;background:rgba(124,111,242,.08)"><div class="label">Recommendation</div><p style="margin-bottom:0"><strong>C as the first flagship route.</strong> It exercises Solid's interactive strengths immediately while preventing the command center from becoming merely another process monitor.</p></div>

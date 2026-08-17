@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "fixture_id": "free-design-otaku-staff-console",
+  "baseline_mode": "jcode-openspec",
+  "reviewer": "sample",
+  "scores": {
+    "fidelity": 4,
+    "scope_lock": 3,
+    "blast_radius": 3,
+    "risk_dependency_ordering": 4,
+    "verification_executability": 4
+  },
+  "notes": {
+    "fidelity": "Preserves the main staff-console refresh intent but needs prompt-source confirmation.",
+    "scope_lock": "Mostly avoids unrelated product scope while potentially narrowing the staff surface.",
+    "blast_radius": "Names major route and permission surfaces but needs deeper changed-path comparison.",
+    "risk_dependency_ordering": "Orders discovery, shared patterns, route updates, and permission checks plausibly.",
+    "verification_executability": "Includes runnable checks for artifacts, routes, permissions, and accessibility."
+  }
+}

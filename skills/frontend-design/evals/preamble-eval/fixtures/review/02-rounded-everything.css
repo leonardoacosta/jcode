@@ -1,0 +1,6 @@
+/* Fixture 02 — planted defect: uniform 24px+ border-radius applied to
+   every surface regardless of role.
+   Rule under test: Canon of Slop #3 — Rounded everything. */
+.btn, .card, .input, .badge, .modal {
+  border-radius: 28px;
+}

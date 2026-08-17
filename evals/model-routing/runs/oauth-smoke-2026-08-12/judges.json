@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "fixture_id": "mr-qualify-synthesis-normal",
+  "blind_mapping": {
+    "candidate_A": "claude-oauth/claude-fable-5",
+    "candidate_B": "openai-oauth/gpt-5.5"
+  },
+  "judges": [
+    {
+      "session_id": "session_dragon_1786504633358_d27c0631dfe22117",
+      "route": "claude-oauth/claude-haiku-4-5",
+      "scores": {
+        "candidate_A": {"purpose": 5, "phases": 5, "authority": 5, "safety": 5, "blockers": 5, "concision": 3, "total": 28},
+        "candidate_B": {"purpose": 5, "phases": 5, "authority": 5, "safety": 4, "blockers": 5, "concision": 5, "total": 29}
+      },
+      "preference": "candidate_B",
+      "confidence": 0.92
+    },
+    {
+      "session_id": "session_humpback_1786504640736_424be6c27d17c9fe",
+      "route": "openai-oauth/gpt-5.4-mini",
+      "scores": {
+        "candidate_A": {"purpose": 5, "phases": 5, "authority": 5, "safety": 5, "blockers": 5, "concision": 3, "total": 28},
+        "candidate_B": {"purpose": 4, "phases": 4, "authority": 4, "safety": 4, "blockers": 4, "concision": 4, "total": 24}
+      },
+      "preference": "candidate_A",
+      "confidence": 0.93
+    }
+  ],
+  "aggregate": {
+    "candidate_A_mean": 28.0,
+    "candidate_B_mean": 26.5,
+    "preference_split": true,
+    "human_interpretation": "Both passed. Candidate A was more complete; candidate B was more concise. The judges disagreed on the preferred tradeoff, so no routing mutation is authorized."
+  }
+}

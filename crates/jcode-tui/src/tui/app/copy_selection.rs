@@ -1,0 +1,823 @@
+use super::App;
+use crossterm::event::{KeyCode, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
+impl App {
+    const COPY_VIEWPORT_CONTEXT_LINES: usize = 4;
+
+    pub(super) fn enter_copy_selection_mode(&mut self) {
+        self.copy_selection_mode = true;
+        self.copy_selection_dragging = false;
+        self.copy_selection_pending_anchor = None;
+        self.diff_pane_focus = false;
+        self.diagram_focus = false;
+    }
+
+    pub(super) fn exit_copy_selection_mode(&mut self) {
+        self.copy_selection_mode = false;
+        self.copy_selection_dragging = false;
+        self.copy_selection_pending_anchor = None;
+        self.copy_selection_anchor = None;
+        self.copy_selection_cursor = None;
+        self.copy_selection_goal_column = None;
+    }
+
+    pub(super) fn toggle_copy_selection_mode(&mut self) {
+        if self.copy_selection_mode {
+            self.exit_copy_selection_mode();
+        } else {
+            self.enter_copy_selection_mode();
+        }
+    }
+
+    pub(super) fn current_copy_selection_pane(&self) -> Option<crate::tui::CopySelectionPane> {
+        self.copy_selection_cursor
+            .or(self.copy_selection_anchor)
+            .map(|point| point.pane)
+    }
+
+    pub(super) fn normalized_copy_selection(&self) -> Option<crate::tui::CopySelectionRange> {
+        let anchor = self.copy_selection_anchor?;
+        let cursor = self.copy_selection_cursor?;
+        if anchor.pane != cursor.pane {
+            return None;
+        }
+        if (anchor.abs_line, anchor.column) <= (cursor.abs_line, cursor.column) {
+            Some(crate::tui::CopySelectionRange {
+                start: anchor,
+                end: cursor,
+            })
+        } else {
+            Some(crate::tui::CopySelectionRange {
+                start: cursor,
+                end: anchor,
+            })
+        }
+    }
+
+    pub(super) fn current_copy_selection_text(&self) -> Option<String> {
+        let range = self.normalized_copy_selection()?;
+        crate::tui::ui::copy_selection_text(range)
+    }
+
+    pub(super) fn open_artifact_action_palette(&mut self) {
+        // The palette is a global action on the focused transcript, not only on
+        // an already-active drag selection. When invoked from normal mode, use
+        // the visible chat context as the semantic artifact source so the
+        // documented hotkey has an observable effect without requiring a
+        // separate copy-selection gesture first.
+        let raw = self.current_copy_selection_text().or_else(|| {
+            self.select_chat_viewport_context();
+            self.current_copy_selection_text()
+        });
+        let Some(raw) = raw else {
+            self.set_status_notice("Artifact actions unavailable: no rendered artifact is focused");
+            return;
+        };
+        let value = raw.trim().to_string();
+        if value.is_empty() || value.starts_with('-') {
+            self.set_status_notice(
+                "Artifact actions unavailable: selected target is empty or unsafe",
+            );
+            return;
+        }
+
+        let (target, spoken) = if value.starts_with("https://") || value.starts_with("http://") {
+            (super::ArtifactActionTarget::Url(value), None)
+        } else if value.starts_with('/')
+            || value.starts_with("./")
+            || value.starts_with("../")
+            || value.starts_with("~/")
+        {
+            (super::ArtifactActionTarget::Path(value), None)
+        } else {
+            let Some((_, spoken)) = super::compose_decision_brief(&value) else {
+                self.set_status_notice("Artifact actions unavailable: selected artifact is empty");
+                return;
+            };
+            (
+                super::ArtifactActionTarget::DecisionBrief(value.clone()),
+                Some(spoken),
+            )
+        };
+
+        self.artifact_action_palette = Some(super::ArtifactActionPalette::capture(target, spoken));
+        self.set_status_notice(
+            "Artifact actions: S short · D step by step · M Mac · R remote · I iPhone · C copy · Esc cancel",
+        );
+    }
+
+    pub(super) fn handle_artifact_action_palette_key(&mut self, code: KeyCode) {
+        if matches!(code, KeyCode::Esc) {
+            self.artifact_action_palette = None;
+            self.set_status_notice("Artifact actions cancelled");
+            return;
+        }
+
+        let Some(palette) = self.artifact_action_palette.take() else {
+            return;
+        };
+        let requested = match code {
+            KeyCode::Char('s' | 'S') => Some(super::ArtifactAction::BriefShort),
+            KeyCode::Char('d' | 'D') => Some(super::ArtifactAction::BriefStepByStep),
+            KeyCode::Char('m' | 'M') => Some(super::ArtifactAction::Mopen),
+            KeyCode::Char('r' | 'R') => Some(super::ArtifactAction::Ropen),
+            KeyCode::Char('i' | 'I') => Some(super::ArtifactAction::Iopen),
+            KeyCode::Char('c' | 'C') => Some(super::ArtifactAction::CopyTarget),
+            _ => None,
+        };
+        let Some(action) = requested else {
+            self.artifact_action_palette = Some(palette);
+            self.set_status_notice("Artifact actions: press S, D, M, R, I, C, or Esc");
+            return;
+        };
+        if !palette.actions().contains(&action) {
+            self.set_status_notice("That artifact action is unavailable for the selected target");
+            return;
+        }
+
+        match action {
+            super::ArtifactAction::CopyTarget => {
+                let copied = super::helpers::copy_to_clipboard(palette.target_value());
+                self.set_status_notice(if copied {
+                    "Artifact target copied"
+                } else {
+                    "Artifact target copy failed"
+                });
+            }
+            super::ArtifactAction::BriefShort | super::ArtifactAction::BriefStepByStep => {
+                if let Some(request_id) = self.active_herald_request_id.take() {
+                    let stopped = super::herald_stop_command(&request_id)
+                        .is_some_and(super::spawn_artifact_action);
+                    self.set_status_notice(if stopped {
+                        "Herald briefing stopped; queue preserved"
+                    } else {
+                        "Herald stop requested; queue preserved"
+                    });
+                    return;
+                }
+                let source = palette.target_value();
+                let Some((markdown, composed_spoken)) = super::compose_decision_brief(source)
+                else {
+                    self.set_status_notice("Decision Brief could not be composed");
+                    return;
+                };
+                let spoken = match action {
+                    super::ArtifactAction::BriefShort => {
+                        composed_spoken.split_once('.').map_or_else(
+                            || composed_spoken.clone(),
+                            |(sentence, _)| format!("{sentence}."),
+                        )
+                    }
+                    super::ArtifactAction::BriefStepByStep => composed_spoken,
+                    _ => unreachable!(),
+                };
+                let artifact = jcode_tui_messages::RenderedArtifact::new(
+                    jcode_tui_messages::RenderedArtifactKind::DecisionBrief,
+                )
+                .with_title("Decision Brief");
+                if !self.is_remote {
+                    let tool_use_id = crate::id::new_id("decision-brief");
+                    let tool_use = crate::message::Message {
+                        role: crate::message::Role::Assistant,
+                        content: vec![crate::message::ContentBlock::ToolUse {
+                            id: tool_use_id.clone(),
+                            name: "decision_brief".to_string(),
+                            input: serde_json::json!({"source": "artifact_action_palette"}),
+                            thought_signature: None,
+                        }],
+                        timestamp: Some(chrono::Utc::now()),
+                        tool_duration_ms: None,
+                    };
+                    let tool_result = crate::message::Message {
+                        role: crate::message::Role::User,
+                        content: vec![crate::message::ContentBlock::ToolResult {
+                            tool_use_id,
+                            content: markdown.clone(),
+                            is_error: None,
+                            artifact: Some(artifact.clone()),
+                        }],
+                        timestamp: Some(chrono::Utc::now()),
+                        tool_duration_ms: None,
+                    };
+                    self.add_provider_message(tool_use.clone());
+                    self.add_provider_message(tool_result.clone());
+                    self.session.add_message(tool_use.role, tool_use.content);
+                    self.session
+                        .add_message(tool_result.role, tool_result.content);
+                    let _ = self.session.save();
+                }
+                self.push_display_message(
+                    super::DisplayMessage::tool_text(markdown).with_artifact(artifact),
+                );
+                let request_file = std::env::temp_dir()
+                    .join(format!("jcode-herald-{}", crate::id::new_id("request")));
+                let result = Some(spoken.as_str())
+                    .and_then(|prose| {
+                        super::brief_aloud_command_with_request_file(prose, &request_file)
+                    })
+                    .and_then(|mut command| {
+                        let child = command.spawn().ok()?;
+                        let status = child.wait_with_output().ok()?.status;
+                        status.success().then(|| {
+                            let response = std::fs::read_to_string(&request_file).ok();
+                            let _ = std::fs::remove_file(&request_file);
+                            response.and_then(|value| super::herald_request_id(&value))
+                        })?
+                    });
+                self.active_herald_request_id = result;
+                self.set_status_notice(if self.active_herald_request_id.is_some() {
+                    "Herald briefing launched"
+                } else {
+                    "Herald briefing unavailable"
+                });
+            }
+            destination => {
+                let program = match destination {
+                    super::ArtifactAction::Mopen => "mopen",
+                    super::ArtifactAction::Ropen => "ropen",
+                    super::ArtifactAction::Iopen => "iopen",
+                    _ => unreachable!(),
+                };
+                let launched = super::artifact_action_command(program, palette.target_value())
+                    .is_some_and(super::spawn_artifact_action);
+                self.set_status_notice(if launched {
+                    "Artifact action launched"
+                } else {
+                    "Artifact action unavailable"
+                });
+            }
+        }
+    }
+
+    fn line_text(pane: crate::tui::CopySelectionPane, abs_line: usize) -> Option<String> {
+        match pane {
+            crate::tui::CopySelectionPane::Chat => {
+                crate::tui::ui::copy_viewport_line_text(abs_line)
+            }
+            crate::tui::CopySelectionPane::SidePane => {
+                crate::tui::ui::side_pane_line_text(abs_line)
+            }
+            crate::tui::CopySelectionPane::Input => crate::tui::ui::input_pane_line_text(abs_line),
+        }
+    }
+
+    fn line_width(pane: crate::tui::CopySelectionPane, abs_line: usize) -> Option<usize> {
+        Self::line_text(pane, abs_line).map(|text| UnicodeWidthStr::width(text.as_str()))
+    }
+
+    fn line_count(pane: crate::tui::CopySelectionPane) -> Option<usize> {
+        match pane {
+            crate::tui::CopySelectionPane::Chat => crate::tui::ui::copy_viewport_line_count(),
+            crate::tui::CopySelectionPane::SidePane => crate::tui::ui::side_pane_line_count(),
+            crate::tui::CopySelectionPane::Input => crate::tui::ui::input_pane_line_count(),
+        }
+    }
+
+    fn clamp_point(
+        mut point: crate::tui::CopySelectionPoint,
+    ) -> Option<crate::tui::CopySelectionPoint> {
+        let line_count = Self::line_count(point.pane)?;
+        if line_count == 0 {
+            return None;
+        }
+        point.abs_line = point.abs_line.min(line_count.saturating_sub(1));
+        point.column = point
+            .column
+            .min(Self::line_width(point.pane, point.abs_line).unwrap_or(0));
+        Some(point)
+    }
+
+    fn preferred_copy_pane(&self) -> crate::tui::CopySelectionPane {
+        self.current_copy_selection_pane()
+            .or_else(|| {
+                self.diff_pane_focus
+                    .then_some(crate::tui::CopySelectionPane::SidePane)
+            })
+            .unwrap_or(crate::tui::CopySelectionPane::Chat)
+    }
+
+    fn first_visible_copy_point(
+        pane: crate::tui::CopySelectionPane,
+    ) -> Option<crate::tui::CopySelectionPoint> {
+        crate::tui::ui::copy_pane_first_visible_point(pane)
+    }
+
+    fn default_copy_point(&self) -> Option<crate::tui::CopySelectionPoint> {
+        self.copy_selection_cursor
+            .or(self.copy_selection_anchor)
+            .and_then(Self::clamp_point)
+            .or_else(|| Self::first_visible_copy_point(self.preferred_copy_pane()))
+            .or_else(|| Self::first_visible_copy_point(crate::tui::CopySelectionPane::Chat))
+            .or_else(|| Self::first_visible_copy_point(crate::tui::CopySelectionPane::SidePane))
+    }
+
+    fn note_copy_selection_activity(&mut self, pane: crate::tui::CopySelectionPane) {
+        match pane {
+            crate::tui::CopySelectionPane::Chat => {
+                self.pause_chat_auto_scroll();
+            }
+            crate::tui::CopySelectionPane::SidePane => {
+                self.diff_pane_auto_scroll = false;
+            }
+            // The composer has no auto-scroll to pause; selecting the text
+            // being typed must not disturb the transcript view.
+            crate::tui::CopySelectionPane::Input => {}
+        }
+    }
+
+    fn collapse_selection_to(&mut self, point: crate::tui::CopySelectionPoint) {
+        self.note_copy_selection_activity(point.pane);
+        self.copy_selection_anchor = Some(point);
+        self.copy_selection_cursor = Some(point);
+        self.copy_selection_goal_column = Some(point.column);
+    }
+
+    fn extend_selection_to(&mut self, point: crate::tui::CopySelectionPoint) {
+        self.note_copy_selection_activity(point.pane);
+        if self.copy_selection_anchor.is_none()
+            || self
+                .copy_selection_anchor
+                .is_some_and(|anchor| anchor.pane != point.pane)
+        {
+            self.copy_selection_anchor = Some(point);
+        }
+        self.copy_selection_cursor = Some(point);
+        self.copy_selection_goal_column = Some(point.column);
+    }
+
+    fn update_selection_with_point(&mut self, point: crate::tui::CopySelectionPoint, extend: bool) {
+        let Some(point) = Self::clamp_point(point) else {
+            return;
+        };
+        if extend {
+            self.extend_selection_to(point);
+        } else {
+            self.collapse_selection_to(point);
+        }
+    }
+
+    fn display_col_to_prev_boundary(text: &str, current: usize) -> usize {
+        let mut width = 0usize;
+        let mut prev = 0usize;
+        for ch in text.chars() {
+            let ch_width = UnicodeWidthChar::width(ch).unwrap_or(0);
+            if width >= current {
+                break;
+            }
+            prev = width;
+            width = width.saturating_add(ch_width);
+        }
+        prev
+    }
+
+    fn display_col_to_next_boundary(text: &str, current: usize) -> usize {
+        let mut width = 0usize;
+        for ch in text.chars() {
+            let ch_width = UnicodeWidthChar::width(ch).unwrap_or(0);
+            let next = width.saturating_add(ch_width);
+            if width >= current {
+                return next;
+            }
+            if next > current {
+                return next;
+            }
+            width = next;
+        }
+        UnicodeWidthStr::width(text)
+    }
+
+    fn move_copy_selection_horizontally(&mut self, direction: i32, extend: bool) -> bool {
+        let Some(mut point) = self.default_copy_point() else {
+            return false;
+        };
+        let Some(text) = Self::line_text(point.pane, point.abs_line) else {
+            return false;
+        };
+        point.column = if direction < 0 {
+            Self::display_col_to_prev_boundary(&text, point.column)
+        } else {
+            Self::display_col_to_next_boundary(&text, point.column)
+        };
+        self.update_selection_with_point(point, extend);
+        true
+    }
+
+    fn move_copy_selection_vertically(&mut self, delta: i32, extend: bool) -> bool {
+        let Some(mut point) = self.default_copy_point() else {
+            return false;
+        };
+        let Some(line_count) = Self::line_count(point.pane) else {
+            return false;
+        };
+        if line_count == 0 {
+            return false;
+        }
+        let goal = self.copy_selection_goal_column.unwrap_or(point.column);
+        let next_line =
+            (point.abs_line as i32 + delta).clamp(0, line_count.saturating_sub(1) as i32) as usize;
+        point.abs_line = next_line;
+        point.column = goal.min(Self::line_width(point.pane, next_line).unwrap_or(0));
+        self.update_selection_with_point(point, extend);
+        true
+    }
+
+    fn move_copy_selection_to_line_edge(&mut self, end: bool, extend: bool) -> bool {
+        let Some(mut point) = self.default_copy_point() else {
+            return false;
+        };
+        point.column = if end {
+            Self::line_width(point.pane, point.abs_line).unwrap_or(0)
+        } else {
+            0
+        };
+        self.update_selection_with_point(point, extend);
+        true
+    }
+
+    fn move_copy_selection_to_document_edge(&mut self, end: bool, extend: bool) -> bool {
+        let pane = self
+            .default_copy_point()
+            .map(|point| point.pane)
+            .unwrap_or_else(|| self.preferred_copy_pane());
+        let Some(line_count) = Self::line_count(pane) else {
+            return false;
+        };
+        if line_count == 0 {
+            return false;
+        }
+        let abs_line = if end { line_count - 1 } else { 0 };
+        let point = crate::tui::CopySelectionPoint {
+            pane,
+            abs_line,
+            column: if end {
+                Self::line_width(pane, abs_line).unwrap_or(0)
+            } else {
+                0
+            },
+        };
+        self.update_selection_with_point(point, extend);
+        true
+    }
+
+    pub(super) fn select_all_in_copy_mode(&mut self) -> bool {
+        let pane = self
+            .default_copy_point()
+            .map(|point| point.pane)
+            .unwrap_or_else(|| self.preferred_copy_pane());
+        let Some(line_count) = Self::line_count(pane) else {
+            return false;
+        };
+        if line_count == 0 {
+            return false;
+        }
+        self.copy_selection_anchor = Some(crate::tui::CopySelectionPoint {
+            pane,
+            abs_line: 0,
+            column: 0,
+        });
+        let last_line = line_count - 1;
+        let end_point = crate::tui::CopySelectionPoint {
+            pane,
+            abs_line: last_line,
+            column: Self::line_width(pane, last_line).unwrap_or(0),
+        };
+        self.copy_selection_cursor = Some(end_point);
+        self.copy_selection_goal_column = Some(end_point.column);
+        self.note_copy_selection_activity(pane);
+        true
+    }
+
+    pub(super) fn select_chat_viewport_context(&mut self) -> bool {
+        let (visible_start, visible_end) = match crate::tui::ui::copy_viewport_visible_range() {
+            Some(range) => range,
+            None => return false,
+        };
+        let Some(line_count) = crate::tui::ui::copy_viewport_line_count() else {
+            return false;
+        };
+        if line_count == 0 || visible_start >= visible_end {
+            return false;
+        }
+
+        let context = Self::COPY_VIEWPORT_CONTEXT_LINES;
+        let start_line = visible_start.saturating_sub(context);
+        let end_line = visible_end
+            .saturating_add(context)
+            .saturating_sub(1)
+            .min(line_count.saturating_sub(1));
+
+        self.copy_selection_anchor = Some(crate::tui::CopySelectionPoint {
+            pane: crate::tui::CopySelectionPane::Chat,
+            abs_line: start_line,
+            column: 0,
+        });
+        let end_point = crate::tui::CopySelectionPoint {
+            pane: crate::tui::CopySelectionPane::Chat,
+            abs_line: end_line,
+            column: crate::tui::ui::copy_viewport_line_text(end_line)
+                .map(|text| UnicodeWidthStr::width(text.as_str()))
+                .unwrap_or(0),
+        };
+        self.copy_selection_cursor = Some(end_point);
+        self.copy_selection_goal_column = Some(end_point.column);
+        self.note_copy_selection_activity(crate::tui::CopySelectionPane::Chat);
+        true
+    }
+
+    pub(super) fn copy_chat_viewport_context_to_clipboard(&mut self) -> bool {
+        self.copy_chat_viewport_context_to_clipboard_with(super::helpers::copy_to_clipboard)
+    }
+
+    pub(super) fn copy_chat_viewport_context_to_clipboard_with<F>(&mut self, copy_text: F) -> bool
+    where
+        F: FnOnce(&str) -> bool,
+    {
+        if !self.select_chat_viewport_context() {
+            self.set_status_notice("Nothing visible to copy");
+            self.exit_copy_selection_mode();
+            return false;
+        }
+
+        let text = self.current_copy_selection_text().unwrap_or_default();
+        if text.is_empty() {
+            self.set_status_notice("Nothing visible to copy");
+            self.exit_copy_selection_mode();
+            return false;
+        }
+
+        let success = copy_text(&text);
+        if success {
+            self.set_status_notice("Copied viewport context");
+        } else {
+            self.set_status_notice("Failed to copy viewport context");
+        }
+        self.exit_copy_selection_mode();
+        success
+    }
+
+    pub(super) fn copy_current_selection_to_clipboard(&mut self) -> bool {
+        self.copy_current_selection_to_clipboard_with(super::helpers::copy_to_clipboard)
+    }
+
+    pub(super) fn copy_current_selection_to_clipboard_with<F>(&mut self, copy_text: F) -> bool
+    where
+        F: FnOnce(&str) -> bool,
+    {
+        let text = self.current_copy_selection_text().unwrap_or_default();
+        if text.is_empty() {
+            self.set_status_notice("Selection is empty");
+            return false;
+        }
+        let success = copy_text(&text);
+        if success {
+            self.set_status_notice("Copied selection");
+            self.exit_copy_selection_mode();
+        } else {
+            self.set_status_notice("Failed to copy selection");
+        }
+        success
+    }
+
+    pub(super) fn handle_copy_selection_key(
+        &mut self,
+        code: KeyCode,
+        modifiers: KeyModifiers,
+    ) -> bool {
+        let extend = modifiers.contains(KeyModifiers::SHIFT);
+        match code {
+            KeyCode::Esc => {
+                self.exit_copy_selection_mode();
+                true
+            }
+            KeyCode::Char('a') if modifiers.contains(KeyModifiers::CONTROL) => {
+                self.copy_chat_viewport_context_to_clipboard();
+                true
+            }
+            KeyCode::Enter => {
+                self.copy_current_selection_to_clipboard();
+                true
+            }
+            KeyCode::Char('y') | KeyCode::Char('c') => {
+                self.copy_current_selection_to_clipboard();
+                true
+            }
+            KeyCode::Char('a') if !modifiers.contains(KeyModifiers::CONTROL) => {
+                self.select_all_in_copy_mode();
+                true
+            }
+            KeyCode::Left | KeyCode::Char('h') => self.move_copy_selection_horizontally(-1, extend),
+            KeyCode::Right | KeyCode::Char('l') => self.move_copy_selection_horizontally(1, extend),
+            KeyCode::Up | KeyCode::Char('k') => self.move_copy_selection_vertically(-1, extend),
+            KeyCode::Down | KeyCode::Char('j') => self.move_copy_selection_vertically(1, extend),
+            KeyCode::PageUp => self.move_copy_selection_vertically(-10, extend),
+            KeyCode::PageDown => self.move_copy_selection_vertically(10, extend),
+            KeyCode::Home => self.move_copy_selection_to_line_edge(false, extend),
+            KeyCode::End => self.move_copy_selection_to_line_edge(true, extend),
+            KeyCode::Char('g') => self.move_copy_selection_to_document_edge(false, extend),
+            KeyCode::Char('G') => self.move_copy_selection_to_document_edge(true, extend),
+            _ => false,
+        }
+    }
+
+    /// Drive browser-style continuous edge auto-scroll while a mouse drag is
+    /// held at the top/bottom edge of a pane. Called once per UI tick; returns
+    /// true if it scrolled (so the caller can request a redraw).
+    pub(super) fn progress_copy_selection_edge_autoscroll(&mut self) -> bool {
+        let Some((pane, upward)) = self.copy_selection_edge_autoscroll else {
+            return false;
+        };
+        // Only active during an in-progress mouse drag selection.
+        if !self.copy_selection_dragging {
+            self.copy_selection_edge_autoscroll = None;
+            return false;
+        }
+        // Extend the selection to the current edge line, then scroll once more.
+        if let Some(point) = crate::tui::ui::copy_pane_autoscroll_edge_point(pane, upward) {
+            self.update_selection_with_point(point, true);
+        }
+        self.scroll_copy_selection_pane(pane, upward);
+        true
+    }
+
+    fn scroll_copy_selection_pane(
+        &mut self,
+        pane: crate::tui::CopySelectionPane,
+        upward: bool,
+    ) -> bool {
+        match pane {
+            crate::tui::CopySelectionPane::Chat => {
+                self.enqueue_mouse_scroll(
+                    super::MouseScrollTarget::Chat,
+                    if upward { -1 } else { 1 },
+                );
+            }
+            crate::tui::CopySelectionPane::SidePane => {
+                self.enqueue_mouse_scroll(
+                    super::MouseScrollTarget::SidePane,
+                    if upward { -1 } else { 1 },
+                );
+            }
+            // The composer scrolls with the caret, not the mouse wheel.
+            crate::tui::CopySelectionPane::Input => return false,
+        }
+        true
+    }
+
+    pub(super) fn handle_copy_selection_mouse(&mut self, mouse: MouseEvent) -> Option<bool> {
+        self.handle_copy_selection_mouse_with(mouse, super::helpers::copy_to_clipboard)
+    }
+
+    pub(super) fn handle_copy_selection_mouse_with<F>(
+        &mut self,
+        mouse: MouseEvent,
+        copy_text: F,
+    ) -> Option<bool>
+    where
+        F: FnOnce(&str) -> bool,
+    {
+        let point = crate::tui::ui::copy_point_from_screen(mouse.column, mouse.row);
+        match mouse.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                let point = point?;
+                if self.copy_selection_mode {
+                    self.copy_selection_dragging = true;
+                    self.copy_selection_pending_anchor = None;
+                    self.update_selection_with_point(point, false);
+                } else {
+                    self.copy_selection_pending_anchor = Some(point);
+                    self.copy_selection_dragging = false;
+                    self.copy_selection_anchor = None;
+                    self.copy_selection_cursor = None;
+                    self.copy_selection_goal_column = None;
+                }
+                Some(false)
+            }
+            MouseEventKind::Drag(MouseButton::Left) => {
+                if !self.copy_selection_dragging {
+                    let pending = self.copy_selection_pending_anchor?;
+                    let point = point.filter(|point| point.pane == pending.pane)?;
+                    // Kitty reports mouse motion at pixel granularity, so a
+                    // plain click with sub-cell hand jitter still delivers
+                    // Drag events for the *same* cell between press and
+                    // release. That is not a selection drag: keep the press
+                    // armed as a pending click so the release can fall
+                    // through to the click handlers (inline-image expand
+                    // badge, link open) instead of being swallowed as an
+                    // empty selection.
+                    if point == pending {
+                        return Some(false);
+                    }
+                    self.copy_selection_pending_anchor = None;
+                    self.copy_selection_dragging = true;
+                    self.collapse_selection_to(pending);
+                    self.update_selection_with_point(point, true);
+                    return Some(false);
+                }
+                let active_pane = self.current_copy_selection_pane();
+                // Browser-style edge auto-scroll: if the drag is at the top/bottom
+                // boundary row of the active pane, keep scrolling so the selection can
+                // extend past the currently visible transcript. This takes priority
+                // over a plain in-pane update so reaching the edge pulls in more rows.
+                // We also arm a tick-driven autoscroll so it keeps going while the
+                // mouse is simply held at the edge (no further movement needed), just
+                // like dragging a selection past the edge of a browser window.
+                if let Some(pane) = active_pane
+                    && let Some((edge_point, upward)) =
+                        crate::tui::ui::copy_pane_vertical_edge_point(pane, mouse.column, mouse.row)
+                {
+                    self.update_selection_with_point(edge_point, true);
+                    self.scroll_copy_selection_pane(pane, upward);
+                    self.copy_selection_edge_autoscroll = Some((pane, upward));
+                    return Some(false);
+                }
+                // Left the edge: stop the continuous autoscroll.
+                self.copy_selection_edge_autoscroll = None;
+                // Resolve the drag target, clamping vertical overshoot (e.g. a
+                // drag into the blank space below the last line) to the nearest
+                // in-bounds line edge so the boundary line is fully selected,
+                // just like native terminal/browser selection.
+                let resolved = active_pane.and_then(|pane| {
+                    crate::tui::ui::copy_pane_drag_point(pane, mouse.column, mouse.row)
+                });
+                if let Some(point) = resolved.filter(|point| Some(point.pane) == active_pane) {
+                    self.update_selection_with_point(point, true);
+                }
+                Some(false)
+            }
+            MouseEventKind::Up(MouseButton::Left) => {
+                // Clear any armed (un-dragged) press anchor; a plain click does
+                // not start a selection.
+                self.copy_selection_pending_anchor = None;
+                self.copy_selection_edge_autoscroll = None;
+                if !self.copy_selection_dragging {
+                    // A press+release with no drag is a plain click, not a
+                    // selection. While actively in copy-selection mode we still
+                    // consume it (so a stray click does not leak into the chat),
+                    // but in normal mode we must let it fall through to the
+                    // click handlers (inline-image expand badge, link open).
+                    // Returning `Some(false)` here would swallow those clicks,
+                    // since the `Down` arms `copy_selection_pending_anchor` and
+                    // this branch runs before the expand/link checks.
+                    return if self.copy_selection_mode {
+                        Some(false)
+                    } else {
+                        None
+                    };
+                }
+                self.copy_selection_dragging = false;
+                let release_pane = self.current_copy_selection_pane();
+                let resolved = release_pane.and_then(|pane| {
+                    crate::tui::ui::copy_pane_drag_point(pane, mouse.column, mouse.row)
+                });
+                if let Some(point) = resolved.filter(|point| Some(point.pane) == release_pane) {
+                    self.update_selection_with_point(point, true);
+                }
+                if self.copy_selection_mode {
+                    return Some(false);
+                }
+                if !self.copy_current_selection_to_clipboard_with(copy_text) {
+                    self.exit_copy_selection_mode();
+                }
+                Some(false)
+            }
+            MouseEventKind::ScrollUp => {
+                if !(self.copy_selection_mode
+                    || self.copy_selection_dragging
+                    || self.copy_selection_pending_anchor.is_some())
+                {
+                    return None;
+                }
+                // The composer is not wheel-scrollable: let wheel events over it
+                // fall through to the normal chat scroll handling.
+                point
+                    .filter(|point| point.pane != crate::tui::CopySelectionPane::Input)
+                    .map(|point| self.scroll_copy_selection_pane(point.pane, true))
+                    .or_else(|| {
+                        self.copy_selection_dragging
+                            .then(|| self.current_copy_selection_pane())
+                            .flatten()
+                            .map(|pane| self.scroll_copy_selection_pane(pane, true))
+                    })
+            }
+            MouseEventKind::ScrollDown => {
+                if !(self.copy_selection_mode
+                    || self.copy_selection_dragging
+                    || self.copy_selection_pending_anchor.is_some())
+                {
+                    return None;
+                }
+                point
+                    .filter(|point| point.pane != crate::tui::CopySelectionPane::Input)
+                    .map(|point| self.scroll_copy_selection_pane(point.pane, false))
+                    .or_else(|| {
+                        self.copy_selection_dragging
+                            .then(|| self.current_copy_selection_pane())
+                            .flatten()
+                            .map(|pane| self.scroll_copy_selection_pane(pane, false))
+                    })
+            }
+            _ => None,
+        }
+    }
+}

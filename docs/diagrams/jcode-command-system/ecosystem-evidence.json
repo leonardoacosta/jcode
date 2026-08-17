@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "generated_from_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+  "redaction_policy": {
+    "secrets_included": false,
+    "raw_session_text_included": false,
+    "credential_material_included": false,
+    "numeric_benchmarks_included": false,
+    "notes": "References are limited to repository paths and short content digests. No token values, credential blobs, or raw transcript text are included. Claims avoid unsupported numeric comparisons."
+  },
+  "observation_window": {
+    "label": "repository snapshot inspected 2026-08-12",
+    "revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+    "scope": [
+      "README.md",
+      "OAUTH.md",
+      "ROADMAP_HANDOFF.md",
+      "docs/diagrams/jcode-command-system/index.html",
+      "docs/diagrams/jcode-command-system/telemetry-results.html",
+      "openspec/changes/add-command-system-documentation-microsite/design.md",
+      "openspec/changes/add-command-system-documentation-microsite/specs/command-system-docs/spec.md",
+      "scripts/test-command-system-docs.py"
+    ],
+    "limitations": [
+      "This is a repository-grounded documentation snapshot, not an external product benchmark.",
+      "Pi-specific claims are intentionally low-confidence because no product-specific integration contract was found in inspected repository files.",
+      "Provider behavior outside committed documentation and code was not measured for this page."
+    ]
+  },
+  "references": [
+    {
+      "ref_id": "ref:readme",
+      "path": "README.md",
+      "digest": "sha256:3858a76b2024416b792d538327aed338624e32db74e9a5c670946d682f706f97",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
+    },
+    {
+      "ref_id": "ref:oauth",
+      "path": "OAUTH.md",
+      "digest": "sha256:7cbfe0000a64a86908714226dab6fb6f6195512b1fae44b381d4ef9844753507",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
+    },
+    {
+      "ref_id": "ref:roadmap",
+      "path": "ROADMAP_HANDOFF.md",
+      "digest": "sha256:ca746b527132839bccc419b8ee82c73b5d53fd11cbcb8487ea188c1f344220fc",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
+    },
+    {
+      "ref_id": "ref:index",
+      "path": "docs/diagrams/jcode-command-system/index.html",
+      "digest": "sha256:2a8f106ba1b3bb56bba71b5599e75508a319aa022d96afe5373e001381cea417",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
+    },
+    {
+      "ref_id": "ref:telemetry-page",
+      "path": "docs/diagrams/jcode-command-system/telemetry-results.html",
+      "digest": "sha256:852763c45cccb567f7c8d53ef9d84f7ff2688dd89cc32beacbf7c0c3802e607d",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
+    },
+    {
+      "ref_id": "ref:microsite-design",
+      "path": "openspec/changes/add-command-system-documentation-microsite/design.md",
+      "digest": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
+    },
+    {
+      "ref_id": "ref:microsite-spec",
+      "path": "openspec/changes/add-command-system-documentation-microsite/specs/command-system-docs/spec.md",
+      "digest": "sha256:3e8eb69d6b2c4169ebed859db8298822202f3c44265e7233b3f10cba4a75bc3e",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
+    },
+    {
+      "ref_id": "ref:validator",
+      "path": "scripts/test-command-system-docs.py",
+      "digest": "sha256:2754cf9a0a7463a49c38a2eac6f04de10c796c171303558f6ad61255c9f7973a",
+      "sanitized": true,
+      "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+      "digest_type": "git-object-sha256"
+    }
+  ],
+  "claims": [
+    {
+      "id": "claude-code",
+      "claim_id": "ecosystem:claude-code:role",
+      "subject": "Claude Code",
+      "label": "documented",
+      "confidence": "high",
+      "claim": "Claude Code is represented in this repository as an external CLI/session and native credential source that Jcode can interoperate with after explicit trust decisions.",
+      "supporting_refs": [
+        "ref:oauth",
+        "ref:roadmap"
+      ],
+      "cooperation_boundary": "Use Claude Code artifacts and credentials only through documented approval and takeover boundaries.",
+      "limitations": "This claim does not benchmark Claude Code quality or assert automatic credential access."
+    },
+    {
+      "id": "codex",
+      "claim_id": "ecosystem:codex:role",
+      "subject": "Codex",
+      "label": "documented",
+      "confidence": "medium",
+      "claim": "Codex/OpenAI appears as a provider lane in auth and provider-neutral orchestration planning.",
+      "supporting_refs": [
+        "ref:oauth",
+        "ref:roadmap",
+        "ref:telemetry-page"
+      ],
+      "cooperation_boundary": "Use as a peer provider behind auth, routing, and human approval gates rather than an automatic default.",
+      "limitations": "The inspected files contain less product-specific local-session detail for Codex than for Claude Code."
+    },
+    {
+      "id": "pi",
+      "claim_id": "ecosystem:pi:role",
+      "subject": "Pi",
+      "label": "inferred",
+      "confidence": "low",
+      "claim": "Pi can only be presented as an advisory conversational surface in this repository-grounded comparison because no Pi-specific committed integration contract was found in the inspected files.",
+      "supporting_refs": [
+        "ref:microsite-spec"
+      ],
+      "cooperation_boundary": "Keep Pi output advisory unless future committed evidence grants it tool or execution authority.",
+      "limitations": "No claims are made about Pi credentials, automated tooling, session import, or runtime performance."
+    },
+    {
+      "id": "jcode",
+      "claim_id": "ecosystem:jcode:role",
+      "subject": "Jcode",
+      "label": "documented",
+      "confidence": "high",
+      "claim": "Jcode is the repository-native command center for this microsite work, combining local tools, static validation, evidence maps, auth boundaries, and swarm coordination surfaces.",
+      "supporting_refs": [
+        "ref:index",
+        "ref:telemetry-page",
+        "ref:validator",
+        "ref:oauth"
+      ],
+      "cooperation_boundary": "Own local orchestration and validation while keeping risky auth, routing, and handoff mutations approval-gated.",
+      "limitations": "Evidence quality is bounded by committed or deliberately captured artifacts."
+    },
+    {
+      "id": "cross-provider-agents",
+      "claim_id": "ecosystem:cross-provider-agents:role",
+      "subject": "Cross-provider agents",
+      "label": "documented",
+      "confidence": "medium",
+      "claim": "Cross-provider coordination is documented as a way to route roles, compare outputs, and preserve evidence without allowing automated tournaments to mutate production routing by themselves.",
+      "supporting_refs": [
+        "ref:roadmap",
+        "ref:telemetry-page",
+        "ref:validator"
+      ],
+      "cooperation_boundary": "Coordinate through shared artifacts, claim IDs, and explicit reports; require human approval for production routing or irreversible authority changes.",
+      "limitations": "This page does not assert a universal winner or quantify provider superiority."
+    }
+  ],
+  "snapshot_id": "ecosystem-claim-map-v1-2026-08-12",
+  "final_digest_freeze": "acceptance_blocked until all approved page/shared-asset mutations are complete; this file currently records a working-tree candidate."
+}

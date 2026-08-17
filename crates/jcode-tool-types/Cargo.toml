@@ -1,0 +1,12 @@
+[package]
+name = "jcode-tool-types"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "jcode_tool_types"
+path = "src/lib.rs"
+
+[dependencies]
+jcode-message-types = { path = "../jcode-message-types" }
+serde_json = "1"

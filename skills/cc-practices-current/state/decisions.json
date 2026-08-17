@@ -1,0 +1,2986 @@
+{
+  "version": 1,
+  "decisions": {
+    "agent-frontmatter-mcpservers-v2.1.117": {
+      "first_seen": "2026-04-26T00:00:00Z",
+      "version": "v2.1.117",
+      "title": "Agent frontmatter mcpServers declaration",
+      "area": "agents",
+      "official_source": "https://code.claude.com/docs/en/sub-agents",
+      "research": {
+        "why": "Per-agent mcpServers lets headless --agent runs declare only servers they actually need (least-privilege MCP access).",
+        "risk": "Medium — upstream bugs mean declared mcpServers may be silently ignored, giving false confidence.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Add mcpServers: [sequential-thinking] if WebSearch/WebFetch MCP tools need explicit scoping for headless runs.",
+            "target": "agents/audit/cc-feature-analyst.md frontmatter"
+          }
+        ],
+        "community_usage": "Adopted in blog examples but blocked by active bugs: #25200 (deferred MCP tools silently absent from subagent inventory), #31287 (pattern unreliable since Sep 2025), #51736."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "defer",
+          "rationale": "Trivial to adopt but confirmed bugs in v2.1.116-117 make declarations unreliable for headless runs; defer until upstream fixes land."
+        }
+      ]
+    },
+    "agent-id-headers-otel-v2.1.139": {
+      "first_seen": "2026-05-14T00:00:00Z",
+      "version": "v2.1.139",
+      "title": "Agent-id attribution in API headers + OTEL spans",
+      "area": "otel",
+      "official_source": "https://code.claude.com/docs/en/agent-sdk/observability",
+      "research": {
+        "why": "Subagents emit stable agent_id + parent_agent_id on every llm_request span.",
+        "risk": "Low — additive JSONL field + new grouping path.",
+        "effort": "small",
+        "our_leverage": [
+          "telemetry.sh:730-773 already reads agent_id but does not persist parent_agent_id",
+          "cost-by-command:43,62,107 add --group-by=agent dimension"
+        ],
+        "community_usage": "Thin; documented in SDK observability docs."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-1mc1x",
+          "date": "2026-05-14",
+          "verdict": "implement",
+          "rationale": "Two targeted additions deliver agent-cost breakout Leo flagged as gap"
+        }
+      ]
+    },
+    "agent-notification-hooks-v2.1.198": {
+      "first_seen": "2026-07-02T00:00:00Z",
+      "version": "v2.1.198",
+      "title": "Notification hook fires agent_needs_input/agent_completed for claude agents sessions",
+      "area": "hooks",
+      "official_source": null,
+      "research": {
+        "why": "Closes the polling loop on the claude agents dashboard: sessions that need input or finish now push instead of requiring watch.",
+        "confidence": "high",
+        "our_leverage": "scripts/hooks/telemetry.sh handle_notification (settings.json Notification hook) fails open on unknown sub-types; no detached-session usage anywhere in config today.",
+        "recommendation": "skip",
+        "community_usage": "Wire the sub-types into Slack/desktop/CI push channels."
+      },
+      "history": [
+        {
+          "ref": "commit-pending",
+          "date": "2026-07-02",
+          "verdict": "implement",
+          "rationale": "USER OVERRIDE (analyst said skip: we run zero detached sessions). Leo chose to wire ahead of need. DONE this session: telemetry.sh handle_notification routes the two sub-types to nx TTS with distinct messages, bypassing 15s throttle and low-effort suppression; fail-open on unknown types. Field name parsed defensively - unverified until a detached session runs."
+        }
+      ]
+    },
+    "agents-dispatch-flags-v2.1.142": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.142",
+      "title": "claude agents dispatch flags",
+      "area": "features",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Adds --add-dir/--settings/--mcp-config/--model/--effort/etc to claude agents TUI.",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "No significant adoption."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-16",
+          "verdict": "skip",
+          "rationale": "cc never invokes claude agents programmatically; agent dispatch via Agent tool or claude --bg, neither uses these flags."
+        }
+      ]
+    },
+    "agent-type-permission-enforced-v2.1.186": {
+      "first_seen": "2026-06-27T00:00:00Z",
+      "version": "v2.1.186",
+      "title": "Agent(type) deny / allowed-types enforced for named spawns",
+      "area": "permissions",
+      "official_source": null,
+      "research": {
+        "why": "Agent(type) deny + Agent(x,y) allowed-types now enforced for named subagent spawns.",
+        "risk": "High if added globally; already covered by hook.",
+        "effort": "trivial-but-counterproductive",
+        "our_leverage": [
+          {
+            "action": "Global rules would break /apply engineer spawns (no per-command scoping). gate.sh gate_agent_spawn already enforces orchestrator-vs-engineer roles (role-aware, non-blocking, 31 agents tagged).",
+            "target": "settings.json permissions"
+          }
+        ],
+        "community_usage": "Agent(model:opus)/Agent(Explore) patterns seen; Agent(type:name) newly enforced."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-27",
+          "verdict": "skip",
+          "rationale": "Already covered by gate.sh gate_agent_spawn; declarative Agent(type) rules are global and would break legitimate /apply engineer spawns."
+        }
+      ]
+    },
+    "agent-view-v2.1.139": {
+      "first_seen": "2026-05-14T00:00:00Z",
+      "version": "v2.1.139",
+      "title": "claude agents — multi-session dashboard",
+      "area": "commands",
+      "official_source": "https://code.claude.com/docs/en/agent-view",
+      "research": {
+        "why": "Single dashboard for running/blocked/done sessions across worktrees + bg.",
+        "risk": "Research preview UI unstable; quota multiplier real if no session caps.",
+        "effort": "trivial",
+        "our_leverage": [
+          "/apply:all, /audit:waves, ralph-loop, /plan:strategy doc callouts to launch via claude --bg"
+        ],
+        "community_usage": "Launched 2026-05-11; addresses six-terminal-tabs anti-pattern; quota multiplier risk."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-6kx3s",
+          "date": "2026-05-14",
+          "verdict": "implement",
+          "rationale": "Operational habit + four command doc callouts; zero code change"
+        }
+      ]
+    },
+    "alwaysload-mcp-server-v2.1.121": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.121",
+      "title": "alwaysLoad MCP server config flag",
+      "area": "mcp",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Skips ToolSearch round-trip for high-traffic servers.",
+        "risk": "Medium for large servers.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "alwaysLoad:true — 1 tool, ~700 token overhead",
+            "target": "mcp.json: sequential-thinking"
+          },
+          {
+            "action": "BLOCKED — server not present",
+            "target": "mcp.json: github"
+          }
+        ],
+        "community_usage": "Selective adoption for low-tool-count servers; warned against on large servers (20+ tools burn 14-81k tokens)."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-16",
+          "verdict": "defer",
+          "rationale": "Primary target (github MCP) blocked by prerequisite (not in mcp.json yet); only actionable candidate (sequential-thinking) is low-leverage. Revisit after github MCP addition."
+        }
+      ]
+    },
+    "askuserquestion-no-autocontinue-v2.1.200": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.200",
+      "title": "AskUserQuestion dialogs no longer auto-continue by default",
+      "area": "general",
+      "official_source": "https://github.com/anthropics/claude-code",
+      "research": {
+        "why": "v2.1.198/199 silently shipped an undocumented 60s AFK auto-continue that let Claude proceed past unanswered questions; v2.1.200 reverted to wait-forever, gating auto-continue behind an explicit /config opt-in.",
+        "risk": "Low -- doc guard, no behavior change; zero unattended AskUserQuestion call sites exist in cc (systemd timers invoke bash scripts, never a CC agent session).",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Added a caution note that /config idle-timeout auto-continue must stay unset, since apply.md/apply/all.md both depend on empty-response/timeout STOPping the run.",
+            "target": "commands/apply/references/user-gate-preflight.md"
+          }
+        ],
+        "community_usage": "Strong negative reaction to the 2.1.198/199 regression (multiple GitHub issues, blog posts calling it a misfeature that broke interactive safety); no push to re-enable it."
+      },
+      "history": [
+        {
+          "ref": "316a7ade",
+          "date": "2026-07-21",
+          "verdict": "implement",
+          "rationale": "cc's [user]-gate doctrine already assumes this default; the note guards against someone later flipping the /config idle-timeout knob and reintroducing the regression class."
+        }
+      ]
+    },
+    "attribution-sessionurl-v2.1.183": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.183",
+      "title": "attribution.sessionUrl setting",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Omits the claude.ai session link from commits/PRs in web/Remote Control sessions.",
+        "risk": "Low relevance — only affects web/RC commits; cc is CLI-primary.",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "N/A — niche."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-20",
+          "verdict": "skip",
+          "rationale": "CLI-primary flow doesn't emit claude.ai session links in commits; setting only affects web/Remote Control sessions. No surface. Revisit if Leo commits from web/RC."
+        }
+      ]
+    },
+    "automode-builtin-destructive-defaults-v2.1.183": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.183",
+      "title": "Auto mode built-in destructive-command defaults expanded",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "v2.1.183 expanded built-in auto-mode deny: git reset --hard / checkout -- . / clean -fd / stash drop (when not discarding), commit --amend on non-agent commits, terraform/pulumi/cdk destroy.",
+        "risk": "None.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Already has $defaults — new built-ins flow in automatically.",
+            "target": "settings.json autoMode.hard_deny"
+          }
+        ],
+        "community_usage": "N/A — built-in safety."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-20",
+          "verdict": "skip",
+          "rationale": "No action: autoMode.hard_deny already includes $defaults (verified), so the expanded built-in deny set is pulled in automatically. Informational."
+        }
+      ]
+    },
+    "automode-classifyallshell-v2.1.193": {
+      "first_seen": "2026-06-27T00:00:00Z",
+      "version": "v2.1.193",
+      "title": "autoMode.classifyAllShell (route all shell through classifier)",
+      "area": "settings",
+      "official_source": null,
+      "research": {
+        "why": "Routes ALL Bash/PowerShell through the auto-mode classifier vs only arbitrary-code patterns.",
+        "risk": "Per-command classifier latency across parallel wave agents; hard_deny ($defaults + 3 custom rules) already catches force-push/rm-rf threat model.",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "Brand-new; no adoption configs found."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-27",
+          "verdict": "defer",
+          "rationale": "hard_deny already covers cc's threat model; per-command classifier latency on high-throughput /apply:all not worth the marginal gain. Revisit if a bypass is observed."
+        }
+      ]
+    },
+    "automode-defaults-extension-v2.1.118": {
+      "first_seen": "2026-04-26T00:00:00Z",
+      "version": "v2.1.118",
+      "title": "autoMode $defaults token for extending built-in lists",
+      "area": "settings",
+      "official_source": "https://code.claude.com/docs/en/permission-modes",
+      "research": {
+        "why": "Without $defaults, defining any autoMode.allow list silently replaces Anthropic's curated safety ruleset; $defaults appends while preserving baseline.",
+        "risk": "Known bug #49273: defaultMode:auto in settings.json not honored on session start; auto must be activated manually.",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "No significant adoption for $defaults specifically; community focus is on autoMode.environment for trusted infra."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "skip",
+          "rationale": "settings.json has defaultMode:auto but no autoMode block — $defaults only matters when overriding allow/soft_deny/environment, which we don't."
+        }
+      ]
+    },
+    "automode-hard-deny-v2.1.136": {
+      "first_seen": "2026-05-11T00:00:00Z",
+      "version": "v2.1.136",
+      "title": "autoMode.hard_deny unconditional classifier block rules",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "soft_deny rules can be overridden when user intent is explicit; hard_deny adds an absolute classifier layer that cannot be bypassed by allow rules or user phrasing.",
+        "risk": "Low — additive; scope rules narrowly (main/master only).",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Add autoMode.hard_deny with $defaults + bd dolt push --force + git push --force-with-lease to main rules.",
+            "target": "~/.claude/settings.json — autoMode key absent; defaultMode:auto active"
+          }
+        ],
+        "community_usage": "Adopted for force-push-to-main and recursive deletion guards in CI/headless setups; thin community corpus (released v2.1.136 May 2026)."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-11",
+          "verdict": "implement",
+          "rationale": "autoMode entirely absent; bd dolt push --force is a real gap not covered by permissions.deny globs."
+        }
+      ]
+    },
+    "automode-user-settings-only-v2.1.207": {
+      "first_seen": "2026-07-16T00:00:00Z",
+      "version": "v2.1.207",
+      "title": "autoMode no longer read from repo-resident settings.local.json",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Security hardening: repo-level settings could inject auto-mode rules; v2.1.207 restricts autoMode + pluginConfigs to user-level settings only.",
+        "risk": "N/A — already compliant.",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Release notes + DevelopersIO frame it as closing a supply-chain vector, paired with autoMode default-on for Bedrock/Vertex/Foundry."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-16",
+          "verdict": "skip",
+          "rationale": "Already adopted: only autoMode block on the machine is user-level (~/.claude/settings.json); fleet sweep of all ~/dev/*/.claude settings files (cc, brown only) found zero autoMode/pluginConfigs keys."
+        }
+      ]
+    },
+    "bash-session-id-env-v2.1.132": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.132",
+      "title": "CLAUDE_CODE_SESSION_ID env in Bash tool subprocess",
+      "area": "hooks",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Zero-cost session correlation via subprocess env.",
+        "risk": "Low — backstop preserved.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Prefer CLAUDE_CODE_SESSION_ID; fall back to CLAUDE_SESSION_ID; nx-send auto-injects.",
+            "target": "telemetry.sh + gate.sh + nx-send.sh"
+          }
+        ],
+        "community_usage": "Too new."
+      },
+      "history": [
+        {
+          "ref": "00cc169b",
+          "date": "2026-05-16",
+          "verdict": "implement",
+          "rationale": "Code read CLAUDE_SESSION_ID (wrong/old name) at 6 sites; v2.1.132 introduced CLAUDE_CODE_SESSION_ID. Latent-bug fix + zero-cost correlation between hook events and bash-tool events."
+        }
+      ]
+    },
+    "beads-1.1.0-formula-system": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v1.1.0",
+      "title": "bd 1.1.0 formula/molecule/gate/wisp/swarm workflow system",
+      "area": "beads",
+      "official_source": "https://beads.gascity.com/workflows/index.md",
+      "research": {
+        "why": "bd 1.1.0 adds declarative workflow templates (formulas->protos->molecules), async checkpoints (gates), ephemeral instances (wisps), epic-DAG multi-agent coordination (swarm) on top of the issue tracker.",
+        "risk": "N/A",
+        "effort": "large -- multi-hour hands-on sandbox spike",
+        "our_leverage": [
+          {
+            "action": "Verified bd --version is byte-identical build (1.1.0, 8e4e59d39) to the 2026-07-20 NO-GO spike; no new release shipped, so nothing to re-derive from a version bump alone.",
+            "target": "docs/recon/bd-formulas-molecules.md"
+          }
+        ],
+        "community_usage": "Niche -- only adjacent gascity/gastownhall ecosystem adoption found, no independent third-party usage."
+      },
+      "history": [
+        {
+          "ref": "docs/recon/bd-formulas-molecules.md",
+          "date": "2026-07-20",
+          "verdict": "skip",
+          "rationale": "NO-GO: molecules cannot idempotently re-sync after a tasks.md edit (breaks spec-sync); molecule roots are not epic-typed (breaks bd ready priority bubble-up + MUST-NOT-close capability-epic rule). advisor-plans/013, cc-yx8bb."
+        },
+        {
+          "ref": "cc-9h6de",
+          "date": "2026-07-21",
+          "verdict": "defer",
+          "rationale": "Leo requested a fresh hands-on re-verification despite the installed bd build being byte-identical to the one the NO-GO spike tested. No new bd release has shipped. Filed as its own dedicated-session task rather than run inline during evolve."
+        }
+      ]
+    },
+    "bg-exec-shell-session-v2.1.154": {
+      "first_seen": "2026-06-15T00:00:00Z",
+      "version": "v2.1.154",
+      "title": "Background shell sessions via ! <command> / claude --bg --exec",
+      "area": "agents",
+      "official_source": "https://code.claude.com/docs/en/agent-view",
+      "research": {
+        "why": "Turns any shell command into a managed background session visible in claude agents dashboard with attach/detach; complements v2.1.147 pinned-bg-session persistence.",
+        "risk": "Medium — SIGTERM-on-compact kills indefinite monitor streams; ralph-loop already migrated to /goal.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Evaluate launching short-lived/retriable monitor streams via ! <command>; avoid indefinite daemons due to SIGTERM risk.",
+            "target": "commands/monitor/*.md — 13 monitor-helpers.sh wrappers"
+          }
+        ],
+        "community_usage": "Adoption thin for ! <command>; SIGTERM-on-session-end kills background processes when parent CC session compacts (GH #25188, #51052)."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-15",
+          "verdict": "defer",
+          "rationale": "Scheduled-auto: SIGTERM-on-compact risk makes this unsafe for primary long-running monitor streams; revisit after confirming pinned sessions survive compaction."
+        }
+      ]
+    },
+    "bg-isolation-none-v2.1.143": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.143",
+      "title": "worktree.bgIsolation: none setting for background sessions",
+      "area": "worktree",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "bgIsolation:none lets repos where worktrees are impractical run bg sessions on working copy directly.",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "No significant adoption — just-shipped 2026-05-15."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-16",
+          "verdict": "skip",
+          "rationale": "Orthogonal axis. CC's bgIsolation controls auto-EnterWorktree on Agent(run_in_background:true) spawns; our wt_create is direct shell git-worktree-add invoked by /apply orchestration, outside CC's worktree machinery."
+        }
+      ]
+    },
+    "bg-session-pinned-persistence-v2.1.147": {
+      "first_seen": "2026-05-25T00:00:00Z",
+      "version": "v2.1.147",
+      "title": "Pinned background sessions persist when idle + restart for updates",
+      "area": "agents",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Pinned bg sessions stay alive when idle and restart in-place during CC updates, eliminating the primary failure mode for multi-hour /apply:all wave runs that previously died mid-wave on auto-update.",
+        "risk": "Low — pinning is additive; un-pinned behavior unchanged.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Added Ctrl+T pin step after claude --bg launch guidance — DONE this run.",
+            "target": "commands/apply/all.md:38"
+          },
+          {
+            "action": "Same pin habit applies to long ralph iteration runs to prevent idle reclaim between cycles.",
+            "target": "ralph-loop polling sessions"
+          }
+        ],
+        "community_usage": "Adoption observed for CI/overnight orchestration runs; teams pin the orchestrator via Ctrl+T in agent view."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-25",
+          "verdict": "implement",
+          "rationale": "apply/all.md updated with Ctrl+T pin step; closes the exact update-interrupted multi-hour wave pain point."
+        }
+      ]
+    },
+    "claude-mcp-login-cli-v2.1.186": {
+      "first_seen": "2026-06-27T00:00:00Z",
+      "version": "v2.1.186",
+      "title": "claude mcp login CLI + headersHelper 401/403 reconnect",
+      "area": "mcp",
+      "official_source": null,
+      "research": {
+        "why": "CLI MCP OAuth login (--no-browser for SSH) + headersHelper auto-reconnect on 401/403.",
+        "risk": "None; the 401-reconnect fix is already live since v2.1.118.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "betterstack/linear use non-expiring API keys (no refresh); context7 key-only; OAuth-pain servers (Slack/Figma) are claude.ai-bridged plugins not reachable by `claude mcp login`. Notion verified WORKING (runtime get-users/self returned Leo).",
+            "target": "mcp.json servers"
+          }
+        ],
+        "community_usage": "Static-API-key shops ignore headersHelper; OAuth servers benefit."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-27",
+          "verdict": "defer",
+          "rationale": "Doesn't apply: OAuth-pain servers are plugin-bridged (not mcp.json); mcp.json servers use non-expiring keys. Notion auth-gap was a false alarm (verified working via get-users/self)."
+        }
+      ]
+    },
+    "claude-skills-plugin-autoload-v2.1.158": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.158",
+      "title": "Plugins in .claude/skills auto-load",
+      "area": "skills",
+      "official_source": "https://code.claude.com/docs/en/plugins",
+      "research": {
+        "why": ".claude/skills plugin auto-load + claude plugin init; distinct from plain SKILL.md auto-discovery we already use.",
+        "risk": "None to existing setup.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "guard for plugin-shaped skills (.claude-plugin/plugin.json) — only matters if we adopt plugin shape",
+            "target": "scripts/bin/cc-inventory"
+          }
+        ],
+        "community_usage": "Early; used to bundle multi-component packs."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-30",
+          "verdict": "defer",
+          "rationale": "Our 80 plain SKILL.md skills gain nothing; only a cc-inventory blind-spot guard, deferrable until first plugin-shaped skill."
+        }
+      ]
+    },
+    "code-review-command-rename-v2.1.147": {
+      "first_seen": "2026-05-25T00:00:00Z",
+      "version": "v2.1.147",
+      "title": "/code-review command (renamed from /simplify)",
+      "area": "commands",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Built-in /simplify renamed to /code-review with configurable effort levels and --comment flag for GitHub PR inline comments.",
+        "risk": "Low — doc-only changes; no behavioral change.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Replaced '/simplify' reference with '/code-review' — DONE this run.",
+            "target": "commands/review.md:23"
+          },
+          {
+            "action": "Replaced 'simplify' with 'code-review' in architecture-reviewer and codebase-health-orchestrator rows — DONE this run.",
+            "target": "skills/cc-tooling/SKILL.md:156,158"
+          }
+        ],
+        "community_usage": "Teams adopt --comment for CI-style async PR review; no namespace conflict with user-defined code-review skill if accessed as /code-review:code-review."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-25",
+          "verdict": "implement",
+          "rationale": "Three stale /simplify references found and updated in-repo; doc-only, trivial effort."
+        }
+      ]
+    },
+    "code-review-effort-pr-form-v2.1.202": {
+      "first_seen": "2026-07-16T00:00:00Z",
+      "version": "v2.1.202",
+      "title": "/review reverted to single-pass; /code-review <level> <pr#> is multi-agent",
+      "area": "commands",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "v2.1.202 reverted native /review <pr> to fast single-pass; /code-review <level> <pr#> is the multi-agent effort-tiered form (findings quality improved on opus-4-8 in v2.1.206).",
+        "risk": "Low — pure documentation; /apply:all gate logic is self-contained.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Repointed pre-merge routing row to /m2m",
+            "target": "CLAUDE.md:217"
+          },
+          {
+            "action": "Updated routing row + Phase 5 diagram label",
+            "target": "skills/cc-reference/SKILL.md:111,349"
+          },
+          {
+            "action": "Rewrote prose to describe inline local-review checks instead of citing archived /review",
+            "target": "commands/apply/all.md:1202 + references/execution-model.md:968,991"
+          }
+        ],
+        "community_usage": "Harness built-in semantics change; no external adoption signal applies."
+      },
+      "history": [
+        {
+          "ref": "commit:232a1516",
+          "date": "2026-07-16",
+          "verdict": "implement",
+          "rationale": "All 5 stale references to the archived /review command fixed; grep-verified only legit native-/review stacked-skill examples remain (cc-reference SKILL.md:18,21)."
+        }
+      ]
+    },
+    "concurrent-subagent-cap-v2.1.217": {
+      "first_seen": "2026-07-21T00:00:00Z",
+      "version": "v2.1.217",
+      "title": "Concurrent subagent cap (default 20)",
+      "area": "orchestration",
+      "official_source": "https://github.com/anthropics/claude-code/releases/tag/v2.1.217",
+      "research": {
+        "why": "New cap on concurrently-running subagents, default 20, CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS. Distinct from the existing lifetime CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION=100 cap cc already sets.",
+        "risk": "Low -- no current breakage measured.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "cc's only uncapped plain-Agent fan-out; typically 3-6 journeys, well under 20. /apply:all dispatches 1 agent/phase; Workflow-routed fan-outs self-cap at min(16,cores-2) already.",
+            "target": "commands/audit/journeys.md Phase 2 fan-out"
+          }
+        ],
+        "community_usage": "Same-day release, no community coverage found."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-21",
+          "verdict": "defer",
+          "rationale": "20 is comfortably above every measured cc fan-out pattern today. No current breakage to fix -- bundle a defensive doc note into whichever future change touches audit/journeys.md rather than shipping standalone."
+        }
+      ]
+    },
+    "disable-alternate-screen-v2.1.132": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.132",
+      "title": "Disable alternate-screen renderer",
+      "area": "env",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Keeps output in terminal native scrollback for tmux copy-mode and scrollback search.",
+        "risk": "Low.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Add CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1",
+            "target": "~/.claude/settings.json env"
+          }
+        ],
+        "community_usage": "No significant adoption."
+      },
+      "history": [
+        {
+          "ref": "settings.json:env",
+          "date": "2026-05-16",
+          "verdict": "implement",
+          "rationale": "Snapshot revealed teammateMode=tmux + CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1 — tmux-primary flow; alternate-screen is harmful. Added to ~/.claude/settings.json env block."
+        }
+      ]
+    },
+    "disable-bundled-skills-v2.1.169": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.169",
+      "title": "disableBundledSkills / CLAUDE_CODE_DISABLE_BUNDLED_SKILLS",
+      "area": "skills",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Hides Anthropic-bundled skills/workflows/built-in slash commands from the per-turn catalog; token-budget lever for the 90-skill custom suite.",
+        "risk": "All-or-nothing — would drop /loop and /claude-api (both actively used, no custom equivalents) plus /run, /verify. ~800 token saving not worth losing commands.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "ABSENT; could set true but all-or-nothing.",
+            "target": "~/.claude/settings.json"
+          }
+        ],
+        "community_usage": "Niche/new (docs issue #66378 notes it's undocumented in the settings table); mainly enterprise minimal-environment setups."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-20",
+          "verdict": "defer",
+          "rationale": "Analyst defer (high conf): all-or-nothing toggle drops /loop + /claude-api which we use, with no per-skill granularity. Revisit if upstream adds granularity or custom equivalents are written. Pairs with deferred skillOverrides (GH #50631)."
+        }
+      ]
+    },
+    "disable-updates-env-v2.1.118": {
+      "first_seen": "2026-04-26T00:00:00Z",
+      "version": "v2.1.118",
+      "title": "DISABLE_UPDATES environment variable",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Blocks all update paths including manual `claude update`, stricter than DISABLE_AUTOUPDATER.",
+        "risk": "Conflicts with Leo's multi-machine Dolt-sync workflow that depends on intentional version coordination.",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "No significant adoption observed; primary use case is CI runners and shared machines with pinned-version requirements."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "skip",
+          "rationale": "Leo updates CC intentionally and frequently across multiple machines; flag designed for locked-down CI/shared environments — opposite of this setup."
+        }
+      ]
+    },
+    "doctor-full-checkup-v2.1.205": {
+      "first_seen": "2026-07-16T00:00:00Z",
+      "version": "v2.1.205",
+      "title": "/doctor full setup checkup (/checkup alias) + CLAUDE.md-trim check",
+      "area": "general",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Upstream-maintained interactive setup checkup: duplicate CLAUDE.md content, unused skills/MCPs, slow hooks, stale version, deny-heavy permission patterns.",
+        "risk": "Medium — trim heuristic cannot distinguish redundant-with-codebase from repeated-on-purpose Iron Law text.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Candidate guard note: cross-check /doctor trim suggestions against deliberate enforcement-repetition before accepting",
+            "target": "rules/TOOLING.md CLAUDE.md-Split Pattern"
+          }
+        ],
+        "community_usage": "Changelog-restating blog coverage only; no false-positive reports surfaced."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-16",
+          "verdict": "defer",
+          "rationale": "Interactive-only (cannot feed validate-cc Tier 3); most checks already automated by the ratchet lane. Adopt as occasional manual sanity check; guard note not yet written (Leo did not opt in this run)."
+        }
+      ]
+    },
+    "duration-ms-on-posttooluse-v2.1.119": {
+      "first_seen": "2026-04-26T00:00:00Z",
+      "version": "v2.1.119",
+      "title": "PostToolUse/PostToolUseFailure duration_ms field",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/hooks",
+      "research": {
+        "why": "CC now supplies authoritative tool execution time in hook stdin, eliminating timestamp arithmetic or regex extraction.",
+        "risk": "Low — additive field; existing consumers ignore unknown keys; STDIN_JSON already buffered.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Read duration_ms via jq -r '.duration_ms // 0' from STDIN_JSON; forward in json_event call to nexus.",
+            "target": "scripts/hooks/telemetry.sh:778-784 (handle_tool_use_end)"
+          },
+          {
+            "action": "Same — parse duration_ms alongside existing tool_name/error reads.",
+            "target": "scripts/hooks/telemetry.sh:789-832 (handle_tool_use_fail)"
+          },
+          {
+            "action": "Optionally include duration_ms for per-tool count path; lower priority.",
+            "target": "scripts/hooks/telemetry.sh:564-599 (handle_heartbeat)"
+          }
+        ],
+        "community_usage": "No significant adoption observed — feature brand-new (2026-04-25); no external configs found yet."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "implement",
+          "rationale": "User accepted: trivial 2-line change per handler, zero risk, telemetry directly benefits."
+        }
+      ]
+    },
+    "dynamic-workflows-v2.1.154": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.154",
+      "title": "Dynamic workflows (Workflow tool primitive)",
+      "area": "orchestration",
+      "official_source": "https://code.claude.com/docs/en/workflows",
+      "research": {
+        "why": "Native fan-out primitive (pipeline/parallel/agent, crash-resume via journal, budget gating, worktree isolation) that can supersede hand-rolled Agent fan-out + bash state files in read-only orchestrators.",
+        "risk": "Session-scoped resume; research-preview status.",
+        "effort": "medium",
+        "our_leverage": [
+          {
+            "action": "PILOTED: authored saved workflow + smoke-run proved load/run/schema-output",
+            "target": "~/.claude/workflows/audit-services.js"
+          },
+          {
+            "action": "read-only fan-outs = good migration candidates",
+            "target": "audit:code Phase4, audit:journeys, audit:services"
+          },
+          {
+            "action": "DO NOT migrate — cross-session durability / user gate; Workflow resume is session-scoped",
+            "target": "apply:all, workflow:evolve Phase5"
+          }
+        ],
+        "community_usage": "Research preview w/ Opus 4.8 (2026-05). Flagship: Bun 750K-line port. Save runs as named commands."
+      },
+      "history": [
+        {
+          "ref": "file:~/.claude/workflows/audit-services.js (run wf_76fd9f32-c24)",
+          "date": "2026-05-30",
+          "verdict": "implement",
+          "rationale": "Piloted this session: audit-services.js authored + registered + smoke-verified (loads, runs, guards empty target, schema-valid output). Read-only audits migrate; apply:all/evolve stay on bash-state."
+        }
+      ]
+    },
+    "endconversation-tool-v2.1.214": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.214",
+      "title": "EndConversation tool",
+      "area": "general",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "Ends sessions with sustained user abuse or jailbreak attempts",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Mirrors claude.ai since 2025"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-18",
+          "verdict": "skip",
+          "rationale": "Ships with its own harness-level usage guidance already surfaced generically; no cc-side config or doc action needed."
+        }
+      ]
+    },
+    "enterworktree-confirm-outside-v2.1.206": {
+      "first_seen": "2026-07-16T00:00:00Z",
+      "version": "v2.1.206",
+      "title": "EnterWorktree confirmation outside .claude/worktrees/",
+      "area": "worktree",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "CC confirms before EnterWorktree enters a worktree outside .claude/worktrees/; v2.1.211 always-allow rules persist at repo root across worktrees.",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Internal CC guard; no external discussion."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-16",
+          "verdict": "defer",
+          "rationale": "Analyst recommended skip (nothing in cc drives the EnterWorktree tool; wt_create/wt_destroy use raw git worktree calls at .worktrees/; relocation = 21+ touches for zero gain, matching 3 prior orthogonal-axis worktree signal rejections); Leo overrode to defer pending personal exploration."
+        }
+      ]
+    },
+    "enterworktree-switch-v2.1.158": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.158",
+      "title": "EnterWorktree mid-session switching",
+      "area": "worktree",
+      "official_source": "https://code.claude.com/docs/en/worktrees",
+      "research": {
+        "why": "Switch between CC-managed worktrees mid-session.",
+        "risk": "Conflicts with our locked one-session-one-worktree model (Option C).",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "Not an observed pattern; multi-session re-entry underserved (#31969)."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-30",
+          "verdict": "skip",
+          "rationale": "Conflicts with the deliberate one-session-one-worktree isolation; multi-spec delegates to /apply:all fresh agents. Adds nothing."
+        }
+      ]
+    },
+    "explore-inherits-model-v2.1.198": {
+      "first_seen": "2026-07-02T00:00:00Z",
+      "version": "v2.1.198",
+      "title": "Built-in Explore inherits session model (capped opus); thinking config inherited by subagents",
+      "area": "agents",
+      "official_source": null,
+      "research": {
+        "why": "Built-in Explore ran haiku unconditionally producing shallow results on complex codebases.",
+        "confidence": "high",
+        "our_leverage": "None - explicit pins override; 6/31 agents haiku, 20 opus, 5 sonnet by design.",
+        "recommendation": "skip",
+        "community_usage": "Transparent default change; no adoption action."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-02",
+          "verdict": "skip",
+          "rationale": "Our custom agents/utility/explore.md pins model:haiku+effort:low deliberately (with 5 sibling analysts) - upstream default shadowed entirely. No extended-thinking session config exists for the inheritance clause."
+        }
+      ]
+    },
+    "fallback-model-session-v2.1.152": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.152",
+      "title": "--fallback-model session persistence",
+      "area": "settings",
+      "official_source": "https://code.claude.com/docs/en/cli-reference",
+      "research": {
+        "why": "On model-not-found CC switches to --fallback-model for the rest of the session instead of failing every request — resilience for long ultracode/apply:all runs.",
+        "risk": "Alias affects shell-launched sessions only (not IDE/desktop); Sonnet caps at high effort (graceful xhigh->high degradation).",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "appended --fallback-model claude-sonnet-4-6 to existing claude alias (DONE, chezmoi applied)",
+            "target": "~/dev/if/home/dot_zsh/rc/shared.zsh"
+          }
+        ],
+        "community_usage": "#8413: previously only on overload; v2.1.152 closes the not-found gap. CLI-flag only, no settings key."
+      },
+      "history": [
+        {
+          "ref": "commit:if/dot_zsh/rc/shared.zsh claude alias",
+          "date": "2026-05-30",
+          "verdict": "implement",
+          "rationale": "Implemented: appended --fallback-model claude-sonnet-4-6 to the existing chezmoi-managed claude alias; chezmoi apply + verified live. Inherits default Opus 4.8 as primary."
+        }
+      ]
+    },
+    "fallback-model-settings-key-v2.1.166": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.166",
+      "title": "fallbackModel settings.json key (up-to-3 chain)",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "settings.json fallbackModel array covers ALL session types (interactive, IDE, daemon, compaction per v2.1.178); the prior shell-alias --fallback-model only fired for shell-launched sessions, leaving IDE/background unprotected during Opus 4.8 overload.",
+        "risk": "Low — only triggers on overload/unavailability; haiku third-tier may lower quality during extended outages but beats session failure.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Added fallbackModel:[claude-sonnet-4-6, claude-haiku-4-5] top-level.",
+            "target": "~/.claude/settings.json"
+          }
+        ],
+        "community_usage": "Standard chain opus->sonnet->haiku post-v2.1.166; key finding: fallbackModel does NOT merge across scopes (highest-precedence file wins the whole chain, non-additive)."
+      },
+      "history": [
+        {
+          "ref": "settings.json:fallbackModel",
+          "date": "2026-06-20",
+          "verdict": "implement",
+          "rationale": "Leo chose the 2-tier chain. Added to settings.json top-level; verified valid JSON + key present. Shell alias kept (CLI flag overrides settings; no conflict). Covers the IDE/daemon/compaction gap the alias misses."
+        }
+      ]
+    },
+    "fork-background-session-v2.1.212": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.212",
+      "title": "/fork background session copy",
+      "area": "orchestration",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "Branch a conversation into its own background session without losing current context",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Real adoption for prompt A/B testing and architecture spikes (multiple 2026-07 writeups)"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-18",
+          "verdict": "skip",
+          "rationale": "No programmatic tool surface (human-typed/CLI-flag only); the worktree-isolation premise this would replace is already moot post session-worktree retirement"
+        }
+      ]
+    },
+    "forked-subagents-env-v2.1.117": {
+      "first_seen": "2026-04-26T00:00:00Z",
+      "version": "v2.1.117",
+      "title": "CLAUDE_CODE_FORK_SUBAGENT env flag for forked subagents",
+      "area": "agents",
+      "official_source": "https://code.claude.com/docs/en/sub-agents",
+      "research": {
+        "why": "Forked subagents share parent's prompt-cache prefix, cutting input token costs 60-90% for children 2-N by inheriting full conversation history.",
+        "risk": "All cc fan-outs (audit:journeys, audit:waves, workflow:evolve) use explicit subagent_type; flag would have zero effect. Incompatible with --print/headless. CHANGELOG 'external builds' suggests Bedrock/Vertex target.",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Adopted for CI cost reduction; caveat: fork only fires when subagent_type is OMITTED — explicit named types bypass the fork path entirely."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "skip",
+          "rationale": "All cc parallel fan-outs use explicit subagent_type, bypassing fork; CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 already provides concurrency; flag targets external/non-standard builds."
+        }
+      ]
+    },
+    "forward-subagent-text-v2.1.211": {
+      "first_seen": "2026-07-16T00:00:00Z",
+      "version": "v2.1.211",
+      "title": "forward-subagent-text stream-json flag",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Lets headless claude -p stream-json runs surface nested subagent text/thinking instead of only the top-level result.",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Flag days old; only changelog restatements found."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-16",
+          "verdict": "defer",
+          "rationale": "Analyst recommended skip (both headless callers — autoresearch-verify, bd-audit-semantic-dedup — have no nested subagents to forward); Leo overrode to defer pending personal exploration of the flag."
+        }
+      ]
+    },
+    "frontmatter-disallowed-tools-v2.1.152": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.152",
+      "title": "disallowedTools frontmatter for agent role enforcement",
+      "area": "agents",
+      "official_source": "https://code.claude.com/docs/en/sub-agents",
+      "research": {
+        "why": "Subagent .md frontmatter tools:/disallowedTools: (camelCase) hard-enforces role at spawn (same mechanism as built-in Explore/Plan). Converts prose+Nexus role discipline into a harness gate. Skill-frontmatter bugs (#37683/#18837) are a DIFFERENT surface.",
+        "risk": "Array-drop bug #60237 corrupts YAML list-form allowlists (use CSV); teams-path silently ignores frontmatter hooks; restart needed.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "CSV-form tools: + disallowedTools: Write,Edit,NotebookEdit",
+            "target": "~10 read-only analysts/reviewers"
+          },
+          {
+            "action": "fix literal 'Bash (read-only commands only)' tool-name bug",
+            "target": "plan.md, explore.md"
+          },
+          {
+            "action": "permissions.deny/SubagentStart backstop (#30703 ignores frontmatter hooks on teams)",
+            "target": "teams path"
+          }
+        ],
+        "community_usage": "Anthropic ships Explore/Plan via this; emerging."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-v4931",
+          "date": "2026-05-30",
+          "verdict": "implement",
+          "rationale": "Verdict implement-with-guards (confidence downgraded high->medium by adversarial verify). Filed as tracked reminder, NOT executed inline — needs array-drop repro + CSV form + runtime tool-inventory verify + teams backstop + restart."
+        }
+      ]
+    },
+    "goal-command-v2.1.139": {
+      "first_seen": "2026-05-14T00:00:00Z",
+      "version": "v2.1.139",
+      "title": "/goal command — completion-condition driven sessions",
+      "area": "commands",
+      "official_source": "https://code.claude.com/docs/en/goal",
+      "research": {
+        "why": "Native completion-condition evaluator-loop; Haiku judge re-evaluates after every turn — replaces ad-hoc polling.",
+        "risk": "Context bloat + false-positive completion if goal wording is vague.",
+        "effort": "small",
+        "our_leverage": [
+          "commands/test/test.md ralph-loop replacement",
+          "commands/apply.md CI-fixed marker cleanup"
+        ],
+        "community_usage": "Used for CI gates, migrations, backlog sweeps. Gotchas: context bloat, no cost cap ($6k overnight runaway cited)."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-sgb7k",
+          "date": "2026-05-14",
+          "verdict": "implement",
+          "rationale": "Leo overrode defer rec — adopt now despite stability risk; explore TEST_GREEN /goal example as canonical migration"
+        }
+      ]
+    },
+    "hook-args-exec-form-v2.1.139": {
+      "first_seen": "2026-05-14T00:00:00Z",
+      "version": "v2.1.139",
+      "title": "Hook args: string[] exec form",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/hooks",
+      "research": {
+        "why": "Direct exec spawn, bypasses shell, eliminates quoting hazards.",
+        "risk": "Low extraction risk.",
+        "effort": "trivial",
+        "our_leverage": [
+          "Extract inline PostToolUse Edit|MultiEdit shell pipeline into scripts/hooks/validate-file-hook.sh"
+        ],
+        "community_usage": "Thin — most public configs still use shell form."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-gd5oc",
+          "date": "2026-05-14",
+          "verdict": "implement",
+          "rationale": "Leo overrode defer rec — script extraction is small + clean refactor, sets up future args: form adoption"
+        }
+      ]
+    },
+    "hook-exit2-schema-validation-fix-v2.1.214": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.214",
+      "title": "Exit-2 hooks with invalid JSON now block correctly",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "Exit-2 hooks with schema-invalid stdout used to silently fail open",
+        "risk": "Low -- confirmed via live smoke test on v2.1.214",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Audited -- all stderr-only, no JSON attempted on block paths, zero risk",
+            "target": "scripts/hooks/gate.sh (13 exit-2 sites)"
+          }
+        ],
+        "community_usage": "Bugfix, no external discussion"
+      },
+      "history": [
+        {
+          "ref": "commit:settings.json",
+          "date": "2026-07-18",
+          "verdict": "implement",
+          "rationale": "Smoke-tested 3 gate.sh guards live on v2.1.214 (force-push block, force-with-lease allow, .env write block) -- all correct. Also fixed adjacent discovered gap: validate-file-hook.sh header claimed continueOnBlock=true but settings.json lacked it (pre-existing known Tier 3 hook-contract FAIL) -- added key, re-ran Tier 3, confirmed pass."
+        }
+      ]
+    },
+    "hook-if-path-conditions-v2.1.176": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.176",
+      "title": "Hook if: path conditions (Edit(src/**) etc.)",
+      "area": "hooks",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "v2.1.176 fixed hook if: glob path conditions; could scope cc's context-blind matchers (rules/TOOLING.md anti-pattern) to relevant paths.",
+        "risk": "HELD: no if: precedent in this config; settings hooks load at session start so NOT verifiable this session; if: FAILS CLOSED (unsupported brace-glob -> hook never fires -> validation silently OFF) for a ~1-fork/Edit saving. validate-file already fast-exits for non-target types, so net benefit is marginal.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Add if: Edit(**/*.{ts,tsx,md,rs}) — validate-file handles exactly ts/tsx/md/rs (confirmed at validate-file:348).",
+            "target": "settings.json validate-file PostToolUse (Edit|MultiEdit)"
+          }
+        ],
+        "community_usage": "No community examples found; docs-only (Edit(*.ts), Bash(git *))."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-20",
+          "verdict": "defer",
+          "rationale": "Leo approved implement, but post-approval evidence held it: unverifiable this session (hooks load at startup) + fail-closed brace-glob risk on the validation hook + marginal benefit (validate-file already fast-exits). Verify-then-apply path: add the if:, restart, edit a .json (expect skip) and a .ts with a syntax error (expect block) to confirm CC's brace-glob support before trusting it."
+        }
+      ]
+    },
+    "hook-matcher-exact-match-v2.1.195": {
+      "first_seen": "2026-06-27T00:00:00Z",
+      "version": "v2.1.195",
+      "title": "Hook matcher exact-match fix (hyphenated/comma)",
+      "area": "hooks",
+      "official_source": null,
+      "research": {
+        "why": "Hyphenated-identifier matchers now exact-match; comma matchers silently never fire (pipe form required).",
+        "risk": "Low; needs a definitive command-hook marker test (restart-gated).",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "All cc matchers pipe-form (no commas). SubagentStop glob `*-engineer|ui-*|db-*` is regex (* not literal hyphen), likely unaffected. Smoke-test inconclusive (confounded by prompt-hook-block-to-parent + LLM judge).",
+            "target": "settings.json hooks"
+          }
+        ],
+        "community_usage": "Release-note only."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-lt87n",
+          "date": "2026-06-27",
+          "verdict": "defer",
+          "rationale": "cc matchers verified comma-free. Smoke-test of the *-engineer glob was inconclusive (test-design confound). Definitive command-hook marker test tracked."
+        },
+        {
+          "ref": "session:19639647",
+          "date": "2026-06-27",
+          "verdict": "defer",
+          "rationale": "VERIFIED on installed 2.1.177 (< 2.1.195 ceiling): only hyphenated matcher is wildcard-form *-engineer|ui-*|db-*|api-*|e2e-* (zero bare-hyphenated); live db-engineer spawn (af2e0671) logged child_type=db-engineer; PostToolUse=Task matcher hyphen-free/immune; v2.1.195 keeps wildcard support (mcp__brave-search__.* migration example). NOT expected to break. Residual: re-spawn after binary >=2.1.195."
+        }
+      ]
+    },
+    "hooks-effort-level-input-v2.1.133": {
+      "first_seen": "2026-05-11T00:00:00Z",
+      "version": "v2.1.133",
+      "title": "Hook effort.level input + $CLAUDE_EFFORT env",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/hooks",
+      "research": {
+        "why": "Hooks can read $CLAUDE_EFFORT to gate expensive side effects (skip telemetry at low, forward tier at high/xhigh).",
+        "risk": "Low — additive guards; existing paths untouched when var absent.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Skip nx_send heartbeat at effort=low.",
+            "target": "scripts/hooks/telemetry.sh:handle_heartbeat"
+          },
+          {
+            "action": "Skip TTS at effort=low.",
+            "target": "scripts/hooks/telemetry.sh:handle_notification"
+          },
+          {
+            "action": "Forward effort_level field to nexus for cost attribution.",
+            "target": "scripts/hooks/telemetry.sh:handle_session_start/stop"
+          },
+          {
+            "action": "Extract effort.level once at entry; reuse across handlers.",
+            "target": "scripts/hooks/telemetry.sh: stdin parse"
+          }
+        ],
+        "community_usage": "No public hook repos yet; documented pattern only."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-11",
+          "verdict": "implement",
+          "rationale": "telemetry.sh has 4 concrete sites; $CLAUDE_EFFORT already xhigh globally."
+        }
+      ]
+    },
+    "hook-stderr-exit2-shown-v2.1.199": {
+      "first_seen": "2026-07-02T00:00:00Z",
+      "version": "v2.1.199",
+      "title": "SessionStart/Setup/SubagentStart hooks exiting 2 no longer hide stderr",
+      "area": "hooks",
+      "official_source": null,
+      "research": {
+        "why": "Harness bug: exit-2 stderr was silently swallowed for these events, making failures invisible without --debug.",
+        "confidence": "high",
+        "our_leverage": "session-primer sections failed invisibly ( ) || true x7; now surfaced.",
+        "recommendation": "skip",
+        "community_usage": "Docs-now-work-as-documented bugfix; exit 2 has no blocking semantics on these events."
+      },
+      "history": [
+        {
+          "ref": "commit-pending",
+          "date": "2026-07-02",
+          "verdict": "implement",
+          "rationale": "USER OVERRIDE (analyst said skip: all hooks exit 0 by fail-open design). Leo chose to surface real failures. DONE this session: session-primer's 7 silently-swallowed sections now emit named stderr + exit 2 (non-blocking for SessionStart). session-init left alone (failures are expected-optional: nexus offline, bd absent); skill-list-dedup left alone (JSON suppress-contract requires exit 0, failures already log to .hooks-errors.jsonl); titler has no swallowed failures."
+        }
+      ]
+    },
+    "hook-terminal-sequence-v2.1.141": {
+      "first_seen": "2026-05-14T00:00:00Z",
+      "version": "v2.1.141",
+      "title": "Hook terminalSequence — native bell/title",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/hooks",
+      "research": {
+        "why": "Hooks emit OSC bell/title/notification escapes without /dev/tty; works in tmux + headless Linux.",
+        "risk": "Low — fire-and-forget, restricted allowlist.",
+        "effort": "trivial",
+        "our_leverage": [
+          "telemetry.sh:877 handle_notification + :501 handle_session_stop fallback bell when nexus-agent down or effort=low suppresses TTS"
+        ],
+        "community_usage": "OSC 777 for Ghostty/Warp desktop toasts on Notification event."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-vydrg",
+          "date": "2026-05-14",
+          "verdict": "implement",
+          "rationale": "Complements existing nx-send TTS with always-available native bell fallback at two concrete sites"
+        }
+      ]
+    },
+    "legacy-high-add-elicitation-elicitationresult-hooks-for-structured-mcp-i": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Add Elicitation + ElicitationResult hooks for structured MCP input interception (flagged 2026-04-13, still unimplemented)",
+      "area": "hooks",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json high-priority recommendation"
+        }
+      ]
+    },
+    "legacy-high-audit-mcp-server-health-nova-context7-sentry-figma-sequentia": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Audit MCP server health: nova-*, context7, sentry, figma, sequential-thinking absent from deferred tools for 2 audits. Fix or remove broken servers.",
+      "area": "mcp",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json high-priority recommendation"
+        }
+      ]
+    },
+    "legacy-high-enable-subprocess-sandboxing-add-sandbox-enabled-true-claude": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Enable subprocess sandboxing: add sandbox.enabled:true + CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 to settings.json (flagged 2026-04-13, still unimplemented)",
+      "area": "settings",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json high-priority recommendation"
+        }
+      ]
+    },
+    "legacy-low-add-monitor-streaming-command-example-to-commands-monitor": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Add Monitor streaming command example to commands/monitor/",
+      "area": "commands",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json low-priority recommendation"
+        }
+      ]
+    },
+    "legacy-low-consolidate-nova-servers-8-entries-move-unused-ones-to-proje": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Consolidate nova-* servers (8 entries) — move unused ones to project-scoped configs",
+      "area": "mcp",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json low-priority recommendation"
+        }
+      ]
+    },
+    "legacy-low-refresh-skill-index-json-to-reflect-all-50-skills": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Refresh skill-index.json to reflect all 50 skills",
+      "area": "skills",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json low-priority recommendation"
+        }
+      ]
+    },
+    "legacy-medium-add-claude-dir-env-var-override-to-cc-inventory-for-symlink-": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Add CLAUDE_DIR env var override to cc-inventory for symlink-less environments",
+      "area": "settings",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json medium-priority recommendation"
+        }
+      ]
+    },
+    "legacy-medium-add-github-mcp-server-to-mcp-json-for-reproducibility-curren": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Add github MCP server to mcp.json for reproducibility (currently platform-provided only)",
+      "area": "mcp",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json medium-priority recommendation"
+        }
+      ]
+    },
+    "legacy-medium-add-official-claude-api-skill-to-skills-directory": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Add official claude-api skill to skills directory",
+      "area": "skills",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json medium-priority recommendation"
+        }
+      ]
+    },
+    "legacy-medium-wire-recap-into-session-primer-or-document-in-claude-md": {
+      "first_seen": "2026-04-20T14:07:30Z",
+      "version": "legacy",
+      "title": "Wire /recap into session-primer or document in CLAUDE.md",
+      "area": "general",
+      "official_source": null,
+      "research": {
+        "why": "Imported from pre-redesign /workflow:evolve run",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "N/A — legacy import"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "legacy-import",
+          "rationale": "Imported from latest.json medium-priority recommendation"
+        }
+      ]
+    },
+    "max-retries-watchdog-v2.1.186": {
+      "first_seen": "2026-06-27T00:00:00Z",
+      "version": "v2.1.186",
+      "title": "CLAUDE_CODE_RETRY_WATCHDOG for unattended sessions",
+      "area": "settings",
+      "official_source": null,
+      "research": {
+        "why": "CLAUDE_CODE_MAX_RETRIES caps at 15; RETRY_WATCHDOG continues retrying past the cap for unattended sessions (multi-hour /apply:all waves, ralph loops).",
+        "risk": "Low; format undocumented but =1 is the natural boolean. Auth/rate-limit errors still surface immediately.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "CLAUDE_CODE_RETRY_WATCHDOG=1 so long waves survive transient API overload; pairs with adopted fallbackModel chain.",
+            "target": "settings.json env"
+          }
+        ],
+        "community_usage": "Freshly introduced; value-format undocumented beyond the changelog sentence."
+      },
+      "history": [
+        {
+          "ref": "commit:settings.json",
+          "date": "2026-06-27",
+          "verdict": "implement",
+          "rationale": "Applied CLAUDE_CODE_RETRY_WATCHDOG=1 to settings.json env. Complements fallbackModel for unattended-wave resilience."
+        }
+      ]
+    },
+    "mcp-auto-background-v2.1.212": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.212",
+      "title": "MCP calls auto-background past 2min",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "Keep session usable during slow MCP calls",
+        "risk": "Low -- a dispatching agent could assume synchronous MCP completion",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Documented FALLOW_TIMEOUT_SECS (120s) racing the ~2min auto-background threshold",
+            "target": "skills/fallow/SKILL.md:232"
+          }
+        ],
+        "community_usage": "GitHub issue #23611 (orchestration users wanting this) closed as superseded by this feature"
+      },
+      "history": [
+        {
+          "ref": "commit:skills/fallow/SKILL.md",
+          "date": "2026-07-18",
+          "verdict": "implement",
+          "rationale": "Added doc note in fallow SKILL.md; settings.json inline comment not possible (plain JSON, no comment syntax)"
+        }
+      ]
+    },
+    "mcp-stdio-claude-project-dir-v2.1.139": {
+      "first_seen": "2026-05-14T00:00:00Z",
+      "version": "v2.1.139",
+      "title": "MCP stdio servers receive CLAUDE_PROJECT_DIR",
+      "area": "mcp",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "MCP stdio servers read CLAUDE_PROJECT_DIR; .mcp.json configs can use ${CLAUDE_PROJECT_DIR} in command/args.",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [
+          "NO current leverage — nova-* live in ~/.local/lib not project root; project .mcp.json use npx package refs"
+        ],
+        "community_usage": "No significant in-the-wild adoption observed yet."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-0ml89",
+          "date": "2026-05-14",
+          "verdict": "implement",
+          "rationale": "Leo overrode skip rec — track for future MCP additions; revisit if any project gets a path-bound .mcp.json entry"
+        }
+      ]
+    },
+    "mcp-stdio-session-env-v2.1.154": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.154",
+      "title": "stdio MCP subprocess CLAUDE_CODE_SESSION_ID",
+      "area": "mcp",
+      "official_source": "https://code.claude.com/docs/en/release-notes",
+      "research": {
+        "why": "stdio MCP subprocesses get CLAUDE_CODE_SESSION_ID + CLAUDECODE=1 for session correlation.",
+        "risk": "N/A",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "No session-tagging memory-server pattern observed."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-30",
+          "verdict": "skip",
+          "rationale": "nova-memory runs as an HTTP server (not stdio) so never receives the env var; session tagging would be an nv-project schema change, not a cc-surface adoption."
+        }
+      ]
+    },
+    "mcp-tool-hook-handler-v2.1.118": {
+      "first_seen": "2026-04-26T00:00:00Z",
+      "version": "v2.1.118",
+      "title": "PreToolUse/PostToolUse mcp_tool hook handler type",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/hooks",
+      "research": {
+        "why": "Adds fifth hook handler type that directly invokes a configured MCP tool — eliminates bash shim + JSON quoting layer.",
+        "risk": "N/A — no applicable target found.",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Confirmed shipped v2.1.118; community examples (luongnv89/claude-howto, gh#4274) show drop-in for shell-based MCP relays. Adoption early."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "skip",
+          "rationale": "Nexus telemetry sink is raw HTTP (port 7400), not a CC-registered MCP server. nova-* servers removed run 5. No target. Revisit if nexus is ever wrapped as MCP."
+        }
+      ]
+    },
+    "mcp-tool-idle-timeout-v2.1.187": {
+      "first_seen": "2026-06-27T00:00:00Z",
+      "version": "v2.1.187",
+      "title": "Pin CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT (MCP resilience bundle)",
+      "area": "mcp",
+      "official_source": null,
+      "research": {
+        "why": "Remote MCP tool calls that hang now abort after an idle window (5min default). Pinning makes the idle-abort intentional/tuned + documents the 3-var resilience bundle.",
+        "risk": "180000 could abort a legitimate >3min tool; mitigated vs the 2min option.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT=180000 (3min) for faster /apply:all wave recovery, headroom for slow Notion/Linear queries.",
+            "target": "settings.json env"
+          },
+          {
+            "action": "Documented the MCP Resilience Bundle (MCP_CONNECTION_NONBLOCKING + MCP_TIMEOUT + CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT).",
+            "target": "cc-tooling SKILL.md"
+          }
+        ],
+        "community_usage": "Community tunes 120s interactive / 300s batch; Slack/Atlassian claude.ai-proxy stalls are the known indefinite-hang culprits."
+      },
+      "history": [
+        {
+          "ref": "commit:settings.json+cc-tooling",
+          "date": "2026-06-27",
+          "verdict": "implement",
+          "rationale": "Pinned 180000ms + documented the 3-var resilience bundle in cc-tooling. Leo chose the balanced 3min window."
+        }
+      ]
+    },
+    "memory-frontmatter-hash-truncation-fix-v2.1.214": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.214",
+      "title": "Memory frontmatter no longer truncated at inline #",
+      "area": "memory",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "Bugfix -- prior versions silently truncated memory frontmatter at an inline #",
+        "risk": "N/A -- verified clean",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Swept for # in description: field",
+            "target": "90 cc memory files"
+          }
+        ],
+        "community_usage": "N/A, bugfix"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-18",
+          "verdict": "skip",
+          "rationale": "Swept all 90 memory file frontmatter blocks for a # in description: -- zero hits, no historical corruption. Informational only."
+        }
+      ]
+    },
+    "memory-frontmatter-modified-timestamp-v2.1.214": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.214",
+      "title": "Memory frontmatter modified timestamp",
+      "area": "memory",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "N/A -- harness-owned field",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Too new for community writeups; official docs confirm auto-memory is harness-managed"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-18",
+          "verdict": "skip",
+          "rationale": "Confirmed harness-auto-managed field on our existing harness-stamped memory frontmatter (name/description/metadata already present, none authored by cc); will populate automatically on next write. No convention change needed."
+        }
+      ]
+    },
+    "messagedisplay-hook-v2.1.152": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.152",
+      "title": "MessageDisplay hook",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/hooks",
+      "research": {
+        "why": "Transforms/hides MAIN-loop displayed text (reformat/redact/condense). displayContent replaces on-screen render only; transcript + model-visible text unchanged.",
+        "risk": "Display-only (zero enforcement value); per-batch hot-path latency; main-loop only.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "KEEP — sole subagent verbosity lever; MessageDisplay never sees subagent output",
+            "target": "docs/agent-output-contracts.md + agent bodies"
+          },
+          {
+            "action": "OPTIONAL cosmetic complement (pre-commit guard already enforces) — not implemented",
+            "target": "MAIN-loop emoji/ASCII-token strip"
+          }
+        ],
+        "community_usage": "Reformat/redact/condense per docs; new (2026-05)."
+      },
+      "history": [
+        {
+          "ref": "boundary:agent-output-contracts.md is the subagent lever",
+          "date": "2026-05-30",
+          "verdict": "defer",
+          "rationale": "Cannot REPLACE subagent output-contracts (display-only, main-loop-only — same limit as output styles). Boundary recorded. Cosmetic main-loop complement deferred (low value vs pre-commit guard)."
+        }
+      ]
+    },
+    "nested-subagent-spawn-depth-v2.1.217": {
+      "first_seen": "2026-07-21T00:00:00Z",
+      "version": "v2.1.217",
+      "title": "Subagents no longer spawn nested subagents by default",
+      "area": "orchestration",
+      "official_source": "https://github.com/anthropics/claude-code/releases/tag/v2.1.217",
+      "research": {
+        "why": "Changed default: subagents can no longer spawn nested subagents unless CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH is set. Docs-only inference initially flagged this as high-risk for codebase-health-orchestrator (fans out to architecture-reviewer/security-reviewer/service-auditor from its own Agent tool calls) and recon-source-analyst (dispatches an Explore sub-analysis).",
+        "risk": "Downgraded from medium to low after live test -- CHA/recon-source-analyst pattern was NOT found actively broken. settings.json change kept as belt-and-suspenders since it is harmless and the exact override semantics remain undocumented beyond the terse changelog line.",
+        "effort": "trivial (settings.json fix); live-verified same session, NOT a claim without runtime evidence",
+        "our_leverage": [
+          {
+            "action": "Set CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=2 defensively.",
+            "target": "settings.json env block"
+          },
+          {
+            "action": "Dispatched a general-purpose subagent whose own body issued a nested Agent() call (same shape as CHA/recon-source-analyst) BEFORE the settings.json fix took effect, under the actual running v2.1.217 build with no override set. The nested spawn succeeded cleanly (PONG returned, no error, no silent no-op) -- directly contradicting the doc-only risk assessment. The restriction, if it exists, sits deeper than a single level of subagent-spawns-subagent, or does not manifest the way the changelog line implied in this environment.",
+            "target": "live runtime test, this session"
+          }
+        ],
+        "community_usage": "Same-day release, no community coverage found."
+      },
+      "history": [
+        {
+          "ref": "316a7ade",
+          "date": "2026-07-21",
+          "verdict": "implement",
+          "rationale": "Settings.json fix applied as a defensive measure. Live runtime test in this session (a real nested Agent-tool dispatch, same shape as CHA's own fan-out) found the pattern was NOT actually broken by the new default -- succeeded cleanly with no override set. Recorded honestly per verification discipline: the original medium-confidence \"regression risk\" framing from doc-only research did not hold up under live testing. Full runtime dispatch of codebase-health-orchestrator itself (all 3 specialists) not yet done -- would be the next verification step if this ever surfaces as a real bug."
+        }
+      ]
+    },
+    "openspec-1.x-opsx-workflow": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v1.x",
+      "title": "OpenSpec 1.x breaking release + opsx artifact-guided workflow",
+      "area": "openspec",
+      "official_source": "https://github.com/Fission-AI/OpenSpec/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "OpenSpec 1.0 renamed /openspec:* -> /opsx:*, added artifact-guided workflow + project-local schema.yaml customization.",
+        "risk": "N/A -- 1.5.0 Stores is early-beta (breaking changes expected), 1.6.0 adds /opsx:update which cc lacks but explicitly does not want (wholesale command adoption out of scope per Leo)",
+        "effort": "N/A",
+        "our_leverage": [
+          {
+            "action": "none -- command rename already executed",
+            "target": "openspec/changes/archive/2026-03-08-migrate-openspec-to-opsx/"
+          },
+          {
+            "action": "none -- CLI 1.4.1 migration landed 2026-07-20/21, deliberately pinned (latest resolved to 1.6.0 mid-migration, downgraded to the dry-run-validated 1.4.1)",
+            "target": "docs/migration/openspec-141-execution-log.md"
+          },
+          {
+            "action": "none -- opsx custom-schema pattern (the specific novel-pattern-extraction interest) researched and adopted same day, narrowed to authoring-guidance since real enforcement stays in bash/regex gates",
+            "target": "openspec/changes/archive/2026-07-21-opsx-schema-for-cc-spec-format/ + docs/reference/opsx-schema-surface.md"
+          }
+        ],
+        "community_usage": "N/A -- in-repo evidence dispositive."
+      },
+      "history": [
+        {
+          "ref": "openspec/changes/archive/2026-07-21-opsx-schema-for-cc-spec-format",
+          "date": "2026-07-21",
+          "verdict": "skip",
+          "rationale": "Leo clarified the actual interest is extracting novel patterns (specifically opsx custom schemas) for cc workflow, not chasing CLI versions or adopting commands wholesale. That specific interest is already satisfied by opsx-schema-for-cc-spec-format, archived same day. CLI stays deliberately pinned at 1.4.1; 1.5.0/1.6.0 deltas (Stores beta, /opsx:update) are not being chased."
+        }
+      ]
+    },
+    "opus4-6-fast-mode-deprecation-v2.1.154": {
+      "first_seen": "2026-06-15T00:00:00Z",
+      "version": "v2.1.154",
+      "title": "CLAUDE_CODE_OPUS_4_6_FAST_MODE_OVERRIDE removed",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Env var removed 2026-06-01; any remaining reference is a dead no-op or potential error source. Fast mode on Opus 4.6 now requires /model + /fast commands interactively.",
+        "risk": "Low — var already documented as NOT FOUND in remote env per snapshot; deprecations.md already tracks it.",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "No significant adoption observed — short-lived override for a specific model variant; community migrated to /model + /fast before removal."
+      },
+      "history": [
+        {
+          "ref": "skills/cc-practices-current/references/deprecations.md",
+          "date": "2026-06-15",
+          "verdict": "skip",
+          "rationale": "Scheduled-auto: deprecations.md already documents the removal; var not present in env. No cleanup needed in cc repo."
+        }
+      ]
+    },
+    "otel-app-entrypoint-v2.1.152": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.152",
+      "title": "app.entrypoint OTEL metric attribute",
+      "area": "otel",
+      "official_source": "https://code.claude.com/docs/en/monitoring-usage",
+      "research": {
+        "why": "Distinguishes interactive/-p/SDK/background spend via OTEL_METRICS_INCLUDE_ENTRYPOINT.",
+        "risk": "Inert without CLAUDE_CODE_ENABLE_TELEMETRY + OTLP pipeline.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "include app.entrypoint facet once the OTLP pipeline exists",
+            "target": "nx OTEL exploration"
+          }
+        ],
+        "community_usage": "Too new for community write-ups."
+      },
+      "history": [
+        {
+          "ref": "openspec:explore@nx (native-otel-migration)",
+          "date": "2026-05-30",
+          "verdict": "defer",
+          "rationale": "Inert without a CC OTEL pipeline; folded into the nx native-OTEL exploration as a facet to add once OTLP export is proven."
+        }
+      ]
+    },
+    "otel-assistant-response-v2.1.193": {
+      "first_seen": "2026-06-27T00:00:00Z",
+      "version": "v2.1.193",
+      "title": "claude_code.assistant_response OTel log event",
+      "area": "otel",
+      "official_source": null,
+      "research": {
+        "why": "New OTel log event carries model response text; redacted unless OTEL_LOG_ASSISTANT_RESPONSES=1 (else follows OTEL_LOG_USER_PROMPTS).",
+        "risk": "Response text 1-5KB/response into Loki; privacy + storage. Belongs to nx native-OTEL workstream.",
+        "effort": "trivial cc-side / large nx-side",
+        "our_leverage": [
+          {
+            "action": "Safe-by-default (OTEL_LOG_USER_PROMPTS unset -> response stays redacted on upgrade). Opt-in (=1 + prompts=0) would route to Loki via the (now-confirmed-healthy) Alloy pipeline.",
+            "target": "settings.json env"
+          }
+        ],
+        "community_usage": "Security/quality teams capture it for SIEM/LLM-judge; solo setups rarely."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-27",
+          "verdict": "defer",
+          "rationale": "Safe-by-default; defer log-content adoption to nx explore-native-otel-telemetry. NOTE: during this run the OTel pipeline was found healthy (Alloy->Loki/Tempo/VM) but cc export was BROKEN by a 404 endpoint bug (fixed separately) - assistant_response logs would now route correctly once enabled."
+        }
+      ]
+    },
+    "otel-skill-activated-v2.1.126": {
+      "first_seen": "2026-05-11T00:00:00Z",
+      "version": "v2.1.126",
+      "title": "claude_code.skill_activated OTel event ingest",
+      "area": "telemetry",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "No prior signal distinguished user-typed vs Claude-proactive skill invocations; portfolio decisions for skillOverrides were guesswork.",
+        "risk": "Low — fire-and-forget; only adds rows to session_events.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Add skill_activated to allowlist; currently silently dropped at line 294.",
+            "target": "nx/apps/agent/src/routes/hooks.ts:112-147 RECOGNIZED_EVENTS"
+          },
+          {
+            "action": "Add optional skill_name + invocation_trigger fields.",
+            "target": "nx/apps/agent/src/routes/hooks.ts:36-110 HookEventPayload"
+          }
+        ],
+        "community_usage": "Early adopters build Grafana boards ranking skills by invocation_trigger."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-lxbsi",
+          "date": "2026-05-11",
+          "verdict": "implement",
+          "rationale": "2-line patch unlocks data feeding future skillOverrides decisions; pairs with deferred companion signal."
+        }
+      ]
+    },
+    "otel-tool-parameters-v2.1.158": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.158",
+      "title": "tool_parameters on tool_decision (OTEL_LOG_TOOL_DETAILS)",
+      "area": "otel",
+      "official_source": "https://code.claude.com/docs/en/monitoring-usage",
+      "research": {
+        "why": "Native OTEL tool_parameters (full_command/file_path/skill_name/subagent_type) + agent_id + skill_activated + native token/cost metrics overlap & exceed our Nexus hook telemetry capture.",
+        "risk": "No CC OTEL pipeline today (CLAUDE_CODE_ENABLE_TELEMETRY unset); OTLP export silent-no-op history #50567; events ship via LOGS protocol #15417; unredacted bash strings; no local-JSONL fallback.",
+        "effort": "medium",
+        "our_leverage": [
+          {
+            "action": "openspec:explore launched for hybrid native-OTEL migration",
+            "target": "nx project"
+          }
+        ],
+        "community_usage": "SIEM/cost-attribution; enable only with collector-side redaction."
+      },
+      "history": [
+        {
+          "ref": "openspec:explore@nx (native-otel-migration)",
+          "date": "2026-05-30",
+          "verdict": "pilot",
+          "rationale": "Native OTEL replaces the MAJORITY of telemetry capture but NOT orchestration-lifecycle events or welded side-effects (PostCompact/TTS). Hybrid pilot gated on a console-exporter smoke test. openspec:explore started in nx."
+        }
+      ]
+    },
+    "permission-mode-manual-rename-v2.1.200": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.200",
+      "title": "Permission mode 'default' renamed 'Manual'",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code",
+      "research": {
+        "why": "Permission mode default renamed Manual fleet-wide (CLI/VS Code/JetBrains); both default and manual strings accepted.",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Coupled with a bigger shift: a session with no explicit defaultMode now pauses on Manual instead of proceeding."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-21",
+          "verdict": "skip",
+          "rationale": "settings.json:124 already sets defaultMode=auto explicitly (not the ambiguous legacy default string). Zero stale references found anywhere in the repo (settings.json, settings.local.json, docs/, skills/, commands/)."
+        }
+      ]
+    },
+    "permission-rule-prefix-hygiene-v2.1.210": {
+      "first_seen": "2026-07-16T00:00:00Z",
+      "version": "v2.1.210",
+      "title": "Permission rule prefix hygiene (Write/NotebookEdit/Glob unsupported)",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "CC v2.1.210 warns Write(path)/NotebookEdit(path)/Glob(path) permission-rule prefixes are unsupported; only Edit()/Read() guaranteed to match, so mis-prefixed rules may silently no-op.",
+        "risk": "Low mechanically; deny rules on secrets were possibly silently non-enforcing before the rename.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Renamed all 20 Write(...) rules to Edit(...) — 5 allow, 15 deny incl .env*/.pem/credentials",
+            "target": "settings.json permissions.allow+deny"
+          }
+        ],
+        "community_usage": "No adoption evidence yet (2 weeks old); generic guides still document Write() examples."
+      },
+      "history": [
+        {
+          "ref": "commit:232a1516",
+          "date": "2026-07-16",
+          "verdict": "implement",
+          "rationale": "Applied: 20 rules renamed in settings.json (landed in working tree during the run, committed here). Runtime-verified: Write probe on .env.test blocked by the renamed Edit(.env.test) deny rule. Note: orchestrator initially mis-called the finding fabricated by grepping the live file AFTER the rename had landed; git HEAD still had the 20 Write( rules — analyst was correct."
+        }
+      ]
+    },
+    "pkill-self-match-fix-v2.1.214": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.214",
+      "title": "Bash tool no longer self-killed by pkill -f matching CLI process",
+      "area": "general",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "Bugfix (Linux) -- pkill -f could accidentally match the CLI own process and kill the session",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [
+          {
+            "action": "Found repeated exit-144 pkill -f failures in 2026-06/07 logs, plausibly this bug (not certain)",
+            "target": "scripts/state/failures/*.jsonl (harness project)"
+          }
+        ],
+        "community_usage": "N/A, bugfix"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-18",
+          "verdict": "skip",
+          "rationale": "Informational only -- no cc-side action; noting as a possible explanation for recurring harness-project pkill failures, to watch whether they recur post-upgrade."
+        }
+      ]
+    },
+    "plugin-default-disabled-v2.1.154": {
+      "first_seen": "2026-06-15T00:00:00Z",
+      "version": "v2.1.154",
+      "title": "Plugin defaultEnabled: false for token-budget management",
+      "area": "skills",
+      "official_source": "https://code.claude.com/docs/en/plugins-reference",
+      "research": {
+        "why": "Marks heavy single-use skills as opt-in so descriptions do not consume session token budget; with 90 skills at 75-150 tokens each, overhead is meaningful.",
+        "risk": "Adopting would require converting bare SKILL.md dirs into plugin packages — structural migration across ~10 candidate skills.",
+        "effort": "medium",
+        "our_leverage": [],
+        "community_usage": "Used in catalog ecosystem (425 packages on tonsofskills.com); all examples use plugin.json manifests — no SKILL.md-only adoption pattern observed."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-15",
+          "verdict": "defer",
+          "rationale": "Scheduled-auto: zero plugin.json files in 90-skill tree; feature requires plugin.json manifest structure we do not have. Defer alongside skillOverrides GH #50631."
+        }
+      ]
+    },
+    "plugin-discover-dir-relevance-v2.1.154": {
+      "first_seen": "2026-06-15T00:00:00Z",
+      "version": "v2.1.154",
+      "title": "/plugin Discover tab directory relevance signals",
+      "area": "skills",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "/plugin Discover tab annotates plugins with suggested-for-this-directory when relevance metadata matches CWD — letting stack-specific skills surface automatically.",
+        "risk": "N/A — skills use plain SKILL.md files with no plugin.json; directory relevance signal targets plugin.json manifests.",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Feature requires plugin.json keywords array; no SKILL.md-native directory relevance pattern observed."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-15",
+          "verdict": "skip",
+          "rationale": "Scheduled-auto: all 90 skills use SKILL.md only, no plugin.json; /plugin Discover UX requires plugin.json manifests to carry relevance signals — no surface in current architecture."
+        }
+      ]
+    },
+    "plugin-root-skill-md-v2.1.142": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.142",
+      "title": "Plugin root-level SKILL.md surfacing",
+      "area": "skills",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Plugins with root SKILL.md and no skills/ subdir now surface as skill.",
+        "risk": "Low.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Add file-vs-dir guard in snapshot_skills.",
+            "target": "scripts/bin/cc-inventory:300-315"
+          }
+        ],
+        "community_usage": "No significant adoption — brand new."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-16",
+          "verdict": "defer",
+          "rationale": "No installed plugin uses flat layout yet; prospective gap. cc-inventory:300-315 has the assumption to patch when first plugin lands."
+        }
+      ]
+    },
+    "plugin-url-flag-v2.1.129": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.129",
+      "title": "plugin-url flag for ephemeral plugin loading",
+      "area": "cli",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Ad-hoc plugin loading without install.",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Interactive only."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-16",
+          "verdict": "skip",
+          "rationale": "Purely interactive CLI flag, no settings.json surface, no automation pattern; cc commands have zero --plugin-url usage."
+        }
+      ]
+    },
+    "posttooluse-continueonblock-v2.1.139": {
+      "first_seen": "2026-05-14T00:00:00Z",
+      "version": "v2.1.139",
+      "title": "PostToolUse continueOnBlock",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "Block reason fed back to Claude as corrective context instead of halting turn.",
+        "risk": "Low — additive.",
+        "effort": "small",
+        "our_leverage": [
+          "settings.json PostToolUse Edit|MultiEdit validate-file (currently || true swallows errors)",
+          "extend archived fix-posttooluse-validate spec as Req-4"
+        ],
+        "community_usage": "Canonical validate→block→self-heal pattern (disler hooks-mastery, pixelmojo CI/CD)."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-orpic",
+          "date": "2026-05-14",
+          "verdict": "implement",
+          "rationale": "Converts dead silently-swallowed validator into live corrective feedback; pairs with active fix-posttooluse-validate spec"
+        }
+      ]
+    },
+    "posttooluse-replace-all-tools-v2.1.121": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.121",
+      "title": "PostToolUse updatedToolOutput for all built-in tools",
+      "area": "hooks",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Pre-model output transformation; tool results are ~60% of context tokens.",
+        "risk": "Medium — silent schema mismatch could break tool output.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Strip TaskCreate nag",
+            "target": "PostToolUse/Task matcher"
+          },
+          {
+            "action": "Strip file-modified reminders",
+            "target": "PostToolUse/Read matcher"
+          }
+        ],
+        "community_usage": "Documented in tarekziade/claude-tools, disler/claude-code-hooks-mastery."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-16",
+          "verdict": "defer",
+          "rationale": "Real leverage (TaskCreate nag strip, Read-reminder strip) but high blast-radius without careful spec. Schema-mismatch failure mode is silent. Warrants its own OpenSpec."
+        }
+      ]
+    },
+    "print-honors-agent-frontmatter-v2.1.119": {
+      "first_seen": "2026-04-26T00:00:00Z",
+      "version": "v2.1.119",
+      "title": "--print honors agent frontmatter tools/disallowedTools",
+      "area": "commands",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "claude -p --agent <name> now enforces tools:/disallowedTools: from agent frontmatter, closing the headless gap.",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "No significant adoption — behavioral consistency fix; enforcement automatic when frontmatter fields present."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "skip",
+          "rationale": "No scripts invoke claude -p --agent; bd-audit-semantic-dedup uses --print without --agent, so this enforcement has zero surface."
+        }
+      ]
+    },
+    "reload-skills-v2.1.152": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.152",
+      "title": "/reload-skills + SessionStart reloadSkills",
+      "area": "skills",
+      "official_source": "https://code.claude.com/docs/en/hooks",
+      "research": {
+        "why": "Skills installed mid-session are invisible until restart; /reload-skills + reloadSkills:true close the gap.",
+        "risk": "Low — additive.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "note /reload-skills after install (DONE)",
+            "target": "skills/find-skills/SKILL.md"
+          },
+          {
+            "action": "note /reload-skills + reloadSkills:true (DONE)",
+            "target": "rules/TOOLING.md Skills Management"
+          }
+        ],
+        "community_usage": "Canonical: git-pull sync hook returning reloadSkills:true."
+      },
+      "history": [
+        {
+          "ref": "commit:find-skills+TOOLING.md reload-skills notes",
+          "date": "2026-05-30",
+          "verdict": "implement",
+          "rationale": "Implemented: doc notes added to find-skills SKILL.md + rules/TOOLING.md."
+        }
+      ]
+    },
+    "respond-to-bash-commands-v2.1.186": {
+      "first_seen": "2026-06-27T00:00:00Z",
+      "version": "v2.1.186",
+      "title": "respondToBashCommands: false (restore silent ! context-injection)",
+      "area": "settings",
+      "official_source": null,
+      "research": {
+        "why": "v2.1.186 flipped ! bash to auto-respond (a model turn per !); false restores silent context-injection that Leo's ! interactive-auth pattern relies on.",
+        "risk": "Schema-drift: documented in v2.1.186 changelog but unwritable in v2.1.195. cc stays on auto-respond default.",
+        "effort": "trivial-but-blocked",
+        "our_leverage": [
+          {
+            "action": "v2.1.195 schema rejects the key as Unrecognized; absent from the bundle schema-export. Runtime /config may still honor it.",
+            "target": "settings.json (BLOCKED)"
+          }
+        ],
+        "community_usage": "Power users running ! for context ingestion set false day one; auto-respond is for test-failure analysis intent."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-7pe9h",
+          "date": "2026-06-27",
+          "verdict": "defer",
+          "rationale": "Verdict was implement, but v2.1.195 settings schema rejects the key (changelog<->schema drift). Tracked for re-check; runtime /config is the candidate path."
+        }
+      ]
+    },
+    "retry-watchdog-300-v2.1.199": {
+      "first_seen": "2026-07-02T00:00:00Z",
+      "version": "v2.1.199",
+      "title": "CLAUDE_CODE_RETRY_WATCHDOG default retries raised to 300; MAX_RETRIES cap lifted",
+      "area": "settings",
+      "official_source": null,
+      "research": {
+        "why": "Long multi-agent sessions survived short 429 storms poorly under the 15-attempt cap.",
+        "confidence": "high",
+        "our_leverage": "none - flag already set, defaults apply.",
+        "recommendation": "skip",
+        "community_usage": "No tuning pattern observed; adjacent issues show frustration with silent retry opacity."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-02",
+          "verdict": "skip",
+          "rationale": "Already adopted: RETRY_WATCHDOG=1 at settings.json:16, MAX_RETRIES never overridden - new defaults ride the CLI upgrade transparently."
+        }
+      ]
+    },
+    "rules-symlink-loading-fix-v2.1.198": {
+      "first_seen": "2026-07-02T00:00:00Z",
+      "version": "v2.1.198",
+      "title": ".claude/rules/ conditional rules now load via symlinked target paths",
+      "area": "general",
+      "official_source": null,
+      "research": {
+        "why": "Conditional (glob-scoped) rules failed to trigger when target file reached via symlink.",
+        "confidence": "high",
+        "our_leverage": "none - no conditional rules exist.",
+        "recommendation": "skip",
+        "community_usage": "Symlinked shared-rules dirs are the documented pattern this repairs."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-02",
+          "verdict": "skip",
+          "rationale": "Zero glob-frontmatter conditional rules in repo despite ~/.claude being the exact symlink topology fixed; rules load via CLAUDE.md tables or Skill() calls. Re-check if we ever adopt glob-scoped rules."
+        }
+      ]
+    },
+    "safe-mode-flag-v2.1.169": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.169",
+      "title": "--safe-mode / CLAUDE_CODE_SAFE_MODE troubleshooting",
+      "area": "commands",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Starts CC with all customizations (CLAUDE.md, plugins, skills, hooks, MCP) disabled — fast bisect for 'is it my config?' given cc's heavy customization (25+ hooks, 90 skills, 12 MCP).",
+        "risk": "None.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Document --safe-mode as the first troubleshooting step. Doc-only.",
+            "target": "cc-reference / cc-tooling skill"
+          }
+        ],
+        "community_usage": "Troubleshooting flag; new."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-20",
+          "verdict": "defer",
+          "rationale": "Doc-only candidate (cc-reference troubleshooting). Not urgent; deferred to a docs pass rather than this run's scope."
+        }
+      ]
+    },
+    "sandbox-credentials-v2.1.187": {
+      "first_seen": "2026-06-27T00:00:00Z",
+      "version": "v2.1.187",
+      "title": "sandbox.credentials blocks credential reads in sandbox",
+      "area": "settings",
+      "official_source": null,
+      "research": {
+        "why": "Blocks sandboxed commands from reading credential files + secret env.",
+        "risk": "No-op unless OS sandbox enabled; enabling it would break engineers reading POSTGRES_URL/API keys. permissions.deny Read(.env*) already covers the tool surface.",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "New; manual denyRead is the current pattern."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-27",
+          "verdict": "skip",
+          "rationale": "No-op without OS sandbox (cc doesn't run sandboxed); enabling sandbox would break legitimate env reads. Existing permissions.deny covers the tool surface."
+        }
+      ]
+    },
+    "sandbox-network-denieddomains-v2.1.113": {
+      "first_seen": "2026-04-26T00:00:00Z",
+      "version": "v2.1.113",
+      "title": "sandbox.network.deniedDomains",
+      "area": "settings",
+      "official_source": "https://code.claude.com/docs/en/sandboxing",
+      "research": {
+        "why": "Precedence-override denylist on top of wildcard allowedDomains — blocks specific sensitive endpoints (telemetry, internal APIs) without narrowing the broader allowlist.",
+        "risk": "Low — additive; no enforcement until sandbox.network is configured.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Add sandbox.network.deniedDomains for o4510046880792576.ingest.us.sentry.io and similar telemetry sinks.",
+            "target": "~/.claude/settings.json (no sandbox key present)"
+          }
+        ],
+        "community_usage": "GitHub issue #35159 confirms feature shipped April 2026 after community request; enterprise use-case is wildcard allow + blocked secrets. No public configs yet."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "defer",
+          "rationale": "Sandbox not yet enabled at all — deniedDomains is a second-step change after sandbox enablement."
+        }
+      ]
+    },
+    "sessionstart-session-title-v2.1.152": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.152",
+      "title": "SessionStart sessionTitle",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/hooks",
+      "research": {
+        "why": "SessionStart hooks set the claude-agents dashboard title via hookSpecificOutput.sessionTitle; disambiguates many parallel sessions.",
+        "risk": "Cosmetic; full dashboard render verifies on next restart.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "NEW dedicated hook emitting sessionTitle=<project> . <branch> . <openspec-change> (DONE, wired as 5th SessionStart hook)",
+            "target": "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/scripts/bin/session-titler"
+          }
+        ],
+        "community_usage": "New; no community pattern yet."
+      },
+      "history": [
+        {
+          "ref": "file:${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/scripts/bin/session-titler",
+          "date": "2026-05-30",
+          "verdict": "implement",
+          "rationale": "Implemented: session-titler script (valid-JSON tested + graceful non-repo fallback) wired into settings.json SessionStart (5 hooks verified). Dashboard render verifies on next session restart."
+        }
+      ]
+    },
+    "settings-agent-field-v2.1.158": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.158",
+      "title": "settings.json agent field for dispatched sessions",
+      "area": "settings",
+      "official_source": "https://code.claude.com/docs/en/settings",
+      "research": {
+        "why": "Sets a default MAIN-session persona for dispatched sessions; --agent overrides.",
+        "risk": "N/A",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "Narrow — claude --bg/--agent fixed-persona users."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-30",
+          "verdict": "skip",
+          "rationale": "Sets main-session persona, not Task-tool subagent_type dispatch (#13953); we dispatch explicitly via the Agent tool. No flow benefits."
+        }
+      ]
+    },
+    "skill-effort-var-v2.1.120": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.120",
+      "title": "CLAUDE_EFFORT variable in skill content",
+      "area": "skills",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Lets skills branch guidance based on effort level.",
+        "risk": "Silent quality regression if effort=low strips load-bearing content; conservative threshold (medium+ = full) mitigates.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Gate refresh.sh behind effort >= high",
+            "target": "cc-practices-current/SKILL.md"
+          },
+          {
+            "action": "3-step fast-path at low",
+            "target": "systematic-debugging/SKILL.md"
+          },
+          {
+            "action": "Primary tree only at low",
+            "target": "extend-before-create/SKILL.md"
+          }
+        ],
+        "community_usage": "Frontmatter pinning common; inline branching less documented."
+      },
+      "history": [
+        {
+          "ref": "ca944220",
+          "date": "2026-05-16",
+          "verdict": "implement",
+          "rationale": "Three heavy skills (cc-practices-current, systematic-debugging, extend-before-create) have natural fast/exhaustive splits. Added conservative Effort Gates sections; default behavior preserved."
+        }
+      ]
+    },
+    "skill-overrides-setting-v2.1.129": {
+      "first_seen": "2026-05-11T00:00:00Z",
+      "version": "v2.1.129",
+      "title": "skillOverrides per-skill description hiding",
+      "area": "skills",
+      "official_source": "https://code.claude.com/docs/en/skills",
+      "research": {
+        "why": "At 66+ installed skills, every description ships in system-prompt catalog (~75-150 tok each), burning budget on skills never auto-triggered.",
+        "risk": "Medium — frontmatter edits wiped on skill updates; restore burden.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Defer until upstream bug fixed; estimated 750-1500 tok/turn savings.",
+            "target": "10 high-value candidates: algorithmic-art, dithering, web-artifacts-builder, skill-judge, skill-creator, datadog-cli, awesome-design-md, autoresearch-loop, database-schema-designer (superseded), planby-pro-best-practices"
+          }
+        ],
+        "community_usage": "GH #50631 confirms settings.json skillOverrides is a no-op (gate stub returns on unconditionally). Frontmatter workaround (disable-model-invocation:true) works but is wiped on npx skills update."
+      },
+      "history": [
+        {
+          "ref": "gh-issue:50631",
+          "date": "2026-05-11",
+          "verdict": "defer",
+          "rationale": "Upstream bug (GH #50631) makes settings.json variant a no-op; re-evaluate when fix lands."
+        }
+      ]
+    },
+    "sonnet-5-default-v2.1.197": {
+      "first_seen": "2026-07-02T00:00:00Z",
+      "version": "v2.1.197",
+      "title": "Claude Sonnet 5 is the new CC default model",
+      "area": "general",
+      "official_source": null,
+      "research": {
+        "why": "Sonnet 5 promoted to CC default 2026-06-30: near-Opus agentic quality at Sonnet pricing, native 1M context, new tokenizer (~1.0-1.35x tokens), promo $2/$10 through Aug 31.",
+        "confidence": "high",
+        "our_leverage": "scripts/lib/cost-rates.sh:31-53 exact-string-keyed arrays; 37 model:sonnet frontmatter pins ride the new default; _compute_cost returned null for unrecognized models.",
+        "recommendation": "implement",
+        "community_usage": "Drop-in: model:sonnet tier aliases resolve automatically; teams told to re-baseline token counts (adaptive thinking on by default shares max_tokens budget)."
+      },
+      "history": [
+        {
+          "ref": "cc-vd8wf",
+          "date": "2026-07-02",
+          "verdict": "implement",
+          "rationale": "Live cost blackout: cost-rates.sh exact-string lookup had no claude-sonnet-5 entry so telemetry+nexus-backfill nulled cost for every default-model session since Jun 30. FIXED this session: promo rates ($2/$10, cache 4/0.20) added, runtime-verified _compute_cost returns 0.70 for test vector. P3 bead cc-vd8wf tracks the Aug 31 revert to $3/$15."
+        }
+      ]
+    },
+    "stacked-skill-invocation-v2.1.199": {
+      "first_seen": "2026-07-02T00:00:00Z",
+      "version": "v2.1.199",
+      "title": "Stacked /skill-a /skill-b invocations load all leading skills (up to 5)",
+      "area": "skills",
+      "official_source": null,
+      "research": {
+        "why": "Multi-skill intent was silently dropped (only first loaded).",
+        "confidence": "high",
+        "our_leverage": "Agent-side Skill tool loading unaffected; human-typed CLI gains combo capability worth documenting.",
+        "recommendation": "skip",
+        "community_usage": "No documented convention found; official docs describe single invocation."
+      },
+      "history": [
+        {
+          "ref": "commit-pending",
+          "date": "2026-07-02",
+          "verdict": "implement",
+          "rationale": "USER OVERRIDE (analyst said skip: human-CLI UX only). Leo chose to document. DONE this session: cc-reference SKILL.md Command Reference gained a Stacked Slash-Skill Invocation subsection (behavior-modifier + task-skill combo pattern)."
+        }
+      ]
+    },
+    "stop-hook-additionalcontext-v2.1.163": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.163",
+      "title": "Stop/SubagentStop hookSpecificOutput.additionalContext",
+      "area": "hooks",
+      "official_source": "https://code.claude.com/docs/en/hooks",
+      "research": {
+        "why": "Stop hooks can return additionalContext to feed Claude corrective context and keep the turn going WITHOUT a hook-error label — clean advisory channel vs decision:block.",
+        "risk": "Loop risk mitigated by per-session marker + stop_hook_active backstop; pure additionalContext (no block) means worst case is an advisory note, never a session-blocking halt.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Second Stop hook (session-closer untouched): nudges once/session when git status shows uncommitted/unpushed work, enforcing the 'not done until push' iron law.",
+            "target": "${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/scripts/hooks/stop-push-gate.sh (NEW)"
+          }
+        ],
+        "community_usage": "Newly documented; pattern combines block+additionalContext with stop_hook_active guard. Limited production adoption."
+      },
+      "history": [
+        {
+          "ref": "file:${CLAUDE_PLUGIN_ROOT:-$HOME/.claude}/scripts/hooks/stop-push-gate.sh",
+          "date": "2026-06-20",
+          "verdict": "implement",
+          "rationale": "Implemented + verified (7 branches): new stop-push-gate.sh wired as 2nd Stop hook. Tested dirty->emits additionalContext, repeat->silent (marker), stop_hook_active->silent, non-git->silent. Pure additionalContext (advisory, no error label). Active next session."
+        }
+      ]
+    },
+    "stop-hook-block-cap-v2.1.143": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.143",
+      "title": "Stop hook consecutive-block safety cap",
+      "area": "hooks",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Stop hooks returning block can infinite-loop; cap default 8.",
+        "risk": "N/A",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Issue #55754 documented real 50-min loss."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-16",
+          "verdict": "skip",
+          "rationale": "session-closer always exits 0 (fire-and-forget); structurally immune to blocking cascade this cap guards against."
+        }
+      ]
+    },
+    "stream-idle-watchdog-default-v2.1.196": {
+      "first_seen": "2026-07-02T00:00:00Z",
+      "version": "v2.1.196",
+      "title": "Streaming idle watchdog default-on for all providers",
+      "area": "settings",
+      "official_source": null,
+      "research": {
+        "why": "Stalled streams on non-Anthropic routes hung indefinitely.",
+        "confidence": "high",
+        "our_leverage": "none - already active.",
+        "recommendation": "skip",
+        "community_usage": "Two layers: 5min byte watchdog + 90s SSE event watchdog; CLAUDE_ENABLE_STREAM_WATCHDOG=0 escape hatch."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-02",
+          "verdict": "skip",
+          "rationale": "Direct Anthropic API only (no BEDROCK/VERTEX/FOUNDRY/BASE_URL configured) - watchdog was already default-on for us since v2.1.163; the 196 delta extends to routes we do not use."
+        }
+      ]
+    },
+    "streaming-tool-exec-always-v2.1.154": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.154",
+      "title": "Streaming tool execution always-on",
+      "area": "orchestration",
+      "official_source": "https://code.claude.com/docs/en/release-notes",
+      "research": {
+        "why": "Streams tool name+params token-by-token so the permission prompt renders before the full block buffers/validates (~10-20s->1-3s on Bedrock). Flag CLAUDE_CODE_ENABLE_FINE_GRAINED_TOOL_STREAMING removed; now unconditional.",
+        "risk": "None — our PreToolUse hooks see the assembled call after content_block_stop; render-latency only.",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "Bedrock teams used the flag for latency; GA = no one sets it."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-30",
+          "verdict": "skip",
+          "rationale": "No-op: flag never set, no Bedrock, nothing to remove; gained the speed-up for free at 2.1.154. Skip (no action exists) not defer (no pending action)."
+        }
+      ]
+    },
+    "subagent-model-teammate-v2.1.147": {
+      "first_seen": "2026-05-25T00:00:00Z",
+      "version": "v2.1.147",
+      "title": "CLAUDE_CODE_SUBAGENT_MODEL applies to teammate processes",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Before v2.1.147, teammate processes (AGENT_TEAMS=1) always used default model; now CLAUDE_CODE_SUBAGENT_MODEL governs them too, enabling cost control for multi-teammate waves.",
+        "risk": "Low — monitor first session for reasoning regressions; Haiku risks weaker engineer output.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Add CLAUDE_CODE_SUBAGENT_MODEL=claude-sonnet-4-5; teammate processes spawned by AGENT_TEAMS=1 inherit it, reducing per-wave cost 40-50% while preserving quality floor.",
+            "target": "~/.claude/settings.json env block"
+          }
+        ],
+        "community_usage": "Common pattern: orchestrator on Sonnet/Opus, CLAUDE_CODE_SUBAGENT_MODEL=claude-haiku-4-5 for subagents. Sonnet is the safer floor to protect planner/engineer quality."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-25",
+          "verdict": "implement",
+          "rationale": "settings.json has AGENT_TEAMS=1 + concurrency=20 but CLAUDE_CODE_SUBAGENT_MODEL unset; one-line env addition directly targets documented cost concern."
+        }
+      ]
+    },
+    "subagent-nested-spawn-v2.1.172": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.172",
+      "title": "Sub-agents can spawn their own sub-agents (5 levels)",
+      "area": "agents",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "v2.1.172 made nested agent spawning possible for the first time (sub-agents were hard leaves); v2.1.181 closed a foreground unbounded-depth loophole. Cherny: motivation is context management, not parallelism.",
+        "risk": "Engineer agents carry Agent in tools with no depth guard in prompts — runaway nesting risk. Flat orchestration is a deliberate cc design.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Already operate at depth-2 when themselves dispatched as sub-agents — now legal, works passively, no change needed.",
+            "target": "codebase-health-orchestrator / qa-orchestrator"
+          }
+        ],
+        "community_usage": "2-3 level chains with explicit model tiering; warned pitfalls: 7x token blowup, circular spawning, silent depth-5 failures."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-06-20",
+          "verdict": "defer",
+          "rationale": "Analyst defer (high conf): flat orchestration is deliberate; TDD loop + audit fan-outs are root-orchestrated. Only passive win (CHA/qa-orchestrator depth-2) needs no action. Optional hygiene: add depth guards to Agent-equipped engineer agents — not urgent."
+        }
+      ]
+    },
+    "subagents-background-by-default-v2.1.198": {
+      "first_seen": "2026-07-02T00:00:00Z",
+      "version": "v2.1.198",
+      "title": "Subagents run in background by default; TaskOutput deprecated",
+      "area": "agents",
+      "official_source": null,
+      "research": {
+        "why": "Background-by-default keeps the orchestrator working while subagents run; also fixes rate-limit cutoffs discarding partial work and API errors misreported as success.",
+        "confidence": "medium",
+        "our_leverage": "skills/orchestrator-patterns/SKILL.md:57-61,222,356-359 stale guidance; CORE.md parallel-dispatch pattern already async-safe.",
+        "recommendation": "implement",
+        "community_usage": "Formalizes opt-in run_in_background as default; TaskOutput deprecated in favor of Read on the task output file."
+      },
+      "history": [
+        {
+          "ref": "commit-pending",
+          "date": "2026-07-02",
+          "verdict": "implement",
+          "rationale": "orchestrator-patterns SKILL.md taught explicit run_in_background:true + TaskOutput-callback polling, both stale. FIXED this session: 3 doc sites updated to background-by-default + Read-output-file mechanism."
+        }
+      ]
+    },
+    "subagent-spawn-cap-v2.1.212": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.212",
+      "title": "Per-session subagent spawn cap",
+      "area": "orchestration",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "Stop runaway delegation loops",
+        "risk": "Largest documented run (17-wave apply:all, ~68 spawns) needs headroom above upstream default while still being a real cap",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Set CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION=100",
+            "target": "settings.json env"
+          }
+        ],
+        "community_usage": "No significant external adoption discussion found"
+      },
+      "history": [
+        {
+          "ref": "commit:settings.json",
+          "date": "2026-07-18",
+          "verdict": "implement",
+          "rationale": "Set to 100: headroom above our largest real run (~68 spawns) while still tighter than upstream 200 default"
+        }
+      ]
+    },
+    "task-tool-mode-deprecated-v2.1.212": {
+      "first_seen": "2026-07-18T00:00:00Z",
+      "version": "v2.1.212",
+      "title": "Task tool mode parameter deprecated",
+      "area": "general",
+      "official_source": "https://code.claude.com/docs/en/changelog",
+      "research": {
+        "why": "mode param now ignored; subagents inherit parent permission mode by default",
+        "risk": "N/A -- verified clean",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Swept for mode:/\"mode\": usage",
+            "target": "commands/skills/agents"
+          }
+        ],
+        "community_usage": "N/A, deprecation"
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-18",
+          "verdict": "skip",
+          "rationale": "All 12 mode: hits in commands/skills/agents are unrelated JSON schema fields (audit findings mode, wave-state mode, fallow config mode), not real Task-tool mode params. Zero real usage, no action needed."
+        }
+      ]
+    },
+    "teamcreate-teamdelete-removed-v2.1.178": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.178",
+      "title": "TeamCreate/TeamDelete tools removed",
+      "area": "agents",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "v2.1.178 removed TeamCreate/TeamDelete; with AGENT_TEAMS=1 every session has one implicit team, spawn teammates via Agent tool name param. team_name accepted but ignored.",
+        "risk": "None — cc surface verified clean.",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "N/A — deprecation."
+      },
+      "history": [
+        {
+          "ref": "deprecations.md",
+          "date": "2026-06-20",
+          "verdict": "skip",
+          "rationale": "Grounding 2026-06-20: ZERO references to TeamCreate/TeamDelete/team_name in cc commands/skills/scripts/agents (only the changelog cache). No cleanup needed. Recorded in deprecations.md. (Removal lands v2.1.178; installed 2.1.177.)"
+        }
+      ]
+    },
+    "tool-param-permission-syntax-v2.1.178": {
+      "first_seen": "2026-06-20T00:00:00Z",
+      "version": "v2.1.178",
+      "title": "Tool(param:value) permission rule syntax",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Param-level permission gates (Tool(param:value) with * wildcard) e.g. Agent(model:opus) to deny/ask Opus subagents — harness-enforced cost tiers + role discipline without hook code.",
+        "risk": "CONFIRMED (docs, CC 2.1.183): Agent(model:opus) matches the RESOLVED model INCLUDING frontmatter-assigned (eval after resolution; alias-literal so bare 'opus' matches our 21 opus agents). A deny would block the whole opus fleet; ask prompts on EVERY opus spawn -> breaks autonomous /apply:all + /audit waves. Single-param rules can't scope opus-by-agent-type. Permissions HOT-RELOAD (verifiable same-session).",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Agent(model:opus) to enforce subagent cost tiers (20/32 agents opus); audit /apply:all + /audit:* dispatch first; ask before deny.",
+            "target": "~/.claude/settings.json permissions.ask/deny"
+          }
+        ],
+        "community_usage": "Early adopters use Agent(model:opus) for cost control and Bash(cmd:...) scoping within days of v2.1.178."
+      },
+      "history": [
+        {
+          "ref": "bd:cc-c3grf",
+          "date": "2026-06-20",
+          "verdict": "defer",
+          "rationale": "Leo chose: file beads, apply after CC update to >=2.1.178. Tracked with drafted rules. High leverage for the opus-heavy fleet but version-gated."
+        },
+        {
+          "ref": "settings.json:permissions.ask + bd:cc-c3grf",
+          "date": "2026-06-20",
+          "verdict": "implement",
+          "rationale": "Resolved on CC 2.1.183. Leo OVERRODE the recommended safe Fable-5 ceiling and chose ask Agent(model:opus) for cost visibility, accepting the autonomous-wave prompt cost (flagged). Added to permissions.ask; verified valid JSON + present + live via hot-reload. NOTE: this prompts on every opus subagent spawn (21/31 agents); one-line revert if it impedes waves."
+        }
+      ]
+    },
+    "usage-category-breakdown-v2.1.149": {
+      "first_seen": "2026-05-25T00:00:00Z",
+      "version": "v2.1.149",
+      "title": "/usage per-category cost breakdown",
+      "area": "commands",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Surfaces which category (skills/subagents/MCP/plugins) drives token cost; previously aggregate totals obscured whether MCP context bloat or parallel subagent round-trips were the culprit.",
+        "risk": "No config change required — read-only observability command.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Run /usage after a heavy /apply:all wave to see subagent vs MCP cost ratio; use to decide whether to tier agents by model or reduce active MCP servers.",
+            "target": "runtime observation — CONCURRENCY=20 + EXPERIMENTAL_AGENT_TEAMS=1"
+          },
+          {
+            "action": "Correlate /usage per-category snapshots with OTel spans to build cost-per-workflow baselines.",
+            "target": "nexus-agent OTel telemetry"
+          }
+        ],
+        "community_usage": "Early adoption in multi-agent setups where MCP tool-definition overhead (~55k tokens for 5 servers) and parallel subagent cost are dominant line items; no significant third-party tooling built around it yet."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-25",
+          "verdict": "implement",
+          "rationale": "Zero config change, already shipped; CONCURRENCY=20 + AGENT_TEAMS + 12 MCP servers is exactly the topology where per-category breakdown delivers actionable cost attribution."
+        }
+      ]
+    },
+    "vercel-plugin-path-substring-matcher": {
+      "first_seen": "2026-04-26T00:00:00Z",
+      "version": "ongoing",
+      "title": "Vercel plugin context-blind PreToolUse matcher",
+      "area": "noise",
+      "official_source": null,
+      "research": {
+        "why": "vercel-plugin's PreToolUse hook fires on any tool input where path/argument contains substrings like workflow/shadcn/react/next/prisma; injects unrelated docs.",
+        "risk": "Plugin is upstream-controlled; disabling drops legitimate Vercel guidance; overriding requires plugin forking.",
+        "effort": "N/A",
+        "our_leverage": [],
+        "community_usage": "Documented in rules/TOOLING.md § Hook Matcher Anti-Patterns as known issue."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-04-26",
+          "verdict": "skip",
+          "rationale": "Upstream-controlled plugin behavior; recognize injection by <!-- vercel-context-chunk:* --> comment and proceed when topic doesn't match request intent."
+        }
+      ]
+    },
+    "workflow-keyword-trigger-setting-v2.1.158": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.158",
+      "title": "Workflow keyword trigger setting",
+      "area": "orchestration",
+      "official_source": "https://code.claude.com/docs/en/settings",
+      "research": {
+        "why": "Default workflowKeywordTriggerEnabled=true fires a dynamic-workflow confirmation on every prompt containing 'workflow' — 129 refs across our /workflow:* command files.",
+        "risk": "Low — does not disable dynamic workflows.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "set workflowKeywordTriggerEnabled:false (DONE) — ultracode + /workflows + saved workflows unaffected",
+            "target": "~/.claude/settings.json"
+          }
+        ],
+        "community_usage": "Power users disable day one; per-prompt escape (alt+w) too fragile for command names."
+      },
+      "history": [
+        {
+          "ref": "commit:settings.json workflowKeywordTriggerEnabled=false",
+          "date": "2026-05-30",
+          "verdict": "implement",
+          "rationale": "Implemented + verified: workflowKeywordTriggerEnabled:false written to settings.json (valid JSON). Key confirmed via docs (analyst inference was correct)."
+        },
+        {
+          "ref": "settings.json:423 (unchanged, false)",
+          "date": "2026-06-20",
+          "verdict": "skip",
+          "rationale": "Re-research (keyword renamed workflow->ultracode at v2.1.160). NO DRIFT: workflowKeywordTriggerEnabled=false IS present at settings.json:423 — the prior 'ABSENT' read was a jq '// \"ABSENT\"' false-flag (false // x returns x). Original motivation (stop /workflow:* command names triggering) is now obsolete. Leo chose KEEP FALSE — harmless (dynamic workflows still launch explicitly; avoids any bare-word 'ultracode' collision with /effort ultracode). Installed CC 2.1.177 < 2.1.178 phrase-only refinement."
+        }
+      ]
+    },
+    "workflow-otel-attributes-v2.1.202": {
+      "first_seen": "2026-07-16T00:00:00Z",
+      "version": "v2.1.202",
+      "title": "Workflow-spawned agent telemetry carries workflow.run_id/workflow.name",
+      "area": "otel",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "Workflow runs previously unattributable in OTel dashboards; attributes enable per-run reconstruction.",
+        "risk": "Low - additive metadata only.",
+        "effort": "small",
+        "our_leverage": [
+          {
+            "action": "Source of the newly-attributable telemetry",
+            "target": "~/.claude/workflows/*.js (4 saved Workflows, active dispatch)"
+          },
+          {
+            "action": "Candidate mining-table row keyed on workflow.run_id",
+            "target": "skills/session-forensics/SKILL.md:29"
+          }
+        ],
+        "community_usage": "No adoption chatter; changelog-line feature."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-07-16",
+          "verdict": "defer",
+          "rationale": "Real payback (active Workflow usage) but requires Grafana-side dashboard work outside this repo; Leo also wants to explore personally before wiring anything."
+        },
+        {
+          "ref": "bd:hl-bma.3",
+          "date": "2026-07-16",
+          "verdict": "defer",
+          "rationale": "Grafana-side work now tracked in homelab repo; producer side verified already exporting (telemetry env on, OTLP collector probe HTTP 200) - nothing to configure in cc."
+        }
+      ]
+    },
+    "worktree-baseref-fresh-v2.1.133": {
+      "first_seen": "2026-05-11T00:00:00Z",
+      "version": "v2.1.133",
+      "title": "worktree.baseRef setting (fresh | head)",
+      "area": "settings",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "v2.1.128 flipped EnterWorktree to local HEAD; v2.1.133 reverted default to fresh and exposed worktree.baseRef. Without setting, version upgrades silently flip agent-worktree base.",
+        "risk": "Low — no-op behaviorally; protects against future default flips.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Add worktree.baseRef = fresh to lock current default explicitly; multi-machine safety.",
+            "target": "~/.claude/settings.json — worktree key null"
+          }
+        ],
+        "community_usage": "GH issues #44965/#50850: worktrees branching from origin/main were 426 commits stale; baseRef:head preferred by power users, fresh for CI/clean-slate."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-11",
+          "verdict": "implement-fresh",
+          "rationale": "Make current default explicit; multi-machine workflow favors fresh."
+        }
+      ]
+    },
+    "worktree-rm-rf-safety-v2.1.143": {
+      "first_seen": "2026-05-16T00:00:00Z",
+      "version": "v2.1.143",
+      "title": "Worktree cleanup rm -rf fallback safety",
+      "area": "worktree",
+      "official_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md",
+      "research": {
+        "why": "git worktree remove fails on dirty/locked worktrees; rm -rf fallback wipes gitignored files silently.",
+        "risk": "Low — strictly safer.",
+        "effort": "trivial",
+        "our_leverage": [
+          {
+            "action": "Drop --force; never rm -rf fallback; error+diagnostic on failure.",
+            "target": "scripts/lib/worktree-helpers.sh:358-359"
+          }
+        ],
+        "community_usage": "Three GitHub issues with confirmed data loss."
+      },
+      "history": [
+        {
+          "ref": "29c85a21",
+          "date": "2026-05-16",
+          "verdict": "implement",
+          "rationale": "wt_destroy:358-359 had the exact rm-rf pattern CC patched (issues #46444, #38287, #29179). Fixed inline at commit 29c85a21."
+        }
+      ]
+    },
+    "worktree-unlocked-on-finish-v2.1.158": {
+      "first_seen": "2026-05-30T00:00:00Z",
+      "version": "v2.1.158",
+      "title": "Worktrees unlocked on agent finish",
+      "area": "worktree",
+      "official_source": "https://code.claude.com/docs/en/worktrees",
+      "research": {
+        "why": "CC-native worktrees left unlocked on finish so git worktree remove/prune works.",
+        "risk": "N/A — upstream fix to CC-native worktrees only.",
+        "effort": "trivial",
+        "our_leverage": [],
+        "community_usage": "Fixes orphan-worktree bug #26725."
+      },
+      "history": [
+        {
+          "ref": null,
+          "date": "2026-05-30",
+          "verdict": "skip",
+          "rationale": "Applies to CC-native EnterWorktree worktrees; our wt_destroy already uses safe git worktree remove (no --force) per worktree-helpers.sh:430. Zero overlap."
+        }
+      ]
+    }
+  }
+}

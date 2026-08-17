@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent stack — Leonardo Acosta</title>
+<script src="https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js"></script>
+<style>
+:root{--paper:#f7f4ec;--ink:#28251f;--muted:#8d897f;--line:#d9d3c7;--accent:#c65d35;--green:#7caf9b;--blue:#6b8db5;--purple:#9a88bd;--gold:#b99b57;--red:#c87977;--shadow:0 7px 22px #473d3214}*{box-sizing:border-box}body{margin:0;background:#191817;color:var(--ink);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.stage{min-height:100vh;padding:clamp(16px,3vw,54px);display:grid;place-items:center}.paper{width:min(860px,100%);aspect-ratio:1320/1720;background:var(--paper);padding:clamp(22px,3vw,54px);position:relative;overflow:hidden;box-shadow:0 25px 80px #0008}.paper:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.08;background-image:radial-gradient(#544b3e 0.45px,transparent .45px);background-size:6px 6px}.top{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid #464139;padding-bottom:14px}.title{font:800 clamp(18px,2.3vw,34px)/1.05 ui-sans-serif,system-ui,sans-serif;letter-spacing:-.055em}.title em{color:var(--accent);font-style:normal}.subtitle{font-size:clamp(8px,1vw,12px);color:#8d8174}.meter{position:relative;z-index:1;margin:17px 0 20px;padding:15px 18px;border:1px solid var(--line);border-radius:12px;display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;background:#fff9}.meter b{font-size:clamp(16px,2vw,25px)}.meter small{display:block;color:var(--muted);font-size:9px}.track{height:9px;border-radius:99px;background:#e5e2dc;overflow:hidden}.fill{height:100%;width:3%;background:var(--accent);border-radius:99px}.grid{position:relative;z-index:1;display:grid;grid-template-columns:70px 1fr 70px;gap:14px;height:calc(100% - 150px)}.rail{display:flex;flex-direction:column;justify-content:space-between;padding:4px 0}.check{display:grid;place-items:center;gap:4px;color:var(--muted);font-size:8px;text-align:center}.check i{width:29px;height:29px;border:2px solid;border-radius:8px;display:grid;place-items:center;font-style:normal;font-size:19px;color:var(--green)}.check.fail i{color:var(--red)}.layers{display:flex;flex-direction:column;gap:10px;min-height:0}.layer{position:relative;flex:1;min-height:61px;border:1px solid var(--line);border-radius:13px;background:#fffcf8;padding:12px 16px;display:grid;grid-template-columns:205px 1fr;gap:20px;box-shadow:var(--shadow);overflow:hidden;opacity:0;transform:translateY(16px)}.layer:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c)}.layer h2{font:800 15px/1.1 ui-sans-serif,system-ui,sans-serif;margin:0 0 6px}.layer p{font-size:9px;color:#79746a;margin:0;line-height:1.35}.panel{background:color-mix(in srgb,var(--c) 9%,#fff);border-radius:9px;padding:8px 13px;display:flex;align-items:center;justify-content:center;min-width:0}.nodes{display:flex;align-items:center;justify-content:center;gap:9px;width:100%}.node{border:1px solid color-mix(in srgb,var(--c) 65%,#777);border-radius:7px;padding:7px 13px;font-size:10px;color:#605b68;background:#ffffff55;white-space:nowrap}.node.active{background:color-mix(in srgb,var(--c) 25%,white);font-weight:700}.connector{height:1px;flex:1;background:repeating-linear-gradient(90deg,var(--c),var(--c) 3px,transparent 3px,transparent 7px);max-width:42px}.spark{position:absolute;right:12px;bottom:8px;width:8px;height:8px;border-radius:50%;background:var(--c);opacity:.45}.context-layer .context-panel{padding:6px 8px;justify-content:stretch;overflow:hidden}.context-layer .context-stack{width:100%;min-width:0;display:grid;grid-template-columns:70px minmax(0,1fr);gap:7px;align-items:stretch}.context-layer .context-compact-step{border:1px solid color-mix(in srgb,var(--gold) 58%,#7b6d52);border-radius:9px;background:#fffaf0;padding:6px 5px;text-align:center;box-shadow:inset 0 0 0 1px #fff6;display:grid;align-content:center;gap:2px;min-width:0}.context-layer .context-compact-step b{display:block;font:900 14px/.9 ui-sans-serif,system-ui,sans-serif;color:#8f6e23;letter-spacing:-.05em}.context-layer .context-compact-step span{font-size:7px;text-transform:uppercase;letter-spacing:.08em;color:#6f6147;white-space:nowrap}.context-layer .context-compact-step small{display:block;color:#7b7366;font-size:6px;line-height:1.1}.context-layer .context-right{min-width:0;display:grid;grid-template-rows:auto 1fr auto;gap:4px}.context-layer .context-segments{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;min-width:0}.context-layer .ctx-segment{position:relative;overflow:hidden;border:1px solid #d5c395;border-radius:7px;background:#fffdf8;padding:4px 4px 5px;min-width:0}.context-layer .ctx-segment i{position:absolute;left:0;top:0;bottom:0;width:var(--w);background:color-mix(in srgb,var(--gold) 20%,transparent);opacity:.95;transform-origin:left center}.context-layer .ctx-segment em,.context-layer .ctx-segment strong{position:relative;display:block;overflow:hidden;text-overflow:ellipsis}.context-layer .ctx-segment em{font-style:normal;text-transform:uppercase;letter-spacing:.06em;color:#86775b;font-size:6px;white-space:nowrap}.context-layer .ctx-segment strong{margin-top:1px;font-size:8px;color:#4f493f;white-space:nowrap}.context-layer .context-budget{align-self:center;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:center;min-width:0}.context-layer .context-budget span{font-size:6px;color:#8a8173;white-space:nowrap}.context-layer .limitbar{height:7px;border:1px solid #d4c9b8;border-radius:99px;background:#eee8dc;overflow:hidden;min-width:0}.context-layer .limitfill{height:100%;width:0;background:linear-gradient(90deg,var(--gold),#d7b85d);border-radius:inherit}.context-layer .context-note{font-size:7px;color:#8a8173;display:flex;justify-content:space-between;gap:6px;min-width:0}.context-layer .context-note span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.context-layer .context-note b{color:#8f6e23;white-space:nowrap}.tools-layer .panel{justify-content:stretch;min-width:0}.tool-board{width:100%;display:grid;grid-template-columns:minmax(0,1fr) 54px;gap:7px;align-items:stretch;min-width:0}.tool-bus{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:18px 8px 8px;border:1px solid color-mix(in srgb,var(--blue) 38%,#d7d0c3);border-radius:10px;background:#fffcf8;overflow:hidden;min-width:0}.tool-bus-label{position:absolute;left:8px;top:4px;z-index:2;color:#4f6f94;font-size:7px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.tool-bus:before{content:"";position:absolute;left:14px;right:14px;top:44px;height:2px;background:repeating-linear-gradient(90deg,color-mix(in srgb,var(--blue) 70%,#777),color-mix(in srgb,var(--blue) 70%,#777) 5px,transparent 5px,transparent 9px);opacity:.42}.tool-bus-flow{position:absolute;left:14px;top:41px;height:7px;width:0;border-radius:99px;background:linear-gradient(90deg,transparent,var(--blue),#fff,var(--blue),transparent);opacity:.72}.tool-cell{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:3px 5px;min-width:0}.tool-node{position:relative;z-index:1;padding:4px 5px;width:100%;text-align:center;font-size:8px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tool-node.enabled{background:color-mix(in srgb,var(--blue) 25%,white);font-weight:800;color:#334861}.tool-node.muted{border-style:dashed;background:#f3f0e9;color:#9b958a;opacity:.72}.tools-layer .schema-ok{position:relative;z-index:1;grid-column:2;border:1px solid color-mix(in srgb,var(--green) 65%,#777);border-radius:99px;background:color-mix(in srgb,var(--green) 18%,white);color:#4d796d;font-size:5.8px;line-height:1;text-transform:uppercase;letter-spacing:.06em;padding:2px 4px;white-space:nowrap;text-align:center}.tools-layer .schema-ok.muted{border-color:#d2cbc0;background:#f4f1ea;color:#a39b8f}.tool-state{display:grid;align-content:center;border:1px solid color-mix(in srgb,var(--blue) 45%,#aaa);border-radius:9px;background:#fffdf9;padding:6px 5px;min-width:0;text-align:center;color:#59606a}.tool-state b{display:block;font:800 15px/1 ui-sans-serif,system-ui,sans-serif;color:#3f638b}.tool-state small{display:block;margin-top:3px;font-size:6.5px;line-height:1.15;color:#7f786d}.tool-dot{position:relative;z-index:1;width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 18%,transparent)}.tool-cell.muted .tool-dot{background:#b8b0a4;box-shadow:0 0 0 3px #e7e0d5}.right{display:flex;flex-direction:column;justify-content:space-between;padding:12px 0}.trace{font-size:8px;color:#837d72;writing-mode:vertical-rl;transform:rotate(180deg);margin:auto}.trace i{display:block;height:20px;width:100%;background:#737c80;margin:6px auto;border-radius:20px}.controls{position:absolute;right:18px;bottom:15px;z-index:3;display:flex;gap:8px}.controls button{font:inherit;font-size:10px;padding:8px 11px;border:1px solid #aaa294;background:#fff9;border-radius:99px;cursor:pointer;color:var(--ink)}.controls button:hover{background:white}@media(max-width:760px){.paper{aspect-ratio:auto;min-height:100vh}.grid{grid-template-columns:30px 1fr 30px;height:auto}.layer{grid-template-columns:1fr;gap:8px}.layer h2{font-size:13px}.layer p{font-size:8px}.node{font-size:8px;padding:5px 7px}.rail{display:none}.right{display:none}.meter{grid-template-columns:auto 1fr}.meter small:last-child{display:none}}
+.surface-layer .surface-panel{min-height:104px;overflow:hidden;padding:8px 10px}.surface-flow{position:relative;width:100%;height:92px;display:grid;grid-template-columns:minmax(0,1fr) minmax(96px,.58fr);align-items:center;gap:12px}.surface-inputs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;min-width:0}.surface-input{justify-content:center;min-width:0;padding:5px 3px;font-size:8px;white-space:nowrap}.surface-task-wrap{position:relative;display:grid;place-items:center;min-width:0}.surface-pulse{position:absolute;inset:auto;width:64px;height:64px;border:1px solid color-mix(in srgb,var(--accent) 55%,#fff);border-radius:20px;background:color-mix(in srgb,var(--accent) 10%,transparent);opacity:.35}.surface-token{position:absolute;left:0;top:50%;width:7px;height:7px;border-radius:50%;background:var(--purple);box-shadow:0 0 0 2px #fff8;opacity:0}.task-object{position:relative;z-index:1;min-width:94px;justify-content:center;text-align:center;border-color:var(--accent);background:#fff3e9;font-size:9px}.task-object small{display:block;margin-top:2px;color:var(--muted);font-size:7px;line-height:1.2}
+.memory-card .panel{padding:7px 9px;overflow:hidden}.memory-panel{display:grid;gap:6px}.memory-flow{display:grid;grid-template-columns:minmax(58px,.75fr) minmax(86px,1.05fr) minmax(72px,.9fr);align-items:center;gap:6px}.memory-session{justify-content:center;min-width:0;text-align:center;line-height:1.05;white-space:normal}.memory-boundary{position:relative;display:grid;place-items:center;min-height:38px;color:#9b6b4d;font-size:7px;text-transform:uppercase;letter-spacing:.07em;text-align:center}.memory-boundary:before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:1px dashed #b88563}.memory-boundary:after{content:"";position:absolute;left:-3px;right:-3px;top:50%;border-top:1px dashed #b88563}.memory-boundary span{position:relative;z-index:1;background:#fffaf2;border:1px solid #e0c5ad;border-radius:999px;padding:3px 5px;line-height:1.1}.memory-beam{position:absolute;left:0;right:0;top:50%;height:2px;background:linear-gradient(90deg,#7caf9b00,#7caf9bcc,#7caf9b00);transform-origin:left center;z-index:0}.memory-restored{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.memory-pill{border:1px solid #d8c2ae;background:#fffaf2;border-radius:7px;padding:4px 4px;text-align:center;font-size:7px;line-height:1.1;color:#66584d;min-width:0}.memory-pill.ok{border-color:#98bdab;background:#eef8f3}.memory-pill.lost{border-color:#d19a96;background:#fff0ee;color:#8b4d49}.memory-pill small{display:block;margin-top:1px;color:#8f867b;font-size:6px;line-height:1}.memory-score{display:flex;gap:5px;justify-content:center;align-items:baseline;font-size:9px;color:#6f665b}.memory-score b:first-child{color:var(--green)}.memory-score .lost{color:var(--red)}
+.model-card .model-panel{min-height:82px;padding:7px 9px;overflow:hidden}.model-flow{position:relative;display:grid;grid-template-columns:64px 1fr;gap:8px;align-items:center;width:100%;max-width:100%;isolation:isolate}.model-route{display:grid;gap:5px;justify-items:start;min-width:0}.model-route-label{font-size:6.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}.route-node{position:relative}.route-dots{display:grid;grid-template-columns:repeat(6,6px);gap:3px;padding-left:1px}.route-dots i{width:6px;height:6px;border-radius:50%;background:var(--c);opacity:.24;box-shadow:0 0 0 1px #2b261d12}.route-dots i:nth-child(-n+5){opacity:.9}.route-dots i:last-child{background:var(--purple);opacity:.55}.model-paths{position:relative;display:grid;grid-template-rows:1fr 1fr;gap:6px;min-width:0}.model-path{position:relative;display:grid;grid-template-columns:minmax(54px,.8fr) auto minmax(58px,.75fr);gap:5px;align-items:center;min-width:0}.model-path .path-line{height:2px;border-radius:99px;background:linear-gradient(90deg,transparent,var(--c));position:relative;min-width:34px}.model-path .path-line:after{content:"";position:absolute;right:-2px;top:50%;width:6px;height:6px;border-radius:50%;background:var(--c);transform:translateY(-50%)}.frontier-fallback .path-line{background:linear-gradient(90deg,transparent,var(--purple))}.frontier-fallback .path-line:after{background:var(--purple)}.model-path small{font-size:6.5px;color:var(--muted);white-space:normal;line-height:1.05;min-width:0}.model-path .node{padding-inline:7px;white-space:nowrap}.badge{font-size:6.5px;line-height:1;border:1px solid color-mix(in srgb,var(--c) 55%,#fff);border-radius:999px;padding:3px 5px;background:#fffdf7;color:#4b4338;white-space:nowrap;box-shadow:0 2px 8px #473d320d}.badge-frontier{border-color:color-mix(in srgb,var(--purple) 55%,#fff)}.model-route-token{position:absolute;left:58px;top:23px;width:7px;height:7px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent),0 2px 8px #473d3240;z-index:2;pointer-events:none}.model-route-token.frontier{background:var(--purple);box-shadow:0 0 0 3px color-mix(in srgb,var(--purple) 18%,transparent),0 2px 8px #473d3240}.runtime-card .runtime-panel{position:relative;padding:6px;overflow:hidden}.runtime-card .sandbox-boundary{position:relative;width:100%;min-height:76px;border:2px dashed color-mix(in srgb,var(--red) 72%,#fff);border-radius:14px;background:linear-gradient(135deg,#fff8,#fff3);display:grid;grid-template-rows:auto auto auto;gap:3px;padding:10px 8px 6px;overflow:hidden}.runtime-card .runtime-label{position:absolute;top:-9px;left:12px;padding:2px 7px;border:1px solid color-mix(in srgb,var(--red) 55%,#fff);border-radius:999px;background:var(--paper);color:var(--red);font-size:7px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.runtime-card .runtime-wall{display:flex;align-items:center;justify-content:space-between;gap:6px;border:1px solid #d3b4ad;border-radius:8px;background:#fff9;padding:2px 6px;font-size:6.5px;line-height:1;color:#6f6258;min-width:0}.runtime-card .runtime-wall b{color:var(--red);font-size:8px;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}.runtime-card .runtime-lane{display:grid;grid-template-columns:auto repeat(3,minmax(0,1fr));gap:3px;align-items:center;min-width:0}.runtime-card .runtime-lane:before{font-size:6.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;min-width:42px}.runtime-card .runtime-lane.allowed:before{content:"allowed"}.runtime-card .runtime-lane.denied{grid-template-columns:auto repeat(2,minmax(0,1fr))}.runtime-card .runtime-lane.denied:before{content:"blocked"}.runtime-card .runtime-lane .node{width:100%;justify-content:center;text-align:center;padding:3px 5px;font-size:7.5px;line-height:1;min-width:0}.runtime-card .runtime-lane.allowed .node{border-color:color-mix(in srgb,var(--green) 62%,#fff);background:#eff8f3;color:#3f755f}.runtime-card .runtime-lane.allowed .node:before{content:"✓ ";font-weight:900}.runtime-card .node.blocked{border-color:var(--red);background:#f5dddc;color:#8f3431;box-shadow:inset 0 0 0 1px #c8797733}.runtime-card .node.blocked:before{content:"× ";font-weight:900}.runtime-card .spark{background:var(--red)}.orchestration-card .orchestration-panel{justify-content:stretch;overflow:hidden}.orchestration-card .orch-flow{position:relative;display:grid;grid-template-rows:18px 5px 18px 26px 5px 18px 5px 18px;align-items:center;justify-items:center;width:100%;max-width:260px;margin:0 auto;gap:0;overflow:hidden}.orchestration-card .orch-flow .node{padding:4px 8px;font-size:8px;line-height:1}.orchestration-card .orch-state{position:relative;display:grid;place-items:center}.orchestration-card .orch-ring{position:absolute;width:34px;height:34px;border:1px dashed var(--c);border-radius:50%;opacity:.6}.orchestration-card .orch-step{position:relative;z-index:2}.orchestration-card .orch-arrow{width:2px;height:100%;background:linear-gradient(180deg,var(--c),#7caf9b33);position:relative;transform-origin:top center}.orchestration-card .orch-arrow:after{content:"";position:absolute;left:50%;bottom:-2px;width:6px;height:6px;border-right:2px solid var(--c);border-bottom:2px solid var(--c);transform:translateX(-50%) rotate(45deg)}.orchestration-card .orch-fanout{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;width:100%;padding:5px 4px 0}.orchestration-card .orch-fanout:before{content:"";position:absolute;left:16%;right:16%;top:2px;height:17px;border-top:1px solid color-mix(in srgb,var(--c) 65%,transparent);border-left:1px solid color-mix(in srgb,var(--c) 45%,transparent);border-right:1px solid color-mix(in srgb,var(--c) 45%,transparent);border-radius:14px 14px 0 0}.orchestration-card .orch-task{position:relative;text-align:center;padding:4px 6px;font-size:8px;min-width:0}.orchestration-card .orch-task:before{content:"";position:absolute;left:50%;top:-7px;width:1px;height:7px;background:color-mix(in srgb,var(--c) 55%,transparent)}.orchestration-card .orch-merge-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;width:100%}.orchestration-card .orch-merge-line{height:1px;background:linear-gradient(90deg,transparent,var(--c));transform-origin:right center}.orchestration-card .orch-merge-line:last-child{background:linear-gradient(90deg,var(--c),transparent);transform-origin:left center}.orchestration-card .orch-answer{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0}.orchestration-card .orch-agents{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;min-width:92px}.orchestration-card .orch-agents i{font-style:normal;font-size:6.5px;text-align:center;border:1px solid color-mix(in srgb,var(--c) 45%,#777);border-radius:99px;padding:2px 3px;background:#fff8;color:#6c665d;white-space:nowrap}.orchestration-card .orch-answer .final{padding-inline:10px}.orchestration-card .orch-pulse{position:absolute;z-index:3;width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 0 5px color-mix(in srgb,var(--c) 18%,transparent);opacity:0;top:12px;left:50%;transform:translateX(-50%)}@media(prefers-reduced-motion:reduce){.layer{opacity:1;transform:none}.fill{width:42%}}
+
+/* ── Leonardo Acosta / Nimbus full-viewport redesign ───────────────────── */
+:root{
+  --paper:#02050a;
+  --ink:#fff4d5;
+  --muted:#c8bb99;
+  --line:rgba(255,240,199,.22);
+  --accent:#ffd879;
+  --green:#9fd5b8;
+  --blue:#92bde8;
+  --purple:#c2a9df;
+  --gold:#ead09a;
+  --red:#ee9a8f;
+  --shadow:none;
+  --ease-out:cubic-bezier(.22,1,.36,1);
+}
+html,body{min-width:320px;min-height:100%;background:var(--paper)}
+body{
+  background:
+    radial-gradient(circle at 8% -8%,rgba(255,216,121,.19),transparent 34rem),
+    radial-gradient(circle at 92% 32%,rgba(234,208,154,.08),transparent 28rem),
+    #02050a;
+  color:var(--ink);
+  font-family:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+  font-size:14px;
+  line-height:1.45;
+  letter-spacing:.012em;
+  -webkit-font-smoothing:antialiased;
+}
+body:before{
+  content:"";
+  position:fixed;inset:0;pointer-events:none;z-index:50;opacity:.055;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
+  mix-blend-mode:soft-light;
+}
+.stage{display:block;min-height:100svh;padding:0}
+.paper{
+  width:100%;min-height:100svh;aspect-ratio:auto;
+  padding:clamp(20px,2.3vw,42px) clamp(20px,3.2vw,64px) clamp(28px,3vw,56px);
+  overflow:visible;background:transparent;box-shadow:none;
+}
+.paper:after{
+  position:fixed;opacity:.11;
+  background-image:linear-gradient(rgba(255,240,199,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,240,199,.055) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:linear-gradient(to bottom,black,transparent 82%);
+}
+.top{
+  min-height:86px;align-items:end;padding:18px 0 20px 84px;
+  border-bottom:1px solid rgba(255,240,199,.3);
+}
+.top:before{
+  content:"leo.";position:absolute;left:0;bottom:18px;
+  font:500 25px/1 "Chillax","Avenir Next",sans-serif;
+  letter-spacing:-.045em;color:var(--accent);
+}
+.title{
+  max-width:980px;color:var(--ink);
+  font:400 clamp(30px,4vw,64px)/.92 "Chillax","Avenir Next","Helvetica Neue",sans-serif;
+  letter-spacing:-.055em;text-transform:lowercase;
+}
+.title em{color:var(--accent);font-family:"Iowan Old Style","Baskerville",serif;font-weight:400;font-style:italic}
+.subtitle{
+  max-width:290px;padding-bottom:4px;color:rgba(255,244,213,.58);
+  font-size:11px;line-height:1.45;text-align:right;text-transform:uppercase;letter-spacing:.12em;
+}
+.meter{
+  margin:18px 0;padding:13px 16px;border:1px solid var(--line);border-radius:6px;
+  grid-template-columns:130px minmax(180px,1fr) minmax(240px,auto);gap:18px;
+  background:rgba(255,239,199,.055);box-shadow:inset 0 1px rgba(255,255,255,.03);
+}
+.meter b{color:var(--accent);font-size:clamp(22px,2vw,32px);font-weight:500}
+.meter small{color:rgba(255,244,213,.62);font-size:10px;line-height:1.4;text-transform:uppercase;letter-spacing:.08em}
+.track{height:6px;background:rgba(255,244,213,.1)}
+.fill{background:linear-gradient(90deg,#ead09a,#ffd879);box-shadow:0 0 18px rgba(255,216,121,.55)}
+.grid{
+  grid-template-columns:86px minmax(0,1fr) 86px;gap:18px;
+  height:auto;min-height:calc(100svh - 185px);
+}
+.layers{display:grid;grid-template-rows:repeat(7,minmax(122px,1fr));gap:10px}
+.rail{padding:2px 0}
+.check{gap:5px;color:rgba(255,244,213,.52);font-size:9px;text-transform:uppercase;letter-spacing:.1em}
+.check i{width:30px;height:30px;border:1px solid currentColor;border-radius:50%;font-size:15px;background:rgba(255,239,199,.035)}
+.check:not(.fail) i{color:var(--green);box-shadow:0 0 15px rgba(159,213,184,.12)}
+.check.fail i{color:var(--red)}
+.trace{border-color:rgba(255,240,199,.16)!important;background:rgba(255,239,199,.035)!important;color:var(--muted)!important}
+.layer{
+  min-height:122px;padding:12px 14px 12px 18px;
+  grid-template-columns:minmax(180px,1.15fr) minmax(480px,3.85fr) 8px;
+  gap:18px;border:1px solid rgba(255,240,199,.14);border-radius:5px;
+  background:linear-gradient(90deg,rgba(255,239,199,.055),rgba(255,239,199,.025));
+  box-shadow:inset 3px 0 0 color-mix(in srgb,var(--c) 72%,transparent);
+  transition:border-color 260ms var(--ease-out),background 260ms var(--ease-out),transform 260ms var(--ease-out);
+}
+.layer:hover{border-color:rgba(255,240,199,.32);background:linear-gradient(90deg,rgba(255,239,199,.085),rgba(255,239,199,.04));transform:translateX(3px)}
+.layer h2{margin:0 0 6px;color:var(--ink);font-size:clamp(16px,1.1vw,19px);font-weight:500;letter-spacing:-.02em;text-transform:lowercase}
+.layer h2:first-letter{color:var(--accent)}
+.layer p{margin:0;max-width:32ch;color:rgba(255,244,213,.68);font-size:12px;line-height:1.4}
+.panel{
+  border:1px solid rgba(255,240,199,.16)!important;border-radius:4px!important;
+  background:rgba(2,5,10,.46)!important;box-shadow:none!important;
+}
+.node,.task-object,.badge,.memory-pill,.tool-pill{
+  color:#fff4d5!important;border-color:color-mix(in srgb,var(--c) 52%,rgba(255,240,199,.18))!important;
+  background:color-mix(in srgb,var(--c) 10%,rgba(2,5,10,.82))!important;
+  box-shadow:none!important;
+}
+.node{font-size:12px!important;line-height:1.2}
+.node.active,.task-object,.orch-merge.active,.final.active{box-shadow:0 0 18px color-mix(in srgb,var(--c) 20%,transparent)!important}
+.surface-input,.task-object{font-size:12px!important}.task-object small{color:rgba(255,244,213,.68);font-size:9px}
+.model-route-label,.model-path small,.badge,.context-note,.memory-boundary,.memory-pill,.memory-score{font-size:9px!important}
+.memory-pill small{font-size:7px!important;color:rgba(255,244,213,.5)!important}
+.spark{filter:drop-shadow(0 0 5px var(--c))}
+@media (max-width:1100px){
+  .paper{padding-inline:22px}.top{padding-left:70px}.grid{grid-template-columns:58px minmax(0,1fr) 58px;gap:10px}
+  .layer{grid-template-columns:150px minmax(390px,1fr) 6px;gap:10px}.layer p{font-size:10px}.subtitle{display:none}
+}
+@media (max-width:780px){
+  .paper{padding:18px 14px 32px}.top{min-height:120px;padding:48px 0 16px}.top:before{top:4px;bottom:auto}
+  .title{font-size:clamp(34px,10vw,58px)}
+  .meter{grid-template-columns:82px 1fr}.meter>small:last-child{grid-column:1/-1}.grid{display:block}.rail,.trace{display:none}
+  .layers{display:flex;flex-direction:column;gap:12px}.layer{grid-template-columns:1fr;gap:9px;padding:15px;min-height:0}.layer>.spark{display:none}
+  .panel{min-height:112px}.layer p{max-width:none;font-size:12px}.layer h2{font-size:18px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
+
+
+
+/* Very wide screens: cap the measure so cards do not stretch into empty space. */
+.paper{max-width:1560px;margin-inline:auto}
+@media (min-width:1500px){
+  .layer{grid-template-columns:260px minmax(0,1fr)}
+  .surface-flow{grid-template-columns:150px minmax(0,1fr)}
+}
+/* Card 2 should span its panel rather than huddle in the middle. */
+@media (min-width:1181px){
+  .orchestration-card .orch-flow{
+    width:100%!important;max-width:none!important;min-width:0!important;
+    grid-template-columns:auto minmax(24px,1fr) auto minmax(200px,1.6fr) minmax(24px,1fr) auto minmax(24px,1fr) auto!important;
+    justify-items:center;
+  }
+  .orchestration-card .orch-fanout{width:100%;justify-content:space-evenly}
+}
+/* Card 2 breathing room so the fan-out never touches the answer column. */
+.orchestration-card .orch-fanout{padding-inline:8px;gap:10px}
+.orchestration-card .orch-task{margin-inline:2px;flex:0 0 auto;width:auto;min-width:max-content;white-space:nowrap}
+/* the fan-out slide is decorative; it must never carry a task into a neighbour */
+.orchestration-card .orch-task{transform:none!important}
+.orchestration-card .orch-answer{margin-left:6px}
+@media (min-width:781px) and (max-width:1180px){
+  .orchestration-card .orch-fanout{gap:10px}
+  .orchestration-card .orch-answer{margin-top:6px}
+}
+@media (min-width:561px) and (max-width:780px){
+  .orchestration-card .orch-flow{row-gap:12px}
+  .orchestration-card .orch-fanout{gap:8px}
+}
+
+/* ── Shared interior alignment grid ────────────────────────────────────────
+   Every card's content starts on the same x. Card 1 keeps its entry column
+   proportional to the panel so the funnel spans a sensible distance instead
+   of leaving a dead gap before the task node. */
+.layer > .panel{padding-left:18px!important;padding-right:18px!important}
+.tools-layer .tool-bus{padding-left:0;padding-right:0}
+.tools-layer .tool-board{padding-inline:0}
+.runtime-card .sandbox-boundary{margin-inline:0}
+.surface-flow{grid-template-columns:minmax(120px,20%) minmax(0,1fr)}
+.surface-task-wrap{justify-self:center;margin-right:0;min-width:0}
+@media (min-width:1181px){
+  .surface-flow{grid-template-columns:minmax(140px,16%) minmax(0,1fr);gap:0}
+}
+
+/* Cards 5-7: pull their inner wrappers onto the same content edge as 1-4. */
+.tools-layer .tool-bus{padding-left:12px}
+.tools-layer .tool-cell:first-child{justify-items:start}
+.tools-layer .tool-cell:first-child .tool-node{text-align:center}
+.runtime-card .sandbox-boundary{padding-left:8px}
+.runtime-card .runtime-lane{padding-left:6px}
+.memory-card .memory-flow{justify-items:start}
+.memory-card .memory-session:first-child{margin-left:6px}
+
+/* Cards 5 and 6 nest an extra bordered container; zero its inline padding so
+   the first node lands on the same content edge as every other card. */
+.tools-layer .tool-bus{padding-left:0!important;padding-right:0!important}
+.tools-layer .tool-bus-label{left:0}
+.runtime-card .sandbox-boundary{padding-left:0!important;padding-right:0!important}
+.runtime-card .runtime-label{left:0}
+.runtime-card .runtime-lane{padding-left:0!important}
+.runtime-card .runtime-wall{padding-left:0}
+
+/* Final nudge: measure to the text edge, not the lane's border box. */
+.runtime-card .runtime-lane.allowed,
+.runtime-card .runtime-lane.denied{margin-left:4px}
+.tools-layer .tool-cell:first-child .tool-node{margin-left:-1px}
+
+/* Narrow: the wrapped card 2 rows need vertical clearance at every size. */
+@media (max-width:780px){
+  .orchestration-card .orch-flow{row-gap:12px!important}
+  .orchestration-card .orch-answer{margin-top:6px}
+  .orchestration-card .orch-fanout{padding-block:2px}
+}
+
+@media (max-width:400px){
+  .context-layer .ctx-segment strong{font-size:8px!important;letter-spacing:0}
+  .context-layer .ctx-segment{padding-inline:2px}
+}
+
+/* ── Card 1 and 2 visual corrections ──────────────────────────────────────
+   .check is the rail's PASS/BLOCKED class; the fan-out chip reuses the name
+   and was inheriting uppercase + wide tracking, so it read as a different
+   kind of thing from its siblings. */
+.orchestration-card .orch-task.check{
+  text-transform:none!important;letter-spacing:.012em!important;font-size:12px!important;
+}
+/* Card 2 stages need real separation; they were sitting flush at 0px. */
+.orchestration-card .orch-flow{column-gap:14px}
+.orchestration-card .orch-arrow{min-width:26px}
+.orchestration-card .orch-answer{margin-left:0}
+/* The small agent chips repeat read/write/check verbatim next to the real
+   fan-out, which reads as duplication rather than as the merged set. */
+.orchestration-card .orch-agents{display:none}
+/* Card 1: centre the entry stack in its panel (was 25px top vs 15px bottom). */
+.surface-layer .surface-panel{padding-top:20px!important;padding-bottom:20px!important}
+.surface-flow{align-content:center}
+
+/* The top-right label strip adds 24px of top padding that was never balanced,
+   so every card's content sat low. Centre content in the area below the label. */
+.layer > .panel{
+  display:grid;align-content:center;
+  padding-top:26px!important;padding-bottom:26px!important;
+}
+
+/* Cards 6 and 7 set their own vertical padding elsewhere; normalise them. */
+.runtime-card .runtime-panel{padding-top:26px!important;padding-bottom:26px!important}
+.memory-card .panel{padding-top:26px!important;padding-bottom:26px!important}
+/* Card 1 funnel: geometry is measured from real element boxes in JS. */
+.surface-funnel{
+  position:absolute!important;inset:0!important;width:100%;height:100%;
+  left:0!important;right:0!important;top:0!important;bottom:0!important;
+  overflow:visible;pointer-events:none;display:block!important;
+}
+.surface-funnel path{
+  fill:none;stroke:url(#funnelStroke);stroke-width:1.5;stroke-linecap:round;
+  vector-effect:non-scaling-stroke;
+}
+.surface-funnel circle{fill:var(--accent)}
+
+/* ── Composition fidelity + collision repair ───────────────────────────── */
+.layer{
+  grid-template-columns:205px minmax(0,1fr);
+  gap:20px;
+}
+.layer > div:first-child{position:relative;z-index:2;align-self:center;min-width:0}
+.layer > .panel{position:relative;z-index:1;min-width:0;overflow:hidden}
+.surface-flow{grid-template-columns:minmax(0,1fr) minmax(132px,.34fr)}
+.surface-task-wrap{min-height:58px}
+.orchestration-panel{padding-block:12px!important}
+.orch-flow{
+  max-width:320px;
+  grid-template-rows:18px 4px 18px 25px 4px 18px 4px 18px;
+  overflow:visible;
+}
+.model-flow{grid-template-columns:104px minmax(0,1fr);gap:12px}
+.model-route{width:100%;align-content:center}
+.model-route-label{white-space:normal!important;line-height:1.2;text-wrap:balance}
+.model-path{grid-template-columns:minmax(72px,.8fr) auto minmax(68px,.75fr)}
+.tool-cell{min-height:46px;overflow:visible}
+.memory-flow{grid-template-columns:minmax(72px,.75fr) minmax(108px,1.05fr) minmax(84px,.9fr)}
+.memory-boundary{overflow:visible}
+.memory-panel{align-content:center}
+/* Keep motion readable at every viewport: opacity, pulse, line, glow, and
+   layer transitions remain, while merge/resource translations cannot cross text. */
+.orchestration-card .orch-plan,
+.orchestration-card .orch-task,
+.runtime-card .runtime-resource,
+.runtime-card .blocked{transform:none!important}
+@media (max-width:1100px){
+  .layer{grid-template-columns:180px minmax(0,1fr);gap:14px}
+  .model-flow{grid-template-columns:92px minmax(0,1fr)}
+}
+@media (max-width:780px){
+  .layer{grid-template-columns:1fr;gap:12px}
+  .layer > .panel{overflow:auto}
+  .model-flow{grid-template-columns:88px minmax(0,1fr)}
+  .surface-flow{display:flex;flex-direction:column;height:auto;min-height:150px;justify-content:center;gap:10px}
+  .surface-inputs{width:100%;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .surface-input{min-height:30px;white-space:normal}
+
+  .surface-task-wrap{min-height:64px}
+}
+
+/* ── Swarmed card fidelity pass ────────────────────────────────────────── */
+.layer::after{
+  content:attr(data-label);position:absolute;right:14px;top:9px;z-index:5;
+  padding:3px 7px;border:1px solid color-mix(in srgb,var(--c) 42%,rgba(255,240,199,.2));
+  border-radius:999px;background:#02050ae8;color:color-mix(in srgb,var(--c) 68%,var(--ink));
+  font:700 8px/1 "IBM Plex Mono",monospace;letter-spacing:.09em;text-transform:uppercase;
+}
+.layer > .panel{padding-top:24px!important}
+
+/* 1 surface: left-aligned entry stack converging through animated lines. */
+.surface-layer .surface-panel{min-height:154px}
+.surface-flow{height:126px;grid-template-columns:132px minmax(0,1fr);gap:30px}
+.surface-inputs{grid-template-columns:1fr;grid-template-rows:repeat(5,minmax(0,1fr));gap:5px;width:124px;align-self:stretch}
+.surface-input{justify-content:flex-start;padding-inline:10px;text-align:left}
+
+
+
+
+
+
+
+.surface-task-wrap{min-height:92px}
+.surface-token{left:-118px}
+
+/* 2 orchestration: explicit left-to-right loop → plan → fan-out → merge → answer. */
+.orchestration-panel{overflow-x:auto!important;overflow-y:hidden!important}
+.orch-flow{
+  display:grid;grid-template-columns:54px 24px 54px minmax(150px,1fr) 24px 92px 24px minmax(138px,auto);
+  grid-template-rows:1fr;align-items:center;justify-items:center;gap:7px;
+  width:100%;max-width:none;min-width:650px;height:104px;margin:0;overflow:visible;
+}
+.orch-loop{grid-column:1;grid-row:1}.orch-a1{grid-column:2;grid-row:1}.orch-plan{grid-column:3;grid-row:1}
+.orch-fanout{grid-column:4;grid-row:1;display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:0}
+.orch-a2{grid-column:5;grid-row:1}.orch-merge-row{grid-column:6;grid-row:1}.orch-a3{grid-column:7;grid-row:1}.orch-answer{grid-column:8;grid-row:1}
+.orch-arrow{width:100%!important;height:2px!important;transform-origin:left center!important;background:linear-gradient(90deg,var(--c),#7caf9b33)!important}
+.orch-pulse{top:50%;left:32px}
+
+/* 3 context: visible, high-contrast legend and payload roles. */
+.context-segments{position:relative;padding-top:20px}
+.context-segments::before{content:"retained context · segment / role";position:absolute;left:0;top:0;color:var(--accent);font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.context-layer .ctx-segment{background:#0b1017!important;border-color:rgba(255,216,121,.48)!important;box-shadow:inset 0 0 0 1px rgba(255,244,213,.04)}
+.context-layer .ctx-segment em{color:#fff4d5!important;font-size:9px!important;font-weight:800!important}
+.context-layer .ctx-segment strong{color:#d8c9a4!important;font-size:9px!important}
+.context-layer .context-note{color:#fff4d5!important;font-size:9px!important}
+.context-layer .context-note b{color:var(--accent)!important}
+
+/* 4 model: route trunk visibly branches into both model paths. */
+.model-flow::before{content:"";position:absolute;left:94px;top:50%;width:24px;height:2px;background:var(--green);box-shadow:0 0 10px #7caf9b66}
+.model-paths{position:relative;margin-left:12px}
+.model-paths::before{content:"";position:absolute;left:-12px;top:24%;bottom:24%;width:2px;background:var(--green);box-shadow:0 0 10px #7caf9b55}
+.model-path .path-line{margin-left:-12px;width:calc(100% + 12px)}
+.small-majority .path-line{background:linear-gradient(90deg,var(--green),color-mix(in srgb,var(--green) 78%,transparent))}
+
+/* 5 tools, 6 runtime, 7 memory: restore source composition at the larger canvas. */
+.tool-board{grid-template-columns:minmax(0,1fr) 70px;gap:10px}
+.tool-bus{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:20px 10px 10px}
+.tool-bus-label{left:10px;top:5px;font-size:8px}.tool-cell{min-height:0;overflow:visible}
+.tool-state{padding:8px 6px}.tool-state b{font-size:15px}.tool-state small{font-size:8px}
+.runtime-panel{padding:10px!important}.sandbox-boundary{min-height:104px;padding:14px 12px 9px;gap:6px}
+.runtime-label{top:-9px;left:14px;font-size:8px}.runtime-wall{padding:4px 8px;font-size:8px}
+.runtime-lane{gap:6px}.runtime-lane .node{font-size:10px!important}
+.memory-card .panel{padding:24px 12px 10px!important}.memory-panel{gap:8px;align-content:center}
+.memory-flow{grid-template-columns:minmax(58px,.75fr) minmax(86px,1.05fr) minmax(72px,.9fr);gap:8px}
+.memory-restored{gap:6px}.memory-pill{padding:6px;font-size:9px!important}.memory-pill small{font-size:8px!important}.memory-score{font-size:10px!important}
+
+@keyframes connector-breathe{0%,100%{opacity:.35;filter:drop-shadow(0 0 0 transparent)}50%{opacity:.92;filter:drop-shadow(0 0 7px var(--c))}}
+@keyframes loop-ring{to{transform:rotate(1turn)}}
+.model-flow::before,.model-paths::before,.tool-bus-flow,.memory-beam{animation:connector-breathe 2.8s ease-in-out infinite}
+/* funnel glow must not touch opacity: the JS draw owns that */
+@keyframes funnel-glow{0%,100%{filter:drop-shadow(0 0 0 transparent)}50%{filter:drop-shadow(0 0 6px var(--accent))}}
+.surface-funnel path{animation:funnel-glow 2.8s ease-in-out infinite}
+.orch-arrow{transform:scaleX(1)!important;opacity:.72!important;animation:connector-breathe 2.8s ease-in-out infinite}
+.orch-ring{animation:loop-ring 2.8s linear infinite!important}
+
+@media (max-width:780px){
+  .layer::after{right:10px;top:8px;font-size:7px}
+  .surface-flow{display:grid;grid-template-columns:118px minmax(180px,1fr);height:150px;min-width:330px;gap:24px}
+  .surface-inputs{grid-template-columns:1fr;grid-template-rows:repeat(5,1fr);width:112px;gap:5px}
+
+  .surface-task-wrap{min-height:94px}.surface-token{left:-96px}
+  .orchestration-panel{overflow-x:auto!important}.orch-flow{min-width:650px}
+}
+
+/* ── Cards 5–7 directional composition repair ──────────────────────────── */
+.tools-layer .tool-board{grid-template-columns:minmax(0,1fr) 74px;gap:10px;align-items:stretch}
+.tools-layer .tool-bus{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;gap:12px;padding:24px 12px 10px}
+.tools-layer .tool-cell{position:relative;display:grid;grid-template-columns:1fr;justify-items:center;gap:5px;text-align:center}
+.tools-layer .tool-cell:not(:last-child)::after{content:"";position:absolute;left:calc(100% + 2px);top:14px;width:10px;height:2px;background:var(--blue);box-shadow:0 0 8px #6b8db566}
+.tools-layer .tool-cell .tool-dot{position:absolute;left:-4px;top:11px}
+.tools-layer .tool-node{overflow:visible;text-overflow:clip;white-space:normal;min-height:30px;display:grid;place-items:center}
+.tools-layer .schema-ok{font-size:8px;white-space:nowrap}
+.tools-layer .tool-cell.muted::before{content:"stop";position:absolute;right:2px;top:-9px;padding:2px 4px;border:1px solid var(--red);border-radius:3px;color:var(--red);background:#02050a;font-size:6px;line-height:1;text-transform:uppercase}
+
+.runtime-card .sandbox-boundary{grid-template-columns:1fr 1fr;grid-template-rows:auto minmax(0,1fr);gap:8px 12px;padding:16px 12px 10px}
+.runtime-card .runtime-wall{grid-column:1/-1;grid-row:1}
+.runtime-card .runtime-lane{display:grid;grid-template-columns:1fr;align-content:start;gap:6px;padding:6px 10px 8px;border-radius:8px}
+.runtime-card .runtime-lane.allowed{grid-column:1;grid-row:2;background:rgba(159,213,184,.08);border:1px solid rgba(159,213,184,.28)}
+.runtime-card .runtime-lane.denied{grid-column:2;grid-row:2;background:rgba(238,154,143,.08);border:1px solid rgba(238,154,143,.28)}
+.runtime-card .runtime-lane::before{min-width:0;text-align:left;font-size:8px;letter-spacing:.1em}
+.runtime-card .runtime-lane .node{width:100%;text-align:center;white-space:normal;overflow:visible;text-overflow:clip}
+
+.memory-card .memory-panel{display:grid;grid-template-columns:230px minmax(0,1fr) 86px;grid-template-rows:1fr;align-items:center;gap:12px}
+.memory-card .memory-flow{grid-column:1;grid-row:1;grid-template-columns:64px 88px 64px;gap:7px}
+.memory-card .memory-restored{grid-column:2;grid-row:1;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;align-items:stretch}
+.memory-card .memory-score{grid-column:3;grid-row:1;display:grid;justify-items:center;gap:3px;padding:8px 4px;border-left:1px solid rgba(255,240,199,.18)}
+.memory-card .memory-score span{display:none}
+.memory-card .memory-pill{display:grid;place-content:center;min-height:54px}
+
+@media (max-width:780px){
+  .tools-layer .tool-board{min-width:620px}
+  .tools-layer .tool-bus{min-width:0}
+  .runtime-card .sandbox-boundary{min-width:520px}
+  .memory-card .memory-panel{grid-template-columns:1fr;grid-template-rows:auto auto auto;min-width:420px}
+  .memory-card .memory-flow{grid-column:1;grid-row:1;justify-content:center}
+  .memory-card .memory-restored{grid-column:1;grid-row:2}
+  .memory-card .memory-score{grid-column:1;grid-row:3;display:flex;border-left:0;border-top:1px solid rgba(255,240,199,.18)}
+  .memory-card .memory-score span{display:inline}
+}
+
+/* ── Visual defect repair (screenshot-driven) ──────────────────────────── */
+/* 1 surface: the five entry rows must fit inside the panel, not spill past it. */
+.surface-layer .surface-panel{min-height:0;padding:26px 14px 14px;display:block}
+.surface-flow{height:auto;min-height:150px;align-items:center;grid-template-columns:132px minmax(0,1fr);justify-content:start}
+.surface-inputs{align-self:center;grid-template-rows:repeat(5,26px);gap:6px;justify-self:start}
+.surface-flow{position:relative}
+
+.surface-task-wrap{justify-self:end;margin-right:14px;min-width:126px}
+
+/* 3 context: segment fill must show its real proportion again. */
+.context-layer .ctx-segment{overflow:hidden}
+.context-layer .ctx-segment i{
+  width:var(--w);background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 62%,transparent),color-mix(in srgb,var(--gold) 26%,transparent));
+  opacity:1;border-right:1px solid color-mix(in srgb,var(--accent) 65%,transparent);
+}
+
+/* 5 tools: compact centred cells, connector between cells, badge above the node. */
+.tools-layer .tool-bus{grid-template-columns:repeat(4,minmax(0,1fr));gap:26px;padding:24px 16px 12px}
+.tools-layer .tool-cell{grid-template-columns:minmax(0,1fr);justify-items:center;gap:6px;overflow:visible}
+.tools-layer .tool-node{width:auto;min-width:86px;padding-inline:12px}
+.tools-layer .tool-cell .tool-dot{left:50%;top:-7px;transform:translateX(-50%)}
+.tools-layer .tool-cell:not(:last-child)::after{left:calc(100% + 4px);width:18px;top:20px}
+.tools-layer .tool-cell.muted::before{
+  right:auto;left:50%;top:-14px;transform:translateX(-50%);
+  padding:2px 5px;background:#02050a;color:var(--red);font-size:6px;letter-spacing:.08em;white-space:nowrap;
+}
+.tools-layer .tool-node{white-space:nowrap;min-height:0;padding-block:6px}
+.tools-layer .tool-cell .tool-dot{top:-8px}
+
+/* 6 runtime: the sandbox tag belongs on the boundary edge. */
+.runtime-card .runtime-panel{padding:26px 12px 12px!important}
+.runtime-card .sandbox-boundary{overflow:visible}
+.runtime-card .runtime-label{top:-10px;left:16px;background:#02050a;border-color:color-mix(in srgb,var(--red) 60%,transparent);color:var(--red)}
+
+/* 7 memory: dark-theme the boundary marker and keep its container visible. */
+.memory-card .memory-boundary{opacity:1!important;color:var(--muted)}
+.memory-card .memory-boundary:before,
+.memory-card .memory-boundary:after{border-color:color-mix(in srgb,var(--accent) 42%,transparent)}
+.memory-card .memory-boundary span{
+  background:#02050a;border-color:color-mix(in srgb,var(--accent) 45%,transparent);
+  color:var(--accent);font-size:8px;letter-spacing:.08em;
+}
+.memory-card .memory-panel{grid-template-columns:280px minmax(0,1fr) 86px}
+.memory-card .memory-flow{grid-template-columns:78px minmax(0,1fr) 78px;gap:8px}
+.memory-card .memory-session{white-space:nowrap;padding-inline:8px;font-size:10px!important}
+/* card 5: the muted tool keeps one clear stop marker, not a stray dot. */
+.tools-layer .tool-cell.muted .tool-dot{display:none}
+.tools-layer .tool-cell{grid-template-columns:auto;justify-items:center;row-gap:7px}
+.tools-layer .schema-ok{position:relative;z-index:1;margin-top:2px}
+.tools-layer .tool-bus{
+  background:rgba(255,239,199,.05);border:1px solid rgba(255,240,199,.16);border-radius:8px;
+}
+.tools-layer .tool-bus-label{color:var(--blue);background:transparent}
+.tools-layer .schema-ok{
+  border:1px solid color-mix(in srgb,var(--blue) 40%,rgba(255,240,199,.2));
+  background:rgba(2,5,10,.72);color:rgba(255,244,213,.78);border-radius:999px;padding:2px 6px;
+}
+.tools-layer .schema-ok.muted{border-color:color-mix(in srgb,var(--red) 45%,transparent);color:var(--red)}
+.tools-layer .tool-state{background:rgba(255,239,199,.05);border:1px solid rgba(255,240,199,.16);border-radius:8px}
+.tools-layer .tool-board{column-gap:16px;grid-template-columns:minmax(0,1fr) 78px}
+.tools-layer .tool-bus{padding:24px 12px 14px;overflow:hidden;gap:10px;grid-template-columns:repeat(4,minmax(0,1fr));align-items:start}
+.tools-layer .tool-cell{
+  display:grid;grid-template-columns:minmax(0,1fr);grid-auto-rows:min-content;
+  justify-items:center;row-gap:6px;
+}
+.tools-layer .tool-node{width:100%;min-width:0;text-align:center;white-space:nowrap;padding-inline:4px;font-size:11px!important}
+.tools-layer .schema-ok{white-space:nowrap;max-width:none;justify-self:center}
+.tools-layer .tool-cell{min-width:0}
+.tools-layer .schema-ok{max-width:100%;overflow:visible;text-overflow:clip}
+.tools-layer .tool-state b{color:var(--blue)}
+.tools-layer .tool-state small{color:rgba(255,244,213,.6)}
+
+@media (max-width:780px){
+  .surface-flow{grid-template-columns:112px minmax(0,1fr);gap:10px;min-width:0}
+  .surface-inputs{width:112px;grid-template-rows:repeat(5,26px)}
+
+  .surface-task-wrap{justify-self:end;margin-right:0;min-width:98px}
+  .memory-card .memory-panel{grid-template-columns:1fr}
+  .memory-card .memory-flow{grid-template-columns:78px minmax(0,1fr) 78px}
+}
+
+/* Mobile: each card fits its own panel; no content sliced by the edge. */
+@media (max-width:780px){
+  /* 4 model: route column and paths shrink to the phone width. */
+  .model-card .model-flow{grid-template-columns:74px minmax(0,1fr);gap:8px}
+  .model-card .model-path{grid-template-columns:auto auto!important;justify-content:start;align-items:center;row-gap:2px;column-gap:8px}
+  .model-card .model-path .node{width:auto;white-space:nowrap}
+  .model-card .badge{position:static;margin:0}
+  .model-card .model-path .path-line{display:none}
+  .model-card .model-path small{grid-column:1/-1;padding-left:0}
+  .model-card .model-paths::before,.model-card .model-flow::before{display:none}
+  .model-card .model-paths{margin-left:0}
+
+  /* 5 tools: two rows of two instead of one sliced row. */
+  .tools-layer .tool-board{min-width:0;grid-template-columns:minmax(0,1fr);gap:10px}
+  .tools-layer .tool-bus{grid-template-columns:1fr;gap:8px;padding:22px 10px 12px}
+  .tools-layer .tool-bus-flow{display:none}
+  .tools-layer .tool-cell:not(:last-child)::after{display:none}
+  .tools-layer .tool-cell{
+    grid-template-columns:minmax(0,1fr) auto;align-items:center;justify-items:stretch;
+    column-gap:8px;row-gap:0;text-align:left;
+  }
+  .tools-layer .tool-node{
+    min-width:0;width:100%;white-space:nowrap;overflow:visible;text-overflow:clip;
+    padding-inline:10px;font-size:11px!important;text-align:left;
+  }
+  .tools-layer .schema-ok{justify-self:end;margin-top:0;white-space:nowrap}
+  .tools-layer .tool-cell.muted::before{left:auto;right:0;top:-12px;transform:none}
+  .tools-layer .tool-state{display:flex;align-items:baseline;justify-content:center;gap:6px;padding:8px}
+
+  /* 6 runtime: allowed and denied lanes stack. */
+  .runtime-card .sandbox-boundary{min-width:0;grid-template-columns:1fr;grid-template-rows:auto auto auto}
+  .runtime-card .runtime-lane.allowed{grid-column:1;grid-row:2}
+  .runtime-card .runtime-lane.denied{grid-column:1;grid-row:3}
+
+  /* 7 memory: no forced width wider than the phone panel. */
+  .memory-card .memory-panel{min-width:0}
+  .memory-card .memory-restored{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+  /* 2 orchestration: keep the linear graph, but scale it to the panel. */
+  .orchestration-panel{overflow-x:hidden!important}
+  .orch-flow{
+    display:grid!important;min-width:0;width:100%;height:auto;
+    grid-template-columns:auto 14px auto 14px auto!important;
+    grid-template-rows:auto auto auto!important;
+    justify-content:center;align-items:center;gap:8px 6px;
+  }
+  .orchestration-panel{height:auto;min-height:0}
+  .orchestration-card .panel{display:grid;align-content:center}
+  .orchestration-card .orch-loop{grid-column:1;grid-row:1}
+  .orchestration-card .orch-a1{grid-column:2;grid-row:1}
+  .orchestration-card .orch-plan{grid-column:3;grid-row:1}
+  .orchestration-card .orch-a2{grid-column:4;grid-row:1}
+  .orchestration-card .orch-merge-row{grid-column:5;grid-row:1}
+  .orchestration-card .orch-fanout{
+    grid-column:1/-1;grid-row:2;display:flex;flex-direction:row;align-items:center;
+    justify-content:center;gap:6px;width:100%;
+  }
+  .orchestration-card .orch-a3{display:none}
+  .orchestration-card .orch-answer{grid-column:1/-1;grid-row:3;justify-self:center;display:flex;align-items:center;gap:6px}
+  .orchestration-card .orch-agents{display:flex;gap:3px;min-width:0}
+  .orchestration-card .node{font-size:10px!important;padding-inline:8px;white-space:nowrap}
+  .orchestration-card .orch-task{width:auto;min-width:0;text-align:center}
+  .orchestration-card .orch-arrow{min-width:12px}
+}
+
+/* Intermediate widths: the desktop row layouts need the same care as 390/1280. */
+@media (min-width:781px) and (max-width:1180px){
+  /* card 2: the single 650px row cannot fit, so wrap it like mobile. */
+  .orchestration-panel{overflow-x:hidden!important}
+  .orch-flow{
+    min-width:0!important;width:100%;height:auto;
+    grid-template-columns:auto 14px auto 14px auto!important;
+    grid-template-rows:auto auto auto!important;
+    justify-content:center;align-items:center;gap:10px 6px;
+  }
+  .orchestration-card .orch-loop{grid-column:1;grid-row:1}
+  .orchestration-card .orch-a1{grid-column:2;grid-row:1}
+  .orchestration-card .orch-plan{grid-column:3;grid-row:1}
+  .orchestration-card .orch-a2{grid-column:4;grid-row:1}
+  .orchestration-card .orch-merge-row{grid-column:5;grid-row:1}
+  .orchestration-card .orch-fanout{grid-column:1/-1;grid-row:2;display:flex;justify-content:center;gap:8px;width:100%}
+  .orchestration-card .orch-a3{display:none}
+  .orchestration-card .orch-answer{grid-column:1/-1;grid-row:3;justify-self:center;display:flex;align-items:center;gap:8px;margin-top:4px}
+  .orchestration-card .orch-agents{display:flex;gap:4px}
+  /* the fan-out slide must not carry tasks into the answer row */
+  .orchestration-card .orch-task{transform:none!important}
+
+  /* card 5: fewer columns so tool names stay whole. */
+  .tools-layer .tool-bus{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+  .tools-layer .tool-cell:not(:last-child)::after{display:none}
+
+  /* card 7: stack the memory groups instead of squeezing three columns. */
+  .memory-card .memory-panel{grid-template-columns:1fr!important;grid-template-rows:auto auto auto;gap:10px;justify-items:center}
+  .memory-card .memory-flow{grid-column:1;grid-row:1}
+  .memory-card .memory-restored{grid-column:1;grid-row:2;width:100%}
+  .memory-card .memory-score{grid-column:1;grid-row:3;display:flex;gap:6px;border-left:0;border-top:1px solid rgba(255,240,199,.18);padding-top:6px;width:100%;justify-content:center}
+  .memory-card .memory-score span{display:inline}
+}
+
+/* Narrow phones: keep long labels intact. */
+@media (max-width:400px){
+  .context-layer .ctx-segment em,
+  .context-layer .ctx-segment strong{white-space:normal;overflow:visible;text-overflow:clip}
+  .context-layer .ctx-segment{min-width:0;padding-inline:3px}
+  .context-layer .ctx-segment em{font-size:8px!important;letter-spacing:.02em}
+  .context-layer .context-segments{gap:3px}
+  .context-layer .context-note{flex-wrap:wrap;white-space:normal;overflow:visible;text-overflow:clip}
+  .context-layer .context-note span{white-space:normal;overflow:visible;text-overflow:clip}
+}
+
+/* 4 model: badges are chips, not full-width bars; label sits beside its path. */
+.model-card .model-path{grid-template-columns:minmax(72px,.8fr) auto auto minmax(0,1fr);justify-items:start}
+.model-card .badge{justify-self:start;width:auto;flex:none}
+.model-card .model-path small{justify-self:start;padding-left:6px}
+
+/* 2 orchestration: the merged agent chips must read as labelled chips. */
+.orchestration-card .orch-agents{min-width:0;gap:5px}
+.orchestration-card .orch-agents i{
+  padding:2px 6px;font-size:7px;line-height:1.1;color:var(--ink);
+  border-color:color-mix(in srgb,var(--c) 50%,rgba(255,240,199,.24));background:rgba(2,5,10,.82);
+}
+
+/* Last word on vertical rhythm: these must beat the earlier per-card rules. */
+.layer > .panel,
+.runtime-card .runtime-panel,
+.memory-card .panel,
+.tools-layer .panel{padding-top:26px!important;padding-bottom:26px!important}
+
+/* Card 6's sandbox box was narrower than its panel, so the centring grid
+   pushed it ~86px right of the shared content edge every other card uses. */
+.runtime-card .sandbox-boundary{width:100%;justify-self:stretch}
+.runtime-card .runtime-lane .node{white-space:nowrap}
+
+/* Making .panel a grid for vertical centring introduced an auto-sized column
+   narrower than the panel, so card content was centred instead of starting on
+   the shared left edge. Force a single full-width column. */
+.layer > .panel{grid-template-columns:minmax(0,1fr)!important;justify-items:stretch!important}
+.layer > .panel > *{justify-self:stretch;min-width:0}
+.model-card .model-flow{width:100%}
+.memory-card .memory-panel{width:100%}
+/* Card 5's bus and card 6's boundary should share that same full width. */
+.tools-layer .tool-board,.tools-layer .tool-bus{width:100%}
+.runtime-card .sandbox-boundary{width:100%}
+/* Uniform panel inset so every card starts at the same x. */
+.layer > .panel{padding-left:18px!important;padding-right:18px!important}
+
+/* Card 7: give the boundary marker its own column so it cannot touch session B. */
+.memory-card .memory-flow{grid-template-columns:78px minmax(96px,1fr) 78px!important;column-gap:14px!important}
+.memory-card .memory-boundary{overflow:visible}
+
+/* Card 7: the memory panel's three groups need real column separation. */
+.memory-card .memory-panel{grid-template-columns:minmax(280px,1.05fr) minmax(0,1.25fr) 92px!important;column-gap:20px!important}
+.memory-card .memory-flow{grid-template-columns:74px minmax(80px,1fr) 74px!important;column-gap:10px!important}
+
+/* Below the desktop breakpoint the same centring problem applies: make every
+   card's main container fill its panel so they share one left edge. */
+@media (max-width:1279px){
+  .surface-inputs,.orch-flow,.context-stack,.model-flow,
+  .tool-board,.tool-bus,.sandbox-boundary,.memory-panel{width:100%;justify-self:stretch}
+  .memory-card .memory-panel{grid-template-columns:minmax(0,1fr)!important;column-gap:0!important}
+}
+/* Card 6 blocked chips must not clip their labels at any width. */
+.runtime-card .runtime-lane.denied .node{white-space:nowrap;overflow:visible;text-overflow:clip}
+.runtime-card .runtime-lane.denied{flex-wrap:wrap;gap:6px}
+
+/* Card 2's wrapped grid used justify-content:center, so it floated away from
+   the shared left edge at intermediate widths. Anchor it left instead. */
+@media (max-width:1180px){
+  .orchestration-card .orch-flow{justify-content:start!important;width:100%}
+  .orchestration-card .orch-fanout{justify-content:flex-start!important}
+  .orchestration-card .orch-answer{justify-self:start!important}
+}
+
+/* The base .orch-flow still carried max-width:260px + margin:0 auto, which
+   centred card 2 at intermediate widths regardless of justify-content. */
+@media (max-width:1180px){
+  .orchestration-card .orch-flow{max-width:none!important;margin-left:0!important;margin-right:0!important}
+}
+/* Card 6 blocked lane: let it wrap instead of clipping 'prod secrets'. */
+.runtime-card .runtime-lane.denied{display:flex;flex-wrap:wrap;align-content:start}
+.runtime-card .runtime-lane.denied .node{flex:0 1 auto;width:auto}
+
+/* The duplicate mini agent chips must stay hidden at every width, including
+   the wrapped intermediate layouts that re-declare .orch-agents. */
+.orchestration-card .orch-agents{display:none!important}
+
+/* ── Density and legibility pass ───────────────────────────────────────────
+   Cards were locked to equal 208px rows, so content-light cards wasted up to
+   74% of their height while the whole page ran ~2000px tall. Size rows to
+   their content instead, with a floor for the visually dense ones. */
+.layers{grid-template-rows:repeat(7,auto)!important;gap:12px!important}
+.layer{min-height:0!important}
+.layer > .panel{min-height:0!important;padding-top:30px!important;padding-bottom:22px!important}
+.surface-layer .surface-panel{min-height:0!important}
+.surface-flow{min-height:150px}
+
+/* Timing labels were 8px, rotated 180deg in vertical writing mode: present but
+   effectively unreadable. Make them horizontal, larger, and properly spaced. */
+.right{justify-content:space-around;padding-block:18px}
+.trace{
+  writing-mode:horizontal-tb!important;transform:none!important;
+  font-size:10px!important;letter-spacing:.04em;white-space:nowrap;
+  padding:4px 8px!important;border-radius:999px!important;text-align:center;
+  color:rgba(255,244,213,.72)!important;
+}
+.trace i{display:none}
+/* Give the rail room for horizontal text. */
+.grid{grid-template-columns:86px minmax(0,1fr) 104px}
+@media (max-width:1100px){.grid{grid-template-columns:58px minmax(0,1fr) 92px}}
+
+/* The narrow-layout rule hid .rail and .trace but left the .right container
+   visible, so the synced grid stacked a ~2200px empty column under the cards. */
+@media (max-width:1100px){
+  .right{display:none!important}
+}
+</style>
+</head>
+<body>
+<main class="stage"><section class="paper">
+<header class="top"><div class="title">what a full-stack agent <em>actually runs on</em></div><div class="subtitle">seven layers, one task, top to bottom</div></header>
+<section class="meter"><div><small>context used</small><b id="percent">4%</b></div><div class="track"><div class="fill" id="fill"></div></div><small>guardrails and traces run the full height<br>compaction at layer 3 gives the window back</small></section>
+<section class="grid"><aside class="rail"><div class="check"><i>✓</i>pass</div><div class="check"><i>✓</i>pass</div><div class="check"><i>✓</i>pass</div><div class="check"><i>✓</i>pass</div><div class="check"><i>✓</i>pass</div><div class="check fail"><i>×</i>blocked</div><div class="check"><i>✓</i>pass</div></aside>
+<div class="layers">
+<article class="layer surface-layer" data-label="entry points" style="--c:var(--purple)"><div><h2>1 surface</h2><p>where every entry point<br>becomes the same task</p></div><div class="panel surface-panel"><div class="surface-flow" aria-label="chat, CLI, schedule, API, and webhook converge into one task object"><div class="surface-inputs"><span class="node surface-input" data-lane="chat">chat</span><span class="node surface-input active" data-lane="cli">cli</span><span class="node surface-input" data-lane="schedule">schedule</span><span class="node surface-input" data-lane="api">api</span><span class="node surface-input active" data-lane="webhook">webhook</span></div><svg class="surface-funnel" aria-hidden="true"><path d="M0 6 L100 50"/><path d="M0 28 L100 50"/><path d="M0 50 L100 50"/><path d="M0 72 L100 50"/><path d="M0 94 L100 50"/></svg><div class="surface-task-wrap"><span class="surface-pulse"></span><span class="surface-token"></span><span class="surface-token"></span><span class="surface-token"></span><span class="surface-token"></span><span class="surface-token"></span><span class="node active task-object">one task<br><small>source + intent</small></span></div></div></div><span class="spark"></span></article>
+<article class="layer orchestration-card" data-label="plan · delegate · merge" style="--c:var(--green)"><div><h2>2 orchestration</h2><p>high-level loop plans work,<br>fans out checks, then merges one answer</p></div><div class="panel orchestration-panel"><div class="orch-flow" aria-label="loop to plan to read write check fan-out to merge to one answer"><span class="orch-pulse" aria-hidden="true"></span><div class="orch-state orch-loop orch-step"><span class="orch-ring"></span><span class="node active">loop</span></div><span class="orch-arrow orch-a1"></span><span class="node orch-plan orch-step">plan</span><div class="orch-fanout"><span class="node orch-task read">read</span><span class="node orch-task write">write</span><span class="node orch-task check">check</span></div><span class="orch-arrow orch-a2"></span><div class="orch-merge-row"><span class="orch-merge-line"></span><span class="node orch-merge active orch-step">merge</span><span class="orch-merge-line"></span></div><span class="orch-arrow orch-a3"></span><div class="orch-answer"><span class="orch-agents"><i>read</i><i>write</i><i>check</i></span><span class="node active final">1 answer</span></div></div></div><span class="spark"></span></article>
+<article class="layer context-layer" data-label="context budget" style="--c:var(--gold)"><div><h2>3 context</h2><p>compact pass trims noise<br>before the model call</p></div><div class="panel context-panel"><div class="context-stack"><div class="context-compact-step"><span>compact</span><b>-52%</b><small>drop stale<br>keep intent</small></div><div class="context-right"><div class="context-segments" aria-label="compacted context segments"><span class="ctx-segment" style="--w:54%"><i></i><em>system</em><strong>policy</strong></span><span class="ctx-segment" style="--w:40%"><i></i><em>tools</em><strong>schemas</strong></span><span class="ctx-segment" style="--w:24%"><i></i><em>history</em><strong>digest</strong></span><span class="ctx-segment" style="--w:18%"><i></i><em>recall</em><strong>facts</strong></span></div><div class="context-budget"><span>before</span><div class="limitbar" aria-label="reduced context budget"><div class="limitfill"></div></div><span>31%</span></div><div class="context-note"><span>trimmed window, model-ready</span><b>31% budget</b></div></div></div></div><span class="spark"></span></article>
+<article class="layer model-card" data-label="model routing" style="--c:var(--green)"><div><h2>4 model</h2><p>which brain gets the call,<br>and how hard it thinks</p></div><div class="panel model-panel" aria-label="model routing decision"><div class="model-flow"><span class="model-route-token" aria-hidden="true"></span><div class="model-route"><span class="model-route-label">high-level route</span><span class="node route-node active">route</span><span class="route-dots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span></div><div class="model-paths"><div class="model-path small-majority"><span class="path-line"></span><span class="node active">small model</span><b class="badge badge-small">80% small</b><small>5 of 6 calls</small></div><div class="model-path frontier-fallback"><span class="path-line"></span><span class="node">frontier</span><b class="badge badge-frontier">1 of 6</b><small>fallback when hard</small></div></div></div></div><span class="spark"></span></article>
+<article class="layer tools-layer" data-label="tool bus" style="--c:var(--blue)"><div><h2>5 tools</h2><p>tool bus gates calls<br>through schema checks</p></div><div class="panel"><div class="tool-board"><div class="tool-bus" aria-label="high-level tool bus with schema status"><span class="tool-bus-label">tool bus</span><span class="tool-bus-flow"></span><div class="tool-cell"><i class="tool-dot"></i><span class="node tool-node enabled">read file</span><span class="schema-ok">schema-ok</span></div><div class="tool-cell"><i class="tool-dot"></i><span class="node tool-node enabled">run code</span><span class="schema-ok">schema-ok</span></div><div class="tool-cell"><i class="tool-dot"></i><span class="node tool-node enabled">search</span><span class="schema-ok">schema-ok</span></div><div class="tool-cell muted"><i class="tool-dot"></i><span class="node tool-node muted">deploy</span><span class="schema-ok muted">unavailable</span></div></div><div class="tool-state"><b>3 of 4</b><small>enabled</small></div></div></div><span class="spark"></span></article>
+<article class="layer runtime-card" data-label="sandbox boundary" style="--c:var(--red)"><div><h2>6 runtime</h2><p>the sandbox the work runs in:<br>allowed resources, blocked exits</p></div><div class="panel runtime-panel"><div class="sandbox-boundary"><div class="runtime-label">sandbox</div><div class="runtime-wall"><b>walled</b><span>high-level boundary around local execution only</span></div><div class="runtime-lane allowed"><span class="node active runtime-resource">files</span><span class="node active runtime-resource">procs</span><span class="node active runtime-resource">tmp</span></div><div class="runtime-lane denied"><span class="node blocked">internet</span><span class="node blocked">prod secrets</span></div></div></div><span class="spark"></span></article>
+<article class="layer memory-card" data-label="session restore" style="--c:#d39b7a"><div><h2>7 memory</h2><p>session boundary crossed:<br>what comes back, what is lost</p></div><div class="panel memory-panel" aria-label="memory restores session A into session B across a boundary"><div class="memory-flow"><span class="node memory-session">session A</span><span class="memory-boundary"><i class="memory-beam" aria-hidden="true"></i><span>boundary</span></span><span class="node memory-session active">session B</span></div><div class="memory-restored"><span class="memory-pill ok">plan<small>restored</small></span><span class="memory-pill ok">files touched<small>restored</small></span><span class="memory-pill ok">decisions<small>restored</small></span><span class="memory-pill lost">scratch context<small>lost</small></span></div><div class="memory-score"><b>3 restored</b><span>/</span><b class="lost">1 lost</b></div></div><span class="spark"></span></article>
+</div><aside class="right"><div class="trace"><i></i>18ms</div><div class="trace"><i></i>227ms</div><div class="trace"><i style="background:var(--gold)"></i>slow retry x1</div><div class="trace"><i></i>321ms</div><div class="trace"><i></i>345ms</div><div class="trace"><i style="background:var(--red)"></i>415ms</div><div class="trace"><i></i>462ms</div></aside></section>
+<div class="controls"><button id="replay">↻ replay</button><button id="pause">Ⅱ pause</button></div>
+</section></main>
+<script>
+const layers=document.querySelectorAll('.layer'), nodes=document.querySelectorAll('.node'), surfaceInputs=document.querySelectorAll('.surface-input'), surfaceLines=document.querySelectorAll('.surface-funnel path'), surfaceTokens=document.querySelectorAll('.surface-token'), surfacePulse=document.querySelector('.surface-pulse'), taskObject=document.querySelector('.task-object'), modelPaths=document.querySelectorAll('.model-card .model-path'), routeDots=document.querySelectorAll('.model-card .route-dots i'), modelBadges=document.querySelectorAll('.model-card .badge'), modelToken=document.querySelector('.model-card .model-route-token'), runtimeResources=document.querySelectorAll('.runtime-resource'), blockedRuntime=document.querySelectorAll('.runtime-card .blocked'), runtimeWall=document.querySelector('.runtime-card .runtime-wall'), sandboxBoundary=document.querySelector('.runtime-card .sandbox-boundary'), fill=document.querySelector('#fill'), percent=document.querySelector('#percent'), contextBits=document.querySelectorAll('.context-layer .context-compact-step,.context-layer .ctx-segment,.context-layer .context-note,.context-layer .context-budget span'), contextLimit=document.querySelector('.context-layer .limitfill'), toolBits=document.querySelectorAll('.tool-cell,.tool-state,.schema-ok'), toolFlow=document.querySelector('.tool-bus-flow'), memoryBits=document.querySelectorAll('.memory-card .memory-boundary,.memory-card .memory-pill,.memory-card .memory-score b'), memoryBeam=document.querySelector('.memory-card .memory-beam'), memoryRestored=document.querySelectorAll('.memory-card .memory-pill.ok'), memoryLost=document.querySelector('.memory-card .memory-pill.lost');
+let timeline,loopTimer,autoLoop=true;
+function resetOrchestration(){anime.set('.orchestration-card .orch-ring',{scale:.72,rotate:0,opacity:.35});anime.set('.orchestration-card .orch-plan,.orchestration-card .orch-task,.orchestration-card .orch-merge,.orchestration-card .orch-agents i,.orchestration-card .final',{opacity:.22,scale:.92,translateX:0,translateY:0});anime.set('.orchestration-card .orch-arrow',{scaleX:0,opacity:0});anime.set('.orchestration-card .orch-merge-line',{scaleX:0,opacity:0});anime.set('.orchestration-card .orch-pulse',{opacity:0,translateX:'-50%',translateY:0,scale:.8});}
+function animateOrchestration(t){resetOrchestration();t.add({targets:'.orchestration-card .orch-ring',rotate:'1turn',scale:[.72,1.08],opacity:[.35,.82],duration:720},'-=720').add({targets:'.orchestration-card .orch-pulse',opacity:[0,1,.65],translateY:[0,24],scale:[.8,1.25,.9],duration:360},'-=520').add({targets:'.orchestration-card .orch-a1',scaleX:[0,1],opacity:[0,.75],duration:260},'-=250').add({targets:'.orchestration-card .orch-plan',opacity:[.22,1],scale:[.9,1.08,1],duration:330},'-=120').add({targets:'.orchestration-card .orch-pulse',translateY:[24,50],scale:[.9,1.15,.85],duration:300},'-=210').add({targets:'.orchestration-card .orch-task',opacity:[.22,1],translateY:[-10,0],scale:[.8,1.06,1],delay:anime.stagger(85,{from:'center'}),duration:430},'-=110').add({targets:'.orchestration-card .orch-a2',scaleX:[0,1],opacity:[0,.7],duration:260},'-=120').add({targets:'.orchestration-card .orch-task.read',translateX:[0,48],scale:[1,.95],duration:310},'-=30').add({targets:'.orchestration-card .orch-task.check',translateX:[0,-48],scale:[1,.95],duration:310},'-=310').add({targets:'.orchestration-card .orch-merge-line',scaleX:[0,1],opacity:[0,.72],duration:300},'-=270').add({targets:'.orchestration-card .orch-merge',opacity:[.22,1],scale:[.9,1.1,1],duration:360},'-=170').add({targets:'.orchestration-card .orch-task.read,.orchestration-card .orch-task.check',translateX:0,scale:1,duration:260},'-=260').add({targets:'.orchestration-card .orch-a3',scaleX:[0,1],opacity:[0,.7],duration:250},'-=70').add({targets:'.orchestration-card .orch-agents i',opacity:[.22,1],translateY:[6,0],delay:anime.stagger(60),duration:300},'-=40').add({targets:'.orchestration-card .final',opacity:[.22,1],scale:[.84,1.14,1],duration:430},'-=160').add({targets:'.orchestration-card .orch-pulse',opacity:[.65,0],translateY:[50,91],scale:[.85,1.35],duration:520},'-=520');}
+
+/* Card 1 funnel geometry: derived from the measured boxes of the entry rows,
+   the task node, and the SVG's own viewport, so it holds at any device size. */
+const funnelSvg=document.querySelector('.surface-funnel');
+function buildFunnel(){
+  if(!funnelSvg)return;
+  const flow=funnelSvg.closest('.surface-flow'),
+        rows=[...document.querySelectorAll('.surface-input')],
+        node=document.querySelector('.task-object');
+  if(!flow||!node||!rows.length)return;
+  const F=flow.getBoundingClientRect(),N=node.getBoundingClientRect();
+  if(F.width<2||F.height<2)return;
+  funnelSvg.setAttribute('viewBox','0 0 '+F.width+' '+F.height);
+  funnelSvg.setAttribute('preserveAspectRatio','none');
+  const stacked=N.left<rows[0].getBoundingClientRect().right;   // narrow: node sits under the rows
+  // convergence point = the node's near edge, vertically centred on the node
+  const tx=(stacked?N.left+N.width/2:N.left)-F.left,
+        ty=N.top+N.height/2-F.top;
+  const defs='<defs><linearGradient id="funnelStroke" x1="0" y1="0" x2="1" y2="0">'+
+    '<stop offset="0%" stop-color="color-mix(in srgb,var(--purple) 82%,transparent)"/>'+
+    '<stop offset="100%" stop-color="var(--accent)"/></linearGradient></defs>';
+  const paths=rows.map(r=>{
+    const R=r.getBoundingClientRect();
+    const sx=R.right-F.left+4, sy=R.top+R.height/2-F.top;
+    const dx=tx-sx;
+    // gentle cubic so lines converge without crossing, scaled to the real gap
+    const c1=sx+dx*0.55, c2=tx-Math.max(12,Math.abs(dx)*0.22);
+    return '<path d="M'+sx+' '+sy+' C'+c1+' '+sy+','+c2+' '+ty+','+tx+' '+ty+'"/>';
+  }).join('');
+  funnelSvg.innerHTML=defs+paths+'<circle cx="'+tx+'" cy="'+ty+'" r="2.5"/>';
+  return true;
+}
+buildFunnel();
+let funnelTimer;
+addEventListener('resize',()=>{clearTimeout(funnelTimer);funnelTimer=setTimeout(()=>{
+  buildFunnel();
+  const lines=document.querySelectorAll('.surface-funnel path');
+  lines.forEach(el=>{const L=el.getTotalLength();el.style.strokeDasharray=L;el.style.strokeDashoffset=0;el.style.opacity=.9});
+},120)});
+
+/* Rail alignment: the check and trace rails must track each card's real
+   height. Rows are content-sized, so mirror the measured heights instead of
+   relying on space-between, which only works with uniform rows. */
+function syncRails(){
+  const layers=[...document.querySelectorAll('.layer')];
+  if(!layers.length)return;
+  const rows=layers.map(l=>Math.round(l.getBoundingClientRect().height)+'px').join(' ');
+  ['.rail','.right'].forEach(sel=>{
+    const rail=document.querySelector(sel);
+    if(!rail)return;
+    // On narrow layouts the rails are display:none by design; forcing a grid
+    // here would reserve seven tall empty rows and balloon the page height.
+    const kids=[...rail.children];
+    const hidden=getComputedStyle(rail).display==='none'||
+      (kids.length&&kids.every(c=>getComputedStyle(c).display==='none'));
+    if(hidden){rail.style.cssText='';return}
+    rail.style.cssText='';
+    rail.style.display='grid';
+    rail.style.gridTemplateRows=rows;
+    rail.style.rowGap=getComputedStyle(document.querySelector('.layers')).rowGap;
+    rail.style.padding='0';
+    [...rail.children].forEach(c=>{c.style.alignSelf='center';c.style.justifySelf='center';c.style.margin='0'});
+  });
+}
+syncRails();
+let railTimer;
+addEventListener('resize',()=>{clearTimeout(railTimer);railTimer=setTimeout(syncRails,120)});
+const prefersReducedMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function play(){clearTimeout(loopTimer);syncRails();buildFunnel();document.querySelectorAll('.surface-funnel path').forEach(el=>{const L=el.getTotalLength();el.style.strokeDasharray=L});if(!window.anime||prefersReducedMotion){layers.forEach(x=>{x.style.opacity=1;x.style.transform='none'});if(contextLimit)contextLimit.style.width='31%';if(sandboxBoundary)sandboxBoundary.style.opacity=1;if(runtimeWall)runtimeWall.style.transform='none';runtimeResources.forEach(x=>x.style.transform='none');blockedRuntime.forEach(x=>x.style.transform='none');modelPaths.forEach(x=>{x.style.opacity=1;x.style.transform='none'});routeDots.forEach(x=>{x.style.opacity=.95;x.style.transform='none'});modelBadges.forEach(x=>{x.style.opacity=1;x.style.transform='none'});if(modelToken){modelToken.style.opacity=1;modelToken.style.transform='none'}if(toolFlow){toolFlow.style.width='calc(100% - 28px)';toolFlow.style.transform='translateX(0)';}toolBits.forEach(x=>{x.style.opacity=1;x.style.transform='none'});memoryBits.forEach(x=>{x.style.opacity=1;x.style.transform='none'});if(memoryBeam){memoryBeam.style.opacity=1;memoryBeam.style.transform='scaleX(1)'}return} if(timeline)timeline.pause(); layers.forEach(x=>{x.style.opacity=0;x.style.transform='translateY(16px)'}); anime.set(fill,{width:'3%'}); anime.set(surfaceInputs,{opacity:.35,translateX:-10,scale:.92}); anime.set(surfaceLines,{strokeDashoffset:(el)=>el.getTotalLength?el.getTotalLength():0,opacity:0}); anime.set(surfaceTokens,{opacity:0,translateX:0,translateY:0,scale:.7}); anime.set(surfacePulse,{opacity:.18,scale:.72,rotate:0}); anime.set(taskObject,{opacity:.2,scale:.88}); anime.set(modelPaths,{translateX:-8,opacity:.25}); anime.set(routeDots,{scale:.45,opacity:.18}); anime.set(modelBadges,{scale:.82,opacity:0}); anime.set(modelToken,{translateX:0,translateY:0,scale:.65,opacity:0}); anime.set(sandboxBoundary,{opacity:.75,scale:.98}); anime.set(runtimeWall,{opacity:.65,translateY:-4}); anime.set(runtimeResources,{opacity:.55,translateY:6,backgroundColor:'#fffdf7'}); anime.set(blockedRuntime,{opacity:.55,translateX:0,backgroundColor:'#f5dddc'}); anime.set(contextBits,{opacity:0,translateY:6}); anime.set(contextLimit,{width:'0%'}); anime.set('.context-layer .ctx-segment i',{scaleX:0}); anime.set(toolBits,{opacity:0,translateY:5}); anime.set(toolFlow,{width:'0%'}); anime.set(memoryBits,{opacity:0,translateY:6}); anime.set(memoryBeam,{scaleX:0,opacity:0}); anime.set(memoryRestored,{translateX:-5}); anime.set(memoryLost,{translateX:5}); percent.textContent='4%'; timeline=anime.timeline({easing:'easeOutCubic',autoplay:true,complete:()=>{if(autoLoop)loopTimer=setTimeout(play,1400)}}).add({targets:'.top',opacity:[0,1],translateY:[-8,0],duration:500}).add({targets:'.meter',opacity:[0,1],translateY:[-8,0],duration:420},'-=260').add({targets:fill,width:'31%',duration:1600},'-=260').add({targets:layers,opacity:[0,1],translateY:[16,0],delay:anime.stagger(145),duration:600},'-=1100').add({targets:nodes,scale:[.85,1],opacity:[0,.96],delay:anime.stagger(20),duration:320},'-=1000').add({targets:surfaceInputs,opacity:[.35,1],translateX:[-10,0],scale:[.92,1],delay:anime.stagger(70),duration:420},'-=760').add({targets:surfaceLines,opacity:[0,.9],strokeDashoffset:[(el)=>el.getTotalLength?el.getTotalLength():0,0],delay:anime.stagger(55),duration:520},'-=520').add({targets:surfaceTokens,opacity:[0,1,0],translateX:[0,anime.stagger([110,150])],translateY:anime.stagger([-28,28]),scale:[.7,1,.55],delay:anime.stagger(70),duration:650,easing:'easeInOutCubic'},'-=520').add({targets:surfacePulse,opacity:[.18,.55,.22],scale:[.72,1.16,1],rotate:[0,8,0],duration:620},'-=330').add({targets:taskObject,opacity:[.2,1],scale:[.88,1.08,1],duration:520},'-=430').add({targets:modelPaths,translateX:[-8,0],opacity:[.25,1],delay:anime.stagger(90),duration:420},'-=760').add({targets:routeDots,scale:[.45,1],opacity:[.18,.95],delay:anime.stagger(55),duration:360},'-=600').add({targets:modelBadges,scale:[.82,1],opacity:[0,1],delay:anime.stagger(110),duration:380},'-=340').add({targets:modelToken,opacity:[0,1],scale:[.65,1],duration:180},'-=460').add({targets:modelToken,translateX:[0,72],translateY:[0,-14],duration:680,easing:'easeInOutSine'},'-=300').add({targets:modelToken,translateX:[72,0],translateY:[-14,16],backgroundColor:['#7caf9b','#9a88bd'],duration:520,easing:'easeInOutSine'},'+=90').add({targets:modelToken,translateX:[0,72],translateY:[16,-14],backgroundColor:['#9a88bd','#7caf9b'],duration:640,easing:'easeInOutSine'},'+=60').add({targets:sandboxBoundary,opacity:[.75,1],scale:[.98,1],duration:420},'-=360').add({targets:runtimeWall,opacity:[.65,1],translateY:[-4,0],duration:330},'-=300').add({targets:runtimeResources,opacity:[.55,1],translateY:[6,0],backgroundColor:['#fffdf7','#eff8f3'],delay:anime.stagger(70),duration:360},'-=260').add({targets:blockedRuntime,opacity:[.55,1],translateX:[-3,0],backgroundColor:['#fff6f5','#f5dddc'],delay:anime.stagger(85),duration:430},'-=220').add({targets:percent,innerHTML:[4,31],round:1,duration:1300},'-=1400').add({targets:contextBits,opacity:[0,1],translateY:[6,0],delay:anime.stagger(45),duration:320},'-=980').add({targets:'.context-layer .ctx-segment i',scaleX:[0,1],delay:anime.stagger(35),duration:520,easing:'easeOutQuart'},'-=760').add({targets:contextLimit,width:'31%',duration:760,easing:'easeOutQuart'},'-=620').add({targets:toolBits,opacity:[0,1],translateY:[5,0],delay:anime.stagger(45),duration:300},'-=900').add({targets:toolFlow,width:'calc(100% - 28px)',translateX:[-8,8,0],opacity:[.35,.85,.72],duration:820,easing:'easeOutQuart'},'-=760').add({targets:memoryBeam,opacity:[0,.95,.45],scaleX:[0,1],duration:520,easing:'easeOutQuart'},'-=560').add({targets:memoryRestored,opacity:[0,1],translateX:[-5,0],translateY:[6,0],scale:[.9,1.05,1],delay:anime.stagger(65),duration:380},'-=390').add({targets:memoryLost,opacity:[0,1],translateX:[5,0],translateY:[6,0],scale:[.9,.96],duration:420,easing:'easeOutBack'},'-=220').add({targets:'.memory-card .memory-score b',opacity:[0,1],translateY:[4,0],scale:[.86,1.08,1],delay:anime.stagger(90),duration:360},'-=260');;animateOrchestration(timeline);}
+play();document.querySelector('#replay').onclick=()=>{autoLoop=true;play()};document.querySelector('#pause').onclick=()=>{if(autoLoop){autoLoop=false;clearTimeout(loopTimer);if(timeline)timeline.pause()}else{autoLoop=true;if(timeline?.completed)play();else if(timeline)timeline.play()}};
+</script>
+</body></html>

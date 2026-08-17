@@ -1,0 +1,2098 @@
+{
+  "version": 1,
+  "generated_from_revision": "7e23a8b835983f3d132c527ed03f52caea896037",
+  "authority": "openspec/changes/add-command-system-documentation-microsite",
+  "pages": {
+    "index.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "hero": {
+          "claim": "approved visual direction",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "chapter_cards": {
+          "claim": "approved six-page scope",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "journey_diagram": {
+          "claim": "approved system journey",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence_map": {
+          "claim": "this change",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "command-lifecycle.html": {
+      "sources": [
+        "openspec/changes/add-native-explore-workflow/design.md",
+        "openspec/changes/add-native-feature-workflow/design.md",
+        "openspec/changes/add-native-apply-workflows/design.md"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "three-phase lifecycle",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-explore-workflow/design.md": "sha256:7cd08c079f6b74fe0757bb734bbd28e169fb4c871c08297251f00b5ee1549a00",
+            "openspec/changes/add-native-feature-workflow/design.md": "sha256:f3b1e29a057d6487148cb5f4b4a6a46a29158f1ca28283e8acd4cfe37e679020",
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b"
+          }
+        },
+        "decisions": {
+          "claim": "native workflow decisions",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-explore-workflow/design.md": "sha256:7cd08c079f6b74fe0757bb734bbd28e169fb4c871c08297251f00b5ee1549a00",
+            "openspec/changes/add-native-feature-workflow/design.md": "sha256:f3b1e29a057d6487148cb5f4b4a6a46a29158f1ca28283e8acd4cfe37e679020",
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b"
+          }
+        },
+        "diagram": {
+          "claim": "authority handoff",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-explore-workflow/design.md": "sha256:7cd08c079f6b74fe0757bb734bbd28e169fb4c871c08297251f00b5ee1549a00",
+            "openspec/changes/add-native-feature-workflow/design.md": "sha256:f3b1e29a057d6487148cb5f4b4a6a46a29158f1ca28283e8acd4cfe37e679020",
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b"
+          }
+        },
+        "snippet": {
+          "claim": "public command shapes",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-explore-workflow/design.md": "sha256:7cd08c079f6b74fe0757bb734bbd28e169fb4c871c08297251f00b5ee1549a00",
+            "openspec/changes/add-native-feature-workflow/design.md": "sha256:f3b1e29a057d6487148cb5f4b4a6a46a29158f1ca28283e8acd4cfe37e679020",
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b"
+          }
+        },
+        "status": {
+          "claim": "approved design, not production-complete",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-explore-workflow/design.md": "sha256:7cd08c079f6b74fe0757bb734bbd28e169fb4c871c08297251f00b5ee1549a00",
+            "openspec/changes/add-native-feature-workflow/design.md": "sha256:f3b1e29a057d6487148cb5f4b4a6a46a29158f1ca28283e8acd4cfe37e679020",
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b"
+          }
+        },
+        "evidence_map": {
+          "claim": "source changes",
+          "source_refs": [
+            "openspec/changes/add-native-explore-workflow/design.md",
+            "openspec/changes/add-native-feature-workflow/design.md",
+            "openspec/changes/add-native-apply-workflows/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-explore-workflow/design.md": "sha256:7cd08c079f6b74fe0757bb734bbd28e169fb4c871c08297251f00b5ee1549a00",
+            "openspec/changes/add-native-feature-workflow/design.md": "sha256:f3b1e29a057d6487148cb5f4b4a6a46a29158f1ca28283e8acd4cfe37e679020",
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/add-native-explore-workflow/design.md": "sha256:7cd08c079f6b74fe0757bb734bbd28e169fb4c871c08297251f00b5ee1549a00",
+        "openspec/changes/add-native-feature-workflow/design.md": "sha256:f3b1e29a057d6487148cb5f4b4a6a46a29158f1ca28283e8acd4cfe37e679020",
+        "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b"
+      }
+    },
+    "lane-protocol.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "three temporary threads",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "contract": {
+          "claim": "approved lane rules",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "diagram": {
+          "claim": "lane split and alignment",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "snippet": {
+          "claim": "project and lane prefixes",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "caveat": {
+          "claim": "not shipped command behavior",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence_map": {
+          "claim": "this change",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "temporary-protocol",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "apply-orchestration.html": {
+      "sources": [
+        "openspec/changes/add-native-apply-workflows/design.md",
+        "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "L1/L2/L3 rigor",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md": "sha256:5cc93dbb0107530bacd12741e6be5ee871e7dc3f94b5aed744b39733fa63f399"
+          }
+        },
+        "levels": {
+          "claim": "risk policy",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md": "sha256:5cc93dbb0107530bacd12741e6be5ee871e7dc3f94b5aed744b39733fa63f399"
+          }
+        },
+        "diagram": {
+          "claim": "topology and runtime selection",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md": "sha256:5cc93dbb0107530bacd12741e6be5ee871e7dc3f94b5aed744b39733fa63f399"
+          }
+        },
+        "snippet": {
+          "claim": "cross-provider only when high",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md": "sha256:5cc93dbb0107530bacd12741e6be5ee871e7dc3f94b5aed744b39733fa63f399"
+          }
+        },
+        "authority": {
+          "claim": "Jcode versus Orca",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md": "sha256:5cc93dbb0107530bacd12741e6be5ee871e7dc3f94b5aed744b39733fa63f399"
+          }
+        },
+        "evidence_map": {
+          "claim": "source changes",
+          "source_refs": [
+            "openspec/changes/add-native-apply-workflows/design.md",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b",
+            "openspec/changes/optimize-orca-command-center-orchestration/design.md": "sha256:5cc93dbb0107530bacd12741e6be5ee871e7dc3f94b5aed744b39733fa63f399"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/add-native-apply-workflows/design.md": "sha256:0d62a32c4f6e6b023af38e6db3cf8a698da3bf902038874545d0d28ee05c088b",
+        "openspec/changes/optimize-orca-command-center-orchestration/design.md": "sha256:5cc93dbb0107530bacd12741e6be5ee871e7dc3f94b5aed744b39733fa63f399"
+      }
+    },
+    "model-routing.html": {
+      "sources": [
+        "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+        "evals/model-routing/experiments/local-smoke.json"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "four routing classes",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "ladder": {
+          "claim": "model-free through frontier",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "diagram": {
+          "claim": "pre-classified role routing",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "snippet": {
+          "claim": "candidate registry",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "caveat": {
+          "claim": "avoid cheap-first failure",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "evidence_map": {
+          "claim": "tournament design and descriptor",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+        "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+      }
+    },
+    "evaluation-tournament.html": {
+      "sources": [
+        "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+        "evals/model-routing/experiments/local-smoke.json"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "qualification and locked holdout",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "phases": {
+          "claim": "eight execution gates",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "diagram": {
+          "claim": "provider-aware blocks",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "snippet": {
+          "claim": "frozen descriptor",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "safety": {
+          "claim": "fail-closed boundaries",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        },
+        "evidence_map": {
+          "claim": "tournament design and descriptor",
+          "source_refs": [
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md",
+            "evals/model-routing/experiments/local-smoke.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+            "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/add-model-routing-evaluation-tournament/design.md": "sha256:1331398c6ca51f8697151fa0fdc348bbf0ab226ef7c468d0a9a809bde7752fe0",
+        "evals/model-routing/experiments/local-smoke.json": "sha256:6a8db2dd6b3d70ef626e9ca1fb36871e1cdd93f08fc02d6914488c7cb7df23ca"
+      }
+    },
+    "telemetry-results.html": {
+      "sources": [
+        "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+      ],
+      "content": {
+        "illustration": {
+          "claim": "blind comparison",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "observed-evidence",
+          "source_digest": {
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json": "sha256:54bdd01759a1ef206426932c47082eabd191f4526ed45d65f794f3fdb8893e34",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json": "sha256:2829ed7f1ac13d7832fb06f92e568bc998d7fe7b0fae74ce99f10c60f7a3a071",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json": "sha256:a6bf80ee07fb7a6fe2150828a111fa6ebcc15393d77cdf2bf2726d346469eddb"
+          }
+        },
+        "metrics": {
+          "claim": "journal timings and scores",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "observed-evidence",
+          "source_digest": {
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json": "sha256:54bdd01759a1ef206426932c47082eabd191f4526ed45d65f794f3fdb8893e34",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json": "sha256:2829ed7f1ac13d7832fb06f92e568bc998d7fe7b0fae74ce99f10c60f7a3a071",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json": "sha256:a6bf80ee07fb7a6fe2150828a111fa6ebcc15393d77cdf2bf2726d346469eddb"
+          }
+        },
+        "diagram": {
+          "claim": "provider-native token evidence",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "observed-evidence",
+          "source_digest": {
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json": "sha256:54bdd01759a1ef206426932c47082eabd191f4526ed45d65f794f3fdb8893e34",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json": "sha256:2829ed7f1ac13d7832fb06f92e568bc998d7fe7b0fae74ce99f10c60f7a3a071",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json": "sha256:a6bf80ee07fb7a6fe2150828a111fa6ebcc15393d77cdf2bf2726d346469eddb"
+          }
+        },
+        "judges": {
+          "claim": "split preference",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "observed-evidence",
+          "source_digest": {
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json": "sha256:54bdd01759a1ef206426932c47082eabd191f4526ed45d65f794f3fdb8893e34",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json": "sha256:2829ed7f1ac13d7832fb06f92e568bc998d7fe7b0fae74ce99f10c60f7a3a071",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json": "sha256:a6bf80ee07fb7a6fe2150828a111fa6ebcc15393d77cdf2bf2726d346469eddb"
+          }
+        },
+        "snippet": {
+          "claim": "receipt excerpt",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "observed-evidence",
+          "source_digest": {
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json": "sha256:54bdd01759a1ef206426932c47082eabd191f4526ed45d65f794f3fdb8893e34",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json": "sha256:2829ed7f1ac13d7832fb06f92e568bc998d7fe7b0fae74ce99f10c60f7a3a071",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json": "sha256:a6bf80ee07fb7a6fe2150828a111fa6ebcc15393d77cdf2bf2726d346469eddb"
+          }
+        },
+        "caveats": {
+          "claim": "one fixture, timing and accounting limits, no mutation, human approval",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "observed-evidence",
+          "source_digest": {
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json": "sha256:54bdd01759a1ef206426932c47082eabd191f4526ed45d65f794f3fdb8893e34",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json": "sha256:2829ed7f1ac13d7832fb06f92e568bc998d7fe7b0fae74ce99f10c60f7a3a071",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json": "sha256:a6bf80ee07fb7a6fe2150828a111fa6ebcc15393d77cdf2bf2726d346469eddb"
+          }
+        },
+        "evidence_map": {
+          "claim": "receipt, attempts, judges",
+          "source_refs": [
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json"
+          ],
+          "evidence_class": "measured",
+          "source_revision": "8d83c5026d6cff2712d62fae4cb497202514e075",
+          "confidence": "high",
+          "implementation_status": "observed-evidence",
+          "source_digest": {
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json": "sha256:54bdd01759a1ef206426932c47082eabd191f4526ed45d65f794f3fdb8893e34",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json": "sha256:2829ed7f1ac13d7832fb06f92e568bc998d7fe7b0fae74ce99f10c60f7a3a071",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json": "sha256:a6bf80ee07fb7a6fe2150828a111fa6ebcc15393d77cdf2bf2726d346469eddb"
+          }
+        }
+      },
+      "source_digests": {
+        "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12/claude.json": "sha256:54bdd01759a1ef206426932c47082eabd191f4526ed45d65f794f3fdb8893e34",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12/openai.json": "sha256:2829ed7f1ac13d7832fb06f92e568bc998d7fe7b0fae74ce99f10c60f7a3a071",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12/judges.json": "sha256:a6bf80ee07fb7a6fe2150828a111fa6ebcc15393d77cdf2bf2726d346469eddb"
+      }
+    },
+    "agent-stack.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "surface": {
+          "claim": "surface",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "orchestration": {
+          "claim": "orchestration",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "context": {
+          "claim": "context",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "model": {
+          "claim": "model",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "tools": {
+          "claim": "tools",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "runtime": {
+          "claim": "runtime",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "memory": {
+          "claim": "memory",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "stack-surface.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "inferred",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "low",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "stack-orchestration.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "inferred",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "low",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "stack-context.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "inferred",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "low",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "stack-model.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "inferred",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "low",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "stack-tools.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "inferred",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "low",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "stack-runtime.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "inferred",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "low",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "stack-memory.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+      ],
+      "content": {
+        "what-layer-does": {
+          "claim": "what layer does",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evolution": {
+          "claim": "evolution",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "daily-use": {
+          "claim": "daily use",
+          "evidence_class": "inferred",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "low",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "interfaces": {
+          "claim": "interfaces",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "ownership": {
+          "claim": "ownership",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "failure-boundaries": {
+          "claim": "failure boundaries",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "related": {
+          "claim": "related",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "diagram": {
+          "claim": "diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "daily-driven-ecosystem.html": {
+      "sources": [
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md",
+        "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+      ],
+      "content": {
+        "claude-code": {
+          "claim": "claude code",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json": "sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4",
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "codex": {
+          "claim": "codex",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "medium",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json": "sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4",
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "pi": {
+          "claim": "pi",
+          "evidence_class": "inferred",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "low",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json": "sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4",
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "jcode": {
+          "claim": "jcode",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json": "sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4",
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "cross-provider-agents": {
+          "claim": "cross provider agents",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md",
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "medium",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "docs/diagrams/jcode-command-system/ecosystem-evidence.json": "sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4",
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "cooperation-diagram": {
+          "claim": "cooperation diagram",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "medium",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        },
+        "evidence-map": {
+          "claim": "evidence map",
+          "evidence_class": "documented",
+          "source_refs": [
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md"
+          ],
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "medium",
+          "implementation_status": "approved-design",
+          "source_digest": {
+            "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+          }
+        }
+      },
+      "source_digests": {
+        "docs/diagrams/jcode-command-system/ecosystem-evidence.json": "sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4",
+        "openspec/changes/archive/2026-08-13-add-command-system-documentation-microsite/design.md": "sha256:c022bd7a1e3c6613538f1f612c5388faacd33ae2d9badf94de2f48eca61861cd"
+      },
+      "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e"
+    },
+    "agent-evaluations.html": {
+      "sources": [
+        "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+        "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+        "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+        "evals/model-routing/README.md",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+      ],
+      "content": {
+        "decision_brief": {
+          "claim": "bounded smoke outcome and non-conclusions",
+          "source_refs": [
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+            "evals/model-routing/README.md",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "implemented",
+          "source_digest": {
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+            "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+          }
+        },
+        "findings_ledger": {
+          "claim": "traceable findings with status and disposition",
+          "source_refs": [
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+            "evals/model-routing/README.md",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "implemented",
+          "source_digest": {
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+            "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+          }
+        },
+        "filters": {
+          "claim": "track severity provider model claim status disposition controls",
+          "source_refs": [
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+            "evals/model-routing/README.md",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "implemented",
+          "source_digest": {
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+            "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+          }
+        },
+        "run_explorer": {
+          "claim": "candidate judges timing native metrics cost and limitations",
+          "source_refs": [
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+            "evals/model-routing/README.md",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "implemented",
+          "source_digest": {
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+            "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+          }
+        },
+        "review_dag": {
+          "claim": "Fable Sol human Luna cold-review authority chain",
+          "source_refs": [
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+            "evals/model-routing/README.md",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "implemented",
+          "source_digest": {
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+            "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+          }
+        },
+        "telemetry": {
+          "claim": "provider-native metrics and unavailable boundaries",
+          "source_refs": [
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+            "evals/model-routing/README.md",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "implemented",
+          "source_digest": {
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+            "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+          }
+        },
+        "evidence_map": {
+          "claim": "manifest digest and sanitized evidence links",
+          "source_refs": [
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+            "evals/model-routing/README.md",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "implemented",
+          "source_digest": {
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+            "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+          }
+        },
+        "privacy": {
+          "claim": "safe evidence publication and redaction caveats",
+          "source_refs": [
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+            "evals/model-routing/README.md",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "implemented",
+          "source_digest": {
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+            "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+          }
+        },
+        "limitations": {
+          "claim": "explicit unavailable fields and measurement limitations",
+          "source_refs": [
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md",
+            "evals/model-routing/README.md",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json"
+          ],
+          "evidence_class": "documented",
+          "source_revision": "044cc8dd98e9935c2a5f70f4f0d855565925a78e",
+          "confidence": "high",
+          "implementation_status": "implemented",
+          "source_digest": {
+            "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+            "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+            "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+            "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+          }
+        }
+      },
+      "source_digests": {
+        "openspec/changes/add-agent-evaluation-evidence-atlas/proposal.md": "sha256:6b39209bec0af45a6a405199f19ebbe6e71e8722d6b2656f6c3bb3b2721bbb14",
+        "openspec/changes/add-agent-evaluation-evidence-atlas/design.md": "sha256:bd5edea2e8a170a0ac1e10c942e8044162a6131c47afa44620f9c54f0eb72ef2",
+        "openspec/changes/add-agent-evaluation-evidence-atlas/specs/agent-evaluation-atlas/spec.md": "sha256:312411caf6048895c18d5b736f093bc82c017e51e739e7067463e88cf8f110a5",
+        "evals/model-routing/README.md": "sha256:60b9de510f23b9082d30dde87620464639ca967e63057655cf76a707ff0ff5eb",
+        "evals/model-routing/runs/oauth-smoke-2026-08-12.json": "sha256:871c67bd863e2a950930750d5a8906659f4b55bbe5d6ef37c96e55e36483eebb"
+      }
+    }
+  },
+  "required_caveats": [
+    "temporary conversation protocol",
+    "not shipped command behavior",
+    "one frozen fixture",
+    "provider-native accounting",
+    "split judge preference",
+    "production routing was not mutated",
+    "separate human approval"
+  ],
+  "ecosystem_evidence": {
+    "path": "docs/diagrams/jcode-command-system/ecosystem-evidence.json",
+    "observation_window": "repository snapshot inspected 2026-08-12",
+    "redaction": "sanitized references only",
+    "snapshot_id": "ecosystem-claim-map-v1-2026-08-12",
+    "source_revision": "7e23a8b835983f3d132c527ed03f52caea896037",
+    "source_digest": "sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4"
+  },
+  "telemetry_source": "evals/model-routing/runs/oauth-smoke-2026-08-12.json",
+  "revision_policy": {
+    "source_revision": "full git commit containing the cited source bytes",
+    "source_digest": "sha256:<64 lowercase hex> computed from git show <source_revision>:<path>",
+    "final_digest_freeze": "resolved at implementation commit 7e23a8b835983f3d132c527ed03f52caea896037; ecosystem evidence digest sha256:3b9b6e168d2c85ba3737124da6167fbc882a2a6b095ff99adb6e6fc4967461b4 is validator-enforced"
+  }
+}

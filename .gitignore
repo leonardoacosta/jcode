@@ -1,103 +1,89 @@
-# This repository sits at JCODE_HOME, not in the jcode source checkout.
-# Keep authored artifacts and installed skills, but exclude mutable runtime state,
-# credentials, caches, generated binaries, session transcripts, and nested repos.
-
-# Credentials and machine-local configuration
-auth*.json
-auth*.bak
-openai-auth*.json
-openai-auth*.bak
-config.toml
-config.bak
-config.lock
-servers.json
-devices.json
-machine_id
-telemetry_id
-
-# Provider/account state
-copilot_usage.json
-copilot_usage.bak
-provider_activity.json
-provider_activity.bak
-setup_hints.json
-setup_hints.bak
-keymap-snapshot.json
-keymap-snapshot.bak
-
-# Runtime state and IPC
-active_pids/
-internal_pids/
-streaming_pids/
-telemetry_active_sessions/
-pending-login/
-pending-soft-interrupts/
-reload-recovery/
-reload-traces/
-ssh-control/
-selfdev-build-requests/
-*.lock
-*.stamp
+# JCODE_HOME runtime state and nested/reference repositories
+/auth*.json
+/auth*.bak
+/openai-auth*.json
+/openai-auth*.bak
+/config.toml
+/config.bak
+/config.lock
+/servers.json
+/devices.json
+/machine_id
+/telemetry_id
+/copilot_usage.json
+/copilot_usage.bak
+/provider_activity.json
+/provider_activity.bak
+/setup_hints.json
+/setup_hints.bak
+/keymap-snapshot.json
+/keymap-snapshot.bak
+/active_pids/
+/internal_pids/
+/streaming_pids/
+/telemetry_active_sessions/
+/pending-login/
+/pending-soft-interrupts/
+/reload-recovery/
+/reload-traces/
+/ssh-control/
+/selfdev-build-requests/
+/sessions/
+/goals/
+/memory/
+/state/
+/todos/
+/side_panel/
+/browser/
+/hotkey/
+/cache/
+/logs/
+/builds/
+/models/
+/scratch/
+/source/
+/private/
+/quarantine/
+/migrations/
+command-center/
+reload-info
+prompt-history.jsonl
+presentation-http.log
+presentation-http-audio.mp3
+mcp-schema-cache.json
+kokoro-models.json
+telemetry_active_days_*.txt
+telemetry_session_starts_*
+telemetry_milestone_*
 last_focused_client_session
 last_seen_changelog
 reload-context-session_*.json
 subscribe-nudge.json
 update_metadata.json
+*.lock
+*.stamp
 
-# Sessions, prompts, personal state, and generated UI state
-sessions/
-goals/
-memory/
-state/
-todos/
-side_panel/
-browser/
-hotkey/
-.superpowers/
-prompt-history.jsonl
-
-# Caches, logs, generated media, models, and build outputs
-cache/
-logs/
-builds/
-models/
-scratch/
-presentation/
-presentation-http.log
-presentation-http-audio.mp3
-mcp-schema-cache.json
-kokoro-models.json
-
-# Telemetry markers
-no_telemetry
-telemetry_install_sent
-telemetry_version_sent
-telemetry_milestone_*
-telemetry_session_starts_*
-
-# Managed/nested repositories and migration state
-source/
-migrations/
-openspec/
-
-# Miscellaneous local probes
-vercel-prod-env-check
-
-# Python bytecode
+# Source/build outputs
+/target
+Cargo.lock
 __pycache__/
 *.pyc
+ios_simulator_screenshot.png
+/.wrangler/
+/tmp/
+/.tmp/
+/.jcode/generated-images/
+/telemetry-worker/backups/
+target-ttest/
+target-ttest*/
+captures/
+/*.log
+/*.avif
+/*.mp4
+/*.png
 
 # OS/editor noise
 .DS_Store
 Thumbs.db
 *.swp
 *.tmp
-
-# Skills now live in the jcode fork (source/jcode/skills), exposed here as a
-# tracked symlink so $JCODE_HOME/skills keeps resolving. See leonardoacosta/jcode@dev.
-
-# Stray runtime artifacts
-ambient/
-command-center/
-reload-info
---full-page

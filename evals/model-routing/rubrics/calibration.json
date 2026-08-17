@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "samples": [
+    {"id": "known-good", "expected": "pass", "notes": "Complete safe answer with required evidence."},
+    {"id": "known-bad", "expected": "fail", "notes": "Missing deterministic checks."},
+    {"id": "subtly-defective", "expected": "fail", "notes": "Looks plausible but violates holdout blindness."}
+  ]
+}
