@@ -1116,3 +1116,342 @@ button:focus-visible {
     animation: none !important;
   }
 }
+
+/* Ambient activity ledger. */
+.ambient-page {
+  max-width: 1240px;
+}
+
+.ambient-toolbar {
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.ambient-ledger {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ambient-ledger-row {
+  display: grid;
+  grid-template-columns: 58px 142px minmax(220px, 1fr) 122px 76px;
+  gap: 16px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding: 17px 0;
+  animation: ambient-row-in 240ms ease both;
+  animation-delay: calc(var(--ambient-index, 0) * 24ms);
+}
+
+.ambient-ledger-row:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.ambient-ledger-row time,
+.ambient-source,
+.ambient-state,
+.ambient-ledger-row small,
+.ambient-section-heading span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.ambient-source {
+  overflow-wrap: anywhere;
+}
+
+.ambient-entry-copy strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.ambient-entry-copy p {
+  margin: 4px 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.ambient-state.running {
+  color: #83c8c6;
+}
+
+.ambient-state.paused {
+  color: var(--pink);
+}
+
+.ambient-state.receipts {
+  color: var(--muted);
+}
+
+.ambient-ledger-row .inline-action {
+  justify-self: end;
+}
+
+.ambient-empty {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ambient-schedule {
+  margin-top: 34px;
+}
+
+.ambient-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.ambient-section-heading h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 400;
+}
+
+.ambient-schedule-list {
+  border-top: 1px solid var(--line);
+}
+
+.ambient-schedule-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 100px minmax(190px, 1fr) 100px;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding: 13px 0;
+  font-size: 12px;
+}
+
+.ambient-schedule-row span {
+  color: var(--muted);
+}
+
+.ambient-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  width: 100%;
+  border: 0;
+  background: rgb(0 0 0 / 58%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-in-out;
+}
+
+.ambient-drawer-backdrop.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ambient-drawer-backdrop[hidden],
+.ambient-drawer[hidden] {
+  display: none;
+}
+
+.ambient-drawer {
+  position: fixed;
+  inset: 12px 12px 12px auto;
+  z-index: 50;
+  display: flex;
+  width: min(560px, calc(100vw - 24px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 22px 70px rgb(0 0 0 / 48%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(28px);
+  visibility: hidden;
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease-in-out,
+    visibility 0s linear 280ms;
+}
+
+.ambient-drawer.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.ambient-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ambient-drawer-head h2 {
+  margin: 4px 0 0;
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
+
+.ambient-drawer-body {
+  overflow-y: auto;
+  padding: 0 24px 24px;
+}
+
+.ambient-drawer-intro,
+.ambient-inspect-block p,
+.ambient-contract-note {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ambient-drawer-intro {
+  margin: 18px 0;
+}
+
+.ambient-form {
+  display: grid;
+  gap: 10px;
+}
+
+.ambient-form label {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.ambient-form input,
+.ambient-form select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #090909;
+  color: var(--ink);
+  padding: 10px 11px;
+  font-size: 12px;
+}
+
+.ambient-contract-note {
+  margin: 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 3%);
+  padding: 10px 12px;
+}
+
+.ambient-inspect-block,
+.ambient-inspect-actions {
+  border-top: 1px solid var(--line);
+  padding: 20px 0 0;
+}
+
+.ambient-inspect-block h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.ambient-inspect-block p {
+  margin: 0 0 8px;
+}
+
+.ambient-log-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-inline-start: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ambient-inspect-actions {
+  margin-top: 20px;
+}
+
+.ambient-inspect-actions .ambient-contract-note {
+  margin-bottom: 0;
+}
+
+@keyframes ambient-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .ambient-ledger-row {
+    grid-template-columns: 52px 1fr auto;
+    gap: 10px;
+    align-items: start;
+  }
+
+  .ambient-source {
+    grid-column: 2 / -1;
+    grid-row: 1;
+  }
+
+  .ambient-entry-copy {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+
+  .ambient-state {
+    grid-column: 2;
+    grid-row: 3;
+    margin-top: 4px;
+  }
+
+  .ambient-ledger-row .inline-action {
+    grid-column: 3;
+    grid-row: 3;
+    justify-self: end;
+  }
+
+  .ambient-schedule-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+  }
+
+  .ambient-schedule-row strong {
+    grid-column: 1 / -1;
+  }
+
+  .ambient-drawer {
+    inset: 0;
+    width: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .ambient-drawer-head {
+    padding: 20px 18px;
+  }
+
+  .ambient-drawer-body {
+    padding: 0 18px calc(var(--mobile-nav) + 18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-ledger-row,
+  .ambient-drawer,
+  .ambient-drawer-backdrop {
+    animation: none !important;
+    transition: none !important;
+  }
+}

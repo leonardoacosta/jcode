@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import {
   AppShell,
+  AmbientActivity,
   DecisionInbox,
   SplitWorkspace,
   InitiativeList,
@@ -14,6 +15,57 @@ import { liveSnapshot, nextEvent, unavailableSnapshot } from "./fixtures/snapsho
 import type { EventEnvelope } from "../src/generated/command-center-contract";
 
 describe("command center components", () => {
+  it("renders a content-first ambient ledger and filters authoritative activity", () => {
+    render(() => <AmbientActivity snapshot={liveSnapshot} />);
+
+    expect(screen.getByRole("heading", { name: "Ambient activity" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Ambient activity ledger" })).toBeInTheDocument();
+    expect(screen.getByText("Wake schedule · every 30 minutes")).toBeInTheDocument();
+    expect(screen.getByText("Frontend route established")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Running" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Receipts" }));
+
+    expect(screen.getByText("Wake schedule · every 30 minutes")).toBeVisible();
+    expect(screen.getByText("Frontend route established")).toBeVisible();
+    expect(screen.queryByText("Jcode Command Center")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Paused" }));
+    expect(screen.getByText("Jcode Command Center")).toBeVisible();
+    expect(screen.getByText(/Runtime topology is fixture-backed/)).toBeVisible();
+  });
+
+  it("opens accessible create and inspect drawers with fail-closed actions", () => {
+    render(() => <AmbientActivity snapshot={liveSnapshot} />);
+
+    const createTrigger = screen.getByRole("button", { name: "New ambient cycle" });
+    fireEvent.click(createTrigger);
+
+    const createDrawer = screen.getByRole("dialog", { name: "Create ambient cycle" });
+    expect(createDrawer).toBeVisible();
+    expect(screen.getByLabelText("Cycle objective")).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Create cycle" })).toBeDisabled();
+    expect(screen.getByText(/ambient-cycle create contract is not available/i)).toBeVisible();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(createDrawer).not.toBeVisible();
+    expect(createTrigger).toHaveFocus();
+
+    fireEvent.click(screen.getByRole("button", { name: /Inspect Wake schedule/ }));
+    const inspectDrawer = screen.getByRole("dialog", { name: "Inspect ambient activity" });
+    expect(inspectDrawer).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Latest logs" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Evidence" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Retained checkpoint" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Owner trail" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Resume cycle" })).toBeDisabled();
+    expect(screen.getByText(/ambient-cycle resume contract is not available/i)).toBeVisible();
+  });
+
   it("exposes the approved global Find drawer trigger and dialog contract", () => {
     render(() => (
       <AppShell snapshot={liveSnapshot}>

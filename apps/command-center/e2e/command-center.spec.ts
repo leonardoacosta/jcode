@@ -279,3 +279,50 @@ test("Decision Inbox keeps the detail sheet reachable on mobile @fixture-only", 
   await expect(page.getByRole("button", { name: "Back to queue" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Durable decision packets" })).toBeVisible();
 });
+
+test("Ambient activity keeps evidence content ahead of controls @fixture-only", async ({
+  page,
+}) => {
+  await page.goto("/ambient");
+
+  await expect(page.getByRole("heading", { name: "Ambient activity" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Ambient activity ledger" })).toBeVisible();
+  await expect(page.getByText("Wake schedule · every 30 minutes")).toBeVisible();
+  await expect(page.getByText("Frontend route established")).toBeVisible();
+
+  await page.getByRole("button", { name: "Receipts" }).click();
+  await expect(page.getByText("Wake schedule · every 30 minutes")).toBeVisible();
+  await expect(page.getByText("Frontend route established")).toBeVisible();
+  await expect(page.getByText("Jcode Command Center")).toBeHidden();
+
+  await page.getByRole("button", { name: "Paused" }).click();
+  await expect(page.getByText("Jcode Command Center")).toBeVisible();
+});
+
+test("Ambient create and inspect drawers are accessible and fail closed @fixture-only", async ({
+  page,
+}) => {
+  await page.goto("/ambient");
+
+  const createTrigger = page.getByRole("button", { name: "New ambient cycle" });
+  await createTrigger.click();
+  const createDrawer = page.getByRole("dialog", { name: "Create ambient cycle" });
+  await expect(createDrawer).toBeVisible();
+  await expect(page.getByLabel("Cycle objective")).toBeFocused();
+  await expect(page.getByRole("button", { name: "Create cycle" })).toBeDisabled();
+  await expect(page.getByText(/ambient-cycle create contract is not available/i)).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(createDrawer).toBeHidden();
+  await expect(createTrigger).toBeFocused();
+
+  await page.getByRole("button", { name: /Inspect Wake schedule/ }).click();
+  const inspectDrawer = page.getByRole("dialog", { name: "Inspect ambient activity" });
+  await expect(inspectDrawer).toBeVisible();
+  await expect(inspectDrawer.getByRole("heading", { name: "Latest logs" })).toBeVisible();
+  await expect(inspectDrawer.getByRole("heading", { name: "Evidence" })).toBeVisible();
+  await expect(inspectDrawer.getByRole("heading", { name: "Retained checkpoint" })).toBeVisible();
+  await expect(inspectDrawer.getByRole("heading", { name: "Owner trail" })).toBeVisible();
+  await expect(inspectDrawer.getByRole("button", { name: "Resume cycle" })).toBeDisabled();
+  await expect(page.getByText(/ambient-cycle resume contract is not available/i)).toBeVisible();
+});

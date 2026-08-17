@@ -9,6 +9,7 @@ import type {
 
 export { AppShell } from "./shell/AppShell";
 export { FindDrawer } from "./shell/FindDrawer";
+export { AmbientActivity } from "./AmbientActivity";
 
 const label = (value: string) =>
   value.replaceAll("_", " ").replace(/^./, (first) => first.toUpperCase());

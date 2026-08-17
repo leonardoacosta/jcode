@@ -9,7 +9,8 @@ import {
   Show,
   untrack,
 } from "solid-js";
-import { AppShell, DecisionInbox, StateCard } from "./components/CommandCenter";
+import { AmbientActivity, AppShell, DecisionInbox, StateCard } from "./components/CommandCenter";
+import type { CommandCenterSnapshot } from "./generated/command-center-contract";
 import { createProjectionStore } from "./stores/projection";
 import { HttpCommandCenterTransport } from "./transport/client";
 import "./styles.css";
@@ -98,7 +99,7 @@ function WorkspaceRoute() {
   return (
     <AppShell snapshot={current()} announcement={store.ui.announcement} activePath={path()}>
       <Show when={path() === "/ambient"}>
-        <AmbientRoute />
+        <AmbientRoute snapshot={current()} />
       </Show>
       <Show when={path() === "/find"}>
         <FindRoute />
@@ -110,22 +111,8 @@ function WorkspaceRoute() {
   );
 }
 
-function AmbientRoute() {
-  return (
-    <section class="page" aria-labelledby="ambient-title">
-      <header class="page-bar">
-        <div>
-          <p class="eyebrow">Background work</p>
-          <h1 id="ambient-title">Ambient activity</h1>
-        </div>
-        <p>Stable route boundary for observed cycles and retained wake evidence.</p>
-      </header>
-      <StateCard
-        title="Ambient workflow boundary"
-        message="Ambient cycle details will be added behind this stable route interface."
-      />
-    </section>
-  );
+function AmbientRoute(props: { snapshot?: CommandCenterSnapshot }) {
+  return <AmbientActivity snapshot={props.snapshot} />;
 }
 
 function FindRoute() {
