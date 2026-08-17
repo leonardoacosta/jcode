@@ -98,19 +98,26 @@ function browserCommandResult(value: unknown): CommandResult {
 
 export class HttpCommandCenterTransport implements CommandCenterTransport {
   private session?: BrowserSession;
+  private sessionRequest?: Promise<BrowserSession>;
 
   constructor(private readonly baseUrl = "") {}
 
   private async authenticatedHeaders(mutating = false): Promise<Record<string, string>> {
     if (!this.session || Date.parse(this.session.expires_at) <= Date.now()) {
-      const response = await fetch(`${this.baseUrl}/api/command-center/bootstrap`, {
+      this.sessionRequest ??= fetch(`${this.baseUrl}/api/command-center/bootstrap`, {
         method: "POST",
         credentials: "same-origin",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({}),
-      });
-      if (!response.ok) throw new Error(`bootstrap_${response.status}`);
-      this.session = (await response.json()) as BrowserSession;
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error(`bootstrap_${response.status}`);
+          return (await response.json()) as BrowserSession;
+        })
+        .finally(() => {
+          this.sessionRequest = undefined;
+        });
+      this.session = await this.sessionRequest;
     }
     return {
       authorization: `Bearer ${this.session.id}`,

@@ -160,6 +160,26 @@ test("Decision Inbox renders durable provider provenance @fixture-only", async (
   await expect(page.getByText("Awaiting approval")).toBeVisible();
 });
 
+test("live Telegram message reaches the authenticated Decision Inbox", async ({ page }) => {
+  test.skip(
+    process.env.JCODE_EXPECT_LIVE_TELEGRAM !== "1",
+    "requires the credential-gated live Telegram acceptance database",
+  );
+  const inboxResponse = page.waitForResponse((response) =>
+    response.url().endsWith("/api/command-center/decision-inbox"),
+  );
+  await page.goto("/initiatives/init-command-center/runs/run-1");
+  const response = await inboxResponse;
+  expect(response.ok()).toBe(true);
+  const inbox = (await response.json()) as {
+    items: Array<{ source: { adapter: string }; content?: string }>;
+  };
+  expect(inbox.items.some((item) => item.source.adapter === "telegram")).toBe(true);
+  expect(inbox.items.some((item) => /inbox acceptance ping/i.test(item.content ?? ""))).toBe(true);
+  await expect(page.getByText("Telegram").first()).toBeVisible();
+  await expect(page.getByText(/inbox acceptance ping/i).first()).toBeVisible();
+});
+
 test("discovery route lists accessible initiatives @fixture-only", async ({ page }) => {
   await page.goto("/initiatives");
   await expect(

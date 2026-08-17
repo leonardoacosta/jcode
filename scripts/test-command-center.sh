@@ -96,6 +96,7 @@ PY
   export JCODE_COMMAND_CENTER_BIND_ADDR="127.0.0.1:$port"
   export JCODE_COMMAND_CENTER_ASSET_DIR="$asset_dir"
   export JCODE_COMMAND_CENTER_BASE_URL="http://127.0.0.1:$port"
+  export JCODE_COMMAND_CENTER_ALLOWED_ORIGINS="$JCODE_COMMAND_CENTER_BASE_URL"
 
   "$jcode_bin" serve \
     --provider ollama \

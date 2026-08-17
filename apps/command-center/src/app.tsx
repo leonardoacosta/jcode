@@ -1,5 +1,14 @@
 import { Router, Route, useLocation } from "@solidjs/router";
-import { createEffect, createResource, createSignal, on, onCleanup, Show, untrack } from "solid-js";
+import {
+  createEffect,
+  createResource,
+  createSignal,
+  on,
+  onCleanup,
+  onMount,
+  Show,
+  untrack,
+} from "solid-js";
 import {
   AppShell,
   DecisionInbox,
@@ -44,22 +53,28 @@ export function loadFailureState(error: unknown) {
 function WorkspaceRoute() {
   const location = useLocation();
   const path = () => location.pathname;
+  const [hydrated, setHydrated] = createSignal(false);
   const [failure, setFailure] = createSignal<string>();
   const [loadError, setLoadError] = createSignal<unknown>();
   const [pending, setPending] = createSignal(false);
   const store = createProjectionStore();
-  const [snapshot] = createResource(path, async (currentPath) => {
-    try {
-      const next = await transport.loadSnapshot(currentPath);
-      store.installSnapshot(next);
-      setLoadError(undefined);
-      return next;
-    } catch (error) {
-      setLoadError(error);
-      return undefined;
-    }
-  });
-  const [decisionInbox] = createResource(async () => {
+  onMount(() => setHydrated(true));
+  const [snapshot] = createResource(
+    () => (hydrated() ? path() : undefined),
+    async (currentPath) => {
+      try {
+        const next = await transport.loadSnapshot(currentPath);
+        store.installSnapshot(next);
+        setLoadError(undefined);
+        return next;
+      } catch (error) {
+        setLoadError(error);
+        return undefined;
+      }
+    },
+  );
+  const [decisionInbox] = createResource(hydrated, async (ready) => {
+    if (!ready) return undefined;
     try {
       return await transport.loadDecisionInbox();
     } catch {
