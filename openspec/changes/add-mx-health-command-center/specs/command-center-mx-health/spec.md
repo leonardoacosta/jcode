@@ -1,123 +1,152 @@
 ## ADDED Requirements
 
-### Requirement: Pinned MX health contract
-Jcode SHALL consume MX health only from a committed, immutable, authenticated, redacted `mx.health.v1` contract whose repository identity, commit SHA, artifact path, compatibility rules, and digest are recorded before implementation.
+### Requirement: Pinned committed MX health authority
+Jcode SHALL consume MX health only from the committed authenticated and redacted `mx.health.v1` authority pinned by repository, commit, source paths, and digests in this change.
 
-#### Scenario: Contract provenance is available
-- **WHEN** implementation begins
-- **THEN** the exact MX contract bytes and immutable provenance are recorded in Jcode
-- **AND** deterministic fixtures and drift checks use those bytes as their authority
+#### Scenario: Pinned authority is unchanged
+- **WHEN** implementation or a drift check begins
+- **THEN** it verifies the recorded MX commit and contract artifact digests
+- **AND** exact-schema redacted fixtures identify that immutable provenance
 
-#### Scenario: Contract authority is unavailable
-- **WHEN** the MX contract is uncommitted, cannot be located, is not authenticated/redacted, or differs materially from this approved change
-- **THEN** implementation stops before adapter code is written
-- **AND** the OpenSpec change is updated and revalidated rather than guessing the contract
+#### Scenario: Authority drifts materially
+- **WHEN** the upstream version, required fields, statuses, authentication, or redaction semantics differ from the pinned authority
+- **THEN** implementation stops before accepting the new response
+- **AND** this OpenSpec change is updated, reviewed, and revalidated rather than guessing compatibility
 
-### Requirement: Server-side authenticated MX adapter
-The Jcode daemon SHALL fetch MX health through a bounded server-side adapter and SHALL NOT expose MX credentials or direct MX access to browser code.
+#### Scenario: Fields absent from v1
+- **WHEN** the adapter or UI projects an MX check
+- **THEN** it does not invent per-check timestamps, cached-data flags, data age, recovery metadata, or mutation capabilities absent from the pinned contract
 
-#### Scenario: Successful authenticated fetch
-- **WHEN** MX returns a valid authenticated redacted `mx.health.v1` response within configured limits
-- **THEN** Jcode validates and projects the response for the authenticated Command Center client
-- **AND** the browser receives no MX bearer token or privileged endpoint configuration
+### Requirement: Bounded server-side authenticated MX adapter
+The Jcode daemon SHALL fetch MX health through bounded authenticated server-side I/O and SHALL NOT expose direct MX access or credentials to browser code.
 
-#### Scenario: MX authentication fails
-- **WHEN** MX rejects the daemon credential
-- **THEN** Jcode returns a stable safe unauthorized state
-- **AND** no authorization header, token, or raw upstream body appears in the browser response or logs
+#### Scenario: Successful HTTP 200 response
+- **WHEN** MX returns HTTP 200 with a valid redacted `mx.health.v1` body
+- **THEN** Jcode validates and projects the authoritative MX state
+- **AND** the browser receives no MX token, endpoint configuration, or authorization header
+
+#### Scenario: Authoritative HTTP 503 response
+- **WHEN** MX returns HTTP 503 with a valid redacted `mx.health.v1` body whose overall state is `down`
+- **THEN** Jcode accepts and projects that authoritative down state
+- **AND** does not replace it with a generic adapter-unreachable error
+
+#### Scenario: Upstream authentication fails
+- **WHEN** MX returns HTTP 401 or 403
+- **THEN** Jcode returns a stable safe upstream-unauthorized adapter state
+- **AND** no token, authorization header, configured endpoint, or raw body appears in browser data or logs
 
 #### Scenario: MX is slow or unreachable
-- **WHEN** the MX request exceeds the timeout or cannot connect
-- **THEN** Jcode terminates the bounded request and reports a typed unavailable state
-- **AND** concurrent browser refreshes do not create an unbounded MX request fan-out
+- **WHEN** DNS, connection, or bounded timeout fails
+- **THEN** Jcode terminates the request and reports a typed unreachable or timeout adapter state
+- **AND** concurrent browser refreshes create at most one active upstream fetch for the coalescing window
 
-#### Scenario: Command Center session is absent or expired
-- **WHEN** an unauthenticated browser or an expired Command Center session requests `/mx` or its Jcode health endpoint
-- **THEN** Jcode applies the existing authentication failure behavior
-- **AND** does not attempt an MX fetch or expose MX configuration
+#### Scenario: Unexpected upstream status
+- **WHEN** MX returns an HTTP status other than the supported contract-bearing or authentication statuses
+- **THEN** Jcode reports a safe typed adapter failure
+- **AND** does not expose or parse untrusted content as health
 
-#### Scenario: Command Center session is forbidden
-- **WHEN** an authenticated session lacks permission to inspect the Command Center health route
-- **THEN** Jcode returns the existing forbidden behavior
-- **AND** does not attempt an MX fetch
+#### Scenario: Browser session is absent, expired, or forbidden
+- **WHEN** the Jcode health endpoint is requested without an authorized Command Center session
+- **THEN** existing Command Center authentication or forbidden behavior applies before adapter invocation
+- **AND** no MX configuration is exposed
 
-### Requirement: Strict health contract validation
-The adapter SHALL fail closed on unsafe or incompatible MX responses and SHALL preserve valid MX states and reason codes without upgrading their severity.
+### Requirement: Strict v1 validation and safe projection
+The adapter SHALL validate the pinned v1 response, preserve valid MX semantics, and fail closed on incompatible or unsafe data.
 
-#### Scenario: Valid degraded response
-- **WHEN** MX reports degraded persistence with downstream workflow checks degraded or unavailable
-- **THEN** Jcode preserves those states, reason codes, timestamps, dependencies, cached-data semantics, and recovery metadata in its projection
-- **AND** Jcode does not present the system as healthy because provider checks remain healthy
+#### Scenario: Valid response
+- **WHEN** the body has `version: "mx.health.v1"`, `redacted: true`, valid `generated_at`, recognized overall/check statuses, unique check IDs, safe required strings, and resolvable dependencies
+- **THEN** Jcode projects version, generation/fetch times, overall state, and every check's ID, layer, status, reason code, summary, and dependency IDs
 
-#### Scenario: Invalid or unsafe response
-- **WHEN** a response has the wrong major version, missing required fields, `redacted` not equal to true, an unknown value for a closed required enum, malformed timestamps, duplicate check IDs, dangling dependencies, or exceeds the size cap
-- **THEN** Jcode rejects it as an invalid contract
-- **AND** raw invalid payload content is not returned to the browser
+#### Scenario: Persistence failure with blocked workflow
+- **WHEN** MX reports provider checks `ok`, persistence `down`, and workflows `blocked` with dependency `persistence`
+- **THEN** Jcode preserves each independent status and the dependency edge
+- **AND** never presents the system as healthy merely because provider checks remain `ok`
 
-#### Scenario: Additive compatible fields
-- **WHEN** the pinned MX compatibility rules permit unknown additive fields
-- **THEN** Jcode ignores only those fields while validating all known required semantics
+#### Scenario: Unsafe or incompatible response
+- **WHEN** version is wrong, `redacted` is not true, JSON or timestamp is malformed, required fields are missing/empty, overall or check status is unknown, check IDs are duplicated, dependencies dangle, or the payload exceeds the cap
+- **THEN** Jcode rejects the response as `invalid_contract`
+- **AND** raw invalid content does not enter browser responses or logs
 
-#### Scenario: Extensible enum fallback
-- **WHEN** the pinned MX contract explicitly declares an enum extensible and supplies an unknown-state fallback
-- **THEN** Jcode projects that fallback as non-healthy according to the contract
-- **AND** does not reject or upgrade it based on guessed semantics
+#### Scenario: Additive JSON field
+- **WHEN** a valid pinned v1 response contains an unknown additive field but all required known semantics remain valid
+- **THEN** Jcode ignores that field
+- **AND** continues to validate every known required field
 
-### Requirement: Explicit live and stale data semantics
-Jcode SHALL distinguish current MX health, adapter fetch health, and last-known-good data so stale information cannot appear current.
+### Requirement: Separate adapter freshness and last-known-good semantics
+Jcode SHALL distinguish authoritative MX health from current adapter fetch health so stale information cannot appear live.
 
-#### Scenario: Current response replaces cache
-- **WHEN** a newly fetched response validates successfully
-- **THEN** Jcode atomically replaces the last-known-good projection
-- **AND** reports the new observation and fetch timestamps
+#### Scenario: Successful fetch replaces cache
+- **WHEN** a new response validates successfully
+- **THEN** Jcode atomically replaces its one in-memory last-known-good projection
+- **AND** records MX `generated_at` separately from Jcode `fetched_at`
 
-#### Scenario: Current fetch fails with cached data
-- **WHEN** a current fetch fails and a last-known-good projection exists
-- **THEN** Jcode may return the cached projection only with an explicit stale state, prior observation timestamp, age, and current failure category
-- **AND** any MX degraded or down state in the cached response remains degraded or down
+#### Scenario: Current fetch fails with eligible cached data
+- **WHEN** a current fetch fails and a valid last-known-good projection remains inside the configured stale limit
+- **THEN** Jcode may return it only with adapter state `stale`, its prior fetch and MX generation timestamps, computed age, and the current safe failure category
+- **AND** cached MX `degraded`, `down`, or `blocked` states retain their severity
 
-#### Scenario: Current fetch fails without cached data
-- **WHEN** a current fetch fails and no validated projection exists
-- **THEN** `/mx` presents an unavailable state rather than fabricated component health
-
-### Requirement: Accessible `/mx` health route
-Command Center SHALL provide an authenticated `/mx` route that communicates MX overall state, impact, layers, checks, dependencies, timestamps, cached-data semantics, and recovery metadata through both a responsive SVG topology and complete semantic HTML.
-
-#### Scenario: Healthy system
-- **WHEN** all required MX checks report healthy
-- **THEN** `/mx` presents a textual healthy overall state, observation age, layer topology, semantic check list, and legend
-
-#### Scenario: Partial degradation
-- **WHEN** one layer is degraded and dependent layers are degraded or unavailable
-- **THEN** `/mx` identifies the affected layer, preserves healthy independent layers, and presents a concise impact statement
-- **AND** status is distinguishable through text and shape/iconography, not color alone
-
-#### Scenario: Keyboard inspection
-- **WHEN** a keyboard user traverses the health page
-- **THEN** every selectable check is reachable with a visible focus indicator
-- **AND** selecting a topology or list control reveals the same named HTML details without pointer-only behavior
-
-#### Scenario: Assistive technology reading path
-- **WHEN** the SVG is unavailable or ignored by assistive technology
-- **THEN** headings, status regions, summaries, lists, and details expose the complete health information in a logical reading order
-- **AND** decorative connectors are hidden from assistive technology
-
-#### Scenario: Passive refresh
-- **WHEN** health data refreshes without user action
-- **THEN** a concise status update is announced without stealing focus or collapsing the user's selected details
+#### Scenario: Current fetch fails without eligible cached data
+- **WHEN** no validated projection exists or the cache exceeds the stale limit
+- **THEN** `/mx` presents the typed adapter failure without fabricated MX checks
 
 #### Scenario: MX is unconfigured
-- **WHEN** an authenticated operator opens `/mx` before daemon MX endpoint and token configuration is available
-- **THEN** the stable route and navigation entry remain available with a setup-required state
-- **AND** no endpoint, token source, or secret value is exposed
+- **WHEN** daemon MX endpoint or token configuration is absent
+- **THEN** Jcode returns a setup-required state without attempting an upstream fetch
+- **AND** exposes no endpoint or token-source value
 
-### Requirement: Responsive and preference-safe health visualization
+### Requirement: Accessible authenticated `/mx` route
+Command Center SHALL provide a stable authenticated `/mx` route communicating MX overall state, impact, layers, checks, dependencies, generation/fetch freshness, and adapter state through responsive SVG and complete semantic HTML.
+
+#### Scenario: Healthy system
+- **WHEN** MX reports `overall: "ok"` and all checks are `ok`
+- **THEN** `/mx` presents textual healthy state, MX generation age, adapter freshness, topology, semantic check list, and legend
+
+#### Scenario: Partial degradation
+- **WHEN** MX reports `overall: "degraded"` with degraded or unreachable source checks while persistence remains available
+- **THEN** `/mx` identifies affected checks, preserves healthy independent checks, and presents concise impact text
+- **AND** every status uses text and shape/iconography in addition to color
+
+#### Scenario: Authoritative system down
+- **WHEN** the validated contract reports `overall: "down"`, persistence `down`, and workflows `blocked`
+- **THEN** `/mx` shows provider availability separately from persistence/workflow failure and causal dependencies
+- **AND** identifies the body as authoritative MX health even though the upstream HTTP status was 503
+
+#### Scenario: Stable unconfigured route
+- **WHEN** an authenticated operator opens `/mx` before MX configuration is available
+- **THEN** the route and navigation entry remain present with setup-required guidance
+- **AND** no configuration value is displayed
+
+#### Scenario: Keyboard inspection
+- **WHEN** a keyboard user traverses checks and selects one
+- **THEN** each selectable check is reachable with visible focus
+- **AND** topology and HTML controls expose the same named details without pointer-only interaction
+
+#### Scenario: Assistive-technology reading path
+- **WHEN** SVG is ignored or unavailable
+- **THEN** headings, status regions, impact summary, ordered layers/checks, dependencies, and details expose the complete information in logical order
+- **AND** decorative paths are hidden from assistive technology
+
+#### Scenario: Passive refresh
+- **WHEN** data refreshes without explicit user action
+- **THEN** one concise result is announced
+- **AND** focus, selected check, details visibility, and unrelated scroll state remain stable
+
+#### Scenario: Adapter failure and retry
+- **WHEN** the page has an unauthorized, unreachable, timeout, invalid-contract, or stale state
+- **THEN** it uses explicit safe copy and may offer retry of the Jcode read
+- **AND** retry performs no MX mutation
+
+### Requirement: Responsive and preference-safe topology
 The `/mx` route SHALL remain usable from 320 CSS pixels through desktop widths, at 200% zoom, in forced-colors mode, and with reduced motion enabled.
 
 #### Scenario: Narrow viewport
 - **WHEN** the viewport is 320 CSS pixels wide
-- **THEN** the topology reflows vertically or yields priority to the semantic list
-- **AND** controls remain visible without page-level horizontal scrolling
+- **THEN** the topology reflows vertically or yields visual priority to the semantic list
+- **AND** no control is clipped and no page-level horizontal scrolling is required
+
+#### Scenario: Desktop viewport
+- **WHEN** sufficient width is available
+- **THEN** the SVG presents ordered layers horizontally while preserving semantic-list and details parity
 
 #### Scenario: Zoom and forced colors
 - **WHEN** the operator uses 200% zoom or forced-colors mode
@@ -125,33 +154,32 @@ The `/mx` route SHALL remain usable from 320 CSS pixels through desktop widths, 
 
 #### Scenario: Reduced motion
 - **WHEN** `prefers-reduced-motion` is enabled
-- **THEN** nonessential topology or refresh animation is disabled without removing status information
+- **THEN** nonessential topology and refresh animation is absent or disabled without removing information
 
-### Requirement: Read-only fail-closed operation
-The MX health page SHALL remain read-only and SHALL expose only adapter capabilities verified by this contract.
+### Requirement: Read-only and secret-safe operation
+The feature SHALL expose only health reads and SHALL prevent MX secrets or unsupported controls from entering public surfaces or retained artifacts.
 
-#### Scenario: Operator retries a read
-- **WHEN** the operator activates retry after a fetch failure
-- **THEN** Jcode repeats the bounded health read
-- **AND** does not restart MX, reconnect a database, refresh credentials, or claim recovery success
+#### Scenario: No mutation controls
+- **WHEN** `/mx` renders any state
+- **THEN** it contains no restart, reconnect, credential-refresh, database-repair, or other MX mutation control
+- **AND** browser interactions emit no MX mutation request
 
-#### Scenario: Recovery metadata is present
-- **WHEN** MX supplies safe redacted recovery state or explanatory action text
-- **THEN** `/mx` displays it as informational context
-- **AND** does not convert it into a mutation control without a separately approved authenticated command contract
+#### Scenario: Secret scanning
+- **WHEN** unit, browser, and managed-runtime tests complete
+- **THEN** browser payloads, logs, screenshots, traces, and retained artifacts contain no MX token, authorization header, endpoint credential, DSN, provider identity, raw provider error, or configured secret sentinel
 
-#### Scenario: Mutation controls remain absent
-- **WHEN** `/mx` renders any healthy, degraded, stale, unavailable, or recovery state
-- **THEN** it exposes no restart, reconnect, credential-refresh, database-repair, or other MX mutation control
-- **AND** browser interaction emits no MX mutation request
-
-### Requirement: Managed-runtime and secret-safety acceptance
-The integration SHALL be verified through an isolated managed Jcode runtime and the public `/mx` interface using exact-schema fixtures and a real redacted endpoint before rollout.
+### Requirement: Public managed-runtime acceptance
+The integration SHALL be accepted through an isolated managed Jcode runtime and the public authenticated `/mx` interface before rollout.
 
 #### Scenario: Deterministic state matrix
-- **WHEN** acceptance runs against healthy, degraded, stale, unauthorized, unreachable, and invalid-contract fixtures
-- **THEN** each public `/mx` state matches the expected contract behavior and accessibility assertions
+- **WHEN** the isolated MX fixture serves healthy/200, degraded/200, down/503, upstream-unauthorized, unreachable, invalid-contract, stale-sequence, and unconfigured cases
+- **THEN** the public `/mx` route matches the specified state, security, accessibility, and responsive behavior for each case
 
-#### Scenario: Secret scan
-- **WHEN** tests and managed-runtime acceptance complete
-- **THEN** browser payloads, logs, screenshots, traces, and retained artifacts contain no MX token, authorization header, DSN, endpoint credential, raw provider error, or configured secret sentinel
+#### Scenario: Existing routes remain compatible
+- **WHEN** MX configuration is absent or MX is unavailable
+- **THEN** existing Command Center inbox, ambient, find, initiative, event-stream, and authentication workflows retain their prior behavior
+
+#### Scenario: Real endpoint gate
+- **WHEN** acceptance runs against the configured real MX endpoint
+- **THEN** the daemon validates a redacted `mx.health.v1` response from the pinned-compatible authority
+- **AND** browser-observable surfaces remain secret-free

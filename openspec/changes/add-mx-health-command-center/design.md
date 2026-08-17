@@ -1,116 +1,171 @@
 ## Context
 
-MX is an external system whose health includes independent layers. Provider scans can succeed while PostgreSQL-backed request persistence or commitment intelligence is unavailable. Command Center must not collapse those conditions into one green connection dot or duplicate MX health logic. The integration crosses a secret-bearing daemon boundary, a typed Rust projection, a generated browser contract, and a visual SVG surface.
+MX is an external health authority with independent source, persistence, and workflow layers. The committed `mx.health.v1` response intentionally permits provider checks to remain `ok` while persistence is `down` and dependent workflows are `blocked`. Command Center must preserve that causal picture across a secret-bearing daemon boundary, a typed Rust projection, a generated browser contract, and an accessible visual surface.
+
+The authoritative MX input is pinned to commit `6f9ac51a419807a3636b17f5e697ae23c37cacff`. The implementation response type is:
+
+```text
+{
+  version: string,
+  generated_at: RFC3339 timestamp,
+  overall: string,
+  redacted: boolean,
+  checks: [{
+    id: string,
+    layer: string,
+    status: string,
+    reason_code: string,
+    summary: string,
+    depends_on?: string[]
+  }]
+}
+```
+
+Current produced overall values are `ok`, `degraded`, and `down`. Current check values are `ok`, `degraded`, `down`, and `blocked`. The contract does not provide per-check timestamps, cached-data state, data age, or recovery metadata.
 
 ## Goals / Non-Goals
 
 ### Goals
 
-- Consume one immutable `mx.health.v1` contract through a bounded, authenticated server-side adapter.
-- Preserve MX reason codes, states, timestamps, cached-data semantics, dependencies, and recovery metadata.
-- Render a compact topology that communicates causal degradation while remaining semantically complete without SVG or color.
-- Fail closed on authentication, transport, version, and schema errors while optionally retaining clearly stale last-known-good data.
+- Consume the pinned `mx.health.v1` contract through bounded authenticated server-side I/O.
+- Preserve MX overall/check status, reason code, safe summary, layer, generation time, and dependencies without severity upgrades.
+- Distinguish upstream MX health from Jcode adapter freshness and failures.
+- Render a compact causal topology that remains complete without SVG, pointer input, motion, or color.
+- Fail closed on auth, transport, redaction, version, schema, and safety errors.
 
 ### Non-Goals
 
-- Recompute MX health from Jcode-side probes.
+- Recompute MX health from Jcode probes.
+- Invent fields absent from `mx.health.v1`.
 - Build a generic service map or observability platform.
-- Add MX mutations, alerting, or long-term health history.
-- Expose network addresses, DSNs, tokens, account identifiers, or raw upstream errors.
+- Add MX mutations, alerting, notifications, or health history.
+- Expose endpoint values, tokens, DSNs, provider identities, or raw upstream errors.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    MX[MX gateway\nGET /health/v1] -->|Bearer auth, bounded timeout| A[Jcode MX health adapter]
-    A --> V[Version and schema validator]
+    MX[MX gateway\nGET /health/v1] -->|Bearer auth, bounded timeout| A[Jcode MX adapter]
+    A --> V[Version, redaction, and schema validator]
+    V --> C[Atomic in-memory last-known-good cache]
     V --> P[Redacted Command Center projection]
-    P --> H[Authenticated Jcode HTTP endpoint]
+    C --> P
+    P --> H[Authenticated Jcode read endpoint]
     H --> U[/mx Solid route]
     U --> S[Inline SVG topology]
-    U --> L[Semantic summary and check list]
+    U --> L[Semantic layer and check list]
     U --> D[Keyboard-accessible details]
 ```
 
-The browser requests only the Jcode projection. The daemon adapter owns the MX URL, token, timeout, response-size limit, validation, and safe error mapping. If the exact MX contract uses different field names from the exploratory draft, the adapter maps those committed fields into the Jcode projection without changing MX semantics.
+The browser requests only the Jcode projection. The adapter owns MX URL/token configuration, timeout, response-size limit, fetch coalescing, response parsing, validation, and safe error mapping.
 
-## Contract Projection
+## Contract Pinning and Drift
 
-The Jcode projection is additive to existing Command Center contracts and should include only fields justified by the pinned MX schema:
+Apply copies a minimal redacted fixture and provenance manifest into Jcode test data. The manifest records repository URL, commit, version, source paths, and SHA-256 digests from the proposal. A deterministic check verifies the fixture shape against the pinned schema/OpenAPI artifact without requiring runtime access to the sibling checkout.
 
-- protocol/schema version and pinned MX contract provenance;
-- generated/fetched timestamps and overall state;
-- redacted flag;
-- check identifier, label, layer/category, state, stable reason code, and safe summary;
-- dependency identifiers needed to draw causal edges;
-- last attempt, last success, and data age when supplied;
-- cached-data availability and explicit stale status;
-- safe recovery state/action text when supplied;
-- adapter fetch state and last-known-good timestamp.
+Any material upstream change requires a new pinned commit/digest and OpenSpec review. Additive unknown JSON fields may be ignored because Go's default decoder and the documented version remain compatible, but required known fields and their safe semantics must still validate. Unknown `overall` or check `status` values are incompatible in this Jcode release and fail closed because the current MX contract does not declare extensible enum behavior.
 
-Unknown fields are ignored only when the committed versioning rules explicitly permit additive compatibility. Unknown values for closed required enums, missing required fields, `redacted != true`, wrong major version, oversized payloads, malformed timestamps, duplicate check IDs, or dangling dependencies fail validation. If the pinned contract declares an enum extensible, the adapter must project its documented unknown-state fallback without treating it as healthy.
+## Adapter and Projection
 
-## Request and Cache Behavior
+### Upstream response handling
 
-- Use a short configurable timeout and response-size cap.
-- Coalesce concurrent refreshes so one browser burst does not fan out to MX.
-- Use a small in-memory freshness window suitable for an operator dashboard. Do not persist health history in this change.
-- On successful validation, replace the last-known-good projection atomically.
-- On fetch or validation failure, return a typed adapter state. A last-known-good projection may accompany it only with `stale: true`, the prior observation timestamp, and the current failure category.
-- Never convert an MX `degraded`, `down`, `starting`, or `recovering` state to `ok` because cached data exists.
+- Authenticate with a daemon-held bearer token.
+- Treat authenticated HTTP 200 and 503 as contract-bearing responses and validate both bodies.
+- Treat 401/403 as upstream authentication failure.
+- Treat other HTTP statuses, timeout, DNS/connect failure, body-size overflow, malformed JSON, or invalid schema as typed adapter failures.
+- Require `version == "mx.health.v1"` and `redacted == true`.
+- Require a valid UTC/RFC3339 `generated_at`, recognized `overall`, nonempty unique check IDs, recognized check statuses, nonempty layer/reason/summary values, and dependencies that reference existing IDs.
+- Preserve check ordering from MX unless the presentation applies a documented stable layer order without changing data semantics.
+
+### Jcode projection
+
+The additive projection contains:
+
+- MX contract version and pinned provenance identifier;
+- MX `generated_at` and Jcode `fetched_at`;
+- MX overall status and redaction confirmation;
+- every check's ID, layer, status, reason code, safe summary, and dependency IDs;
+- adapter state: `live`, `stale`, `unconfigured`, `unauthorized`, `unreachable`, `timeout`, or `invalid_contract`;
+- current safe failure category when adapter state is not live;
+- optional last-known-good projection with its fetch timestamp and computed age only when explicitly stale.
+
+Jcode-generated age is adapter freshness metadata, not an MX check attribute. Cached data never upgrades MX `degraded`, `down`, or `blocked` state.
+
+## Configuration and Cache Behavior
+
+- Add daemon-only MX base URL and bearer token configuration plus bounded timeout, response-size cap, refresh window, and stale-cache limit.
+- Use existing secret-safe environment/config conventions and redact configuration summaries.
+- Coalesce concurrent refreshes so a browser burst produces at most one active upstream request.
+- Keep only one in-memory last-known-good value. Do not persist history.
+- Replace it atomically only after successful validation.
+- When a fetch fails, return stale data only if it is within the configured stale limit, and label both the stale observation and the current adapter failure.
+- When unconfigured or no valid cache exists, return no fabricated checks.
+
+## Jcode HTTP Boundary
+
+Add one authenticated read endpoint under the existing Command Center router. Browser authentication and permission checks run before adapter invocation. Its response never contains MX URL, token source, authorization headers, raw body, or raw errors. Retry invokes this same bounded read endpoint. No endpoint for MX mutation is added.
 
 ## UI Composition
 
-- Add `MX` to the stable Command Center navigation and route table. When daemon MX configuration is absent, keep the route visible and render a setup-required state without exposing secret or endpoint values.
-- Page header contains the overall text state, observation age, and a concise impact statement.
-- Desktop topology flows through ordered layer groups. Dependencies determine connector state; Jcode must not invent edges absent from the validated contract or an explicitly documented fixed presentation mapping.
-- At narrow widths, the SVG uses a vertical view box or is visually secondary to the ordered semantic list. The page must not require horizontal scrolling.
-- Selecting a node opens or focuses an HTML details region with state, reason, timestamps, cached-data semantics, dependencies, and recovery text.
-- Loading uses stable geometry or a plain status region. Error states provide retry for the Jcode read only, not an MX mutation.
+- Add one stable `MX health` navigation item and `/mx` route using the existing shell.
+- Reuse `.page`, `.page-bar`, `.surface`, `.status`, `.state-card`, `.side-link`, and `.mobile-link` conventions.
+- Use existing palette tokens. `--teal` communicates `ok`; `--pink` communicates degraded/down/blocked attention; `--faint` supports unavailable/secondary state. Text and shape/iconography always accompany color.
+- Page header shows overall text status, MX generation age, adapter freshness, and concise deterministic impact copy.
+- The desktop SVG uses a horizontal layer map. Narrow layouts use a vertical map or make the ordered HTML list primary. Neither creates page-level horizontal scroll.
+- Dependencies alone determine connector edges. Jcode does not invent links absent from `depends_on`.
+- Selecting a node or equivalent list control updates one HTML details region containing the exact committed fields and adapter context.
+- Valid MX HTTP 503 renders the MX down topology, not a generic fetch error.
+- Unconfigured, unauthorized, unreachable, timeout, invalid-contract, stale, and loading states use the current Command Center state-card/surface language.
 
 ## Accessibility
 
-- The page has one `h1`, logical headings, a live status region for refresh outcome, and a visible keyboard focus indicator.
-- Status uses text and shape/iconography in addition to color. Forced-colors mode preserves boundaries and selected/focus state.
-- Interactive SVG nodes are native focusable controls where practical or are paired one-to-one with HTML controls. Connector paths and decorative marks use `aria-hidden="true"`.
-- SVG has an accessible name and description, while the semantic list contains the complete data so no user must interpret geometry.
-- Details selection and retry work by keyboard. Focus is not moved on passive refresh.
-- Animation is optional, subtle, and disabled under `prefers-reduced-motion`.
+- One `h1`, logical region headings, an accessible SVG name/description, a complete semantic list, and a concise live refresh region.
+- Interactive checks are native HTML controls mirrored visually in SVG, or SVG controls with equivalent keyboard behavior and one-to-one HTML controls.
+- Connectors and decorative marks are hidden from assistive technology.
+- Selection and retry are keyboard operable with visible focus. Passive refresh does not move focus, reset selection, or collapse details.
+- Forced-colors mode preserves boundaries, status, focus, and selection.
+- Nonessential animation is absent or disabled under `prefers-reduced-motion`.
 
 ## Security and Privacy
 
-- Configuration is daemon-side only. The MX token is loaded through Jcode's secret-safe config path and is never serialized into generated frontend configuration.
-- Logs contain stable failure categories and check IDs only. Raw MX bodies, authorization headers, URLs with credentials, DSNs, and provider error strings are excluded.
-- The Jcode route uses the existing authenticated Command Center session and permission boundary.
-- The adapter requires the upstream `redacted` assertion and rejects responses that violate it.
-- Tests use synthetic redacted fixtures and scan browser payloads/artifacts for known secret sentinels.
+- Browser code never calls MX or receives its endpoint/token configuration.
+- Logs contain stable adapter categories and safe check IDs only.
+- Raw upstream bodies, authorization headers, configured URLs containing credentials, DSNs, provider identities, account details, and raw provider errors are forbidden.
+- Upstream `redacted: true` is mandatory.
+- Fixtures contain only synthetic safe values and tests scan browser payloads, logs, screenshots, traces, and retained artifacts for secret sentinels.
 
-## Alternatives Considered
+## Compatibility and Conflicts
 
-- **Browser calls MX directly:** rejected because it exposes topology and bearer credentials and complicates CORS/authentication.
-- **Derive health from existing `/sources` plus Jcode probes:** rejected because it duplicates semantics and misses persistence/workflow degradation.
-- **Static SVG image:** rejected because it cannot express live states, keyboard details, semantic equivalence, or responsive reflow.
-- **Generic topology renderer:** rejected as unnecessary scope. This page uses one MX-specific presentation model.
-- **Mutation buttons:** rejected until MX publishes explicit authenticated mutation contracts and idempotency/receipt semantics.
+- Existing `/inbox`, `/ambient`, `/find`, and initiative routes remain unchanged.
+- The projection is additive to generated Command Center types.
+- The feature reuses the daemon-hosted lifecycle and does not create a new listener, database, or workflow authority.
+- Dirty swarm and isometric-map work is unrelated and must remain untouched.
+- Apply rechecks proposed paths for new overlap before each batch.
 
-## Risks / Trade-offs
+## Alternatives Rejected
 
-- **Contract drift:** pin immutable provenance and fail closed on incompatible versions.
-- **Stale data looks current:** label stale state at page and check level with observation age and current fetch failure.
-- **SVG accessibility regressions:** require semantic-list parity and keyboard/browser acceptance.
-- **Dense mobile layout:** prefer the list/details reading order and a simplified vertical SVG rather than shrinking desktop geometry.
-- **Active test-file overlap:** apply must adopt or isolate additions around the existing dirty baseline and review the final diff by path.
+- **Browser calls MX directly:** exposes credentials/topology and creates a second auth/CORS boundary.
+- **Infer from `/sources`:** misses persistence/workflow state and duplicates MX semantics.
+- **Treat all non-2xx as transport failure:** incorrectly hides the authoritative 503/down contract.
+- **Static image only:** cannot support live state, keyboard selection, semantic parity, or responsive reflow.
+- **Generic topology framework:** unnecessary scope.
+- **Recovery buttons:** no approved MX mutation contract exists.
 
 ## Rollout and Rollback
 
-1. Pin and fixture the committed MX contract.
-2. Land adapter and projection behind configuration; when unconfigured, the stable authenticated route remains visible and reports setup required.
-3. Add `/mx`, navigation, and fixture acceptance.
-4. Configure an isolated managed daemon against a deterministic MX fixture, then a real redacted MX endpoint.
-5. Enable the route only after secret scanning, accessibility, responsive, and managed-runtime gates pass.
+1. Land pinned fixtures, drift checks, adapter, and projection behind daemon-only configuration.
+2. Add the authenticated read endpoint and safe state matrix.
+3. Add `/mx`, navigation, semantic UI, and SVG topology.
+4. Pass deterministic fixture acceptance through the isolated managed daemon.
+5. Exercise the real redacted MX endpoint without retaining secrets.
 
-Rollback removes the navigation exposure and disables MX configuration. Existing Command Center routes and contracts remain compatible because the projection is additive and read-only.
+Rollback disables MX configuration and removes navigation exposure while preserving all existing Command Center behavior. The route may continue to show setup-required during staged rollout.
 
-## External Gate
+## Verification Strategy
 
-Implementation is blocked until the exact committed MX contract is locally inspectable and its repository SHA, artifact path, schema version, compatibility rules, and SHA-256 digest are recorded in this change's implementation evidence. If the committed contract differs materially from the fields assumed here, update and revalidate this OpenSpec change before coding.
+- Rust tests cover validation, HTTP 200/503 contract responses, auth/transport failures, coalescing, stale caching, redaction, and secret safety.
+- Contract generation checks ensure additive deterministic TypeScript output.
+- Solid tests cover every UI state, semantic/SVG parity, keyboard selection, retry, passive refresh stability, and no mutation controls.
+- Playwright covers 320/768/desktop widths, 200% zoom, forced colors, reduced motion, no horizontal overflow, session auth failures, and public `/mx` state behavior.
+- The isolated managed-daemon launcher serves exact-schema healthy, degraded, down/503, unauthorized, unreachable, invalid, and stale sequences.
+- A real endpoint gate verifies only the redacted contract shape and browser secret absence.
