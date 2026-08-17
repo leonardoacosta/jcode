@@ -290,6 +290,7 @@ pub struct ExternalSignalStore {
     pub signals: BTreeMap<String, ExternalSignal>,
     pub lifecycles: BTreeMap<String, LifecycleAggregate>,
     pub attention: BTreeMap<String, AttentionEvidence>,
+    #[serde(default)]
     pub dead_letters: BTreeMap<String, DeadLetterRecord>,
     pub accepted_count: u64,
     pub deduplicated_count: u64,
@@ -1304,5 +1305,38 @@ mod tests {
         let persisted = load_store(&state.path).unwrap();
         assert_eq!(persisted.accepted_count, 2);
         assert!(state.path.with_extension("bak").exists());
+    }
+
+    #[tokio::test]
+    async fn admission_migrates_legacy_store_without_dead_letters_field() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("state.json");
+        let cfg = config();
+        let mut legacy = serde_json::to_value(ExternalSignalStore::default()).unwrap();
+        legacy.as_object_mut().unwrap().remove("dead_letters");
+        std::fs::write(&path, serde_json::to_vec(&legacy).unwrap()).unwrap();
+
+        let state = IngressState {
+            config: cfg,
+            path,
+            gate: Arc::new(Mutex::new(())),
+        };
+        let headers = HeaderMap::from_iter([(
+            header::CONTENT_TYPE,
+            "application/json".parse().unwrap(),
+        )]);
+        let body = payload(
+            "firing",
+            "high",
+            "2026-08-17T04:00:00Z",
+            "0001-01-01T00:00:00Z",
+        );
+
+        let (status, receipt) = admit_inner(&state, &headers, &body).unwrap();
+        assert_eq!(status, StatusCode::ACCEPTED);
+        assert_eq!(receipt.outcome, "accepted");
+        let persisted = load_store(&state.path).unwrap();
+        assert_eq!(persisted.accepted_count, 1);
+        assert!(persisted.dead_letters.is_empty());
     }
 }
