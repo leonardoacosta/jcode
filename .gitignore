@@ -43,6 +43,7 @@
 /models/
 /scratch/
 /source/
+/artifacts/
 /private/
 /quarantine/
 /migrations/
@@ -84,6 +85,7 @@ ios_simulator_screenshot.png
 target-ttest/
 target-ttest*/
 captures/
+/docs/diagrams/main-dev-delta.html
 /*.log
 /*.avif
 /*.mp4
