@@ -221,7 +221,7 @@ impl Tool for BrowserTool {
             "profile".into(),
             json!({
                 "type": "string",
-                "description": "Explicit agent-browser Chrome profile name. Names only; paths are rejected. Custom profiles under the agent-browser profile directory are resolved safely. Chrome only. Repeat on each action that should use the profile."
+                "description": "Agent-browser Chrome profile name, not a path. Repeat it on each action using the profile."
             }),
         );
         properties.insert(

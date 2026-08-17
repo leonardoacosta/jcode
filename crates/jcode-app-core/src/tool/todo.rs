@@ -815,17 +815,17 @@ impl Tool for TodoTool {
                             "feedback_loop_relevance": {
                                 "type": "string",
                                 "enum": ["indirect", "synthetic", "representative", "acceptance_blocked", "acceptance_aligned"],
-                                "description": "How directly checks represent observable acceptance behavior. indirect = inspection or an internal proxy; synthetic = custom harnesses, stubs, mocks, copied sources, or synthetic fixtures; representative = real public interfaces but not the complete acceptance workflow; acceptance_blocked = the real acceptance workflow was attempted but an external constraint prevented a result; acceptance_aligned = the real project build, integration test, or end-user workflow passed. Substitute-only validation is never acceptance_aligned."
+                                "description": "Acceptance realism. acceptance_aligned requires passed real public interfaces; substitutes are not."
                             },
                             "feedback_loop_coverage": {
                                 "type": "string",
                                 "enum": ["narrow", "main_paths", "edge_and_integration_paths"],
-                                "description": "How broadly the checks exercise main workflows, integration boundaries, edge cases, packaging, and likely failure modes."
+                                "description": "Workflows, integration boundaries, edge cases, packaging, and likely failure modes exercised."
                             },
                             "feedback_loop_traceability": {
                                 "type": "string",
                                 "enum": ["unmapped", "partial", "complete"],
-                                "description": "How completely requirements map to evidence. unmapped = requirements are not tied to checks; partial = only some explicit requirements or changed public outputs have concrete checks and observed results; complete = every explicit requirement and changed public output has a concrete check and observed result. Aggregate test counts alone do not establish complete traceability."
+                                "description": "Map evidence to requirements and changed outputs; test counts alone are not complete traceability."
                             },
                             "delivery_state": {
                                 "type": "string",
@@ -1053,10 +1053,9 @@ mod tests {
             .as_str()
             .expect("feedback-loop relevance should explain every state");
         for required_concept in [
-            "custom harnesses",
             "real public interfaces",
-            "external constraint",
-            "Substitute-only validation is never acceptance_aligned",
+            "acceptance_aligned",
+            "substitutes",
         ] {
             assert!(relevance_description.contains(required_concept));
         }
