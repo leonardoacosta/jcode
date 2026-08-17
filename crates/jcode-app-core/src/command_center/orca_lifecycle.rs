@@ -275,10 +275,12 @@ impl OrcaLifecycleAdapter {
         };
         let live = match self.canonical_placement().await {
             Ok(placement) => placement,
-            Err(error) => return RuntimeCommandExecution::failed(error),
+            Err(error) => {
+                return self.mark_recovery(record, OrcaMutationStage::RunCreate, error);
+            }
         };
         if let Err(error) = compare_placement(&request.placement, &live) {
-            return RuntimeCommandExecution::failed(error);
+            return self.mark_recovery(record, OrcaMutationStage::RunCreate, error);
         }
         let record = match self.persist_placement(&record, &request.placement) {
             Ok(record) => record,
@@ -296,6 +298,38 @@ impl OrcaLifecycleAdapter {
             "[jcode-cc:{}] {}",
             request.context.command_id.0, request.objective
         );
+        if record.orca_run_id.is_none()
+            && record
+                .requests
+                .iter()
+                .any(|request| request.stage == OrcaMutationStage::RunCreate.as_str())
+        {
+            match self.reconcile_run_marker(&objective).await {
+                Ok(Some((run_id, evidence))) => {
+                    record = match self.append_receipt(
+                        &record,
+                        OrcaMutationStage::RunCreate,
+                        "reconciled",
+                        evidence,
+                        OrcaOperationUpdate {
+                            state: Some(OrcaOperationState::InProgress),
+                            orca_run_id: Some(run_id),
+                            ..update_now()
+                        },
+                    ) {
+                        Ok(record) => record,
+                        Err(error) => return RuntimeCommandExecution::failed(error),
+                    };
+                }
+                Ok(None) if record.state == OrcaOperationState::OutcomeUnknown => {
+                    return execution_from_record(&record);
+                }
+                Ok(None) => {}
+                Err(error) => {
+                    return self.mark_recovery(record, OrcaMutationStage::RunCreate, error);
+                }
+            }
+        }
         if record.orca_run_id.is_none() {
             let request_id =
                 orca_request_id(&request.context.command_id, OrcaMutationStage::RunCreate);
@@ -314,24 +348,29 @@ impl OrcaLifecycleAdapter {
                 .persist_and_invoke(
                     &record,
                     OrcaMutationStage::RunCreate,
-                    request_id,
+                    request_id.clone(),
                     args,
                     json!({"objective": objective, "terminal": self.coordinator.terminal}),
                 )
                 .await
             {
                 Ok(output) => output,
-                Err(CommandCenterError::OrcaUnavailable) => {
-                    return RuntimeCommandExecution::failed(CommandCenterError::OrcaUnavailable);
-                }
                 Err(error) => {
-                    return self.mark_unknown(record, OrcaMutationStage::RunCreate, error);
+                    return self.handle_invocation_error(
+                        record,
+                        OrcaMutationStage::RunCreate,
+                        error,
+                    );
                 }
             };
-            let parsed = match parse_run_create(&output) {
+            let parsed = match parse_run_create(&output, Some(&request_id)) {
                 Ok(parsed) => parsed,
                 Err(error) => {
-                    return self.mark_unknown(record, OrcaMutationStage::RunCreate, error);
+                    return self.handle_invocation_error(
+                        record,
+                        OrcaMutationStage::RunCreate,
+                        error,
+                    );
                 }
             };
             record = match self.append_receipt(
@@ -354,6 +393,40 @@ impl OrcaLifecycleAdapter {
             return self.mark_recovery(record, OrcaMutationStage::RunBind, error);
         }
 
+        if record.orca_task_id.is_none() {
+            let display_name = format!("jcode-cc:{}:initial", request.context.command_id.0);
+            if record
+                .requests
+                .iter()
+                .any(|request| request.stage == OrcaMutationStage::TaskCreate.as_str())
+            {
+                match self.reconcile_task_marker(&run_id, &display_name).await {
+                    Ok(Some((task_id, evidence))) => {
+                        record = match self.append_receipt(
+                            &record,
+                            OrcaMutationStage::TaskCreate,
+                            "reconciled",
+                            evidence,
+                            OrcaOperationUpdate {
+                                state: Some(OrcaOperationState::InProgress),
+                                orca_task_id: Some(task_id),
+                                ..update_now()
+                            },
+                        ) {
+                            Ok(record) => record,
+                            Err(error) => return RuntimeCommandExecution::failed(error),
+                        };
+                    }
+                    Ok(None) if record.state == OrcaOperationState::OutcomeUnknown => {
+                        return execution_from_record(&record);
+                    }
+                    Ok(None) => {}
+                    Err(error) => {
+                        return self.mark_recovery(record, OrcaMutationStage::TaskCreate, error);
+                    }
+                }
+            }
+        }
         if record.orca_task_id.is_none() {
             let request_id =
                 orca_request_id(&request.context.command_id, OrcaMutationStage::TaskCreate);
@@ -380,24 +453,29 @@ impl OrcaLifecycleAdapter {
                 .persist_and_invoke(
                     &record,
                     OrcaMutationStage::TaskCreate,
-                    request_id,
+                    request_id.clone(),
                     args,
                     json!({"spec": spec, "displayName": display_name, "runId": run_id}),
                 )
                 .await
             {
                 Ok(output) => output,
-                Err(CommandCenterError::OrcaUnavailable) => {
-                    return RuntimeCommandExecution::failed(CommandCenterError::OrcaUnavailable);
-                }
                 Err(error) => {
-                    return self.mark_unknown(record, OrcaMutationStage::TaskCreate, error);
+                    return self.handle_invocation_error(
+                        record,
+                        OrcaMutationStage::TaskCreate,
+                        error,
+                    );
                 }
             };
-            let parsed = match parse_task_create(&output, &run_id) {
+            let parsed = match parse_task_create(&output, &run_id, Some(&request_id)) {
                 Ok(parsed) => parsed,
                 Err(error) => {
-                    return self.mark_unknown(record, OrcaMutationStage::TaskCreate, error);
+                    return self.handle_invocation_error(
+                        record,
+                        OrcaMutationStage::TaskCreate,
+                        error,
+                    );
                 }
             };
             record = match self.append_receipt(
@@ -442,12 +520,13 @@ impl OrcaLifecycleAdapter {
             match result {
                 Ok(updated) => record = updated,
                 Err(WorkerMutationFailure::Unavailable) => {
-                    return RuntimeCommandExecution::failed(CommandCenterError::OrcaUnavailable);
+                    return self.mark_unavailable(record, OrcaMutationStage::WorkerStart);
                 }
                 Err(WorkerMutationFailure::Execution(execution)) => return execution,
             }
         }
-        self.observe_attempt(record, None).await
+        self.observe_attempt(record, None, OrcaMutationStage::WorkerStart)
+            .await
     }
 
     pub(super) async fn retry(&self, request: RetryLinkedRunRequest) -> RuntimeCommandExecution {
@@ -466,10 +545,12 @@ impl OrcaLifecycleAdapter {
         };
         let live = match self.canonical_placement().await {
             Ok(placement) => placement,
-            Err(error) => return RuntimeCommandExecution::failed(error),
+            Err(error) => {
+                return self.mark_recovery(record, OrcaMutationStage::WorkerRetry, error);
+            }
         };
         if let Err(error) = compare_placement(&request.placement, &live) {
-            return RuntimeCommandExecution::failed(error);
+            return self.mark_recovery(record, OrcaMutationStage::WorkerRetry, error);
         }
         let mut record = match self.persist_placement(&record, &request.placement) {
             Ok(record) => record,
@@ -495,7 +576,11 @@ impl OrcaLifecycleAdapter {
                 );
             }
             return self
-                .observe_attempt(record, Some(request.retry_of_dispatch_id))
+                .observe_attempt(
+                    record,
+                    Some(request.retry_of_dispatch_id),
+                    OrcaMutationStage::WorkerRetry,
+                )
                 .await;
         }
 
@@ -564,7 +649,7 @@ impl OrcaLifecycleAdapter {
         {
             Ok(updated) => record = updated,
             Err(WorkerMutationFailure::Unavailable) => {
-                return RuntimeCommandExecution::failed(CommandCenterError::OrcaUnavailable);
+                return self.mark_unavailable(record, OrcaMutationStage::WorkerRetry);
             }
             Err(WorkerMutationFailure::Execution(execution)) => return execution,
         }
@@ -575,8 +660,12 @@ impl OrcaLifecycleAdapter {
                 schema_mismatch("retry returned the prior Dispatch ID"),
             );
         }
-        self.observe_attempt(record, Some(request.retry_of_dispatch_id))
-            .await
+        self.observe_attempt(
+            record,
+            Some(request.retry_of_dispatch_id),
+            OrcaMutationStage::WorkerRetry,
+        )
+        .await
     }
 
     pub(super) async fn cancel(&self, request: CancelLinkedRunRequest) -> RuntimeCommandExecution {
@@ -618,18 +707,14 @@ impl OrcaLifecycleAdapter {
                 schema_mismatch("cancel preflight identity mismatch"),
             );
         }
-        let stop_receipted = record.receipts.iter().any(|receipt| {
-            receipt.request_id
-                == format!(
-                    "{}:{}",
-                    record.command_id.0,
-                    OrcaMutationStage::WorkerStop.as_str()
-                )
-        });
-        if stop_receipted && before.state == "stopped" {
+        let stop_requested = record
+            .requests
+            .iter()
+            .any(|request| request.stage == OrcaMutationStage::WorkerStop.as_str());
+        if stop_requested && before.state == "stopped" {
             return self.release_stopped(record, request, before).await;
         }
-        if stop_receipted && before.state == "stop_unknown" {
+        if stop_requested && before.state == "stop_unknown" {
             return self.abandon(record, request, before).await;
         }
         match before.state.as_str() {
@@ -784,6 +869,34 @@ impl OrcaLifecycleAdapter {
         {
             Ok(output) => output,
             Err(error) => {
+                let recovery =
+                    observation
+                        .terminal_id
+                        .as_ref()
+                        .map(|terminal| OrcaRecoveryObligation {
+                            id: format!("{}:terminal-release", record.command_id.0),
+                            resource_kind: "terminal".into(),
+                            resource_id: Some(terminal.0.clone()),
+                            action: "retry_worker_release_with_same_request".into(),
+                            state: OrcaRecoveryState::OutcomeUnknown,
+                            evidence: Some(json!({"error": error.to_string()})),
+                            updated_at: Utc::now(),
+                        });
+                record = match self.append_receipt(
+                    &record,
+                    OrcaMutationStage::WorkerRelease,
+                    "release_unknown",
+                    json!({"error": error.to_string()}),
+                    OrcaOperationUpdate {
+                        state: Some(OrcaOperationState::Completed),
+                        orca_terminal_id: observation.terminal_id.clone(),
+                        recovery: recovery.into_iter().collect(),
+                        ..update_now()
+                    },
+                ) {
+                    Ok(record) => record,
+                    Err(store_error) => return RuntimeCommandExecution::failed(store_error),
+                };
                 let cleanup = terminal_cleanup(
                     observation.terminal_id.as_ref(),
                     CleanupResourceState::RecoveryRequired,
@@ -1015,7 +1128,9 @@ impl OrcaLifecycleAdapter {
             match request {
                 OrcaTypedOperationRequest::StartInitiativeRun(request) => {
                     if record.orca_dispatch_id.is_some() {
-                        let _ = self.observe_attempt(record.clone(), None).await;
+                        let _ = self
+                            .observe_attempt(record.clone(), None, OrcaMutationStage::WorkerStart)
+                            .await;
                     } else {
                         let _ = self.start(request).await;
                     }
@@ -1026,6 +1141,7 @@ impl OrcaLifecycleAdapter {
                             .observe_attempt(
                                 record.clone(),
                                 Some(request.retry_of_dispatch_id.clone()),
+                                OrcaMutationStage::WorkerRetry,
                             )
                             .await;
                     } else {
@@ -1115,12 +1231,12 @@ impl OrcaLifecycleAdapter {
             .persist_and_invoke(
                 record,
                 OrcaMutationStage::RunBind,
-                request_id,
+                request_id.clone(),
                 args,
                 json!({"runId": run_id, "terminal": self.coordinator.terminal}),
             )
             .await?;
-        let raw = parse_bound_run(&output, run_id)?;
+        let raw = parse_bound_run(&output, run_id, Some(&request_id))?;
         self.append_receipt(
             record,
             OrcaMutationStage::RunBind,
@@ -1174,7 +1290,7 @@ impl OrcaLifecycleAdapter {
             .persist_and_invoke(
                 record,
                 stage,
-                request_id,
+                request_id.clone(),
                 args,
                 json!({
                     "runId": run_id,
@@ -1198,14 +1314,12 @@ impl OrcaLifecycleAdapter {
                 )));
             }
         };
-        let parsed = match parse_worker_start(&output, run_id, task_id) {
+        let parsed = match parse_worker_start(&output, run_id, task_id, Some(&request_id)) {
             Ok(parsed) => parsed,
             Err(error) => {
-                return Err(WorkerMutationFailure::Execution(self.mark_unknown(
-                    record.clone(),
-                    stage,
-                    error,
-                )));
+                return Err(WorkerMutationFailure::Execution(
+                    self.handle_invocation_error(record.clone(), stage, error),
+                ));
             }
         };
         let operation_state = match parsed.state.as_str() {
@@ -1270,11 +1384,12 @@ impl OrcaLifecycleAdapter {
         &self,
         mut record: OrcaOperationRecord,
         retry_of: Option<OrcaDispatchId>,
+        stage: OrcaMutationStage,
     ) -> RuntimeCommandExecution {
         let dispatch_id = record.orca_dispatch_id.clone().expect("dispatch persisted");
         let observation = match self.worker_show(&dispatch_id).await {
             Ok(observation) => observation,
-            Err(error) => return self.mark_unknown(record, OrcaMutationStage::WorkerStart, error),
+            Err(error) => return self.mark_unknown(record, stage, error),
         };
         if record.orca_run_id.as_ref() != Some(&observation.run_id)
             || record.orca_task_id.as_ref() != Some(&observation.task_id)
@@ -1283,9 +1398,50 @@ impl OrcaLifecycleAdapter {
         {
             return self.mark_recovery(
                 record,
-                OrcaMutationStage::WorkerStart,
+                stage,
                 schema_mismatch("worker-show identity or placement mismatch"),
             );
+        }
+        if observation.state == "ready" {
+            let expected = typed_request(&record).and_then(|request| match request {
+                OrcaTypedOperationRequest::StartInitiativeRun(request) => Some(request.placement),
+                OrcaTypedOperationRequest::RetryLinkedRun(request) => Some(request.placement),
+                OrcaTypedOperationRequest::CancelLinkedRun(_) => None,
+            });
+            if let Some(expected) = expected {
+                match expected.launcher {
+                    OrcaWorkerLauncher::Agent {
+                        agent,
+                        model,
+                        effort,
+                    } => {
+                        if observation.terminal_id.is_none()
+                            || observation.agent.as_deref() != Some(agent.as_str())
+                            || observation.model != model
+                            || observation.effort != effort
+                        {
+                            return self.mark_recovery(
+                                record,
+                                stage,
+                                schema_mismatch(
+                                    "worker-show did not confirm the exact agent launch placement",
+                                ),
+                            );
+                        }
+                    }
+                    OrcaWorkerLauncher::ExistingTerminal { terminal_id } => {
+                        if observation.terminal_id.as_ref() != Some(&terminal_id) {
+                            return self.mark_recovery(
+                                record,
+                                stage,
+                                schema_mismatch(
+                                    "worker-show did not confirm the exact terminal placement",
+                                ),
+                            );
+                        }
+                    }
+                }
+            }
         }
         let (outcome, state) = match observation.state.as_str() {
             "ready" => (OrcaMutationOutcome::Ready, OrcaOperationState::Ready),
@@ -1297,7 +1453,7 @@ impl OrcaLifecycleAdapter {
             other => {
                 return self.mark_recovery(
                     record,
-                    OrcaMutationStage::WorkerStart,
+                    stage,
                     schema_mismatch(format!("unexpected worker state after start: {other}")),
                 );
             }
@@ -1323,6 +1479,60 @@ impl OrcaLifecycleAdapter {
             Vec::new(),
             retry_of,
         )
+    }
+
+    async fn reconcile_run_marker(
+        &self,
+        objective: &str,
+    ) -> Result<Option<(OrcaRunId, Value)>, CommandCenterError> {
+        let result = self
+            .read_result(&["orchestration", "run-list", "--json"])
+            .await?;
+        let runs = required_array(&result, "runs")?;
+        let matching = runs
+            .iter()
+            .filter_map(Value::as_object)
+            .filter(|run| string_alias(run, &["objective"]) == Some(objective))
+            .collect::<Vec<_>>();
+        match matching.as_slice() {
+            [] => Ok(None),
+            [run] => {
+                let run_id = OrcaRunId(required_string(run, "id")?.to_string());
+                Ok(Some((run_id, json!({"reconciledRun": run}))))
+            }
+            _ => Err(CommandCenterError::OrcaOperationRecoveryRequired {
+                stage: "run_create_marker_ambiguous".into(),
+            }),
+        }
+    }
+
+    async fn reconcile_task_marker(
+        &self,
+        run_id: &OrcaRunId,
+        display_name: &str,
+    ) -> Result<Option<(OrcaTaskId, Value)>, CommandCenterError> {
+        let result = self
+            .read_result(&["orchestration", "task-list", "--run", &run_id.0, "--json"])
+            .await?;
+        let tasks = required_array(&result, "tasks")?;
+        let matching = tasks
+            .iter()
+            .filter_map(Value::as_object)
+            .filter(|task| {
+                string_alias(task, &["run_id", "runId"]) == Some(run_id.0.as_str())
+                    && string_alias(task, &["display_name", "displayName"]) == Some(display_name)
+            })
+            .collect::<Vec<_>>();
+        match matching.as_slice() {
+            [] => Ok(None),
+            [task] => {
+                let task_id = OrcaTaskId(required_string(task, "id")?.to_string());
+                Ok(Some((task_id, json!({"reconciledTask": task}))))
+            }
+            _ => Err(CommandCenterError::OrcaOperationRecoveryRequired {
+                stage: "task_create_marker_ambiguous".into(),
+            }),
+        }
     }
 
     async fn task_status(
@@ -1402,6 +1612,22 @@ impl OrcaLifecycleAdapter {
         let effects = effects_from_alias(worker, &["effects"])?;
         let residual_resources =
             effects_from_alias(worker, &["residualResources", "residual_resources"])?;
+        let start_options = worker
+            .get("startOptions")
+            .or_else(|| worker.get("start_options"))
+            .and_then(Value::as_object);
+        let effective_launch = start_options
+            .and_then(|options| options.get("launch"))
+            .and_then(Value::as_object)
+            .and_then(|launch| launch.get("effective"))
+            .and_then(Value::as_object);
+        let launch_value = |key: &str| {
+            start_options
+                .and_then(|options| options.get(key))
+                .and_then(Value::as_str)
+                .or_else(|| effective_launch.and_then(|launch| string_alias(launch, &[key])))
+                .map(str::to_string)
+        };
         Ok(WorkerObservation {
             dispatch_id: OrcaDispatchId(required_string(dispatch, "id")?.to_string()),
             run_id: OrcaRunId(required_string_alias(dispatch, &["run_id", "runId"])?.to_string()),
@@ -1418,6 +1644,9 @@ impl OrcaLifecycleAdapter {
             terminal_id: string_alias(worker, &["agent_terminal_handle", "agentTerminalHandle"])
                 .filter(|value| !value.is_empty())
                 .map(|value| OrcaTerminalId(value.to_string())),
+            agent: launch_value("agent"),
+            model: launch_value("model"),
+            effort: launch_value("effort"),
             last_error: string_alias(worker, &["last_error", "lastError"]).map(str::to_string),
             effects,
             residual_resources,
@@ -1565,6 +1794,56 @@ impl OrcaLifecycleAdapter {
         )
     }
 
+    fn mark_unavailable(
+        &self,
+        record: OrcaOperationRecord,
+        stage: OrcaMutationStage,
+    ) -> RuntimeCommandExecution {
+        let updated = self
+            .store
+            .update(
+                &record.command_id,
+                OrcaOperationUpdate {
+                    state: Some(OrcaOperationState::Failed),
+                    ..update_now()
+                },
+            )
+            .unwrap_or(record);
+        let mut execution = lifecycle_execution(
+            &updated,
+            OrcaMutationOutcome::Failed,
+            stage.as_str().into(),
+            Some(CommandCenterError::OrcaUnavailable.to_string()),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            None,
+        );
+        execution.error = Some(CommandCenterError::OrcaUnavailable);
+        execution
+    }
+
+    fn handle_invocation_error(
+        &self,
+        record: OrcaOperationRecord,
+        stage: OrcaMutationStage,
+        error: CommandCenterError,
+    ) -> RuntimeCommandExecution {
+        match error {
+            CommandCenterError::OrcaUnavailable => self.mark_unavailable(record, stage),
+            CommandCenterError::OrcaOperationOutcomeUnknown { .. } => {
+                self.mark_unknown(record, stage, error)
+            }
+            CommandCenterError::OrcaSchemaMismatch { .. }
+            | CommandCenterError::OrcaProfileMismatch { .. }
+            | CommandCenterError::OrcaReceiptIdentityConflict { .. }
+            | CommandCenterError::OrcaOperationRecoveryRequired { .. } => {
+                self.mark_recovery(record, stage, error)
+            }
+            _ => self.mark_recovery(record, stage, error),
+        }
+    }
+
     fn mark_recovery(
         &self,
         record: OrcaOperationRecord,
@@ -1677,6 +1956,9 @@ struct WorkerObservation {
     stage: String,
     worktree_id: OrcaWorktreeId,
     terminal_id: Option<OrcaTerminalId>,
+    agent: Option<String>,
+    model: Option<String>,
+    effort: Option<String>,
     last_error: Option<String>,
     effects: Vec<OrcaEffectReceipt>,
     residual_resources: Vec<OrcaEffectReceipt>,
@@ -1709,7 +1991,10 @@ struct EnvelopeError {
     data: Option<Value>,
 }
 
-fn parse_run_create(output: &OrcaCommandOutput) -> Result<ParsedRunCreate, CommandCenterError> {
+fn parse_run_create(
+    output: &OrcaCommandOutput,
+    expected_request: Option<&OrcaRequestId>,
+) -> Result<ParsedRunCreate, CommandCenterError> {
     let envelope = parse_mutation_envelope(output)?;
     require_success_exit(output, &envelope, "run-create")?;
     let result = envelope
@@ -1720,6 +2005,7 @@ fn parse_run_create(output: &OrcaCommandOutput) -> Result<ParsedRunCreate, Comma
         &["run", "binding", "mutation"],
         "run-create result",
     )?;
+    validate_mutation_request(&result, expected_request)?;
     let run = required_object(&result, "run")?;
     let run_id = required_string(run, "id")?;
     if run_id.is_empty() {
@@ -1734,8 +2020,9 @@ fn parse_run_create(output: &OrcaCommandOutput) -> Result<ParsedRunCreate, Comma
 fn parse_bound_run(
     output: &OrcaCommandOutput,
     expected: &OrcaRunId,
+    expected_request: Option<&OrcaRequestId>,
 ) -> Result<Value, CommandCenterError> {
-    let parsed = parse_run_create(output)?;
+    let parsed = parse_run_create(output, expected_request)?;
     if parsed.run_id != *expected {
         return Err(schema_mismatch("run-use returned a different Run ID"));
     }
@@ -1745,6 +2032,7 @@ fn parse_bound_run(
 fn parse_task_create(
     output: &OrcaCommandOutput,
     expected_run: &OrcaRunId,
+    expected_request: Option<&OrcaRequestId>,
 ) -> Result<ParsedTaskCreate, CommandCenterError> {
     let envelope = parse_mutation_envelope(output)?;
     require_success_exit(output, &envelope, "task-create")?;
@@ -1756,6 +2044,7 @@ fn parse_task_create(
         &["task", "mutation"],
         "task-create result",
     )?;
+    validate_mutation_request(&result, expected_request)?;
     let task = required_object(&result, "task")?;
     if let Some(run_id) = string_alias(task, &["run_id", "runId"])
         && run_id != expected_run.0
@@ -1772,6 +2061,7 @@ fn parse_worker_start(
     output: &OrcaCommandOutput,
     expected_run: &OrcaRunId,
     expected_task: &OrcaTaskId,
+    expected_request: Option<&OrcaRequestId>,
 ) -> Result<ParsedWorkerStart, CommandCenterError> {
     let envelope = parse_mutation_envelope(output)?;
     if !envelope.ok {
@@ -1787,11 +2077,19 @@ fn parse_worker_start(
             if output.exit_code == Some(0) {
                 return Err(schema_mismatch("operation_unknown exited successfully"));
             }
+            let effects = data
+                .map(|data| effects_from_alias(data, &["effects"]))
+                .transpose()?
+                .unwrap_or_default();
+            let residual_resources = data
+                .map(|data| effects_from_alias(data, &["residualResources", "residual_resources"]))
+                .transpose()?
+                .unwrap_or_default();
             return Ok(ParsedWorkerStart {
                 dispatch_id: OrcaDispatchId(dispatch.to_string()),
                 state: "outcome_unknown".into(),
-                effects: Vec::new(),
-                residual_resources: Vec::new(),
+                effects,
+                residual_resources,
                 raw: serde_json::to_value(&envelope).unwrap_or(Value::Null),
             });
         }
@@ -1821,6 +2119,7 @@ fn parse_worker_start(
         ],
         "worker-start result",
     )?;
+    validate_mutation_request(&result, expected_request)?;
     if string_from_value(&result, &["runId"]).as_deref() != Some(expected_run.0.as_str())
         || string_from_value(&result, &["taskId"]).as_deref() != Some(expected_task.0.as_str())
     {
@@ -2042,7 +2341,9 @@ fn map_envelope_error(envelope: &Envelope) -> CommandCenterError {
         "operation_unknown" => CommandCenterError::OrcaOperationOutcomeUnknown {
             stage: "operation_unknown".into(),
         },
-        "runtime_unavailable" => CommandCenterError::OrcaUnavailable,
+        "runtime_unavailable" => CommandCenterError::OrcaOperationOutcomeUnknown {
+            stage: "runtime_unavailable_after_invoke".into(),
+        },
         code => schema_mismatch(format!("unknown Orca error code {code}")),
     }
 }
@@ -2094,6 +2395,10 @@ fn lifecycle_execution(
 }
 
 fn execution_from_record(record: &OrcaOperationRecord) -> RuntimeCommandExecution {
+    let mut stage = "stored_operation".to_string();
+    let mut last_error = None;
+    let mut residual_resources = Vec::new();
+    let mut cleanup = recovery_cleanup(record);
     let outcome = match record.state {
         OrcaOperationState::Recorded
         | OrcaOperationState::InProgress
@@ -2102,7 +2407,55 @@ fn execution_from_record(record: &OrcaOperationRecord) -> RuntimeCommandExecutio
         OrcaOperationState::Rejected => OrcaMutationOutcome::Rejected,
         OrcaOperationState::Failed => OrcaMutationOutcome::Failed,
         OrcaOperationState::RecoveryRequired => OrcaMutationOutcome::RecoveryRequired,
-        OrcaOperationState::Completed => OrcaMutationOutcome::AlreadySettled,
+        OrcaOperationState::Completed => {
+            if let Some(receipt) = record.receipts.iter().rev().find(|receipt| {
+                record
+                    .requests
+                    .iter()
+                    .find(|request| request.id == receipt.request_id)
+                    .is_some_and(|request| {
+                        matches!(request.stage.as_str(), "worker_release" | "worker_abandon")
+                    })
+            }) {
+                let receipt_stage = record
+                    .requests
+                    .iter()
+                    .find(|request| request.id == receipt.request_id)
+                    .map(|request| request.stage.as_str())
+                    .expect("terminal receipt must reference a persisted request");
+                stage = receipt_stage.to_string();
+                last_error = string_from_value(&receipt.payload, &["lastError"]);
+                match receipt_stage {
+                    "worker_release" => {
+                        let cleanup_state =
+                            if matches!(receipt.status.as_str(), "released" | "already_released") {
+                                CleanupResourceState::VerifiedReleased
+                            } else {
+                                CleanupResourceState::RecoveryRequired
+                            };
+                        cleanup = terminal_cleanup(
+                            record.orca_terminal_id.as_ref(),
+                            cleanup_state,
+                            format!("worker-release returned {}", receipt.status),
+                        );
+                        OrcaMutationOutcome::Stopped
+                    }
+                    "worker_abandon" => {
+                        residual_resources = receipt
+                            .payload
+                            .as_object()
+                            .and_then(|payload| {
+                                effects_from_alias(payload, &["residualResources"]).ok()
+                            })
+                            .unwrap_or_default();
+                        OrcaMutationOutcome::Abandoned
+                    }
+                    _ => unreachable!("filtered terminal cancellation receipt"),
+                }
+            } else {
+                OrcaMutationOutcome::AlreadySettled
+            }
+        }
     };
     let retry_of = match typed_request(record) {
         Some(OrcaTypedOperationRequest::RetryLinkedRun(request)) => {
@@ -2113,11 +2466,11 @@ fn execution_from_record(record: &OrcaOperationRecord) -> RuntimeCommandExecutio
     lifecycle_execution(
         record,
         outcome,
-        "stored_operation".into(),
-        None,
+        stage,
+        last_error,
         Vec::new(),
-        Vec::new(),
-        recovery_cleanup(record),
+        residual_resources,
+        cleanup,
         retry_of,
     )
 }
@@ -2309,6 +2662,33 @@ fn require_dispatch(
         return Err(schema_mismatch(format!(
             "{command} returned a different Dispatch ID"
         )));
+    }
+    Ok(())
+}
+
+fn validate_mutation_request(
+    result: &Value,
+    expected: Option<&OrcaRequestId>,
+) -> Result<(), CommandCenterError> {
+    let Some(expected) = expected else {
+        return Ok(());
+    };
+    let Some(mutation) = result.get("mutation") else {
+        // The pinned 1.4.176 fixture corpus predates mutation metadata on a few
+        // success fixtures. When the runtime supplies it, it is authoritative.
+        return Ok(());
+    };
+    let mutation = mutation
+        .as_object()
+        .ok_or_else(|| schema_mismatch("mutation metadata is not an object"))?;
+    validate_keys(mutation, &["requestId", "replayed"], "mutation metadata")?;
+    if required_string(mutation, "requestId")? != expected.0 {
+        return Err(CommandCenterError::OrcaReceiptIdentityConflict {
+            field: "Orca mutation request_id".into(),
+        });
+    }
+    if !mutation.get("replayed").is_some_and(Value::is_boolean) {
+        return Err(schema_mismatch("mutation metadata omitted replayed"));
     }
     Ok(())
 }
