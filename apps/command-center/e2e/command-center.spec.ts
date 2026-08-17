@@ -210,6 +210,54 @@ test("split route deep links to the selected run @fixture-only", async ({ page }
   );
 });
 
+test("global Find opens as an accessible drawer from the selected run route @fixture-only", async ({
+  page,
+}) => {
+  await page.goto("/initiatives/init-command-center/runs/run-1");
+
+  const trigger = page.getByRole("button", { name: /Find run or receipt/i });
+  await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+  await expect(trigger).toHaveAttribute("aria-controls", "find-drawer");
+  await trigger.click();
+
+  const drawer = page.getByRole("dialog", { name: "Find run or receipt" });
+  await expect(drawer).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Search durable references" })).toBeFocused();
+});
+
+test("global Find filters durable references and updates the result count @fixture-only", async ({
+  page,
+}) => {
+  await page.goto("/initiatives/init-command-center/runs/run-1");
+  await page.getByRole("button", { name: /Find run or receipt/i }).click();
+
+  const query = page.getByRole("searchbox", { name: "Search durable references" });
+  await query.fill("run-1");
+
+  const drawer = page.getByRole("dialog", { name: "Find run or receipt" });
+  await expect(page.getByText("1 result")).toBeVisible();
+  await expect(drawer.locator("a.find-result").filter({ hasText: "run-1" })).toBeVisible();
+  await expect(
+    drawer.locator("a.find-result").filter({ hasText: "Jcode Command Center" }),
+  ).toBeHidden();
+});
+
+test("global Find result links preserve initiative and run deep links @fixture-only", async ({
+  page,
+}) => {
+  await page.goto("/initiatives/init-command-center/runs/run-1");
+  await page.getByRole("button", { name: /Find run or receipt/i }).click();
+
+  const drawer = page.getByRole("dialog", { name: "Find run or receipt" });
+  await expect(
+    drawer.locator("a.find-result").filter({ hasText: "Jcode Command Center" }),
+  ).toHaveAttribute("href", "/initiatives/init-command-center");
+  await expect(drawer.locator("a.find-result").filter({ hasText: "run-1" })).toHaveAttribute(
+    "href",
+    "/initiatives/init-command-center/runs/run-1",
+  );
+});
+
 test("milestone step update posts command and installs replacement snapshot @fixture-only", async ({
   page,
 }) => {

@@ -1,7 +1,12 @@
 import { render, screen, fireEvent } from "@solidjs/testing-library";
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
-import { DecisionInbox, SplitWorkspace, InitiativeList } from "../src/components/CommandCenter";
+import {
+  AppShell,
+  DecisionInbox,
+  SplitWorkspace,
+  InitiativeList,
+} from "../src/components/CommandCenter";
 import { loadFailureState } from "../src/app";
 import { createProjectionStore } from "../src/stores/projection";
 import { HttpCommandCenterTransport } from "../src/transport/client";
@@ -9,6 +14,66 @@ import { liveSnapshot, nextEvent, unavailableSnapshot } from "./fixtures/snapsho
 import type { EventEnvelope } from "../src/generated/command-center-contract";
 
 describe("command center components", () => {
+  it("exposes the approved global Find drawer trigger and dialog contract", () => {
+    render(() => (
+      <AppShell snapshot={liveSnapshot}>
+        <p>Command center content</p>
+      </AppShell>
+    ));
+
+    const trigger = screen.getByRole("button", { name: /Find run or receipt/i });
+    expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+    expect(trigger).toHaveAttribute("aria-controls", "find-drawer");
+    const dialog = screen.getByRole("dialog", { hidden: true });
+    expect(dialog).toHaveAttribute("aria-labelledby", "find-title");
+    expect(
+      screen.getByRole("heading", { name: "Find run or receipt", hidden: true }),
+    ).toBeInTheDocument();
+    expect(dialog).not.toBeVisible();
+  });
+
+  it("opens Find, focuses durable-reference search, and filters results by query", () => {
+    render(() => (
+      <AppShell snapshot={liveSnapshot}>
+        <p>Command center content</p>
+      </AppShell>
+    ));
+
+    fireEvent.click(screen.getByRole("button", { name: /Find run or receipt/i }));
+
+    const dialog = screen.getByRole("dialog", { name: "Find run or receipt" });
+    expect(dialog).toBeVisible();
+    const query = screen.getByRole("searchbox", { name: "Search durable references" });
+    expect(query).toHaveFocus();
+
+    fireEvent.input(query, { target: { value: "run-1" } });
+
+    expect(screen.getByText("1 result")).toBeVisible();
+    expect(screen.getByRole("link", { name: /run-1/i })).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: /Jcode Command Center$/i, hidden: true }),
+    ).not.toBeVisible();
+  });
+
+  it("keeps Find results as stable initiative and run deep links", () => {
+    render(() => (
+      <AppShell snapshot={liveSnapshot}>
+        <p>Command center content</p>
+      </AppShell>
+    ));
+
+    fireEvent.click(screen.getByRole("button", { name: /Find run or receipt/i }));
+
+    expect(screen.getByRole("link", { name: /Jcode Command Center/i })).toHaveAttribute(
+      "href",
+      "/initiatives/init-command-center",
+    );
+    expect(screen.getByRole("link", { name: /run-1/i })).toHaveAttribute(
+      "href",
+      "/initiatives/init-command-center/runs/run-1",
+    );
+  });
+
   it("renders durable Decision Inbox provenance, categories, and approval state", () => {
     render(() => (
       <DecisionInbox
