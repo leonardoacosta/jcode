@@ -5,7 +5,7 @@
 //! both can contain the full request URL. Errors are reduced to safe classes
 //! and status codes before crossing the boundary.
 
-use std::fmt;
+use std::{fmt, time::Duration};
 
 use reqwest::blocking::Client;
 use serde_json::{Value, json};
@@ -19,6 +19,9 @@ pub struct TelegramClient {
 }
 
 impl TelegramClient {
+    /// Must remain longer than the runner's 30-second Telegram long poll.
+    const HTTP_TIMEOUT: Duration = Duration::from_secs(45);
+
     #[must_use]
     pub fn new(token: BotToken) -> Self {
         Self::with_base_url(token, "https://api.telegram.org")
@@ -27,7 +30,13 @@ impl TelegramClient {
     #[must_use]
     pub fn with_base_url(token: BotToken, base_url: impl Into<String>) -> Self {
         Self {
-            http: Client::new(),
+            // Telegram's runner uses a 30-second long poll. Reqwest's default
+            // request timeout is also 30 seconds, so the client can abort just
+            // before Telegram returns an otherwise successful empty poll.
+            http: Client::builder()
+                .timeout(Self::HTTP_TIMEOUT)
+                .build()
+                .expect("Telegram HTTP client configuration is valid"),
             base_url: base_url.into().trim_end_matches('/').to_owned(),
             token,
         }
