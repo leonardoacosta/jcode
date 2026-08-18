@@ -75,7 +75,7 @@ escaped_env=${env// /\\x20}
 assert_contains "$unit" "EnvironmentFile=$escaped_env"
 assert_not_contains "$unit" 'EnvironmentFile="'
 assert_contains "$unit" 'ExecStart="'
-assert_contains "$env" 'JCODE_COMMAND_CENTER_UI_BIND=127.0.0.1:43119'
+assert_contains "$env" 'JCODE_COMMAND_CENTER_UI_BIND=0.0.0.0:43119'
 assert_contains "$env" 'JCODE_COMMAND_CENTER_API_URL=http://127.0.0.1:43118'
 assert_contains "$tmp/mock.log" 'systemctl --user daemon-reload'
 assert_contains "$tmp/mock.log" 'systemctl --user enable jcode-command-center.service'
@@ -83,9 +83,12 @@ assert_contains "$tmp/mock.log" 'systemctl --user restart jcode-command-center.s
 assert_contains "$tmp/mock.log" 'loginctl enable-linger '
 
 first=$(readlink "$root/current")
+# An operator-edited env file must survive a repeat install.
+printf 'JCODE_COMMAND_CENTER_UI_BIND=0.0.0.0:9999\n' > "$env"
 run_installer "$home"
 second=$(readlink "$root/current")
 [[ "$first" != "$second" ]] || fail 'repeat install did not create a new release'
+assert_contains "$env" 'JCODE_COMMAND_CENTER_UI_BIND=0.0.0.0:9999'
 
 MOCK_CURL_FAIL=1 HOME="$home" PATH="$tmp/bin:$PATH" MOCK_LOG="$tmp/mock.log" \
   JCODE_COMMAND_CENTER_SKIP_PREREQS=1 JCODE_COMMAND_CENTER_APP_DIR="$tmp/app" JCODE_COMMAND_CENTER_HEALTH_ATTEMPTS=1 bash "$installer" >/dev/null 2>&1 && fail 'health failure unexpectedly passed'

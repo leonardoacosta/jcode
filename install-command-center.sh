@@ -10,9 +10,10 @@ unit_dir="$config_dir/systemd/user"
 unit_path="$unit_dir/jcode-command-center.service"
 env_path=${JCODE_COMMAND_CENTER_ENV_FILE:-"$config_dir/jcode-command-center.env"}
 service_name=jcode-command-center.service
-ui_bind=${JCODE_COMMAND_CENTER_UI_BIND:-127.0.0.1:43119}
+ui_bind=${JCODE_COMMAND_CENTER_UI_BIND:-0.0.0.0:43119}
 api_url=${JCODE_COMMAND_CENTER_API_URL:-http://127.0.0.1:43118}
-health_url=${JCODE_COMMAND_CENTER_HEALTH_URL:-"http://$ui_bind/healthz"}
+# The health probe always hits loopback, even when the UI binds 0.0.0.0 for Traefik.
+health_url=${JCODE_COMMAND_CENTER_HEALTH_URL:-"http://127.0.0.1:${ui_bind##*:}/healthz"}
 
 need() {
   command -v "$1" >/dev/null 2>&1 || { echo "required command not found: $1" >&2; exit 1; }
@@ -53,11 +54,15 @@ find "$stage" -type f -exec chmod a-w {} +
 mv "$stage" "$release"
 ln -sfn "releases/$(basename "$release")" "$install_root/current"
 
-cat >"$env_path" <<EOF
+# Preserve an operator-edited env file (e.g. a non-default bind); only write
+# one when it does not yet exist or the caller explicitly overrides it.
+if [[ ! -f "$env_path" || -n "${JCODE_COMMAND_CENTER_UI_BIND:-}" || -n "${JCODE_COMMAND_CENTER_API_URL:-}" ]]; then
+  cat >"$env_path" <<EOF
 JCODE_COMMAND_CENTER_UI_BIND=$ui_bind
 JCODE_COMMAND_CENTER_API_URL=$api_url
 EOF
-chmod 600 "$env_path"
+  chmod 600 "$env_path"
+fi
 systemd_env_path=${env_path// /\\x20}
 cat >"$unit_path" <<EOF
 [Unit]

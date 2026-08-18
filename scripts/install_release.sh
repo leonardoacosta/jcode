@@ -112,6 +112,14 @@ install_dir="${JCODE_INSTALL_DIR:-$HOME/.local/bin}"
 mkdir -p "$install_dir"
 ln -sfn "$current_dir/jcode" "$install_dir/jcode"
 
+# Ship the Telegram intake poller alongside the daemon so the decision inbox
+# keeps working after a deploy. It is built by the same `cargo build` above.
+intake_bin="$target_dir/$profile/jcode-telegram-intake"
+if [[ -x "$intake_bin" ]]; then
+  install -m 755 "$intake_bin" "$version_dir/jcode-telegram-intake"
+  install -m 755 "$intake_bin" "$install_dir/jcode-telegram-intake"
+fi
+
 echo "Installed: $version_dir/jcode"
 echo "Updated stable symlink: $stable_dir/jcode -> $version_dir/jcode"
 echo "Updated current symlink: $current_dir/jcode -> $version_dir/jcode"
