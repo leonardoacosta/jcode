@@ -155,11 +155,12 @@
     }
     .views-shell {
       position: absolute;
-      z-index: 7;
-      inset: 0;
-      overflow: auto;
-      padding: 24px;
-      background: var(--page-bg);
+      z-index: 8;
+      inset: 18px auto auto 18px;
+      overflow: visible;
+      padding: 0;
+      background: transparent;
+      pointer-events: none;
     }
     .views-tablist {
       position: sticky;
@@ -168,7 +169,8 @@
       display: flex;
       gap: 8px;
       padding-bottom: 16px;
-      background: var(--page-bg);
+      background: transparent;
+      pointer-events: auto;
     }
     .views-tab {
       min-height: 40px;
@@ -186,7 +188,8 @@
       outline: 2px solid var(--focus);
       outline-offset: 3px;
     }
-    .views-panel { max-width: 1120px; margin: 0 auto 32px; scroll-margin-top: 88px; }
+    .views-panel { display: none !important; }
+    #views-selection-details { display: none !important; }
     .network-container {
       min-width: 0;
       margin: 12px 0;
@@ -408,8 +411,62 @@
     const SCENE = __SCENE_JSON__;
     const ICON_SVGS = __ICON_SVGS__;
     const PATH_EVIDENCE = __PATH_EVIDENCE__;
+    const BASE_SCENE = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob("__FULL_SCENE_JSON__"), char => char.charCodeAt(0))));
     __VIEWS_SCRIPT__
     const THEME = __THEME_ADAPTER__;
+    let requestedProjection = "runtime";
+    let canvasReady = false;
+
+    function projectionScene(view) {
+      if (typeof VIEWS_SIDECAR === "undefined" || view === "runtime") return BASE_SCENE;
+      const scene = structuredClone(BASE_SCENE);
+      scene.flows = [];
+      scene.traffic = { direction: null, layers: [] };
+      scene.areas = [];
+      if (view === "network") {
+        const ids = new Set((VIEWS_SIDECAR.network?.memberships || []).map(item => item.node_id));
+        scene.nodes = BASE_SCENE.nodes.filter(node => ids.has(node.id));
+        const links = VIEWS_SIDECAR.network?.links || [];
+        scene.paths = links.map((link, index) => {
+          const source = scene.nodes.find(node => node.id === link.source_id);
+          const target = scene.nodes.find(node => node.id === link.target_id);
+          if (!source || !target) return null;
+          const start = { x: source.position.x + .5, y: source.position.y + .5 };
+          const end = { x: target.position.x + .5, y: target.position.y + .5 };
+          return { id: `network-${link.id || index}`, from: source.id, to: target.id, kind: "network", label: link.label || link.id, route: [start, end], payload_ids: [], evidence_level: link.evidence_level || "direct", evidence: link.evidence || [] };
+        }).filter(Boolean);
+      } else if (view === "ado") {
+        const pipelines = Array.isArray(VIEWS_SIDECAR.pipelines) ? VIEWS_SIDECAR.pipelines : [];
+        const stageNodes = [];
+        const paths = [];
+        pipelines.forEach((pipeline, pipelineIndex) => {
+          const stages = Array.isArray(pipeline.stages) ? pipeline.stages : [];
+          const stageIds = new Set(stages.map(stage => stage.id));
+          stages.forEach((stage, index) => {
+            const target = BASE_SCENE.nodes.find(node => node.id === stage.target_node_id);
+            stageNodes.push({ ...(target || {}), id: `ado-${pipeline.id}-${stage.id}`, code: stage.id.slice(0, 8).toUpperCase(), label: stage.label || stage.id, role: "pipeline", zone: "pipeline", form: "cube", position: { x: 2 + (index % 7) * 3, y: 2 + pipelineIndex * 5 + Math.floor(index / 7) * 2 }, footprint: { width: 1, depth: 1 }, status: stage.status || "active", resource_type: "Azure DevOps pipeline", icon: stage.icon || "az-build-pipeline", description: stage.label || stage.id, evidence: stage.evidence || [] });
+          });
+          const stageById = new Map(stages.map((stage, index) => [stage.id, stageNodes.find(node => node.id === `ado-${pipeline.id}-${stage.id}`) || stageNodes[index]]));
+          (pipeline.edges || []).forEach((edge, index) => {
+            const source = stageById.get(edge.source_id), target = stageById.get(edge.target_id);
+            if (!source || !target || !stageIds.has(edge.source_id) || !stageIds.has(edge.target_id)) return;
+            paths.push({ id: `ado-${pipeline.id}-${edge.id || index}`, from: source.id, to: target.id, kind: edge.kind === "approval" || edge.kind === "manual" ? "control" : "delivery", label: edge.label || edge.id, route: [{ x: source.position.x + .5, y: source.position.y + .5 }, { x: target.position.x + .5, y: target.position.y + .5 }], payload_ids: [], evidence_level: "direct", evidence: edge.evidence || [] });
+          });
+        });
+        scene.nodes = stageNodes;
+        scene.paths = paths;
+        scene.canvas = { ...BASE_SCENE.canvas, grid_width: 23, grid_depth: Math.max(12, 8 + pipelines.length * 5) };
+        scene.zones = [{ id: "pipeline", label: "Azure DevOps delivery pipelines", description: "Full-canvas pipeline projection" }];
+      }
+      return scene;
+    }
+
+    function activateCanvasProjection(view) {
+      requestedProjection = view;
+      if (!canvasReady) return;
+      Object.assign(SCENE, projectionScene(view));
+      resizeAndRender();
+    }
 
     function enhanceViewsTabs() {
       if (typeof VIEWS_SIDECAR === "undefined") return;
@@ -440,12 +497,12 @@
         panels.forEach(panel => {
           panel.hidden = panel.id !== selectedView;
         });
+        if (typeof resizeAndRender === "function") activateCanvasProjection(selectedView);
         if (selectedSemanticId) {
           document.querySelector(`[data-semantic-id="${CSS.escape(selectedSemanticId)}"]`)?.setAttribute("aria-current", "true");
         }
         viewsShell?.scrollTo({ top: 0, left: 0, behavior: "auto" });
         if (selectedView === "network") requestAnimationFrame(rerouteNetworkConnectors);
-        requestAnimationFrame(redrawSidecarGraphs);
         if (!options.skipHistory && location.hash !== `#${selectedView}`) {
           history.replaceState(null, "", `#${selectedView}`);
         }
@@ -541,9 +598,6 @@
       if (typeof VIEWS_SIDECAR === "undefined") return;
       document.querySelectorAll("canvas[data-sidecar-graph]").forEach(canvas => drawSidecarGraph(canvas, canvas.dataset.sidecarGraph, VIEWS_SIDECAR));
     }
-    window.addEventListener("resize", redrawSidecarGraphs);
-    requestAnimationFrame(redrawSidecarGraphs);
-
     enhanceViewsTabs();
 
     function rerouteNetworkConnectors() {
@@ -1494,6 +1548,8 @@
       updatePauseControl();
       await preloadIcons();
       resizeObserver.observe(stage);
+      canvasReady = true;
+      Object.assign(SCENE, projectionScene(requestedProjection));
       resizeAndRender();
     }
 

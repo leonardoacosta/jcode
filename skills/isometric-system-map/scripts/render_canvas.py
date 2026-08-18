@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import copy
 import hashlib
 import html
@@ -711,12 +712,13 @@ def render(scene_path: Path, theme_path: Path, output_path: Path, views_path: Pa
         "__SCENE_HASH__": _semantic_hash(scene),
         "__VIEWS_ATTR__": f' data-views-sha256="{_semantic_hash(views)}"' if views is not None else "",
         "__SCENE_JSON__": _safe_script_json(render_scene),
+        "__FULL_SCENE_JSON__": base64.b64encode(json.dumps(full_render_scene, separators=(",", ":")).encode("utf-8")).decode("ascii"),
         "__PATH_EVIDENCE__": _safe_script_json(_path_evidence(render_scene)),
         "__VIEWS_SCRIPT__": f"const VIEWS_SIDECAR = {_safe_script_json(views)};" if views is not None else "",
         "__ICON_SVGS__": _safe_script_json(icon_svgs),
         "__THEME_ADAPTER__": theme_source,
         "__FALLBACK_BUTTONS__": _fallback_buttons(render_scene),
-        "__VIEWS_SHELL__": _render_views_shell(views, full_render_scene, icon_svgs) if views is not None else "",
+        "__VIEWS_SHELL__": _render_views_shell(views, render_scene, icon_svgs) if views is not None else "",
     }
     for marker, value in replacements.items():
         template = template.replace(marker, value)
