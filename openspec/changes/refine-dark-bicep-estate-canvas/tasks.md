@@ -7,7 +7,8 @@
 
 ### 2. Dark renderer presentation
 - [x] 2.1 Render labeled isometric VNet terrain and nested subnet planes in the dark theme.
-- [x] 2.2 Render private endpoints as selectable foreground dots/markers with associated-resource private-link connectors while retaining evidence and semantic metadata.
+- [ ] 2.2 Render private endpoints as selectable foreground dots/markers with associated-resource private-link connectors while retaining evidence and semantic metadata.
+  - Partial: dark-only foreground markers are implemented; the explicit marker-to-resource connector remains outstanding.
 - [x] 2.3 Preserve full resource labels, Azure icons, path semantics, runtime emphasis, and no aggregate incoming-traffic arrow.
 - [ ] 2.4 Ensure the full 28-resource inventory remains visible and selectable in the generated artifact.
 
