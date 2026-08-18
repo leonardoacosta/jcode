@@ -118,7 +118,8 @@
           "lines": "13-17",
           "claim": "The development VNet declares 10.234.132.0/22 and 10.234.156.0/22 address spaces and its subnets."
         }
-      ]
+      ],
+      "level": "vnet"
     },
     {
       "id": "decus-537-vnet-area",
@@ -139,7 +140,122 @@
           "lines": "21-23",
           "claim": "Decus 537 owns a separate landing zone with distinct subnets and private endpoints; hub peering is gated and not deployed."
         }
-      ]
+      ],
+      "level": "vnet"
+    },
+    {
+      "id": "wholesale-apim-subnet",
+      "label": "SNET-WHS-346-APIM-CentralUS-DEV",
+      "kind": "vnet",
+      "status": "active",
+      "member_ids": [
+        "wholesale-api-management"
+      ],
+      "padding": 0,
+      "description": "SNET-WHS-346-APIM-CentralUS-DEV subnet (10.234.157.128/27).",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "21-23",
+          "claim": "The audited topology places resources in SNET-WHS-346-APIM-CentralUS-DEV (10.234.157.128/27)."
+        }
+      ],
+      "parent_id": "wholesale-development-vnet",
+      "cidr": "10.234.157.128/27",
+      "level": "subnet"
+    },
+    {
+      "id": "wholesale-vnet-integration-subnet",
+      "label": "SNET-WHS-346-VNetIntegration-CentralUS-DEV",
+      "kind": "vnet",
+      "status": "active",
+      "member_ids": [
+        "fireball-event-publisher-function-app",
+        "bridge-epay-function-app"
+      ],
+      "padding": 0,
+      "description": "SNET-WHS-346-VNetIntegration-CentralUS-DEV subnet (10.234.156.64/26).",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "21-23",
+          "claim": "The audited topology places resources in SNET-WHS-346-VNetIntegration-CentralUS-DEV (10.234.156.64/26)."
+        }
+      ],
+      "parent_id": "wholesale-development-vnet",
+      "cidr": "10.234.156.64/26",
+      "level": "subnet"
+    },
+    {
+      "id": "wholesale-data-subnet",
+      "label": "SNET-WHS-346-DATA-CentralUS-DEV",
+      "kind": "vnet",
+      "status": "active",
+      "member_ids": [
+        "wholesale-service-bus-private-endpoint",
+        "wholesale-key-vault-private-endpoint",
+        "wholesale-sql-private-endpoint",
+        "function-storage-blob-private-endpoint",
+        "function-storage-file-private-endpoint",
+        "function-storage-queue-private-endpoint",
+        "function-storage-table-private-endpoint"
+      ],
+      "padding": 0,
+      "description": "SNET-WHS-346-DATA-CentralUS-DEV subnet (10.234.132.0/25).",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "21-23",
+          "claim": "The audited topology places resources in SNET-WHS-346-DATA-CentralUS-DEV (10.234.132.0/25)."
+        }
+      ],
+      "parent_id": "wholesale-development-vnet",
+      "cidr": "10.234.132.0/25",
+      "level": "subnet"
+    },
+    {
+      "id": "decus-data-subnet",
+      "label": "SNET-WHS-537-DATA-EastUS2-DEV",
+      "kind": "vnet",
+      "status": "active",
+      "member_ids": [
+        "decus-key-vault-private-endpoint",
+        "decus-app-configuration-private-endpoint",
+        "decus-sql-private-endpoint"
+      ],
+      "padding": 0,
+      "description": "SNET-WHS-537-DATA-EastUS2-DEV subnet (10.218.57.0/26).",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "21-23",
+          "claim": "The audited topology places resources in SNET-WHS-537-DATA-EastUS2-DEV (10.218.57.0/26)."
+        }
+      ],
+      "parent_id": "decus-development-vnet",
+      "cidr": "10.218.57.0/26",
+      "level": "subnet"
+    },
+    {
+      "id": "decus-mdop-subnet",
+      "label": "SNET-WHS-537-MDOP-EastUS2-DEV",
+      "kind": "vnet",
+      "status": "active",
+      "member_ids": [
+        "decus-managed-devops-pool"
+      ],
+      "padding": 0,
+      "description": "SNET-WHS-537-MDOP-EastUS2-DEV subnet (10.218.59.0/26).",
+      "evidence": [
+        {
+          "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+          "lines": "21-23",
+          "claim": "The audited topology places resources in SNET-WHS-537-MDOP-EastUS2-DEV (10.218.59.0/26)."
+        }
+      ],
+      "parent_id": "decus-development-vnet",
+      "cidr": "10.218.59.0/26",
+      "level": "subnet"
     }
   ],
   "traffic": {

@@ -939,7 +939,7 @@
         ];
         const path = polygonPath(points);
         const labelPoint = project(rect.x + rect.width / 2, rect.y, 0);
-        THEME.drawArea(ctx, path, area, labelPoint, state);
+        if (typeof THEME.drawArea === "function") THEME.drawArea(ctx, path, area, labelPoint, state);
         state.areaHits.push({ item: area, path, points });
         state.areaGeometry.push({
           id: area.id,
@@ -1008,7 +1008,9 @@
               iconMass = mass;
             }
             ["left", "right", "roof"].forEach(side => {
-              THEME.drawFace(ctx, faces[side], side, node, massIndex, state);
+              if (!(typeof THEME.drawPrivateEndpoint === "function" && node.resource_type === "Microsoft.Network/privateEndpoints")) {
+                THEME.drawFace(ctx, faces[side], side, node, massIndex, state);
+              }
               hit.addPath(faces[side]);
             });
           });
@@ -1023,7 +1025,9 @@
           projectedVerticalEdge: cube.height * state.heightUnit,
           cubeEdge: cube.cubeEdge,
         });
-        if (drawNodeIcon(ctx, node, iconRoof, iconMass)) state.renderedIcons.push(node.id);
+        if (typeof THEME.drawPrivateEndpoint === "function" && node.resource_type === "Microsoft.Network/privateEndpoints") {
+          THEME.drawPrivateEndpoint(ctx, node, project(node.position.x + node.footprint.width / 2, node.position.y + node.footprint.depth, iconHeight + .15), state);
+        } else if (drawNodeIcon(ctx, node, iconRoof, iconMass)) state.renderedIcons.push(node.id);
         const labelPoint = project(
           node.position.x + node.footprint.width / 2,
           node.position.y + node.footprint.depth / 2,

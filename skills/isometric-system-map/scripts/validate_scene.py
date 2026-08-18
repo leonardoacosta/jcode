@@ -511,8 +511,8 @@ def validate_scene(document: Any) -> list[str]:
     if not isinstance(areas, list):
         errors.append("$.areas: required list with at most 8 sourced containment areas")
         areas = []
-    elif len(areas) > 8:
-        errors.append("$.areas: maximum 8 sourced containment areas")
+    elif len(areas) > 12:
+        errors.append("$.areas: maximum 12 sourced containment areas")
     area_ids: set[str] = set()
     for index, area in enumerate(areas):
         path = f"areas[{index}]"
@@ -521,7 +521,7 @@ def validate_scene(document: Any) -> list[str]:
             continue
         _unknown_keys(
             area,
-            {"id", "label", "kind", "status", "member_ids", "padding", "description", "evidence"},
+            {"id", "label", "kind", "status", "member_ids", "padding", "description", "evidence", "parent_id", "cidr", "level"},
             path,
             errors,
         )
@@ -533,6 +533,12 @@ def validate_scene(document: Any) -> list[str]:
         if area.get("status") not in NODE_STATUSES:
             errors.append(f"{path}.status: must be one of {sorted(NODE_STATUSES)}")
         _validate_evidence(area.get("evidence"), f"{path}.evidence", errors)
+        if "parent_id" in area and not _is_string(area.get("parent_id")):
+            errors.append(f"{path}.parent_id: must be a non-empty area id when provided")
+        if "cidr" in area and not _is_string(area.get("cidr")):
+            errors.append(f"{path}.cidr: must be a non-empty string when provided")
+        if area.get("level", "vnet") not in {"vnet", "subnet"}:
+            errors.append(f"{path}.level: must be 'vnet' or 'subnet'")
 
         area_id = area.get("id")
         if isinstance(area_id, str):

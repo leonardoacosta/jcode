@@ -156,18 +156,41 @@
     },
 
     drawArea(ctx, path, area, labelPoint) {
+      const subnet = area.level === "subnet";
       ctx.save();
-      ctx.fillStyle = area.status === "held" ? "rgba(65,116,190,.035)" : "rgba(65,116,190,.09)";
+      ctx.fillStyle = subnet
+        ? (area.status === "held" ? "rgba(45,170,193,.025)" : "rgba(45,170,193,.07)")
+        : (area.status === "held" ? "rgba(65,116,190,.035)" : "rgba(65,116,190,.09)");
       ctx.fill(path);
-      ctx.strokeStyle = area.status === "held" ? "rgba(89,145,225,.5)" : "rgba(89,145,225,.88)";
-      ctx.lineWidth = 1.35;
-      ctx.setLineDash(area.status === "held" ? [6, 4] : []);
+      ctx.strokeStyle = subnet ? "rgba(55,205,218,.72)" : (area.status === "held" ? "rgba(89,145,225,.5)" : "rgba(89,145,225,.88)");
+      ctx.lineWidth = subnet ? 1 : 1.35;
+      ctx.setLineDash(subnet ? [4, 4] : (area.status === "held" ? [6, 4] : []));
       ctx.stroke(path);
       ctx.setLineDash([]);
-      ctx.fillStyle = "rgba(145,187,245,.82)";
-      ctx.font = "700 9px ui-monospace, monospace";
+      ctx.fillStyle = subnet ? "rgba(101,224,231,.78)" : "rgba(145,187,245,.82)";
+      ctx.font = subnet ? "600 8px ui-monospace, monospace" : "700 9px ui-monospace, monospace";
+      ctx.textAlign = "left";
+      ctx.fillText(`${area.label.toUpperCase()}${area.cidr ? ` · ${area.cidr}` : ""}`, labelPoint.x + 6, labelPoint.y - (subnet ? 4 : 10));
+      ctx.restore();
+    },
+
+    drawPrivateEndpoint(ctx, node, point) {
+      const accent = roleColors.network;
+      ctx.save();
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = "#07131b";
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#d7f8ff";
+      ctx.font = "700 8px ui-monospace, monospace";
       ctx.textAlign = "center";
-      ctx.fillText(area.label.toUpperCase(), labelPoint.x, labelPoint.y - 10);
+      ctx.fillText(node.code, point.x, point.y - 10);
       ctx.restore();
     },
 
@@ -238,6 +261,30 @@
         ctx.shadowBlur = 10;
         ctx.stroke(path);
       }
+      ctx.restore();
+    },
+
+    drawPrivateEndpoint(ctx, node, point) {
+      const accent = roleColors[node.role] || roleColors.network;
+      ctx.save();
+      ctx.translate(point.x, point.y + 2);
+      ctx.strokeStyle = accent;
+      ctx.fillStyle = "rgba(5,8,14,.96)";
+      ctx.lineWidth = 1.4;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(0, -10);
+      ctx.lineTo(9, -1);
+      ctx.lineTo(0, 8);
+      ctx.lineTo(-9, -1);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(0, -1, 3, 0, Math.PI * 2);
+      ctx.stroke();
       ctx.restore();
     },
 
