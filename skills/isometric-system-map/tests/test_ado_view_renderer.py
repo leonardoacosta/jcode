@@ -37,6 +37,8 @@ class AdoViewRendererTests(unittest.TestCase):
 
     def test_ado_projection_renders_accessible_pipeline_stage_graph_from_fixture(self):
         html, views = self.render_ado_view()
+        self.assertRegex(html, r'<canvas[^>]+data-sidecar-graph="ado"[^>]+role="img"')
+        self.assertIn("drawSidecarGraph", html)
         pipeline = views["pipelines"][0]
 
         ado_panel_pattern = re.compile(

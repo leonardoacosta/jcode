@@ -445,6 +445,7 @@
         }
         viewsShell?.scrollTo({ top: 0, left: 0, behavior: "auto" });
         if (selectedView === "network") requestAnimationFrame(rerouteNetworkConnectors);
+        requestAnimationFrame(redrawSidecarGraphs);
         if (!options.skipHistory && location.hash !== `#${selectedView}`) {
           history.replaceState(null, "", `#${selectedView}`);
         }
@@ -496,6 +497,52 @@
       });
       setActiveView(VIEWS_SIDECAR.default_view ? selectedInitialView : selectedInitialView, { skipHistory: Boolean(hashView()) });
     }
+
+    function drawSidecarGraph(canvas, kind, model) {
+      if (!canvas || !model) return;
+      const dpr = window.devicePixelRatio || 1;
+      const width = Math.max(640, canvas.clientWidth || 960);
+      const height = kind === "network" ? 460 : 380;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      canvas.style.height = `${height}px`;
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      THEME.drawBackground(ctx, { width, height });
+      const project = (x, y, z = 0) => ({ x: width / 2 + (x - y) * 34, y: 90 + (x + y) * 17 - z * 22 });
+      const cube = (point, label, color) => {
+        const top = [{x: point.x, y: point.y - 18}, {x: point.x + 30, y: point.y - 2}, {x: point.x, y: point.y + 14}, {x: point.x - 30, y: point.y - 2}];
+        ctx.fillStyle = color; ctx.globalAlpha = .92; ctx.beginPath(); top.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = color; ctx.globalAlpha = .62; ctx.beginPath(); ctx.moveTo(top[3].x, top[3].y); ctx.lineTo(top[0].x, top[0].y); ctx.lineTo(top[0].x, top[0].y + 34); ctx.lineTo(top[3].x, top[3].y + 34); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = color; ctx.globalAlpha = .45; ctx.beginPath(); ctx.moveTo(top[0].x, top[0].y); ctx.lineTo(top[1].x, top[1].y); ctx.lineTo(top[1].x, top[1].y + 34); ctx.lineTo(top[0].x, top[0].y + 34); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1; ctx.fillStyle = THEME.css?.text || "#fff"; ctx.font = "700 9px ui-monospace, monospace"; ctx.textAlign = "center"; ctx.fillText(label.slice(0, 15), point.x, point.y + 3);
+      };
+      const positions = new Map();
+      if (kind === "network") {
+        const containers = (model.network?.containers || []).filter(Boolean);
+        const memberships = model.network?.memberships || [];
+        containers.forEach((container, index) => {
+          const x = index % 4 * 4 + 1, y = Math.floor(index / 4) * 4 + 1;
+          const origin = project(x, y); ctx.strokeStyle = "rgba(105,160,220,.72)"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(origin.x - 100, origin.y + 30); ctx.lineTo(origin.x, origin.y - 24); ctx.lineTo(origin.x + 100, origin.y + 30); ctx.lineTo(origin.x, origin.y + 84); ctx.closePath(); ctx.stroke();
+          ctx.fillStyle = "#9bb8ff"; ctx.font = "700 9px ui-monospace, monospace"; ctx.fillText(String(container.label || container.id).toUpperCase().slice(0, 34), origin.x, origin.y + 104);
+          memberships.filter(m => m.container_id === container.id).forEach((membership, memberIndex) => { const node = SCENE.nodes.find(n => n.id === membership.node_id); if (!node) return; const p = project(x + (memberIndex % 3) * .9 - 1, y + Math.floor(memberIndex / 3) * .9 - .5); positions.set(node.id, p); cube(p, node.code || node.id, THEME.iconColor ? THEME.iconColor(node) : "#287fb8"); });
+        });
+        (model.network?.links || []).forEach(link => { const a = positions.get(link.source_id), b = positions.get(link.target_id); if (!a || !b) return; ctx.strokeStyle = link.evidence_level === "held" ? "#9866d8" : "#22b8cf"; ctx.setLineDash(link.evidence_level === "direct" ? [] : [6, 5]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]); });
+      } else {
+        const pipeline = model.pipelines?.[0]; if (!pipeline) return;
+        const ranks = new Map(); pipeline.stages.forEach(stage => ranks.set(stage.id, 0)); pipeline.edges.forEach(edge => ranks.set(edge.target_id, Math.max(ranks.get(edge.target_id) || 0, (ranks.get(edge.source_id) || 0) + 1)));
+        pipeline.stages.forEach((stage, index) => { const p = project((ranks.get(stage.id) || 0) * 2.5, (index % 3) * 1.7); positions.set(stage.id, p); cube(p, stage.id, stage.stage_type === "gate" || stage.stage_type === "approval" ? "#9866d8" : "#287fb8"); });
+        pipeline.edges.forEach(edge => { const a = positions.get(edge.source_id), b = positions.get(edge.target_id); if (!a || !b) return; ctx.strokeStyle = "#9866d8"; ctx.setLineDash([8, 5]); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); ctx.setLineDash([]); });
+      }
+    }
+
+    function redrawSidecarGraphs() {
+      if (typeof VIEWS_SIDECAR === "undefined") return;
+      document.querySelectorAll("canvas[data-sidecar-graph]").forEach(canvas => drawSidecarGraph(canvas, canvas.dataset.sidecarGraph, VIEWS_SIDECAR));
+    }
+    window.addEventListener("resize", redrawSidecarGraphs);
+    requestAnimationFrame(redrawSidecarGraphs);
 
     enhanceViewsTabs();
 

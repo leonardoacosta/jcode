@@ -301,7 +301,7 @@ def _network_isometric_svg(containers: list[Any], memberships: list[Any], links:
         if source and target:
             connector_parts.append(f'<path class="sidecar-iso-link evidence-{html.escape(str(link.get("evidence_level", "direct")), quote=True)}" d="M{source[0]},{source[1]} L{target[0]},{target[1]}" data-link-id="{html.escape(str(link.get("id", "")), quote=True)}" data-selectable="true" tabindex="0"><title>{html.escape(str(link.get("label", link.get("id", "Relationship"))))}</title></path>')
     defs = '<defs><marker id="sidecar-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10Z" fill="currentColor"/></marker></defs>'
-    return f'<svg class="sidecar-isometric-graph network-isometric-graph" viewBox="0 0 1120 620" role="img" aria-label="Isometric Network topology graph">{defs}<g class="sidecar-iso-links">{"".join(connector_parts)}</g>{"".join(terrain)}{"".join(cubes)}</svg>'
+    return '<canvas class="sidecar-isometric-graph network-isometric-graph" data-sidecar-graph="network" role="img" aria-label="Isometric Network topology graph"></canvas>'
 
 
 def _ado_isometric_svg(pipeline: dict[str, Any], ranks: dict[str, int], lanes: dict[str, int]) -> str:
@@ -321,7 +321,7 @@ def _ado_isometric_svg(pipeline: dict[str, Any], ranks: dict[str, int], lanes: d
             a, b = positions[str(edge["source_id"])], positions[str(edge["target_id"])]
             links.append(f'<path class="sidecar-iso-link ado-link" d="M{a[0]},{a[1]} L{b[0]},{b[1]}" data-transition-id="{html.escape(str(edge.get("id", "")), quote=True)}" data-selectable="true" tabindex="0"><title>{html.escape(str(edge.get("label", edge.get("id", "Transition"))))}</title></path>')
     defs = '<defs><marker id="sidecar-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10Z" fill="currentColor"/></marker></defs>'
-    return f'<svg class="sidecar-isometric-graph ado-isometric-graph" viewBox="0 0 1120 520" role="img" aria-label="Isometric Azure DevOps pipeline graph">{defs}<g class="sidecar-iso-links">{"".join(links)}</g>{"".join(cubes)}</svg>'
+    return '<canvas class="sidecar-isometric-graph ado-isometric-graph" data-sidecar-graph="ado" role="img" aria-label="Isometric Azure DevOps pipeline graph"></canvas>'
 
 
 def _pipeline_stage_ranks(pipeline: dict[str, Any]) -> dict[str, int]:

@@ -36,6 +36,8 @@ class NetworkViewRendererTests(unittest.TestCase):
 
     def test_views_enabled_network_projection_renders_accessible_azure_topology(self):
         html = self.render_network_view()
+        self.assertRegex(html, r'<canvas[^>]+data-sidecar-graph="network"[^>]+role="img"')
+        self.assertIn("drawSidecarGraph", html)
 
         nested_hierarchy = re.compile(
             r'<section[^>]+id="network"[^>]+data-projection="network"[^>]*>.*?'
