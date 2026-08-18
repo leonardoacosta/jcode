@@ -194,6 +194,29 @@
       border: 1px solid var(--hairline);
       overflow-wrap: anywhere;
     }
+    .sidecar-isometric-graph {
+      display: block;
+      width: 100%;
+      min-height: 360px;
+      margin: 18px 0 28px;
+      color: var(--structure);
+      background: linear-gradient(145deg, rgba(7,22,36,.9), rgba(13,39,61,.72));
+      border: 1px solid var(--hairline);
+      overflow: visible;
+    }
+    .sidecar-isometric-graph text { fill: var(--text); font: 11px var(--font-family); pointer-events: none; }
+    .sidecar-isometric-graph .sidecar-iso-subtitle { fill: var(--muted); font-size: 9px; }
+    .sidecar-iso-terrain { color: var(--structure); fill: rgba(36,104,153,.12); }
+    .sidecar-iso-terrain-label { fill: var(--structure) !important; font-weight: 700; }
+    .sidecar-iso-node { cursor: pointer; outline: none; }
+    .sidecar-iso-node:hover polygon { filter: brightness(1.35); }
+    .sidecar-iso-node:focus-visible polygon { stroke: var(--focus); stroke-width: 3; }
+    .sidecar-iso-links { color: var(--network-direct); }
+    .sidecar-iso-link { fill: none; stroke: currentColor; stroke-width: 2; marker-end: url(#sidecar-arrow); opacity: .9; cursor: pointer; }
+    .sidecar-iso-link.evidence-inferred { stroke-dasharray: 8 6; color: var(--network-inferred); }
+    .sidecar-iso-link.evidence-held { stroke-dasharray: 2 7; color: var(--network-held); }
+    .sidecar-iso-link:focus-visible { stroke: var(--focus); stroke-width: 4; }
+    .ado-isometric-graph .ado-link { color: #9866d8; }
     .network-resource-card {
       min-width: 0;
       margin: 12px 0;

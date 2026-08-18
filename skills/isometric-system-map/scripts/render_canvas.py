@@ -259,6 +259,71 @@ def _network_summary_item(link: dict[str, Any]) -> str:
     return f'<li data-link-id="{link_id}"><strong>{label}</strong> <span>{source} → {target}</span> <span>{evidence_level}</span>{_evidence_items(link.get("evidence"))}</li>'
 
 
+def _iso_cube(x: int, y: int, label: str, subtitle: str, color: str, semantic_id: str, node_id: str = "") -> str:
+    safe_id = html.escape(semantic_id, quote=True)
+    safe_node = html.escape(node_id, quote=True)
+    return (
+        f'<g class="sidecar-iso-node" data-semantic-id="{safe_id}" data-selectable="true" tabindex="0" data-node-id="{safe_node}" transform="translate({x} {y})">'
+        f'<title>{html.escape(label)}</title><polygon points="0,18 34,0 68,18 34,36" fill="{color}" opacity=".95"/>'
+        f'<polygon points="0,18 34,36 34,72 0,54" fill="{color}" opacity=".7"/><polygon points="34,36 68,18 68,54 34,72" fill="{color}" opacity=".52"/>'
+        f'<text x="34" y="30" text-anchor="middle">{html.escape(label)}</text><text class="sidecar-iso-subtitle" x="34" y="88" text-anchor="middle">{html.escape(subtitle)}</text></g>'
+    )
+
+
+def _network_isometric_svg(containers: list[Any], memberships: list[Any], links: list[Any], nodes_by_id: dict[str, dict[str, Any]]) -> str:
+    container_items = [c for c in containers if isinstance(c, dict)]
+    memberships_by_container: dict[str, list[dict[str, Any]]] = {}
+    for membership in memberships:
+        if isinstance(membership, dict):
+            memberships_by_container.setdefault(str(membership.get("container_id", "")), []).append(membership)
+    positions: dict[str, tuple[int, int]] = {}
+    terrain: list[str] = []
+    cubes: list[str] = []
+    for index, container in enumerate(container_items):
+        col, row = index % 4, index // 4
+        cx, cy = 150 + col * 250, 110 + row * 170
+        cid = str(container.get("id", ""))
+        positions[cid] = (cx, cy)
+        terrain.append(f'<polygon class="sidecar-iso-terrain" points="{cx-105},{cy+45} {cx},{cy-8} {cx+105},{cy+45} {cx},{cy+98}" fill="none" stroke="currentColor" stroke-width="2"/><text class="sidecar-iso-terrain-label" x="{cx}" y="{cy+122}" text-anchor="middle">{html.escape(str(container.get("label", cid)))}</text>')
+        for member_index, membership in enumerate(memberships_by_container.get(cid, [])):
+            node_id = str(membership.get("node_id", ""))
+            node = nodes_by_id.get(node_id)
+            if not node:
+                continue
+            nx, ny = cx - 76 + (member_index % 3) * 76, cy - 34 + (member_index // 3) * 92
+            positions[node_id] = (nx + 34, ny + 36)
+            cubes.append(_iso_cube(nx, ny, str(node.get("code", node_id))[:12], str(node.get("role", "resource")), "#1683b8", f"network:resource:{node_id}", node_id))
+    connector_parts = []
+    for link in links:
+        if not isinstance(link, dict):
+            continue
+        source, target = positions.get(str(link.get("source_id"))), positions.get(str(link.get("target_id")))
+        if source and target:
+            connector_parts.append(f'<path class="sidecar-iso-link evidence-{html.escape(str(link.get("evidence_level", "direct")), quote=True)}" d="M{source[0]},{source[1]} L{target[0]},{target[1]}" data-link-id="{html.escape(str(link.get("id", "")), quote=True)}" data-selectable="true" tabindex="0"><title>{html.escape(str(link.get("label", link.get("id", "Relationship"))))}</title></path>')
+    defs = '<defs><marker id="sidecar-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10Z" fill="currentColor"/></marker></defs>'
+    return f'<svg class="sidecar-isometric-graph network-isometric-graph" viewBox="0 0 1120 620" role="img" aria-label="Isometric Network topology graph">{defs}<g class="sidecar-iso-links">{"".join(connector_parts)}</g>{"".join(terrain)}{"".join(cubes)}</svg>'
+
+
+def _ado_isometric_svg(pipeline: dict[str, Any], ranks: dict[str, int], lanes: dict[str, int]) -> str:
+    stages = [stage for stage in pipeline.get("stages", []) if isinstance(stage, dict)]
+    positions: dict[str, tuple[int, int]] = {}
+    cubes: list[str] = []
+    for stage in stages:
+        stage_id = str(stage.get("id", ""))
+        x, y = 105 + ranks.get(stage_id, 0) * 180, 105 + lanes.get(stage_id, 0) * 120
+        positions[stage_id] = (x, y)
+        kind = str(stage.get("stage_type", "stage"))
+        color = "#9866d8" if kind in {"gate", "approval", "manual"} else "#287fb8"
+        cubes.append(_iso_cube(x - 34, y - 36, stage_id[:14], kind, color, f"ado:stage:{pipeline.get('id', '')}:{stage_id}"))
+    links = []
+    for edge in pipeline.get("edges", []):
+        if isinstance(edge, dict) and str(edge.get("source_id")) in positions and str(edge.get("target_id")) in positions:
+            a, b = positions[str(edge["source_id"])], positions[str(edge["target_id"])]
+            links.append(f'<path class="sidecar-iso-link ado-link" d="M{a[0]},{a[1]} L{b[0]},{b[1]}" data-transition-id="{html.escape(str(edge.get("id", "")), quote=True)}" data-selectable="true" tabindex="0"><title>{html.escape(str(edge.get("label", edge.get("id", "Transition"))))}</title></path>')
+    defs = '<defs><marker id="sidecar-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10Z" fill="currentColor"/></marker></defs>'
+    return f'<svg class="sidecar-isometric-graph ado-isometric-graph" viewBox="0 0 1120 520" role="img" aria-label="Isometric Azure DevOps pipeline graph">{defs}<g class="sidecar-iso-links">{"".join(links)}</g>{"".join(cubes)}</svg>'
+
+
 def _pipeline_stage_ranks(pipeline: dict[str, Any]) -> dict[str, int]:
     stages = pipeline.get("stages", [])
     edges = pipeline.get("edges", [])
@@ -443,6 +508,7 @@ def _render_ado_pipeline(
     )
     return (
         f'<section class="ado-pipeline" data-pipeline-id="{html.escape(pipeline_id, quote=True)}"><h3>{label}</h3>'
+        f'{_ado_isometric_svg(pipeline, ranks, lanes)}'
         f'<div class="ado-stage-graph" role="list" aria-label="{label} DAG stages">{stage_cards}</div>'
         f'<div class="ado-transitions" aria-label="{label} directed transitions">{transitions}</div>'
         f'<section data-stage-transition-summary="ado"><h4>Ordered stage and transition summary</h4><ol>{summary_stages}</ol><ol>{summary_edges}</ol></section></section>'
@@ -525,6 +591,7 @@ def _render_network_projection(network: dict[str, Any], scene: dict[str, Any], i
     summary = "".join(_network_summary_item(link) for link in links if isinstance(link, dict))
     return (
         "<p>Network view preserves the sidecar container hierarchy, memberships, and labeled relationships.</p>"
+        f'{_network_isometric_svg(containers, memberships, links, nodes_by_id)}'
         f'<div class="network-diagram"><svg class="network-connectors-overlay" data-network-connectors aria-label="Measured network connectors" role="group">{relationships}</svg>'
         f'<div class="network-hierarchy">{hierarchy}<section class="network-uncontained" aria-label="Uncontained and external endpoints">{uncontained}</section></div></div>'
         f'<section data-relationship-summary="network"><h3>Relationship summary</h3><ol>{summary}</ol></section>'
