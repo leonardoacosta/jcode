@@ -175,6 +175,10 @@ function matches(reference: FindReference, query: string) {
     .includes(query.trim().toLowerCase());
 }
 
+function referenceId(reference: FindReference) {
+  return reference.id.split(":").slice(1).join(":") || reference.id;
+}
+
 export function FindResultList(props: { references: FindReference[] }) {
   return (
     <div class="find-results" role="list" aria-label="Global Find results">
@@ -190,13 +194,10 @@ export function FindResultList(props: { references: FindReference[] }) {
               aria-label={`${kindLabels[reference.kind]}: ${reference.label}`}
             >
               <span>
-                <strong>{kindLabels[reference.kind]}</strong>
-                <small>{reference.evidence}</small>
+                {referenceId(reference)} · {reference.kind}
+                <small class="find-provenance">{reference.provenance}</small>
               </span>
-              <span>
-                <strong>{reference.label}</strong>
-                <small>{reference.provenance}</small>
-              </span>
+              <strong>{reference.label}</strong>
               <small>{actionLabels[reference.kind]}</small>
             </a>
           )}

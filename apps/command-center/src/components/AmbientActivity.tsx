@@ -225,6 +225,7 @@ function AmbientDrawer(props: {
   open: boolean;
   id: string;
   title: string;
+  ariaLabel?: string;
   eyebrow: string;
   describedBy: string;
   drawerRef: (element: HTMLElement) => void;
@@ -251,7 +252,8 @@ function AmbientDrawer(props: {
         aria-modal="true"
         aria-hidden={!props.open}
         hidden={!props.open}
-        aria-labelledby={`${props.id}-title`}
+        aria-labelledby={props.ariaLabel ? undefined : `${props.id}-title`}
+        aria-label={props.ariaLabel}
         aria-describedby={props.describedBy}
         tabIndex={-1}
         onKeyDown={(event) => props.onKeyDown(event)}
@@ -417,13 +419,15 @@ export function AmbientActivity(props: {
                 style={{ "--ambient-index": index() }}
               >
                 <time dateTime={entry.occurredAt}>{readableTime(entry.occurredAt)}</time>
-                <span class="ambient-source">{entry.source}</span>
+                <span class="ambient-source">
+                  <small>{entry.source}</small>
+                </span>
                 <div class="ambient-entry-copy">
                   <strong>{entry.title}</strong>
                   <p>{entry.summary}</p>
-                  <small>{entry.evidence}</small>
                 </div>
                 <span class={`ambient-state ${entry.state}`}>{entry.stateLabel}</span>
+                <small>{entry.evidence}</small>
                 <button
                   class="inline-action"
                   type="button"
@@ -452,11 +456,13 @@ export function AmbientActivity(props: {
               {(schedule) => (
                 <div class="ambient-schedule-row">
                   <strong>{schedule.cadence}</strong>
-                  <span>{schedule.timezone}</span>
-                  <span>
-                    {schedule.nextFire ? readableDate(schedule.nextFire) : "No next wake"}
+                  <span class="mono">
+                    {schedule.nextFire ? readableTime(schedule.nextFire) : "No next wake"}
                   </span>
-                  <span>{schedule.lastResult ?? "No result"}</span>
+                  <span>
+                    {schedule.timezone} · {schedule.lastResult ?? "No result"}
+                  </span>
+                  <span>{schedule.id}</span>
                 </div>
               )}
             </For>
@@ -467,8 +473,9 @@ export function AmbientActivity(props: {
       <AmbientDrawer
         open={drawer() === "create"}
         id="ambient-create-drawer"
-        title="Create ambient cycle"
-        eyebrow="Bounded workflow"
+        ariaLabel="Create ambient cycle"
+        title="Create ambient activity"
+        eyebrow="Guarded draft · inactive until reviewed"
         describedBy="ambient-create-description"
         drawerRef={(element) => {
           createDrawerElement = element;
@@ -477,12 +484,20 @@ export function AmbientActivity(props: {
         onKeyDown={trapFocus}
       >
         <p id="ambient-create-description" class="ambient-drawer-intro">
-          Create remains unavailable until Jcode exposes an authoritative ambient-cycle command.
+          State the intended outcome, then bind it to explicit operating limits. This draft does not
+          schedule work.
         </p>
         <form class="ambient-form" onSubmit={(event) => event.preventDefault()}>
-          <label for="ambient-cycle-objective">Cycle objective</label>
+          <section class="form-section">
+            <label for="ambient-cycle-objective">Cycle objective</label>
+            <small>Intent</small>
+            <small>Use an observable outcome. Hidden follow-on work is outside this contract.</small>
+          </section>
           <input id="ambient-cycle-objective" type="text" placeholder="What should be observed?" />
-          <label for="ambient-cycle-cadence">Wake cadence</label>
+          <section class="form-section">
+            <h3>Schedule and trigger</h3>
+          </section>
+          <label for="ambient-cycle-cadence">Schedule</label>
           <select id="ambient-cycle-cadence" value="every 30 minutes">
             <option>every 30 minutes</option>
             <option>hourly</option>
@@ -513,29 +528,36 @@ export function AmbientActivity(props: {
         <Show when={selectedEntry()} keyed>
           {(entry) => (
             <>
-              <p id="ambient-inspect-description" class="ambient-drawer-intro">
-                {entry.summary}
-              </p>
+              <div class="ambient-inspect-summary">
+                <div>
+                  <span class="section-label">Current reading</span>
+                  <h3>{entry.title}</h3>
+                  <p id="ambient-inspect-description">{entry.summary}</p>
+                </div>
+                <span class={`ambient-state ${entry.state}`}>{entry.stateLabel}</span>
+              </div>
               <section class="ambient-inspect-block" aria-labelledby="ambient-latest-logs-title">
                 <h3 id="ambient-latest-logs-title">Latest logs</h3>
+                <small>Recent log activity</small>
                 <ul class="ambient-log-list">
-                  <For each={entry.logs}>{(log) => <li>{log}</li>}</For>
+                  <For each={entry.logs.slice(0, 3)}>{(log) => <li>{log}</li>}</For>
                 </ul>
               </section>
-              <section class="ambient-inspect-block" aria-labelledby="ambient-evidence-title">
-                <h3 id="ambient-evidence-title">Evidence</h3>
-                <p>{entry.evidence}</p>
-              </section>
-              <section class="ambient-inspect-block" aria-labelledby="ambient-checkpoint-title">
-                <h3 id="ambient-checkpoint-title">Retained checkpoint</h3>
-                <p>{entry.checkpoint}</p>
-              </section>
-              <section class="ambient-inspect-block" aria-labelledby="ambient-owner-title">
-                <h3 id="ambient-owner-title">Owner trail</h3>
-                <p>{entry.owner}</p>
-                <p>{entry.source}</p>
-              </section>
-              <section class="ambient-inspect-actions" aria-label="Bounded activity actions">
+              <div class="ambient-inspect-grid">
+                <section class="ambient-inspect-block" aria-labelledby="ambient-evidence-title">
+                  <h3 id="ambient-evidence-title">Evidence</h3>
+                  <small>Latest evidence</small>
+                  <p>{entry.evidence}</p>
+                  <small>{entry.owner}</small>
+                </section>
+                <section class="ambient-inspect-block" aria-labelledby="ambient-checkpoint-title">
+                  <h3 id="ambient-checkpoint-title">Retained checkpoint</h3>
+                  <small>Checkpoint</small>
+                  <p>{entry.checkpoint}</p>
+                </section>
+              </div>
+              <section class="ambient-inspect-block" aria-labelledby="ambient-interventions-title">
+                <h3 id="ambient-interventions-title">Available interventions</h3>
                 <button class="button primary" type="button" disabled>
                   Resume cycle
                 </button>
@@ -543,6 +565,11 @@ export function AmbientActivity(props: {
                   Unavailable: ambient-cycle resume contract is not available in the current
                   transport. No authority is inferred.
                 </p>
+              </section>
+              <section class="ambient-inspect-block" aria-labelledby="ambient-owner-title">
+                <h3 id="ambient-owner-title">Owner trail</h3>
+                <p>{entry.owner}</p>
+                <p>{entry.source}</p>
               </section>
             </>
           )}
