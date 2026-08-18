@@ -44,6 +44,19 @@ function packetDate(value: string) {
   }).format(date);
 }
 
+/** Compact age used by the queue list and header, matching the proposal mock. */
+function packetAge(value: string, now = Date.now()) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const seconds = Math.max(0, Math.round((now - date.getTime()) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
+}
+
 function packetEvidence(item: DecisionInboxItem) {
   const delivery = [
     item.duplicateDeliveries > 0
@@ -91,7 +104,7 @@ export function DecisionInbox(props: {
           <h1 id="decision-inbox-title">Decision queue</h1>
         </div>
         <span class="toolbar-note">
-          Updated {props.snapshot ? packetDate(props.snapshot.generatedAt) : "when connected"}
+          Updated {props.snapshot ? `${packetAge(props.snapshot.generatedAt)} ago` : "when connected"}
         </span>
       </header>
 
@@ -179,8 +192,8 @@ export function DecisionInbox(props: {
                             <span>{item.redacted ? "Content redacted" : "Content retained"}</span>
                           </span>
                         </span>
-                        <time class="item-time" dateTime={item.receivedAt}>
-                          {packetDate(item.receivedAt)}
+                        <time class="item-time" dateTime={item.receivedAt} title={packetDate(item.receivedAt)}>
+                          {packetAge(item.receivedAt)}
                         </time>
                       </button>
                     )}

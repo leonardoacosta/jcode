@@ -53,7 +53,11 @@ function readableTime(value: string) {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime())
     ? value
-    : new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(parsed);
+    : new Intl.DateTimeFormat(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
+      }).format(parsed);
 }
 
 function latestCheckpoint(initiative: InitiativeProjection): Checkpoint | undefined {
