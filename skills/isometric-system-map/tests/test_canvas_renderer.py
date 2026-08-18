@@ -273,6 +273,34 @@ class CanvasRendererTests(unittest.TestCase):
             self.assertIn("areaGeometry", html)
             self.assertEqual(len(re.findall(r'data-target-kind="area"', html)), 1)
 
+    def test_brown_bicep_dark_canvas_preserves_subnet_labels_cidrs_and_private_endpoint_hook(self):
+        scene = json.loads(BICEP_FIXTURE.read_text())
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "brown-dark.html"
+            result = self.render(BICEP_FIXTURE, DARK_THEME, output)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            html = output.read_text()
+
+            self.assertEqual(
+                len(re.findall(r'<button[^>]+data-target-kind="node"', html)),
+                len(scene["nodes"]),
+            )
+            for area in scene["areas"]:
+                if area.get("level") == "subnet":
+                    self.assertIn(area["label"], html)
+                    self.assertIn(area["cidr"], html)
+            self.assertIn("drawPrivateEndpoint", html)
+            self.assertIn('Microsoft.Network/privateEndpoints', html)
+
+    def test_brown_bicep_fixture_remains_compatible_with_all_theme_adapters(self):
+        for theme in (DARK_THEME, PAPER_THEME, AZURE_THEME):
+            with self.subTest(theme=theme.name):
+                with tempfile.TemporaryDirectory() as directory:
+                    output = Path(directory) / f"{theme.stem}.html"
+                    result = self.render(BICEP_FIXTURE, theme, output)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertTrue(output.exists())
+
     def test_renderer_draws_directional_traffic_layers_and_exposes_semantic_controls(self):
         scene = traffic_scene()
         with tempfile.TemporaryDirectory() as directory:

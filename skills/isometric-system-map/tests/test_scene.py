@@ -12,6 +12,7 @@ VALIDATOR = ROOT / "scripts" / "validate_scene.py"
 MATH = ROOT / "scripts" / "scene_math.py"
 FIXTURE = Path(__file__).parent / "fixtures" / "valid-scene.json"
 DIRECTIONAL_FIXTURE = Path(__file__).parent / "fixtures" / "directional-scene.json"
+BICEP_FIXTURE = Path(__file__).parent / "fixtures" / "bicep-scene.json"
 AZURE_SPRITE = ROOT / "assets" / "azure-icons.svg"
 AZURE_TOKENS = ROOT / "assets" / "azure-tokens.json"
 
@@ -28,6 +29,24 @@ def load_module(path: Path, name: str):
 class SceneContractTests(unittest.TestCase):
     def setUp(self):
         self.document = json.loads(FIXTURE.read_text())
+
+    def test_brown_bicep_fixture_has_28_nodes_and_network_area_metadata(self):
+        document = json.loads(BICEP_FIXTURE.read_text())
+        self.assertEqual(len(document["nodes"]), 28)
+
+        vnets = {area["id"] for area in document["areas"] if area.get("level") == "vnet"}
+        self.assertEqual(vnets, {"wholesale-346-vnet-area", "decus-537-vnet-area"})
+        subnets = [area for area in document["areas"] if area.get("level") == "subnet"]
+        self.assertEqual(len(subnets), 5)
+        for subnet in subnets:
+            self.assertTrue(subnet["label"])
+            self.assertRegex(subnet["cidr"], r"^\d{1,3}(?:\.\d{1,3}){3}/\d{1,2}$")
+            expected_parent = (
+                "wholesale-development-vnet"
+                if subnet["id"].startswith("wholesale-")
+                else "decus-development-vnet"
+            )
+            self.assertEqual(subnet["parent_id"], expected_parent)
 
     def traffic_document(self):
         return json.loads(DIRECTIONAL_FIXTURE.read_text())

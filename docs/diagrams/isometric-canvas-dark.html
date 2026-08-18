@@ -1420,7 +1420,7 @@
           cubeEdge: cube.cubeEdge,
         });
         if (typeof THEME.drawPrivateEndpoint === "function" && node.resource_type === "Microsoft.Network/privateEndpoints") {
-          THEME.drawPrivateEndpoint(ctx, node, project(node.position.x + node.footprint.width / 2, node.position.y + node.footprint.depth / 2, iconHeight), state);
+          THEME.drawPrivateEndpoint(ctx, node, project(node.position.x + node.footprint.width / 2, node.position.y + node.footprint.depth, iconHeight + .15), state);
         } else if (drawNodeIcon(ctx, node, iconRoof, iconMass)) state.renderedIcons.push(node.id);
         const labelPoint = project(
           node.position.x + node.footprint.width / 2,
