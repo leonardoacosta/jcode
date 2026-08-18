@@ -1,0 +1,1351 @@
+{
+  "version": 1,
+  "repository": {
+    "name": "brown-wholesale",
+    "ref": "46be8f57ead08d0f957c4af7ff9321224a668f6a",
+    "commit": "46be8f57ead08d0f957c4af7ff9321224a668f6a"
+  },
+  "default_view": "network",
+  "runtime": {
+    "node_ids": [
+      "cloudflare-apim-proxy",
+      "wholesale-api-management",
+      "fireball-event-publisher-function-app",
+      "bridge-epay-function-app",
+      "wholesale-service-bus-private-endpoint",
+      "wholesale-service-bus-namespace",
+      "wholesale-key-vault-private-endpoint",
+      "wholesale-key-vault",
+      "wholesale-sql-private-endpoint",
+      "wholesale-sql-server",
+      "wholesale-elastic-pool",
+      "function-storage-blob-private-endpoint",
+      "function-storage-file-private-endpoint",
+      "function-storage-queue-private-endpoint",
+      "function-storage-table-private-endpoint",
+      "wholesale-function-storage-account",
+      "wholesale-application-insights",
+      "wholesale-log-analytics-workspace",
+      "enterprise-network-virtual-appliance"
+    ],
+    "path_ids": [
+      "cloudflare-to-wholesale-api-management",
+      "api-management-to-fireball-event-publisher",
+      "api-management-to-bridge-epay",
+      "fireball-to-service-bus-private-endpoint",
+      "fireball-to-key-vault-private-endpoint",
+      "fireball-to-sql-private-endpoint",
+      "bridge-epay-to-storage-queue-private-endpoint",
+      "service-bus-private-link-target",
+      "key-vault-private-link-target",
+      "sql-private-link-target",
+      "storage-blob-private-link-target",
+      "storage-file-private-link-target",
+      "storage-queue-private-link-target",
+      "storage-table-private-link-target",
+      "sql-server-to-elastic-pool",
+      "api-management-to-application-insights",
+      "application-insights-to-log-analytics",
+      "wholesale-applications-to-enterprise-egress"
+    ]
+  },
+  "network": {
+    "containers": [
+      {
+        "id": "wholesale-development-subscription",
+        "kind": "subscription",
+        "label": "Wholesale 346 development subscription",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/foundation/network/consts.bicep",
+            "lines": "7-12",
+            "claim": "The Wholesale development VNet is assigned to the Wholesale development subscription."
+          }
+        ]
+      },
+      {
+        "id": "wholesale-network-resource-group",
+        "kind": "resource-group",
+        "label": "RG-WHS-346-Network-CentralUS-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/foundation/network/consts.bicep",
+            "lines": "7-12",
+            "claim": "The Wholesale development VNet belongs to the named Network resource group."
+          }
+        ],
+        "parent_id": "wholesale-development-subscription"
+      },
+      {
+        "id": "wholesale-runtime-resource-group",
+        "kind": "resource-group",
+        "label": "RG-WHS-346-Wholesale-CentralUS-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "164-172",
+            "claim": "Wholesale shared routing, compute, messaging, secrets, storage, and observability resources are deployed as decomposed services."
+          }
+        ],
+        "parent_id": "wholesale-development-subscription"
+      },
+      {
+        "id": "wholesale-data-resource-group",
+        "kind": "resource-group",
+        "label": "RG-WHS-346-Data-CentralUS-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "169-170",
+            "claim": "Wholesale SQL Server, elastic pool, databases, and SQL private endpoint form the data foundation."
+          }
+        ],
+        "parent_id": "wholesale-development-subscription"
+      },
+      {
+        "id": "wholesale-logging-resource-group",
+        "kind": "resource-group",
+        "label": "RG-WHS-346-Logging-CentralUS-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "171-172",
+            "claim": "Wholesale Application Insights and Log Analytics support APIM diagnostics."
+          }
+        ],
+        "parent_id": "wholesale-development-subscription"
+      },
+      {
+        "id": "wholesale-development-vnet",
+        "kind": "vnet",
+        "label": "VNET-WHS-346-CentralUS-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/foundation/network/vnets/VNET-WHS-346-CentralUS-DEV.bicep",
+            "lines": "13-17",
+            "claim": "The VNet declares two development address spaces."
+          }
+        ],
+        "parent_id": "wholesale-network-resource-group",
+        "cidr": "10.234.132.0/22, 10.234.156.0/22"
+      },
+      {
+        "id": "wholesale-apim-subnet",
+        "kind": "subnet",
+        "label": "SNET-WHS-346-APIM-CentralUS-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/foundation/network/vnets/VNET-WHS-346-CentralUS-DEV.bicep",
+            "lines": "40-47",
+            "claim": "The APIM subnet uses 10.234.157.128/27."
+          }
+        ],
+        "parent_id": "wholesale-development-vnet",
+        "cidr": "10.234.157.128/27"
+      },
+      {
+        "id": "wholesale-vnet-integration-subnet",
+        "kind": "subnet",
+        "label": "SNET-WHS-346-VNetIntegration-CentralUS-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/foundation/network/vnets/VNET-WHS-346-CentralUS-DEV.bicep",
+            "lines": "250-257",
+            "claim": "The delegated VNet Integration subnet uses 10.234.156.64/26."
+          }
+        ],
+        "parent_id": "wholesale-development-vnet",
+        "cidr": "10.234.156.64/26"
+      },
+      {
+        "id": "wholesale-data-subnet",
+        "kind": "subnet",
+        "label": "SNET-WHS-346-DATA-CentralUS-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/foundation/network/vnets/VNET-WHS-346-CentralUS-DEV.bicep",
+            "lines": "152-159",
+            "claim": "The DATA subnet uses 10.234.132.0/25."
+          }
+        ],
+        "parent_id": "wholesale-development-vnet",
+        "cidr": "10.234.132.0/25"
+      },
+      {
+        "id": "decus-development-subscription",
+        "kind": "subscription",
+        "label": "WHS-537 Decus development subscription",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "21-23",
+            "claim": "Decus 537 owns a separate East US 2 landing zone and foundation."
+          }
+        ]
+      },
+      {
+        "id": "decus-network-resource-group",
+        "kind": "resource-group",
+        "label": "RG-WHS-537-Network-EastUS2-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "178-180",
+            "claim": "The Decus network is a separate East US 2 VNet with routed subnets."
+          }
+        ],
+        "parent_id": "decus-development-subscription"
+      },
+      {
+        "id": "decus-shared-resource-group",
+        "kind": "resource-group",
+        "label": "RG-WHS-537-DecusShared-EastUS2-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "182-186",
+            "claim": "The Decus shared root owns Key Vault, App Configuration, SQL Server, elastic pool, and Log Analytics."
+          }
+        ],
+        "parent_id": "decus-development-subscription"
+      },
+      {
+        "id": "decus-development-vnet",
+        "kind": "vnet",
+        "label": "VNET-WHS-537-EastUS2-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/_noship/reference/decus-537-eastus2/vnet.json",
+            "lines": "25-48",
+            "claim": "Declares the East US 2 Decus development Virtual Network and address space."
+          }
+        ],
+        "parent_id": "decus-network-resource-group",
+        "cidr": "10.218.56.0/22"
+      },
+      {
+        "id": "decus-app-subnet",
+        "kind": "subnet",
+        "label": "SNET-WHS-537-APP-EastUS2-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/_noship/reference/decus-537-eastus2/vnet.json",
+            "lines": "49-63",
+            "claim": "Declares the Decus APP subnet and CIDR."
+          }
+        ],
+        "parent_id": "decus-development-vnet",
+        "cidr": "10.218.56.0/26"
+      },
+      {
+        "id": "decus-data-subnet",
+        "kind": "subnet",
+        "label": "SNET-WHS-537-DATA-EastUS2-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/_noship/reference/decus-537-eastus2/vnet.json",
+            "lines": "65-78",
+            "claim": "Declares the Decus DATA subnet and CIDR."
+          }
+        ],
+        "parent_id": "decus-development-vnet",
+        "cidr": "10.218.57.0/26"
+      },
+      {
+        "id": "decus-vnet-integration-subnet",
+        "kind": "subnet",
+        "label": "SNET-WHS-537-DecusVNetIntegration-EastUS2-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/_noship/reference/decus-537-eastus2/vnet.json",
+            "lines": "80-100",
+            "claim": "Declares the Decus Virtual Network Integration subnet, CIDR, and App Service Plan delegation."
+          }
+        ],
+        "parent_id": "decus-development-vnet",
+        "cidr": "10.218.58.0/26"
+      },
+      {
+        "id": "decus-mdop-subnet",
+        "kind": "subnet",
+        "label": "SNET-WHS-537-MDOP-EastUS2-DEV",
+        "status": "active",
+        "evidence": [
+          {
+            "path": "bicep/_noship/reference/decus-537-eastus2/vnet.json",
+            "lines": "102-122",
+            "claim": "Declares the Decus Managed DevOps pool subnet, CIDR, and managed-pool delegation."
+          }
+        ],
+        "parent_id": "decus-development-vnet",
+        "cidr": "10.218.59.0/26"
+      },
+      {
+        "id": "enterprise-hub-vnet",
+        "kind": "vnet",
+        "label": "Enterprise hub virtual network area",
+        "status": "external",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "32-35",
+            "claim": "The audit represents the enterprise hub as a network area containing firewall and DNS services."
+          }
+        ]
+      }
+    ],
+    "memberships": [
+      {
+        "container_id": "wholesale-apim-subnet",
+        "node_id": "wholesale-api-management",
+        "evidence": [
+          {
+            "path": "bicep/foundation/wholesale/wholesale-rg/routing/apim/index.bicep",
+            "lines": "125-151",
+            "claim": "API Management receives the selected subnet resource ID."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-vnet-integration-subnet",
+        "node_id": "fireball-event-publisher-function-app",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "44-48",
+            "claim": "Wholesale Function Apps and App Services integrate with the VNet Integration subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-vnet-integration-subnet",
+        "node_id": "bridge-epay-function-app",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "44-48",
+            "claim": "Wholesale Function Apps and App Services integrate with the VNet Integration subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-data-subnet",
+        "node_id": "wholesale-service-bus-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "50-55",
+            "claim": "Wholesale private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-data-subnet",
+        "node_id": "wholesale-key-vault-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "50-55",
+            "claim": "Wholesale private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-data-subnet",
+        "node_id": "wholesale-sql-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "50-55",
+            "claim": "Wholesale private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-data-subnet",
+        "node_id": "function-storage-blob-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "50-55",
+            "claim": "Wholesale private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-data-subnet",
+        "node_id": "function-storage-file-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "50-55",
+            "claim": "Wholesale private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-data-subnet",
+        "node_id": "function-storage-queue-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "50-55",
+            "claim": "Wholesale private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-data-subnet",
+        "node_id": "function-storage-table-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "50-55",
+            "claim": "Wholesale private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-runtime-resource-group",
+        "node_id": "wholesale-service-bus-namespace",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "164-171",
+            "claim": "Wholesale shared services are decomposed into routing, messaging, secrets, and storage resources."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-runtime-resource-group",
+        "node_id": "wholesale-key-vault",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "164-171",
+            "claim": "Wholesale shared services are decomposed into routing, messaging, secrets, and storage resources."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-runtime-resource-group",
+        "node_id": "wholesale-function-storage-account",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "164-171",
+            "claim": "Wholesale shared services are decomposed into routing, messaging, secrets, and storage resources."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-data-resource-group",
+        "node_id": "wholesale-sql-server",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "169-170",
+            "claim": "Wholesale SQL resources are resource-group-scoped PaaS services."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-data-resource-group",
+        "node_id": "wholesale-elastic-pool",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "169-170",
+            "claim": "Wholesale SQL resources are resource-group-scoped PaaS services."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-logging-resource-group",
+        "node_id": "wholesale-application-insights",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "171-172",
+            "claim": "Wholesale observability services remain resource-group scoped."
+          }
+        ]
+      },
+      {
+        "container_id": "wholesale-logging-resource-group",
+        "node_id": "wholesale-log-analytics-workspace",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "171-172",
+            "claim": "Wholesale observability services remain resource-group scoped."
+          }
+        ]
+      },
+      {
+        "container_id": "decus-data-subnet",
+        "node_id": "decus-key-vault-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "81-85",
+            "claim": "Decus private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "decus-data-subnet",
+        "node_id": "decus-app-configuration-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "81-85",
+            "claim": "Decus private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "decus-data-subnet",
+        "node_id": "decus-sql-private-endpoint",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "81-85",
+            "claim": "Decus private endpoints land in the DATA subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "decus-mdop-subnet",
+        "node_id": "decus-managed-devops-pool",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "87-89",
+            "claim": "The Managed DevOps Pool belongs in the MDOP subnet."
+          }
+        ]
+      },
+      {
+        "container_id": "decus-shared-resource-group",
+        "node_id": "decus-key-vault",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "182-186",
+            "claim": "Decus PaaS foundation resources are resource-group scoped."
+          }
+        ]
+      },
+      {
+        "container_id": "decus-shared-resource-group",
+        "node_id": "decus-app-configuration-store",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "182-186",
+            "claim": "Decus PaaS foundation resources are resource-group scoped."
+          }
+        ]
+      },
+      {
+        "container_id": "decus-shared-resource-group",
+        "node_id": "decus-sql-server",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "182-186",
+            "claim": "Decus PaaS foundation resources are resource-group scoped."
+          }
+        ]
+      },
+      {
+        "container_id": "decus-shared-resource-group",
+        "node_id": "decus-elastic-pool",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "182-186",
+            "claim": "Decus PaaS foundation resources are resource-group scoped."
+          }
+        ]
+      },
+      {
+        "container_id": "decus-shared-resource-group",
+        "node_id": "decus-log-analytics-workspace",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "182-186",
+            "claim": "Decus PaaS foundation resources are resource-group scoped."
+          }
+        ]
+      }
+    ],
+    "links": [
+      {
+        "id": "wholesale-service-bus-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "wholesale-service-bus-private-endpoint",
+        "target_id": "wholesale-service-bus-namespace",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Wholesale Service Bus private endpoint binding",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "195-197",
+            "claim": "The audit directly evidences wholesale service bus private endpoint binding."
+          }
+        ]
+      },
+      {
+        "id": "wholesale-key-vault-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "wholesale-key-vault-private-endpoint",
+        "target_id": "wholesale-key-vault",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Wholesale Key Vault private endpoint binding",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "195-197",
+            "claim": "The audit directly evidences wholesale key vault private endpoint binding."
+          }
+        ]
+      },
+      {
+        "id": "wholesale-sql-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "wholesale-sql-private-endpoint",
+        "target_id": "wholesale-sql-server",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Wholesale SQL private endpoint binding",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "195-197",
+            "claim": "The audit directly evidences wholesale sql private endpoint binding."
+          }
+        ]
+      },
+      {
+        "id": "decus-key-vault-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "decus-key-vault-private-endpoint",
+        "target_id": "decus-key-vault",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Decus Key Vault private endpoint binding",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "195-197",
+            "claim": "The audit directly evidences decus key vault private endpoint binding."
+          }
+        ]
+      },
+      {
+        "id": "decus-app-configuration-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "decus-app-configuration-private-endpoint",
+        "target_id": "decus-app-configuration-store",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Decus App Configuration private endpoint binding",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "195-197",
+            "claim": "The audit directly evidences decus app configuration private endpoint binding."
+          }
+        ]
+      },
+      {
+        "id": "decus-sql-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "decus-sql-private-endpoint",
+        "target_id": "decus-sql-server",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Decus SQL private endpoint binding",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "195-197",
+            "claim": "The audit directly evidences decus sql private endpoint binding."
+          }
+        ]
+      },
+      {
+        "id": "function-storage-blob-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "function-storage-blob-private-endpoint",
+        "target_id": "wholesale-function-storage-account",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Function storage blob private endpoint binding",
+        "evidence": [
+          {
+            "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+            "lines": "55-80",
+            "claim": "The blob private endpoint directly targets function storage."
+          }
+        ]
+      },
+      {
+        "id": "function-storage-file-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "function-storage-file-private-endpoint",
+        "target_id": "wholesale-function-storage-account",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Function storage file private endpoint binding",
+        "evidence": [
+          {
+            "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+            "lines": "82-107",
+            "claim": "The file private endpoint directly targets function storage."
+          }
+        ]
+      },
+      {
+        "id": "function-storage-queue-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "function-storage-queue-private-endpoint",
+        "target_id": "wholesale-function-storage-account",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Function storage queue private endpoint binding",
+        "evidence": [
+          {
+            "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+            "lines": "109-134",
+            "claim": "The queue private endpoint directly targets function storage."
+          }
+        ]
+      },
+      {
+        "id": "function-storage-table-pe-link",
+        "kind": "private-endpoint",
+        "source_id": "function-storage-table-private-endpoint",
+        "target_id": "wholesale-function-storage-account",
+        "direction": "forward",
+        "evidence_level": "direct",
+        "label": "Function storage table private endpoint binding",
+        "evidence": [
+          {
+            "path": "bicep/foundation/wholesale/wholesale-rg/compute/function-storage.bicep",
+            "lines": "136-161",
+            "claim": "The table private endpoint directly targets function storage."
+          }
+        ]
+      },
+      {
+        "id": "decus-spoke-to-enterprise-hub-peering",
+        "kind": "peering",
+        "source_id": "decus-development-vnet",
+        "target_id": "enterprise-hub-vnet",
+        "direction": "both",
+        "evidence_level": "held",
+        "label": "Decus spoke-to-hub peering is gated and not deployed",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "21-23",
+            "claim": "Decus hub peering is declared as gated and not deployed."
+          }
+        ]
+      },
+      {
+        "id": "wholesale-enterprise-routing",
+        "kind": "data",
+        "source_id": "wholesale-development-vnet",
+        "target_id": "enterprise-network-virtual-appliance",
+        "direction": "both",
+        "evidence_level": "inferred",
+        "label": "Wholesale enterprise routing and DNS require live effective-route verification",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "200-206",
+            "claim": "Wholesale enterprise routing is supported by source constants but requires live effective-route confirmation."
+          }
+        ]
+      },
+      {
+        "id": "decus-hub-peering-held",
+        "kind": "peering",
+        "source_id": "decus-development-vnet",
+        "target_id": "enterprise-hub-vnet",
+        "direction": "both",
+        "evidence_level": "held",
+        "label": "Decus 537 spoke-to-hub peering held, not deployed",
+        "evidence": [
+          {
+            "path": "docs/diagrams/decus-wholesale-bicep-traffic-audit.md",
+            "lines": "23,150,187,208-215",
+            "claim": "Decus hub peering is gated off pending enterprise hub identity and coordination; it is not an active relationship."
+          }
+        ]
+      }
+    ]
+  },
+  "pipelines": [
+    {
+      "id": "wholesale-foundation-release",
+      "label": "Wholesale 346 foundation and satellite release",
+      "stages": [
+        {
+          "id": "wholesale-repository",
+          "label": "Wholesale manual environment selection",
+          "stage_type": "repository",
+          "icon": "az-git-repo",
+          "status": "manual",
+          "lane": 0,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "1-12",
+              "claim": "The Wholesale pipeline is manually queued and selects dev, test, stage, or prod."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-link-bets",
+          "label": "LinkBetsVnet stage, link job",
+          "stage_type": "deployment",
+          "icon": "az-vnet",
+          "status": "active",
+          "lane": 0,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "51-89",
+              "claim": "LinkBetsVnet runs an idempotent cross-subscription VNet link job."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-dns-check",
+          "label": "TestBetsDnsResolution stage, test job",
+          "stage_type": "validation",
+          "icon": "az-build-check",
+          "status": "active",
+          "lane": 1,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "91-128",
+              "claim": "TestBetsDnsResolution resolves BETS-hosted Key Vault and SQL names from the environment VNet."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-bicep-cache",
+          "label": "F_BicepCache stage, compile job and published artifact",
+          "stage_type": "artifact",
+          "icon": "az-ado",
+          "status": "active",
+          "lane": 0,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "349-391",
+              "claim": "F_BicepCache compiles foundation and satellite Bicep and publishes the artifact."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-foundation-core",
+          "label": "F_Foundation stage, core job",
+          "stage_type": "deployment",
+          "icon": "az-key-vault",
+          "status": "active",
+          "parallel_group": "foundation-jobs",
+          "lane": 0,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "160-216",
+              "claim": "The core job deploys the foundation core domain inside F_Foundation."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-foundation-logging",
+          "label": "F_Foundation stage, logging job",
+          "stage_type": "deployment",
+          "icon": "az-log-analytics",
+          "status": "active",
+          "parallel_group": "foundation-jobs",
+          "lane": 1,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "217-256",
+              "claim": "The logging job runs in parallel inside F_Foundation."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-foundation-messaging",
+          "label": "F_Foundation stage, messaging job",
+          "stage_type": "deployment",
+          "icon": "az-service-bus",
+          "status": "active",
+          "parallel_group": "foundation-jobs",
+          "lane": 2,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "257-303",
+              "claim": "The messaging job runs in parallel inside F_Foundation."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-data",
+          "label": "D_Data stage, deploy job",
+          "stage_type": "deployment",
+          "icon": "az-sql-server",
+          "status": "active",
+          "lane": 0,
+          "target_node_id": "wholesale-sql-server",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "397-449",
+              "claim": "D_Data depends on F_Foundation and deploys the data domain."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-compute",
+          "label": "D_Compute stage, deploy job",
+          "stage_type": "deployment",
+          "icon": "az-storage",
+          "status": "active",
+          "lane": 1,
+          "target_node_id": "wholesale-function-storage-account",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "446-504",
+              "claim": "D_Compute depends on F_Foundation and deploys the compute domain."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-routing",
+          "label": "R_Routing stage, routing job for API Management",
+          "stage_type": "deployment",
+          "icon": "az-apim",
+          "status": "active",
+          "lane": 0,
+          "target_node_id": "wholesale-api-management",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "498-608",
+              "claim": "R_Routing depends on F_Foundation and deploys API Management with what-if skipped for APIM-heavy templates."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-satellite-infra",
+          "label": "SatelliteInfra stage, application infrastructure fan-out",
+          "stage_type": "deployment",
+          "icon": "az-function-app",
+          "status": "active",
+          "lane": 1,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "609-686",
+              "claim": "SatelliteInfra fans out satellite application infrastructure after foundation dependencies."
+            }
+          ]
+        },
+        {
+          "id": "wholesale-observability",
+          "label": "D_ObsExtras stage, deploy job",
+          "stage_type": "deployment",
+          "icon": "az-log-analytics",
+          "status": "active",
+          "lane": 2,
+          "target_node_id": "wholesale-log-analytics-workspace",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "687-715",
+              "claim": "D_ObsExtras deploys the remaining observability resources after foundation."
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "ws-repo-link",
+          "source_id": "wholesale-repository",
+          "target_id": "wholesale-link-bets",
+          "label": "Manual queue to VNet link",
+          "kind": "manual",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "1-12",
+              "claim": "The pipeline is manually queued before its environment-specific stages."
+            }
+          ]
+        },
+        {
+          "id": "ws-link-dns",
+          "source_id": "wholesale-link-bets",
+          "target_id": "wholesale-dns-check",
+          "label": "Link before DNS verification",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "51-128",
+              "claim": "The VNet link and DNS check are separate root stages."
+            }
+          ]
+        },
+        {
+          "id": "ws-dns-cache",
+          "source_id": "wholesale-dns-check",
+          "target_id": "wholesale-bicep-cache",
+          "label": "Preflight before Bicep compile",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "91-128",
+              "claim": "DNS resolution is an explicit preflight before the foundation tier."
+            }
+          ]
+        },
+        {
+          "id": "ws-cache-foundation-core",
+          "source_id": "wholesale-bicep-cache",
+          "target_id": "wholesale-foundation-core",
+          "label": "Compiled artifact to core job",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "149-216",
+              "claim": "F_Foundation depends on F_BicepCache."
+            }
+          ]
+        },
+        {
+          "id": "ws-cache-foundation-logging",
+          "source_id": "wholesale-bicep-cache",
+          "target_id": "wholesale-foundation-logging",
+          "label": "Compiled artifact to logging job",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "149-256",
+              "claim": "F_Foundation parallel jobs depend on F_BicepCache."
+            }
+          ]
+        },
+        {
+          "id": "ws-cache-foundation-messaging",
+          "source_id": "wholesale-bicep-cache",
+          "target_id": "wholesale-foundation-messaging",
+          "label": "Compiled artifact to messaging job",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "149-303",
+              "claim": "F_Foundation parallel jobs depend on F_BicepCache."
+            }
+          ]
+        },
+        {
+          "id": "ws-foundation-data",
+          "source_id": "wholesale-foundation-core",
+          "target_id": "wholesale-data",
+          "label": "F_Foundation completion gate to D_Data",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "149-153,397-403",
+              "claim": "D_Data follows the whole F_Foundation stage."
+            }
+          ]
+        },
+        {
+          "id": "ws-foundation-compute",
+          "source_id": "wholesale-foundation-logging",
+          "target_id": "wholesale-compute",
+          "label": "F_Foundation completion gate to D_Compute",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "149-153,446-452",
+              "claim": "D_Compute follows the whole F_Foundation stage."
+            }
+          ]
+        },
+        {
+          "id": "ws-foundation-routing",
+          "source_id": "wholesale-foundation-messaging",
+          "target_id": "wholesale-routing",
+          "label": "F_Foundation completion gate to R_Routing",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "149-153,505-516",
+              "claim": "R_Routing follows F_Foundation and runs in parallel with SatelliteInfra."
+            }
+          ]
+        },
+        {
+          "id": "ws-compute-satellite",
+          "source_id": "wholesale-compute",
+          "target_id": "wholesale-satellite-infra",
+          "label": "Compute foundation to application fan-out",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "609-686",
+              "claim": "SatelliteInfra deploys application infrastructure after foundation."
+            }
+          ]
+        },
+        {
+          "id": "ws-routing-observability",
+          "source_id": "wholesale-routing",
+          "target_id": "wholesale-observability",
+          "label": "Routing before observability extras",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/wholesale.yml",
+              "lines": "687-715",
+              "claim": "D_ObsExtras is a later observability stage."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fireball-application-release",
+      "label": "Fireball application, APIM, and health release",
+      "stages": [
+        {
+          "id": "fireball-approval",
+          "label": "Approval stage, WaitForApproval job",
+          "stage_type": "gate",
+          "icon": "az-approval",
+          "status": "conditional-prod-gate",
+          "lane": 0,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/_templates/approval-stage.yml",
+              "lines": "14-30",
+              "claim": "The shared approval template defines an Approval stage with a WaitForApproval job and ManualValidation task; Fireball includes it only for prod."
+            }
+          ]
+        },
+        {
+          "id": "fireball-code-deploy",
+          "label": "CodeDeploy stage: BuildDeployMatrix job",
+          "stage_type": "build",
+          "icon": "az-function-app",
+          "status": "active",
+          "lane": 0,
+          "target_node_id": "fireball-event-publisher-function-app",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "388-448",
+              "claim": "CodeDeploy runs the BuildDeployMatrix job over the manifest project matrix and deploys application code."
+            }
+          ]
+        },
+        {
+          "id": "fireball-ui-build",
+          "label": "CodeDeploy stage: BuildUI job",
+          "stage_type": "build",
+          "icon": "az-static-web-app",
+          "status": "active",
+          "parallel_group": "fireball-code-deploy-jobs",
+          "lane": 1,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "450-499",
+              "claim": "BuildUI is an independent job that builds and deploys the Fireball UI."
+            }
+          ]
+        },
+        {
+          "id": "fireball-tests",
+          "label": "CodeDeploy stage: RunTests job",
+          "stage_type": "validation",
+          "icon": "az-build-check",
+          "status": "active",
+          "parallel_group": "fireball-code-deploy-jobs",
+          "lane": 2,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "500-540",
+              "claim": "RunTests executes the Fireball xUnit test job and publishes results."
+            }
+          ]
+        },
+        {
+          "id": "fireball-apim-route-sync",
+          "label": "APIMRouteSync stage: ApplyFunctionKeyPolicies job",
+          "stage_type": "deployment",
+          "icon": "az-apim",
+          "status": "active",
+          "lane": 0,
+          "target_node_id": "wholesale-api-management",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "542-562",
+              "claim": "APIMRouteSync injects function-key policies on fireball APIs after CodeDeploy."
+            }
+          ]
+        },
+        {
+          "id": "fireball-health-check",
+          "label": "HealthCheck stage: HealthCheckJob and SwaHealthCheckJob",
+          "stage_type": "validation",
+          "icon": "az-app-insights",
+          "status": "active",
+          "parallel_group": "fireball-health-jobs",
+          "lane": 0,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "564-614",
+              "claim": "HealthCheck probes declared Fireball hosts and the SWA from separate jobs."
+            }
+          ]
+        },
+        {
+          "id": "fireball-subkey-sync",
+          "label": "MigrateApimSubKeys stage: SyncFireballSubKeys job",
+          "stage_type": "deployment",
+          "icon": "az-key-vault",
+          "status": "active",
+          "lane": 1,
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "615-644",
+              "claim": "MigrateApimSubKeys synchronizes Fireball APIM subscription keys to Key Vault."
+            }
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "fb-approval-code",
+          "source_id": "fireball-approval",
+          "target_id": "fireball-code-deploy",
+          "label": "Prod approval before CodeDeploy",
+          "kind": "approval",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "382-394",
+              "claim": "Fireball CodeDeploy depends on Approval only when env is prod."
+            }
+          ]
+        },
+        {
+          "id": "fb-code-route",
+          "source_id": "fireball-code-deploy",
+          "target_id": "fireball-apim-route-sync",
+          "label": "CodeDeploy completion to APIM route sync",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "388-394,546-550",
+              "claim": "APIMRouteSync depends on CodeDeploy and accepts its completion result."
+            }
+          ]
+        },
+        {
+          "id": "fb-tests-route",
+          "source_id": "fireball-tests",
+          "target_id": "fireball-apim-route-sync",
+          "label": "Test job is part of CodeDeploy stage",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "388-394,500-505",
+              "claim": "RunTests is a CodeDeploy-stage job before APIMRouteSync."
+            }
+          ]
+        },
+        {
+          "id": "fb-route-health",
+          "source_id": "fireball-apim-route-sync",
+          "target_id": "fireball-health-check",
+          "label": "APIM route sync before health gate",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "546-570",
+              "claim": "HealthCheck depends on successful APIMRouteSync."
+            }
+          ]
+        },
+        {
+          "id": "fb-route-subkeys",
+          "source_id": "fireball-apim-route-sync",
+          "target_id": "fireball-subkey-sync",
+          "label": "Route sync before subscription-key sync",
+          "kind": "dependency",
+          "evidence": [
+            {
+              "path": ".azuredevops/build/satellites/fireball.yml",
+              "lines": "546-618",
+              "claim": "MigrateApimSubKeys depends on APIMRouteSync."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
