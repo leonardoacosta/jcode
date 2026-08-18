@@ -1375,6 +1375,12 @@
       // the same deterministic overlap avoidance as the initial render.
       state.labelPlates = [];
 
+      const privateEndpointTargets = new Map(
+        SCENE.paths
+          .filter(path => path.kind === "network" && path.from && path.to)
+          .map(path => [path.from, path.to]),
+      );
+
       SCENE.paths.forEach(item => {
         const points = routePoints(item);
         const path = polylinePath(points);
@@ -1420,7 +1426,9 @@
           cubeEdge: cube.cubeEdge,
         });
         if (typeof THEME.drawPrivateEndpoint === "function" && node.resource_type === "Microsoft.Network/privateEndpoints") {
-          THEME.drawPrivateEndpoint(ctx, node, project(node.position.x + node.footprint.width / 2, node.position.y + node.footprint.depth, iconHeight + .15), state);
+          const target = SCENE.nodes.find(candidate => candidate.id === privateEndpointTargets.get(node.id));
+          const markerNode = target || node;
+          THEME.drawPrivateEndpoint(ctx, node, project(markerNode.position.x + markerNode.footprint.width / 2, markerNode.position.y + markerNode.footprint.depth, iconHeight + .15), state);
         } else if (drawNodeIcon(ctx, node, iconRoof, iconMass)) state.renderedIcons.push(node.id);
         const labelPoint = project(
           node.position.x + node.footprint.width / 2,
