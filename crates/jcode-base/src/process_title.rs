@@ -72,7 +72,7 @@ pub fn terminal_display_title_for_id(session_id: &str) -> Option<String> {
 /// identifies the session/connection, so do not repeat `jcode` or the memorable
 /// animal name in window chrome.
 pub fn terminal_window_title(
-    icon: &str,
+    _icon: &str,
     display_title: Option<&str>,
     fallback_label: Option<&str>,
     is_selfdev: bool,
@@ -82,10 +82,10 @@ pub fn terminal_window_title(
         .map(|title| truncate_chars(&title, 48));
     let suffix = if is_selfdev { " [self-dev]" } else { "" };
     let title = match display_title {
-        Some(title) => format!("{icon} {title}{suffix}"),
+        Some(title) => format!("{title}{suffix}"),
         None => match fallback_label.and_then(normalized_display_title) {
-            Some(label) => format!("{icon} {label}{suffix}"),
-            None => format!("{icon}{suffix}"),
+            Some(label) => format!("{label}{suffix}"),
+            None => suffix.trim_start().to_string(),
         },
     };
     crate::output_style::terminal_text(&title).into_owned()
@@ -164,18 +164,10 @@ mod tests {
 
     #[test]
     fn terminal_window_title_omits_product_and_animal_names() {
-        assert_eq!(
-            terminal_window_title(
-                "🐙",
-                Some("resume window title"),
-                Some("jcode Octopus"),
-                false
-            ),
-            "🐙 resume window title"
-        );
+        assert_eq!(terminal_window_title("🐙", Some("resume window title"), Some("jcode Octopus"), false), "resume window title");
         assert_eq!(
             terminal_window_title("🐙", None, Some("jcode Octopus"), false),
-            "🐙 jcode Octopus"
+            "jcode Octopus"
         );
         assert_eq!(
             terminal_window_title(
@@ -184,7 +176,7 @@ mod tests {
                 Some("jcode Octopus"),
                 true
             ),
-            "🐙 resume window title [self-dev]"
+            "resume window title [self-dev]"
         );
     }
 
