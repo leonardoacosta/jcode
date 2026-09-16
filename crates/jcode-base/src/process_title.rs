@@ -181,6 +181,14 @@ mod tests {
     }
 
     #[test]
+    fn terminal_window_title_does_not_render_connection_icon_but_keeps_authored_emoji() {
+        assert_eq!(terminal_window_title("🌐", Some("Fix API"), Some("fallback"), false), "Fix API");
+        assert_eq!(terminal_window_title("🔌", Some("🛠 Fix API"), Some("fallback"), false), "🛠 Fix API");
+        assert_eq!(terminal_window_title("🌐", None, Some("fallback"), true), "fallback [self-dev]");
+        assert_eq!(terminal_window_title("🔌", None, None, false), "");
+    }
+
+    #[test]
     fn terminal_session_label_for_id_reads_custom_title_from_session() {
         let _guard = lock_test_env();
         let previous_home = std::env::var_os("JCODE_HOME");
