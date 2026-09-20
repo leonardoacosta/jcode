@@ -80,6 +80,9 @@ struct BrowserInput {
     fields: Option<Vec<BrowserField>>,
     #[serde(default)]
     scroll_to: Option<ScrollTo>,
+    /// Natural-language goal for `jev_select` action.
+    #[serde(default)]
+    goal: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -272,6 +275,13 @@ impl Tool for BrowserTool {
                 }
             }),
         );
+        properties.insert(
+            "goal".into(),
+            json!({
+                "type": "string",
+                "description": "Natural-language goal for jev_select: what action to perform on the page."
+            }),
+        );
         Value::Object(Map::from_iter([
             ("type".into(), json!("object")),
             ("required".into(), json!(["action"])),
@@ -286,6 +296,7 @@ impl Tool for BrowserTool {
         match params.action.as_str() {
             "status" => provider.status(&ctx).await,
             "setup" => provider.setup().await,
+            "jev_select" => jev_select_action(provider, &params, ctx).await,
             other => {
                 let setup_message = provider.ensure_ready().await?;
                 let output = provider.execute(other, &params, &ctx).await?;
@@ -296,6 +307,115 @@ impl Tool for BrowserTool {
             }
         }
     }
+}
+
+
+/// jev_select: snapshot the page, ask Jev which operation + element to target,
+/// then execute the chosen browser action.
+async fn jev_select_action(
+    provider: &(dyn BrowserProvider + '_),
+    input: &BrowserInput,
+    ctx: ToolContext,
+) -> Result<ToolOutput> {
+    let goal = input.goal.as_deref().unwrap_or("interact with the page");
+
+    let setup_message = provider.ensure_ready().await?;
+
+    // Snapshot the DOM as annotated text.
+    let snap_input: BrowserInput = serde_json::from_value(json!({
+        "action": "snapshot",
+        "format": "annotated",
+        "browser": input.browser,
+    }))?;
+    let snap = provider.execute("snapshot", &snap_input, &ctx).await?;
+    let snap_text = &snap.output;
+
+    // Call Jev for operation + target selection.
+    let (op, target_idx) = match call_jev_select(goal, snap_text).await {
+        Ok(r) => r,
+        Err(e) => {
+            return Ok(ToolOutput::new(format!(
+                "jev_select: Jev call failed: {e}. Use manual browser actions."
+            )));
+        }
+    };
+
+    // Execute the chosen action.
+    let action_input: BrowserInput = serde_json::from_value(json!({
+        "action": &op,
+        "selector": &target_idx,
+        "browser": input.browser,
+    }))?;
+    let mut output = provider.execute(&op, &action_input, &ctx).await?;
+
+    if let Some(msg) = setup_message {
+        if !msg.is_empty() {
+            output = prepend_setup_message(output, &msg);
+        }
+    }
+
+    Ok(output)
+}
+
+async fn call_jev_select(goal: &str, page_text: &str) -> Result<(String, String)> {
+    let api_key = std::env::var("TYPESAFE_API_KEY")
+        .or_else(|_| std::env::var("OPENROUTER_API_KEY"))
+        .map_err(|_| anyhow::anyhow!("no TYPESAFE_API_KEY or OPENROUTER_API_KEY set"))?;
+
+    let request = serde_json::json!({
+        "state": { "goal": goal, "page_text": page_text.chars().take(2000).collect::<String>() },
+        "model": "jev-latest",
+        "questions": {
+            "operation": {
+                "type": "choice",
+                "instructions": "Which single browser action (click, type, select, scroll_up, scroll_down, wait, done) best advances this goal?",
+                "criteria": {
+                    "click": "Click a button or link visible on the page",
+                    "type": "Type text into a text field",
+                    "select": "Select an option from a dropdown",
+                    "scroll_up": "Scroll the page up",
+                    "scroll_down": "Scroll the page down",
+                    "wait": "Wait for the page to load or settle",
+                    "done": "The goal is already achieved"
+                }
+            },
+            "target": {
+                "type": "choice",
+                "instructions": "Which element on the page is the best target for this action? Return a CSS selector snippet like 'button[aria-label=\"Search\"]' or 'input[type=\"text\"]'.",
+                "criteria": {
+                    "auto": "Let Jev pick the best target automatically (default)",
+                    "primary_button": "The most prominent button on the page",
+                    "first_input": "The first text input field"
+                }
+            }
+        }
+    });
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .context("jev_select: request failed")?;
+
+    let resp = client
+        .post("https://api.typesafe.ai/v1/systemone")
+        .header("Authorization", format!("Bearer {api_key}"))
+        .json(&request)
+        .send()
+        .await
+        .context("jev_select: API unreachable")?;
+
+    if !resp.status().is_success() {
+        anyhow::bail!("TypeSafe HTTP {}", resp.status());
+    }
+
+    let body: Value = resp.json().await.context("jev_select: bad response")?;
+    let answers = body["answers"].as_object()
+        .ok_or_else(|| anyhow::anyhow!("jev_select: invalid response"))?;
+
+    let op = answers["operation"]["choice"].as_str().unwrap_or("click").to_string();
+    let target = answers["target"]["choice"].as_str().unwrap_or("auto").to_string();
+
+    Ok((op, target))
 }
 
 fn prepend_setup_message(mut output: ToolOutput, message: &str) -> ToolOutput {
