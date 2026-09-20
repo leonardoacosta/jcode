@@ -184,10 +184,12 @@ impl Tool for EvaluateTool {
         // Check cache.
         let fp = JevCache::fingerprint(&model_for_cache, &questions_json, &params.state, "");
         if let Some(cached) = self.cache.check(&fp) {
+            crate::logging::debug(&format!("Jev cache HIT fp={fp}"));
             return Ok(ToolOutput::new(format!(
                 "{cached}"
             )));
         }
+        crate::logging::debug(&format!("Jev cache MISS fp={fp}"));
 
         self.cache.record_call();
 
