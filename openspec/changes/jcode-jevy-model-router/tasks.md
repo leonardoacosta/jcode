@@ -12,13 +12,13 @@ Priority: CONSIDER — medium effort, medium risk.
 ## 2. Policy engine
 
 - [x] 2.1 Implement deterministic routing policy rules: `route_tier()`: explicit user choice wins; Jev failure→KeepCurrent (fail-open); low confidence (<0.6)→no downgrade, cap upgrade at Balanced; large conversation (>50% budget)→refuse downgrade; all same tier→skip Jev; already cheapest→skip downgrade; unavailable tier→step upward.
-- [ ] 2.2 Implement tier model resolution: Per-provider config `[provider.<name>.tiers]` with fast/balanced/strong/long keys. Resolution: unconfigured tier steps upward. No tiers configured → routing disabled. Support all active Jcode providers.
+- [x] 2.2 Implement tier model resolution: Per-provider config `[provider.<name>.tiers]` with fast/balanced/strong/long keys. Resolution: unconfigured tier steps upward. No tiers configured → routing disabled. Support all active Jcode providers.
 
-## Deferred tasks
+## 3. Provider integration
 
-- [ ] 3.1 Wire JevRouter into provider dispatch pipeline (deferred — needs clear hook point)
-- [ ] 3.2 Add routing telemetry and logging (deferred)
-- [ ] 3.3 Implement fail-open and edge case handling (deferred)
+- [x] 3.1 Wire JevRouter into provider dispatch pipeline: Add as middleware in provider dispatch. Intercept first request per turn → classify → apply policy → resolve tier model → route. Tool-loop continuations reuse turn's model.
+- [x] 3.2 Add routing telemetry and logging: Log routing decisions at debug: "JevRouter: prompt → Strong (complexity=4, confidence=0.82)". Track per-session: turns, tier distribution, Jev failures, cost saved estimate.
+- [x] 3.3 Implement fail-open and edge case handling: Jev unavailable→KeepCurrent (warn). Rate limited→KeepCurrent (log). Routing disabled→skip Jev entirely. Prompt exceeds limit→truncate last 32k chars. Concurrent turns→first routes, subsequent reuse.
 
 ## Dependency graph
 

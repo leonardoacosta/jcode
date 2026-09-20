@@ -10,7 +10,7 @@ pub use jcode_config_types::{
     KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
     MarkdownSpacingMode, NamedProviderAuth, NamedProviderConfig, NamedProviderModelConfig,
     NamedProviderType, NativeScrollbarConfig, NotificationsConfig, OverscrollStatusMode,
-    PowerConfig, ProviderConfig, ReasoningDisplayMode, SafetyConfig, SessionPickerResumeAction,
+    PowerConfig, ProviderConfig, ProviderTierConfig, ReasoningDisplayMode, RouterConfig, SafetyConfig, SessionPickerResumeAction,
     SponsorsConfig, SwarmSpawnMode, SwarmStripLayout, TerminalConfig, UpdateChannel,
     WebSearchConfig, WebSearchEngine,
 };
@@ -523,6 +523,10 @@ pub struct Config {
 
     /// Compaction configuration
     pub compaction: CompactionConfig,
+
+    /// Jev model router configuration
+    #[serde(default)]
+    pub router: RouterConfig,
 
     /// Power-management configuration (prevent sleep while streaming)
     pub power: PowerConfig,

@@ -1583,3 +1583,42 @@ mod reasoning_display_defaults_tests {
         assert!(!display.show_thinking);
     }
 }
+
+/// Jev-driven model tier routing configuration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RouterConfig {
+    /// Whether Jev model routing is enabled.
+    pub enabled: bool,
+    /// Per-provider tier model mappings (provider name -> tier -> model).
+    pub provider_tiers: std::collections::HashMap<String, ProviderTierConfig>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ProviderTierConfig {
+    pub fast: Option<String>,
+    pub balanced: Option<String>,
+    pub strong: Option<String>,
+    pub long: Option<String>,
+}
+
+impl Default for RouterConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            provider_tiers: std::collections::HashMap::new(),
+        }
+    }
+}
+
+impl Default for ProviderTierConfig {
+    fn default() -> Self {
+        Self {
+            fast: None,
+            balanced: None,
+            strong: None,
+            long: None,
+        }
+    }
+}

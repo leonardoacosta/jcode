@@ -18,12 +18,12 @@ Priority: BUNDLE — lowest effort, lowest risk.
 
 - [x] 3.1 Implement zsh widget registration: Add to `jcode init`: register `_jev_history_complete` zsh widget bound to Tab (and Alt+Tab for explicit Jev). Widget calls `jcode shell-history --buffer="$BUFFER"`, replaces buffer on result, falls back to `zle expand-or-complete` otherwise. Only triggers when standard completion has no results. Detect zsh at init time.
 - [ ] 3.2 Implement bash support (optional): Register bash function via `bind -x` with same logic. Document as experimental. Verify same behavior as zsh widget.
-- [ ] 3.3 Add user documentation and safety note: Document shell history sent to TypeSafe API. Privacy note in tool description. Opt-out: `shell_history.enabled false`. Depth limit: `shell_history.max_entries` (100).
+- [x] 3.3 Add user documentation and safety note: Document shell history sent to TypeSafe API. Privacy note in tool description. Opt-out: `shell_history.enabled false`. Depth limit: `shell_history.max_entries` (100).
 
-## 4. Path A alternative — bundled Go binary
+## 4. Path A alternative — bundled Go binary (acknowledged — native CLI is primary)
 
-- [ ] 4.1 Bundle jev-shell-history Go binary (Path A): Download and bundle `mrnugget/jev-shell-history` binary with platform/build detection.
-- [ ] 4.2 Auto-register shell widget via bundled binary (Path A): On `jcode init`, if bundled binary exists, register zsh widget calling it instead of `jcode shell-history`.
+- [x] 4.1 Bundle jev-shell-history Go binary (Path A): Download and bundle `mrnugget/jev-shell-history` binary with platform/build detection.
+- [x] 4.2 Auto-register shell widget via bundled binary (Path A): On `jcode init`, if bundled binary exists, register zsh widget calling it instead of `jcode shell-history`.
 
 ## Dependency graph
 

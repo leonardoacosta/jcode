@@ -3628,6 +3628,9 @@ fn match_command_sync(
 /// Users run `jcode shell-history --init >> ~/.zshrc` to install.
 fn print_zsh_widget() {
     let widget = r##"# ── jcode jev-shell-history Tab completion ──
+# PRIVACY: Your shell history text is sent to api.typesafe.ai for
+# fuzzy matching. Set shell_history.enabled=false to opt out.
+# Limit history depth with shell_history.max_entries (default 200).
 _jev_history_complete() {
   local buffer="$BUFFER"
   if [[ -z "$buffer" ]]; then
