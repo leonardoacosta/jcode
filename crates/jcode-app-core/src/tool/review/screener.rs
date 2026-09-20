@@ -820,6 +820,16 @@ pub async fn screen_hunks(
         }
     }
 
+    // Telemetry: log screening outcome.
+    let cost_saved = results.estimated_cost_saved();
+    crate::logging::info(&format!(
+        "JevReview: {} hunks screened, {} flagged, {} low-risk, ${:.4} saved",
+        results.total_screened,
+        results.llm_reviews_triggered(),
+        results.llm_reviews_avoided(),
+        cost_saved,
+    ));
+
     results
 }
 
