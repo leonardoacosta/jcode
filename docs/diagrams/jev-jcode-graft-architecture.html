@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jev + Jcode + Graft — Integration Architecture</title>
+<style>
+  :root {
+    --bg: #080a0e;
+    --surface: #0f1118;
+    --surface2: #161922;
+    --border: #1e2230;
+    --text: #99a4b8;
+    --text-dim: #5a6478;
+    --text-bright: #dde4f0;
+    --accent: #6ef5a0;
+    --accent2: #5edbff;
+    --warn: #f5b06e;
+    --rose: #f56e8a;
+    --purple: #a08ef5;
+    --grid: #1a1d2a;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{font-size:15px;scroll-behavior:smooth}
+  body{
+    font-family: 'Iosevka Web','JetBrains Mono','SF Mono','Cascadia Code',monospace;
+    background:var(--bg);color:var(--text);min-height:100vh;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:
+      radial-gradient(ellipse at 25% 20%,rgba(110,245,160,0.03),transparent 60%),
+      radial-gradient(ellipse at 75% 60%,rgba(94,219,255,0.03),transparent 55%),
+      radial-gradient(ellipse at 50% 85%,rgba(160,142,245,0.02),transparent 70%);}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity:0.018;}
+  .container{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 2rem}
+
+  header{padding:4rem 0 2rem;text-align:center}
+  header .eyebrow{font-size:0.7rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.25em;font-weight:700;margin-bottom:1rem}
+  header h1{font-size:2.2rem;color:var(--text-bright);font-weight:800;letter-spacing:-0.03em;line-height:1.15}
+  header h1 span:nth-child(2){color:var(--accent)}
+  header h1 span:nth-child(4){color:var(--accent2)}
+  header .sub{font-size:0.85rem;color:var(--text-dim);margin-top:0.8rem;max-width:620px;margin-inline:auto}
+
+  .tabs{display:flex;gap:0;justify-content:center;margin:0 auto 3rem;border-bottom:1px solid var(--border);max-width:900px;position:relative;z-index:1}
+  .tab{padding:0.7rem 1.5rem;font-size:0.7rem;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:color 0.2s,border-color 0.2s;font-weight:600;letter-spacing:0.03em;text-transform:uppercase}
+  .tab:hover{color:var(--text-bright)}
+  .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+  .panel{display:none}
+  .panel.active{display:block}
+
+  /* Mermaid containers */
+  .diagram-box{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:2rem;margin:2rem 0;overflow-x:auto}
+  .diagram-box h3{font-size:0.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1rem;font-weight:700}
+  .diagram{min-height:60px}
+  .diagram svg{max-width:100%;height:auto}
+
+  /* Section cards */
+  .section{margin:3rem 0}
+  .section h2{font-size:1.15rem;color:var(--text-bright);margin-bottom:0.4rem;font-weight:700}
+  .section h2 .tag{padding:0.15em 0.5em;border-radius:3px;font-size:0.55rem;vertical-align:middle;margin-left:0.5rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase}
+  .tag-adopt{background:var(--accent);color:#000}
+  .tag-consider{background:var(--warn);color:#000}
+  .tag-bundle{background:var(--purple);color:#fff}
+  .section .desc{font-size:0.82rem;color:var(--text-dim);margin-bottom:1.2rem;line-height:1.6}
+
+  .int-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem}
+  .int-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.2rem 1.3rem;position:relative;overflow:hidden;transition:border-color 0.2s}
+  .int-card:hover{border-color:#3a6648}
+  .int-card::after{content:'';position:absolute;top:0;right:0;width:100px;height:100px;background:radial-gradient(ellipse at 100% 0%,var(--card-glow,transparent),transparent 70%);opacity:0.04;pointer-events:none}
+  .int-card .num{font-size:0.6rem;color:var(--accent);font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.3rem}
+  .int-card .title{font-size:0.9rem;color:var(--text-bright);font-weight:600;margin-bottom:0.3rem}
+  .int-card .why{font-size:0.72rem;color:var(--text-dim);line-height:1.5;margin-bottom:0.6rem}
+  .int-card .how{font-size:0.7rem;color:var(--accent2);line-height:1.4}
+  .int-card .codeblock{font-size:0.65rem;color:var(--accent2);background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:0.5rem 0.7rem;margin-top:0.5rem;white-space:pre-wrap;line-height:1.4;overflow-x:auto}
+
+  .graft-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:2rem 0}
+  .graft-layout .diagram-box{margin:0}
+
+  /* Manual bar chart */
+  .bar-chart{display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0}
+  .bar-row{display:flex;align-items:center;gap:0.75rem}
+  .bar-label{font-size:0.7rem;color:var(--text-dim);width:160px;text-align:right;flex-shrink:0;line-height:1.2}
+  .bar-track{flex:1;height:18px;background:var(--surface2);border-radius:2px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;position:absolute;left:0;top:0;display:flex;align-items:center;padding-left:0.5rem;font-size:0.62rem;color:#000;font-weight:700;white-space:nowrap;border-radius:2px}
+  .bar-jevs{background:var(--accent);z-index:2}
+  .bar-llm{background:var(--warn);z-index:1}
+  .bar-chart-caption{font-size:0.65rem;color:var(--text-dim);text-align:center;margin-top:0.5rem}
+
+  .met-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.75rem;margin:1.5rem 0}
+  .met{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1rem;text-align:center}
+  .met .val{font-size:1.4rem;color:var(--accent);font-weight:800;letter-spacing:-0.02em}
+  .met .lbl{font-size:0.65rem;color:var(--text-dim);margin-top:0.2rem;text-transform:uppercase;letter-spacing:0.05em}
+
+  .int-questions{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:1.5rem;margin:2rem 0}
+  .int-questions p{font-size:0.8rem;color:var(--text-dim);margin-bottom:0.5rem;line-height:1.6}
+  .int-questions strong{color:var(--text-bright)}
+
+  footer{text-align:center;padding:3rem 0 2rem;font-size:0.7rem;color:var(--text-dim);border-top:1px solid var(--border);margin-top:2rem}
+  footer a{color:var(--accent2);text-decoration:none}
+
+  @media(max-width:768px){
+    .container{padding:0 1rem}
+    header h1{font-size:1.4rem}
+    .graft-layout{grid-template-columns:1fr}
+    .int-grid{grid-template-columns:1fr}
+    .tabs{overflow-x:auto;justify-content:flex-start;-webkit-overflow-scrolling:touch}
+    .tab{padding:0.5rem 1rem;flex-shrink:0}
+    .bar-label{width:100px;font-size:0.62rem}
+  }
+</style>
+</head>
+<body>
+
+<header class="container">
+  <div class="eyebrow">2026-09-19 · Research Artifact</div>
+  <h1><span>Jev</span> <span>+</span> <span>Jcode</span> <span>+</span> <span>Graft</span></h1>
+  <p class="sub">Seven integration proposals mapped across Jcode's architecture. Three adopt. Three consider. One bundle. Plus Graft augmentation with Jev semantic scoring.</p>
+</header>
+
+<div class="tabs container">
+  <div class="tab active" onclick="switchTab('integrations')">Integrations</div>
+  <div class="tab" onclick="switchTab('graft')">Graft + Jev</div>
+  <div class="tab" onclick="switchTab('architecture')">Architecture</div>
+  <div class="tab" onclick="switchTab('metrics')">Evidence</div>
+</div>
+
+<main class="container">
+
+<!-- ===== INTEGRATIONS PANEL ===== -->
+<div class="panel active" id="panel-integrations">
+
+  <div class="diagram-box">
+    <h3>Integration Decision Map</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+graph LR
+    E1["#1 evaluate tool"]:::adopt
+    E2["#2 compaction"]:::adopt
+    E3["#3 browser select"]:::adopt
+    C1["#4 model routing"]:::consider
+    C2["#5 worker supervision"]:::consider
+    C3["#6 code review"]:::consider
+    B1["#7 shell history"]:::bundle
+    E1 -->|foundation| E2
+    E1 -->|foundation| E3
+    E1 -->|enables| C1
+    E1 -->|enables| C2
+    E1 -->|enables| C3
+    E3 -->|acceleration| E2
+    C1 -->|cost saving| E2
+    C2 -->|guard| E3
+    classDef adopt fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    classDef consider fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    classDef bundle fill:#10081a,stroke:#a08ef5,color:#a08ef5
+      </pre>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Adopt <span class="tag tag-adopt">build now</span></h2>
+    <p class="desc">Foundation primitives. Replace LLM-call-with-text-parsing patterns with typed Jev judgments.</p>
+    <div class="int-grid">
+      <div class="int-card" style="--card-glow:rgba(110,245,160,0.5)">
+        <div class="num">#1 · ADOPT · LOW EFFORT · HIGH IMPACT</div>
+        <div class="title">evaluate tool</div>
+        <div class="why">Replaces "ask LLM → parse text → hope valid" with typed probabilities. ~$0.0002/call vs ~$0.003. ~300ms vs ~2s latency.</div>
+        <div class="how">→ Path A: Native Rust tool (~200 lines, reqwest + Serde)<br>→ Path B: Bundle evaluate Go binary as built-in MCP</div>
+        <div class="codeblock">POST https://api.typesafe.ai/v1/systemone
+{ state, model: "jev-latest",
+  questions: { is_urgent: { type: "noul", instructions: "..." } } }
+→ { answers: { is_urgent: { noul: 0.91 } } }</div>
+      </div>
+      <div class="int-card" style="--card-glow:rgba(110,245,160,0.4)">
+        <div class="num">#2 · ADOPT · MEDIUM EFFORT · HIGH IMPACT</div>
+        <div class="title">Jev-driven context compaction</div>
+        <div class="why">Never rewrites text. Jev scores each tool call for relevance. ~$0.002 vs ~$0.02 for LLM summarization.</div>
+        <div class="how">→ Add JevCompactor to agent/compaction.rs<br>→ Steal fast-jev-compaction's 5-step algorithm<br>→ Fall back to LLM summarization if Jev unavailable</div>
+        <div class="codeblock">1. Pair tool_use ↔ tool_result; pin recent N
+2. Fit state into 25k tokens (staged truncation)
+3. Per call: 2 Noul Qs — "keep call?" "keep result?"
+4. Batched into parallel Jev requests
+5. Rebuild message list; no orphaned results</div>
+      </div>
+      <div class="int-card" style="--card-glow:rgba(110,245,160,0.3)">
+        <div class="num">#3 · STEAL · HIGH EFFORT · HIGH IMPACT</div>
+        <div class="title">Jev browser element selection</div>
+        <div class="why">jev-ultrafast: 7.1s flight search. 101 browser calls instead of 1,092. One Jev request picks operation + element.</div>
+        <div class="how">→ Add action="jev_select" to tool/browser.rs<br>→ Snapshot DOM → indexed element table<br>→ Speculative fan-out: operation + target in one request<br>→ Only TYPE_TEXT triggers small LLM</div>
+        <div class="codeblock">page → DOM snapshot → [{index,role,label,value}...]
+→ TypeSafe: operation={CLICK|TYPE|SELECT|...}
+ + click_target={[1]Button,[5]Link,...}
+ + type_text_target={[2]Input,[3]Search,...}
+→ Browser executes matching element</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Consider <span class="tag tag-consider">prototype</span></h2>
+    <p class="desc">Validated prior art but needs Jcode-specific adaptation. Prototype before committing.</p>
+    <div class="int-grid">
+      <div class="int-card" style="--card-glow:rgba(245,176,110,0.4)">
+        <div class="num">#4 · CONSIDER · MEDIUM EFFORT</div>
+        <div class="title">Model tier routing</div>
+        <div class="why">Saves 40-60% API costs. Jev picks Fast/Balanced/Strong per-turn. jev-router proven on Claude Code + Codex.</div>
+        <div class="how">→ Provider middleware, not proxy<br>→ Intercept first request per turn<br>→ Tier map: per-provider config<br>→ Fail-open: unavailable Jev = current model</div>
+      </div>
+      <div class="int-card" style="--card-glow:rgba(245,176,110,0.3)">
+        <div class="num">#5 · CONSIDER · HIGH EFFORT</div>
+        <div class="title">Worker supervision (Foreman)</div>
+        <div class="why">10 Jev Noul questions per cycle. Catches stuck/off-track workers before token waste. Deterministic policy decides.</div>
+        <div class="how">→ Periodic Jev assessment on swarm workers (30s)<br>→ 10 dimensions in one request per cycle<br>→ Start passive: observe, don't intervene<br>→ Risk: Jcode swarm &gt; Foreman single-worker</div>
+      </div>
+      <div class="int-card" style="--card-glow:rgba(245,176,110,0.3)">
+        <div class="num">#6 · CONSIDER · MEDIUM EFFORT</div>
+        <div class="title">Jev code review</div>
+        <div class="why">6-stage pipeline across 5 dimensions with calibrated confidence. 10-50× cheaper than LLM review.</div>
+        <div class="how">→ Pre-screen: Noul risk matrix per diff hunk<br>→ Score &gt;0.7: route to full LLM review<br>→ Score &lt;0.7: Jev-only with confidence scores<br>→ Integrate with existing /review skill</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Bundle <span class="tag tag-bundle">low risk</span></h2>
+    <div class="int-grid">
+      <div class="int-card" style="--card-glow:rgba(160,142,245,0.3)">
+        <div class="num">#7 · BUNDLE · LOW EFFORT · LOW IMPACT</div>
+        <div class="title">Shell history</div>
+        <div class="why">Tab → Jev picks matching command from history. ~$0.0001/completion. Zero risk.</div>
+        <div class="how">→ Bundle Go binary or re-implement as jcode shell-history<br>→ Zsh widget registered on jcode init</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="int-questions">
+    <p><strong>Which existing Jcode crates do these extend, replace, or supplement?</strong></p>
+    <table style="width:100%;border-collapse:collapse;font-size:0.75rem;margin-top:0.8rem">
+      <tr style="color:var(--text-dim);border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:0.4rem 0.5rem;font-weight:600">#</th>
+        <th style="text-align:left;padding:0.4rem 0.5rem;font-weight:600">Integration</th>
+        <th style="text-align:left;padding:0.4rem 0.5rem;font-weight:600">Relation</th>
+        <th style="text-align:left;padding:0.4rem 0.5rem;font-weight:600">Target Crate / Module</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#1</td><td style="padding:0.4rem 0.5rem;color:var(--text-bright)">evaluate tool</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--accent)">supplement</span></td><td style="padding:0.4rem 0.5rem;font-size:0.65rem;color:var(--text-dim)">jcode-app-core → <code style="color:var(--accent2)">tool/evaluate.rs</code> (new)<br>or jcode-app-core → <code style="color:var(--accent2)">tool/mcp.rs</code> (bundled)</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#2</td><td style="padding:0.4rem 0.5rem;color:var(--text-bright)">Jev compaction</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--warn)">replace</span></td><td style="padding:0.4rem 0.5rem;font-size:0.65rem;color:var(--text-dim)">jcode-app-core → <code style="color:var(--accent2)">agent/compaction.rs</code></td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#3</td><td style="padding:0.4rem 0.5rem;color:var(--text-bright)">Browser select</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--accent)">extend</span></td><td style="padding:0.4rem 0.5rem;font-size:0.65rem;color:var(--text-dim)">jcode-app-core → <code style="color:var(--accent2)">tool/browser.rs</code></td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#4</td><td style="padding:0.4rem 0.5rem;color:var(--text-bright)">Model routing</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--warn)">extend</span></td><td style="padding:0.4rem 0.5rem;font-size:0.65rem;color:var(--text-dim)">jcode-app-core → <code style="color:var(--accent2)">agent/provider.rs</code></td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#5</td><td style="padding:0.4rem 0.5rem;color:var(--text-bright)">Worker supervision</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--warn)">extend</span></td><td style="padding:0.4rem 0.5rem;font-size:0.65rem;color:var(--text-dim)">jcode-app-core → <code style="color:var(--accent2)">agent/turn_loops.rs</code></td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#6</td><td style="padding:0.4rem 0.5rem;color:var(--text-bright)">Code review</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--accent)">supplement</span></td><td style="padding:0.4rem 0.5rem;font-size:0.65rem;color:var(--text-dim)">jcode-app-core → <code style="color:var(--accent2)">tool/skill.rs</code> (/review)</td></tr>
+      <tr><td style="padding:0.4rem 0.5rem;color:var(--accent)">#7</td><td style="padding:0.4rem 0.5rem;color:var(--text-bright)">Shell history</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--purple)">supplement</span></td><td style="padding:0.4rem 0.5rem;font-size:0.65rem;color:var(--text-dim)">jcode-base or new binary</td></tr>
+    </table>
+    <p style="font-size:0.7rem;color:var(--text-dim);margin-top:0.8rem"><span style="color:var(--accent)">supplement</span> = add alongside · <span style="color:var(--warn)">extend</span> = enhance existing · <span style="color:var(--warn)">replace</span> = swap out current implementation</p>
+  </div>
+</div>
+
+<!-- ===== GRAFT + JEV PANEL ===== -->
+<div class="panel" id="panel-graft">
+  <div class="section">
+    <h2>Graft + Jev Augmentation</h2>
+    <p class="desc">Graft (NanoNets/Trail, MIT) builds a structural code graph from tree-sitter ASTs. Jev adds probabilistic semantic judgment on top. Structure + meaning, both cheap and fast.</p>
+  </div>
+
+  <div class="met-grid">
+    <div class="met"><div class="val">46%</div><div class="lbl">fewer tool calls</div></div>
+    <div class="met"><div class="val">42%</div><div class="lbl">fewer tokens</div></div>
+    <div class="met"><div class="val">60%</div><div class="lbl">less time</div></div>
+    <div class="met"><div class="val">66%</div><div class="lbl">SWE-bench accuracy</div></div>
+    <div class="met"><div class="val">12pts</div><div class="lbl">over cold baseline</div></div>
+    <div class="met"><div class="val">3ms</div><div class="lbl">graph refresh</div></div>
+  </div>
+
+  <div class="diagram-box">
+    <h3>Graft Build Pipeline</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart LR
+    S["Source files"] --> T1["Tier 1 — tree-sitter<br/>deterministic, no model"]
+    S --> P1["Pass 1 — LLM summary<br/>per-file description"]
+    T1 --> W["graft/.graph/wiring.json"]
+    P1 --> P2["Pass 2 — group into<br/>semantic nodes + links"]
+    P2 --> N["graft/*.md<br/>node graph"]
+    N --> A["Coding Agent<br/>46% fewer calls"]
+    style T1 fill:#0f1118,stroke:#5edbff,color:#5edbff
+    style P1 fill:#0f1118,stroke:#a08ef5,color:#a08ef5
+    style P2 fill:#0f1118,stroke:#a08ef5,color:#a08ef5
+    style W fill:#0f1118,stroke:#6ef5a0,color:#6ef5a0
+    style N fill:#0f1118,stroke:#6ef5a0,color:#6ef5a0
+    style A fill:#0f1118,stroke:#f5b06e,color:#f5b06e
+      </pre>
+    </div>
+  </div>
+
+  <div class="graft-layout">
+    <div class="diagram-box">
+      <h3>Aug #1: Impact Analysis</h3>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TD
+    G["Graft: cron.ts dependents<br/>scheduler, api, workers"] --> J["Jev Noul per dependent:<br/>'Will changing cron.ts<br/>break this file?'"]
+    J --> R["scheduler.ts: 0.78 ⚠<br/>api.ts: 0.45<br/>workers.ts: 0.12"]
+    style G fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style J fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    style R fill:#0f1118,stroke:#5edbff,color:#5edbff
+        </pre>
+      </div>
+    </div>
+    <div class="diagram-box">
+      <h3>Aug #2: Task→Node Routing</h3>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TD
+    T["Task: 'Add rate limiting'"] --> G["Graft ask → api,<br/>middleware, config, types"]
+    G --> J["Jev Noul per node:<br/>'Needs changes for<br/>rate limiting?'"]
+    J --> R["api: 0.91 ✓<br/>middleware: 0.88 ✓<br/>config: 0.72 ✓<br/>types: 0.18 ✗"]
+    style T fill:#0f1118,stroke:#f5b06e,color:#f5b06e
+    style G fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style J fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    style R fill:#0f1118,stroke:#5edbff,color:#5edbff
+        </pre>
+      </div>
+    </div>
+    <div class="diagram-box">
+      <h3>Aug #3: Review Clustering</h3>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart TD
+    D["git diff → 12 changed files"] --> G["Graft map → auth cluster (3)<br/>payment cluster (4)<br/>util cluster (5)"]
+    G --> J["Jev Noul per cluster:<br/>'Does this change break<br/>dependent contracts?'"]
+    J --> R["auth: 0.12 safe<br/>payment: 0.89 ⚠ risky<br/>util: 0.08 safe"]
+    style D fill:#0f1118,stroke:#f5b06e,color:#f5b06e
+    style G fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style J fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    style R fill:#0f1118,stroke:#5edbff,color:#5edbff
+        </pre>
+      </div>
+    </div>
+    <div class="diagram-box">
+      <h3>Aug #4: Context Injection</h3>
+      <div class="diagram">
+        <pre class="mermaid">
+flowchart LR
+    A["Agent turn"] --> G["Graft: pull relevant<br/>nodes (free)"]
+    G --> J["Jev: score each node<br/>for task relevance"]
+    J --> I["Inject top-N nodes<br/>into context"]
+    I --> W["Agent works with<br/>pre-loaded map"]
+    style A fill:#0f1118,stroke:#f5b06e,color:#f5b06e
+    style G fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style J fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    style I fill:#0f1118,stroke:#5edbff,color:#5edbff
+    style W fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+        </pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Enrichment Acceleration</h2>
+    <p class="desc">Graft uses an LLM for two-pass enrichment. Jev can replace the file classification pass — picking system categories with Choice and API visibility with Noul — making <code>graft build --deep</code> 10× cheaper.</p>
+  </div>
+  <div class="diagram-box">
+    <h3>LLM → Jev Enrichment Replacement</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart LR
+    subgraph C["Current: LLM"]
+        F1["per-file summary<br/>~$0.003/file"] --> F2["semantic grouping<br/>~$0.01/build"]
+    end
+    subgraph JV["Jev Accelerated"]
+        J1["Choice: system category<br/>~$0.0002/file"] --> J2["Noul: public API?<br/>~$0.0002/file"]
+    end
+    C -->|replace pass 1| JV
+    JV --> N["graft/*.md<br/>same quality<br/>10x cheaper"]
+    style C fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    style JV fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style N fill:#0f1118,stroke:#5edbff,color:#5edbff
+      </pre>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ARCHITECTURE PANEL ===== -->
+<div class="panel" id="panel-architecture">
+  <div class="section">
+    <h2>Jev Primitives &amp; Integration Architecture</h2>
+    <p class="desc">TypeSafe's Jev is a System One model. Three question primitives evaluated independently and in parallel against the same state in one request.</p>
+  </div>
+
+  <div class="diagram-box">
+    <h3>Jev Primitives — One Request, Multiple Typed Questions</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart LR
+    S["state"] --> API["POST /v1/systemone"]
+    Q["questions map"] --> API
+    API --> A1["noul: P(yes)"]
+    API --> A2["choice: option + probs"]
+    API --> A3["score: weighted position"]
+    style API fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style A1 fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    style A2 fill:#0f1118,stroke:#5edbff,color:#5edbff
+    style A3 fill:#10081a,stroke:#a08ef5,color:#a08ef5
+      </pre>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <h3>Jcode Integration Architecture — Where Each Proposal Lands</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+flowchart TD
+    COMP["agent/compaction.rs"] -->|"#2 replace"| JCOMP["JevCompactor"]
+    TOOLS["tool/mod.rs"] -->|"#3 extend"| BSEL["jev_select action"]
+    TOOLS -->|"#1 supplement"| EVAL["evaluate tool"]
+    PROVIDER["agent/provider.rs"] -->|"#4 extend"| ROUTE["Jev Router"]
+    AGENT["agent/turn_loops.rs"] -->|"#5 extend"| WATCH["Foreman watch"]
+    SKILL["tool/skill.rs"] -->|"#6 supplement"| REVIEW["Jev Review"]
+    MCP["tool/mcp.rs"] -->|"#1 alt"| EVALMCP["evaluate MCP"]
+    TOOLS -->|"#7 supplement"| SHIST["shell history"]
+    style COMP fill:#0f1118,stroke:#5a6478,color:#5a6478
+    style TOOLS fill:#0f1118,stroke:#5a6478,color:#5a6478
+    style PROVIDER fill:#0f1118,stroke:#5a6478,color:#5a6478
+    style AGENT fill:#0f1118,stroke:#5a6478,color:#5a6478
+    style SKILL fill:#0f1118,stroke:#5a6478,color:#5a6478
+    style MCP fill:#0f1118,stroke:#5a6478,color:#5a6478
+    style JCOMP fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style BSEL fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style EVAL fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style ROUTE fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    style WATCH fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    style REVIEW fill:#1a1008,stroke:#f5b06e,color:#f5b06e
+    style EVALMCP fill:#0a1a0f,stroke:#6ef5a0,color:#6ef5a0
+    style SHIST fill:#10081a,stroke:#a08ef5,color:#a08ef5
+      </pre>
+    </div>
+  </div>
+
+  <div class="diagram-box">
+    <h3>Jev Ultrafast: Speculative Fan-out (from source: model.py)</h3>
+    <div class="diagram">
+      <pre class="mermaid">
+sequenceDiagram
+    participant B as Browser
+    participant J as Jev (TypeSafe)
+    participant L as Text LLM
+    B->>B: DOM snapshot → indexed elements
+    Note over B: [1] button "Submit"<br/>[2] input "Email"<br/>[3] input "Password"
+    B->>J: 1 request: operation (Choice)<br/>+ click_target (Choice)<br/>+ type_text_target (Choice)
+    Note over J: speculative fan-out:<br/>all heads computed<br/>only matching head executes
+    J-->>B: operation=CLICK target=[1]
+    alt TYPE_TEXT
+        B->>L: "Enter email from goal"
+        L-->>B: "user@example.com"
+    end
+    B->>B: execute on resolved DOM node
+    B->>B: observe → next cycle
+      </pre>
+    </div>
+  </div>
+
+  <!-- Extended/Replace/Supplement Table -->
+  <div class="int-questions">
+    <p><strong>Integration Relation Map</strong> — each proposal's effect on existing Jcode crates:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:0.75rem;margin-top:0.8rem">
+      <tr style="color:var(--text-dim);border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:0.4rem 0.5rem;font-weight:600">#</th>
+        <th style="text-align:left;padding:0.4rem 0.5rem;font-weight:600">Relation</th>
+        <th style="text-align:left;padding:0.4rem 0.5rem;font-weight:600">Meaning</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#1</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--accent)">supplement</span></td><td style="padding:0.4rem 0.5rem;font-size:0.78rem">Adds new <code style="color:var(--accent2)">evaluate</code> tool alongside existing tools. No existing code modified.</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#2</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--warn)">replace</span></td><td style="padding:0.4rem 0.5rem;font-size:0.78rem">Swaps LLM summarizer in <code style="color:var(--accent2)">compaction.rs</code> with Jev-based tool-call pruning. Existing compactor kept as fallback.</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#3</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--accent)">extend</span></td><td style="padding:0.4rem 0.5rem;font-size:0.78rem">Adds <code style="color:var(--accent2)">action="jev_select"</code> to existing <code style="color:var(--accent2)">browser.rs</code>. All current actions remain.</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#4</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--warn)">extend</span></td><td style="padding:0.4rem 0.5rem;font-size:0.78rem">Middleware layer before <code style="color:var(--accent2)">provider.rs</code> dispatch. Pass-through when Jev unavailable.</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#5</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--warn)">extend</span></td><td style="padding:0.4rem 0.5rem;font-size:0.78rem">Background observer on <code style="color:var(--accent2)">turn_loops.rs</code>. Starts passive — reports, doesn't intervene.</td></tr>
+      <tr style="border-bottom:1px solid var(--border)"><td style="padding:0.4rem 0.5rem;color:var(--accent)">#6</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--accent)">supplement</span></td><td style="padding:0.4rem 0.5rem;font-size:0.78rem">Pre-screening layer before existing <code style="color:var(--accent2)">/review</code> skill. Jev screens, LLM reviews flagged hunks.</td></tr>
+      <tr><td style="padding:0.4rem 0.5rem;color:var(--accent)">#7</td><td style="padding:0.4rem 0.5rem"><span style="color:var(--purple)">supplement</span></td><td style="padding:0.4rem 0.5rem;font-size:0.78rem">New sub-command or binary. Zero interaction with existing crates.</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== EVIDENCE PANEL ===== -->
+<div class="panel" id="panel-metrics">
+  <div class="section">
+    <h2>Evidence &amp; Benchmarks</h2>
+    <p class="desc">Every recommendation is backed by measured results from the originating repos.</p>
+  </div>
+
+  <div class="diagram-box">
+    <h3>Cost Comparison: Jev vs LLM for Common Agent Judgments</h3>
+    <div class="bar-chart">
+      <div class="bar-row">
+        <div class="bar-label">Noul (yes/no) — per 100</div>
+        <div class="bar-track">
+          <div class="bar-fill bar-jevs" style="width:1%">$0.02</div>
+          <div class="bar-fill bar-llm" style="width:15%;left:1%">$0.30</div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Choice (pick 1) — per 100</div>
+        <div class="bar-track">
+          <div class="bar-fill bar-jevs" style="width:1%">$0.02</div>
+          <div class="bar-fill bar-llm" style="width:15%;left:1%">$0.30</div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Score (rate 1–5) — per 100</div>
+        <div class="bar-track">
+          <div class="bar-fill bar-jevs" style="width:1%">$0.02</div>
+          <div class="bar-fill bar-llm" style="width:15%;left:1%">$0.30</div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Code review (1 diff)</div>
+        <div class="bar-track">
+          <div class="bar-fill bar-jevs" style="width:1%">$0.02</div>
+          <div class="bar-fill bar-llm" style="width:150%;left:1%">$3.00</div>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label">Context compaction</div>
+        <div class="bar-track">
+          <div class="bar-fill bar-jevs" style="width:10%">$0.20</div>
+          <div class="bar-fill bar-llm" style="width:100%;left:10%">$2.00</div>
+        </div>
+      </div>
+    </div>
+    <div class="bar-chart-caption">
+      Green bar: Jev cost · Orange bar: LLM cost (GPT-4o-mini equivalent) · 10–150× cost difference
+    </div>
+  </div>
+
+  <div class="met-grid">
+    <div class="met"><div class="val">7.1s</div><div class="lbl">jev-ultrafast: flight search</div></div>
+    <div class="met"><div class="val">101</div><div class="lbl">browser calls (was 1092)</div></div>
+    <div class="met"><div class="val">−25%</div><div class="lbl">latency reduction</div></div>
+    <div class="met"><div class="val">2.8s</div><div class="lbl">Wikipedia task</div></div>
+  </div>
+
+  <div class="met-grid">
+    <div class="met"><div class="val">$0.0002</div><div class="lbl">per Jev API call</div></div>
+    <div class="met"><div class="val">~300ms</div><div class="lbl">typical Jev latency</div></div>
+    <div class="met"><div class="val">32k</div><div class="lbl">token request limit</div></div>
+    <div class="met"><div class="val">3</div><div class="lbl">question primitives</div></div>
+  </div>
+
+  <div class="met-grid">
+    <div class="met"><div class="val">7.9k</div><div class="lbl">stars: jev-ultrafast</div></div>
+    <div class="met"><div class="val">4k</div><div class="lbl">stars: fast-compaction</div></div>
+    <div class="met"><div class="val">353</div><div class="lbl">stars: foreman</div></div>
+    <div class="met"><div class="val">331</div><div class="lbl">stars: jev-review</div></div>
+    <div class="met"><div class="val">191</div><div class="lbl">stars: jev-router</div></div>
+    <div class="met"><div class="val">99</div><div class="lbl">stars: typesafe-mcp</div></div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <p>Research: Jev Ecosystem + Jcode Integration · <a href="research/jev-ecosystem-deep-research.md">full report</a> · <a href="research/jev-jcode-feature-breakdown.md">feature breakdown</a> · <a href="https://docs.typesafe.ai">TypeSafe docs</a> · <a href="https://github.com/NanoNets/context-graph-engine">Graft repo</a></p>
+  <p style="margin-top:0.4rem">34 sources · 485 lines report · 585 lines architecture artifact · MIT</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#0f1118',
+    primaryBorderColor: '#1e2230',
+    primaryTextColor: '#99a4b8',
+    lineColor: '#5a6478',
+    secondaryColor: '#161922',
+    tertiaryColor: '#080a0e',
+    fontFamily: "'Iosevka Web','JetBrains Mono','SF Mono',monospace",
+    fontSize: '12px',
+    edgeLabelBackground: '#0f1118',
+    nodeBorder: '#1e2230',
+  },
+  flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+  sequence: { useMaxWidth: true, actorMargin: 30 },
+});
+
+// CRITICAL: Show all panels momentarily so Mermaid can measure them,
+// render every diagram, then hide non-active panels.
+let rendered = false;
+function renderAllPanels() {
+  if (rendered) return;
+  rendered = true;
+  
+  // Show all panels
+  document.querySelectorAll('.panel').forEach(p => { p.style.display = 'block'; p.style.visibility = 'visible'; });
+  
+  // Find all mermaid pre elements and render them
+  const mermaidBlocks = document.querySelectorAll('pre.mermaid');
+  mermaidBlocks.forEach((block, i) => {
+    // Replace pre.mermaid with a div for mermaid to render into
+    const div = document.createElement('div');
+    div.className = 'mermaid';
+    div.textContent = block.textContent;
+    block.parentNode.replaceChild(div, block);
+  });
+  
+  // Run mermaid on all
+  mermaid.run({ querySelector: '.mermaid' }).then(() => {
+    // Now hide non-active panels
+    document.querySelectorAll('.panel').forEach(p => {
+      if (!p.classList.contains('active')) {
+        p.style.display = 'none';
+      } else {
+        p.style.visibility = 'visible';
+      }
+    });
+  });
+}
+
+// Tab switching: show panel, render any unrendered diagrams inside it
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => { p.classList.remove('active'); p.style.display = 'none'; });
+  
+  const tabEl = document.querySelector(`.tab:nth-child(${
+    {'integrations':1,'graft':2,'architecture':3,'metrics':4}[name]
+  })`);
+  if (tabEl) tabEl.classList.add('active');
+  
+  const panel = document.getElementById('panel-' + name);
+  panel.classList.add('active');
+  panel.style.display = 'block';
+  panel.style.visibility = 'visible';
+}
+
+// Kick off rendering after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(renderAllPanels, 100);
+});
+</script>
+</body>
+</html>

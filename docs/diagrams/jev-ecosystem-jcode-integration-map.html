@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jev Ecosystem → Jcode · Integration Map</title>
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --border: #1e2128;
+    --text: #c4c8d4;
+    --text-dim: #6b7080;
+    --text-bright: #edf0f5;
+    --accent: #b7ff6e;
+    --accent-dim: #5a7f37;
+    --blue: #4c9fff;
+    --purple: #8b6fff;
+    --amber: #ffb84c;
+    --rose: #ff4c8b;
+    --cyan: #4cf0e0;
+  }
+  * { margin:0; padding:0; box-sizing:border-box }
+  html { font-size:15px }
+  body {
+    font-family: 'Iosevka Web', 'JetBrains Mono', 'SF Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height:100vh;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background: radial-gradient(ellipse at 30% 30%, rgba(140,111,255,0.03), transparent 70%),
+                radial-gradient(ellipse at 70% 70%, rgba(76,79,255,0.04), transparent 60%),
+                radial-gradient(ellipse at 50% 50%, rgba(183,255,110,0.02), transparent 80%);
+    pointer-events:none; z-index:0;
+  }
+  body::after {
+    content:''; position:fixed; inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity:0.015; pointer-events:none; z-index:0;
+  }
+  header, main, .modal-overlay { position:relative; z-index:1; max-width:1440px; margin:0 auto; padding:0 2rem }
+  header {
+    padding: 3rem 2rem 1.5rem;
+    border-bottom:1px solid var(--border);
+    display:flex; justify-content:space-between; align-items:flex-end;
+    gap:2rem; flex-wrap:wrap;
+  }
+  header h1 { font-size:1.6rem; font-weight:700; color:var(--text-bright); letter-spacing:-0.02em; line-height:1.1 }
+  header h1 span { color:var(--accent) }
+  .header-meta { display:flex; gap:2rem; font-size:0.8rem; color:var(--text-dim) }
+  .header-meta b { color:var(--text-bright); font-weight:600 }
+  .legend { display:flex; gap:1.2rem; flex-wrap:wrap; padding:1rem 2rem 0; position:relative; z-index:1; max-width:1440px; margin:0 auto; font-size:0.75rem }
+  .legend-item { display:flex; align-items:center; gap:0.4rem }
+  .legend-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0 }
+
+  main { display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr)); gap:1rem; padding:1.5rem 2rem 3rem }
+
+  /* Priority summary bar */
+  .priority-bar { grid-column:1/-1; display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:0.5rem; margin-bottom:0.5rem }
+  .priority-chip {
+    background:var(--surface); border:1px solid var(--border); border-radius:4px;
+    padding:0.75rem 1rem; cursor:pointer; transition: border-color 0.15s, background 0.15s;
+    display:flex; flex-direction:column; gap:0.3rem;
+  }
+  .priority-chip:hover { border-color:var(--accent-dim); background:#161820 }
+  .priority-chip.top { border-color:var(--accent-dim) }
+  .priority-chip .rank { font-size:0.65rem; color:var(--accent); text-transform:uppercase; letter-spacing:0.1em; font-weight:700 }
+  .priority-chip .name { font-size:0.85rem; color:var(--text-bright); font-weight:600 }
+  .priority-chip .effort { font-size:0.7rem; color:var(--text-dim) }
+  .priority-chip .stars { font-size:0.65rem; color:var(--text-dim); margin-top:0.2rem }
+
+  /* Repo cards */
+  .card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:1.2rem 1.3rem;
+    display:flex; flex-direction:column; gap:0.6rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position:relative; overflow:hidden;
+  }
+  .card:hover { border-color:var(--accent-dim); box-shadow:0 0 30px rgba(183,255,110,0.03) }
+  .card::after {
+    content:''; position:absolute; top:0; right:0; width:120px; height:120px;
+    background:radial-gradient(ellipse at 100% 0%, var(--card-glow, transparent) 0%, transparent 70%);
+    opacity:0.03; pointer-events:none;
+  }
+  .card-header { display:flex; justify-content:space-between; align-items:flex-start; gap:0.5rem }
+  .card-num { font-size:0.65rem; color:var(--text-dim); font-weight:600; letter-spacing:0.05em }
+  .card-title { font-size:0.92rem; color:var(--text-bright); font-weight:600; flex:1; line-height:1.3 }
+  .card-stars { font-size:0.7rem; color:var(--amber); font-weight:600; flex-shrink:0; white-space:nowrap }
+  .card-lang { font-size:0.65rem; color:var(--text-dim); letter-spacing:0.03em }
+  .card-desc { font-size:0.78rem; color:var(--text-dim); line-height:1.45 }
+  .card-tags { display:flex; gap:0.4rem; flex-wrap:wrap }
+  .tag {
+    font-size:0.62rem; padding:0.2em 0.6em; border-radius:3px;
+    font-weight:600; letter-spacing:0.04em; text-transform:uppercase;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+  }
+  .tag.relevance-high { background:var(--accent); color:#000; border-color:var(--accent) }
+  .tag.relevance-med { color:var(--amber); border-color:var(--amber) }
+  .tag.category { color:var(--blue); border-color:var(--blue) }
+  .card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:0.2rem }
+  .card-op { font-size:0.7rem; color:var(--accent); font-weight:600 }
+  .card-op.dim { color:var(--text-dim) }
+
+  /* Stats summary */
+  .stats-bar { grid-column:1/-1; display:flex; gap:2rem; flex-wrap:wrap; padding:0.75rem 0; font-size:0.78rem; color:var(--text-dim); border-top:1px solid var(--border); margin-top:0.5rem }
+  .stats-bar span b { color:var(--text-bright) }
+
+  /* Modals */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10; padding:3rem 2rem; overflow-y:auto }
+  .modal-overlay.open { display:flex; align-items:flex-start; justify-content:center }
+  .modal {
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    max-width:640px; width:100%; padding:2rem; position:relative;
+    box-shadow:0 0 60px rgba(0,0,0,0.5);
+  }
+  .modal h2 { font-size:1.2rem; color:var(--text-bright); margin-bottom:0.8rem }
+  .modal h3 { font-size:0.85rem; color:var(--accent); margin-top:1.2rem; margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.06em }
+  .modal p { font-size:0.82rem; color:var(--text-dim); line-height:1.6; margin-bottom:0.6rem }
+  .modal pre { font-size:0.72rem; color:var(--cyan); background:#0a0c10; border:1px solid var(--border); border-radius:4px; padding:1rem; overflow-x:auto; white-space:pre-wrap; line-height:1.4 }
+  .modal .close { position:absolute; top:1rem; right:1rem; background:none; border:none; color:var(--text-dim); font-size:1.2rem; cursor:pointer; width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:4px }
+  .modal .close:hover { color:var(--text-bright); background:var(--border) }
+  .modal .tag-row { display:flex; gap:0.5rem; flex-wrap:wrap; margin:0.8rem 0 }
+
+  @media(max-width:600px) {
+    header { flex-direction:column; align-items:flex-start; gap:0.5rem }
+    main { grid-template-columns:1fr; padding:1rem }
+    header { padding:2rem 1rem 1rem }
+    .legend { padding:0.5rem 1rem 0 }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Jev Ecosystem<br><span>→ Jcode Integration Map</span></h1>
+  </div>
+  <div class="header-meta">
+    <div>Research <b>2026-09-19</b></div>
+    <div>Repos <b>17</b></div>
+    <div>Sources <b>34</b></div>
+    <div style="color:var(--accent)">Full report → research/jev-ecosystem-deep-research.md</div>
+  </div>
+</header>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Adopt / Steal</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Consider</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--text-dim)"></div>Monitor</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Browser</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Agent Tooling</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--cyan)"></div>MCP/Infra</div>
+</div>
+
+<main>
+<!-- Priority bar -->
+<div class="priority-bar">
+  <div class="priority-chip top" onclick="openModal('evaluate')">
+    <div class="rank">#1 · Adopt Now</div>
+    <div class="name">evaluate tool</div>
+    <div class="effort">Effort: Low · Impact: High</div>
+  </div>
+  <div class="priority-chip top" onclick="openModal('compaction')">
+    <div class="rank">#2 · Implement</div>
+    <div class="name">Jev compaction</div>
+    <div class="effort">Effort: Medium · Impact: High</div>
+  </div>
+  <div class="priority-chip top" onclick="openModal('browser')">
+    <div class="rank">#3 · Steal</div>
+    <div class="name">Browser selection</div>
+    <div class="effort">Effort: High · Impact: High</div>
+  </div>
+  <div class="priority-chip" onclick="openModal('router')">
+    <div class="rank">#4 · Consider</div>
+    <div class="name">Model routing</div>
+    <div class="effort">Effort: Medium · Impact: Medium</div>
+  </div>
+  <div class="priority-chip" onclick="openModal('foreman')">
+    <div class="rank">#5 · Consider</div>
+    <div class="name">Worker supervision</div>
+    <div class="effort">Effort: High · Impact: Medium</div>
+  </div>
+  <div class="priority-chip" onclick="openModal('review')">
+    <div class="rank">#6 · Consider</div>
+    <div class="name">Code review</div>
+    <div class="effort">Effort: Medium · Impact: Medium</div>
+  </div>
+  <div class="priority-chip">
+    <div class="rank">#7 · Nice-to-have</div>
+    <div class="name">Shell history</div>
+    <div class="effort">Effort: Low · Impact: Low</div>
+  </div>
+</div>
+
+<!-- Repo cards -->
+<div class="card" style="--card-glow:rgba(183,255,110,0.5)" data-relevance="high" data-category="browser">
+  <div class="card-header">
+    <div class="card-num">#1 · github.com/browser-use/jev-ultrafast</div>
+    <div class="card-stars">★ 7.9k</div>
+  </div>
+  <div class="card-title">Jev Ultrafast — Browser agent with indexed action space</div>
+  <div class="card-lang">Python · MIT · 7.1s flight search, 101 browser calls</div>
+  <div class="card-desc">Jev selects both operation and target element in ONE request. No screenshots — consumes structured DOM state. 25% faster, 10× fewer protocol calls. The pattern Jcode should steal for its browser tool.</div>
+  <div class="card-tags">
+    <span class="tag relevance-high">Steal Architecture</span>
+    <span class="tag category">Browser</span>
+    <span class="tag">Playwright</span>
+  </div>
+  <div class="card-footer">
+    <span class="card-op">→ Add jev_select action to browser.rs</span>
+  </div>
+</div>
+
+<div class="card" style="--card-glow:rgba(183,255,110,0.4)" data-relevance="high" data-category="agent">
+  <div class="card-header">
+    <div class="card-num">#5 · github.com/tamaratran/fast-jev-compaction</div>
+    <div class="card-stars">★ 4k</div>
+  </div>
+  <div class="card-title">Fast Jev Compaction — Drop obsolete tool calls, keep everything verbatim</div>
+  <div class="card-lang">TypeScript · MIT · Claude Code plugin + npm library</div>
+  <div class="card-desc">Never rewrites text. Jev scores each tool call: keep, truncate, or drop. User/assistant text stays intact. Staged 25k-token fitting. Replace/supplement Jcode's LLM summarizer.</div>
+  <div class="card-tags">
+    <span class="tag relevance-high">Adopt Algorithm</span>
+    <span class="tag category">Agent Tooling</span>
+    <span class="tag">Context Mgmt</span>
+  </div>
+  <div class="card-footer">
+    <span class="card-op">→ Add JevCompactor alongside LLM compactor</span>
+  </div>
+</div>
+
+<div class="card" style="--card-glow:rgba(183,255,110,0.4)" data-relevance="high" data-category="agent">
+  <div class="card-header">
+    <div class="card-num">#6 · github.com/thruwire/foreman</div>
+    <div class="card-stars">★ 353</div>
+  </div>
+  <div class="card-title">Foreman — Jev-supervised Codex workers</div>
+  <div class="card-lang">Python · MIT · Dual-loop factory with 10-dimension assessment</div>
+  <div class="card-desc">Independent observer loop watches coding agents. 10 Jev Noul questions in one request: stuck?, satisfied?, needs verification?, AGENTS.md drift?, ready to finish? Deterministic policy decides.</div>
+  <div class="card-tags">
+    <span class="tag relevance-med">Consider</span>
+    <span class="tag category">Agent Tooling</span>
+    <span class="tag">Supervision</span>
+  </div>
+  <div class="card-footer">
+    <span class="card-op dim">→ Swarm supervision layer (complex)</span>
+  </div>
+</div>
+
+<div class="card" style="--card-glow:rgba(183,255,110,0.3)" data-relevance="high" data-category="agent">
+  <div class="card-header">
+    <div class="card-num">#8 · github.com/gargpratyush/jev-router</div>
+    <div class="card-stars">★ 191</div>
+  </div>
+  <div class="card-title">Jev Router — Per-turn model tier selection</div>
+  <div class="card-lang">TypeScript · MIT · Proxy for Claude Code + Codex</div>
+  <div class="card-desc">Each fresh user turn: Jev picks Fast/Balanced/Strong/Long tier. Policy rules in code — explicit requests win, low confidence never downgrades, failures keep current model.</div>
+  <div class="card-tags">
+    <span class="tag relevance-med">Consider</span>
+    <span class="tag category">Agent Tooling</span>
+    <span class="tag">Cost</span>
+  </div>
+  <div class="card-footer">
+    <span class="card-op dim">→ Provider middleware (medium effort)</span>
+  </div>
+</div>
+
+<div class="card" style="--card-glow:rgba(183,255,110,0.3)" data-relevance="high" data-category="agent">
+  <div class="card-header">
+    <div class="card-num">#7 · github.com/devagrawal09/jev-review</div>
+    <div class="card-stars">★ 331</div>
+  </div>
+  <div class="card-title">Jev Review — Staged code review pipeline</div>
+  <div class="card-lang">TypeScript · MIT · 6-stage Jev workflow + local dashboard</div>
+  <div class="card-desc">Noul risk matrix → Choice/Score file profiles → Choice evidence → Score severity → Choice routing. Screens: correctness, security, reliability, compatibility, test coverage.</div>
+  <div class="card-tags">
+    <span class="tag relevance-med">Consider</span>
+    <span class="tag category">Agent Tooling</span>
+    <span class="tag">Review</span>
+  </div>
+  <div class="card-footer">
+    <span class="card-op dim">→ Enhance /review skill with Jev screening</span>
+  </div>
+</div>
+
+<div class="card" style="--card-glow:rgba(76,240,224,0.5)" data-relevance="high" data-category="mcp">
+  <div class="card-header">
+    <div class="card-num">#11 · github.com/itsmostafa/typesafe-mcp</div>
+    <div class="card-stars">★ 99</div>
+  </div>
+  <div class="card-title">Typesafe MCP (evaluate) — One MCP tool, three question types</div>
+  <div class="card-lang">Go · MIT · Single binary, one-command setup</div>
+  <div class="card-desc">CRITICAL bridge. Exposes Jev as MCP tool for Claude Code, Codex, Claude Desktop, pi. Three primitives: Noul (yes/no probability), Choice (pick from map), Score (ordered levels). Auto-retries 429/529.</div>
+  <div class="card-tags">
+    <span class="tag relevance-high">Bundle or Build</span>
+    <span class="tag category">MCP/Infra</span>
+    <span class="tag">Server</span>
+  </div>
+  <div class="card-footer">
+    <span class="card-op">→ Built-in MCP server or native Rust tool</span>
+  </div>
+</div>
+
+<div class="card" data-relevance="med" data-category="mcp">
+  <div class="card-header">
+    <div class="card-num">#10 · github.com/kitze/skillbox</div>
+    <div class="card-stars">★ 190</div>
+  </div>
+  <div class="card-title">Skillbox — MCP-distributed agent skills + Jev recommendations</div>
+  <div class="card-lang">TypeScript · MCP platform for skill management with Jev-fit recommendations</div>
+  <div class="card-desc">Jev integration recommends skills fitting the task. Pattern relevant to Jcode's skill system.</div>
+  <div class="card-tags">
+    <span class="tag relevance-med">Consider</span>
+    <span class="tag category">MCP/Infra</span>
+    <span class="tag">Skills</span>
+  </div>
+  <div class="card-footer"><span class="card-op dim">→ Skill routing enhancement</span></div>
+</div>
+
+<div class="card" data-relevance="med" data-category="mcp">
+  <div class="card-header">
+    <div class="card-num">#12 · github.com/mrnugget/jev-shell-history</div>
+    <div class="card-stars">★ 63</div>
+  </div>
+  <div class="card-title">Jev Shell History — Tab completion from command history</div>
+  <div class="card-lang">Go · Zsh widget: Jev selects matching past command</div>
+  <div class="card-desc">Nice-to-have. Dead simple to implement. Low priority but zero-risk integration.</div>
+  <div class="card-tags">
+    <span class="tag">Low Priority</span>
+    <span class="tag category">MCP/Infra</span>
+  </div>
+  <div class="card-footer"><span class="card-op dim">→ Shell history enhancement</span></div>
+</div>
+
+<div class="card" data-relevance="med" data-category="browser">
+  <div class="card-header">
+    <div class="card-num">#3 · github.com/droidrun/mobile-jev</div>
+    <div class="card-stars">★ 103</div>
+  </div>
+  <div class="card-title">Mobile Jev — Android automation via Mobilerun</div>
+  <div class="card-lang">TypeScript · 21s/9 actions · No ADB · Same indexed-control pattern</div>
+  <div class="card-desc">Architecture mirrors jev-ultrafast but for phones. Live React studio. Text extracted from goal spans, never generated.</div>
+  <div class="card-tags"><span class="tag">Monitor</span><span class="tag category">Browser</span><span class="tag">Mobile</span></div>
+  <div class="card-footer"><span class="card-op dim">→ Template if Jcode adds mobile</span></div>
+</div>
+
+<div class="card" data-relevance="med" data-category="browser">
+  <div class="card-header">
+    <div class="card-num">#4 · github.com/moritzkremb/jev-voice-browser</div>
+    <div class="card-stars">★ 40</div>
+  </div>
+  <div class="card-title">Voice Browser — Web Speech → Jev gating → Playwright</div>
+  <div class="card-lang">TypeScript · ~250ms per Jev call · 9-11 questions per partial transcript</div>
+  <div class="card-desc">Continuous streaming input → Jev decides: act/wait/ask/ignore. Pattern: partial input gating.</div>
+  <div class="card-tags"><span class="tag">Monitor</span><span class="tag category">Browser</span><span class="tag">Voice</span></div>
+  <div class="card-footer"><span class="card-op dim">→ Streaming input gating pattern</span></div>
+</div>
+
+<div class="card" data-relevance="med" data-category="mcp">
+  <div class="card-header">
+    <div class="card-num">#14 · github.com/superagents-lab/jev-search</div>
+    <div class="card-stars">★ 48</div>
+  </div>
+  <div class="card-title">Jev Search — Multi-source search with Jev ranking</div>
+  <div class="card-lang">TypeScript · Cloudflare Workers · 12 engines · Jev constructs query + ranks</div>
+  <div class="card-desc">Jev picks sources, time ranges, search terms. Then scores results for relevance. Pattern for smart web search ranking.</div>
+  <div class="card-tags"><span class="tag relevance-med">Consider</span><span class="tag category">MCP/Infra</span><span class="tag">Search</span></div>
+  <div class="card-footer"><span class="card-op dim">→ Enhance websearch ranking</span></div>
+</div>
+
+<div class="card" data-relevance="low" data-category="mcp">
+  <div class="card-header">
+    <div class="card-num">#13 · github.com/realZachi/pg-jev</div>
+    <div class="card-stars">★ 207</div>
+  </div>
+  <div class="card-title">PG Jev — PostgreSQL extension for AI judgments in SQL</div>
+  <div class="card-lang">Python/C · Call Jev from SQL: jev_noul(col, 'urgent?') > 0.7</div>
+  <div class="card-desc">Powerful pattern but Jcode uses SQLite. Could inspire local judgment cache.</div>
+  <div class="card-tags"><span class="tag">Monitor</span><span class="tag category">MCP/Infra</span><span class="tag">SQL</span></div>
+  <div class="card-footer"><span class="card-op dim">→ SQLite judgment extensions (future)</span></div>
+</div>
+
+<div class="card" data-relevance="med" data-category="mcp">
+  <div class="card-header">
+    <div class="card-num">#16 · github.com/kitze/unclutter</div>
+    <div class="card-stars">★ 73</div>
+  </div>
+  <div class="card-title">Unclutter — Browser extension hides ads via Jev</div>
+  <div class="card-lang">TypeScript · WXT extension · Jev classifies DOM regions as ad/popup</div>
+  <div class="card-desc">DOM element classification pattern relevant to browser content filtering. Jev identifies ad slots.</div>
+  <div class="card-tags"><span class="tag">Monitor</span><span class="tag category">MCP/Infra</span><span class="tag">Browser</span></div>
+  <div class="card-footer"><span class="card-op dim">→ Browser content classification</span></div>
+</div>
+
+<div class="card" data-relevance="low" data-category="mcp">
+  <div class="card-header"><div class="card-num">#17 · github.com/ChetasLua/jevmeter</div><div class="card-stars">★ 52</div></div>
+  <div class="card-title">Jevmeter — Sentence-level video scoring with meter overlay</div>
+  <div class="card-lang">Python · 99% held-out accuracy · Full debate ~$0.05</div>
+  <div class="card-desc">Batch Noul scoring per sentence. Pattern: sequential-item judgment at scale.</div>
+  <div class="card-tags"><span class="tag">Monitor</span><span class="tag category">MCP/Infra</span><span class="tag">Batch</span></div>
+  <div class="card-footer"><span class="card-op dim">→ Batch judgment pattern for review workflows</span></div>
+</div>
+
+<div class="card" data-relevance="low" data-category="agent">
+  <div class="card-header"><div class="card-num">#9 · github.com/EliaAlberti/jev-rules</div><div class="card-stars">★ 29</div></div>
+  <div class="card-title">Jev Rules — Instruction rule selection for Claude Code</div>
+  <div class="card-lang">TypeScript · New repo · Selects reference materials based on request context</div>
+  <div class="card-desc">Emerging pattern. Could enhance Jcode's skill routing — select relevant skills based on task.</div>
+  <div class="card-tags"><span class="tag">Monitor</span><span class="tag category">Agent Tooling</span><span class="tag">Rules</span></div>
+  <div class="card-footer"><span class="card-op dim">→ Skill routing enhancement (future)</span></div>
+</div>
+
+<div class="card" data-relevance="low" data-category="mcp">
+  <div class="card-header"><div class="card-num">#15 · github.com/jexp/neo4jev</div><div class="card-stars">★ 17</div></div>
+  <div class="card-title">Neo4jev — Jev-driven graph traversal in Neo4j</div>
+  <div class="card-lang">Python · Jev selects next relationship to traverse for data exploration</div>
+  <div class="card-desc">Graph visualization pattern. Low relevance: no graph DB in Jcode.</div>
+  <div class="card-tags"><span class="tag">Monitor</span><span class="tag category">MCP/Infra</span><span class="tag">Graph</span></div>
+  <div class="card-footer"><span class="card-op dim">→ Future graph data exploration pattern</span></div>
+</div>
+
+<div class="card" data-relevance="low" data-category="browser">
+  <div class="card-header"><div class="card-num">#2 · github.com/awlevin/typesafe-computer-use</div><div class="card-stars">★ 203</div></div>
+  <div class="card-title">Typesafe Computer Use — Mac accessibility + OCR automation</div>
+  <div class="card-lang">TypeScript · Mac-only · Jcode has computer/ module for macOS already</div>
+  <div class="card-desc">Relevance: Jcode's computer/ module could adopt Jev-driven element selection pattern.</div>
+  <div class="card-tags"><span class="tag">Monitor</span><span class="tag category">Browser</span><span class="tag">Mac</span></div>
+  <div class="card-footer"><span class="card-op dim">→ Enhance computer/ module</span></div>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <span>Integration proposals: <b>7</b></span>
+  <span>Adopt/steal now: <b>3</b></span>
+  <span>Consider: <b>6</b></span>
+  <span>Monitor: <b>8</b></span>
+  <span>TypeSafe API: <b>POST /v1/systemone</b></span>
+  <span>OpenRouter: <b>~typesafe/jev-latest</b></span>
+  <span>Key available: <b>yes</b></span>
+</div>
+
+</main>
+
+<!-- Modals -->
+<div class="modal-overlay" id="modal-evaluate">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">✕</button>
+    <h2>#1 · evaluate Tool · Adopt Now</h2>
+    <p><b>Effort: Low</b> · <b>Risk: Low</b> · <b>Impact: High</b></p>
+    <p>Add a native Rust evaluate tool that wraps the TypeSafe API. Every Jcode agent gets typed probabilistic judgments — no more "ask LLM then parse prose."</p>
+    <div class="tag-row"><span class="tag relevance-high">Start Here</span><span class="tag category">MCP Tool</span></div>
+    <h3>API call</h3>
+    <pre>POST https://api.typesafe.ai/v1/systemone
+Authorization: Bearer &lt;TYPESAFE_API_KEY&gt;
+
+{
+  "state": "Help! Payouts failing for 3 days.",
+  "model": "jev-latest",
+  "questions": {
+    "is_urgent": { "type": "noul", "instructions": "Does this convey urgency?" },
+    "department": { "type": "choice", "instructions": "Which team?",
+      "criteria": { "billing": "Payment issues", "technical": "Bugs" } }
+  }
+}</pre>
+    <h3>Integration paths</h3>
+    <p><b>Option A</b> — Bundle evaluate (Go binary) as built-in MCP server. One command: <code>evaluate setup mcp</code>. Agents get it automatically.</p>
+    <p><b>Option B</b> — Native Rust tool (~200 lines). No external dependency. Uses reqwest to call the HTTP API directly. Serde types for request/response.</p>
+    <p>Fallback: return error message if Jev is unavailable. Never block agent on Jev.</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-compaction">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">✕</button>
+    <h2>#2 · Jev Compaction · Implement</h2>
+    <p><b>Effort: Medium</b> · <b>Risk: Medium</b> · <b>Impact: High</b></p>
+    <p>Replace/supplement Jcode's LLM-based context summarization. Jev scores each tool call: keep, truncate, or drop. Never rewrites anything — user and assistant text stays verbatim.</p>
+    <h3>How fast-jev-compaction works</h3>
+    <pre>1. Pair tool_use ↔ tool_result; pin recent N messages
+2. Fit state into 25k tokens (progressive truncation)
+3. For each call: two Noul questions — keep call? keep result?
+4. merge decisions: keep both / keep call+truncate / drop
+5. Rebuild message list; no orphaned results</pre>
+    <h3>Jcode integration</h3>
+    <p>Jcode already has compaction at <code>agent/compaction.rs</code>. Add <code>JevCompactor</code> as alternative. Gate on Jev availability; fall back to LLM summarization. Each compaction saves both cost and preserves critical details that summaries lose.</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-browser">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">✕</button>
+    <h2>#3 · Jev Browser Selection · Steal Architecture</h2>
+    <p><b>Effort: High</b> · <b>Risk: Medium</b> · <b>Impact: High</b></p>
+    <p>Jev Ultrafast proves: DOM snapshot → Jev picks operation + element → browser executes. 7.1s flight searches. 101 browser calls instead of 1,092. The architecture to steal:</p>
+    <h3>Pattern</h3>
+    <pre>page → DOM snapshot → indexed element table
+→ One TypeSafe request: operation (CLICK/TYPE/...) + target [#N]
+→ Browser executes on matching element
+→ Only TYPE_TEXT triggers a small LLM
+→ Repeat</pre>
+    <h3>Jcode hook</h3>
+    <p>Jcode's <code>tool/browser.rs</code> uses a Firefox bridge. Add <code>action="jev_select"</code> that takes a natural-language goal, runs the DOM snapshot, sends to Jev, and executes. Fall back to existing action-based commands if Jev is unavailable.</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-router">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">✕</button>
+    <h2>#4 · Jev Model Routing · Consider</h2>
+    <p><b>Effort: Medium</b> · <b>Risk: Medium</b> · <b>Impact: Medium</b></p>
+    <p>On each user turn, Jev decides: simple work → fast/cheap model, complex work → strong model. Can implement as provider middleware rather than proxy.</p>
+    <pre>Tiers: Fast (Haiku/Luna) / Balanced (Sonnet/Terra)
+        / Strong (Opus/Sol) / Long (Fable/Astra)</pre>
+    <p>Key policy: explicit user requests win. Low confidence never downgrades. Failures keep current model. Large conversations refuse downgrades.</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-foreman">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">✕</button>
+    <h2>#5 · Foreman Worker Supervision · Consider</h2>
+    <p><b>Effort: High</b> · <b>Risk: High</b> · <b>Impact: Medium</b></p>
+    <p>10 Jev Noul questions per observation cycle, sent in one request. Deterministic policy decides actions. Jcode's swarm is more complex than Foreman's single-worker model.</p>
+    <pre>Dimensions: implementation_complete, tests_sufficient,
+  requirements_satisfied, needs_verification, ready_to_finish,
+  meaningful_progress, worker_stuck, work_off_track,
+  agents_md_drift, needs_human</pre>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-review">
+  <div class="modal">
+    <button class="close" onclick="closeModal()">✕</button>
+    <h2>#6 · Jev Code Review · Consider</h2>
+    <p><b>Effort: Medium</b> · <b>Risk: Low</b> · <b>Impact: Medium</b></p>
+    <p>6-stage review pipeline: Noul risk matrix → Choice/Score profiles → Choice evidence → Score severity → Choice routing. Screens 5 dimensions per change. Local dashboard at 127.0.0.1:4317.</p>
+    <p>Complements Jcode's existing review skill with calibrated confidence scores and systematic multi-dimensional screening.</p>
+  </div>
+</div>
+
+<script>
+function openModal(id) {
+  const el = document.getElementById('modal-' + id);
+  if (el) { el.classList.add('open'); document.body.style.overflow = 'hidden' }
+}
+function closeModal() {
+  document.querySelectorAll('.modal-overlay.open').forEach(el => el.classList.remove('open'));
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal() });
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal() });
+});
+</script>
+
+</body>
+</html>

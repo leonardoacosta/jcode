@@ -14,11 +14,13 @@ mod debug_socket;
 mod discover;
 mod discover_secrets;
 mod edit;
+mod evaluate;
 mod feedback;
 mod gmail;
 mod goal;
 pub mod inflight;
 mod invalid;
+mod jev_cache;
 mod jcode_docs;
 mod ls;
 pub mod mcp;
@@ -41,6 +43,7 @@ mod write;
 use crate::compaction::CompactionManager;
 use crate::provider::Provider;
 use crate::skill::SkillRegistry;
+use crate::tool::jev_cache::JevCache;
 use anyhow::Result;
 use jcode_message_types::ToolDefinition;
 use serde_json::Value;
@@ -70,6 +73,18 @@ struct SessionToolPolicy {
 
 static SESSION_TOOL_POLICIES: LazyLock<StdRwLock<HashMap<String, SessionToolPolicy>>> =
     LazyLock::new(|| StdRwLock::new(HashMap::new()));
+
+/// Global Jev decision cache — shared across all evaluate tool instances.
+static JEV_CACHE: LazyLock<Arc<JevCache>> = LazyLock::new(|| {
+    let dir = std::env::var("JEVCACHE_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| {
+            let mut d = std::path::PathBuf::from(".");
+            d.push(".jcode/jevcache");
+            d
+        });
+    Arc::new(JevCache::new(&dir).expect("Jev cache initialization"))
+});
 
 pub(crate) fn set_session_tool_policy(
     session_id: &str,
@@ -275,6 +290,12 @@ impl Registry {
                 goal::InitiativeTool::new,
             );
             Self::insert_tool_timed(&mut m, &mut timings, "gmail", gmail::GmailTool::new);
+            Self::insert_tool_timed(
+                &mut m,
+                &mut timings,
+                "evaluate",
+                || evaluate::EvaluateTool::new(JEV_CACHE.clone()),
+            );
             Self::insert_tool_timed(&mut m, &mut timings, "schedule", ambient::ScheduleTool::new);
             Self::insert_tool_timed(&mut m, &mut timings, "selfdev", selfdev::SelfDevTool::new);
             let nonzero: Vec<String> = timings
