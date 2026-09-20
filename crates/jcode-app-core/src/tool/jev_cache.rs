@@ -248,6 +248,20 @@ impl JevCache {
         self.stats.read().map(|s| s.clone()).unwrap_or_default()
     }
 
+    /// Log a one-line cache stats summary at info level.
+    pub fn log_stats(&self) {
+        let s = self.stats();
+        let hit_rate = if s.calls > 0 {
+            (s.hits as f64 / s.calls as f64) * 100.0
+        } else {
+            0.0
+        };
+        crate::logging::info(&format!(
+            "Jev cache: {} calls, {} hits ({:.1}%), ${:.4} saved",
+            s.calls, s.hits, hit_rate, s.cost_saved,
+        ));
+    }
+
     /// Return the salt configured for a schema name, if any.
     ///
     /// Used by the evaluate tool to include the salt when computing

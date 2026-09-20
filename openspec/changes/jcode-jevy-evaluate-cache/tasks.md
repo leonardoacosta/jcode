@@ -15,7 +15,7 @@ Dependency: `add-jevsdk-evaluate-tool` must be complete before Phase 1 begins. T
 
 ## 3. Observability
 
-- [ ] 3.1 Surface cache stats in jcode stats: Show total calls, cache hits, hit rate (%), estimated cost saved. Per-session stats, ledger persists across sessions. Verify `jcode stats` shows Jev cache section.
+- [x] 3.1 Surface cache stats in jcode stats: Show total calls, cache hits, hit rate (%), estimated cost saved. Per-session stats, ledger persists across sessions. Verify `jcode stats` shows Jev cache section.
 - [x] 3.2 Add debug logging: Log cache hit/miss at debug level, cache init (N entries loaded), cache disabling. Use existing tracing/log infrastructure. Verify log lines appear with `RUST_LOG=debug`.
 
 ## Dependency graph
