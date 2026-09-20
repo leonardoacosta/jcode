@@ -43,6 +43,7 @@ impl EvaluateTool {
 #[derive(Debug, Deserialize)]
 struct EvaluateInput {
     #[serde(default)]
+    #[allow(dead_code)]
     intent: Option<String>,
     /// The content to judge: plain text, or a structured JSON object/array.
     state: Value,
