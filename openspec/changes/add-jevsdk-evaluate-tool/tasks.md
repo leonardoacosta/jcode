@@ -2,76 +2,28 @@
 
 Dependency order matters: `#1 evaluate tool` is the foundation for all other Jev proposals. Complete it first.
 
-## Phase 1: Core types and HTTP client
+## 1. Core types and HTTP client
 
-### Task 1.1: Define Rust types for TypeSafe API
+- [ ] 1.1 Define Rust types for TypeSafe API: Create `source/jcode/crates/jcode-app-core/src/tool/evaluate.rs` with Serde types matching the TypeSafe API schema. Verify with `cargo check` and round-trip serde_json test.
+- [ ] 1.2 Implement HTTP client for TypeSafe API: Add `reqwest`-based HTTP client with `POST /v1/systemone`, `TYPESAFE_API_KEY` Bearer auth, 10s timeout, 3 retries on 429/529, error handling for 401/5xx/timeouts. Verify with real API key; invalid key returns clear error.
+- [ ] 1.3 Implement response validation: Validate Choice (option in criteria, probabilities sum ~1.0), Noul (probability in [0,1]), Score (distribution sums ~1.0). Reject malformed responses with clear error messages.
 
-**Scope:** Create `source/jcode/crates/jcode-app-core/src/tool/evaluate.rs` with Serde types matching the TypeSafe API schema.
+## 2. Jcode tool integration
 
-**Verification:** `cargo check` compiles. Types round-trip through serde_json successfully.
+- [ ] 2.1 Register evaluate as a Jcode tool: Implement `Tool` trait (`name()`, `description()`, `input_schema()`, `invoke()`) and add to `tool/mod.rs`. Verify tool appears in agent tool list and is callable.
+- [ ] 2.2 Add API key configuration: Support `TYPESAFE_API_KEY` and `OPENROUTER_API_KEY`. OpenRouter fallback: if TypeSafe key missing, use `https://openrouter.ai/api/alpha/decisions` with `~typesafe/jev-latest`. Clear error when neither key is set.
+- [ ] 2.3 Ship agent-visible usage guidance: Tool description teaches agents when to use Noul/Choice/Score, how to structure questions, how to handle confidence. Verify agent calls evaluate correctly on first attempt.
 
-### Task 1.2: Implement HTTP client for TypeSafe API
+## 3. MCP bundling (alternative path)
 
-**Scope:** Add `reqwest`-based HTTP client to `evaluate.rs`. Implement `POST /v1/systemone` with:
-- `TYPESAFE_API_KEY` authentication (Bearer header)
-- 10-second timeout
-- Retry on 429/529 (3 attempts, exponential backoff)
-- Error handling for 401, 5xx, network timeouts
-
-**Verification:** Call against a real TypeSafe API key. Valid Noul/Choice/Score requests return typed answers. Invalid key returns clear error.
-
-### Task 1.3: Implement response validation
-
-**Scope:** Validate TypeSafe responses:
-- Choice: selected option is in criteria, probabilities sum to ~1.0 (tolerance 0.02), confidence in [0,1]
-- Noul: probability in [0,1]
-- Score: probability distribution sums to ~1.0, score is valid level
-
-**Verification:** Malformed responses (wrong structure, invalid probabilities) are rejected with clear error messages. Valid responses pass through.
-
-## Phase 2: Jcode tool integration
-
-### Task 2.1: Register evaluate as a Jcode tool
-
-**Scope:** Add `evaluate` to `tool/mod.rs`. Implement the `Tool` trait: `name()`, `description()`, `input_schema()`, `invoke()`. 
-
-**Verification:** Tool appears in agent tool list. `evaluate` is callable with state + questions JSON.
-
-### Task 2.2: Add API key configuration
-
-**Scope:** Support `TYPESAFE_API_KEY` and `OPENROUTER_API_KEY` environment/config keys. OpenRouter path: if `TYPESAFE_API_KEY` is absent but `OPENROUTER_API_KEY` is set, use `https://openrouter.ai/api/alpha/decisions` with model `~typesafe/jev-latest`.
-
-**Verification:** Tool works with TypeSafe key. Tool works with OpenRouter key as fallback. Tool returns clear error when neither key is set.
-
-### Task 2.3: Agent-visible usage guidance
-
-**Scope:** Ship tool description and usage hints that teach agents:
-- When to use Noul vs Choice vs Score
-- How to structure questions (one narrow judgment per question)
-- How to handle confidence scores
-- Example patterns: "Is this urgent?", "Which file should I open?", "How severe is this?"
-
-**Verification:** Agent calls evaluate correctly on first attempt with well-structured questions. Agent correctly interprets probabilities and confidence.
-
-## Phase 3: MCP bundling (alternative path)
-
-### Task 3.1: Bundle evaluate Go binary
-
-**Scope:** Copy `itsmostafa/typesafe-mcp` evaluate binary into `jcode-bundled-servers/evaluate`. Add build step to download/compile the binary for the target platform.
-
-**Verification:** Binary is present in the installed Jcode distribution. `evaluate --version` works.
-
-### Task 3.2: Auto-register evaluate MCP server
-
-**Scope:** On session start, run `evaluate setup mcp` to register the MCP server with detected agents (Claude Code, Codex, etc.). The evaluate tool then appears as an MCP tool for all agent sessions.
-
-**Verification:** New session has evaluate available as MCP tool. Agent can call `evaluate(state, questions)` through MCP.
+- [ ] 3.1 Bundle evaluate Go binary: Copy `itsmostafa/typesafe-mcp` evaluate binary into `jcode-bundled-servers/evaluate` with platform build step. Verify binary present in distribution.
+- [ ] 3.2 Auto-register evaluate MCP server: On session start, run `evaluate setup mcp` to register with detected agents. Verify new session has evaluate as MCP tool.
 
 ## Dependency graph
 
 ```
-Task 1.1 → Task 1.2 → Task 1.3 → Task 2.1 → Task 2.2 → Task 2.3
-                                                      ↘ Task 3.1 → Task 3.2
+Task 1.1 → 1.2 → 1.3 → 2.1 → 2.2 → 2.3
+                                  ↘ 3.1 → 3.2
 ```
 
 Phase 1 must complete before Phase 2. Phase 3 is independent (MCP bundling path).
