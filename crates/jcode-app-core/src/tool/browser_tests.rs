@@ -45,6 +45,7 @@ fn snapshot_maps_to_annotated_get_content() {
         path: None,
         fields: None,
         scroll_to: None,
+        goal: None,
     };
 
     let (action, params, _) = bridge_request("snapshot", &input).unwrap();
@@ -87,6 +88,7 @@ fn eval_maps_script_and_page_world() {
         path: None,
         fields: None,
         scroll_to: None,
+        goal: None,
     };
 
     let (action, params, _) = bridge_request("eval", &input).unwrap();
@@ -127,6 +129,7 @@ fn interactables_maps_to_bridge_action() {
         path: None,
         fields: None,
         scroll_to: None,
+        goal: None,
     };
 
     let (action, params, _) = bridge_request("interactables", &input).unwrap();
