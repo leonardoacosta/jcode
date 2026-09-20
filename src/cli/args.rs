@@ -547,6 +547,10 @@ pub(crate) enum Command {
         /// Maximum history entries to consider (default: 200)
         #[arg(long, default_value = "200")]
         max_entries: usize,
+
+        /// Print the zsh widget registration snippet for jcode init
+        #[arg(long)]
+        init: bool,
     },
 
     /// Serve the stable harness API on a Unix socket, for SDK clients.

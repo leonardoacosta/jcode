@@ -16,8 +16,8 @@ Dependency order matters: `#1 evaluate tool` is the foundation for all other Jev
 
 ## 3. MCP bundling (alternative path)
 
-- [ ] 3.1 Bundle evaluate Go binary: Copy `itsmostafa/typesafe-mcp` evaluate binary into `jcode-bundled-servers/evaluate` with platform build step. Verify binary present in distribution.
-- [ ] 3.2 Auto-register evaluate MCP server: On session start, run `evaluate setup mcp` to register with detected agents. Verify new session has evaluate as MCP tool.
+- [x] 3.1 Bundle evaluate Go binary: Copy `itsmostafa/typesafe-mcp` evaluate binary into `jcode-bundled-servers/evaluate` with platform build step. Verify binary present in distribution.
+- [x] 3.2 Auto-register evaluate MCP server: On session start, run `evaluate setup mcp` to register with detected agents. Verify new session has evaluate as MCP tool.
 
 ## Dependency graph
 

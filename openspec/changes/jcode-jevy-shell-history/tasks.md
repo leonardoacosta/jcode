@@ -16,7 +16,7 @@ Priority: BUNDLE — lowest effort, lowest risk.
 
 ## 3. Shell integration
 
-- [ ] 3.1 Implement zsh widget registration: Add to `jcode init`: register `_jev_history_complete` zsh widget bound to Tab (and Alt+Tab for explicit Jev). Widget calls `jcode shell-history --buffer="$BUFFER"`, replaces buffer on result, falls back to `zle expand-or-complete` otherwise. Only triggers when standard completion has no results. Detect zsh at init time.
+- [x] 3.1 Implement zsh widget registration: Add to `jcode init`: register `_jev_history_complete` zsh widget bound to Tab (and Alt+Tab for explicit Jev). Widget calls `jcode shell-history --buffer="$BUFFER"`, replaces buffer on result, falls back to `zle expand-or-complete` otherwise. Only triggers when standard completion has no results. Detect zsh at init time.
 - [ ] 3.2 Implement bash support (optional): Register bash function via `bind -x` with same logic. Document as experimental. Verify same behavior as zsh widget.
 - [ ] 3.3 Add user documentation and safety note: Document shell history sent to TypeSafe API. Privacy note in tool description. Opt-out: `shell_history.enabled false`. Depth limit: `shell_history.max_entries` (100).
 

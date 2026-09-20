@@ -429,8 +429,9 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
             buffer,
             history_file,
             max_entries,
+            init,
         }) => {
-            commands::run_shell_history(buffer, history_file, max_entries)?;
+            commands::run_shell_history(buffer, history_file, max_entries, init)?;
         }
         Some(Command::Replay {
             session,

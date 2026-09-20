@@ -3439,7 +3439,13 @@ pub(crate) fn run_shell_history(
     buffer: String,
     history_file: Option<String>,
     max_entries: usize,
+    init: bool,
 ) -> Result<()> {
+    if init {
+        print_zsh_widget();
+        return Ok(());
+    }
+
     if buffer.trim().is_empty() {
         return Ok(());
     }
@@ -3616,4 +3622,33 @@ fn match_command_sync(
     }
 
     Ok(None)
+}
+
+/// Print the zsh widget registration snippet for `jcode init`.
+/// Users run `jcode shell-history --init >> ~/.zshrc` to install.
+fn print_zsh_widget() {
+    let widget = r##"# ── jcode jev-shell-history Tab completion ──
+_jev_history_complete() {
+  local buffer="$BUFFER"
+  if [[ -z "$buffer" ]]; then
+    zle expand-or-complete
+    return
+  fi
+  local result
+  result=$(jcode shell-history --buffer="$buffer" 2>/dev/null)
+  if [[ -n "$result" ]]; then
+    BUFFER="$result"
+    CURSOR=${#BUFFER}
+    zle redisplay
+  else
+    zle expand-or-complete
+  fi
+}
+zle -N _jev_history_complete
+# Bind to Tab (after standard completion fails).
+# Use Alt+Tab for explicit Jev completion if preferred.
+bindkey '^I' _jev_history_complete
+# bindkey '^[^I' _jev_history_complete  # Alt+Tab for explicit
+"##;
+    println!("{widget}");
 }
