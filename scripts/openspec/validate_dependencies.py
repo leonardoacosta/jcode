@@ -40,6 +40,9 @@ def load_active_changes(changes_dir):
     """Load all active changes with their dependency metadata."""
     changes = {}
     for entry in os.listdir(changes_dir):
+        # Skip the archive subdirectory.
+        if entry == "archive":
+            continue
         change_dir = os.path.join(changes_dir, entry)
         proposal_path = os.path.join(change_dir, "proposal.md")
         if not os.path.isdir(change_dir) or not os.path.isfile(proposal_path):
@@ -70,7 +73,11 @@ def load_active_changes(changes_dir):
 
 
 def load_archived_changes(archive_dir):
-    """Load archived changes (for resolving legacy dependencies)."""
+    """Load archived changes (for resolving legacy dependencies).
+
+    Archived directories use the naming convention:
+    YYYY-MM-DD-<original-change-id>
+    """
     changes = {}
     if not os.path.isdir(archive_dir):
         return changes
@@ -78,14 +85,56 @@ def load_archived_changes(archive_dir):
         archive_item = os.path.join(archive_dir, entry)
         if not os.path.isdir(archive_item):
             continue
-        # Check if there's a proposal.md
         proposal_path = os.path.join(archive_item, "proposal.md")
-        if os.path.isfile(proposal_path):
-            changes[entry] = {"id": entry, "archived": True}
+        if not os.path.isfile(proposal_path):
+            continue
+        # Strip date prefix to get the original change ID.
+        original_id = entry
+        # Match YYYY-MM-DD- prefix.
+        if len(entry) > 11 and entry[4] == '-' and entry[7] == '-':
+            original_id = entry[11:]
+        changes[original_id] = {"id": original_id, "archived": True}
     return changes
 
 
-def validate_dependency_graph(selected_ids, all_changes, archived_changes):
+def verify_archived_prerequisite_integration(root, dep_id):
+    """Verify an archived prerequisite is integrated into current HEAD.
+
+    Finds the archive commit for the proposal and verifies it is an
+    ancestor of HEAD via git merge-base.
+    """
+    import subprocess
+    archive_dir = os.path.join(root, "openspec", "changes", "archive")
+    if not os.path.isdir(archive_dir):
+        return False
+    for entry in os.listdir(archive_dir):
+        original_id = entry
+        if len(entry) > 11 and entry[4] == '-' and entry[7] == '-':
+            original_id = entry[11:]
+        if original_id != dep_id:
+            continue
+        try:
+            # Use the archive commit itself. The archive rename means the
+            # implementation was already integrated before archiving.
+            result = subprocess.run(
+                ["git", "-C", root, "log", "--format=%H", "-1",
+                 "--", f"openspec/changes/archive/{entry}/"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                archive_commit = result.stdout.strip()
+                check = subprocess.run(
+                    ["git", "-C", root, "merge-base", "--is-ancestor",
+                     archive_commit, "HEAD"],
+                    capture_output=True, timeout=5
+                )
+                return check.returncode == 0
+        except (subprocess.TimeoutExpired, OSError):
+            pass
+    return False
+
+
+def validate_dependency_graph(selected_ids, all_changes, archived_changes, root):
     """Validate the dependency graph for selected changes."""
     issues = []
 
@@ -105,9 +154,13 @@ def validate_dependency_graph(selected_ids, all_changes, archived_changes):
                 if not dep["valid"]:
                     issues.append(f"Change '{cid}' depends on '{dep_id}' which has {dep['reason']}")
                 continue
-            # Check if dependency exists as archived
+            # Check if dependency exists as archived.
             if dep_id in archived_changes:
-                # Archived dependencies need manual evidence review
+                # Verify the prerequisite integration revision is in the current
+                # HEAD ancestry. If proven, the dependency is satisfied.
+                if verify_archived_prerequisite_integration(root, dep_id):
+                    continue
+                # Archived dependencies need manual evidence review.
                 issues.append(f"Change '{cid}' depends on archived '{dep_id}' — manual evidence review required")
                 continue
             # Not found anywhere
@@ -165,7 +218,7 @@ def main():
     args = parser.parse_args()
 
     changes_dir = os.path.join(args.root, "openspec", "changes")
-    archive_dir = os.path.join(args.root, "openspec", "archive")
+    archive_dir = os.path.join(args.root, "openspec", "changes", "archive")
 
     if not os.path.isdir(changes_dir):
         result = {"valid": False, "issues": [f"Changes directory not found: {changes_dir}"]}
@@ -196,7 +249,7 @@ def main():
             print(json.dumps(result))
         sys.exit(0)
 
-    issues, topo_order = validate_dependency_graph(selected_ids, active_changes, archived_changes)
+    issues, topo_order = validate_dependency_graph(selected_ids, active_changes, archived_changes, args.root)
 
     result = {
         "valid": len(issues) == 0,
