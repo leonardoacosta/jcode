@@ -21,6 +21,8 @@ pub enum CompactionMode {
     Proactive,
     /// Compact based on semantic topic shifts and relevance scoring
     Semantic,
+    /// Jev-driven compaction: score tool calls for relevance, prune obsolete ones
+    Jev,
 }
 
 impl CompactionMode {
@@ -29,6 +31,7 @@ impl CompactionMode {
             Self::Reactive => "reactive",
             Self::Proactive => "proactive",
             Self::Semantic => "semantic",
+            Self::Jev => "jev",
         }
     }
 
@@ -37,6 +40,7 @@ impl CompactionMode {
             "reactive" => Some(Self::Reactive),
             "proactive" => Some(Self::Proactive),
             "semantic" => Some(Self::Semantic),
+            "jev" => Some(Self::Jev),
             _ => None,
         }
     }
@@ -380,6 +384,15 @@ pub struct CompactionConfig {
 
     /// [semantic] Number of recent turns to look at for building the "current goal" embedding
     pub goal_window_turns: usize,
+
+    // ── Jev compaction ────────────────────────────────────────────────────
+
+    /// [jev] Probability threshold for keeping a tool call or result (0.0-1.0).
+    /// Calls scored below this are dropped.
+    pub jev_keep_threshold: f64,
+
+    /// [jev] Number of newest messages to always pin (never drop).
+    pub jev_preserve_recent: usize,
 }
 
 impl Default for CompactionConfig {
@@ -395,6 +408,8 @@ impl Default for CompactionConfig {
             topic_shift_threshold: 0.45,
             relevance_keep_threshold: 0.65,
             goal_window_turns: 5,
+            jev_keep_threshold: 0.5,
+            jev_preserve_recent: 4,
         }
     }
 }

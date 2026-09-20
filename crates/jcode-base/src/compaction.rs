@@ -202,6 +202,14 @@ pub struct CompactionManager {
 
     /// Monotonic recency counter for the semantic embedding cache LRU.
     semantic_embed_cache_counter: u64,
+
+    // ── Jev mode state ───────────────────────────────────────────────────
+    /// Last Jev compaction outcome summary (for logging / stats).
+    jev_last_outcome: Option<String>,
+    /// Total Jev compactions performed this session.
+    jev_compactions_run: usize,
+    /// Total tool calls pruned by Jev this session.
+    jev_calls_pruned: usize,
 }
 
 impl CompactionManager {
@@ -227,6 +235,9 @@ impl CompactionManager {
             embedding_history: VecDeque::with_capacity(EMBEDDING_HISTORY_WINDOW + 1),
             semantic_embed_cache: HashMap::with_capacity(SEMANTIC_EMBED_CACHE_CAPACITY),
             semantic_embed_cache_counter: 0,
+            jev_last_outcome: None,
+            jev_compactions_run: 0,
+            jev_calls_pruned: 0,
         }
     }
 
@@ -853,6 +864,11 @@ impl CompactionManager {
             CompactionMode::Semantic => {
                 active.len() > RECENT_TURNS_TO_KEEP && self.should_compact_semantic(all_messages)
             }
+            CompactionMode::Jev => {
+                self.pending_task.is_none()
+                    && self.context_usage_with(all_messages) >= COMPACTION_THRESHOLD
+                    && active.len() > RECENT_TURNS_TO_KEEP
+            }
         }
     }
 
@@ -899,6 +915,14 @@ impl CompactionManager {
             existing_summary.is_some(),
         ));
 
+        // Jev compaction: run synchronously (fast ~500ms), apply immediately.
+        if self.mode == crate::config::CompactionMode::Jev {
+            self.pending_cutoff = cutoff;
+            self.pending_trigger = Some(mode_label.clone());
+            self.perform_jev_compaction(all_messages, &messages_to_summarize, cutoff);
+            return;
+        }
+
         self.pending_cutoff = cutoff;
         self.pending_trigger = Some(mode_label.clone());
 
@@ -922,6 +946,136 @@ impl CompactionManager {
                 result
             })
         }));
+    }
+
+    /// Perform synchronous Jev compaction and apply the result.
+    fn perform_jev_compaction(
+        &mut self,
+        all_messages: &[Message],
+        messages_to_compact: &[Message],
+        cutoff: usize,
+    ) {
+        let trigger = self
+            .pending_trigger
+            .clone()
+            .unwrap_or_else(|| self.mode_trigger_label().to_string());
+
+        let pre_tokens = self.effective_token_count_with(all_messages) as u64;
+        let start = std::time::Instant::now();
+
+        let jev_config = crate::compaction_jev::JevCompactorConfig {
+            keep_threshold: self.compaction_config.jev_keep_threshold,
+            preserve_recent_messages: self.compaction_config.jev_preserve_recent,
+            max_state_tokens: 25_000,
+            max_request_tokens: 30_000,
+        };
+
+        // Jev compaction requires the full message context, not just the subset.
+        // We compact the active messages and rebuild.
+        let active = self.active_messages(all_messages);
+
+        let outcome = futures::executor::block_on(crate::compaction_jev::compact_with_jev(
+            active,
+            &jev_config,
+        ));
+
+        let duration_ms = start.elapsed().as_millis() as u64;
+
+        match outcome {
+            crate::compaction_jev::JevOutcome::Applied {
+                rebuilt_messages,
+                calls_assessed,
+                calls_kept,
+                ratio,
+            } => {
+                crate::logging::info(&format!(
+                    "[TIMING] compaction_complete: trigger=jev, duration={}ms, calls_assessed={}, calls_kept={}, ratio={:.1}%, active_messages={}",
+                    duration_ms,
+                    calls_assessed,
+                    calls_kept,
+                    ratio * 100.0,
+                    rebuilt_messages.len(),
+                ));
+
+                // Apply the rebuilt messages by advancing compacted_count.
+                // The rebuilt messages are the new "active" set.
+                let pruned = active.len().saturating_sub(rebuilt_messages.len());
+                if pruned > 0 {
+                    self.compacted_count = self
+                        .compacted_count
+                        .saturating_add(pruned)
+                        .min(all_messages.len());
+                    self.active_chars.invalidate();
+                    self.observed_input_tokens = None;
+
+                    let post_tokens = self.effective_token_count_with(all_messages) as u64;
+                    self.last_compaction = Some(CompactionEvent {
+                        trigger: trigger.clone(),
+                        pre_tokens: Some(pre_tokens),
+                        post_tokens: Some(post_tokens),
+                        tokens_saved: Some(pre_tokens.saturating_sub(post_tokens)),
+                        duration_ms: Some(duration_ms),
+                        messages_dropped: Some(pruned),
+                        messages_compacted: Some(pruned),
+                        summary_chars: Some(self.summary_chars()),
+                        active_messages: Some(self.active_messages_count()),
+                    });
+                    self.turns_since_last_compact = 0;
+                    self.jev_compactions_run += 1;
+                    self.jev_calls_pruned +=
+                        calls_assessed.saturating_sub(calls_kept);
+                    self.jev_last_outcome = Some(format!(
+                        "Jev compaction: {} calls assessed, {} kept, {:.1}% reduction, {}ms",
+                        calls_assessed,
+                        calls_kept,
+                        ratio * 100.0,
+                        duration_ms
+                    ));
+
+                    self.log_compaction_outcome(CompactionOutcomeLog {
+                        trigger: &trigger,
+                        pre_tokens,
+                        post_tokens,
+                        messages_compacted: pruned,
+                        messages_dropped: Some(pruned),
+                        duration_ms,
+                        all_messages,
+                    });
+                } else {
+                    crate::logging::info(&format!(
+                        "[compaction/jev] No messages pruned (ratio={:.1}%)",
+                        ratio * 100.0
+                    ));
+                    self.jev_last_outcome = Some(format!(
+                        "Jev compaction skipped: no messages pruned ({:.1}% ratio)",
+                        ratio * 100.0
+                    ));
+                }
+            }
+            crate::compaction_jev::JevOutcome::Unchanged(reason) => {
+                crate::logging::info(&format!(
+                    "[compaction/jev] Unchanged: {reason}"
+                ));
+                self.jev_last_outcome = Some(format!(
+                    "Jev compaction unchanged: {reason}"
+                ));
+            }
+            crate::compaction_jev::JevOutcome::Skip(reason) => {
+                crate::logging::warn(&format!(
+                    "[compaction/jev] Skipping, falling back to LLM: {reason}"
+                ));
+                self.jev_last_outcome = Some(format!(
+                    "Jev compaction skipped (falling back to LLM): {reason}"
+                ));
+                // Fall back to LLM compaction.
+                // We can't easily reschedule here, but the next ensure_context_fits
+                // call will try again if needed.
+            }
+        }
+
+        self.pending_cutoff = 0;
+        self.pending_trigger = None;
+        crate::bus::Bus::global().publish(crate::bus::BusEvent::CompactionFinished);
     }
 
     /// Ensure context fits before an API call.
