@@ -534,6 +534,21 @@ pub(crate) enum Command {
         json: bool,
     },
 
+    /// Jev-powered fuzzy shell history matching for Tab completion
+    ShellHistory {
+        /// Current command-line buffer to match against shell history
+        #[arg(long)]
+        buffer: String,
+
+        /// Shell history file path (default: ~/.zsh_history)
+        #[arg(long)]
+        history_file: Option<String>,
+
+        /// Maximum history entries to consider (default: 200)
+        #[arg(long, default_value = "200")]
+        max_entries: usize,
+    },
+
     /// Serve the stable harness API on a Unix socket, for SDK clients.
     ///
     /// This is the endpoint the TypeScript SDK (`@1jehuang/jcode-sdk`) connects to. It

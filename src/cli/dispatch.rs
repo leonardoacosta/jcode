@@ -425,6 +425,13 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
         Some(Command::Browser { action }) => {
             commands::run_browser(&action).await?;
         }
+        Some(Command::ShellHistory {
+            buffer,
+            history_file,
+            max_entries,
+        }) => {
+            commands::run_shell_history(buffer, history_file, max_entries)?;
+        }
         Some(Command::Replay {
             session,
             swarm,

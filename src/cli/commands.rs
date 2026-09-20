@@ -1,6 +1,6 @@
 #![cfg_attr(test, allow(clippy::await_holding_lock))]
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::io::{Read, Write};
@@ -3428,3 +3428,192 @@ fn filter_cli_model_routes_for_choice(
 #[cfg(test)]
 #[path = "commands_tests.rs"]
 mod tests;
+
+// ── shell-history ──
+
+/// Run the shell-history command: match a partial command buffer against
+/// shell history using Jev fuzzy matching. Prints the best match to stdout
+/// or nothing on no-match. Errors go to stderr (must not interfere with
+/// zsh widget output capture).
+pub(crate) fn run_shell_history(
+    buffer: String,
+    history_file: Option<String>,
+    max_entries: usize,
+) -> Result<()> {
+    if buffer.trim().is_empty() {
+        return Ok(());
+    }
+
+    // Read and parse the shell history file.
+    let history_path = history_file.unwrap_or_else(|| {
+        let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+        format!("{home}/.zsh_history")
+    });
+    let entries = match read_shell_history(&history_path, max_entries) {
+        Ok(entries) => entries,
+        Err(_) => return Ok(()), // silent fallback
+    };
+
+    if entries.len() <= 2 {
+        return Ok(()); // too few entries for meaningful matching
+    }
+
+    // If no API key is configured, silently return.
+    let api_key = match resolve_jev_api_key() {
+        Some(k) => k,
+        None => {
+            crate::logging::debug("Jev shell history: no API key configured, skipping");
+            return Ok(());
+        }
+    };
+
+    // Call Jev for fuzzy matching.
+    let matched = match match_command_sync(&buffer, &entries, &api_key) {
+        Ok(Some(cmd)) => cmd,
+        Ok(None) => return Ok(()),
+        Err(e) => {
+            eprintln!("shell-history: {e}");
+            std::process::exit(1);
+        }
+    };
+
+    println!("{matched}");
+    Ok(())
+}
+
+/// Read and parse a shell history file, returning deduplicated
+/// most-recent-first entries.
+fn read_shell_history(path: &str, max_entries: usize) -> Result<Vec<String>> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| anyhow::anyhow!("cannot read history file {path}: {e}"))?;
+
+    let mut entries: Vec<String> = Vec::with_capacity(max_entries);
+    for line in content.lines().rev() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        // Strip zsh extended history timestamps: `: 1234567890:0;command`
+        let command = strip_zsh_timestamp(line);
+        if command.is_empty() {
+            continue;
+        }
+        // Dedup consecutive duplicates.
+        if entries.last().map(|s| s.as_str()) == Some(command) {
+            continue;
+        }
+        entries.push(command.to_string());
+        if entries.len() >= max_entries {
+            break;
+        }
+    }
+    Ok(entries)
+}
+
+/// Strip zsh extended-history timestamp prefix: `: 1234567890:0;command` → `command`.
+fn strip_zsh_timestamp(line: &str) -> &str {
+    if let Some(rest) = line.strip_prefix(": ") {
+        // Split on `;` — the command starts after the second semicolon.
+        let parts: Vec<&str> = rest.splitn(3, ';').collect();
+        if parts.len() == 3 {
+            return parts[2];
+        }
+        // If the format doesn't match exactly, treat the whole thing after `: ` as the command.
+        return rest;
+    }
+    line
+}
+
+/// Resolve the Jev API key from environment variables.
+fn resolve_jev_api_key() -> Option<String> {
+    if let Ok(key) = std::env::var("TYPESAFE_API_KEY") {
+        if !key.trim().is_empty() {
+            return Some(key);
+        }
+    }
+    if let Ok(key) = std::env::var("OPENROUTER_API_KEY") {
+        if !key.trim().is_empty() {
+            return Some(key);
+        }
+    }
+    None
+}
+
+/// Call the Jev API synchronously (blocking) to match a partial buffer
+/// against shell history entries.
+fn match_command_sync(
+    buffer: &str,
+    history: &[String],
+    api_key: &str,
+) -> Result<Option<String>> {
+    // Build criteria: cmd_0 → first entry, cmd_1 → second, etc.
+    let mut criteria = serde_json::Map::new();
+    for (i, entry) in history.iter().enumerate() {
+        criteria.insert(format!("cmd_{i}"), serde_json::Value::String(entry.clone()));
+    }
+
+    let request = serde_json::json!({
+        "state": serde_json::json!({
+            "buffer": buffer,
+            "history": history,
+        }),
+        "model": "jev-latest",
+        "questions": {
+            "match": {
+                "type": "choice",
+                "instructions": format!("Which command in the history best matches the partial buffer '{buffer}'? If nothing matches well, pick the closest."),
+                "criteria": criteria,
+            },
+        },
+    });
+
+    let client = reqwest::blocking::Client::builder()
+        .timeout(std::time::Duration::from_secs(3))
+        .build()
+        .context("shell-history: cannot create HTTP client")?;
+
+    let response = client
+        .post("https://api.typesafe.ai/v1/systemone")
+        .header("Authorization", format!("Bearer {api_key}"))
+        .json(&request)
+        .send()
+        .context("shell-history: failed to reach TypeSafe API")?;
+
+    if !response.status().is_success() {
+        anyhow::bail!(
+            "TypeSafe API returned HTTP {}",
+            response.status()
+        );
+    }
+
+    let body: serde_json::Value = response.json()
+        .context("shell-history: failed to parse TypeSafe response")?;
+
+    // Extract match answer.
+    let answers = body.get("answers")
+        .and_then(|a| a.as_object())
+        .ok_or_else(|| anyhow::anyhow!("shell-history: invalid response format"))?;
+
+    let match_answer = answers.get("match")
+        .ok_or_else(|| anyhow::anyhow!("shell-history: no match answer"))?;
+
+    // Parse choice format: {"choice": "cmd_3", "confidence": 0.87, ...}
+    let choice = match_answer.get("choice")
+        .and_then(|c| c.as_str())
+        .unwrap_or("");
+
+    if choice.is_empty() {
+        return Ok(None);
+    }
+
+    // Resolve cmd_N back to the actual command.
+    if let Some(index_str) = choice.strip_prefix("cmd_") {
+        if let Ok(index) = index_str.parse::<usize>() {
+            if let Some(cmd) = history.get(index) {
+                return Ok(Some(cmd.clone()));
+            }
+        }
+    }
+
+    Ok(None)
+}
