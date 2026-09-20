@@ -89,6 +89,7 @@ struct ToolUseInfo {
 
 /// Decision for a single tool call pair.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct CallDecision {
     call_msg_idx: usize,
     result_msg_idx: Option<usize>,
@@ -1019,8 +1020,6 @@ async fn send_once(
 
 /// Apply decisions to rebuild the message list.
 fn apply_decisions(messages: &[Message], decisions: &[CallDecision]) -> Vec<Message> {
-    let total = messages.len();
-
     // Build a set of message indices to remove.
     let mut remove_idxs: std::collections::HashSet<usize> = std::collections::HashSet::new();
     let mut truncate_results: HashMap<usize, usize> = HashMap::new();

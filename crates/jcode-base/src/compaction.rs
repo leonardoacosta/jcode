@@ -952,8 +952,8 @@ impl CompactionManager {
     fn perform_jev_compaction(
         &mut self,
         all_messages: &[Message],
-        messages_to_compact: &[Message],
-        cutoff: usize,
+        _messages_to_compact: &[Message],
+        _cutoff: usize,
     ) {
         let trigger = self
             .pending_trigger
