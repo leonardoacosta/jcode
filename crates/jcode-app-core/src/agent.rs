@@ -8,6 +8,7 @@ mod messages;
 mod prompting;
 mod provider;
 mod response_recovery;
+mod router;
 mod status;
 mod streaming;
 mod tools;
