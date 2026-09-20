@@ -6,9 +6,9 @@ Priority: CONSIDER — medium effort, low risk.
 
 ## 1. Jev risk screening
 
-- [ ] 1.1 Implement diff chunking for review: Create `review/screener.rs` with `chunk_diff()` that chunks diffs into file-level hunks with diff text, file path, language, related test paths (inferred by convention). Binary files flagged as skip. Max hunk size 8000 chars; split oversized files at function boundaries.
-- [ ] 1.2 Implement 5-dimension risk matrix via Jev: `screen_hunk()` sends each hunk to Jev with 5 Noul: correctness_risk, security_risk, reliability_risk, compatibility_risk, test_gap. Timeout 5s per hunk. Respects Jev cache. Verify SQL injection→security high, comment changes→all low, timeout→error routed to LLM.
-- [ ] 1.3 Implement threshold-based routing: `needs_full_review()`: any dimension >0.7 (configurable)→flag for LLM; all ≤0.7→Jev-only. Returns RiskMatrix with scores + routing decision.
+- [x] 1.1 Implement diff chunking for review: Create `review/screener.rs` with `chunk_diff()` that chunks diffs into file-level hunks with diff text, file path, language, related test paths (inferred by convention). Binary files flagged as skip. Max hunk size 8000 chars; split oversized files at function boundaries.
+- [x] 1.2 Implement 5-dimension risk matrix via Jev: `screen_hunk()` sends each hunk to Jev with 5 Noul: correctness_risk, security_risk, reliability_risk, compatibility_risk, test_gap. Timeout 5s per hunk. Respects Jev cache. Verify SQL injection→security high, comment changes→all low, timeout→error routed to LLM.
+- [x] 1.3 Implement threshold-based routing: `needs_full_review()`: any dimension >0.7 (configurable)→flag for LLM; all ≤0.7→Jev-only. Returns RiskMatrix with scores + routing decision.
 
 ## 2. Review integration
 
