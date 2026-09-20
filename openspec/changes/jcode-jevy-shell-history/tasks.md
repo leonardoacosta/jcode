@@ -6,13 +6,13 @@ Priority: BUNDLE — lowest effort, lowest risk.
 
 ## 1. Jev-powered history matching
 
-- [ ] 1.1 Implement shell history collection: Create `cli/shell_history.rs` that reads shell history file (configurable path), parses entries (strips zsh timestamps), deduplicates consecutive duplicates, limits to configurable depth (default 200). Verify zsh format parsing, dedup, depth limit, empty history handling.
-- [ ] 1.2 Implement Jev command matching: `match_command()` sends buffer prefix + history to Jev with Choice (cmd_0..cmd_N) and confidence Noul. Returns match or None if confidence <0.5. Timeout 3s→None. Skip if empty buffer or ≤2 history entries.
+- [x] 1.1 Implement shell history collection: Create `cli/shell_history.rs` that reads shell history file (configurable path), parses entries (strips zsh timestamps), deduplicates consecutive duplicates, limits to configurable depth (default 200). Verify zsh format parsing, dedup, depth limit, empty history handling.
+- [x] 1.2 Implement Jev command matching: `match_command()` sends buffer prefix + history to Jev with Choice (cmd_0..cmd_N) and confidence Noul. Returns match or None if confidence <0.5. Timeout 3s→None. Skip if empty buffer or ≤2 history entries.
 
 ## 2. CLI integration
 
-- [ ] 2.1 Implement jcode shell-history subcommand: `jcode shell-history --buffer <text>` calls `match_command()`, prints result to stdout or nothing on no-match. Stderr for errors only (must not interfere with zsh widget). Exit 0 on success/no-match, non-zero on error.
-- [ ] 2.2 Add API key configuration: Reuse `TYPESAFE_API_KEY` or `OPENROUTER_API_KEY` from evaluate tool. No key→silently return no result (no Jev call). Debug log: "Jev shell history: no API key configured, skipping".
+- [x] 2.1 Implement jcode shell-history subcommand: `jcode shell-history --buffer <text>` calls `match_command()`, prints result to stdout or nothing on no-match. Stderr for errors only (must not interfere with zsh widget). Exit 0 on success/no-match, non-zero on error.
+- [x] 2.2 Add API key configuration: Reuse `TYPESAFE_API_KEY` or `OPENROUTER_API_KEY` from evaluate tool. No key→silently return no result (no Jev call). Debug log: "Jev shell history: no API key configured, skipping".
 
 ## 3. Shell integration
 
