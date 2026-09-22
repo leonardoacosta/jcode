@@ -82,3 +82,18 @@ Alternatives: payload-filter workaround is experimentally disproven; model switc
 5. Pin the candidate artifact and checksum. Preserve the current binary/image and config for rollback. Coordinate the shared-service restart with active sessions. Check deployment packaging and successful model listing, then smoke-test the production listener before resuming /poke.
 
 Outcome: cross-model request mutation and the failure of the config-only workaround are established by 64 isolated runtime cases. A narrow proxy patch is the recommended path. Implementation, successful upstream model round trips, candidate packaging, and deployment remain intentionally unperformed under explore scope.
+
+### Requirement-to-evidence review
+
+| Investigation requirement | Concrete check | Observed result and limit |
+| --- | --- | --- |
+| Determine whether this is GLM-only | Deployed executable through HTTP chat completions, four model names, each streaming mode and fixture | All nonempty compatible catalogs gained arguments. Real Azure rejection remains confirmed only for GLM. |
+| Establish whether native OpenAI routes share the defect | Executor registration and all helper call sites | Native Codex registration returns before compatible registration. Source evidence only; no native end-to-end health guarantee. |
+| Identify correct update/config | Exact version sanitizer source plus two runs with/without wildcard payload filter | Backfill is unconditional and occurs after filtering; tested configuration cannot prevent mutation. |
+| Check preservation hazards | History and schema-property fixtures for every model/mode | Probe asserts real invocation arguments and nested property named arguments survive the current path. Candidate repair must retain those properties. |
+| Check empty-input boundary | Empty-tools fixture for every model/mode | No tools or arguments invented for empty catalogs. |
+| Check upgrade availability | Public latest-release endpoint | Latest published version at investigation time is the deployed affected release. No fixed release validated. |
+| Deliver actionable recommendation | Committed exploration, repair location, tests needing correction, canary and rollback gates | Recommendation delivered. No candidate binary or deployment produced. |
+| Demonstrate repaired end-user outcome | Not executed: repair forbidden by active explore scope and no candidate exists | Cannot claim improved model success, streaming continuation, packaging compatibility, or deployment acceptance. These are gates for subsequent implementation, not completed investigation tests. |
+
+Review outcome: revalidated all 64 saved results individually against the full model/mode/fixture matrix. These are synthetic loopback integration observations through the actual executable's public HTTP interface, not real-provider acceptance. Repeating the faulty production request would not demonstrate improvement. Investigation quality improved through observed elimination of the config workaround and a proven cross-model reproduction, but system behavior has not been repaired. Stop with the recommendation as required by explore, rather than presenting implementation acceptance as achieved.
