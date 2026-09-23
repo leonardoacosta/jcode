@@ -42,3 +42,19 @@ Two things that waste time otherwise:
 - Confirm which binary you are actually inspecting. `strings` on
   `builds/shared-server/jcode` reads a 70-byte symlink, not a program; resolve it
   with `readlink -f` first.
+
+## Optional local agent memory and code navigation
+
+- **Graft** is an optional local-first memory tool for reusable fixes, decisions,
+  and project gotchas. When `graft` is installed, use `graft query` for a quick
+  confidence-gated prior-solution check, `graft retrieve` for ranked hybrid
+  recall, and `graft explore` only when connected context is useful. Treat
+  retrieved memories as hints and verify them against current source. Do not
+  install Graft, initialize profiles, or write memories unless asked.
+- **Blink** (`ellipsis-dev/blink`) is an optional Jev-powered codebase path
+  search, not a memory store. When `blink` is installed, use it to rank likely
+  files for a natural-language location question; use `--recursive` or
+  `--n_walkers N` only when a top-level scan is insufficient. Verify results
+  by reading the files. It requires a configured TypeSafe API key and makes
+  hosted Jev requests. Do not use it when credentials are unavailable, when
+  network use is out of scope, or when ordinary `agentgrep` is enough.
