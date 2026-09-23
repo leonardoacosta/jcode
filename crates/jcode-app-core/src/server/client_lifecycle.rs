@@ -1,9 +1,9 @@
 use super::available_models_dedup::available_models_dedup_key;
 use super::client_actions::{
     AgentTaskContext, NotifySessionContext, handle_agent_task, handle_compact, handle_input_shell,
-    handle_notify_session, handle_rename_session, handle_run_subagent, handle_set_feature,
-    handle_set_subagent_model, handle_split, handle_stdin_response, handle_transfer,
-    handle_trigger_memory_extraction,
+    handle_notify_session, handle_question_cancel, handle_question_response,
+    handle_rename_session, handle_run_subagent, handle_set_feature, handle_set_subagent_model,
+    handle_split, handle_stdin_response, handle_transfer, handle_trigger_memory_extraction,
 };
 use super::client_comm::{
     handle_comm_channel_members, handle_comm_list, handle_comm_list_channels, handle_comm_message,
@@ -657,6 +657,9 @@ pub(super) async fn handle_client(
     }
 
     let stdin_responses: Arc<Mutex<HashMap<String, tokio::sync::oneshot::Sender<String>>>> =
+        Arc::new(Mutex::new(HashMap::new()));
+
+    let pending_questions: super::client_actions::PendingQuestions =
         Arc::new(Mutex::new(HashMap::new()));
 
     // Subscribe to bus events so we can forward ModelsUpdated to this client
@@ -1963,6 +1966,33 @@ pub(super) async fn handle_client(
             } => {
                 handle_stdin_response(id, request_id, input, &stdin_responses, &client_event_tx)
                     .await;
+            }
+
+            Request::QuestionResponse {
+                id,
+                request_id,
+                answers,
+            } => {
+                handle_question_response(
+                    id,
+                    request_id,
+                    answers,
+                    &client_session_id,
+                    &pending_questions,
+                    &client_event_tx,
+                )
+                .await;
+            }
+
+            Request::QuestionCancel { id, request_id } => {
+                handle_question_cancel(
+                    id,
+                    request_id,
+                    &client_session_id,
+                    &pending_questions,
+                    &client_event_tx,
+                )
+                .await;
             }
 
             Request::AgentTask { id, task, .. } => {

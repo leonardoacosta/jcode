@@ -1081,6 +1081,104 @@ pub(super) async fn handle_stdin_response(
     let _ = client_event_tx.send(ServerEvent::Done { id });
 }
 
+/// A question pending a user answer, keyed by request_id.
+#[derive(Clone)]
+pub(super) struct PendingQuestion {
+    pub(super) session_id: String,
+    pub(super) tool_call_id: String,
+    /// oneshot sender: when the user answers/cancels, send the result to the waiting tool.
+    pub(super) response_tx: Arc<std::sync::Mutex<Option<tokio::sync::oneshot::Sender<QuestionOutcome>>>>,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub(super) enum QuestionOutcome {
+    Answered {
+        answers: serde_json::Value,
+    },
+    Cancelled,
+    Unavailable {
+        reason: String,
+    },
+}
+
+pub(super) type PendingQuestions =
+    Arc<Mutex<HashMap<String, PendingQuestion>>>;
+
+/// Handle a user's answer to a pending question.
+pub(super) async fn handle_question_response(
+    id: u64,
+    request_id: String,
+    answers: serde_json::Value,
+    client_session_id: &str,
+    pending_questions: &PendingQuestions,
+    client_event_tx: &mpsc::UnboundedSender<ServerEvent>,
+) {
+    let pending = {
+        let mut guard = pending_questions.lock().await;
+        guard.remove(&request_id)
+    };
+    match pending {
+        Some(pq) if pq.session_id == client_session_id => {
+            let tx = pq.response_tx.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).take();
+            if let Some(tx) = tx {
+                let _ = tx.send(QuestionOutcome::Answered { answers });
+            }
+        }
+        Some(pq) => {
+            let rid = request_id.clone();
+            // Wrong session: do not consume the answer channel
+            let _ = client_event_tx.send(ServerEvent::QuestionUnavailable {
+                request_id: rid,
+                reason: "answer from different session".into(),
+            });
+            // Re-insert for the correct session to consume
+            pending_questions.lock().await.insert(request_id, pq);
+        }
+        None => {
+            let _ = client_event_tx.send(ServerEvent::QuestionAlreadyAnswered {
+                request_id,
+            });
+        }
+    }
+    let _ = client_event_tx.send(ServerEvent::Done { id });
+}
+
+/// Handle a user's cancellation of a pending question.
+pub(super) async fn handle_question_cancel(
+    id: u64,
+    request_id: String,
+    client_session_id: &str,
+    pending_questions: &PendingQuestions,
+    client_event_tx: &mpsc::UnboundedSender<ServerEvent>,
+) {
+    let pending = {
+        let mut guard = pending_questions.lock().await;
+        guard.remove(&request_id)
+    };
+    match pending {
+        Some(pq) if pq.session_id == client_session_id => {
+            let tx = pq.response_tx.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).take();
+            if let Some(tx) = tx {
+                let _ = tx.send(QuestionOutcome::Cancelled);
+            }
+        }
+        Some(pq) => {
+            // Re-insert for the correct session
+            pending_questions.lock().await.insert(request_id.clone(), pq);
+            let _ = client_event_tx.send(ServerEvent::QuestionUnavailable {
+                request_id,
+                reason: "cancel from different session".into(),
+            });
+        }
+        None => {
+            let _ = client_event_tx.send(ServerEvent::QuestionAlreadyAnswered {
+                request_id,
+            });
+        }
+    }
+    let _ = client_event_tx.send(ServerEvent::Done { id });
+}
+
 pub(super) struct AgentTaskContext<'a> {
     pub(super) client_event_tx: &'a mpsc::UnboundedSender<ServerEvent>,
     pub(super) swarm_members: &'a Arc<RwLock<HashMap<String, SwarmMember>>>,

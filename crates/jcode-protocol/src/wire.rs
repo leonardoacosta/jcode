@@ -362,6 +362,24 @@ pub enum Request {
         input: String,
     },
 
+    /// Answer a pending ask_user_question
+    #[serde(rename = "question_response")]
+    QuestionResponse {
+        id: u64,
+        /// Matches the request_id from the Question event
+        request_id: String,
+        /// Per-question answers keyed by question id
+        answers: serde_json::Value,
+    },
+
+    /// Cancel a pending question (Esc)
+    #[serde(rename = "question_cancel")]
+    QuestionCancel {
+        id: u64,
+        /// Matches the request_id from the Question event
+        request_id: String,
+    },
+
     // === Agent-to-agent communication ===
     /// Register as an external agent
     #[serde(rename = "agent_register")]
@@ -1460,5 +1478,34 @@ pub enum ServerEvent {
         is_password: bool,
         /// Tool call ID this is associated with
         tool_call_id: String,
+    },
+
+    /// Structured question from ask_user_question tool
+    #[serde(rename = "question")]
+    Question {
+        /// Unpredictable request ID for matching the response
+        request_id: String,
+        /// Tool call ID this is associated with
+        tool_call_id: String,
+        /// Session that owns this question
+        session_id: String,
+        /// Questions payload (1-4 questions with options)
+        questions: serde_json::Value,
+    },
+
+    /// A submitted question was already answered (late duplicate)
+    #[serde(rename = "question_already_answered")]
+    QuestionAlreadyAnswered {
+        /// Original question request_id
+        request_id: String,
+    },
+
+    /// Question is unavailable (wrong session, unsupported client, etc.)
+    #[serde(rename = "question_unavailable")]
+    QuestionUnavailable {
+        /// Original question request_id
+        request_id: String,
+        /// Reason (e.g. "not an interactive root session")
+        reason: String,
     },
 }
