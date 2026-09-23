@@ -16,5 +16,5 @@
 
 - [ ] 3.1 Add an integration test covering AgentMail send, event receive, authorization, directive enqueue, and Ambient consumption while existing channels remain enabled.
 - [ ] 3.2 Add non-secret status/log reporting for disabled, misconfigured, connected, and degraded AgentMail states; verify messages contain no API key or email body content.
-- [ ] 3.3 Document human-controlled AgentMail account/inbox verification, secret setup, opt-in send/reply enablement, and rollback; verify documented keys and commands match implementation.
+- [x] 3.3 Document human-controlled AgentMail account/inbox verification, secret setup, opt-in send/reply enablement, and rollback; verify documented keys and commands match implementation.
 - [ ] 3.4 Run focused crate tests and OpenSpec validation; verify all AgentMail scenarios have coverage and `openspec validate agentmail-ambient-channel` passes.
