@@ -366,7 +366,25 @@ async fn ensure_client_swarm_member(
     let member_name = fallback_name.or_else(|| friendly_name.clone());
     let mut inserted = false;
     {
+        let lock_wait_start = Instant::now();
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_member_lock_wait".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+            ],
+        );
         let mut members = swarm_members.write().await;
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_member_lock_acquired".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+                ("wait_ms", lock_wait_start.elapsed().as_millis().to_string()),
+            ],
+        );
         if let Some(member) = members.get_mut(client_session_id) {
             member.event_tx = client_event_tx.clone();
             member
@@ -412,7 +430,26 @@ async fn ensure_client_swarm_member(
     }
 
     if inserted && let Some(ref swarm_id_ref) = derived_swarm_id {
+        let lock_wait_start = Instant::now();
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_swarm_index_lock_wait".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+                ("swarm_id", swarm_id_ref.clone()),
+            ],
+        );
         let mut swarms = swarms_by_id.write().await;
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_swarm_index_lock_acquired".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+                ("wait_ms", lock_wait_start.elapsed().as_millis().to_string()),
+            ],
+        );
         swarms
             .entry(swarm_id_ref.to_string())
             .or_insert_with(HashSet::new)
@@ -430,6 +467,14 @@ async fn ensure_client_swarm_member(
             },
         )
         .await;
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_join_event_recorded".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+            ],
+        );
     }
 
     crate::logging::event_info(
