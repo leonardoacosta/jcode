@@ -1,6 +1,7 @@
 mod agentgrep;
 pub mod ambient;
 mod apply_patch;
+pub mod ask_user_question;
 mod bash;
 mod batch;
 mod bg;
@@ -20,8 +21,8 @@ mod gmail;
 mod goal;
 pub mod inflight;
 mod invalid;
-mod jev_cache;
 mod jcode_docs;
+mod jev_cache;
 mod ls;
 pub mod mcp;
 mod memory;
@@ -29,6 +30,11 @@ mod multiedit;
 mod open;
 mod patch;
 mod read;
+pub(crate) mod remote_desktop {
+    mod tool;
+    pub(crate) mod transport;
+    pub(crate) use tool::RemoteDesktopTool;
+}
 pub mod selfdev;
 pub(crate) mod serde_coerce;
 mod session_search;
@@ -242,6 +248,12 @@ impl Registry {
             Self::insert_tool_timed(&mut m, &mut timings, "bash", bash::BashTool::new);
             Self::insert_tool_timed(&mut m, &mut timings, "browser", browser::BrowserTool::new);
             Self::insert_tool_timed(&mut m, &mut timings, "open", open::OpenTool::new);
+            Self::insert_tool_timed(
+                &mut m,
+                &mut timings,
+                "ask_user_question",
+                ask_user_question::AskUserQuestionTool::new,
+            );
             #[cfg(target_os = "macos")]
             Self::insert_tool_timed(
                 &mut m,
@@ -290,12 +302,9 @@ impl Registry {
                 goal::InitiativeTool::new,
             );
             Self::insert_tool_timed(&mut m, &mut timings, "gmail", gmail::GmailTool::new);
-            Self::insert_tool_timed(
-                &mut m,
-                &mut timings,
-                "evaluate",
-                || evaluate::EvaluateTool::new(JEV_CACHE.clone()),
-            );
+            Self::insert_tool_timed(&mut m, &mut timings, "evaluate", || {
+                evaluate::EvaluateTool::new(JEV_CACHE.clone())
+            });
             Self::insert_tool_timed(&mut m, &mut timings, "schedule", ambient::ScheduleTool::new);
             Self::insert_tool_timed(&mut m, &mut timings, "selfdev", selfdev::SelfDevTool::new);
             let nonzero: Vec<String> = timings
@@ -312,6 +321,16 @@ impl Registry {
         });
         // Clone the Arc entries (cheap refcount bumps, not deep copies)
         let mut tools = base.clone();
+        let remote_desktop = &crate::config::config().remote_desktop;
+        if remote_desktop.validate().is_ok()
+            && remote_desktop.targets.iter().any(|target| target.enabled)
+        {
+            Self::insert_tool(
+                &mut tools,
+                "remote_desktop",
+                remote_desktop::RemoteDesktopTool::new(),
+            );
+        }
         // SkillTool needs the skills registry reference (shared across sessions)
         Self::insert_tool(
             &mut tools,
