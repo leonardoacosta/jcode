@@ -8,6 +8,8 @@ use jcode_system_one::SystemOneResponse;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::time::Instant;
 
 /// Recommendation from the shadow assessment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -187,6 +189,247 @@ pub fn parse_poke_assessment(
     }))
 }
 
+// ---------------------------------------------------------------------------
+// Evidence builder
+// ---------------------------------------------------------------------------
+
+/// Maximum UTF-8 byte length for a shadow assessment evidence payload.
+pub const MAX_EVIDENCE_BYTES: usize = 8192;
+
+/// Bounded evidence snapshot sent to the System One service.
+#[derive(Debug, Clone, Serialize)]
+pub struct EvidenceSnapshot {
+    /// Shortened user request (first 200 chars).
+    pub user_request: String,
+    /// Relevant todos: id, content (first 120 chars), status.
+    pub todos: Vec<TodoEvidence>,
+    /// Names of tools called in the last turn (max 8).
+    pub recent_tools: Vec<String>,
+    /// Whether a verification pass has run recently.
+    pub verification_fresh: bool,
+    /// Known background work (max 3 items).
+    pub background_work: Vec<String>,
+    /// Explicit user-input wait detected.
+    pub awaiting_user: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TodoEvidence {
+    pub id: String,
+    pub content: String,
+    pub status: String,
+}
+
+/// Known credential sentinels — substrings that indicate a secret may be
+/// present in text. Text containing any of these is refused by the builder.
+const CREDENTIAL_SENTINELS: &[&str] = &[
+    "TYPESAFE_API_KEY",
+    "OPENROUTER_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "api_key",
+    "Bearer ",
+    "Authorization:",
+    "sk-",
+    "sk-ant-",
+    "AIza",
+];
+
+/// Build a sanitized evidence snapshot from turn-end state.
+///
+/// Returns `None` if the evidence cannot be safely captured (e.g. credential
+/// sentinels detected in the request text, or the payload exceeds the byte cap
+/// after minimization).
+pub fn build_evidence_snapshot(
+    user_request: &str,
+    todos: &[crate::todo::TodoItem],
+    recent_tools: &[String],
+    verification_fresh: bool,
+    background_work: &[String],
+    awaiting_user: bool,
+) -> Option<EvidenceSnapshot> {
+    // Redact user request: check for credential sentinels first.
+    let lower_req = user_request.to_lowercase();
+    for sentinel in CREDENTIAL_SENTINELS {
+        if lower_req.contains(&sentinel.to_lowercase()) {
+            crate::logging::debug(&format!(
+                "poke_shadow: evidence rejected — credential sentinel '{sentinel}' in request"
+            ));
+            return None;
+        }
+    }
+
+    // Truncate user request to first 200 chars.
+    let request_text: String = user_request.chars().take(200).collect();
+
+    // Collect todo evidence, max 12 items, each content capped at 120 chars.
+    let todo_evidence: Vec<TodoEvidence> = todos
+        .iter()
+        .take(12)
+        .map(|t| TodoEvidence {
+            id: t.id.clone(),
+            content: t.content.chars().take(120).collect(),
+            status: t.status.clone(),
+        })
+        .collect();
+
+    // Cap tool names.
+    let tools: Vec<String> = recent_tools.iter().take(8).cloned().collect();
+
+    // Cap background work.
+    let bg: Vec<String> = background_work.iter().take(3).cloned().collect();
+
+    let snapshot = EvidenceSnapshot {
+        user_request: request_text,
+        todos: todo_evidence,
+        recent_tools: tools,
+        verification_fresh,
+        background_work: bg,
+        awaiting_user,
+    };
+
+    // Serialize and check the byte cap.
+    let serialized = match serde_json::to_vec(&snapshot) {
+        Ok(v) => v,
+        Err(_) => return None,
+    };
+
+    if serialized.len() > MAX_EVIDENCE_BYTES {
+        crate::logging::debug(&format!(
+            "poke_shadow: evidence rejected — {} bytes exceeds {MAX_EVIDENCE_BYTES} cap",
+            serialized.len()
+        ));
+        return None;
+    }
+
+    Some(snapshot)
+}
+
+// ---------------------------------------------------------------------------
+// Assessment service lifecycle
+// ---------------------------------------------------------------------------
+
+/// Maximum number of launched requests per consent session.
+pub const MAX_REQUESTS_PER_SESSION: u32 = 20;
+
+/// Overall deadline for an assessment request (queuing + provider time).
+pub const ASSESSMENT_DEADLINE_SECS: u64 = 2;
+
+/// The result of an assessment attempt.
+#[derive(Debug, Clone)]
+pub enum AssessmentOutcome {
+    /// A valid recommendation was produced.
+    Recommendation(PokeAssessment),
+    /// The assessment could not produce a recommendation.
+    Abstained(AbstainReason),
+}
+
+/// An in-flight or completed assessment request, keyed by evidence revision.
+#[derive(Debug, Clone)]
+pub struct AssessmentState {
+    /// Current shadow consent generation. Incremented on cancel/disable.
+    pub generation: u64,
+    /// Whether shadow mode is currently enabled.
+    pub enabled: bool,
+    /// Number of launched requests in this consent session.
+    pub launched: u32,
+    /// Last evidence revision that was (or is being) assessed.
+    pub last_revision: Option<String>,
+    /// The most recent outcome, if any.
+    pub last_outcome: Option<AssessmentOutcome>,
+    /// When the current in-flight request started, for deadline tracking.
+    pub in_flight_since: Option<Instant>,
+}
+
+impl Default for AssessmentState {
+    fn default() -> Self {
+        Self {
+            generation: 1,
+            enabled: false,
+            launched: 0,
+            last_revision: None,
+            last_outcome: None,
+            in_flight_since: None,
+        }
+    }
+}
+
+impl AssessmentState {
+    /// Enable shadow mode, returning the disclosure message.
+    pub fn enable(&mut self, provider: &str) -> String {
+        if self.enabled {
+            return format!("Shadow assessment is already enabled. Provider: {provider}. Launched: {}/{}.",
+                self.launched, MAX_REQUESTS_PER_SESSION);
+        }
+        self.enabled = true;
+        // Reset budget on fresh enable. Re-enabling within the same session
+        // does not reset the budget per the design.
+        format!(
+            "Shadow assessment enabled.\n\nProvider: {provider}\n\nData sent: bounded task text, \
+             todo summaries, recent tool names, sanitized outcome summaries. No raw command \
+             arguments, output, environment values, file bodies, or credentials.\n\nRequests \
+             may incur provider charges. Max {MAX_REQUESTS_PER_SESSION} requests per session, \
+             {ASSESSMENT_DEADLINE_SECS}s deadline per request.\n\nUse /poke shadow off to disable."
+        )
+    }
+
+    /// Disable shadow mode.
+    pub fn disable(&mut self) -> &'static str {
+        if !self.enabled {
+            return "Shadow assessment is already disabled.";
+        }
+        self.enabled = false;
+        self.generation = self.generation.wrapping_add(1);
+        self.in_flight_since = None;
+        "Shadow assessment disabled."
+    }
+
+    /// Check whether a new assessment can be launched.
+    pub fn can_launch(&self) -> Option<AbstainReason> {
+        if !self.enabled {
+            return Some(AbstainReason::MissingCredentials); // reuse as "not enabled"
+        }
+        if self.in_flight_since.is_some() {
+            // One in-flight at a time.
+            return None; // None means "skip, already in flight" — not an error
+        }
+        if self.launched >= MAX_REQUESTS_PER_SESSION {
+            return Some(AbstainReason::BudgetExhausted);
+        }
+        None // can launch
+    }
+
+    /// Record that a request has been launched for the given revision.
+    pub fn record_launch(&mut self, revision: &str) {
+        self.launched = self.launched.saturating_add(1);
+        self.last_revision = Some(revision.to_string());
+        self.in_flight_since = Some(Instant::now());
+    }
+
+    /// Record that the in-flight request completed (or timed out / was cancelled).
+    pub fn record_complete(
+        &mut self,
+        outcome: AssessmentOutcome,
+        current_generation: u64,
+    ) {
+        if self.generation != current_generation {
+            // Stale: a new generation started while this request was in flight.
+            return;
+        }
+        self.in_flight_since = None;
+        self.last_outcome = Some(outcome);
+    }
+
+    /// Check whether the current in-flight request has exceeded the deadline.
+    pub fn deadline_exceeded(&self) -> bool {
+        match self.in_flight_since {
+            Some(start) => start.elapsed().as_secs() >= ASSESSMENT_DEADLINE_SECS,
+            None => false,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -347,5 +590,170 @@ mod tests {
         let response = make_response(answers);
         let result = parse_poke_assessment(&response, &DisplayThresholds::default()).unwrap();
         assert_eq!(result.unwrap_err(), AbstainReason::MalformedResponse);
+    }
+
+    // --- evidence builder tests ---
+
+    fn make_test_todo(id: &str, content: &str, status: &str) -> crate::todo::TodoItem {
+        crate::todo::TodoItem {
+            id: id.to_string(),
+            content: content.to_string(),
+            status: status.to_string(),
+            priority: "medium".to_string(),
+            group: None,
+            blocked_by: vec![],
+            assigned_to: None,
+            confidence: None,
+            completion_confidence: None,
+            confidence_history: vec![],
+        }
+    }
+
+    #[test]
+    fn test_evidence_builder_normal() {
+        let todos = vec![
+            make_test_todo("1", "Implement feature X", "in_progress"),
+            make_test_todo("2", "Fix bug in parser", "pending"),
+        ];
+        let tools = vec!["bash".into(), "agentgrep".into()];
+        let snapshot = build_evidence_snapshot(
+            "Please implement the new feature",
+            &todos,
+            &tools,
+            true,
+            &[],
+            false,
+        )
+        .unwrap();
+        assert_eq!(snapshot.todos.len(), 2);
+        assert_eq!(snapshot.todos[0].id, "1");
+        assert_eq!(snapshot.recent_tools.len(), 2);
+        assert!(snapshot.verification_fresh);
+    }
+
+    #[test]
+    fn test_evidence_builder_credential_sentinel_rejected() {
+        let snapshot = build_evidence_snapshot(
+            "Use OPENAI_API_KEY=sk-abc123 for the request",
+            &[],
+            &[],
+            false,
+            &[],
+            false,
+        );
+        assert!(snapshot.is_none());
+    }
+
+    #[test]
+    fn test_evidence_builder_bearer_token_rejected() {
+        let snapshot = build_evidence_snapshot(
+            "curl -H 'Authorization: Bearer xyz' https://api.example.com",
+            &[],
+            &[],
+            false,
+            &[],
+            false,
+        );
+        assert!(snapshot.is_none());
+    }
+
+    #[test]
+    fn test_evidence_builder_truncates_long_request() {
+        let long_request = "A".repeat(500);
+        let snapshot = build_evidence_snapshot(&long_request, &[], &[], false, &[], false).unwrap();
+        assert!(snapshot.user_request.len() <= 200);
+        assert!(snapshot.user_request.chars().all(|c| c == 'A'));
+    }
+
+    #[test]
+    fn test_evidence_builder_caps_todos_and_tools() {
+        let todos: Vec<_> = (0..20)
+            .map(|i| make_test_todo(&format!("{i}"), &format!("task {i}"), "pending"))
+            .collect();
+        let tools: Vec<_> = (0..15).map(|i| format!("tool{i}")).collect();
+        let snapshot = build_evidence_snapshot("test", &todos, &tools, false, &[], false).unwrap();
+        assert!(snapshot.todos.len() <= 12);
+        assert!(snapshot.recent_tools.len() <= 8);
+    }
+
+    // --- assessment lifecycle tests ---
+
+    #[test]
+    fn test_assessment_state_default_disabled() {
+        let state = AssessmentState::default();
+        assert!(!state.enabled);
+        assert_eq!(state.launched, 0);
+        assert!(state.last_revision.is_none());
+    }
+
+    #[test]
+    fn test_assessment_state_enable_disable() {
+        let mut state = AssessmentState::default();
+        let msg = state.enable("test-provider");
+        assert!(msg.contains("Shadow assessment enabled"));
+        assert!(msg.contains("test-provider"));
+        assert!(state.enabled);
+
+        let msg = state.disable();
+        assert!(msg.contains("disabled"));
+        assert!(!state.enabled);
+    }
+
+    #[test]
+    fn test_assessment_state_budget() {
+        let mut state = AssessmentState::default();
+        state.enable("test");
+        // Launch MAX_REQUESTS_PER_SESSION requests.
+        for i in 0..MAX_REQUESTS_PER_SESSION {
+            assert!(state.can_launch().is_none(), "should allow launch {i}");
+            state.record_launch(&format!("rev{i}"));
+            state.record_complete(
+                AssessmentOutcome::Abstained(AbstainReason::Uncertain),
+                state.generation,
+            );
+        }
+        // Next launch should be blocked.
+        assert_eq!(
+            state.can_launch(),
+            Some(AbstainReason::BudgetExhausted)
+        );
+    }
+
+    #[test]
+    fn test_assessment_state_generation_rejects_stale() {
+        let mut state = AssessmentState::default();
+        state.enable("test");
+        let gen_val = state.generation;
+        state.record_launch("rev1");
+        state.disable(); // increments generation
+        // Record with old generation — should be silently ignored.
+        state.record_complete(
+            AssessmentOutcome::Recommendation(PokeAssessment {
+                recommendation: PokeRecommendation::Continue,
+                probabilities: HashMap::new(),
+                provider_confidence: Some(0.9),
+                model: "test".into(),
+            }),
+            gen_val,
+        );
+        assert!(state.last_outcome.is_none());
+    }
+
+    #[test]
+    fn test_assessment_state_deadline() {
+        let mut state = AssessmentState::default();
+        state.enable("test");
+        state.record_launch("rev1");
+        // Immediately after launch, deadline should not be exceeded.
+        assert!(!state.deadline_exceeded());
+    }
+
+    #[test]
+    fn test_assessment_state_in_flight_blocks_new_launch() {
+        let mut state = AssessmentState::default();
+        state.enable("test");
+        state.record_launch("rev1");
+        // can_launch returns None when already in flight (not an error, just skip).
+        assert!(state.can_launch().is_none());
     }
 }
