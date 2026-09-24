@@ -1,8 +1,6 @@
 ## Decision
 
-Use the existing native Jev capability, not an MCP subprocess. The model's function is classification, not tool execution. Reuse the prerequisite service resolver, endpoint/model policy, and credential handling. Do not copy Foreman's transport code or rely on Evaluate's currently inconsistent cache-hit/miss envelope. Expose a typed service result with identical hit/miss shape and strict validation for this caller. Any necessary shared extraction must preserve existing callers' public contracts with tests.
-
-This is a proposed product decision awaiting approval. Mandatory MCP transport would require revising this boundary, including server selection and tool-schema negotiation, before implementation.
+Use the System One service trait from `crates/jcode-system-one`, not an MCP subprocess. The model's function is classification, not tool execution. Reuse the shared provider resolver and credential handling. Expose a typed service result with identical hit/miss shape and strict validation for this caller.
 
 ## Control and Integration Boundaries
 
@@ -26,10 +24,10 @@ Treat text as untrusted evidence, never as instructions. Do not feed the agent's
 
 One choice question returns `continue`, `verify`, `replan`, `wait_for_user`, or `unknown`. This is a recommendation only. Parse only declared labels and finite probabilities in [0,1], with a complete distribution summing to one within 0.01. Missing or malformed answers abstain. Preserve the distribution and provider confidence separately. Provider confidence is concentration, not correctness.
 
-Initially display a non-unknown recommendation only when its top probability is at least 0.80 and exceeds the second probability by at least 0.20. Otherwise return `unknown` with reason `uncertain`. These are display/abstention policy values, not calibrated correctness claims or continuation thresholds. Explicit provider failures use fixed sanitized reason codes. Status displays mode, provider/model, last result or skip reason, result revision, and remaining request budget.
+Initially display a non-unknown recommendation only when its top probability is at least 0.80 and exceeds the second probability by at least 0.20. Otherwise return `unknown` with reason `uncertain`. These are display/abstention policy values, not calibrated correctness claims. Explicit provider failures use fixed sanitized reason codes. Status displays mode, provider/model, last result or skip reason, result revision, and remaining request budget.
 
 ## Alternatives and Risks
 
-Deterministic wait detection is useful regardless of Jev and governs eligibility here. A full LLM supervisor and active intervention add authority not justified by existing evidence. MCP transport adds lifecycle and schema dependencies without an established requirement.
+Deterministic wait detection is useful regardless of the System One service and governs eligibility here. A full LLM supervisor and active intervention add authority not justified by existing evidence. MCP transport adds lifecycle and schema dependencies without an established requirement.
 
 Main risks are evidence leakage, misleading probability interpretation, stale results, duplicate-client billing, and async work affecting scheduling. Scenario tests target each. Actual model quality requires independently labeled, consented samples. Shadow results alone cannot certify completion or justify enabling intervention.

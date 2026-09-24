@@ -18,7 +18,7 @@ Model-quality acceptance is intentionally separate from mechanics. A mocked prov
 
 - `openspec validate jev-poke-shadow-assessment --strict --no-interactive`: PASS.
 - Requirement scenario checks: PASS, five requirements and fifteen WHEN/THEN scenarios.
-- Principal source paths: PASS after correcting the moved protocol reference to `crates/jcode-protocol/src/wire.rs`.
-- Dependency validator: BLOCKED, reports the prerequisite's missing execution frontmatter. The dependency resolves to an existing active proposal, but graph admission and implementation readiness are not claimed.
+- Principal source paths: PASS.
+- Dependency validator: pending `system-one-service` implementation.
 
-Dependency readiness is blocked: the prerequisite proposal exists, has unchecked implementation tasks, and lacks execution frontmatter. Do not amend another change just to make this proposal appear ready.
+Dependency readiness is blocked: `system-one-service` exists, validates clean, and passes dependency checks independently, but its implementation tasks are unchecked. Do not amend another change to make this one appear ready.
