@@ -1002,6 +1002,7 @@ pub(in crate::tui::app) fn handle_server_event(
             false
         }
         ServerEvent::Interrupted => {
+            app.question_prompt = None;
             crate::logging::info(&format!(
                 "REMOTE_INTERRUPT_EVENT_RECEIVED kind=interrupted session={:?} current_message_id={:?} is_processing={} status={:?} streaming_text_bytes={} pending_soft_interrupts={} queued_messages={}",
                 app.remote_session_id,
@@ -1059,6 +1060,7 @@ pub(in crate::tui::app) fn handle_server_event(
             remote.clear_pending();
             remote.reset_call_output_tokens_seen();
             let auto_poked = app.schedule_turn_end_followups();
+            app.schedule_shadow_assessment_if_needed();
             if !auto_poked {
                 app.clear_visible_turn_started();
             }
@@ -1185,6 +1187,7 @@ pub(in crate::tui::app) fn handle_server_event(
                     std::time::Duration::from_secs(30),
                 );
                 auto_poked = app.schedule_turn_end_followups();
+                app.schedule_shadow_assessment_if_needed();
                 if !auto_poked {
                     app.clear_visible_turn_started();
                     if app.queued_messages.is_empty() {
@@ -1398,7 +1401,9 @@ pub(in crate::tui::app) fn handle_server_event(
                 // that is known to work), instead of leaving the user to run
                 // /login or /model manually.
                 app.offer_fallback_after_error_with_payload(&message, failed_fallback_payload);
-                return app.schedule_turn_end_followups();
+                let auto_poked = app.schedule_turn_end_followups();
+                app.schedule_shadow_assessment_if_needed();
+                return auto_poked;
             }
             false
         }
@@ -1613,6 +1618,9 @@ pub(in crate::tui::app) fn handle_server_event(
             crate::set_current_session(&session_id);
             app.note_client_focus(true);
             let session_changed = prev_session_id.as_deref() != Some(session_id.as_str());
+            if session_changed || was_interrupted == Some(true) {
+                app.question_prompt = None;
+            }
 
             if session_changed {
                 app.rate_limit_pending_message = None;
@@ -2842,6 +2850,52 @@ pub(in crate::tui::app) fn handle_server_event(
         ServerEvent::StdinRequest { .. } => {
             app.set_status_notice("⌨ Interactive terminal detected (command will timeout)");
             false
+        }
+        ServerEvent::Question {
+            request_id,
+            tool_call_id,
+            session_id,
+            questions,
+        } => {
+            if app.remote_session_id.as_deref() != Some(session_id.as_str()) {
+                return false;
+            }
+            let count = questions.as_array().map_or(0, Vec::len);
+            app.question_prompt = Some(crate::tui::QuestionPromptState {
+                request_id,
+                tool_call_id,
+                session_id,
+                questions,
+                question_index: 0,
+                option_index: 0,
+                reviewing: false,
+                selected: std::collections::BTreeMap::new(),
+                free_text: std::collections::BTreeMap::new(),
+                editing_other: false,
+            });
+            app.set_status_notice(format!("Agent needs your input ({count} questions)"));
+            true
+        }
+        ServerEvent::QuestionUnavailable { request_id, reason } => {
+            if app
+                .question_prompt
+                .as_ref()
+                .is_some_and(|question| question.request_id == request_id)
+            {
+                app.set_status_notice(format!("Question unavailable: {reason}"));
+            }
+            true
+        }
+        ServerEvent::QuestionAlreadyAnswered { request_id } => {
+            if app
+                .question_prompt
+                .as_ref()
+                .is_some_and(|question| question.request_id == request_id)
+            {
+                app.question_prompt = None;
+                app.set_status_notice("Question was already answered");
+            }
+            true
         }
         _ => false,
     }

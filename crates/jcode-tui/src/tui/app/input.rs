@@ -1780,6 +1780,59 @@ impl App {
         true
     }
 
+    /// If shadow assessment is enabled and eligible, fire a Jev call synchronously
+    /// (blocking the caller for up to 2s). Does not affect poke scheduling.
+    /// Called at turn-end when no other follow-up is queued.
+    pub(super) fn schedule_shadow_assessment_if_needed(&mut self) {
+        if !self.poke_shadow_enabled {
+            return;
+        }
+        if self.poke_shadow_remaining_budget == 0 {
+            return;
+        }
+        if self.consecutive_guardrail_stops > 0
+            || self.is_processing
+            || self.pending_turn
+            || self.has_queued_followups()
+        {
+            return;
+        }
+
+        let todos = super::commands::poke_todos(self);
+        if todos.is_empty() {
+            return;
+        }
+        let user_request = self.input.clone();
+        let recent_tools: Vec<String> = self
+            .streaming_tool_calls
+            .iter()
+            .map(|tc| tc.name.clone())
+            .collect();
+
+        let gen_before = self.poke_shadow_generation;
+        self.poke_shadow_remaining_budget =
+            self.poke_shadow_remaining_budget.saturating_sub(1);
+
+        // Block synchronously: the runtime is always available in the TUI.
+        let result = tokio::runtime::Handle::current().block_on(
+            crate::agent::poke_shadow::run_shadow_assessment(
+                &user_request,
+                &todos,
+                &recent_tools,
+                false,
+                &[],
+                false,
+            ),
+        );
+
+        // Guard against stale results.
+        if !self.poke_shadow_enabled || self.poke_shadow_generation != gen_before {
+            return;
+        }
+
+        self.poke_shadow_last_result = result;
+    }
+
     pub(super) fn schedule_queued_dispatch_after_interrupt(&mut self) {
         if self.has_queued_followups() {
             self.pending_queued_dispatch = true;

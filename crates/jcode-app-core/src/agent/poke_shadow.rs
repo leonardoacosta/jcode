@@ -440,6 +440,108 @@ impl AssessmentState {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Live evaluation
+// ---------------------------------------------------------------------------
+
+/// Run a shadow assessment against the live System One service.
+///
+/// Builds the evidence into a choice question, calls Jev through the injected
+/// service, parses the response, and returns an `AssessmentOutcome`.
+/// This is the only function that makes a hosted call.
+pub async fn evaluate_shadow(
+    service: &dyn jcode_system_one::SystemOneService,
+    evidence: &EvidenceSnapshot,
+    thresholds: &DisplayThresholds,
+) -> AssessmentOutcome {
+    let state = serde_json::to_value(evidence).unwrap_or(serde_json::Value::Null);
+
+    let mut questions = std::collections::HashMap::new();
+    questions.insert(
+        "poke_action".to_string(),
+        serde_json::json!({
+            "type": "choice",
+            "instructions": "Given this turn-end snapshot of a coding agent, what should happen next?",
+            "criteria": {
+                "continue": "The agent should continue working — there is a clear, actionable next step.",
+                "verify": "The agent claims completion but verification evidence is thin or missing. It should run tests or checks.",
+                "replan": "The agent appears stuck or repeating failed approaches. It should step back and replan.",
+                "wait_for_user": "The agent needs human input, permission, credentials, or a decision before proceeding.",
+                "unknown": "The situation is ambiguous or none of the above clearly applies."
+            }
+        }),
+    );
+
+    let model = Some("jev-latest");
+    let response = match tokio::time::timeout(
+        std::time::Duration::from_secs(ASSESSMENT_DEADLINE_SECS),
+        service.evaluate(state, questions, model),
+    )
+    .await
+    {
+        Ok(Ok(r)) => r,
+        Ok(Err(e)) => {
+            crate::logging::debug(&format!("poke_shadow: service error: {e}"));
+            return AssessmentOutcome::Abstained(AbstainReason::ProviderError);
+        }
+        Err(_elapsed) => {
+            crate::logging::debug("poke_shadow: deadline exceeded");
+            return AssessmentOutcome::Abstained(AbstainReason::DeadlineExceeded);
+        }
+    };
+
+    match parse_poke_assessment(&response, thresholds) {
+        Some(Ok(assessment)) => AssessmentOutcome::Recommendation(assessment),
+        Some(Err(reason)) => {
+            crate::logging::debug(&format!("poke_shadow: abstained: {:?}", reason));
+            AssessmentOutcome::Abstained(reason)
+        }
+        None => {
+            crate::logging::debug("poke_shadow: no valid answer in response");
+            AssessmentOutcome::Abstained(AbstainReason::MalformedResponse)
+        }
+    }
+}
+
+/// Convenience entry point for the TUI: build evidence, resolve the service,
+/// evaluate, and return a display string for the status line.
+///
+/// Returns `None` if the evidence cannot be built safely (credential sentinel
+/// or oversized payload) or if no System One credential is configured.
+pub async fn run_shadow_assessment(
+    user_request: &str,
+    todos: &[crate::todo::TodoItem],
+    recent_tools: &[String],
+    verification_fresh: bool,
+    background_work: &[String],
+    awaiting_user: bool,
+) -> Option<String> {
+    let evidence = build_evidence_snapshot(
+        user_request, todos, recent_tools,
+        verification_fresh, background_work, awaiting_user,
+    )?;
+
+    let config = jcode_system_one::resolve_service(None).ok()?;
+    let service = jcode_system_one::LiveSystemOneService::with_timeout(
+        config,
+        std::time::Duration::from_secs(ASSESSMENT_DEADLINE_SECS),
+    );
+    let thresholds = DisplayThresholds::default();
+
+    let outcome = evaluate_shadow(&service, &evidence, &thresholds).await;
+
+    Some(match outcome {
+        AssessmentOutcome::Recommendation(a) => {
+            format!("Shadow: → {} (conf: {:.0}%)",
+                a.recommendation,
+                a.provider_confidence.unwrap_or(0.0) * 100.0)
+        }
+        AssessmentOutcome::Abstained(r) => {
+            format!("Shadow: — ({})", r.as_reason())
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

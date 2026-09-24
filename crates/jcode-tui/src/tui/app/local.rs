@@ -606,6 +606,7 @@ pub(super) fn finish_turn(app: &mut App) {
     app.thinking_buffer.clear();
     app.note_runtime_memory_event_force("turn_completed", "local_turn_finished");
     let followup_scheduled = app.schedule_turn_end_followups();
+    app.schedule_shadow_assessment_if_needed();
     if !followup_scheduled {
         app.clear_visible_turn_started();
         if !app.pending_queued_dispatch && app.queued_messages.is_empty() {
