@@ -1,41 +1,42 @@
 //! Jev evaluate tool — typed probabilistic judgments from TypeSafe's System One model.
 //!
-//! Sends `POST /v1/systemone` with `state` and typed `questions`; returns structured
-//! answers with probabilities that agent code can branch on directly.
+//! Delegates to `jcode_system_one::SystemOneService` for provider resolution and
+//! HTTP transport, preserving the tool's own cache, retry policy, and schema.
 //!
 //! Uses the deterministic jcode_jev_cache to avoid re-billing identical decisions.
 
 use super::{Tool, ToolContext, ToolOutput};
 use crate::tool::jev_cache::JevCache;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use jcode_system_one::{resolve_service, LiveSystemOneService, SystemOneResponse, SystemOneService};
+use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::Arc;
 use std::time::Duration;
 
-const TYPESAFE_API_URL: &str = "https://api.typesafe.ai/v1/systemone";
-const OPENROUTER_API_URL: &str = "https://openrouter.ai/api/alpha/decisions";
-const DEFAULT_MODEL: &str = "jev-latest";
-const OPENROUTER_MODEL: &str = "~typesafe/jev-latest";
 const REQUEST_TIMEOUT_SECS: u64 = 10;
 const MAX_RETRIES: u32 = 3;
 
-static HTTP_CLIENT: std::sync::LazyLock<reqwest::Client> = std::sync::LazyLock::new(|| {
-    reqwest::Client::builder()
-        .http2_prior_knowledge()
-        .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
-        .build()
-        .expect("build reqwest client")
-});
-
 pub struct EvaluateTool {
+    service: Arc<dyn SystemOneService>,
     cache: Arc<JevCache>,
 }
 
 impl EvaluateTool {
     pub fn new(cache: Arc<JevCache>) -> Self {
-        Self { cache }
+        let config = resolve_service(None)
+            .expect("EvaluateTool: no System One credential available at construction");
+        let service = Arc::new(LiveSystemOneService::with_timeout(
+            config,
+            Duration::from_secs(REQUEST_TIMEOUT_SECS),
+        ));
+        Self { service, cache }
+    }
+
+    #[cfg(test)]
+    pub fn with_service(cache: Arc<JevCache>, service: Arc<dyn SystemOneService>) -> Self {
+        Self { service, cache }
     }
 }
 
@@ -45,17 +46,13 @@ struct EvaluateInput {
     #[serde(default)]
     #[allow(dead_code)]
     intent: Option<String>,
-    /// The content to judge: plain text, or a structured JSON object/array.
     state: Value,
-    /// Map of question IDs to typed questions.
     questions: std::collections::HashMap<String, Question>,
-    /// Model override. Defaults to `jev-latest` (or `~typesafe/jev-latest` on OpenRouter).
     #[serde(default)]
     model: Option<String>,
 }
 
-/// A single typed question for Jev.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, serde::Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum Question {
     #[serde(rename = "noul")]
@@ -70,44 +67,6 @@ enum Question {
         instructions: Value,
         criteria: Vec<Value>,
     },
-}
-
-/// Request body sent to the TypeSafe API.
-#[derive(Debug, Serialize)]
-struct TypeSafeRequest {
-    state: Value,
-    model: String,
-    questions: std::collections::HashMap<String, Question>,
-}
-
-/// Response from the TypeSafe API.
-#[derive(Debug, Serialize, Deserialize)]
-struct TypeSafeResponse {
-    answers: std::collections::HashMap<String, Value>,
-    model: String,
-    #[serde(default)]
-    usage: Option<Value>,
-}
-
-fn api_config() -> Result<(&'static str, String, String)> {
-    if let Ok(key) = std::env::var("TYPESAFE_API_KEY") {
-        if key.trim().is_empty() {
-            // fall through to OpenRouter
-        } else {
-            return Ok((TYPESAFE_API_URL, key, DEFAULT_MODEL.to_string()));
-        }
-    }
-    if let Ok(key) = std::env::var("OPENROUTER_API_KEY") {
-        if key.trim().is_empty() {
-            anyhow::bail!(
-                "No TypeSafe or OpenRouter API key configured. Set TYPESAFE_API_KEY or OPENROUTER_API_KEY."
-            );
-        }
-        return Ok((OPENROUTER_API_URL, key, OPENROUTER_MODEL.to_string()));
-    }
-    anyhow::bail!(
-        "No TypeSafe or OpenRouter API key configured. Set TYPESAFE_API_KEY or OPENROUTER_API_KEY."
-    )
 }
 
 #[async_trait]
@@ -158,7 +117,7 @@ impl Tool for EvaluateTool {
                 },
                 "model": {
                     "type": "string",
-                    "description": "Model override. Defaults to jev-latest."
+                    "description": "Model override. Defaults to the resolver's configured model."
                 }
             }
         })
@@ -167,72 +126,68 @@ impl Tool for EvaluateTool {
     async fn execute(&self, input: Value, _ctx: ToolContext) -> Result<ToolOutput> {
         let params: EvaluateInput = serde_json::from_value(input)?;
 
-        // Validate locally: questions must not be empty.
         if params.questions.is_empty() {
             anyhow::bail!("evaluate requires at least one question");
         }
 
-        let (api_url, api_key, default_model) = api_config()?;
-        let model = params.model.unwrap_or(default_model);
-        let model_for_cache = if model == OPENROUTER_MODEL {
-            DEFAULT_MODEL.to_string()
-        } else {
-            model.clone()
-        };
         let questions_json = serde_json::to_value(&params.questions)?;
-
-        // Check cache.
-        let fp = JevCache::fingerprint(&model_for_cache, &questions_json, &params.state, "");
+        let cache_model = params.model.as_deref().unwrap_or("");
+        let fp = JevCache::fingerprint(cache_model, &questions_json, &params.state, "");
         if let Some(cached) = self.cache.check(&fp) {
             crate::logging::debug(&format!("Jev cache HIT fp={fp}"));
-            return Ok(ToolOutput::new(format!(
-                "{cached}"
-            )));
+            return Ok(ToolOutput::new(format!("{cached}")));
         }
         crate::logging::debug(&format!("Jev cache MISS fp={fp}"));
 
         self.cache.record_call();
 
-        let body = TypeSafeRequest {
-            state: params.state,
-            model,
-            questions: params.questions,
-        };
+        let questions: std::collections::HashMap<String, Value> = params
+            .questions
+            .into_iter()
+            .map(|(id, q)| {
+                let v = serde_json::to_value(&q).expect("serialize Question");
+                (id, v)
+            })
+            .collect();
 
-        let response = send_with_retry(api_url, &api_key, &body, MAX_RETRIES).await?;
+        let model_override = params.model.as_deref();
+        let response = send_with_retry(
+            self.service.as_ref(),
+            &params.state,
+            &questions,
+            model_override,
+            MAX_RETRIES,
+        )
+        .await?;
 
-        // Validate: every requested question must have an answer.
-        let answer_ids: Vec<&String> = body.questions.keys().collect();
-        for id in &answer_ids {
-            if !response.answers.contains_key(*id) {
-                anyhow::bail!(
-                    "evaluate: missing answer for question '{}' in TypeSafe response",
-                    id
-                );
+        for id in questions.keys() {
+            if !response.answers.contains_key(id) {
+                anyhow::bail!("evaluate: missing answer for question '{id}' in response");
             }
         }
 
-        // Cache the answer.
         let answer_value = serde_json::to_value(&response)?;
         let answer_for_cache = serde_json::to_value(&response.answers)?;
-        let _ = self
-            .cache
-            .store(&fp, &model_for_cache, &answer_for_cache);
+        let _ = self.cache.store(&fp, cache_model, &answer_for_cache);
 
         Ok(ToolOutput::new(format!("{answer_value}")))
     }
 }
 
 async fn send_with_retry(
-    url: &str,
-    api_key: &str,
-    body: &TypeSafeRequest,
+    service: &dyn SystemOneService,
+    state: &Value,
+    questions: &std::collections::HashMap<String, Value>,
+    model_override: Option<&str>,
     max_retries: u32,
-) -> Result<TypeSafeResponse> {
+) -> Result<SystemOneResponse> {
     let mut last_error: Option<anyhow::Error> = None;
 
     for attempt in 0..=max_retries {
-        match send_once(url, api_key, body).await {
+        match service
+            .evaluate(state.clone(), questions.clone(), model_override)
+            .await
+        {
             Ok(response) => return Ok(response),
             Err(e) => {
                 let status_is_retryable =
@@ -252,27 +207,4 @@ async fn send_with_retry(
     }
 
     Err(last_error.unwrap_or_else(|| anyhow::anyhow!("evaluate: unknown error")))
-}
-
-async fn send_once(url: &str, api_key: &str, body: &TypeSafeRequest) -> Result<TypeSafeResponse> {
-    let response = HTTP_CLIENT
-        .post(url)
-        .header("Authorization", format!("Bearer {api_key}"))
-        .json(body)
-        .send()
-        .await
-        .context("evaluate: failed to reach TypeSafe/OpenRouter API")?;
-
-    let status = response.status();
-    if !status.is_success() {
-        let status_text = response.text().await.unwrap_or_default();
-        anyhow::bail!("evaluate: API returned HTTP {status}: {status_text}");
-    }
-
-    let parsed: TypeSafeResponse = response
-        .json()
-        .await
-        .context("evaluate: failed to parse TypeSafe response")?;
-
-    Ok(parsed)
 }

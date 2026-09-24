@@ -1,0 +1,21 @@
+[package]
+name = "jcode-system-one"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Modular System One (Jev) service — typed evaluation trait and shared provider resolver"
+
+[lib]
+name = "jcode_system_one"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "http2", "rustls-tls", "rustls-tls-native-roots"] }
+tokio = { version = "1", features = ["time"] }
+anyhow = "1"
+async-trait = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
