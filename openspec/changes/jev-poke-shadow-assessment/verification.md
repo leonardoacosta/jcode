@@ -17,7 +17,7 @@ Model-quality acceptance is intentionally separate from mechanics. A mocked prov
 ## Authoring checks
 
 - `openspec validate jev-poke-shadow-assessment --strict --no-interactive`: PASS.
-- Requirement scenario checks: PASS, five requirements and sixteen WHEN/THEN scenarios.
+- Requirement scenario checks: PASS, five requirements and fifteen WHEN/THEN scenarios.
 - Principal source paths: PASS after correcting the moved protocol reference to `crates/jcode-protocol/src/wire.rs`.
 - Dependency validator: BLOCKED, reports the prerequisite's missing execution frontmatter. The dependency resolves to an existing active proposal, but graph admission and implementation readiness are not claimed.
 
