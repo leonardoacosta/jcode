@@ -1,0 +1,22 @@
+# Ordered tasks
+
+All tasks await approval. Do not stage unrelated working-tree changes.
+
+## A. Composer pane
+- [ ] A1 (depends: design approval) Verify current native question baseline and overlapping proposal against source. Freeze manual lifecycle and protocol compatibility tests. Paths: app-core tool/ask_user_question.rs, server/client_actions.rs, server/client_lifecycle.rs, protocol/wire.rs. Verify valid/invalid answers, cancellation, duplicate/wrong-session replies and reconnect.
+- [ ] A2 (depends: A1) Replace top-level overlay early return with bounded composer-region rendering. Extract a focused renderer only if it avoids further growth of ui.rs. Paths: jcode-tui/src/tui/ui.rs, mod.rs, app/remote/question_prompt.rs, key_handling.rs and server_events.rs. Verify draft/cursor restoration, focus, Other, review/back/cancel, transcript scrolling, long Unicode content and resize using TestBackend.
+- [ ] A3 (depends: A2) Capture actual debug tester frames at 120x40, 80x24, 40x16 and 20x8. Exercise real keyboard and reconnect flows on an isolated socket with the freshly built binary. Compare transcript and draft before/after. Use coordinated selfdev TUI build. Commit only verified pane changes.
+
+## B. Jev advice
+- [ ] B1 (depends: advisory approval, A1) Discover configured MCP Jev contract and dispatch path, reproduce/resolve availability blocker or document dependency as blocked. Confirm authorization for bounded remote context and normalized typed result schema. No silent native-provider fallback. Verify one real successful request and an unavailable-provider path before declaring live integration ready.
+- [ ] B2 (depends: B1, A2) Add asynchronous session-owned advice state and negotiated wire fields. Verify 15-second timeout, missing permission, malformed distribution, unknown IDs, abstention, stale revisions and late results with deterministic fakes. Assert evaluation holds no resolution lock. Add attribution, confidence and explicit accept action, including separate Jcode rationale labeling.
+- [ ] B3 (depends: B2, A3) Verify actual TUI successful and unavailable advice frames and real manual submission while advice is pending. Verify legacy client behavior. Commit verified advice changes.
+
+## C. Overnight decisions
+- [ ] C1 (depends: explicit automation-policy approval, B2) Add per-run opt-in flag and disable control, manifest default-off migration and versioned scope/eligibility policy. Paths: overnight-core/lib.rs, prompts.rs, app-core/overnight.rs and command dispatch discovered during implementation. Tests cover coordinator binding, excluded risk categories, unknown risk, target wake, child sessions and legacy manifests. If no trustworthy eligibility boundary can be implemented, stop this stage rather than using model self-attestation.
+- [ ] C2 (depends: C1) Extend session-owned pending state, authenticated activity protocol and monotonic deadlines. Reuse response validation/arbitration. Test 299/300 seconds with paused clock, navigation reset, edit disarm, batch gates, threshold boundaries, background-output non-reset, disable/cancel/run end, incompatible attach and late manual/timer races. Preserve root-only exposure and disconnect/restart contracts.
+- [ ] C3 (depends: C2) Add durable pre-delivery audit and deterministic transcript/tool-result/log/review rendering. Paths: server/client_actions.rs, app-core/overnight.rs, overnight-core/lib.rs and helper_tests.rs. Test write failure, recorded-but-undelivered crash, duplicate records, escaped hostile labels, old manifest loading, and completed/failed/cancelled report parity.
+- [ ] C4 (depends: C3, B3) Run real isolated overnight workflow with a safe delegated question and a full five-minute idle interval. Verify one answer and matching durable record/report. Exercise a manual override, blocked sensitive question and disabled automation. Use fresh binary/tester evidence, not just compilation. Commit only scoped verified work.
+
+## Close
+- [ ] D1 (depends: approved stages' verification) Record exact commands/results and remaining blocked stages in verification.md. Do not mark C complete when only A/B ship. Present runtime evidence and request separate rollout approval if needed.
