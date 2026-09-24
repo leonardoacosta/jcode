@@ -289,6 +289,11 @@ async fn handle_remote_key_internal(
         return Ok(());
     }
 
+    if app.question_prompt.is_some() {
+        return super::question_prompt::handle_question_prompt_key(app, code, text_input, remote)
+            .await;
+    }
+
     if app.prompt_history_search.is_some() {
         app.handle_prompt_history_search_key(code, modifiers);
         return Ok(());
@@ -2177,6 +2182,17 @@ async fn handle_remote_key_internal(
                                     app.visible_turn_started = Some(Instant::now());
                                 }
                             }
+                        }
+                        Ok(app_mod::commands::PokeCommand::ShadowOn) => {
+                            app_mod::commands::handle_poke_shadow_on(app);
+                        }
+                        Ok(app_mod::commands::PokeCommand::ShadowOff) => {
+                            app_mod::commands::handle_poke_shadow_off(app);
+                        }
+                        Ok(app_mod::commands::PokeCommand::ShadowStatus) => {
+                            app.push_display_message(DisplayMessage::system(
+                                app_mod::commands::poke_shadow_status(app),
+                            ));
                         }
                     }
                     return Ok(());

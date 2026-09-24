@@ -13,10 +13,19 @@ use jcode_system_one::{resolve_service, LiveSystemOneService, SystemOneResponse,
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::Arc;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 const REQUEST_TIMEOUT_SECS: u64 = 10;
 const MAX_RETRIES: u32 = 3;
+
+/// Returns the current System One provider name for display purposes.
+/// Returns None if neither credential is configured.
+pub fn provider_name() -> Option<String> {
+    jcode_system_one::resolve_service(None)
+        .ok()
+        .map(|cfg| cfg.provider.to_string())
+}
 
 pub struct EvaluateTool {
     service: std::sync::OnceLock<Arc<dyn SystemOneService>>,

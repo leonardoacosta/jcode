@@ -189,6 +189,16 @@ pub fn parse_poke_assessment(
     }))
 }
 
+/// Resolve the provider name for display in the TUI.
+/// Returns the provider string (e.g. "openrouter" or "typesafe") or
+/// a message indicating no credentials are configured.
+pub fn shadow_provider_name() -> String {
+    jcode_system_one::resolve_service(None)
+        .ok()
+        .map(|cfg| cfg.provider.to_string())
+        .unwrap_or_else(|| "no credentials configured".to_string())
+}
+
 // ---------------------------------------------------------------------------
 // Evidence builder
 // ---------------------------------------------------------------------------

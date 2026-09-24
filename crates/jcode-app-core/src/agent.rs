@@ -6,7 +6,7 @@ mod foreman;
 mod inline_tail;
 mod interrupts;
 mod messages;
-mod poke_shadow;
+pub mod poke_shadow;
 mod prompting;
 mod provider;
 mod response_recovery;

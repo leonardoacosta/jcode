@@ -52,6 +52,9 @@ pub(super) enum PokeCommand {
     On,
     Off,
     Status,
+    ShadowOn,
+    ShadowOff,
+    ShadowStatus,
 }
 
 pub(super) enum PokeActivation {
@@ -69,6 +72,12 @@ pub(super) fn parse_poke_command(trimmed: &str) -> Option<Result<PokeCommand, St
         "/poke on" => Some(Ok(PokeCommand::On)),
         "/poke off" => Some(Ok(PokeCommand::Off)),
         "/poke status" => Some(Ok(PokeCommand::Status)),
+        "/poke shadow on" => Some(Ok(PokeCommand::ShadowOn)),
+        "/poke shadow off" => Some(Ok(PokeCommand::ShadowOff)),
+        "/poke shadow status" => Some(Ok(PokeCommand::ShadowStatus)),
+        _ if trimmed.starts_with("/poke shadow ") => {
+            Some(Err("Usage: /poke shadow [on|off|status]".to_string()))
+        }
         _ if trimmed.starts_with("/poke ") => Some(Err("Usage: /poke [on|off|status]".to_string())),
         _ => None,
     }
@@ -570,6 +579,64 @@ pub(super) fn poke_status_message(app: &App) -> String {
     message
 }
 
+pub(super) fn handle_poke_shadow_on(app: &mut App) {
+    let provider = jcode_app_core::agent::poke_shadow::shadow_provider_name();
+    if app.poke_shadow_enabled {
+        app.push_display_message(DisplayMessage::system(format!(
+            "Shadow assessment is already enabled. Provider: {provider}. Budget: {}/{}.",
+            crate::agent::poke_shadow::MAX_REQUESTS_PER_SESSION.saturating_sub(
+                app.poke_shadow_remaining_budget as u32
+            ),
+            crate::agent::poke_shadow::MAX_REQUESTS_PER_SESSION
+        )));
+        return;
+    }
+    app.poke_shadow_enabled = true;
+    app.poke_shadow_remaining_budget = crate::agent::poke_shadow::MAX_REQUESTS_PER_SESSION as u8;
+    app.poke_shadow_generation = app.poke_shadow_generation.wrapping_add(1);
+    app.poke_shadow_last_result = None;
+    app.push_display_message(DisplayMessage::system(format!(
+        "Shadow assessment enabled.\n\nProvider: {provider}\n\n\
+         Data sent: bounded task text, todo summaries, recent tool names, \
+         sanitized outcome summaries. No raw command arguments, output, \
+         environment values, file bodies, or credentials.\n\n\
+         Requests may incur provider charges. Max {} requests per session, \
+         {}s deadline per request.\n\nUse /poke shadow off to disable.",
+        crate::agent::poke_shadow::MAX_REQUESTS_PER_SESSION,
+        crate::agent::poke_shadow::ASSESSMENT_DEADLINE_SECS
+    )));
+}
+
+pub(super) fn handle_poke_shadow_off(app: &mut App) {
+    if !app.poke_shadow_enabled {
+        app.push_display_message(DisplayMessage::system(
+            "Shadow assessment is already disabled.",
+        ));
+        return;
+    }
+    app.poke_shadow_enabled = false;
+    app.poke_shadow_generation = app.poke_shadow_generation.wrapping_add(1);
+    app.poke_shadow_last_result = None;
+    app.push_display_message(DisplayMessage::system("Shadow assessment disabled."));
+}
+
+pub(super) fn poke_shadow_status(app: &App) -> String {
+    let provider = jcode_app_core::agent::poke_shadow::shadow_provider_name();
+    let used = crate::agent::poke_shadow::MAX_REQUESTS_PER_SESSION
+        .saturating_sub(app.poke_shadow_remaining_budget as u32);
+    let mut msg = format!(
+        "Shadow: {}. Provider: {provider}. Requests: {}/{}.",
+        if app.poke_shadow_enabled { "ON" } else { "OFF" },
+        used,
+        crate::agent::poke_shadow::MAX_REQUESTS_PER_SESSION
+    );
+    if let Some(result) = &app.poke_shadow_last_result {
+        msg.push('\n');
+        msg.push_str(result);
+    }
+    msg
+}
+
 pub(super) fn current_subagent_model_summary(app: &App) -> String {
     match app.session.subagent_model.as_deref() {
         Some(model) => format!("fixed {}", model),
@@ -701,6 +768,7 @@ fn launch_manual_subagent(app: &mut App, spec: ManualSubagentSpec) {
             tool_call_id: tool_call_for_task.id.clone(),
             working_dir: working_dir.as_deref().map(PathBuf::from),
             stdin_request_tx: None,
+            pending_question_tx: None,
             graceful_shutdown_signal: None,
             execution_mode: crate::tool::ToolExecutionMode::Direct,
         };
@@ -2119,6 +2187,15 @@ pub(super) fn handle_session_command(app: &mut App, trimmed: &str) -> bool {
             }
             Ok(PokeCommand::Trigger | PokeCommand::On) => {
                 activate_auto_poke_local(app);
+            }
+            Ok(PokeCommand::ShadowOn) => {
+                handle_poke_shadow_on(app);
+            }
+            Ok(PokeCommand::ShadowOff) => {
+                handle_poke_shadow_off(app);
+            }
+            Ok(PokeCommand::ShadowStatus) => {
+                app.push_display_message(DisplayMessage::system(poke_shadow_status(app)));
             }
         }
 
