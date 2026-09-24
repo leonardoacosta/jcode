@@ -19,24 +19,40 @@ const REQUEST_TIMEOUT_SECS: u64 = 10;
 const MAX_RETRIES: u32 = 3;
 
 pub struct EvaluateTool {
-    service: Arc<dyn SystemOneService>,
+    service: std::sync::OnceLock<Arc<dyn SystemOneService>>,
     cache: Arc<JevCache>,
 }
 
 impl EvaluateTool {
     pub fn new(cache: Arc<JevCache>) -> Self {
-        let config = resolve_service(None)
-            .expect("EvaluateTool: no System One credential available at construction");
-        let service = Arc::new(LiveSystemOneService::with_timeout(
+        Self {
+            service: std::sync::OnceLock::new(),
+            cache,
+        }
+    }
+
+    /// Resolve or return the cached System One service. Fails only when no
+    /// credential is available and this is the first call.
+    fn get_service(&self) -> Result<Arc<dyn SystemOneService>> {
+        if let Some(svc) = self.service.get() {
+            return Ok(Arc::clone(svc));
+        }
+        let config = resolve_service(None)?;
+        let svc: Arc<dyn SystemOneService> = Arc::new(LiveSystemOneService::with_timeout(
             config,
             Duration::from_secs(REQUEST_TIMEOUT_SECS),
         ));
-        Self { service, cache }
+        // OnceLock::set returns Err if already set (racy init), which is fine —
+        // we return the winner.
+        let _ = self.service.set(Arc::clone(&svc));
+        Ok(svc)
     }
 
     #[cfg(test)]
     pub fn with_service(cache: Arc<JevCache>, service: Arc<dyn SystemOneService>) -> Self {
-        Self { service, cache }
+        let s = Self::new(cache);
+        let _ = s.service.set(service);
+        s
     }
 }
 
@@ -151,8 +167,9 @@ impl Tool for EvaluateTool {
             .collect();
 
         let model_override = params.model.as_deref();
+        let service = self.get_service()?;
         let response = send_with_retry(
-            self.service.as_ref(),
+            service.as_ref(),
             &params.state,
             &questions,
             model_override,
