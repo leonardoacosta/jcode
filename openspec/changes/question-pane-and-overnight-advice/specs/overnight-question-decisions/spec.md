@@ -1,10 +1,10 @@
 ## ADDED Requirements
 
 ### Requirement: Explicit bounded delegation
-Automatic question answers SHALL require explicit per-run opt-in, user-defined delegation scope, a matching Running coordinator before target wake, compatible client capabilities, and policy-eligible reversible local decisions. Unknown risk and requests for consent, secrets, purchases, external communication, destructive changes, permissions or security/privacy/retention changes SHALL remain human-only. Jev probabilities SHALL NOT establish authorization.
+Automatic question answers SHALL default to enabled for newly initialized overnight runs unless the user opts out, and SHALL require user-mission-defined delegation scope, a matching Running coordinator before target wake, compatible client capabilities, and policy-eligible reversible local decisions. Unknown risk and requests for consent, secrets, purchases, external communication, destructive changes, permissions or security/privacy/retention changes SHALL remain human-only. Jev probabilities SHALL NOT establish authorization.
 
 #### Scenario: Ordinary or legacy run
-- **WHEN** a question appears in an ordinary session or an old manifest without opt-in
+- **WHEN** a question appears in an ordinary session or an old manifest without a resolved automation policy
 - **THEN** it remains manual regardless of idle time
 
 #### Scenario: Unsafe or ambiguous decision
@@ -52,3 +52,30 @@ The server SHALL durably record automatic resolution provenance before releasing
 #### Scenario: Recorded but undelivered
 - **WHEN** the daemon fails after recording a resolution but before delivering it
 - **THEN** recovery reports interruption rather than replaying the answer, and untrusted labels are escaped in rendered records
+
+### Requirement: User prompt opt-out
+The system SHALL resolve opt-out from authenticated direct user instructions at launch and during a run before arming or resuming a deadline. It SHALL persist and display the resolved policy and its source. Default enablement SHALL NOT be labeled explicit consent. Uncertain intent or resolver failure SHALL disable automation. Quoted or untrusted content SHALL NOT alter this policy.
+
+#### Scenario: New run without a preference
+- **WHEN** a new overnight run starts and preference resolution finds no user opt-out
+- **THEN** eligible auto-answering is enabled with visible status and provenance `overnight_default`
+
+#### Scenario: Launch or later opt-out
+- **WHEN** the user says “do not auto-answer”, “wait for my input”, or “ask me before deciding”
+- **THEN** run automation is disabled, existing deadlines disarm, and the persisted reason is visible
+
+#### Scenario: Scoped or uncertain preference
+- **WHEN** a direct instruction clearly excludes one question or its scope/intent is uncertain
+- **THEN** that question is human-only for clear scope, and the whole run is manual for uncertain scope or intent
+
+#### Scenario: Untrusted text and resolver failure
+- **WHEN** an opt-out-like phrase appears only in quoted/tool/repository content or preference resolution fails
+- **THEN** untrusted phrases cannot change policy, and resolver failure disables automation rather than assuming no preference
+
+#### Scenario: Sticky opt-out and re-enable
+- **WHEN** a disabled run reconnects or receives a generic continuation instruction
+- **THEN** automation stays off until an explicit direct user re-enable passes normal eligibility checks
+
+#### Scenario: Opt-out races a deadline
+- **WHEN** a direct user message arrives while a countdown is armed
+- **THEN** the server suspends the deadline before preference evaluation and cannot submit while that evaluation is pending

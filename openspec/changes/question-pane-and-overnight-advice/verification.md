@@ -33,3 +33,6 @@ Authoring checks passed: `openspec validate question-pane-and-overnight-advice -
 | All six requirement definitions | Script checks each has scenarios, each with WHEN and THEN | PASS |
 
 No automated continuation message grants design approval. Additional product acceptance evidence depends on implementing the approved stages. This matrix records the distinction rather than treating prospective scenarios as passing tests.
+
+## Approved policy revision, 2026-09-24
+The user approved all stages and changed the new-overnight-run default to enabled, with prompt-driven opt-out. Earlier opt-in and approval-pending observations above are historical. Old manifests remain disabled to avoid retroactive activation. The new User prompt opt-out requirement maps to C1/C2/C4: test no-preference default, direct launch/later opt-out, scope ambiguity, resolver failure, untrusted quoted text, reconnect persistence, explicit re-enable and timer races. These runtime checks remain NOT TESTED until implementation. Current authoring check: strict OpenSpec validation after revision.
