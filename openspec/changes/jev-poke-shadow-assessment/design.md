@@ -14,6 +14,49 @@ Only assess a completed TUI turn with shadow mode on, auto-poke enabled, nonempt
 
 At most one request per evidence revision, one in flight per session, and 20 launched requests per consent session. Re-enabling within the same session does not reset the request budget. No automatic retries. An overall two-second deadline includes queueing and provider time. Deadline failure yields an abstention, never changes poke behavior. Cache hits do not count as launched requests but still follow the single-result/revision rule.
 
+## Completion Hook — Deterministic Work-Done Detection
+
+Before calling the Jev service, apply deterministic checks that can resolve the
+situation without inference. These hooks answer the user's primary pain point:
+sessions where the agent completed all work, delivered the final summary, and is
+genuinely waiting for the user — but poke cannot tell this apart from a stall.
+
+### Check order and resolution
+
+| # | Signal | Resolution | Source |
+|---|---|---|---|
+| 1 | `todo_final_response_requested` is true | `wait_for_user` (reason: `final_response_sent`) | `App` field, set after `TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE` is queued |
+| 2 | All todos completed AND all goal feedback-loop states pass AND all goal delivery states are at least `outcome_delivered` | `wait_for_user` (reason: `work_appears_complete`) | `poke_todos()` + `load_goals()` |
+| 3 | Last stored message role is `User` and is not a synthetic poke continuation | `wait_for_user` (reason: `user_turn_pending`) | `is_auto_poke_user_message()` + session message history |
+
+When any hook fires, skip the Jev call. The resolution is reported through the
+same status path as a provider result, with a fixed label and deterministic
+reason. These hooks do not change poke behavior — they only classify the
+situation for the shadow status display.
+
+### Why this matters
+
+Without these hooks, a Jev call must infer "is the agent waiting for the user?"
+from the same evidence. That burns a hosted call to answer a question the
+codebase already answers: the final response was sent, the work passes internal
+checks, and the user is the next actor. The hooks also prevent Jev from
+recommending `continue` or `verify` when the session's own state machine says
+the cycle is complete.
+
+### Hook ordering and overrides
+
+Hooks fire top-to-bottom and stop at the first match. A later hook never
+overrides an earlier one. All hooks are read-only — they inspect state, never
+mutate it. Hooks cannot mark work complete, promote confidence, or authorize
+any tool.
+
+### Hooks and the evidence boundary
+
+Hooks are local Rust code. They do not send data to a provider. They are not
+subject to the 2-second deadline, the 8 KiB evidence cap, or the 20-request
+budget. They run synchronously on the TUI thread before any async assessment
+is spawned.
+
 ## Evidence and Data Boundary
 
 Use an allowlist: bounded current user request, relevant todo IDs/content/status, recent tool names and sanitized exit/result summaries, verification freshness, known background/permission state, and previous recommendation metadata. Exclude full transcripts, raw command arguments, raw stdout/stderr, environment values, file bodies, and credentials. Apply the existing secret redactor to all permitted text, cap the UTF-8-safe serialized payload at 8 KiB, and skip if required context cannot fit safely. Do not claim redaction guarantees anonymity. Opt-in disclosure must state that the remaining task text can still be private.

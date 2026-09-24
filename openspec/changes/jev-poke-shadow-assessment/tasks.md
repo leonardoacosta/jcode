@@ -5,6 +5,7 @@
 
 ## 2. Assessment service (depends on 1)
 
+- [ ] 2.0 Implement deterministic completion hooks: `todo_final_response_requested` check, completed-todos + goal-state check, and last-user-message check. Add unit tests for each hook firing and for none matching. Verify hooks are read-only.
 - [ ] 2.1 Implement an allowlisted, redacted, UTF-8-safe 8 KiB evidence builder. Test credential sentinels, excluded raw fields, oversized required context, and evidence freshness.
 - [ ] 2.2 Implement asynchronous assessment through the shared resolver with no retries, a two-second total deadline, per-session 20-request budget, revision deduplication, and typed abstention. Test both provider routes, absent credentials, malformed responses, deadline, cancellation, and hit/miss parity.
 - [ ] 2.3 Add consent-generation request/result identity and a single per-session daemon assessment lease. Test two attached clients, lease revocation, disconnect, stale results, and budget preservation across toggles. Local TUI must reuse the service without remote transport.

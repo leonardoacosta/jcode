@@ -8,6 +8,7 @@ Status: proposal awaiting approval. No application behavior has been implemented
 | --- | --- | --- |
 | Explicit session consent | Public commands, disclosure, status, invalid input, default-off network count | 3.1, 4.3 |
 | Non-authoritative recommendations | Queue/todo parity for all labels/errors, waits and overnight exclusions | 3.2, 4.2, 4.3 |
+| Deterministic completion hooks | Hook fire order, read-only, Jev call skipped, final-response/completed-goals/user-turn scenarios | 2.0, 3.2, 4.2 |
 | Bounded evidence | Captured provider request omits sentinel/raw fields and respects UTF-8/byte cap | 2.1, 4.2 |
 | Strict typed assessment | Both provider routes, cache parity, malformed and uncertain abstentions | 1.2, 2.2, 4.2 |
 | Bounded asynchronous lifecycle | Deadline, budget, deduplication, two-client lease, stale results, reconnect | 2.2, 2.3, 3.3, 4.3 |
@@ -17,7 +18,7 @@ Model-quality acceptance is intentionally separate from mechanics. A mocked prov
 ## Authoring checks
 
 - `openspec validate jev-poke-shadow-assessment --strict --no-interactive`: PASS.
-- Requirement scenario checks: PASS, five requirements and fifteen WHEN/THEN scenarios.
+- Requirement scenario checks: PASS, 6 requirements and 20 WHEN/THEN scenarios.
 - Principal source paths: PASS.
 - Dependency validator: pending `system-one-service` implementation.
 

@@ -28,6 +28,31 @@ Shadow assessments SHALL NOT enqueue, suppress, delay, or modify existing poke c
 - **WHEN** a turn has no todos, active background work, pending user input, a permission wait, a guardrail stop, disabled auto-poke, or overnight execution
 - **THEN** shadow mode sends no request and reports the applicable skip reason
 
+
+### Requirement: Deterministic completion hooks
+
+The shadow assessment SHALL apply deterministic, read-only completion checks before any hosted Jev call. A matching hook SHALL resolve the classification without inference, using only local application state. Hooks SHALL fire in a fixed top-to-bottom order, stopping at the first match, and SHALL NOT mutate poke state, todo fields, or confidence.
+
+#### Scenario: Final response already sent
+- **WHEN** `todo_final_response_requested` is true at turn end
+- **THEN** the shadow assessment reports `wait_for_user` with reason `final_response_sent` and does not call the System One service
+
+#### Scenario: Work appears complete by internal checks
+- **WHEN** all todos are completed, all goal feedback-loop states pass, and all goal delivery states are at least `outcome_delivered`
+- **THEN** the shadow assessment reports `wait_for_user` with reason `work_appears_complete` and does not call the System One service
+
+#### Scenario: User turn pending
+- **WHEN** the last stored message role is User and the message is not a synthetic poke continuation
+- **THEN** the shadow assessment reports `wait_for_user` with reason `user_turn_pending` and does not call the System One service
+
+#### Scenario: No hook matches
+- **WHEN** none of the completion hooks match
+- **THEN** the shadow assessment proceeds to the Jev eligibility and evidence checks
+
+#### Scenario: Hooks are read-only
+- **WHEN** a completion hook fires
+- **THEN** no todo, goal, poke, or session state is modified
+
 ### Requirement: Bounded evidence
 
 Assessment input SHALL use only the design's allowlisted fields, pass all permitted text through secret redaction, and fit within an 8 KiB UTF-8-safe serialized payload. The system SHALL NOT expose raw payloads, credentials, or provider response bodies through status or diagnostics.
