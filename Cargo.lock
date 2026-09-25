@@ -3488,6 +3488,7 @@ dependencies = [
  "jcode-session-types",
  "jcode-setup-hints",
  "jcode-swarm-core",
+ "jcode-system-one",
  "jcode-task-types",
  "jcode-terminal-image",
  "jcode-tool-core",
@@ -4321,6 +4322,18 @@ version = "0.1.0"
 dependencies = [
  "jcode-plan",
  "serde",
+]
+
+[[package]]
+name = "jcode-system-one"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
