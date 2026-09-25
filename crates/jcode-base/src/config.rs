@@ -29,6 +29,8 @@ const CONFIG_CACHE_CHECK_INTERVAL: Duration = if cfg!(test) {
 
 const CONFIG_ENV_KEYS: &[&str] = &[
     "HOME",
+    "SYSTEMONE_URL",
+    "SYSTEMONE_MODEL",
     "JCODE_ACP_PROFILE",
     "JCODE_ACP_TOOL_PROFILE",
     "JCODE_ACTIVE_SESSIONS_MANAGER",
@@ -545,6 +547,14 @@ pub struct Config {
 
     /// Global "launch a new jcode" hotkeys (macOS). Baked once by auto-import.
     pub launch_hotkeys: LaunchHotkeysConfig,
+
+    /// System One endpoint selector or full URL. Defaults to the configured 9Router profile.
+    #[serde(alias = "SYSTEMONE_URL", skip_serializing_if = "String::is_empty")]
+    pub systemone_url: String,
+
+    /// Optional model override for System One calls.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub systemone_model: Option<String>,
 }
 
 /// Agent Client Protocol adapter configuration.

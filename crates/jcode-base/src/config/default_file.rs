@@ -25,6 +25,13 @@ impl Config {
 # Environment variables override these settings.
 # Run `/config` in jcode to see current settings.
 
+# System One endpoint: "9router" (default), "openrouter", "typesafe", or a full URL.
+# System One uses the provider profile credentials for 9Router and the matching
+# provider credentials for OpenRouter or TypeSafe.
+systemone_url = "9router"
+# Optional model override. The default for 9Router is openrouter/typesafe/jev-1.13.
+# systemone_model = "openrouter/typesafe/jev-1.13"
+
 [keybindings]
 # Scroll keys (vim-style by default)
 # Supports: ctrl, alt, shift modifiers + any key
