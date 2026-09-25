@@ -219,6 +219,14 @@ api_key_env = "JCODE_PROVIDER_TEST_SYSTEMONE_KEY"
     }
 
     #[test]
+    fn requires_key_for_selected_direct_provider() {
+        with_config("systemone_url = \"typesafe\"\n", || {
+            let error = resolve().err().unwrap().to_string();
+            assert!(error.contains("TYPESAFE_API_KEY"));
+        });
+    }
+
+    #[test]
     fn rejects_unmapped_url() {
         let config = crate::config::Config::default();
         let error = resolve_full_url(&config, "https://unknown.example/systemone")
