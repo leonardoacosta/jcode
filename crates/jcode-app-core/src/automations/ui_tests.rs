@@ -8,6 +8,17 @@ fn weekday_form_values_reject_bad_days_without_dropping_them() {
     assert!(parse_weekdays("0,0").is_err());
 }
 
+#[test]
+fn interval_shorthand_is_checked_and_keeps_seconds_api() {
+    assert_eq!(parse_interval("900").unwrap(), 900);
+    assert_eq!(parse_interval("15m").unwrap(), 900);
+    assert_eq!(parse_interval("1h").unwrap(), 3600);
+    assert_eq!(parse_interval("1d").unwrap(), 86400);
+    assert!(parse_interval("59").is_err());
+    assert!(parse_interval("0m").is_err());
+    assert!(parse_interval("999999999999999999d").is_err());
+}
+
 #[tokio::test]
 async fn preview_returns_three_times_and_rejects_invalid_calendar() {
     let dir = tempfile::tempdir().unwrap();
@@ -106,12 +117,86 @@ async fn preview_returns_three_times_and_rejects_invalid_calendar() {
         .unwrap();
     assert!(state.contains("demo"));
     let id = state
-        .split("data-edit=\"")
+        .split("href=\"/?edit=")
         .nth(1)
         .unwrap()
         .split('\"')
         .next()
         .unwrap();
+    let edit_page = client
+        .get(format!("{origin}/?edit={id}"))
+        .header("Cookie", &cookie)
+        .send()
+        .await
+        .unwrap();
+    let edit_page = edit_page.text().await.unwrap();
+    assert!(edit_page.contains(&format!("action=\"/api/automations/{id}\"")));
+    assert!(edit_page.contains("name=\"arguments\" value=\"initial\""));
+    assert!(edit_page.contains("Save changes"));
+    assert!(!edit_page.contains("name=\"seconds\" value=\"3600\" value="));
+    assert_eq!(
+        client
+            .get(format!("{origin}/?edit=missing"))
+            .header("Cookie", &cookie)
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        404
+    );
+    assert!(state.contains("href=\"/?edit="));
+    assert!(state.contains("form method=post action=\"/api/automations/"));
+    let native_preview = client
+        .post(format!("{origin}/api/preview"))
+        .header("Origin", &origin)
+        .header("Cookie", &cookie)
+        .form(&[
+            ("csrf", csrf),
+            ("kind", "interval"),
+            ("seconds", "15m"),
+            ("preview_page", "true"),
+            ("edit_id", id),
+        ])
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(native_preview.status(), 200);
+    let native_preview = native_preview.text().await.unwrap();
+    assert!(native_preview.contains("<!doctype html>"));
+    assert!(native_preview.contains("Next three runs"));
+    assert!(native_preview.contains(&format!("href=\"/?edit={id}\">Return to schedule")));
+    assert_eq!(native_preview.matches("<li>").count(), 3);
+    let ajax_preview = client
+        .post(format!("{origin}/api/preview"))
+        .header("Origin", &origin)
+        .header("Cookie", &cookie)
+        .header("x-csrf-token", csrf)
+        .form(&[("kind", "interval"), ("seconds", "900")])
+        .send()
+        .await
+        .unwrap();
+    let ajax_preview = ajax_preview.text().await.unwrap();
+    assert!(!ajax_preview.contains("<!doctype html>"));
+    assert_eq!(ajax_preview.matches("<li>").count(), 3);
+    let native_pause = client
+        .post(format!("{origin}/api/automations/{id}/pause"))
+        .header("Origin", &origin)
+        .header("Cookie", &cookie)
+        .form(&[("csrf", csrf)])
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(native_pause.status(), 303);
+    assert_eq!(native_pause.headers().get("location").unwrap(), "/");
+    let native_resume = client
+        .post(format!("{origin}/api/automations/{id}/resume"))
+        .header("Origin", &origin)
+        .header("Cookie", &cookie)
+        .form(&[("csrf", csrf)])
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(native_resume.status(), 303);
     let edited = client
         .post(format!("{origin}/api/automations/{id}"))
         .header("Origin", &origin)
@@ -173,7 +258,7 @@ async fn preview_returns_three_times_and_rejects_invalid_calendar() {
         .text()
         .await
         .unwrap();
-    assert_eq!(rows.matches("data-edit=").count(), 1);
+    assert_eq!(rows.matches("href=\"/?edit=").count(), 1);
     let good = client
         .post(format!("{origin}/api/preview"))
         .header("Origin", &origin)

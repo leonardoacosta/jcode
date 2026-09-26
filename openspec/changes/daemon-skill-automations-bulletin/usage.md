@@ -13,7 +13,7 @@ jcode --no-update automations open
 
 `init` captures the current directory, configured daemon socket, optional model, and a private loopback port. It does not install a service. An already-running older daemon needs an explicit update/restart before it can recognize this configuration. `open` prints a sensitive five-minute single-use pairing link. Open it only in the intended browser. Browser sessions expire after 24 hours. Log out to revoke the current session.
 
-Choose an installed skill, optional arguments, and either an interval in seconds (minimum 60) or comma-separated weekdays (Monday 0 through Sunday 6), local HH:MM time, and IANA timezone. Calendar previews show the next three occurrences. Nonexistent daylight-saving times are skipped, repeated times run at their earlier instant. Missed downtime occurrences are skipped. Runs are serial with a 30-minute deadline. Cancellation retains ownership until execution acknowledges shutdown.
+Choose an installed skill, optional arguments, and either an interval in seconds or shorthand such as `15m`, `1h`, `1d` (minimum 60 seconds) or comma-separated weekdays (Monday 0 through Sunday 6), local HH:MM time, and IANA timezone. Calendar previews show the next three occurrences. Nonexistent daylight-saving times are skipped, repeated times run at their earlier instant. Missed downtime occurrences are skipped. Runs are serial with a 30-minute deadline. Cancellation retains ownership until execution acknowledges shutdown.
 
 Results retain the latest 1,000 terminal records, at most 64 KiB per final response. Output is escaped, and known credentials are masked, but arbitrary skill output may contain sensitive information. Review skill permissions and recurring model costs before enabling a schedule.
 

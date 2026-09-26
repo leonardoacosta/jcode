@@ -42,6 +42,7 @@ pub(crate) enum AutomationCommand {
 pub(crate) async fn run(action: AutomationCommand, model: Option<&str>) -> Result<()> {
     let directory = config::directory()?;
     if let AutomationCommand::Init { port } = action {
+        let _configuration_lock = provision_commands::mutation_lock(&directory)?;
         ensure!(
             config::load(&directory)?.is_none(),
             "automations already configured; configuration was not replaced"
@@ -161,5 +162,14 @@ mod tests {
             }
         ));
         assert!(TestArgs::try_parse_from(["test", "service", "--enable-linger"]).is_ok());
+    }
+
+    #[test]
+    fn initialization_and_provisioning_share_exclusive_ownership() {
+        let dir = tempfile::tempdir().unwrap();
+        let owner = provision_commands::mutation_lock(dir.path()).unwrap();
+        assert!(provision_commands::mutation_lock(dir.path()).is_err());
+        drop(owner);
+        assert!(provision_commands::mutation_lock(dir.path()).is_ok());
     }
 }

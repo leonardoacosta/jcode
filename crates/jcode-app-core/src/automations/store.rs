@@ -303,6 +303,13 @@ impl Store {
             }
         }
         for a in &mut next.automations {
+            if a.enabled {
+                if let Err(error) = a.schedule.validate() {
+                    a.enabled = false;
+                    a.error = Some(error.to_string());
+                    continue;
+                }
+            }
             if a.enabled && a.next_due <= now {
                 match a.schedule.next_from(a.next_due, now) {
                     Ok(due) => a.next_due = due,

@@ -117,10 +117,12 @@ async fn stop_active(
 
 async fn run_instance(
     dir: PathBuf,
-    cfg: config::Config,
+    mut cfg: config::Config,
     provider: Arc<dyn crate::provider::Provider>,
     cancel: CancellationToken,
 ) -> Result<tokio::task::JoinHandle<()>> {
+    cfg.provider.get_or_insert_with(|| provider.name().to_string());
+    cfg.model.get_or_insert_with(|| provider.model());
     let store = Arc::new(Mutex::new(Store::open(dir.join("state.json"))?));
     store.lock().await.recover(Utc::now())?;
     Ok(tokio::spawn(async move {
@@ -228,6 +230,14 @@ async fn execute(
     let skill = skills
         .get(&automation.skill)
         .with_context(|| format!("skill unavailable: {}", automation.skill))?;
+    if let Some(provider_name) = automation.provider.as_deref() {
+        let expected = crate::provider::provider_from_model_key(provider_name)
+            .map(jcode_provider_core::provider_key)
+            .with_context(|| format!("unknown automation provider: {provider_name}"))?;
+        if expected != provider_template.name() {
+            bail!("automation provider mismatch: configured {expected}, runtime is {}", provider_template.name());
+        }
+    }
     let source = format!("{}#{}", skill.path.display(), sha256(&skill.content));
     let provider = provider_template.fork();
     if let Some(model) = automation.model.as_deref() {
@@ -288,12 +298,20 @@ async fn execute(
         let mut terminal = None;
         loop {
             tokio::select! {
+                biased;
                 _ = cancel.cancelled() => { signal.fire(); let _ = (&mut agent_run).await; terminal = Some(RunStatus::Interrupted); break; }
                 _ = &mut deadline => { signal.fire(); let _ = (&mut agent_run).await; terminal = Some(RunStatus::Timeout); break; }
                 event = rx.recv() => match event {
                     Some(ServerEvent::ToolStart { name, .. }) | Some(ServerEvent::ToolExec { name, .. }) if name == "ask_user_question" || name == "request_permission" => { signal.fire(); let _ = (&mut agent_run).await; terminal = Some(RunStatus::Blocked); break; }
                     Some(ServerEvent::ToolDone { name, error: Some(_), .. }) if name == "ask_user_question" || name == "request_permission" => { signal.fire(); let _ = (&mut agent_run).await; terminal = Some(RunStatus::Blocked); break; }
-                    None => break,
+                    // The streaming sender may drop before the agent future
+                    // resolves. Keep polling the agent instead of reporting an
+                    // empty successful run prematurely.
+                    None => {
+                        let result = (&mut agent_run).await;
+                        result.context("automation agent turn failed")?;
+                        break;
+                    },
                     _ => {}
                 },
                 result = &mut agent_run => { result.context("automation agent turn failed")?; break; }
@@ -358,3 +376,7 @@ mod tests {
         assert_eq!(redact("token=abc", &["abc".into()]), "token=[REDACTED]");
     }
 }
+
+#[cfg(test)]
+#[path = "automations_tests.rs"]
+mod execution_tests;

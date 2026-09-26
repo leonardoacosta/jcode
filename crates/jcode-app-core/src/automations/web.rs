@@ -360,7 +360,11 @@ async fn logout(State(s): State<AppState>, headers: HeaderMap) -> Response {
     response
 }
 
-async fn index(State(s): State<AppState>, headers: HeaderMap) -> Response {
+async fn index(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    axum::extract::Query(edit): axum::extract::Query<EditQuery>,
+) -> Response {
     let authenticated = if let Some(id) = cookie(&headers, "bulletin_session") {
         let mut sessions = s.sessions.lock().await;
         sessions.retain(|_, (expiry, _, _)| *expiry > Utc::now());
@@ -371,7 +375,68 @@ async fn index(State(s): State<AppState>, headers: HeaderMap) -> Response {
     if authenticated {
         let csrf = cookie(&headers, "bulletin_csrf").unwrap_or("");
         let st = s.store.lock().await;
-        let mut html = include_str!("assets/index.html").replace("__CSRF__", &esc(csrf));
+        let mut html = include_str!("assets/index.html")
+            .replace("__CSRF__", &esc(csrf))
+            .replace(
+                "__EDIT_ID__",
+                edit.edit.as_deref().map(esc).as_deref().unwrap_or(""),
+            );
+        if let Some(id) = edit.edit.as_deref() {
+            let Some(a) = st.automations().iter().find(|a| a.id == id) else {
+                return StatusCode::NOT_FOUND.into_response();
+            };
+            html = html
+                .replace("<h2>Create schedule</h2>", "<h2>Edit schedule</h2>")
+                .replace(
+                    "action=\"/api/automations\"",
+                    &format!("action=\"/api/automations/{}\"", esc(&a.id)),
+                )
+                .replace("Create schedule", "Save changes");
+            let (kind, seconds, weekdays, time, timezone) = match &a.schedule {
+                Schedule::Interval { seconds } => (
+                    "interval",
+                    seconds.to_string(),
+                    String::new(),
+                    String::new(),
+                    String::new(),
+                ),
+                Schedule::Calendar {
+                    weekdays,
+                    time,
+                    timezone,
+                } => (
+                    "calendar",
+                    String::new(),
+                    weekdays
+                        .iter()
+                        .map(u32::to_string)
+                        .collect::<Vec<_>>()
+                        .join(","),
+                    time.clone(),
+                    timezone.clone(),
+                ),
+            };
+            let values = [
+                ("skill", a.skill.clone()),
+                ("arguments", a.arguments.clone()),
+                ("working_dir", a.working_dir.to_string_lossy().into_owned()),
+                ("seconds", seconds),
+                ("weekdays", weekdays),
+                ("time", time),
+                ("timezone", timezone),
+            ];
+            for (name, value) in values {
+                let marker = format!("name=\"{name}\"");
+                for default in ["3600", ""] {
+                    html = html.replace(&format!("{marker} value=\"{default}\""), &marker);
+                }
+                html = html.replace(&marker, &format!("{marker} value=\"{}\"", esc(&value)));
+            }
+            html = html.replace(
+                &format!("<option value=\"{kind}\">"),
+                &format!("<option value=\"{kind}\" selected>"),
+            );
+        }
         html = html.replace(
             "__AUTOMATIONS__",
             &render_list(st.automations(), 0).replace("__CSRF__", &esc(csrf)),
@@ -425,11 +490,17 @@ async fn runs(
 struct Page {
     page: Option<usize>,
 }
+#[derive(Deserialize, Default)]
+struct EditQuery {
+    edit: Option<String>,
+}
 
 #[derive(Clone, Deserialize)]
 struct CreateForm {
     #[serde(default)]
     csrf: String,
+    preview_page: Option<bool>,
+    edit_id: Option<String>,
     #[serde(default)]
     skill: String,
     #[serde(default)]
@@ -509,25 +580,57 @@ fn parse_weekdays(value: &str) -> anyhow::Result<Vec<u32>> {
     };
     Ok(days)
 }
+fn parse_interval(value: &str) -> anyhow::Result<u64> {
+    let (number, multiplier) = match value.strip_suffix(['s', 'm', 'h', 'd']) {
+        Some(v) => {
+            let unit = value.chars().last().unwrap();
+            (
+                v,
+                match unit {
+                    's' => 1,
+                    'm' => 60,
+                    'h' => 3600,
+                    'd' => 86400,
+                    _ => unreachable!(),
+                },
+            )
+        }
+        None => (value, 1),
+    };
+    let seconds = number
+        .parse::<u64>()?
+        .checked_mul(multiplier)
+        .ok_or_else(|| anyhow::anyhow!("interval overflow"))?;
+    anyhow::ensure!(seconds >= 60, "interval must be at least 60 seconds");
+    Ok(seconds)
+}
 async fn create(State(s): State<AppState>, axum::Form(f): axum::Form<CreateForm>) -> Response {
     let copy = f.clone();
     let schedule = if f.kind == "interval" {
         Schedule::Interval {
-            seconds: match f.seconds.as_deref().unwrap_or("0").parse() {
+            seconds: match parse_interval(f.seconds.as_deref().unwrap_or("0")) {
                 Ok(v) => v,
-                Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+                Err(_) => {
+                    return form_error(
+                        &copy,
+                        "/api/automations",
+                        "Invalid interval. Use seconds or 15m, 1h, 1d (minimum 60 seconds).",
+                    );
+                }
             },
         }
-    } else {
+    } else if f.kind == "calendar" {
         let weekdays = match parse_weekdays(f.weekdays.as_deref().unwrap_or("")) {
             Ok(v) => v,
-            Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+            Err(_) => return form_error(&copy, "/api/automations", "Invalid weekday list."),
         };
         Schedule::Calendar {
             weekdays,
             time: f.time.unwrap_or_default(),
             timezone: f.timezone.unwrap_or_default(),
         }
+    } else {
+        return form_error(&copy, "/api/automations", "Invalid schedule kind.");
     };
     let now = Utc::now();
     let mut st = s.store.lock().await;
@@ -560,19 +663,19 @@ async fn create(State(s): State<AppState>, axum::Form(f): axum::Form<CreateForm>
 async fn pause(
     State(s): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
-) -> StatusCode {
+) -> Response {
     match s.store.lock().await.pause(&id) {
-        Ok(()) => StatusCode::NO_CONTENT,
-        Err(_) => StatusCode::NOT_FOUND,
+        Ok(()) => Redirect::to("/").into_response(),
+        Err(_) => StatusCode::NOT_FOUND.into_response(),
     }
 }
 async fn resume(
     State(s): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
-) -> StatusCode {
+) -> Response {
     match s.store.lock().await.resume(&id, Utc::now()) {
-        Ok(()) => StatusCode::NO_CONTENT,
-        Err(_) => StatusCode::NOT_FOUND,
+        Ok(()) => Redirect::to("/").into_response(),
+        Err(_) => StatusCode::NOT_FOUND.into_response(),
     }
 }
 async fn update(
@@ -583,20 +686,38 @@ async fn update(
     let copy = f.clone();
     let schedule = if f.kind == "interval" {
         Schedule::Interval {
-            seconds: match f.seconds.as_deref().unwrap_or("0").parse() {
+            seconds: match parse_interval(f.seconds.as_deref().unwrap_or("0")) {
                 Ok(v) => v,
-                Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+                Err(_) => {
+                    return form_error(
+                        &copy,
+                        &format!("/api/automations/{}", esc(&id)),
+                        "Invalid interval. Use seconds or 15m, 1h, 1d (minimum 60 seconds).",
+                    );
+                }
             },
         }
-    } else {
+    } else if f.kind == "calendar" {
         Schedule::Calendar {
             weekdays: match parse_weekdays(f.weekdays.as_deref().unwrap_or("")) {
                 Ok(v) => v,
-                Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+                Err(_) => {
+                    return form_error(
+                        &copy,
+                        &format!("/api/automations/{}", esc(&id)),
+                        "Invalid weekday list.",
+                    );
+                }
             },
             time: f.time.unwrap_or_default(),
             timezone: f.timezone.unwrap_or_default(),
         }
+    } else {
+        return form_error(
+            &copy,
+            &format!("/api/automations/{}", esc(&id)),
+            "Invalid schedule kind.",
+        );
     };
     let now = Utc::now();
     let mut st = s.store.lock().await;
@@ -633,20 +754,28 @@ async fn update(
 async fn preview(axum::Form(f): axum::Form<CreateForm>) -> Response {
     let schedule = if f.kind == "interval" {
         Schedule::Interval {
-            seconds: match f.seconds.as_deref().unwrap_or("0").parse() {
+            seconds: match parse_interval(f.seconds.as_deref().unwrap_or("0")) {
                 Ok(v) => v,
-                Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+                Err(_) => {
+                    return form_error(
+                        &f,
+                        "/api/automations",
+                        "Invalid interval. Use seconds or 15m, 1h, 1d (minimum 60 seconds).",
+                    );
+                }
             },
         }
-    } else {
+    } else if f.kind == "calendar" {
         Schedule::Calendar {
             weekdays: match parse_weekdays(f.weekdays.as_deref().unwrap_or("")) {
                 Ok(v) => v,
-                Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+                Err(_) => return form_error(&f, "/api/automations", "Invalid weekday list."),
             },
             time: f.time.unwrap_or_default(),
             timezone: f.timezone.unwrap_or_default(),
         }
+    } else {
+        return form_error(&f, "/api/automations", "Invalid schedule kind.");
     };
     let mut after = Utc::now();
     let mut html = String::from("<ol>");
@@ -677,38 +806,24 @@ async fn preview(axum::Form(f): axum::Form<CreateForm>) -> Response {
         }
     }
     html.push_str("</ol>");
-    Html(html).into_response()
+    if f.preview_page == Some(true) {
+        let back = f
+            .edit_id
+            .as_deref()
+            .filter(|id| !id.is_empty())
+            .map(|id| format!("/?edit={}", esc(id)))
+            .unwrap_or_else(|| "/".into());
+        Html(format!("<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Schedule preview</title><body><h1>Next three runs</h1>{html}<p><a href=\"{back}\">Return to schedule</a></p></body></html>")).into_response()
+    } else {
+        Html(html).into_response()
+    }
 }
 
 fn render_list(items: &[Automation], page: usize) -> String {
     let mut out = String::from("<ul>");
     for a in items.iter().rev().skip(page.saturating_mul(50)).take(50) {
         let action = if a.enabled { "pause" } else { "resume" };
-        let (kind, seconds, weekdays, time, timezone) = match &a.schedule {
-            Schedule::Interval { seconds } => (
-                "interval",
-                seconds.to_string(),
-                String::new(),
-                String::new(),
-                String::new(),
-            ),
-            Schedule::Calendar {
-                weekdays,
-                time,
-                timezone,
-            } => (
-                "calendar",
-                String::new(),
-                weekdays
-                    .iter()
-                    .map(u32::to_string)
-                    .collect::<Vec<_>>()
-                    .join(","),
-                time.clone(),
-                timezone.clone(),
-            ),
-        };
-        out.push_str(&format!("<li><strong>{}</strong> · next {} <button type=button data-edit=\"{}\" data-skill=\"{}\" data-arguments=\"{}\" data-working=\"{}\" data-kind=\"{}\" data-seconds=\"{}\" data-weekdays=\"{}\" data-time=\"{}\" data-timezone=\"{}\">Edit</button><form method=post action=\"/api/automations/{}/{}\"><input type=hidden name=csrf value=\"__CSRF__\"><button>{}</button></form></li>",esc(&a.skill),esc(&a.next_due.to_rfc3339()),esc(&a.id),esc(&a.skill),esc(&a.arguments),esc(&a.working_dir.to_string_lossy()),kind,seconds,weekdays,time,timezone,esc(&a.id),action,if a.enabled{"Pause"}else{"Resume"}));
+        out.push_str(&format!("<li><strong>{}</strong> · next {} <a href=\"/?edit={}\">Edit</a><form method=post action=\"/api/automations/{}/{}\"><input type=hidden name=csrf value=\"__CSRF__\"><button>{}</button></form></li>",esc(&a.skill),esc(&a.next_due.to_rfc3339()),esc(&a.id),esc(&a.id),action,if a.enabled{"Pause"}else{"Resume"}));
     }
     out.push_str("</ul>");
     if page > 0 {

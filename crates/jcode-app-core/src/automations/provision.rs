@@ -235,6 +235,32 @@ pub fn inspect_serve_status(json: &str, port: u16, local_port: u16) -> ServeStat
     }
 }
 
+/// Remove only the endpoint owned by this provisioning receipt before config comparison.
+pub fn serve_config_without_endpoint(json: &str, host: &str, port: u16) -> Result<Value, String> {
+    let mut value: Value =
+        serde_json::from_str(json).map_err(|e| format!("invalid Serve status JSON: {e}"))?;
+    let root = value
+        .as_object_mut()
+        .ok_or("unrecognized Serve status shape")?;
+    let host_port = format!("{host}:{port}");
+    for (field, key) in [
+        ("TCP", port.to_string()),
+        ("Web", host_port.clone()),
+        ("AllowFunnel", host_port),
+    ] {
+        if let Some(map) = root.get_mut(field) {
+            let map = map
+                .as_object_mut()
+                .ok_or_else(|| format!("unknown {field} map"))?;
+            map.remove(&key);
+            if map.is_empty() {
+                root.remove(field);
+            }
+        }
+    }
+    Ok(value)
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CommandSpec {
     pub program: PathBuf,
@@ -272,28 +298,59 @@ impl CommandSpec {
     }
 }
 pub fn execute(spec: &CommandSpec) -> std::io::Result<Output> {
-    let mut child = Command::new(&spec.program)
+    let mut command = Command::new(&spec.program);
+    command
         .args(&spec.args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
+        .stderr(Stdio::piped());
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    let mut child = command.spawn()?;
     let mut out = child.stdout.take().unwrap();
     let mut err = child.stderr.take().unwrap();
     let out_thread = std::thread::spawn(move || {
         let mut b = Vec::new();
-        let _ = out.by_ref().take(CAPTURE_LIMIT + 1).read_to_end(&mut b);
+        let mut buf = [0; 8192];
+        loop {
+            match out.read(&mut buf) {
+                Ok(0) | Err(_) => break,
+                Ok(n) if b.len() < CAPTURE_LIMIT as usize => {
+                    let keep = n.min(CAPTURE_LIMIT as usize - b.len());
+                    b.extend_from_slice(&buf[..keep]);
+                }
+                Ok(_) => {}
+            }
+        }
         b
     });
     let err_thread = std::thread::spawn(move || {
         let mut b = Vec::new();
-        let _ = err.by_ref().take(CAPTURE_LIMIT + 1).read_to_end(&mut b);
+        let mut buf = [0; 8192];
+        loop {
+            match err.read(&mut buf) {
+                Ok(0) | Err(_) => break,
+                Ok(n) if b.len() < CAPTURE_LIMIT as usize => {
+                    let keep = n.min(CAPTURE_LIMIT as usize - b.len());
+                    b.extend_from_slice(&buf[..keep]);
+                }
+                Ok(_) => {}
+            }
+        }
         b
     });
     let start = std::time::Instant::now();
+    let mut status = None;
     loop {
-        if child.try_wait()?.is_some() {
-            let status = child.wait()?;
+        if status.is_none() {
+            status = child.try_wait()?;
+        }
+        if let Some(status) =
+            status.filter(|_| out_thread.is_finished() && err_thread.is_finished())
+        {
             let mut stdout = out_thread.join().unwrap_or_default();
             let mut stderr = err_thread.join().unwrap_or_default();
             stdout.truncate(CAPTURE_LIMIT as usize);
@@ -305,6 +362,10 @@ pub fn execute(spec: &CommandSpec) -> std::io::Result<Output> {
             });
         }
         if start.elapsed() >= spec.timeout {
+            #[cfg(unix)]
+            unsafe {
+                libc::kill(-(child.id() as i32), libc::SIGKILL);
+            }
             let _ = child.kill();
             let _ = child.wait();
             let _ = out_thread.join();
@@ -328,24 +389,39 @@ pub fn user_service_unit(
         }
     }
     let launcher = systemd_escape(launcher)?;
+    let data_dir_raw = data_dir.to_str().ok_or("path is not valid UTF-8")?;
+    if data_dir_raw.contains(['\n', '\r']) {
+        return Err("path contains a newline".into());
+    }
     let data_dir = systemd_escape(data_dir)?;
     let socket = systemd_escape(socket)?;
     Ok(format!(
-        "[Unit]\nDescription=Jcode user daemon\nAfter=default.target\n\n[Service]\nType=simple\nEnvironment=JCODE_HOME={data_dir}\nWorkingDirectory={data_dir}\nExecStart={launcher} --no-update --socket {socket} serve\nRestart=on-failure\nRestartSec=3\n\n[Install]\nWantedBy=default.target\n"
+        "[Unit]\nDescription=Jcode user daemon\nAfter=default.target\n\n[Service]\nType=simple\nEnvironment=\"JCODE_HOME={}\"\nWorkingDirectory=\"{}\"\nExecStart=\"{}\" --no-update --socket \"{}\" serve\nRestart=on-failure\nRestartSec=3\n\n[Install]\nWantedBy=default.target\n",
+        systemd_environment_escape(data_dir_raw),
+        systemd_environment_escape(&data_dir),
+        systemd_argument_escape(&launcher),
+        systemd_argument_escape(&socket)
     ))
+}
+fn systemd_environment_escape(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('%', "%%")
+        .replace('"', "\\\"")
+}
+fn systemd_argument_escape(value: &str) -> String {
+    value
+        .replace('\\', "\\\\")
+        .replace('%', "%%")
+        .replace('$', "$$")
+        .replace('"', "\\\"")
 }
 fn systemd_escape(path: &Path) -> Result<String, String> {
     let value = path.to_str().ok_or("path is not valid UTF-8")?;
     if value.contains(['\n', '\r']) {
         return Err("path contains a newline".into());
     }
-    Ok(value
-        .replace('\\', "\\\\")
-        .replace('%', "%%")
-        .replace('$', "$$")
-        .replace('"', "\\\"")
-        .replace(' ', "\\x20")
-        .replace('\t', "\\x09"))
+    Ok(value.to_owned())
 }
 #[cfg(test)]
 mod tests {
@@ -396,6 +472,57 @@ mod tests {
             ServeStatus::Unavailable { .. }
         ));
     }
+
+    #[test]
+    fn endpoint_stripping_compares_unrelated_serve_routes() {
+        let before = r#"{"TCP":{"443":{"HTTPS":true},"8443":{"HTTPS":true}},"Web":{"other.ts.net:443":{"Handlers":{}},"node.ts.net:8443":{"Handlers":{}}},"AllowFunnel":{"other.ts.net:443":false,"node.ts.net:8443":false}}"#;
+        let after = r#"{"TCP":{"443":{"HTTPS":true}},"Web":{"other.ts.net:443":{"Handlers":{}}},"AllowFunnel":{"other.ts.net:443":false}}"#;
+        assert_eq!(
+            serve_config_without_endpoint(before, "node.ts.net", 8443).unwrap(),
+            serve_config_without_endpoint(after, "node.ts.net", 8443).unwrap()
+        );
+        let changed = r#"{"TCP":{"443":{"HTTPS":true}},"Web":{"other.ts.net:443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:9"}}}},"AllowFunnel":{"other.ts.net:443":false}}"#;
+        assert_ne!(
+            serve_config_without_endpoint(before, "node.ts.net", 8443).unwrap(),
+            serve_config_without_endpoint(changed, "node.ts.net", 8443).unwrap()
+        );
+    }
+    #[test]
+    fn environment_uses_systemd_value_quoting_not_exec_expansion_escaping() {
+        let unit = user_service_unit(
+            Path::new("/home/u/.local/bin/jcode"),
+            Path::new("/home/u/.jcode $x%\""),
+            Path::new("/run/user/1/jcode.sock"),
+        )
+        .unwrap();
+        assert!(unit.contains("Environment=\"JCODE_HOME=/home/u/.jcode $x%%\\\"\""));
+        assert!(unit.contains("WorkingDirectory=\"/home/u/.jcode $x%%\\\"\""));
+        assert!(unit.contains("ExecStart=\"/home/u/.local/bin/jcode\""));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn timeout_kills_descendants_holding_pipes() {
+        use std::{fs, os::unix::fs::PermissionsExt};
+        let dir = std::env::temp_dir().join(format!("jcode-timeout-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        for command in ["sleep 30 & wait", "sleep 30 & exit 0"] {
+            let script = dir.join("test-command");
+            fs::write(&script, format!("#!/bin/sh\n{command}\n")).unwrap();
+            fs::set_permissions(&script, fs::Permissions::from_mode(0o700)).unwrap();
+            let start = std::time::Instant::now();
+            let err = execute(&CommandSpec {
+                program: script.clone(),
+                args: vec![],
+                timeout: Duration::from_millis(100),
+            })
+            .unwrap_err();
+            assert_eq!(err.kind(), std::io::ErrorKind::TimedOut);
+            assert!(start.elapsed() < Duration::from_secs(2));
+        }
+        let _ = fs::remove_dir_all(dir);
+    }
+
     #[test]
     fn commands_and_unit_are_scoped() {
         let c = EndpointConfig::new(8443, 3000).unwrap();
@@ -417,8 +544,8 @@ mod tests {
             Path::new("/run/user/1/jcode.sock"),
         )
         .unwrap();
-        assert!(u.contains("JCODE_HOME=/home/u/.jcode\\x20$$x%%\\\""));
-        assert!(u.contains("ExecStart=/home/u/.local/bin/jcode"));
+        assert!(u.contains("Environment=\"JCODE_HOME=/home/u/.jcode $x%%\\\"\""));
+        assert!(u.contains("ExecStart=\"/home/u/.local/bin/jcode\""));
         assert!(
             user_service_unit(Path::new("jcode"), Path::new("/data"), Path::new("/sock")).is_err()
         );

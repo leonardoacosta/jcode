@@ -4,7 +4,7 @@ Proposal approved by the user on 2026-09-26 at 07:08:40 UTC. Implementation task
 
 ## 1. Durable definitions and recurrence
 
-- [ ] 1.1 After approval, add versioned definitions/run records and atomic single-writer persistence using existing storage conventions. Verify restore, corrupt/unknown-version preservation, write failure, and duplicate-owner exclusion using isolated temporary data.
+- [x] 1.1 After approval, add versioned definitions/run records and atomic single-writer persistence using existing storage conventions. Verify restore, corrupt/unknown-version preservation, write failure, and duplicate-owner exclusion using isolated temporary data. Evidence: `288707poz9`, persisted-store tests in `automations/tests.rs`.
 - [ ] 1.2 Depends on 1.1. Implement skill/directory validation and checked interval parsing plus IANA-zone weekday/time schedules, create/pause/resume/schedule-edit operations. Verify valid units, invalid values, overflow, project-local skill precedence, weekday selection, time/zone validation, next-three preview, DST gaps/folds, host-zone independence, next-due rules, and unchanged one-shot config/queue behavior.
 - [ ] 1.3 Depends on 1.2. Add daemon-owned serial recurrence and persisted pre-execution claims, independent of Ambient. Use deterministic clock tests for ties, waiting definitions, overlap, long-running coalescence, downtime, forward/backward clock jumps, and interrupted-run recovery.
 

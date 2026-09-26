@@ -1,44 +1,37 @@
-# Proposal Verification
+# Implementation verification
 
-Date: 2026-09-26. State: user approved revision `9635a9425` at 07:08:40 UTC. Implementation in progress, not ready for use.
+Approved 2026-09-26, revision `9635a9425`. Implementation remains open until the operational acceptance gates below pass. No production service or Tailscale configuration changed.
 
-## Implementation checkpoint
+## Current evidence
 
-- Coordinator: chick. Current branch remains `codex/systemone-config-routing`; unrelated dirty changes are preserved.
-- New code under `crates/jcode-app-core/src/automations/`, daemon integration under `server/automations.rs`, CLI under `src/cli/automations*.rs`. Dependencies: chrono-tz for IANA timezone rules, axum for maintained HTTP parsing, locally bundled HTMX 2.0.8 with license.
-- Expected RED evidence: coordinated test `8663865ve4` failed for missing Schedule/Store, `9602194jto` failed for missing Config and foundation symbols before implementation.
-- Integration checks `2853684wlu` and `45837886bp` failed on new-code compile errors. No passing implementation verification claimed. Security/lifecycle review found draft defects; fixes and regression tests remain in progress.
-- No live service installation, linger changes, Tailscale route changes, automation enablement, or shared-daemon restart was performed by this feature work. External server reloads interrupted workers; source and tool evidence remain authoritative.
-- Remaining acceptance: all unchecked tasks in tasks.md, including actual daemon skill execution, browser workflows, second-device access and service/logout gates. Do not archive or mark complete based on this checkpoint.
+- `777039ehbc` (36 library tests and two CLI tests): `cargo test -p jcode-app-core automations:: --lib`, `cargo test -p jcode cli::automations:: --lib`, and `cargo check -p jcode --bin jcode` passed on the follow-through implementation.
+- Deterministic real-Agent tests verify installed skill activation in the dynamic system prompt, captured workspace/session identity, final response and source digest, provider failure, missing skill/directory, unsupported provider selection, human-input blocking, cancellation acknowledgement, and listener recovery after a bind conflict. A fake provider supplies deterministic responses, so this is representative integration evidence, not proof of a live-provider deployment.
+- Storage tests cover version/corruption preservation, single writer, persisted claim, serial execution, fast/slow completion, interval boundaries, DST gaps/folds, invalid future timezone isolation, restart interruption, output truncation and retention.
+- Real HTTP tests cover pairing, expiry, local/remote cookie security, origin isolation, CSRF, token replay, revocation, body limits, creation, edit recovery, calendar preview and native edit routes.
+- Provisioning tests cover actual flat Tailscale ServeConfig parsing, conflicting routes/Funnel, exact unrelated-config comparison, command output draining, timeouts when descendants retain pipes, and distinct systemd Environment/WorkingDirectory/ExecStart quoting. CLI initialization and provisioning share a tested exclusive mutation lock. These tests perform no live Tailscale or systemd mutation.
+- Fresh TUI build `286042n7ow` passed using `scripts/dev_cargo.sh build --profile selfdev -p jcode --bin jcode`. Coordinated builds had aborted before execution during external reloads, so the documented fallback was used.
+- Managed Chromium session `automation-bulletin-chick`, isolated daemon/data/socket/runtime: pairing, one-minute creation, calendar edit, validation recovery and pause persisted correctly. At 390px width there was no horizontal overflow.
+- With all application JavaScript requests blocked (`typeof htmx === "undefined"`), native edit navigation restored saved calendar fields, changing to `15m` persisted 900 seconds without duplicating the definition or enabling a paused schedule, and resume/pause redirected to controls reflecting the new state. Native preview returned three occurrences. A final follow-up adds a full native preview page and return link, covered by HTTP tests.
+- A real isolated local-provider run reached a persisted session and ultimately failed rather than succeeding. The fixture was paused, the browser closed, and the isolated daemon exited. This does not satisfy two successful unattended model runs.
 
-## Fresh evidence during implementation
+## Browser-driven correction
 
-- Final formatted-source check `288707poz9` PASSED: 22 automation library tests, one CLI authorization/parsing test, and `cargo check -p jcode --bin jcode`. Root test compilation required adding the missing `pending_question_tx: None` field in an existing selfdev test initializer, reflecting unrelated API drift.
-- Fresh binary build `085596x1tl` PASSED. Real managed Chromium acceptance on isolated daemon PASSED pairing, native one-minute creation, edit entry, corrected weekday/time/timezone edit preserving the same definition, validation-error recovery, and pause persistence. At 390px width the document had no horizontal overflow. Screenshot: `scratch/automation-acceptance/mobile.png` (not committed).
-- Runtime dispatched a due fixture into a real headless session and persisted a running record/session link. Successful final completion was NOT established with the local provider. The fixture was paused. This is not evidence of two successful unattended runs.
+Chromium native form POSTs under `Referrer-Policy: no-referrer` emitted a null Origin and were correctly rejected by CSRF checks. The implementation uses `strict-origin` instead: origin validation still applies, while referrers exclude path/query bootstrap tokens. Native browser pairing and forms passed after this change.
 
-## Remaining work, not a completed feature
+## Remaining acceptance gates
 
-- Complete two successful unattended runs, crash/restart recovery against the real daemon, timeout/permission cancellation tests using a representative provider, and safe shutdown confirmation.
-- Verify real Tailscale HTTPS from a second device, denied-device policy, logout/reboot service continuity, and owned-route cleanup. Live provisioning was not authorized or performed in this session.
-- Close UI contract gaps: interval shorthand (`15m`, `1h`) is not yet exposed, edit currently relies on JavaScript, full keyboard-only/no-JavaScript workflows and polling/page-state behavior need acceptance tests. Pause persisted but the native 204 response left the existing button stale until refresh.
-- Harden provisioning with concurrent-operation ownership tests, exact unrelated-route preservation after changes, process timeout descendants, and service-unit escaping verification. Status currently reports reachability, not full daemon/tailnet health.
-- Do not archive this change or mark all tasks complete. Implementation is committed as an opt-in checkpoint, with no production service or network change.
+1. Two successful unattended runs with a real configured provider, followed by restart without replay, against the final binary. Deterministic Agent tests do not replace this workflow.
+2. Real Tailscale HTTPS from a second authorized device, denied-device/outside-tailnet checks, remote outage recovery, and owned-route removal. Requires explicit live provisioning authorization and existing Tailscale login/HTTPS/policy prerequisites.
+3. User-service installation, logout/reboot continuity and uninstall in an authorized disposable environment. No linger or service changes were made here.
+4. Full keyboard-only, JavaScript-enabled pagination/polling state and timeout-deadline acceptance. Core native/no-application-script browser flows passed, but this is not complete scenario coverage.
+5. Status currently distinguishes reachability from readiness rather than proving full scheduler/tailnet health. Validate and improve this before operational signoff.
 
-- `135251v7kt`: automation library tests passed 20/20, including actual HTTP pairing/CSRF/origin isolation and durable schedule regressions. Subsequent CLI check in that command failed, then `21734265iw` passed `cargo check -p jcode --bin jcode` after correction.
-- `2756252eud`: fresh TUI binary built successfully with the supported `scripts/dev_cargo.sh build --profile selfdev -p jcode --bin jcode` fallback. Two coordinated build requests aborted before execution during external reloads.
-- Isolated daemon uses `scratch/automation-acceptance/home`, a separate `JCODE_RUNTIME_DIR`, and a distinct socket. Inherited named-provider environment needed clearing. No production daemon or service was modified. Live status confirmed loopback listener readiness.
-- Owned managed Chromium session `automation-bulletin-chick`: unauthenticated page protected, one-time browser pairing succeeded after a browser-discovered referrer-policy correction. `no-referrer` caused native form POST Origin to become null in Chromium. Use `strict-origin` instead: preserve origin validation while excluding paths/query tokens from referrers. This is a security-compatible implementation adjustment, not relaxed CSRF validation.
-- Browser inspection found an incorrect 900-second HTML minimum and stale page-level referrer override. Source fixes restore the approved 60-second minimum and consistent strict-origin policy. Full fresh-binary workflow retest remains required.
-- Foundation checkpoint committed as `f3cf9f764`. Remaining integration is not complete, and no real tailnet, service/logout, or unattended successful model-run acceptance has passed yet.
+Do not archive this change or claim deployment complete. Tasks stay unchecked where their complete named verification has not passed.
 
-Revision incorporates user-required weekday/time-of-day schedules and first-class Tailscale access. Supersedes the earlier interval-only/local-only scope.
+## Persistence and scope
 
-- Source evidence: inspected `crates/jcode-base/src/gateway.rs` for MagicDNS discovery and existing remote access. Its wildcard WebSocket transport is not reused as a private HTTP security model.
-- Dependency evidence: no `chrono-tz` in inspected Cargo.lock. IANA-aware calendar implementation requires library selection, not fixed-offset arithmetic.
-- Scenario mapping: tasks 1.1–1.3 cover storage, both schedule types, DST, clock changes and recovery. Tasks 2.1–2.2 cover execution/outcomes. Tasks 3.1–3.3 cover authenticated HTML, schedule controls and accessibility. Task 3.4 covers private Serve provisioning, remote authentication and failure boundaries. Tasks 4.1–4.2 cover unattended operation and actual second-device/network-boundary acceptance.
-- Dependency review: all task dependencies refer to defined earlier tasks and remain acyclic. User approval clears the implementation gate. Live service/network provisioning retains its explicit authorization boundaries.
-- PASS: `openspec validate daemon-skill-automations-bulletin --strict` and `git diff --check -- openspec/changes/daemon-skill-automations-bulletin` completed successfully after this revision.
-- NOT RUN: compilation, runtime, browser, service, Tailscale provisioning, second-device, logout, or DST implementation checks. This is an artifact revision only.
-
-Approved decisions: skip nonexistent DST times, use the earlier repeated time, private Tailscale Serve HTTPS plus app browser pairing, one calendar time per definition, existing serial execution/retention/deadline defaults. Human-controlled Tailscale login, HTTPS configuration, network policy and endpoint permissions remain explicit provisioning prerequisites. Their absence must block remote readiness claims.
+- `f3cf9f764`: durable timezone-aware foundation.
+- `e775383d4`: opt-in daemon, HTTP and provisioning integration checkpoint.
+- Follow-through changes fix native UI workflows, cancellation races, future-zone recovery and provisioning ownership/process boundaries.
+- Unrelated dirty work remains untouched except the necessary missing `pending_question_tx: None` test initializer required to compile existing CLI tests.
+- Proposal validation: `openspec validate daemon-skill-automations-bulletin --strict`.

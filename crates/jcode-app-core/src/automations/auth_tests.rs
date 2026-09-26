@@ -1,6 +1,73 @@
 use super::*;
 
 #[tokio::test]
+async fn expired_bootstrap_is_rejected_and_remote_cookie_is_secure() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Arc::new(Mutex::new(
+        Store::open(dir.path().join("state.json")).unwrap(),
+    ));
+    let state = app_state(
+        store,
+        WebConfig {
+            local_origin: "http://127.0.0.1:8123".into(),
+            tailnet_origin: Some("https://node.test.ts.net:8443".into()),
+            control_token: "test-control".into(),
+            default_working_dir: dir.path().into(),
+            default_provider: None,
+            default_model: None,
+        },
+    );
+    state.bootstrap.lock().await.insert(
+        "expired".into(),
+        (
+            state.config.local_origin.clone(),
+            Utc::now() - Duration::seconds(1),
+        ),
+    );
+    assert_eq!(
+        login(
+            State(state.clone()),
+            axum::Form(Login {
+                token: "expired".into()
+            })
+        )
+        .await
+        .status(),
+        StatusCode::UNAUTHORIZED
+    );
+    assert!(state.sessions.lock().await.is_empty());
+    state.bootstrap.lock().await.insert(
+        "remote".into(),
+        (
+            state.config.tailnet_origin.clone().unwrap(),
+            Utc::now() + Duration::seconds(60),
+        ),
+    );
+    let response = login(
+        State(state.clone()),
+        axum::Form(Login {
+            token: "remote".into(),
+        }),
+    )
+    .await;
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    for cookie in response.headers().get_all(header::SET_COOKIE) {
+        let cookie = cookie.to_str().unwrap();
+        assert!(cookie.contains("; Secure"));
+        assert!(cookie.contains("SameSite=Strict"));
+        assert!(!cookie.contains("Domain="));
+    }
+    assert!(
+        state
+            .sessions
+            .lock()
+            .await
+            .values()
+            .all(|(_, _, remote)| *remote)
+    );
+}
+
+#[tokio::test]
 async fn real_http_pairing_requires_origin_session_and_csrf() {
     let dir = tempfile::tempdir().unwrap();
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
