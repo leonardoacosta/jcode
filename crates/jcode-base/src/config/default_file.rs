@@ -25,6 +25,10 @@ impl Config {
 # Environment variables override these settings.
 # Run `/config` in jcode to see current settings.
 
+# Shared endpoint for all System One (Jev Decisions) requests.
+# Options: "9router" (default), "openrouter", or "typesafe".
+systemone_url = "9router"
+
 [keybindings]
 # Scroll keys (vim-style by default)
 # Supports: ctrl, alt, shift modifiers + any key
@@ -467,17 +471,12 @@ swarm_max_concurrent_agents = 32
 # swarm_strip_layout = "vertical"
 #
 # Recall uses Jev typed Decisions directly, without embeddings or a sidecar LLM.
-# Provider values: auto, jcode, openrouter, typesafe, aimlapi.
-# auto prefers Jcode, then OpenRouter, TypeSafe, AI/ML API credentials.
-# Env override: JCODE_MEMORY_JEV_PROVIDER
-# memory_jev_provider = "auto"
 # Minimum relevance probability (0.8..=1.0). Invalid values fail closed.
 # memory_jev_threshold = 0.8
-# BYOK: OPENROUTER_API_KEY, TYPESAFE_API_KEY, or AIMLAPI_API_KEY.
-# Jcode requires an eligible subscription and gateway memory_jev capability.
-# With a Jcode login and an older gateway, explicitly select a BYOK provider.
-# No fallback after entitlement, auth, billing, or network failure; no silent BYOK spend.
-# Memories remain local; the query and candidate memories go to the selected provider.
+# Configure the shared provider route using top-level systemone_url.
+# Set the selected provider's own key: OPENROUTER_API_KEY or TYPESAFE_API_KEY.
+# For 9Router, configure [providers.9router] and its api_key_env.
+# Memories remain local; the query and candidate memories go to the configured route.
 # No keys? Local memory list/search/remember/forget still work.
 #
 # Optional text-generating extraction is separate from recall. Disable it to

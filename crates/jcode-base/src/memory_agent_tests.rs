@@ -44,7 +44,8 @@ impl Drop for TestEnv {
 #[tokio::test]
 async fn missing_jev_access_clears_pending_without_fallback() {
     let _lock = crate::storage::lock_test_env();
-    let _env = TestEnv::set(&[("JCODE_MEMORY_JEV_PROVIDER", "disabled-for-test")]);
+    let home = tempfile::tempdir().unwrap();
+    let _env = TestEnv::set(&[("JCODE_HOME", home.path().to_str().unwrap())]);
     let sid = "jev-agent-no-fallback";
     memory::set_pending_memory(sid, "stale result".into(), 1);
     let (_, rx) = mpsc::channel(1);
@@ -62,8 +63,8 @@ fn manager_without_working_dir_does_not_infer_process_project() {
     assert!(manager.load_project_graph().unwrap().memories.is_empty());
 }
 
-/// Exercises the real credential resolver, subscription capability check, HTTP
-/// Decisions adapter, local stores, selection, and pending-injection boundary.
+/// Exercises the config-based credential resolver, HTTP Decisions adapter,
+/// local stores, selection, and pending-injection boundary.
 /// No provider calls or credentials leave this loopback fixture.
 #[tokio::test]
 async fn automatic_recall_uses_jev_http_without_embeddings_or_sidecar() {
@@ -73,11 +74,16 @@ async fn automatic_recall_uses_jev_http_without_embeddings_or_sidecar() {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     listener.set_nonblocking(true).unwrap();
     let base = format!("http://{}/v1", listener.local_addr().unwrap());
+    std::fs::write(
+        dir.path().join("config.toml"),
+        format!(
+            "systemone_url = \"9router\"\n\n[providers.9router]\ntype = \"openai-compatible\"\nbase_url = \"{base}\"\napi_key_env = \"JCODE_PROVIDER_9ROUTER_API_KEY\"\n"
+        ),
+    )
+    .unwrap();
     let _env = TestEnv::set(&[
         ("JCODE_HOME", dir.path().to_str().unwrap()),
-        ("JCODE_MEMORY_JEV_PROVIDER", "jcode"),
-        ("JCODE_API_KEY", "jcode_test_only_never_a_real_key"),
-        ("JCODE_API_BASE", &base),
+        ("JCODE_PROVIDER_9ROUTER_API_KEY", "jcode_test_only_never_a_real_key"),
     ]);
     let server = std::thread::spawn(move || {
         let deadline = Instant::now() + Duration::from_secs(10);
@@ -120,13 +126,11 @@ async fn automatic_recall_uses_jev_http_without_embeddings_or_sidecar() {
                 bytes.extend_from_slice(&chunk[..n]);
             }
             let headers = String::from_utf8_lossy(&bytes[..header_end]);
-            let response = if headers.starts_with("GET /v1/me ") {
-                serde_json::json!({"capabilities":{"memory_jev":true}})
-            } else {
-                assert!(headers.starts_with("POST /v1/decisions "));
+            let response = {
+                assert!(headers.starts_with("POST /v1/systemone "));
                 let body: serde_json::Value =
                     serde_json::from_slice(&bytes[header_end..header_end + length]).unwrap();
-                assert_eq!(body["model"], "typesafe/jev-1.13");
+                assert_eq!(body["model"], "openrouter/typesafe/jev-1.13");
                 let state: serde_json::Value =
                     serde_json::from_str(body["state"].as_str().unwrap()).unwrap();
                 let mut answers = serde_json::Map::new();

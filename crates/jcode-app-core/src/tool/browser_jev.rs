@@ -549,13 +549,13 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "requires an eligible Jcode account, deployed browser_jev capability, and makes one small subscription Jev request"]
-    async fn live_subscription_jev_decision_smoke() {
+    #[ignore = "requires the configured System One endpoint and makes one small Jev request"]
+    async fn live_configured_systemone_jev_decision_smoke() {
         let transport = JevTransport::new().unwrap();
         assert_eq!(
             transport.provider_name(),
-            "jcode",
-            "Set JCODE_BROWSER_JEV_PROVIDER=jcode and sign in with jcode account login. BYOK is not subscription validation."
+            "9router",
+            "Set systemone_url = \"9router\" and configure [providers.9router] in config.toml."
         );
         let decision = transport.decide(&request()).await.unwrap();
         assert_eq!(decision.choice, "a0");
