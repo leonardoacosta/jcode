@@ -102,7 +102,7 @@ impl Config {
 - Spawn hook: {}
 - Review: {}
 - Judge: {}
-- Memory recall: Jev ({})
+- System One route: {}
 - Memory extraction sidecar: {}
 - Ambient: {}
 
@@ -296,7 +296,11 @@ impl Config {
                 .model
                 .as_deref()
                 .unwrap_or("(inherit current session)"),
-            self.agents.memory_jev_provider,
+            if self.systemone_url.trim().is_empty() {
+                "9router"
+            } else {
+                self.systemone_url.trim()
+            },
             if self.agents.memory_sidecar_enabled {
                 "enabled"
             } else {

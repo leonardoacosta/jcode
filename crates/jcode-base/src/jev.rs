@@ -1,7 +1,7 @@
 //! Shared Jev typed Decisions transport, separate from chat completions.
 //!
-//! BYOK credentials are bound to fixed provider endpoints. The Jcode route uses
-//! the configured trusted account gateway, and checks its live purpose-specific
+//! Every purpose resolves through the shared `systemone_url` config setting.
+//! Jcode subscription access, where used, checks its live purpose-specific
 //! capability before each evaluation. Credential presence is not entitlement.
 
 use anyhow::{Result, anyhow, bail, ensure};
@@ -9,8 +9,11 @@ use reqwest::{Client, Response, Url};
 use serde_json::{Map, Value, json};
 use std::time::Duration;
 
+#[cfg(test)]
 const PROVIDER_ENV: &str = "JCODE_MEMORY_JEV_PROVIDER";
+#[cfg(test)]
 const BROWSER_PROVIDER_ENV: &str = "JCODE_BROWSER_JEV_PROVIDER";
+#[cfg(test)]
 const VOICE_PROVIDER_ENV: &str = "JCODE_VOICE_JEV_PROVIDER";
 const MAX_REQUEST_BYTES: usize = 80 * 1024;
 const MAX_RESPONSE_BYTES: usize = 256 * 1024;
@@ -42,6 +45,7 @@ impl JevPurpose {
         }
     }
 
+    #[cfg(test)]
     fn selector_with(
         self,
         env: impl FnOnce(&str) -> Result<String, std::env::VarError>,
@@ -66,8 +70,10 @@ impl JevPurpose {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum JevProvider {
+    NineRouter,
     OpenRouter,
     TypeSafe,
+    #[cfg(test)]
     Aimlapi,
     Jcode,
 }
@@ -75,17 +81,22 @@ enum JevProvider {
 impl JevProvider {
     fn name(self) -> &'static str {
         match self {
+            Self::NineRouter => "9router",
             Self::OpenRouter => "openrouter",
             Self::TypeSafe => "typesafe",
+            #[cfg(test)]
             Self::Aimlapi => "aimlapi",
             Self::Jcode => "jcode",
         }
     }
 
+    #[cfg(test)]
     fn credentials(self) -> (&'static str, &'static str) {
         match self {
+            Self::NineRouter => ("JCODE_PROVIDER_9ROUTER_API_KEY", "provider-9router.env"),
             Self::OpenRouter => ("OPENROUTER_API_KEY", "openrouter.env"),
             Self::TypeSafe => ("TYPESAFE_API_KEY", "typesafe.env"),
+            #[cfg(test)]
             Self::Aimlapi => ("AIMLAPI_API_KEY", "aimlapi.env"),
             Self::Jcode => (
                 crate::subscription_catalog::JCODE_API_KEY_ENV,
@@ -96,16 +107,23 @@ impl JevProvider {
 
     fn model(self) -> &'static str {
         match self {
+            Self::NineRouter => "openrouter/typesafe/jev-1.13",
             Self::OpenRouter | Self::Jcode => "typesafe/jev-1.13",
             Self::TypeSafe => "jev-latest",
+            #[cfg(test)]
             Self::Aimlapi => "typesafe/jev",
         }
     }
 
+    #[cfg(test)]
     fn endpoint(self, gateway_base: &str) -> Result<String> {
         Ok(match self {
+            Self::NineRouter => {
+                bail!("9Router System One endpoint comes from [providers.9router].base_url")
+            }
             Self::OpenRouter => "https://openrouter.ai/api/alpha/decisions".into(),
             Self::TypeSafe => "https://api.typesafe.ai/v1/systemone".into(),
+            #[cfg(test)]
             Self::Aimlapi => "https://api.aimlapi.com/v1/decisions".into(),
             Self::Jcode => format!("{}/decisions", trusted_gateway_base(gateway_base)?),
         })
@@ -127,29 +145,27 @@ impl JevClient {
     /// A configured credential route exists. This is not a health or entitlement
     /// probe. In particular, Jcode entitlement is checked live by `evaluate`.
     pub fn available() -> bool {
-        Self::resolve(JevPurpose::Memory).is_ok()
+        Self::resolve().is_ok()
     }
 
     pub fn new() -> Result<Self> {
         Self::for_purpose(JevPurpose::Memory)
     }
 
-    /// Browser routing is independent of memory configuration and defaults to
-    /// subscription-first auto selection. Evaluation never changes accounts.
+    /// Browser Decisions use the same configured System One route as all other
+    /// callers. Evaluation never changes accounts.
     pub fn for_browser() -> Result<Self> {
         Self::for_purpose(JevPurpose::Browser)
     }
 
-    /// Voice uses included Jcode access (whose gateway uses Typesafe directly),
-    /// then Typesafe BYOK when no Jcode credential exists. Other provider keys and
-    /// memory/browser configuration are ignored. JCODE_VOICE_JEV_PROVIDER may
-    /// explicitly select typesafe or jcode. Evaluation never changes accounts.
+    /// Voice Decisions use the same configured System One route as all other
+    /// callers. Evaluation never changes accounts.
     pub fn for_voice() -> Result<Self> {
         Self::for_purpose(JevPurpose::Voice)
     }
 
     fn for_purpose(purpose: JevPurpose) -> Result<Self> {
-        let (provider, api_key, endpoint, me_endpoint) = Self::resolve(purpose)?;
+        let (provider, api_key, endpoint, me_endpoint) = Self::resolve()?;
         let client = client_builder()
             .build()
             .map_err(|_| anyhow!("Could not initialize the Jev decision client"))?;
@@ -163,27 +179,16 @@ impl JevClient {
         })
     }
 
-    fn resolve(purpose: JevPurpose) -> Result<(JevProvider, String, String, Option<String>)> {
-        let selector = purpose.selector_with(
-            |key| std::env::var(key),
-            || crate::config::config().agents.memory_jev_provider.clone(),
-        )?;
-        // Unlike the API-key helper, this does not consult registered
-        // cross-provider fallback resolvers or the shared compatible slot.
-        let load = |env: &str, file: &str| {
-            crate::provider_catalog::load_env_value_from_env_or_config(env, file)
-        };
-        let (provider, api_key) = if purpose == JevPurpose::Voice {
-            resolve_voice_with(&selector, load)?
-        } else {
-            resolve_with(&selector, load)?
-        };
+    fn resolve() -> Result<(JevProvider, String, String, Option<String>)> {
+        let config = crate::config::config();
+        let (provider, api_key, endpoint) = resolve_systemone_with(&config, |env, file| {
+            crate::provider_catalog::load_api_key_from_env_or_config(env, file)
+        })?;
         let base = if provider == JevProvider::Jcode {
             crate::subscription_api::configured_api_base()
         } else {
             String::new()
         };
-        let endpoint = provider.endpoint(&base)?;
         let me_endpoint = if provider == JevProvider::Jcode {
             Some(format!("{}/me", trusted_gateway_base(&base)?))
         } else {
@@ -283,6 +288,82 @@ impl JevClient {
     }
 }
 
+fn resolve_systemone_with(
+    config: &crate::config::Config,
+    mut load_key: impl FnMut(&str, &str) -> Option<String>,
+) -> Result<(JevProvider, String, String)> {
+    const OPENROUTER_URL: &str = "https://openrouter.ai/api/alpha/decisions";
+    const TYPESAFE_URL: &str = "https://api.typesafe.ai/v1/systemone";
+    let selected = config.systemone_url.trim();
+    let selected = if selected.is_empty() {
+        "9router"
+    } else {
+        selected
+    };
+    match selected.to_ascii_lowercase().as_str() {
+        "9router" => {
+            let profile = config.providers.get("9router").ok_or_else(|| {
+                anyhow!("Jev System One: systemone_url is 9router but [providers.9router] is missing")
+            })?;
+            let base = Url::parse(profile.base_url.trim())
+                .map_err(|_| anyhow!("System One: invalid [providers.9router].base_url"))?;
+            ensure!(
+                matches!(base.scheme(), "http" | "https"),
+                "System One: 9Router base_url must use HTTP or HTTPS"
+            );
+            ensure!(
+                base.username().is_empty()
+                    && base.password().is_none()
+                    && base.query().is_none()
+                    && base.fragment().is_none(),
+                "System One: 9Router base_url cannot contain credentials, a query, or a fragment"
+            );
+            let endpoint = format!(
+                "{}/systemone",
+                profile.base_url.trim().trim_end_matches('/')
+            );
+            let key_env = profile
+                .api_key_env
+                .as_deref()
+                .ok_or_else(|| anyhow!("System One: [providers.9router] has no api_key_env"))?;
+            let env_file = profile
+                .env_file
+                .as_deref()
+                .unwrap_or("provider-9router.env");
+            let key = load_key(key_env, env_file).ok_or_else(|| {
+                anyhow!("System One: missing 9Router credential ({key_env} in {env_file})")
+            })?;
+            Ok((JevProvider::NineRouter, key, endpoint))
+        }
+        "openrouter" => {
+            let key = load_key("OPENROUTER_API_KEY", "openrouter.env").ok_or_else(|| {
+                anyhow!("System One: set OPENROUTER_API_KEY or configure openrouter.env")
+            })?;
+            Ok((JevProvider::OpenRouter, key, OPENROUTER_URL.to_string()))
+        }
+        "typesafe" => {
+            let key = load_key("TYPESAFE_API_KEY", "typesafe.env").ok_or_else(|| {
+                anyhow!("System One: set TYPESAFE_API_KEY or configure typesafe.env")
+            })?;
+            Ok((JevProvider::TypeSafe, key, TYPESAFE_URL.to_string()))
+        }
+        "jcode" | "subscription" | "jcode-subscription" => {
+            let key = load_key(
+                crate::subscription_catalog::JCODE_API_KEY_ENV,
+                crate::subscription_catalog::JCODE_ENV_FILE,
+            )
+            .ok_or_else(|| {
+                anyhow!("System One: set JCODE_API_KEY or configure jcode-subscription.env")
+            })?;
+            let base = crate::subscription_catalog::configured_api_base()
+                .unwrap_or_else(|| crate::subscription_catalog::DEFAULT_JCODE_API_BASE.to_string());
+            let base = trusted_gateway_base(&base)?;
+            Ok((JevProvider::Jcode, key, format!("{base}/decisions")))
+        }
+        _ => bail!("System One: systemone_url must be 9router, openrouter, typesafe, or jcode"),
+    }
+}
+
 #[cfg(not(test))]
 const TRANSIENT_RETRY_DELAYS: [Duration; 2] =
     [Duration::from_millis(600), Duration::from_millis(1800)];
@@ -319,6 +400,7 @@ fn client_builder() -> reqwest::ClientBuilder {
         .redirect(reqwest::redirect::Policy::none())
 }
 
+#[cfg(test)]
 fn resolve_voice_with(
     selector: &str,
     load: impl FnMut(&str, &str) -> Option<String>,
@@ -334,6 +416,7 @@ fn resolve_voice_with(
     }
 }
 
+#[cfg(test)]
 fn resolve_with(
     selector: &str,
     load: impl FnMut(&str, &str) -> Option<String>,
@@ -357,6 +440,7 @@ fn resolve_with(
     resolve_providers(providers, load)
 }
 
+#[cfg(test)]
 fn resolve_providers(
     providers: &[JevProvider],
     mut load: impl FnMut(&str, &str) -> Option<String>,
@@ -496,12 +580,15 @@ fn request_body_for(
     }
     // String state is accepted by every provider and preserves the existing
     // OpenRouter Decisions wire contract. Direct providers retain structured data.
-    let state =
-        if matches!(provider, JevProvider::OpenRouter | JevProvider::Jcode) && !state.is_string() {
-            Value::String(serde_json::to_string(&state).map_err(|_| anyhow!("Invalid Jev state"))?)
-        } else {
-            state
-        };
+    let state = if matches!(
+        provider,
+        JevProvider::NineRouter | JevProvider::OpenRouter | JevProvider::Jcode
+    ) && !state.is_string()
+    {
+        Value::String(serde_json::to_string(&state).map_err(|_| anyhow!("Invalid Jev state"))?)
+    } else {
+        state
+    };
     let body = serde_json::to_vec(&json!({
         "model": provider.model(), "state": state, "questions": questions
     }))
@@ -594,6 +681,138 @@ mod tests {
     fn browser_questions() -> Map<String, Value> {
         json!({"action": {"type": "choice", "instructions": "Choose the next browser action", "criteria": {"click": "Click the button", "stop": "Return control"}}})
             .as_object().unwrap().clone()
+    }
+
+    #[test]
+    fn systemone_route_defaults_to_9router_and_uses_its_provider_profile() {
+        let deserialized: crate::config::Config = serde_json::from_value(json!({})).unwrap();
+        assert_eq!(deserialized.systemone_url, "9router");
+        let mut config = crate::config::Config::default();
+        let mut profile = crate::config::NamedProviderConfig::default();
+        profile.base_url = "https://router.example:443/v1/".into();
+        profile.api_key_env = Some("JCODE_PROVIDER_9ROUTER_API_KEY".into());
+        profile.env_file = Some("provider-9router.env".into());
+        config.providers.insert("9router".into(), profile);
+
+        let (provider, key, endpoint) = resolve_systemone_with(&config, |env, file| {
+            assert_eq!(
+                (env, file),
+                ("JCODE_PROVIDER_9ROUTER_API_KEY", "provider-9router.env")
+            );
+            Some("route-test-key".into())
+        })
+        .unwrap();
+        assert_eq!(provider, JevProvider::NineRouter);
+        assert_eq!(key, "route-test-key");
+        assert_eq!(provider.model(), "openrouter/typesafe/jev-1.13");
+        assert_eq!(endpoint, "https://router.example:443/v1/systemone");
+    }
+
+    #[test]
+    fn systemone_direct_routes_require_only_the_selected_provider_key() {
+        for (route, expected_provider, expected_env, expected_file, expected_endpoint) in [
+            (
+                "openrouter",
+                JevProvider::OpenRouter,
+                "OPENROUTER_API_KEY",
+                "openrouter.env",
+                "https://openrouter.ai/api/alpha/decisions",
+            ),
+            (
+                "typesafe",
+                JevProvider::TypeSafe,
+                "TYPESAFE_API_KEY",
+                "typesafe.env",
+                "https://api.typesafe.ai/v1/systemone",
+            ),
+        ] {
+            let config = crate::config::Config {
+                systemone_url: route.into(),
+                ..Default::default()
+            };
+            let (provider, key, endpoint) = resolve_systemone_with(&config, |env, file| {
+                assert_eq!((env, file), (expected_env, expected_file));
+                Some("selected-route-key".into())
+            })
+            .unwrap();
+            assert_eq!(provider, expected_provider);
+            assert_eq!(key, "selected-route-key");
+            assert_eq!(endpoint, expected_endpoint);
+        }
+    }
+
+    #[test]
+    fn systemone_route_does_not_fall_back_when_selected_key_is_missing() {
+        let config = crate::config::Config {
+            systemone_url: "typesafe".into(),
+            ..Default::default()
+        };
+        let error = resolve_systemone_with(&config, |env, file| {
+            assert_eq!((env, file), ("TYPESAFE_API_KEY", "typesafe.env"));
+            None
+        })
+        .unwrap_err();
+        assert!(error.to_string().contains("TYPESAFE_API_KEY"));
+    }
+
+    #[test]
+    fn systemone_jcode_subscription_route_is_explicit_and_uses_account_key() {
+        let config = crate::config::Config {
+            systemone_url: "jcode".into(),
+            ..Default::default()
+        };
+        crate::env::set_var(
+            crate::subscription_catalog::JCODE_API_BASE_ENV,
+            "https://account.example/v1/",
+        );
+        let resolved = resolve_systemone_with(&config, |env, file| {
+            assert_eq!(
+                (env, file),
+                (
+                    crate::subscription_catalog::JCODE_API_KEY_ENV,
+                    crate::subscription_catalog::JCODE_ENV_FILE
+                )
+            );
+            Some("subscription-key".to_string())
+        })
+        .unwrap();
+        assert_eq!(resolved.0, JevProvider::Jcode);
+        assert_eq!(resolved.1, "subscription-key");
+        assert_eq!(resolved.2, "https://account.example/v1/decisions");
+        crate::env::remove_var(crate::subscription_catalog::JCODE_API_BASE_ENV);
+    }
+
+    #[test]
+    fn systemone_jcode_route_requires_subscription_key_without_fallback() {
+        let config = crate::config::Config {
+            systemone_url: "subscription".into(),
+            ..Default::default()
+        };
+        let error = resolve_systemone_with(&config, |env, file| {
+            assert_eq!(
+                (env, file),
+                (
+                    crate::subscription_catalog::JCODE_API_KEY_ENV,
+                    crate::subscription_catalog::JCODE_ENV_FILE
+                )
+            );
+            None
+        })
+        .unwrap_err();
+        assert!(error.to_string().contains("JCODE_API_KEY"));
+    }
+
+    #[test]
+    fn systemone_rejects_unknown_routes_without_consulting_other_credentials() {
+        let config = crate::config::Config {
+            systemone_url: "aimlapi".into(),
+            ..Default::default()
+        };
+        let error = resolve_systemone_with(&config, |_, _| {
+            panic!("unknown route must be rejected before credential lookup")
+        })
+        .unwrap_err();
+        assert!(error.to_string().contains("systemone_url must be 9router"));
     }
 
     #[test]

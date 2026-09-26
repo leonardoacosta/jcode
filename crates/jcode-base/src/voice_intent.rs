@@ -2,10 +2,9 @@
 //!
 //! This module only classifies. It cannot open paths, create sessions, or execute
 //! actions. Session IDs stay local and are returned only from the supplied list.
-//! Uses Jcode subscriber access (Typesafe upstream) or Typesafe direct BYOK via
+//! Uses the shared System One route from config.toml via
 //! [`crate::jev::JevClient::for_voice`], with shared auth, timeouts and bounds.
-//! JCODE_VOICE_JEV_PROVIDER is independent of memory/browser provider selectors.
-//! OpenRouter and AIMLAPI are never voice routes or fallback accounts.
+//! Voice, browser, and memory callers use the same configured route.
 
 use anyhow::{Context, Result, ensure};
 use serde_json::{Map, Value, json};

@@ -39,3 +39,6 @@ Pending after the v0.88 lineage merge: integrate separate System One routing com
 
 ## Verified v0.88 lineage merge
 Actual combined-tree suites passed: app-core 1513 passed/13 ignored, base 1611 passed/6 ignored, TUI 2413 passed/17 ignored. Base/TUI used scratch HOME with inherited provider credentials removed; no source tests skipped beyond their existing ignored markers. CLI cargo check passed. Source-editor links, local custom additions and both Git parent histories retained. Separate deployed routing delta and final artifact/runtime acceptance remain pending.
+
+## Named System One merge verified
+Merged b4f04fb86 routing history with explicit deployed Jcode subscription selector/key/endpoint regression additions. Retained concurrent entitlement transport fixture instead of weakening coverage. Duplicate config field removed while preserving legacy alias and custom model setting. Conflict-resolution script briefly truncated two uncommitted files; immediately recovered full default template and complete test tail from verified HEAD, then reran checks. Fresh Jev/memory tests: 56 passed/1 ignored; public memory tool tests: 5 passed; full CLI check passed. All fixes are in the existing main merge, no new branch.

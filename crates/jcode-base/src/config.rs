@@ -126,7 +126,6 @@ const CONFIG_ENV_KEYS: &[&str] = &[
     "JCODE_MEMORY_EMBEDDING_DIM",
     "JCODE_MEMORY_EMBEDDING_MODEL",
     "JCODE_MEMORY_ENABLED",
-    "JCODE_MEMORY_JEV_PROVIDER",
     "JCODE_ENABLE_MERMAID",
     "JCODE_MEMORY_MODEL",
     "JCODE_MEMORY_SIDECAR_ENABLED",
@@ -484,6 +483,11 @@ pub fn on_config_reloaded(listener: fn()) {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
+    /// Shared route for all System One (Jev Decisions) requests. Accepts
+    /// `9router` (default), `openrouter`, or `typesafe`.
+    #[serde(default = "default_systemone_url", alias = "SYSTEMONE_URL")]
+    pub systemone_url: String,
+
     /// Daemon behavior for autonomous wake requests.
     pub server: ServerConfig,
 
@@ -569,10 +573,6 @@ pub struct Config {
     /// Global "launch a new jcode" hotkeys (macOS). Baked once by auto-import.
     pub launch_hotkeys: LaunchHotkeysConfig,
 
-    /// System One endpoint selector or full URL. Defaults to the configured 9Router profile.
-    #[serde(alias = "SYSTEMONE_URL", skip_serializing_if = "String::is_empty")]
-    pub systemone_url: String,
-
     /// Optional model override for System One calls.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub systemone_model: Option<String>,
@@ -581,6 +581,10 @@ pub struct Config {
     /// them verbatim so a CLI settings save never wipes Desktop preferences.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub desktop: Option<toml::Table>,
+}
+
+fn default_systemone_url() -> String {
+    "9router".to_string()
 }
 
 /// Controls who owns autonomous wake execution.
