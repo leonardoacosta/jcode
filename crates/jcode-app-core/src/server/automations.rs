@@ -220,6 +220,17 @@ async fn execute(
     provider_template: Arc<dyn crate::provider::Provider>,
     cancel: CancellationToken,
 ) -> Result<(String, RunStatus)> {
+    execute_with_deadline(automation, run, store, provider_template, cancel, DEADLINE).await
+}
+
+async fn execute_with_deadline(
+    automation: &Automation,
+    run: &Run,
+    store: Arc<Mutex<Store>>,
+    provider_template: Arc<dyn crate::provider::Provider>,
+    cancel: CancellationToken,
+    deadline_duration: Duration,
+) -> Result<(String, RunStatus)> {
     use crate::{agent::Agent, protocol::ServerEvent, session::Session, tool::Registry};
     if !automation.working_dir.is_absolute() || !automation.working_dir.is_dir() {
         store.lock().await.pause(&automation.id)?;
@@ -293,25 +304,19 @@ async fn execute(
     let terminal = {
         let signal = agent.graceful_shutdown_signal();
         let mut agent_run = Box::pin(agent.run_once_streaming_mpsc(&prompt, Vec::new(), None, tx));
-        let deadline = tokio::time::sleep(DEADLINE);
+        let deadline = tokio::time::sleep(deadline_duration);
         tokio::pin!(deadline);
         let mut terminal = None;
+        let mut channel_open = true;
         loop {
             tokio::select! {
                 biased;
                 _ = cancel.cancelled() => { signal.fire(); let _ = (&mut agent_run).await; terminal = Some(RunStatus::Interrupted); break; }
                 _ = &mut deadline => { signal.fire(); let _ = (&mut agent_run).await; terminal = Some(RunStatus::Timeout); break; }
-                event = rx.recv() => match event {
+                event = rx.recv(), if channel_open => match event {
                     Some(ServerEvent::ToolStart { name, .. }) | Some(ServerEvent::ToolExec { name, .. }) if name == "ask_user_question" || name == "request_permission" => { signal.fire(); let _ = (&mut agent_run).await; terminal = Some(RunStatus::Blocked); break; }
                     Some(ServerEvent::ToolDone { name, error: Some(_), .. }) if name == "ask_user_question" || name == "request_permission" => { signal.fire(); let _ = (&mut agent_run).await; terminal = Some(RunStatus::Blocked); break; }
-                    // The streaming sender may drop before the agent future
-                    // resolves. Keep polling the agent instead of reporting an
-                    // empty successful run prematurely.
-                    None => {
-                        let result = (&mut agent_run).await;
-                        result.context("automation agent turn failed")?;
-                        break;
-                    },
+                    None => { channel_open = false; continue; },
                     _ => {}
                 },
                 result = &mut agent_run => { result.context("automation agent turn failed")?; break; }

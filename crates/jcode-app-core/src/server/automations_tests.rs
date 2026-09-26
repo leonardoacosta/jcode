@@ -122,6 +122,15 @@ async fn setup() -> (
     Arc<tokio::sync::Mutex<Store>>,
     Automation,
 ) {
+    setup_at(Utc::now() - chrono::Duration::seconds(120)).await
+}
+
+async fn setup_at(now: chrono::DateTime<Utc>) -> (
+    TestEnv,
+    tempfile::TempDir,
+    Arc<tokio::sync::Mutex<Store>>,
+    Automation,
+) {
     let lock = crate::storage::lock_test_env();
     let temp = tempfile::tempdir().unwrap();
     let home = EnvVarGuard::set("JCODE_HOME", temp.path());
@@ -135,7 +144,6 @@ async fn setup() -> (
     let store = Arc::new(tokio::sync::Mutex::new(
         Store::open(temp.path().join("state.json")).unwrap(),
     ));
-    let now = Utc::now() - chrono::Duration::seconds(120);
     let automation = Automation {
         id: "automation-test".into(),
         skill: "demo".into(),
@@ -338,6 +346,61 @@ async fn cancellation_acknowledges_interruption_and_keeps_run_slot_claimed() {
             .unwrap()
             .is_none()
     );
+}
+
+#[tokio::test]
+async fn deadline_waits_for_agent_ack_then_returns_timeout_without_finishing_run() {
+    let (_env, _temp, store, automation) = setup().await;
+    let claimed = claim(&store).await;
+    let provider = StreamingTestProvider {
+        delay: std::time::Duration::from_millis(120),
+        ..StreamingTestProvider::responding(vec![
+            StreamEvent::TextDelta("late output".into()),
+            StreamEvent::MessageEnd { stop_reason: None },
+        ])
+    };
+    let started = tokio::time::Instant::now();
+    let (_, status) = execute_with_deadline(
+        &automation,
+        &claimed,
+        store.clone(),
+        Arc::new(provider),
+        CancellationToken::new(),
+        std::time::Duration::from_millis(20),
+    )
+    .await
+    .unwrap();
+    assert_eq!(status, RunStatus::Timeout);
+    assert!(started.elapsed() >= std::time::Duration::from_millis(100));
+    let mut db = store.lock().await;
+    assert_eq!(db.runs().iter().find(|run| run.id == claimed.id).unwrap().status, RunStatus::Running);
+    assert!(db.claim_due(Utc::now() + chrono::Duration::seconds(1)).unwrap().is_none());
+}
+
+#[tokio::test]
+async fn recurrence_runs_twice_and_restart_does_not_replay_finished_runs() {
+    let start = Utc::now() - chrono::Duration::seconds(120);
+    let (_env, temp, store, automation) = setup_at(start).await;
+    let provider = Arc::new(StreamingTestProvider {
+        responses: Arc::new(Mutex::new(VecDeque::from([
+            vec![StreamEvent::TextDelta("first".into()), StreamEvent::MessageEnd { stop_reason: None }],
+            vec![StreamEvent::TextDelta("second".into()), StreamEvent::MessageEnd { stop_reason: None }],
+        ]))),
+        ..Default::default()
+    });
+    for expected in ["first", "second"] {
+        let due = store.lock().await.automations()[0].next_due.max(Utc::now());
+        let claimed = store.lock().await.claim_due(due).unwrap().unwrap().1;
+        let (output, status) = execute(&automation, &claimed, store.clone(), provider.clone(), CancellationToken::new()).await.unwrap();
+        assert_eq!(status, RunStatus::Success);
+        assert_eq!(output, expected);
+        store.lock().await.finish(&claimed.id, status, &output, due).unwrap();
+    }
+    drop(store);
+    let restarted = Arc::new(tokio::sync::Mutex::new(Store::open(temp.path().join("state.json")).unwrap()));
+    restarted.lock().await.recover(Utc::now()).unwrap();
+    assert!(restarted.lock().await.claim_due(Utc::now()).unwrap().is_none());
+    assert_eq!(provider.calls.lock().unwrap().len(), 2);
 }
 
 #[tokio::test]
