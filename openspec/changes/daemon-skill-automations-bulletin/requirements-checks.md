@@ -25,6 +25,13 @@ Scope: final implementation at `6c354519a`, rerun `256484bv7k`. This ledger maps
 
 ## Whole-result run
 
+Follow-up `473826m2wa` passed 42 automation tests, 14 Ambient compatibility tests and two CLI tests. New observations:
+- Equal due times selected ID `a` before `z` despite reverse insertion; moving the clock backward did not reclaim either completed occurrence.
+- Changing host `TZ` from Asia/Tokyo to Europe/London left the explicit America/Chicago occurrence at 2026-09-28 14:00 UTC.
+- An expired session received HTTP 401 and was removed. Holding all 16 request permits caused a real HTTP request to receive 429; releasing them restored HTTP 200. Permit saturation is controlled fixture evidence, not a 16-client load benchmark.
+
+These close the specific tie/backward-clock, host-zone independence, expired-session and semaphore-enforcement hypotheses. Remaining gaps in the table are not automatically closed by them.
+
 `256484bv7k` runs automation library tests (public HTTP, real Agent with deterministic provider, storage, scheduling, provisioning helpers), existing Ambient one-shot regressions, CLI tests, and CLI compilation against the final result. Exact final counts/result are recorded in verification.md after completion. The earlier final browser run used built production interfaces with isolated data and synthetic history, not screenshots alone.
 
 Full feature closure remains unproven while PARTIAL/BLOCKED rows remain. Local improvements are observed, not inferred from source inspection. Deployment gating is not equivalent to a passed acceptance check.

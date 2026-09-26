@@ -3,6 +3,57 @@ use chrono::{TimeZone, Utc};
 use std::fs;
 
 #[test]
+fn equal_due_times_use_ids_and_backward_clock_cannot_reclaim() {
+    let dir = tempfile::tempdir().unwrap();
+    let now = Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap();
+    let (mut first, skills) = demo_automation(dir.path(), now);
+    let mut second = first.clone();
+    first.id = "z".into();
+    second.id = "a".into();
+    let mut store = Store::open(dir.path().join("state.json")).unwrap();
+    store.create(first, &skills).unwrap();
+    store.create(second, &skills).unwrap();
+    let due = now + chrono::Duration::minutes(1);
+    let (selected, run) = store.claim_due(due).unwrap().unwrap();
+    assert_eq!(selected.id, "a");
+    store
+        .finish(&run.id, RunStatus::Success, "done", due)
+        .unwrap();
+    assert!(store.claim_due(now).unwrap().is_none());
+    let (selected, run) = store.claim_due(due).unwrap().unwrap();
+    assert_eq!(selected.id, "z");
+    store
+        .finish(&run.id, RunStatus::Success, "done", due)
+        .unwrap();
+    assert!(store.claim_due(due).unwrap().is_none());
+}
+
+#[test]
+fn explicit_timezone_does_not_follow_host_timezone() {
+    let _guard = crate::storage::lock_test_env();
+    let prior = std::env::var_os("TZ");
+    let schedule = Schedule::Calendar {
+        weekdays: vec![0],
+        time: "09:00".into(),
+        timezone: "America/Chicago".into(),
+    };
+    let now = Utc.with_ymd_and_hms(2026, 9, 26, 0, 0, 0).unwrap();
+    crate::env::set_var("TZ", "Asia/Tokyo");
+    let first = schedule.next_after(now);
+    crate::env::set_var("TZ", "Europe/London");
+    let second = schedule.next_after(now);
+    match prior {
+        Some(value) => crate::env::set_var("TZ", value),
+        None => crate::env::remove_var("TZ"),
+    }
+    assert_eq!(first.unwrap(), second.unwrap());
+    assert_eq!(
+        schedule.next_after(now).unwrap().to_rfc3339(),
+        "2026-09-28T14:00:00+00:00"
+    );
+}
+
+#[test]
 fn recovery_pauses_invalid_future_zone_without_blocking_valid_schedule() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("state.json");

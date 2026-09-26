@@ -4,6 +4,8 @@ Approved 2026-09-26, revision `9635a9425`. Implementation remains open until the
 
 ## Current evidence
 
+- Additional hypotheses `473826m2wa` PASSED: 42 automation tests, 14 Ambient tests and two CLI tests. Stable ID ordering and backward-clock non-replay, host-timezone independence, expired-session HTTP rejection and recovery from saturated request permits now have explicit assertions. See requirement ledger for exact observations and fixture limitations.
+
 - Whole-result rerun `256484bv7k` PASSED on final code: 39 automation tests, 14 existing Ambient/one-shot compatibility tests, two CLI tests, and CLI compilation. [Requirement ledger](requirements-checks.md) maps every requirement to checks, observations and remaining gaps. Earlier claims of complete traceability/full local closure were too broad: the checked flows passed, but not every specified scenario has a passing observation.
 
 - Final browser follow-through: `05504820lj` rebuilt the corrected binary and passed all eight HTTP/UI tests. Real Chromium keyboard pairing, pagination to the second page (nine retained rows), page retention across five-second polling, focused input preservation, automatic three-occurrence preview, and keyboard result expansion surviving polling all passed. Restart retained the two successful fixture records with definitions paused and no replay.

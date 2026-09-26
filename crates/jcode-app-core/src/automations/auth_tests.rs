@@ -1,6 +1,57 @@
 use super::*;
 
 #[tokio::test]
+async fn expired_sessions_and_saturated_requests_fail_closed_over_http() {
+    let dir = tempfile::tempdir().unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let origin = format!("http://{}", listener.local_addr().unwrap());
+    let state = app_state(
+        Arc::new(Mutex::new(
+            Store::open(dir.path().join("state.json")).unwrap(),
+        )),
+        WebConfig {
+            local_origin: origin.clone(),
+            tailnet_origin: None,
+            control_token: "test".into(),
+            default_working_dir: dir.path().into(),
+            default_provider: None,
+            default_model: None,
+        },
+    );
+    state.sessions.lock().await.insert(
+        "expired".into(),
+        (Utc::now() - Duration::seconds(1), "csrf".into(), false),
+    );
+    let cancel = CancellationToken::new();
+    let app = router(state.clone());
+    let shutdown = cancel.clone();
+    let task = tokio::spawn(async move {
+        axum::serve(listener, app)
+            .with_graceful_shutdown(shutdown.cancelled_owned())
+            .await
+            .unwrap()
+    });
+    let client = reqwest::Client::new();
+    let expired = client
+        .get(format!("{origin}/api/runs"))
+        .header("Cookie", "bulletin_session=expired")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(expired.status(), 401);
+    assert!(state.sessions.lock().await.is_empty());
+    let permits = state.requests.clone().acquire_many_owned(16).await.unwrap();
+    assert_eq!(client.get(&origin).send().await.unwrap().status(), 429);
+    drop(permits);
+    assert_eq!(client.get(&origin).send().await.unwrap().status(), 200);
+    cancel.cancel();
+    tokio::time::timeout(std::time::Duration::from_secs(3), task)
+        .await
+        .unwrap()
+        .unwrap();
+}
+
+#[tokio::test]
 async fn expired_bootstrap_is_rejected_and_remote_cookie_is_secure() {
     let dir = tempfile::tempdir().unwrap();
     let store = Arc::new(Mutex::new(
