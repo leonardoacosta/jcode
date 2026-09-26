@@ -1,20 +1,20 @@
 ## ADDED Requirements
 
 ### Requirement: Durable skill automation definitions
-The system SHALL accept an installed skill and fixed frequency, capture working directory and provider/model reference, and persist enabled state and next due time without changing one-shot schedules.
+The system SHALL accept an installed skill and either a fixed interval or weekday/time-of-day schedule with explicit IANA timezone, capture working directory and provider/model reference, and persist enabled state and next due time without changing one-shot schedules.
 
 #### Scenario: Create and restore
 - **WHEN** the owner creates an automation for an available skill with `15m`
 - **THEN** the system shows its captured directory and first due time 15 minutes later, and preserves the definition after restart.
 
 #### Scenario: Invalid configuration
-- **WHEN** creation uses an unknown skill, nonexistent directory, zero/negative/overflowing interval, unsupported unit, or interval below one minute
+- **WHEN** creation uses an unknown skill, nonexistent directory, zero/negative/overflowing interval, unsupported unit, interval below one minute, empty weekday selection, invalid local time, or unknown timezone
 - **THEN** validation identifies the invalid field and no definition is persisted.
 
 #### Scenario: Pause and change cadence
 - **WHEN** the owner pauses a definition
 - **THEN** no further run starts, and any current run may finish.
-- **WHEN** the owner resumes or changes its frequency
+- **WHEN** the owner resumes or changes its schedule
 - **THEN** the next due time is recalculated from the successful update time without a catch-up run.
 
 ### Requirement: Bounded daemon-owned recurrence
@@ -58,7 +58,7 @@ The system SHALL persist claims before execution, enforce a single writer, and f
 
 #### Scenario: Restart after an uncertain run
 - **WHEN** the daemon restarts with a running record
-- **THEN** it marks that record interrupted, does not replay it, and schedules future intervals normally.
+- **THEN** it marks that record interrupted, does not replay it, and schedules future occurrences normally.
 
 #### Scenario: Persistence or ownership failure
 - **WHEN** state is corrupt, an unknown version, unwritable, or already owned by another daemon
@@ -78,3 +78,30 @@ The system SHALL offer opt-in Linux user-service provisioning for the daemon and
 #### Scenario: Disable and uninstall
 - **WHEN** the owner uninstalls the managed service
 - **THEN** that service stops and is disabled while automation history and unrelated services remain intact.
+
+### Requirement: Timezone-aware weekday and time scheduling
+The system SHALL support nonempty weekday selections and one local HH:MM time per calendar definition, persist an explicit IANA timezone, and preview the next three occurrences with UTC offsets. Calendar execution SHALL follow local wall time, not a fixed UTC offset.
+
+#### Scenario: Weekday and daily schedules
+- **WHEN** the owner selects Monday through Friday at 09:00 America/Chicago
+- **THEN** only those weekdays match at 09:00 in that zone, and the next three matching occurrences are shown before saving.
+- **WHEN** all seven weekdays are selected
+- **THEN** the schedule runs daily at the selected local time.
+
+#### Scenario: Daylight-saving transitions
+- **WHEN** a selected local time does not exist during spring-forward
+- **THEN** that day's occurrence is skipped and the next valid matching date is used.
+- **WHEN** a selected local time occurs twice during fall-back
+- **THEN** only its earlier instant is eligible, including after a restart between the two instants.
+
+#### Scenario: Zone stability and invalid timezone data
+- **WHEN** the host timezone changes
+- **THEN** an existing calendar definition retains its selected timezone and local time.
+- **WHEN** the persisted timezone cannot be resolved
+- **THEN** that definition pauses with an actionable error rather than falling back to UTC or the host timezone.
+
+#### Scenario: Missed calendar occurrence and schedule edit
+- **WHEN** the daemon resumes after a calendar occurrence was missed during downtime
+- **THEN** it schedules the next future match without replaying the missed occurrence.
+- **WHEN** the owner changes weekdays, time, timezone, or schedule mode
+- **THEN** the next due time is recomputed strictly after the update and previously claimed occurrences are not duplicated.
