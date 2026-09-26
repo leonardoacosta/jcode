@@ -4,6 +4,8 @@ Approved 2026-09-26, revision `9635a9425`. Implementation remains open until the
 
 ## Current evidence
 
+- Whole-result rerun `256484bv7k` PASSED on final code: 39 automation tests, 14 existing Ambient/one-shot compatibility tests, two CLI tests, and CLI compilation. [Requirement ledger](requirements-checks.md) maps every requirement to checks, observations and remaining gaps. Earlier claims of complete traceability/full local closure were too broad: the checked flows passed, but not every specified scenario has a passing observation.
+
 - Final browser follow-through: `05504820lj` rebuilt the corrected binary and passed all eight HTTP/UI tests. Real Chromium keyboard pairing, pagination to the second page (nine retained rows), page retention across five-second polling, focused input preservation, automatic three-occurrence preview, and keyboard result expansion surviving polling all passed. Restart retained the two successful fixture records with definitions paused and no replay.
 - Browser checks caught and fixed stale `dirty.form` references, duplicate hidden `edit_id` inputs, an obsolete inline HTMX handler incompatible with no-eval CSP, and focus protection suppressing deliberate pagination. Regression assertions cover the asset defects. Owned browser and isolated daemon were closed afterward.
 
