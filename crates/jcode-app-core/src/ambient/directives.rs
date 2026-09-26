@@ -43,9 +43,20 @@ fn save_directives(directives: &[UserDirective]) -> Result<()> {
 
 /// Store a new directive from an email reply.
 pub fn add_directive(text: String, in_reply_to: String) -> Result<()> {
+    add_directive_with_id(
+        format!("dir_{:08x}", rand::random::<u32>()),
+        text,
+        in_reply_to,
+    )
+}
+
+pub fn add_directive_with_id(id: String, text: String, in_reply_to: String) -> Result<()> {
     let mut directives = load_directives();
+    if directives.iter().any(|directive| directive.id == id) {
+        return Ok(());
+    }
     directives.push(UserDirective {
-        id: format!("dir_{:08x}", rand::random::<u32>()),
+        id,
         text,
         received_at: Utc::now(),
         in_reply_to_cycle: in_reply_to,

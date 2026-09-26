@@ -10,9 +10,9 @@ pub use jcode_config_types::{
     KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
     MarkdownSpacingMode, NamedProviderAuth, NamedProviderConfig, NamedProviderModelConfig,
     NamedProviderType, NativeScrollbarConfig, NotificationsConfig, OverscrollStatusMode,
-    PowerConfig, ProviderConfig, ProviderTierConfig, ReasoningDisplayMode, RouterConfig, SafetyConfig, SessionPickerResumeAction,
-    SponsorsConfig, SwarmSpawnMode, SwarmStripLayout, TerminalConfig, UpdateChannel,
-    WebSearchConfig, WebSearchEngine,
+    PowerConfig, ProviderConfig, ProviderTierConfig, ReasoningDisplayMode, RouterConfig,
+    SafetyConfig, SessionPickerResumeAction, SponsorsConfig, SwarmSpawnMode, SwarmStripLayout,
+    TerminalConfig, UpdateChannel, WebSearchConfig, WebSearchEngine,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -82,6 +82,11 @@ const CONFIG_ENV_KEYS: &[&str] = &[
     "JCODE_EFFORT_DECREASE_KEY",
     "JCODE_EFFORT_INCREASE_KEY",
     "JCODE_EMAIL_REPLY_ENABLED",
+    "JCODE_AGENTMAIL_API_KEY",
+    "JCODE_AGENTMAIL_ENABLED",
+    "JCODE_AGENTMAIL_REPLY_ENABLED",
+    "JCODE_AGENTMAIL_INBOX_ID",
+    "JCODE_AGENTMAIL_ALLOWED_SENDERS",
     "JCODE_EMAIL_TO",
     "JCODE_FOCUS_HOOK",
     "JCODE_GATEWAY_BIND_ADDR",
@@ -748,6 +753,10 @@ mod tests;
 #[cfg(test)]
 #[path = "config_color_tests.rs"]
 mod color_tests;
+
+#[cfg(test)]
+#[path = "config/agentmail_tests.rs"]
+mod agentmail_tests;
 
 /// Whether integration discovery settings carry no information beyond the shipped
 /// default, so `[sponsors]` can be left out of written config files.

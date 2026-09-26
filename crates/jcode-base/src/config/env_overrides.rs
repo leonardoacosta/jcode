@@ -601,6 +601,25 @@ impl Config {
         if let Ok(v) = std::env::var("JCODE_SMTP_PASSWORD") {
             self.safety.email_password = Some(v);
         }
+        if let Ok(v) = std::env::var("JCODE_AGENTMAIL_API_KEY") {
+            self.safety.agentmail_api_key = Some(v);
+        }
+        if let Ok(v) = std::env::var("JCODE_AGENTMAIL_ENABLED")
+            && let Some(parsed) = parse_env_bool(&v)
+        {
+            self.safety.agentmail_enabled = parsed;
+        }
+        if let Ok(v) = std::env::var("JCODE_AGENTMAIL_REPLY_ENABLED")
+            && let Some(parsed) = parse_env_bool(&v)
+        {
+            self.safety.agentmail_reply_enabled = parsed;
+        }
+        if let Ok(v) = std::env::var("JCODE_AGENTMAIL_INBOX_ID") {
+            self.safety.agentmail_inbox_id = Some(v);
+        }
+        if let Ok(v) = std::env::var("JCODE_AGENTMAIL_ALLOWED_SENDERS") {
+            self.safety.agentmail_allowed_senders = parse_env_list(&v);
+        }
         if let Ok(v) = std::env::var("JCODE_EMAIL_TO") {
             self.safety.email_to = Some(v);
             self.safety.email_enabled = true;

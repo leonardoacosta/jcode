@@ -3508,6 +3508,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-stream",
+ "tokio-tungstenite",
  "tokio-util",
  "unicode-width",
  "url",

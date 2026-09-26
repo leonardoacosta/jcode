@@ -386,7 +386,6 @@ pub struct CompactionConfig {
     pub goal_window_turns: usize,
 
     // ── Jev compaction ────────────────────────────────────────────────────
-
     /// [jev] Probability threshold for keeping a tool call or result (0.0-1.0).
     /// Calls scored below this are dropped.
     pub jev_keep_threshold: f64,
@@ -1423,6 +1422,17 @@ pub struct SafetyConfig {
     pub jade_relay_launch_enabled: bool,
     /// Default working directory for remotely launched headed sessions
     pub jade_relay_launch_working_dir: Option<String>,
+    /// Enable AgentMail Ambient notifications (default: false)
+    pub agentmail_enabled: bool,
+    /// Enable AgentMail replies as Ambient directives (default: false)
+    pub agentmail_reply_enabled: bool,
+    /// AgentMail inbox identifier
+    pub agentmail_inbox_id: Option<String>,
+    /// AgentMail API key (prefer JCODE_AGENTMAIL_API_KEY env var)
+    #[serde(skip_serializing)]
+    pub agentmail_api_key: Option<String>,
+    /// Sender identities permitted to submit Ambient directives
+    pub agentmail_allowed_senders: Vec<String>,
 }
 
 impl Default for SafetyConfig {
@@ -1458,6 +1468,11 @@ impl Default for SafetyConfig {
             jade_relay_reply_enabled: false,
             jade_relay_launch_enabled: false,
             jade_relay_launch_working_dir: None,
+            agentmail_enabled: false,
+            agentmail_reply_enabled: false,
+            agentmail_inbox_id: None,
+            agentmail_api_key: None,
+            agentmail_allowed_senders: Vec::new(),
         }
     }
 }

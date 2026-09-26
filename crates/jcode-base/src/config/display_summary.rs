@@ -126,6 +126,8 @@ impl Config {
 - Telegram replies: {}
 - Discord: {}
 - Discord replies: {}
+- AgentMail: {}
+- AgentMail replies: {}
 
 *Edit the config file or set environment variables to customize.*
 *Environment variables (e.g., `JCODE_SCROLL_UP_KEY`, `JCODE_GATEWAY_ENABLED`) override file settings.*"#,
@@ -364,6 +366,25 @@ impl Config {
                 "disabled"
             },
             if self.safety.discord_reply_enabled {
+                "enabled"
+            } else {
+                "disabled"
+            },
+            if self.safety.agentmail_enabled {
+                if self.safety.agentmail_api_key.is_some()
+                    && self.safety.agentmail_inbox_id.is_some()
+                    && self.safety.email_to.is_some()
+                {
+                    "enabled (configured)"
+                } else {
+                    "enabled (misconfigured)"
+                }
+            } else {
+                "disabled"
+            },
+            if self.safety.agentmail_reply_enabled
+                && !self.safety.agentmail_allowed_senders.is_empty()
+            {
                 "enabled"
             } else {
                 "disabled"

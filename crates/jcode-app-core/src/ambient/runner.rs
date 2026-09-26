@@ -555,6 +555,13 @@ impl AmbientRunnerHandle {
         // infrastructure.
         if ambient_enabled {
             let safety_config = config().safety.clone();
+            if safety_config.agentmail_reply_enabled {
+                let agentmail_config = safety_config.clone();
+                tokio::spawn(async move {
+                    crate::notifications::agentmail_reply_loop(agentmail_config).await;
+                });
+                logging::info("Ambient runner: AgentMail reply listener spawned");
+            }
             if safety_config.email_reply_enabled
                 && safety_config.email_imap_host.is_some()
                 && safety_config.email_enabled
