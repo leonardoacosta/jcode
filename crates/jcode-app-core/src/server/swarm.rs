@@ -1053,21 +1053,8 @@ pub(super) async fn remove_session_from_swarm(
 
     let mut elected_coordinator = None;
     if was_coordinator {
-        let new_coordinator = {
-            let swarms = swarms_by_id.read().await;
-            let members = swarm_members.read().await;
-            swarms.get(swarm_id).and_then(|swarm| {
-                swarm
-                    .iter()
-                    .filter_map(|id| {
-                        members
-                            .get(id)
-                            .filter(|member| !member.is_headless)
-                            .map(|_| id.clone())
-                    })
-                    .min()
-            })
-        };
+        let new_coordinator =
+            elect_swarm_coordinator_candidate(swarm_id, swarm_members, swarms_by_id).await;
 
         {
             let mut coordinators = swarm_coordinators.write().await;
@@ -1210,6 +1197,65 @@ pub(super) async fn remove_session_from_swarm(
         ],
     );
     broadcast_swarm_status(swarm_id, swarm_members, swarms_by_id).await;
+}
+
+/// Elect from a snapshot of the swarm index without holding both shared maps
+/// at once. The maps are updated independently, so selection has always been
+/// best-effort; taking separate snapshots preserves that contract while
+/// preventing lock-order cycles with subscribe/rename bookkeeping.
+async fn elect_swarm_coordinator_candidate(
+    swarm_id: &str,
+    swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
+    swarms_by_id: &Arc<RwLock<HashMap<String, HashSet<String>>>>,
+) -> Option<String> {
+    elect_swarm_coordinator_candidate_with_snapshot_hook(
+        swarm_id,
+        swarm_members,
+        swarms_by_id,
+        || {},
+    )
+    .await
+}
+
+async fn elect_swarm_coordinator_candidate_with_snapshot_hook<F>(
+    swarm_id: &str,
+    swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
+    swarms_by_id: &Arc<RwLock<HashMap<String, HashSet<String>>>>,
+    after_snapshot: F,
+) -> Option<String>
+where
+    F: FnOnce(),
+{
+    let member_ids = {
+        let swarms = swarms_by_id.read().await;
+        swarms.get(swarm_id).cloned().unwrap_or_default()
+    };
+    after_snapshot();
+
+    let members = swarm_members.read().await;
+    member_ids
+        .iter()
+        .filter(|id| members.get(*id).is_some_and(|member| !member.is_headless))
+        .min()
+        .cloned()
+}
+
+#[cfg(test)]
+pub(super) async fn elect_swarm_coordinator_candidate_after_snapshot_for_test(
+    swarm_id: &str,
+    swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
+    swarms_by_id: &Arc<RwLock<HashMap<String, HashSet<String>>>>,
+    snapshot_complete: tokio::sync::oneshot::Sender<()>,
+) -> Option<String> {
+    elect_swarm_coordinator_candidate_with_snapshot_hook(
+        swarm_id,
+        swarm_members,
+        swarms_by_id,
+        move || {
+            let _ = snapshot_complete.send(());
+        },
+    )
+    .await
 }
 
 /// Set a member's stable task label, derived from its spawn prompt or task
@@ -1727,8 +1773,8 @@ fn parse_swarm_tasks(text: &str) -> Vec<SwarmTaskSpec> {
 mod tests {
     use super::{
         broadcast_swarm_plan, broadcast_swarm_plan_with_previous, broadcast_swarm_status,
-        member_in_status_broadcast, member_status_is_dead, now_unix_ms, parse_swarm_tasks,
-        refresh_swarm_task_staleness, remove_session_from_swarm,
+        elect_swarm_coordinator_candidate, member_in_status_broadcast, member_status_is_dead,
+        now_unix_ms, parse_swarm_tasks, refresh_swarm_task_staleness, remove_session_from_swarm,
         salvage_assignments_of_dead_member, swarm_ancestors, swarm_is_self_or_ancestor,
         swarm_spawn_depth, touch_swarm_task_progress, update_member_status,
         update_member_status_with_report,
@@ -1839,6 +1885,36 @@ mod tests {
         let (mut member, _rx) = swarm_member(session_id, "agent", false);
         member.report_back_to_session_id = parent.map(str::to_string);
         member
+    }
+
+    #[tokio::test]
+    async fn coordinator_election_uses_live_non_headless_member_snapshot() {
+        let (headless, _headless_rx) = swarm_member("a-headless", "agent", true);
+        let (first, _first_rx) = swarm_member("b-live", "agent", false);
+        let (second, _second_rx) = swarm_member("c-live", "agent", false);
+        let swarm_members = Arc::new(RwLock::new(HashMap::from([
+            ("a-headless".to_string(), headless),
+            ("b-live".to_string(), first),
+            ("c-live".to_string(), second),
+        ])));
+        let swarms_by_id = Arc::new(RwLock::new(HashMap::from([(
+            "swarm-1".to_string(),
+            HashSet::from([
+                "a-headless".to_string(),
+                "b-live".to_string(),
+                "c-live".to_string(),
+                "missing".to_string(),
+            ]),
+        )])));
+
+        assert_eq!(
+            elect_swarm_coordinator_candidate("swarm-1", &swarm_members, &swarms_by_id).await,
+            Some("b-live".to_string())
+        );
+        assert_eq!(
+            elect_swarm_coordinator_candidate("unknown", &swarm_members, &swarms_by_id).await,
+            None
+        );
     }
 
     #[test]

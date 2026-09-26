@@ -5,6 +5,41 @@ use tempfile::tempdir;
 use tokio::time::{Duration, sleep};
 
 #[tokio::test]
+async fn adopted_task_output_exists_while_running_and_is_replaced_on_completion() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    let (finish_tx, finish_rx) = tokio::sync::oneshot::channel();
+    let handle = tokio::spawn(async move {
+        finish_rx.await?;
+        Ok(jcode_tool_types::ToolOutput::new("complete output\n"))
+    });
+
+    let info = manager
+        .adopt_with_options("bash", None, "session-adopt-output", false, false, handle)
+        .await;
+
+    // Keep the adopted work blocked so this checks Running, not a lucky completion.
+    assert_eq!(
+        manager.status(&info.task_id).await.unwrap().status,
+        BackgroundTaskStatus::Running
+    );
+    assert!(info.output_file.is_file());
+    assert_eq!(manager.output(&info.task_id).await.as_deref(), Some(""));
+
+    finish_tx.send(()).unwrap();
+    let finished = manager
+        .wait(&info.task_id, Duration::from_secs(5), false)
+        .await
+        .expect("adopted task should exist");
+    assert_eq!(finished.task.status, BackgroundTaskStatus::Completed);
+    assert_eq!(
+        manager.output(&info.task_id).await.as_deref(),
+        Some("complete output\n")
+    );
+    Ok(())
+}
+
+#[tokio::test]
 async fn spawn_with_notify_emits_started_ui_activity() -> Result<()> {
     let tmp = tempdir()?;
     let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
@@ -185,7 +220,9 @@ async fn update_progress_keeps_the_determinate_high_water_mark() -> Result<()> {
         source: BackgroundTaskProgressSource::Reported,
     };
 
-    manager.update_progress(&info.task_id, progress(60.0)).await?;
+    manager
+        .update_progress(&info.task_id, progress(60.0))
+        .await?;
     let status = manager
         .update_progress(&info.task_id, progress(25.0))
         .await?
@@ -224,7 +261,9 @@ async fn update_progress_preserves_high_water_mark_through_reported_checkpoint()
         updated_at: Utc::now().to_rfc3339(),
         source: BackgroundTaskProgressSource::Reported,
     };
-    manager.update_progress(&info.task_id, progress.clone()).await?;
+    manager
+        .update_progress(&info.task_id, progress.clone())
+        .await?;
 
     progress.kind = BackgroundTaskProgressKind::Indeterminate;
     progress.percent = None;
@@ -248,7 +287,9 @@ async fn update_progress_preserves_high_water_mark_through_reported_checkpoint()
 #[tokio::test]
 async fn concurrent_progress_updates_cannot_overwrite_the_high_water_mark() -> Result<()> {
     let tmp = tempdir()?;
-    let manager = Arc::new(BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf()));
+    let manager = Arc::new(BackgroundTaskManager::with_output_dir(
+        tmp.path().to_path_buf(),
+    ));
     let info = manager
         .spawn_with_notify(
             "bash",

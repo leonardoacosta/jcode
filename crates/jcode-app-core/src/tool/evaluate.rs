@@ -101,12 +101,7 @@ impl Tool for EvaluateTool {
     }
 
     fn description(&self) -> &str {
-        "Call System One for typed probabilistic judgments. Use for yes/no questions (noul), \
-         choosing from defined options (choice), or rating on ordered levels (score). \
-         Send state (text or JSON) plus typed questions; get back probabilities your code \
-         can branch on directly. Ask one narrow judgment per question. Include a no-match \
-         option in choice criteria when nothing may fit. Keep policy in code — Jev returns \
-         probabilities, you set thresholds."
+        "Evaluate typed questions with System One and return probabilities."
     }
 
     fn parameters_schema(&self) -> Value {
@@ -117,11 +112,12 @@ impl Tool for EvaluateTool {
                 "intent": super::intent_schema_property(),
                 "state": {
                     "type": ["string", "object", "array"],
-                    "description": "Content to judge: plain text, or structured JSON with named fields. Raw evidence, not your conclusion about it."
+                    "items": {"type": ["string", "number", "boolean", "object", "null"]},
+                    "description": "Evidence to judge as text or structured JSON."
                 },
                 "questions": {
                     "type": "object",
-                    "description": "Map of question IDs to typed questions. Each question has 'type' (noul/choice/score) and 'instructions'. Choice also needs 'criteria' (map of option→description). Score also needs 'criteria' (ordered levels).",
+                    "description": "Questions by ID, with type, instructions, and choice or score criteria.",
                     "additionalProperties": {
                         "type": "object",
                         "required": ["type", "instructions"],
@@ -132,9 +128,12 @@ impl Tool for EvaluateTool {
                             },
                             "instructions": {
                                 "type": ["string", "object", "array"],
-                                "description": "The question to evaluate. For noul: yes/no question. For choice: which option fits? For score: where on the scale?"
+                    "items": {"type": ["string", "number", "boolean", "object", "null"]},
+                                "description": "Question or instructions to evaluate."
                             },
                             "criteria": {
+                                "type": ["object", "array"],
+                                "items": {"type": ["string", "number", "boolean", "object", "null"]},
                                 "description": "For choice: map of option → description. For score: ordered list of level descriptions."
                             }
                         }

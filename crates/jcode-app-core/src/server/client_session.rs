@@ -18,6 +18,7 @@ use crate::provider::Provider;
 use crate::tool::Registry;
 use crate::transport::WriteHalf;
 use anyhow::Result;
+use futures::FutureExt;
 use jcode_agent_runtime::InterruptSignal;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -365,7 +366,25 @@ async fn ensure_client_swarm_member(
     let member_name = fallback_name.or_else(|| friendly_name.clone());
     let mut inserted = false;
     {
+        let lock_wait_start = Instant::now();
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_member_lock_wait".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+            ],
+        );
         let mut members = swarm_members.write().await;
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_member_lock_acquired".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+                ("wait_ms", lock_wait_start.elapsed().as_millis().to_string()),
+            ],
+        );
         if let Some(member) = members.get_mut(client_session_id) {
             member.event_tx = client_event_tx.clone();
             member
@@ -411,7 +430,26 @@ async fn ensure_client_swarm_member(
     }
 
     if inserted && let Some(ref swarm_id_ref) = derived_swarm_id {
+        let lock_wait_start = Instant::now();
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_swarm_index_lock_wait".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+                ("swarm_id", swarm_id_ref.clone()),
+            ],
+        );
         let mut swarms = swarms_by_id.write().await;
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_swarm_index_lock_acquired".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+                ("wait_ms", lock_wait_start.elapsed().as_millis().to_string()),
+            ],
+        );
         swarms
             .entry(swarm_id_ref.to_string())
             .or_insert_with(HashSet::new)
@@ -429,6 +467,14 @@ async fn ensure_client_swarm_member(
             },
         )
         .await;
+        crate::logging::event_info(
+            "SESSION_LIFECYCLE",
+            vec![
+                ("phase", "subscribe_join_event_recorded".to_string()),
+                ("session_id", client_session_id.to_string()),
+                ("client_connection_id", client_connection_id.to_string()),
+            ],
+        );
     }
 
     crate::logging::event_info(
@@ -898,6 +944,17 @@ pub(super) async fn handle_subscribe(
         session_id: client_session_id.to_string(),
     });
     let _ = client_event_tx.send(ServerEvent::Done { id });
+    prewarm_idle_agent(agent);
+}
+
+fn prewarm_idle_agent(agent: &Arc<Mutex<Agent>>) -> bool {
+    // Poll local preparation once, without holding the agent across a yield.
+    // If a registry/provider lock would wait, abandon this optional attempt.
+    // Only the provider's network task can outlive this call.
+    let Ok(guard) = agent.try_lock() else {
+        return false;
+    };
+    guard.prewarm_provider().now_or_never().is_some()
 }
 
 async fn subscribe_should_mark_ready(
@@ -1203,6 +1260,7 @@ pub(super) async fn handle_resume_session(
     event_history: &Arc<RwLock<std::collections::VecDeque<SwarmEvent>>>,
     event_counter: &Arc<std::sync::atomic::AtomicU64>,
     swarm_event_tx: &broadcast::Sender<SwarmEvent>,
+    supports_pdf_panels: bool,
 ) -> Result<Arc<Mutex<Agent>>> {
     let resume_start = Instant::now();
     let incoming_client_instance_id = client_instance_id.map(str::to_string);
@@ -1386,6 +1444,7 @@ pub(super) async fn handle_resume_session(
             server_name,
             server_icon,
             None,
+            supports_pdf_panels,
         )
         .await?;
         let _ = client_event_tx.send(ServerEvent::Done { id });
@@ -1553,11 +1612,6 @@ pub(super) async fn handle_resume_session(
         }
     }
 
-    {
-        let mut agent_guard = agent.lock().await;
-        agent_guard.mark_closed();
-    }
-
     let (result, is_canary) = {
         let mut agent_guard = agent.lock().await;
         let result =
@@ -1677,6 +1731,7 @@ pub(super) async fn handle_resume_session(
                 server_name,
                 server_icon,
                 Some(was_interrupted),
+                supports_pdf_panels,
             )
             .await?;
             let _ = client_event_tx.send(ServerEvent::Done { id });

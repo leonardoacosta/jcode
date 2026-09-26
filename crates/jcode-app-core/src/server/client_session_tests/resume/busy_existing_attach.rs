@@ -75,8 +75,15 @@ async fn handle_resume_session_allows_live_attach_when_existing_agent_is_busy() 
             },
         ),
     ])));
-    let swarm_members = Arc::new(RwLock::new(HashMap::<String, SwarmMember>::new()));
-    let swarms_by_id = Arc::new(RwLock::new(HashMap::<String, HashSet<String>>::new()));
+    let rename_source_member = test_swarm_member("rename_source", "ready");
+    let swarm_members = Arc::new(RwLock::new(HashMap::from([(
+        "rename_source".to_string(),
+        rename_source_member,
+    )])));
+    let swarms_by_id = Arc::new(RwLock::new(HashMap::from([(
+        "swarm-test".to_string(),
+        HashSet::from(["rename_source".to_string()]),
+    )])));
     let file_touch = FileTouchService::new();
     let channel_subscriptions = Arc::new(RwLock::new(HashMap::<
         String,
@@ -134,6 +141,7 @@ async fn handle_resume_session_allows_live_attach_when_existing_agent_is_busy() 
         &event_history,
         &event_counter,
         &swarm_event_tx,
+        false,
     )
     .await?;
 
@@ -142,35 +150,99 @@ async fn handle_resume_session_allows_live_attach_when_existing_agent_is_busy() 
     // bookkeeping must never wait for the live agent lock, otherwise the
     // desktop's immediately following state request remains unread and times
     // out after ten seconds.
-    tokio::time::timeout(
-        std::time::Duration::from_secs(1),
-        handle_subscribe(
-            77,
-            Some("/tmp/jcode-busy-desktop-attach".to_string()),
-            Some(true),
-            false,
-            &mut client_selfdev,
-            target_session_id,
-            "conn_new",
-            &None,
-            &existing_agent,
-            &new_registry,
-            true,
-            &swarm_members,
-            &swarms_by_id,
-            &channel_subscriptions,
-            &channel_subscriptions_by_session,
-            &swarm_plans,
-            &swarm_coordinators,
-            &client_event_tx,
-            &mcp_pool,
-            &event_history,
-            &event_counter,
-            &swarm_event_tx,
-        ),
-    )
-    .await
-    .expect("subscribe bookkeeping must not wait for a busy live agent");
+    // Reproduce the lock-order cycle deterministically. The rename queues for
+    // the member map first. Coordinator election then snapshots the swarm
+    // index and pauses at the test hook while holding no index guard. Finally,
+    // subscribe queues for the member map. Once released, rename can update the
+    // index, coordinator election can inspect members, and subscribe can finish.
+    let member_map_guard = swarm_members.write().await;
+    let (rename_queued_tx, rename_queued_rx) = oneshot::channel();
+    let rename_task = tokio::spawn({
+        let swarm_members = Arc::clone(&swarm_members);
+        let swarms_by_id = Arc::clone(&swarms_by_id);
+        async move {
+            let _ = rename_queued_tx.send(());
+            rename_swarm_member_session(
+                "rename_source",
+                "rename_target",
+                &swarm_members,
+                &swarms_by_id,
+            )
+            .await;
+        }
+    });
+    rename_queued_rx.await?;
+
+    let (snapshot_complete_tx, snapshot_complete_rx) = oneshot::channel();
+    let election_task = tokio::spawn({
+        let swarm_members = Arc::clone(&swarm_members);
+        let swarms_by_id = Arc::clone(&swarms_by_id);
+        async move {
+            crate::server::swarm::elect_swarm_coordinator_candidate_after_snapshot_for_test(
+                "swarm-test",
+                &swarm_members,
+                &swarms_by_id,
+                snapshot_complete_tx,
+            )
+            .await
+        }
+    });
+    snapshot_complete_rx.await?;
+
+    let subscribe_task = tokio::spawn({
+        let existing_agent = Arc::clone(&existing_agent);
+        let new_registry = new_registry.clone();
+        let swarm_members = Arc::clone(&swarm_members);
+        let swarms_by_id = Arc::clone(&swarms_by_id);
+        let channel_subscriptions = Arc::clone(&channel_subscriptions);
+        let channel_subscriptions_by_session = Arc::clone(&channel_subscriptions_by_session);
+        let swarm_plans = Arc::clone(&swarm_plans);
+        let swarm_coordinators = Arc::clone(&swarm_coordinators);
+        let client_event_tx = client_event_tx.clone();
+        let mcp_pool = Arc::clone(&mcp_pool);
+        let event_history = Arc::clone(&event_history);
+        let event_counter = Arc::clone(&event_counter);
+        let swarm_event_tx = swarm_event_tx.clone();
+        async move {
+            let mut subscribe_client_selfdev = false;
+            handle_subscribe(
+                77,
+                Some("/tmp/jcode-busy-desktop-attach".to_string()),
+                Some(true),
+                false,
+                &mut subscribe_client_selfdev,
+                target_session_id,
+                "conn_new",
+                &None,
+                &existing_agent,
+                &new_registry,
+                true,
+                &swarm_members,
+                &swarms_by_id,
+                &channel_subscriptions,
+                &channel_subscriptions_by_session,
+                &swarm_plans,
+                &swarm_coordinators,
+                &client_event_tx,
+                &mcp_pool,
+                &event_history,
+                &event_counter,
+                &swarm_event_tx,
+            )
+            .await;
+        }
+    });
+
+    drop(member_map_guard);
+    let (rename_result, election_result, subscribe_result) =
+        tokio::time::timeout(std::time::Duration::from_secs(1), async {
+            tokio::join!(rename_task, election_task, subscribe_task)
+        })
+        .await
+        .expect("subscribe lock-order regression scenario must settle");
+    rename_result.expect("session rename task");
+    election_result.expect("coordinator election task");
+    subscribe_result.expect("subscribe bookkeeping task");
 
     // Resume and subscribe both answer request id 77, so each emits its own
     // Done. Collect both batches, otherwise the assertions below only ever see
