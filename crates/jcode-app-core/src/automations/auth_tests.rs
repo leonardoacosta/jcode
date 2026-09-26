@@ -91,6 +91,36 @@ async fn real_http_pairing_requires_origin_session_and_csrf() {
         .unwrap();
     assert_eq!(
         client
+            .get(format!("{origin}/api/status"))
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        401
+    );
+    let status = client
+        .get(format!("{origin}/api/status"))
+        .bearer_auth("control-test")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(status.status(), 200);
+    let status: serde_json::Value = status.json().await.unwrap();
+    assert_eq!(status["service"], "jcode-automation-bulletin");
+    assert_eq!(status["persistence_ready"], true);
+    assert_eq!(
+        client
+            .get(format!("{origin}/api/status"))
+            .header("Host", "node.test.ts.net:8443")
+            .bearer_auth("control-test")
+            .send()
+            .await
+            .unwrap()
+            .status(),
+        403
+    );
+    assert_eq!(
+        client
             .get(format!("{origin}/api/runs"))
             .send()
             .await

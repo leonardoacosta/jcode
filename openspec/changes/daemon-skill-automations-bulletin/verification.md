@@ -24,7 +24,7 @@ Chromium native form POSTs under `Referrer-Policy: no-referrer` emitted a null O
 2. Real Tailscale HTTPS from a second authorized device, denied-device/outside-tailnet checks, remote outage recovery, and owned-route removal. Requires explicit live provisioning authorization and existing Tailscale login/HTTPS/policy prerequisites.
 3. User-service installation, logout/reboot continuity and uninstall in an authorized disposable environment. No linger or service changes were made here.
 4. Full keyboard-only, JavaScript-enabled pagination/polling state and timeout-deadline acceptance. Core native/no-application-script browser flows passed, but this is not complete scenario coverage.
-5. Status currently distinguishes reachability from readiness rather than proving full scheduler/tailnet health. Validate and improve this before operational signoff.
+5. CLI status now queries a local-host-only authenticated control endpoint, reports identified bulletin service, persistence readiness and active/enabled counts. This does not prove remote tailnet reachability or a successful scheduler cycle. Remote operational status remains an acceptance gate.
 
 Do not archive this change or claim deployment complete. Tasks stay unchecked where their complete named verification has not passed.
 

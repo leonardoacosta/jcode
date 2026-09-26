@@ -105,6 +105,9 @@ impl Store {
     pub fn runs(&self) -> &[Run] {
         &self.state.runs
     }
+    pub fn persistence_ready(&self) -> bool {
+        !self.poisoned
+    }
     fn commit(&mut self, next: State) -> Result<()> {
         if self.poisoned {
             bail!("automation store persistence failed; reopen after restart")

@@ -99,10 +99,17 @@ pub(crate) async fn run(action: AutomationCommand, model: Option<&str>) -> Resul
                 .redirect(reqwest::redirect::Policy::none())
                 .build()?;
             let response = client
-                .get(format!("{}/", settings.local_origin()))
+                .get(format!("{}/api/status", settings.local_origin()))
+                .bearer_auth(&settings.control_token)
                 .send()
                 .await;
             let listener_reachable = response.is_ok();
+            let bulletin_status = match response {
+                Ok(response) if response.status().is_success() => {
+                    response.json::<serde_json::Value>().await.ok()
+                }
+                _ => None,
+            };
             println!(
                 "{}",
                 serde_json::to_string_pretty(&serde_json::json!({
@@ -110,6 +117,7 @@ pub(crate) async fn run(action: AutomationCommand, model: Option<&str>) -> Resul
                     "local_url": settings.local_origin(),
                     "tailnet_url": settings.tailnet_origin,
                     "listener_reachable": listener_reachable,
+                    "bulletin_status": bulletin_status,
                     "socket": settings.socket_path,
                     "note": "A reachable listener is not proof of authenticated bulletin or tailnet readiness."
                 }))?

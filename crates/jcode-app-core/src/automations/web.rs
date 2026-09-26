@@ -74,6 +74,7 @@ fn router(state: AppState) -> Router {
         .route("/assets/htmx.min.js", get(htmx))
         .route("/assets/bulletin.js", get(bulletin_js))
         .route("/api/bootstrap", post(bootstrap))
+        .route("/api/status", get(control_status))
         .route("/login", get(login_page).post(login))
         .route("/logout", post(logout))
         .route("/api/automations", get(list).post(create))
@@ -149,7 +150,7 @@ async fn authorize(state: AppState, request: Request<Body>, next: Next) -> Respo
             Err(_) => return StatusCode::REQUEST_TIMEOUT.into_response(),
         };
     let path = parts.uri.path();
-    if path == "/api/bootstrap" {
+    if path == "/api/bootstrap" || path == "/api/status" {
         if !local {
             return StatusCode::FORBIDDEN.into_response();
         }
@@ -254,6 +255,25 @@ struct BootstrapRequest {
 #[derive(Serialize)]
 struct BootstrapResponse {
     url: String,
+}
+async fn control_status(State(state): State<AppState>, headers: HeaderMap) -> Response {
+    if headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        != Some(format!("Bearer {}", state.config.control_token).as_str())
+    {
+        return StatusCode::UNAUTHORIZED.into_response();
+    }
+    let store = state.store.lock().await;
+    Json(serde_json::json!({
+        "service": "jcode-automation-bulletin",
+        "persistence_ready": store.persistence_ready(),
+        "automations": store.automations().len(),
+        "enabled_automations": store.automations().iter().filter(|a| a.enabled).count(),
+        "active_runs": store.runs().iter().filter(|r| r.status == RunStatus::Running).count(),
+        "tailnet_configured": state.config.tailnet_origin.is_some(),
+    }))
+    .into_response()
 }
 async fn bootstrap(
     State(s): State<AppState>,
