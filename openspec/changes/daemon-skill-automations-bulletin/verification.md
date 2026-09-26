@@ -4,6 +4,9 @@ Approved 2026-09-26, revision `9635a9425`. Implementation remains open until the
 
 ## Current evidence
 
+- Final browser follow-through: `05504820lj` rebuilt the corrected binary and passed all eight HTTP/UI tests. Real Chromium keyboard pairing, pagination to the second page (nine retained rows), page retention across five-second polling, focused input preservation, automatic three-occurrence preview, and keyboard result expansion surviving polling all passed. Restart retained the two successful fixture records with definitions paused and no replay.
+- Browser checks caught and fixed stale `dirty.form` references, duplicate hidden `edit_id` inputs, an obsolete inline HTMX handler incompatible with no-eval CSP, and focus protection suppressing deliberate pagination. Regression assertions cover the asset defects. Owned browser and isolated daemon were closed afterward.
+
 - `777039ehbc` (36 library tests and two CLI tests): `cargo test -p jcode-app-core automations:: --lib`, `cargo test -p jcode cli::automations:: --lib`, and `cargo check -p jcode --bin jcode` passed on the follow-through implementation.
 - Deterministic real-Agent tests verify installed skill activation in the dynamic system prompt, captured workspace/session identity, final response and source digest, provider failure, missing skill/directory, unsupported provider selection, human-input blocking, cancellation acknowledgement, and listener recovery after a bind conflict. A fake provider supplies deterministic responses, so this is representative integration evidence, not proof of a live-provider deployment.
 - `471784cekj`: 11 runtime tests passed, including a shortened test-only deadline retaining the run slot until agent acknowledgement and two successful executions followed by store reopen without replay. Production deadline remains 30 minutes. Closing the stream channel no longer bypasses deadline/cancellation observation.
@@ -21,10 +24,10 @@ Chromium native form POSTs under `Referrer-Policy: no-referrer` emitted a null O
 
 ## Remaining acceptance gates
 
-1. Live-account/provider smoke check and final-binary restart without replay. Two unattended real-daemon runs through a deterministic HTTP provider passed, but live model/account readiness remains unverified.
+1. Live-account/provider smoke check. Two unattended real-daemon runs through a deterministic HTTP provider and final-binary paused-definition restart passed, but live model/account readiness remains unverified.
 2. Real Tailscale HTTPS from a second authorized device, denied-device/outside-tailnet checks, remote outage recovery, and owned-route removal. Requires explicit live provisioning authorization and existing Tailscale login/HTTPS/policy prerequisites.
 3. User-service installation, logout/reboot continuity and uninstall in an authorized disposable environment. No linger or service changes were made here.
-4. Full keyboard-only and JavaScript-enabled pagination/polling browser acceptance. Core native/no-application-script flows and deterministic deadline acknowledgement passed, but this is not complete scenario coverage.
+4. Broader assistive-technology audit remains optional follow-up. Requested keyboard controls, no-application-script forms, mobile layout, JavaScript pagination/polling, and deterministic deadline acknowledgement have concrete checks above.
 5. CLI status now queries a local-host-only authenticated control endpoint, reports identified bulletin service, persistence readiness and active/enabled counts. This does not prove remote tailnet reachability or a successful scheduler cycle. Remote operational status remains an acceptance gate.
 
 Do not archive this change or claim deployment complete. Tasks stay unchecked where their complete named verification has not passed.

@@ -1,6 +1,15 @@
 use super::*;
 
 #[test]
+fn form_assets_have_one_edit_id_and_no_stale_inline_state() {
+    let html = include_str!("assets/index.html");
+    let script = include_str!("assets/bulletin.js");
+    assert_eq!(html.matches("name=\"edit_id\"").count(), 1);
+    assert!(!html.contains("hx-on:"));
+    assert!(!script.contains("dirty.form"));
+}
+
+#[test]
 fn weekday_form_values_reject_bad_days_without_dropping_them() {
     assert_eq!(parse_weekdays("0,2,6").unwrap(), vec![0, 2, 6]);
     assert!(parse_weekdays("0,7").is_err());
