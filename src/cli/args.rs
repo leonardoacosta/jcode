@@ -120,6 +120,9 @@ pub(crate) struct Args {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum Command {
+    /// Manage recurring skills and the private HTMX bulletin.
+    #[command(subcommand)]
+    Automations(super::automations::AutomationCommand),
     /// Start the agent server (background daemon)
     Serve {
         /// Internal: mark this server as temporary so it can self-clean when its owner exits.
