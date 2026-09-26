@@ -30,11 +30,6 @@ mod multiedit;
 mod open;
 mod patch;
 mod read;
-pub(crate) mod remote_desktop {
-    mod tool;
-    pub(crate) mod transport;
-    pub(crate) use tool::RemoteDesktopTool;
-}
 pub mod selfdev;
 pub(crate) mod serde_coerce;
 mod session_search;
@@ -321,16 +316,6 @@ impl Registry {
         });
         // Clone the Arc entries (cheap refcount bumps, not deep copies)
         let mut tools = base.clone();
-        let remote_desktop = &crate::config::config().remote_desktop;
-        if remote_desktop.validate().is_ok()
-            && remote_desktop.targets.iter().any(|target| target.enabled)
-        {
-            Self::insert_tool(
-                &mut tools,
-                "remote_desktop",
-                remote_desktop::RemoteDesktopTool::new(),
-            );
-        }
         // SkillTool needs the skills registry reference (shared across sessions)
         Self::insert_tool(
             &mut tools,

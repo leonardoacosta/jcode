@@ -208,6 +208,18 @@ fn walk(schema: &Value, spec: &DialectSpec, quirks: &LearnedQuirks) -> Value {
                     out.insert(key.clone(), value.clone());
                     continue;
                 }
+                // OpenAI-compatible endpoints use a regex engine that rejects
+                // lookaround, even though `pattern` itself is accepted.
+                if spec.id == "openai"
+                    && key == "pattern"
+                    && value.as_str().is_some_and(|pattern| {
+                        ["(?=", "(?!", "(?<=", "(?<!"]
+                            .iter()
+                            .any(|token| pattern.contains(token))
+                    })
+                {
+                    continue;
+                }
 
                 let normalized = match keyword_role(key) {
                     KeywordRole::SubschemaMap => match value {
@@ -256,6 +268,27 @@ fn walk(schema: &Value, spec: &DialectSpec, quirks: &LearnedQuirks) -> Value {
         }
         Value::Array(items) => Value::Array(items.iter().map(|i| walk(i, spec, quirks)).collect()),
         _ => schema.clone(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::registry::OPENAI;
+
+    #[test]
+    fn openai_drops_patterns_with_unsupported_lookaround() {
+        let schema = serde_json::json!({
+            "type": "object",
+            "properties": {
+                "email": {"type": "string", "pattern": "^(?!\\.)(?<!x)name@example\\.com$"},
+                "ordinary": {"type": "string", "pattern": "^[a-z]+$"}
+            }
+        });
+
+        let normalized = apply(&schema, &OPENAI);
+        assert!(normalized["properties"]["email"]["pattern"].is_null());
+        assert_eq!(normalized["properties"]["ordinary"]["pattern"], "^[a-z]+$");
     }
 }
 

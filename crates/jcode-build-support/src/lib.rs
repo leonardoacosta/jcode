@@ -253,7 +253,7 @@ pub fn write_current_dev_binary_source_metadata(
     write_dev_binary_source_metadata(&binary, source)
 }
 
-fn read_binary_version_report(binary: &Path) -> Result<BinaryVersionReport> {
+pub fn read_binary_version_report(binary: &Path) -> Result<BinaryVersionReport> {
     let output = Command::new(binary)
         .args(["version", "--json"])
         .env("JCODE_NON_INTERACTIVE", "1")
@@ -275,6 +275,48 @@ fn read_binary_version_report(binary: &Path) -> Result<BinaryVersionReport> {
             err
         )
     })
+}
+
+fn version_core(version: &str) -> Option<(u32, u32, u32)> {
+    let core = version
+        .trim()
+        .strip_prefix('v')
+        .unwrap_or(version.trim())
+        .split([' ', '-'])
+        .next()?;
+    let mut parts = core.split('.').map(str::parse::<u32>);
+    Some((
+        parts.next()?.ok()?,
+        parts.next()?.ok()?,
+        parts.next()?.ok()?,
+    ))
+}
+
+fn version_is_downgrade(candidate: &str, current: &str) -> Option<bool> {
+    Some(version_core(candidate)? < version_core(current)?)
+}
+
+fn ensure_not_older_than_current(candidate: &Path) -> Result<()> {
+    let Some(current_version) = read_current_version()? else {
+        return Ok(());
+    };
+    let current_binary = version_binary_path(&current_version)?;
+    let candidate_report = read_binary_version_report(candidate)?;
+    let current_report = read_binary_version_report(&current_binary)?;
+    let candidate_version = candidate_report.version.as_deref().unwrap_or_default();
+    let current_version = current_report.version.as_deref().unwrap_or_default();
+    match version_is_downgrade(candidate_version, current_version) {
+        Some(true) => anyhow::bail!(
+            "Refusing to publish older self-dev build {} over current {}. Update the source checkout first; use `jcode server promote <version>` only for an intentional rollback.",
+            candidate_version,
+            current_version,
+        ),
+        Some(false) => {}
+        None => anyhow::bail!(
+            "Refusing to publish self-dev build: invalid candidate/current version metadata ({candidate_version:?}, {current_version:?})"
+        ),
+    }
+    Ok(())
 }
 
 pub fn smoke_test_binary(binary: &Path) -> Result<()> {
@@ -687,6 +729,7 @@ pub fn publish_local_current_build_for_source(
     }
 
     validate_dev_binary_matches_source(repo_dir, &binary, source)?;
+    ensure_not_older_than_current(&binary)?;
     let previous_current_version = read_current_version()?;
     let versioned_path = install_binary_at_version(&binary, &source.version_label)?;
     let installed_report = read_binary_version_report(&versioned_path)?;

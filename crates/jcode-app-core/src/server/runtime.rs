@@ -263,6 +263,14 @@ impl ServerRuntime {
             .await
     }
 
+    pub(super) async fn spawn_scoped_task<F, Fut>(&self, task: F) -> bool
+    where
+        F: FnOnce(CancellationToken) -> Fut,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        self.tasks.spawn(task).await
+    }
+
     async fn spawn_client_task(
         &self,
         stream: Stream,

@@ -245,10 +245,6 @@ pub struct Agent {
     rewind_undo_snapshot: Option<RewindUndoSnapshot>,
     /// Channel for tools to request stdin input from the user
     stdin_request_tx: Option<tokio::sync::mpsc::UnboundedSender<crate::tool::StdinInputRequest>>,
-    /// Channel for tools to request structured user questions
-    pending_question_tx:
-        Option<tokio::sync::mpsc::UnboundedSender<crate::tool::PendingQuestionRequest>>,
-    question_client_capable: bool,
     /// Canonical reducer-backed view of runtime provider/model selection.
     provider_runtime_state: ProviderRuntimeState,
     /// When true, this session is an inline swarm worker: stream a throttled
@@ -324,8 +320,6 @@ impl Agent {
             memory_enabled: crate::config::config().features.memory,
             rewind_undo_snapshot: None,
             stdin_request_tx: None,
-            pending_question_tx: None,
-            question_client_capable: false,
             provider_runtime_state: ProviderRuntimeState::observed(initial_provider_model),
             inline_output_tap: false,
             inline_tail: inline_tail::InlineTailBuffer::default(),

@@ -116,6 +116,9 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
     }
 
     match args.command {
+        Some(Command::Automations(action)) => {
+            super::automations::run(action, args.model.as_deref()).await?;
+        }
         Some(Command::Serve {
             temporary_server,
             owner_pid,

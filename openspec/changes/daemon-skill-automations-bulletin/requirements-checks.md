@@ -1,0 +1,37 @@
+# Requirement-to-check ledger
+
+Scope: final implementation at `6c354519a`, rerun `256484bv7k`. This ledger maps every requirement, not every scenario to a claimed pass. PARTIAL means observed checks passed but named scenarios remain unverified. No live deployment is claimed.
+
+| Requirement | Executable / public-interface check | Observed behavior | Coverage |
+|---|---|---|---|
+| Durable skill automation definitions | Store claim/finish/reopen tests, real HTTP create/edit, actual browser interval/calendar edit | Definition persists, edit keeps ID and paused state, invalid weekday and interval inputs rejected | PARTIAL: project-overlay precedence and all creation validation scenarios not individually evidenced |
+| Bounded daemon-owned recurrence | Real Agent tests, serial Store claims, deadline acknowledgement, real isolated daemon + HTTP fixture | Two runs returned Success/BULLETIN_OK about one minute apart without TUI/browser; active claim prevents another run; deadline waits for acknowledgement | PARTIAL: never-acknowledging task degraded display and all tie/clock scenarios not individually evidenced |
+| Safe skill execution and visible outcomes | `executes_skill_in_workspace_and_records_session_source_and_output`, provider failure, missing directory/skill, human ask, cancellation tests | Skill appears in dynamic system prompt, workspace/session/digest recorded, final response returned, human ask blocked, cancellation interrupted | PARTIAL: live credentials/provider health not tested; generic provider failure is not every missing-credential case |
+| Crash-safe claims and compatible storage | Writer lock, corrupt/version preservation, poisoned write, reopen/recovery, Ambient compatibility suite | Duplicate owner rejected, failed writes block claims, interrupted claims not replayed; existing one-shot queue regression suite rerun | PARTIAL: platform-specific durability and all reload/clock permutations not covered |
+| Explicit always-on provisioning | CLI confirmation/lock tests, unit quoting and command tests | Mutations require explicit flag and exclusive lock; generated unit uses JCODE_HOME; command descendants cannot indefinitely hold capture pipes | BLOCKED: actual user-service, linger, logout/reboot and uninstall require authorized disposable deployment |
+| Timezone-aware weekday/time scheduling | Calendar gap/fold, next-three preview, invalid-zone isolation, real HTTP and browser calendar edits | Selected weekdays/time/IANA zone persist, missing local times skipped, first fold chosen, invalid future zone pauses only that definition | PARTIAL: explicit host-zone-change and timezone database update workflows not run |
+| Local and tailnet single-page bulletin | Real HTTP suite and managed Chromium final binary | Native create/edit/pause/resume/preview work, no application JavaScript needed for forms; HTMX polling works with JS | PARTIAL: tailnet remote browser workflow not run |
+| Private and inert output | Actual HTTP pairing/session/origin/CSRF/size tests; escaping assertions; browser clean redirect | Unauthenticated reads rejected, replay rejected, wrong host/origin denied, logout revokes session, remote cookie Secure/host-only, output escaped | PARTIAL: exhaustive expiry/rate-limit/forwarding attack matrix not run |
+| Bounded history and accessible controls | Retention/UTF-8 tests, synthetic55-entry browser history, keyboard controls at390px | Retains1000 terminal records, truncates on UTF-8 boundary, second page9rows persists across polls, keyboard expansion/focus survive polling, no horizontal overflow | PARTIAL: no screen-reader audit, not every accessibility scenario |
+| Listener lifecycle and failure isolation | Real TCP bind-conflict retry test, isolated daemon restart, authenticated status | Bind conflict recovers after release, state survives restart, local control status identifies service/persistence; browser sessions re-paired after restart | PARTIAL: request concurrency saturation and every temporary-daemon/reload path not independently exercised |
+| First-class private Tailscale access | Actual upstream ServeConfig fixtures, unrelated-route comparison, scoped enable/remove helpers, local/remote auth boundary tests | Conflicting/Funnel routes rejected, unrelated config changes detected, control status denied on remote Host, separate ownership receipts and locks | BLOCKED: real second device, policy-denied/outside-tailnet probes, HTTPS/certificate behavior and outage recovery require live provisioning |
+
+## Concrete improvement observations
+
+- Native Chromium login initially failed because no-referrer caused null Origin. Strict-origin preserved origin checks without leaking token query paths; keyboard login passed afterward.
+- Automatic preview initially threw on removed `dirty.form` and then failed on duplicate hidden `edit_id`. Final browser produced exactly three preview entries after keyboard input; asset regressions passed.
+- Pagination initially delayed deliberate keyboard swaps because focus protection blocked them. Final binary displayed page1 immediately, retained nine rows over polling, and preserved focused input/open output.
+- Representative Agent tests caught cancellation racing with completion and a closed event channel bypassing deadline observation. Fixed tests return Interrupted/Timeout only after acknowledgement, retaining the serial claim until finish.
+
+## Whole-result run
+
+Follow-up `473826m2wa` passed 42 automation tests, 14 Ambient compatibility tests and two CLI tests. New observations:
+- Equal due times selected ID `a` before `z` despite reverse insertion; moving the clock backward did not reclaim either completed occurrence.
+- Changing host `TZ` from Asia/Tokyo to Europe/London left the explicit America/Chicago occurrence at 2026-09-28 14:00 UTC.
+- An expired session received HTTP 401 and was removed. Holding all 16 request permits caused a real HTTP request to receive 429; releasing them restored HTTP 200. Permit saturation is controlled fixture evidence, not a 16-client load benchmark.
+
+These close the specific tie/backward-clock, host-zone independence, expired-session and semaphore-enforcement hypotheses. Remaining gaps in the table are not automatically closed by them.
+
+`256484bv7k` runs automation library tests (public HTTP, real Agent with deterministic provider, storage, scheduling, provisioning helpers), existing Ambient one-shot regressions, CLI tests, and CLI compilation against the final result. Exact final counts/result are recorded in verification.md after completion. The earlier final browser run used built production interfaces with isolated data and synthetic history, not screenshots alone.
+
+Full feature closure remains unproven while PARTIAL/BLOCKED rows remain. Local improvements are observed, not inferred from source inspection. Deployment gating is not equivalent to a passed acceptance check.

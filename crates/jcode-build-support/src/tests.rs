@@ -1,5 +1,20 @@
 use super::*;
 
+#[test]
+fn version_core_compares_dev_versions_without_prerelease_suffix() {
+    assert_eq!(version_core("v0.77.71-dev (abc, dirty)"), Some((0, 77, 71)));
+    assert_eq!(version_core("v0.88.0"), Some((0, 88, 0)));
+    assert!(version_core("not-a-version").is_none());
+    assert_eq!(
+        version_is_downgrade("v0.77.71-dev (abc, dirty)", "v0.88.53-dev (def, dirty)"),
+        Some(true)
+    );
+    assert_eq!(
+        version_is_downgrade("v0.88.53-dev", "v0.88.53"),
+        Some(false)
+    );
+}
+
 fn test_env_lock() -> std::sync::MutexGuard<'static, ()> {
     static ENV_LOCK: std::sync::OnceLock<std::sync::Mutex<()>> = std::sync::OnceLock::new();
     ENV_LOCK

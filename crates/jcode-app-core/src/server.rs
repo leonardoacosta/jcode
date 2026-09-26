@@ -1,3 +1,4 @@
+mod automations;
 mod available_models_dedup;
 mod await_members_state;
 mod background_tasks;
@@ -2318,10 +2319,12 @@ impl Server {
 
         let server_start_time = Instant::now();
 
+        let is_temporary_server = temporary_server_policy.is_some();
         self.spawn_background_tasks(server_start_time, temporary_server_policy);
         let (runtime, main_handle, debug_handle) = self
             .finish_startup_after_bind(main_listener, debug_listener, server_start_time)
             .await;
+        automations::start(self, &runtime, is_temporary_server).await;
 
         // If either listener exits unexpectedly, stop accepting work and wait
         // for every owned connection task before returning. The normal daemon
