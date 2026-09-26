@@ -1,6 +1,6 @@
 ## Execution Gate
 
-All tasks are blocked on explicit proposal approval. Do not install services or modify implementation while this change is a draft. Check concurrent changes before editing shared files, preserve unrelated work.
+Proposal approved by the user on 2026-09-26 at 07:08:40 UTC. Implementation tasks are ready in dependency order, beginning with 1.1. Live service/network provisioning and automation enablement retain the explicit authorization boundaries in proposal.md. Check concurrent changes before editing shared files, preserve unrelated work.
 
 ## 1. Durable definitions and recurrence
 

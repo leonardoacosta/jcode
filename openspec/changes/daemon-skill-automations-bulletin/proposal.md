@@ -37,4 +37,4 @@ Touches daemon startup/shutdown, headless execution, configuration, skill lookup
 
 ## Approval
 
-Draft, awaiting user approval. Implementation and service installation are blocked until approval. Enabling an automation separately confirms recurring model usage and the selected skill's existing permissions. Persistent login-independent service setup and Tailscale Serve configuration require explicit provisioning actions. Tailscale login, HTTPS availability, and tailnet access policy are human-controlled prerequisites, never silently changed.
+Approved by the user on 2026-09-26 at 07:08:40 UTC, following revision `9635a9425`. The weekday/timezone schedule and first-class Tailscale scope, including proposed design defaults, are approved for implementation in task dependency order. Implementation has not started. Enabling an automation separately confirms recurring model usage and the selected skill's existing permissions. Persistent login-independent service setup and Tailscale Serve configuration require explicit provisioning actions. Tailscale login, HTTPS availability, and tailnet access policy are human-controlled prerequisites, never silently changed.
