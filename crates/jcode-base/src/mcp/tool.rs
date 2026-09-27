@@ -200,31 +200,29 @@ mod tests {
     use tokio::sync::RwLock;
 
     #[tokio::test]
+    #[cfg(unix)]
     async fn stdio_mcp_image_reaches_mcp_tool_output() {
         let temp = tempfile::tempdir().expect("temp dir");
-        let server = temp.path().join("image-mcp.py");
+        let fixture = temp.path().join("image-mcp.sh");
+        let executable = std::env::current_exe().expect("test executable path");
         std::fs::write(
-            &server,
-            r#"import json,sys
-png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQioAAAAASUVORK5CYII='
-for line in sys.stdin:
- r=json.loads(line); i=r.get('id'); m=r.get('method')
- if i is None: continue
- if m=='initialize': out={'protocolVersion':'2024-11-05','capabilities':{'tools':{}},'serverInfo':{'name':'test','version':'1'}}
- elif m=='tools/list': out={'tools':[{'name':'capture_screenshot','inputSchema':{'type':'object','properties':{}}}]}
- elif m=='tools/call': out={'content':[{'type':'text','text':'fixture'},{'type':'image','data':png,'mimeType':'image/png'}]}
- else: continue
- print(json.dumps({'jsonrpc':'2.0','id':i,'result':out}),flush=True)
-"#,
+            &fixture,
+            format!(
+                "#!/bin/sh\nexec '{}' --exact mcp::tool::tests::stdio_mcp_fixture_server --nocapture\n",
+                executable.display()
+            ),
         )
-        .expect("write MCP fixture");
+        .expect("write MCP fixture launcher");
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&fixture, std::fs::Permissions::from_mode(0o700))
+            .expect("make fixture executable");
         let mut config = McpConfig::default();
         config.servers.insert(
             "image-test".to_string(),
             McpServerConfig {
-                command: "python3".to_string(),
-                args: vec![server.to_string_lossy().to_string()],
-                env: HashMap::new(),
+                command: fixture.to_string_lossy().to_string(),
+                args: vec![],
+                env: HashMap::from([("JCODE_MCP_TEST_STDIN_SERVER".to_string(), "1".to_string())]),
                 shared: false,
                 transport: None,
                 url: None,
@@ -266,9 +264,50 @@ for line in sys.stdin:
         assert_eq!(output.output, "fixture");
         assert_eq!(output.images.len(), 1);
         assert_eq!(output.images[0].media_type, "image/png");
-        assert!(!output.images[0].data.is_empty());
+        assert_eq!(output.images[0].data, PNG_FIXTURE_BASE64);
         manager.write().await.disconnect_all().await;
     }
+
+    #[tokio::test]
+    async fn stdio_mcp_fixture_server() {
+        if std::env::var_os("JCODE_MCP_TEST_STDIN_SERVER").is_none() {
+            return;
+        }
+        use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
+        let mut lines = tokio::io::BufReader::new(tokio::io::stdin()).lines();
+        let mut stdout = tokio::io::stdout();
+        while let Some(line) = lines.next_line().await.expect("read JSON-RPC request") {
+            let request: serde_json::Value = serde_json::from_str(&line).expect("valid request");
+            let Some(id) = request.get("id").cloned() else {
+                continue;
+            };
+            let result = match request.get("method").and_then(|method| method.as_str()) {
+                Some("initialize") => {
+                    json!({"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"test","version":"1"}})
+                }
+                Some("tools/list") => {
+                    json!({"tools":[{"name":"capture_screenshot","inputSchema":{"type":"object","properties":{}}}]})
+                }
+                Some("tools/call") => {
+                    json!({"content":[{"type":"text","text":"fixture"},{"type":"image","data":PNG_FIXTURE_BASE64,"mimeType":"image/png"}]})
+                }
+                _ => continue,
+            };
+            let response = json!({"jsonrpc":"2.0","id":id,"result":result});
+            stdout
+                .write_all(
+                    serde_json::to_string(&response)
+                        .expect("serialize response")
+                        .as_bytes(),
+                )
+                .await
+                .expect("write response");
+            stdout.write_all(b"\n").await.expect("terminate response");
+            stdout.flush().await.expect("flush response");
+        }
+    }
+
+    const PNG_FIXTURE_BASE64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQioAAAAASUVORK5CYII=";
 
     #[test]
     fn mcp_image_content_is_preserved_in_tool_output() {
