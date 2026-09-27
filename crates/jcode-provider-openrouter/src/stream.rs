@@ -17,19 +17,19 @@ fn truncated_stream_payload_context(data: &str) -> String {
 
 /// Pop the next complete SSE event off the front of `buffer`.
 ///
-/// Accepts both `\n\n` and `\r\n\r\n` event delimiters. Only handling `\n\n`
+/// Accepts LF and CRLF line endings, including mixed event delimiters. Only handling `\n\n`
 /// meant CRLF streams accumulated many events into one blob (see #565).
 /// Draining in place avoids the O(buffer^2) copy of reassigning the buffer.
 fn take_sse_event(buffer: &mut String) -> Option<String> {
-    let crlf = buffer.find("\r\n\r\n");
+    let crlf = buffer.find("\n\r\n");
     let lf = buffer.find("\n\n");
     let (pos, sep_len) = match (crlf, lf) {
-        (Some(c), Some(l)) if c <= l => (c, 4),
-        (Some(c), None) => (c, 4),
+        (Some(c), Some(l)) if c <= l => (c, 3),
+        (Some(c), None) => (c, 3),
         (_, Some(l)) => (l, 2),
         (None, None) => return None,
     };
-    let event = buffer[..pos].to_string();
+    let event = buffer[..pos].trim_end_matches('\r').to_string();
     buffer.drain(..pos + sep_len);
     Some(event)
 }
@@ -292,9 +292,14 @@ impl OpenRouterStream {
                             requeued.push_str("\n\n");
                         }
                         if let Some(partial) = &split.trailing_partial {
-                            // Hold the truncated object back and prepend it to the
-                            // next event's payload rather than dropping it.
-                            self.partial_json = Some(partial.clone());
+                            if requeued.is_empty() {
+                                self.partial_json = Some(partial.clone());
+                            } else {
+                                // Process complete objects before holding the trailing partial.
+                                requeued.push_str("data: ");
+                                requeued.push_str(partial);
+                                requeued.push_str("\n\n");
+                            }
                         }
                         if !requeued.is_empty() {
                             self.buffer.insert_str(0, &requeued);
@@ -605,6 +610,66 @@ mod tests {
         .to_string();
 
         assert_eq!(drain_text(&mut stream), "hello world");
+    }
+
+    #[test]
+    fn complete_objects_before_partial_json_keep_their_order() {
+        let mut stream = test_stream();
+        stream.buffer = concat!(
+            r#"data: {"choices":[{"delta":{"content":"first"}}]}"#,
+            r#"{"choices":[{"delta":{"content":" second"}}]}"#,
+            r#"{"choices":[{"delta":{"content":" thi"#,
+            "\n\n",
+            r#"data: rd"}}]}"#,
+            "\n\ndata: [DONE]\n\n"
+        )
+        .to_string();
+        assert_eq!(drain_text(&mut stream), "first second third");
+    }
+
+    #[test]
+    fn recovered_json_survives_every_chunk_boundary() {
+        for separator in ["\n\n", "\r\n\r\n", "\n\r\n", "\r\n\n"] {
+            let payload = format!(
+                "data: {}{}{separator}data: {}{separator}data: [DONE]{separator}",
+                r#"{"choices":[{"delta":{"content":"first"}}]}"#,
+                r#"{"choices":[{"delta":{"content":" 世"#,
+                r#"界"}}]}"#,
+            );
+            for split in 0..=payload.len() {
+                let chunks: Vec<Result<Bytes, reqwest::Error>> = vec![
+                    Ok(Bytes::copy_from_slice(&payload.as_bytes()[..split])),
+                    Ok(Bytes::copy_from_slice(&payload.as_bytes()[split..])),
+                ];
+                let stream = OpenRouterStream::new(
+                    futures::stream::iter(chunks),
+                    "test-model".to_string(),
+                    Arc::new(Mutex::new(None)),
+                );
+                let events = futures::executor::block_on(stream.collect::<Vec<_>>());
+                let mut text = String::new();
+                let mut ends = 0;
+                for event in events {
+                    match event.unwrap() {
+                        StreamEvent::TextDelta(delta) => text.push_str(&delta),
+                        StreamEvent::MessageEnd { .. } => ends += 1,
+                        _ => {}
+                    }
+                }
+                assert_eq!(text, "first 世界", "separator {separator:?}, split {split}");
+                assert_eq!(ends, 1);
+            }
+        }
+    }
+
+    #[test]
+    fn take_sse_event_accepts_mixed_line_endings() {
+        for separator in ["\n\n", "\r\n\r\n", "\n\r\n", "\r\n\n"] {
+            let mut buffer = format!("data: a{separator}data: b{separator}");
+            assert_eq!(take_sse_event(&mut buffer).unwrap().trim_end(), "data: a");
+            assert_eq!(take_sse_event(&mut buffer).unwrap().trim_end(), "data: b");
+            assert_eq!(take_sse_event(&mut buffer), None);
+        }
     }
 
     #[test]
