@@ -19,7 +19,8 @@ fn validated_image(data: String, mime_type: &str) -> Option<ToolImage> {
     if !matches!(
         mime_type,
         "image/png" | "image/jpeg" | "image/gif" | "image/webp"
-    ) || data.len() > MAX_MCP_IMAGE_BASE64_SIZE
+    ) || data.is_empty()
+        || data.len() > MAX_MCP_IMAGE_BASE64_SIZE
     {
         return None;
     }
@@ -186,9 +187,88 @@ pub fn create_mcp_tools_from_cached(
 
 #[cfg(test)]
 mod tests {
-    use super::{dispatch_name, tool_output_from_result};
-    use crate::mcp::protocol::{ContentBlock, ToolCallResult};
+    use super::{McpTool, dispatch_name, tool_output_from_result};
+    use crate::mcp::manager::McpManager;
+    use crate::mcp::protocol::{
+        ContentBlock, McpConfig, McpServerConfig, McpToolDef, ToolCallResult,
+    };
     use base64::Engine as _;
+    use jcode_tool_core::{Tool, ToolContext};
+    use serde_json::json;
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+
+    #[tokio::test]
+    async fn stdio_mcp_image_reaches_mcp_tool_output() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let server = temp.path().join("image-mcp.py");
+        std::fs::write(
+            &server,
+            r#"import json,sys
+png='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQioAAAAASUVORK5CYII='
+for line in sys.stdin:
+ r=json.loads(line); i=r.get('id'); m=r.get('method')
+ if i is None: continue
+ if m=='initialize': out={'protocolVersion':'2024-11-05','capabilities':{'tools':{}},'serverInfo':{'name':'test','version':'1'}}
+ elif m=='tools/list': out={'tools':[{'name':'capture_screenshot','inputSchema':{'type':'object','properties':{}}}]}
+ elif m=='tools/call': out={'content':[{'type':'text','text':'fixture'},{'type':'image','data':png,'mimeType':'image/png'}]}
+ else: continue
+ print(json.dumps({'jsonrpc':'2.0','id':i,'result':out}),flush=True)
+"#,
+        )
+        .expect("write MCP fixture");
+        let mut config = McpConfig::default();
+        config.servers.insert(
+            "image-test".to_string(),
+            McpServerConfig {
+                command: "python3".to_string(),
+                args: vec![server.to_string_lossy().to_string()],
+                env: HashMap::new(),
+                shared: false,
+                transport: None,
+                url: None,
+                headers: HashMap::new(),
+                enabled: None,
+                disabled: None,
+            },
+        );
+        let manager = Arc::new(RwLock::new(McpManager::with_config(config)));
+        let server_config = manager.read().await.config().servers["image-test"].clone();
+        manager
+            .read()
+            .await
+            .connect("image-test", &server_config)
+            .await
+            .expect("connect real stdio MCP fixture");
+        let tool_def = McpToolDef {
+            name: "capture_screenshot".to_string(),
+            description: None,
+            input_schema: json!({"type":"object","properties":{}}),
+        };
+        let tool = McpTool::new("image-test".to_string(), tool_def, Arc::clone(&manager));
+        let output = tool
+            .execute(
+                json!({}),
+                ToolContext {
+                    session_id: "test".to_string(),
+                    message_id: "message".to_string(),
+                    tool_call_id: "call".to_string(),
+                    working_dir: None,
+                    stdin_request_tx: None,
+                    pending_question_tx: None,
+                    graceful_shutdown_signal: None,
+                    execution_mode: jcode_tool_core::ToolExecutionMode::Direct,
+                },
+            )
+            .await
+            .expect("execute MCP screenshot tool");
+        assert_eq!(output.output, "fixture");
+        assert_eq!(output.images.len(), 1);
+        assert_eq!(output.images[0].media_type, "image/png");
+        assert!(!output.images[0].data.is_empty());
+        manager.write().await.disconnect_all().await;
+    }
 
     #[test]
     fn mcp_image_content_is_preserved_in_tool_output() {
@@ -216,6 +296,10 @@ mod tests {
             ToolCallResult {
                 content: vec![
                     ContentBlock::Image {
+                        data: String::new(),
+                        mime_type: "image/png".to_string(),
+                    },
+                    ContentBlock::Image {
                         data: "not-base64".to_string(),
                         mime_type: "image/png".to_string(),
                     },
@@ -233,7 +317,7 @@ mod tests {
             "mcp:desktop:screenshot".to_string(),
         );
         assert!(output.images.is_empty());
-        assert_eq!(output.output.matches("[Image omitted:").count(), 3);
+        assert_eq!(output.output.matches("[Image omitted:").count(), 4);
     }
 
     #[test]
