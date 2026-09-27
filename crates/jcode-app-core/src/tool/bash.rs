@@ -529,6 +529,14 @@ impl Drop for ProcessGroupKillGuard {
 }
 
 fn build_shell_command(cmd_str: &str) -> TokioCommand {
+    let mut cmd = build_shell_command_unscoped(cmd_str);
+    if let Some(env) = crate::hooks::client_terminal_env() {
+        crate::terminal_launch::apply_client_terminal_env(cmd.as_std_mut(), &env);
+    }
+    cmd
+}
+
+fn build_shell_command_unscoped(cmd_str: &str) -> TokioCommand {
     #[cfg(windows)]
     {
         let mut cmd = TokioCommand::new("cmd.exe");
@@ -598,6 +606,50 @@ mod utf8_truncation_tests {
     #[cfg(any(windows, unix))]
     use super::build_shell_command;
     use super::format_command_output;
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn shell_subprocess_uses_scoped_client_terminal_context() {
+        let _guard = crate::storage::lock_test_env();
+        let old_herdr = std::env::var_os("HERDR_PANE_ID");
+        crate::env::set_var("HERDR_PANE_ID", "stale-daemon");
+        let command =
+            "printf '%s|%s|%s' \"$TMUX_PANE\" \"$HERDR_PANE_ID\" \"$JCODE_CLIENT_HERDR_PANE_ID\"";
+        let run = |env| {
+            let command = command.to_string();
+            async move {
+                crate::hooks::with_client_terminal_env(env, async move {
+                    let child = build_shell_command(&command)
+                        .stdout(std::process::Stdio::piped())
+                        .spawn()
+                        .expect("spawn shell");
+                    tokio::task::spawn(async move {
+                        child.wait_with_output().await.expect("wait shell")
+                    })
+                    .await
+                    .expect("join spawned shell")
+                })
+                .await
+            }
+        };
+        let (first, second) = tokio::join!(
+            run(vec![
+                ("TMUX_PANE".into(), "pane-one".into()),
+                ("JCODE_UNTRUSTED_CLIENT_KEY".into(), "bad".into()),
+            ]),
+            run(vec![("HERDR_PANE_ID".into(), "herdr-two".into())]),
+        );
+        assert_eq!(String::from_utf8_lossy(&first.stdout), "pane-one||");
+        assert_eq!(
+            String::from_utf8_lossy(&second.stdout),
+            "|herdr-two|herdr-two"
+        );
+        if let Some(value) = old_herdr {
+            crate::env::set_var("HERDR_PANE_ID", value);
+        } else {
+            crate::env::remove_var("HERDR_PANE_ID");
+        }
+    }
 
     #[test]
     fn format_command_output_truncates_on_utf8_boundary() {
@@ -994,6 +1046,9 @@ impl BashTool {
         let display_name = summarize_background_command(params.intent.as_deref(), &params.command);
 
         let mut cmd = build_detached_shell_wrapper(&params.command);
+        if let Some(env) = crate::hooks::client_terminal_env() {
+            crate::terminal_launch::apply_client_terminal_env(&mut cmd, &env);
+        }
         let stdout = OpenOptions::new()
             .create(true)
             .append(true)
@@ -1135,6 +1190,7 @@ impl BashTool {
 
         let wake = params.wake;
         let notify = params.notify || wake;
+        let client_terminal_env = crate::hooks::client_terminal_env();
         let info = crate::background::global()
             .spawn_with_notify(
                 "bash",
@@ -1143,7 +1199,10 @@ impl BashTool {
                 notify,
                 wake,
 				move |output_path| async move {
-					let mut cmd = build_shell_command(&command);
+					let mut cmd = build_shell_command_unscoped(&command);
+					if let Some(env) = client_terminal_env.as_ref() {
+						crate::terminal_launch::apply_client_terminal_env(cmd.as_std_mut(), env);
+					}
 					#[cfg(unix)]
 					unsafe {
 						cmd.pre_exec(|| {
