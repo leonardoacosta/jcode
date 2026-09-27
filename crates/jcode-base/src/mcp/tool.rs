@@ -5,10 +5,78 @@ use super::protocol::{ContentBlock, McpToolDef};
 use anyhow::Result;
 use async_trait::async_trait;
 use jcode_tool_core::{Tool, ToolContext};
-use jcode_tool_types::ToolOutput;
+use jcode_tool_types::{ToolImage, ToolOutput};
 use serde_json::Value;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+
+const MAX_MCP_IMAGE_SIZE: usize = 20 * 1024 * 1024;
+const MAX_MCP_IMAGE_BASE64_SIZE: usize = MAX_MCP_IMAGE_SIZE.div_ceil(3) * 4;
+
+fn validated_image(data: String, mime_type: &str) -> Option<ToolImage> {
+    use base64::Engine as _;
+
+    if !matches!(
+        mime_type,
+        "image/png" | "image/jpeg" | "image/gif" | "image/webp"
+    ) || data.len() > MAX_MCP_IMAGE_BASE64_SIZE
+    {
+        return None;
+    }
+    let decoded = base64::engine::general_purpose::STANDARD
+        .decode(&data)
+        .ok()?;
+    (decoded.len() <= MAX_MCP_IMAGE_SIZE).then(|| ToolImage {
+        media_type: mime_type.to_string(),
+        data,
+        label: None,
+    })
+}
+
+fn tool_output_from_result(result: super::protocol::ToolCallResult, title: String) -> ToolOutput {
+    let mut output_parts = Vec::new();
+    let mut images = Vec::new();
+    for block in result.content {
+        match block {
+            ContentBlock::Text { text } => output_parts.push(text),
+            ContentBlock::Image { data, mime_type } => {
+                if let Some(image) = validated_image(data, &mime_type) {
+                    images.push(image);
+                } else {
+                    output_parts.push(format!(
+                        "[Image omitted: invalid or unsupported {} payload]",
+                        mime_type
+                    ));
+                }
+            }
+            ContentBlock::Resource { resource } => {
+                if let Some(text) = resource.text {
+                    output_parts.push(text);
+                } else if let Some(blob) = resource.blob {
+                    output_parts.push(format!(
+                        "[Resource: {} ({} bytes)]",
+                        resource.uri,
+                        blob.len()
+                    ));
+                } else {
+                    output_parts.push(format!("[Resource: {}]", resource.uri));
+                }
+            }
+        }
+    }
+    let output = output_parts.join("\n");
+    let output = if result.is_error {
+        format!("Error: {}", output)
+    } else {
+        output
+    };
+    ToolOutput {
+        output,
+        title: Some(title),
+        metadata: None,
+        images,
+    }
+}
 
 /// A tool that proxies to an MCP server
 pub struct McpTool {
@@ -69,40 +137,8 @@ impl Tool for McpTool {
             .call_tool(&self.server_name, &self.tool_def.name, input)
             .await?;
 
-        // Convert MCP content blocks to output string
-        let mut output_parts = Vec::new();
-        for block in result.content {
-            match block {
-                ContentBlock::Text { text } => {
-                    output_parts.push(text);
-                }
-                ContentBlock::Image { data, mime_type } => {
-                    output_parts.push(format!("[Image: {} ({} bytes)]", mime_type, data.len()));
-                }
-                ContentBlock::Resource { resource } => {
-                    if let Some(text) = resource.text {
-                        output_parts.push(text);
-                    } else if let Some(blob) = resource.blob {
-                        output_parts.push(format!(
-                            "[Resource: {} ({} bytes)]",
-                            resource.uri,
-                            blob.len()
-                        ));
-                    } else {
-                        output_parts.push(format!("[Resource: {}]", resource.uri));
-                    }
-                }
-            }
-        }
-
-        let output = output_parts.join("\n");
         let title = format!("mcp:{}:{}", self.server_name, self.tool_def.name);
-
-        if result.is_error {
-            Ok(ToolOutput::new(format!("Error: {}", output)).with_title(title))
-        } else {
-            Ok(ToolOutput::new(output).with_title(title))
-        }
+        Ok(tool_output_from_result(result, title))
     }
 }
 
@@ -150,7 +186,55 @@ pub fn create_mcp_tools_from_cached(
 
 #[cfg(test)]
 mod tests {
-    use super::dispatch_name;
+    use super::{dispatch_name, tool_output_from_result};
+    use crate::mcp::protocol::{ContentBlock, ToolCallResult};
+    use base64::Engine as _;
+
+    #[test]
+    fn mcp_image_content_is_preserved_in_tool_output() {
+        let data = base64::engine::general_purpose::STANDARD.encode(b"png bytes");
+        let output = tool_output_from_result(
+            ToolCallResult {
+                content: vec![ContentBlock::Image {
+                    data: data.clone(),
+                    mime_type: "image/png".to_string(),
+                }],
+                is_error: false,
+            },
+            "mcp:desktop:screenshot".to_string(),
+        );
+        assert_eq!(output.images.len(), 1);
+        assert_eq!(output.images[0].media_type, "image/png");
+        assert_eq!(output.images[0].data, data);
+    }
+
+    #[test]
+    fn invalid_or_oversized_mcp_images_are_omitted() {
+        let oversized =
+            base64::engine::general_purpose::STANDARD.encode(vec![0; 20 * 1024 * 1024 + 1]);
+        let output = tool_output_from_result(
+            ToolCallResult {
+                content: vec![
+                    ContentBlock::Image {
+                        data: "not-base64".to_string(),
+                        mime_type: "image/png".to_string(),
+                    },
+                    ContentBlock::Image {
+                        data: "AQID".to_string(),
+                        mime_type: "text/plain".to_string(),
+                    },
+                    ContentBlock::Image {
+                        data: oversized,
+                        mime_type: "image/png".to_string(),
+                    },
+                ],
+                is_error: false,
+            },
+            "mcp:desktop:screenshot".to_string(),
+        );
+        assert!(output.images.is_empty());
+        assert_eq!(output.output.matches("[Image omitted:").count(), 3);
+    }
 
     #[test]
     fn hyphenated_mcp_names_are_safe_for_the_standard_dispatcher() {
