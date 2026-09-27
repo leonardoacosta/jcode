@@ -2,7 +2,7 @@ use super::{Tool, ToolContext, ToolOutput};
 use anyhow::Result;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value, json};
+use serde_json::{Value, json};
 use std::collections::HashMap;
 
 /// Maximum questions per request.
@@ -20,7 +20,6 @@ const MAX_QUESTION_CHARS: usize = 1_000;
 const MAX_HEADER_CHARS: usize = 12;
 const MAX_LABEL_CHARS: usize = 100;
 const MAX_DESCRIPTION_CHARS: usize = 500;
-const MAX_ANSWER_CHARS: usize = 4_000;
 
 /// A single structured question to present to the user.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -65,22 +64,33 @@ fn validate_questions(questions: &[Question]) -> Result<()> {
         anyhow::bail!("at least {MIN_QUESTIONS} question required");
     }
     if questions.len() > MAX_QUESTIONS {
-        anyhow::bail!("at most {MAX_QUESTIONS} questions allowed, got {}", questions.len());
+        anyhow::bail!(
+            "at most {MAX_QUESTIONS} questions allowed, got {}",
+            questions.len()
+        );
     }
 
     let mut seen_ids: HashMap<&str, usize> = HashMap::new();
     for q in questions {
+        if q.id.trim().is_empty() || q.id.chars().count() > 64 {
+            anyhow::bail!("question id must be 1..64 characters");
+        }
         // Unique question id
         if let Some(&prev_idx) = seen_ids.get(q.id.as_str()) {
-            anyhow::bail!("duplicate question id '{}' at index {} (first seen at {})", q.id, seen_ids.len(), prev_idx);
+            anyhow::bail!(
+                "duplicate question id '{}' at index {} (first seen at {})",
+                q.id,
+                seen_ids.len(),
+                prev_idx
+            );
         }
         seen_ids.insert(&q.id, seen_ids.len());
 
         // String bounds
-        if q.question.is_empty() || q.question.len() > MAX_QUESTION_CHARS {
+        if q.question.is_empty() || q.question.chars().count() > MAX_QUESTION_CHARS {
             anyhow::bail!("question text must be 1..{MAX_QUESTION_CHARS} chars");
         }
-        if q.header.is_empty() || q.header.len() > MAX_HEADER_CHARS {
+        if q.header.is_empty() || q.header.chars().count() > MAX_HEADER_CHARS {
             anyhow::bail!("question header must be 1..{MAX_HEADER_CHARS} chars");
         }
 
@@ -89,21 +99,40 @@ fn validate_questions(questions: &[Question]) -> Result<()> {
             anyhow::bail!("question '{}' needs at least {MIN_OPTIONS} options", q.id);
         }
         if q.options.len() > MAX_OPTIONS {
-            anyhow::bail!("question '{}' has too many options (max {MAX_OPTIONS})", q.id);
+            anyhow::bail!(
+                "question '{}' has too many options (max {MAX_OPTIONS})",
+                q.id
+            );
         }
 
         // Validate options
         let mut seen_opt_ids: HashMap<&str, usize> = HashMap::new();
         for opt in &q.options {
+            if opt.id.trim().is_empty() || opt.id.chars().count() > 64 {
+                anyhow::bail!("option id must be 1..64 characters");
+            }
             if let Some(&prev_idx) = seen_opt_ids.get(opt.id.as_str()) {
-                anyhow::bail!("duplicate option id '{}' in question '{}' (first seen at index {})", opt.id, q.id, prev_idx);
+                anyhow::bail!(
+                    "duplicate option id '{}' in question '{}' (first seen at index {})",
+                    opt.id,
+                    q.id,
+                    prev_idx
+                );
             }
             seen_opt_ids.insert(&opt.id, seen_opt_ids.len());
-            if opt.label.is_empty() || opt.label.len() > MAX_LABEL_CHARS {
-                anyhow::bail!("option label must be 1..{MAX_LABEL_CHARS} chars, question '{}' option '{}'", q.id, opt.id);
+            if opt.label.is_empty() || opt.label.chars().count() > MAX_LABEL_CHARS {
+                anyhow::bail!(
+                    "option label must be 1..{MAX_LABEL_CHARS} chars, question '{}' option '{}'",
+                    q.id,
+                    opt.id
+                );
             }
-            if opt.description.len() > MAX_DESCRIPTION_CHARS {
-                anyhow::bail!("option description too long (max {MAX_DESCRIPTION_CHARS} chars), question '{}' option '{}'", q.id, opt.id);
+            if opt.description.chars().count() > MAX_DESCRIPTION_CHARS {
+                anyhow::bail!(
+                    "option description too long (max {MAX_DESCRIPTION_CHARS} chars), question '{}' option '{}'",
+                    q.id,
+                    opt.id
+                );
             }
         }
     }
@@ -206,15 +235,52 @@ impl Tool for AskUserQuestionTool {
             .unwrap_or_default()
             .len();
         if payload_bytes > MAX_PAYLOAD_BYTES {
-            anyhow::bail!("question payload too large ({payload_bytes} bytes, max {MAX_PAYLOAD_BYTES})");
+            anyhow::bail!(
+                "question payload too large ({payload_bytes} bytes, max {MAX_PAYLOAD_BYTES})"
+            );
         }
 
         validate_questions(&params.questions)?;
 
-        // Block until user answers via the TUI protocol path.
-        // The stdin_request_tx path is for shell stdin, not this structured path.
-        // For now, when no client is listening, return unavailable.
-        anyhow::bail!("ask_user_question requires an interactive client; no answer channel available in this session. The tool is available only for root interactive sessions with a capable TUI client.")
+        // Send to client lifecycle via the pending question channel.
+        let tx = ctx.pending_question_tx.as_ref()
+            .ok_or_else(|| anyhow::anyhow!("ask_user_question requires an interactive client; use this tool only from an interactive root session"))?;
+
+        let request_id = crate::id::new_id("qreq");
+        let questions_json = serde_json::to_value(&params.questions)
+            .map_err(|e| anyhow::anyhow!("failed to serialize questions: {e}"))?;
+
+        let (outcome_tx, outcome_rx) = tokio::sync::oneshot::channel();
+
+        let req = crate::tool::PendingQuestionRequest {
+            request_id: request_id.clone(),
+            tool_call_id: ctx.tool_call_id.clone(),
+            session_id: ctx.session_id.clone(),
+            questions: questions_json,
+            outcome_tx,
+        };
+
+        tx.send(req)
+            .map_err(|_| anyhow::anyhow!("question forwarding channel closed"))?;
+
+        // Block until user answers or cancels. Turn cancellation must release the
+        // wait immediately so server shutdown/clear cannot strand the tool call.
+        let outcome = if let Some(signal) = ctx.graceful_shutdown_signal.clone() {
+            tokio::select! {
+                result = outcome_rx => result.map_err(|_| anyhow::anyhow!("question answer channel cancelled (session may have been closed)"))?,
+                _ = signal.notified() => anyhow::bail!("question interrupted by turn cancellation"),
+            }
+        } else {
+            outcome_rx.await.map_err(|_| {
+                anyhow::anyhow!("question answer channel cancelled (session may have been closed)")
+            })?
+        };
+
+        let status = outcome
+            .get("status")
+            .and_then(Value::as_str)
+            .unwrap_or("unavailable");
+        Ok(ToolOutput::new(serde_json::to_string_pretty(&outcome)?).with_title(status))
     }
 }
 
@@ -229,8 +295,16 @@ mod tests {
             question: "Which template?".into(),
             header: "Template".into(),
             options: vec![
-                QuestionOption { id: "a".into(), label: "Next.js".into(), description: "App Router".into() },
-                QuestionOption { id: "b".into(), label: "Remix".into(), description: "Full stack".into() },
+                QuestionOption {
+                    id: "a".into(),
+                    label: "Next.js".into(),
+                    description: "App Router".into(),
+                },
+                QuestionOption {
+                    id: "b".into(),
+                    label: "Remix".into(),
+                    description: "Full stack".into(),
+                },
             ],
             multi_select: false,
         }];
@@ -241,18 +315,38 @@ mod tests {
     fn test_duplicate_question_id_rejected() {
         let qs = vec![
             Question {
-                id: "q1".into(), question: "A".into(), header: "H".into(),
+                id: "q1".into(),
+                question: "A".into(),
+                header: "H".into(),
                 options: vec![
-                    QuestionOption { id: "a".into(), label: "X".into(), description: "d".into() },
-                    QuestionOption { id: "b".into(), label: "Y".into(), description: "d".into() },
+                    QuestionOption {
+                        id: "a".into(),
+                        label: "X".into(),
+                        description: "d".into(),
+                    },
+                    QuestionOption {
+                        id: "b".into(),
+                        label: "Y".into(),
+                        description: "d".into(),
+                    },
                 ],
                 multi_select: false,
             },
             Question {
-                id: "q1".into(), question: "B".into(), header: "H2".into(),
+                id: "q1".into(),
+                question: "B".into(),
+                header: "H2".into(),
                 options: vec![
-                    QuestionOption { id: "c".into(), label: "X".into(), description: "d".into() },
-                    QuestionOption { id: "d".into(), label: "Y".into(), description: "d".into() },
+                    QuestionOption {
+                        id: "c".into(),
+                        label: "X".into(),
+                        description: "d".into(),
+                    },
+                    QuestionOption {
+                        id: "d".into(),
+                        label: "Y".into(),
+                        description: "d".into(),
+                    },
                 ],
                 multi_select: false,
             },
@@ -263,10 +357,20 @@ mod tests {
     #[test]
     fn test_duplicate_option_id_rejected() {
         let qs = vec![Question {
-            id: "q1".into(), question: "A".into(), header: "H".into(),
+            id: "q1".into(),
+            question: "A".into(),
+            header: "H".into(),
             options: vec![
-                QuestionOption { id: "dup".into(), label: "X".into(), description: "d".into() },
-                QuestionOption { id: "dup".into(), label: "Y".into(), description: "d".into() },
+                QuestionOption {
+                    id: "dup".into(),
+                    label: "X".into(),
+                    description: "d".into(),
+                },
+                QuestionOption {
+                    id: "dup".into(),
+                    label: "Y".into(),
+                    description: "d".into(),
+                },
             ],
             multi_select: false,
         }];
@@ -276,10 +380,14 @@ mod tests {
     #[test]
     fn test_too_few_options_rejected() {
         let qs = vec![Question {
-            id: "q1".into(), question: "A".into(), header: "H".into(),
-            options: vec![
-                QuestionOption { id: "a".into(), label: "X".into(), description: "d".into() },
-            ],
+            id: "q1".into(),
+            question: "A".into(),
+            header: "H".into(),
+            options: vec![QuestionOption {
+                id: "a".into(),
+                label: "X".into(),
+                description: "d".into(),
+            }],
             multi_select: false,
         }];
         assert!(validate_questions(&qs).is_err());
@@ -287,24 +395,46 @@ mod tests {
 
     #[test]
     fn test_too_many_questions_rejected() {
-        let qs: Vec<Question> = (0..MAX_QUESTIONS+1).map(|i| Question {
-            id: format!("q{i}"), question: "A".into(), header: "H".into(),
-            options: vec![
-                QuestionOption { id: "a".into(), label: "X".into(), description: "d".into() },
-                QuestionOption { id: "b".into(), label: "Y".into(), description: "d".into() },
-            ],
-            multi_select: false,
-        }).collect();
+        let qs: Vec<Question> = (0..MAX_QUESTIONS + 1)
+            .map(|i| Question {
+                id: format!("q{i}"),
+                question: "A".into(),
+                header: "H".into(),
+                options: vec![
+                    QuestionOption {
+                        id: "a".into(),
+                        label: "X".into(),
+                        description: "d".into(),
+                    },
+                    QuestionOption {
+                        id: "b".into(),
+                        label: "Y".into(),
+                        description: "d".into(),
+                    },
+                ],
+                multi_select: false,
+            })
+            .collect();
         assert!(validate_questions(&qs).is_err());
     }
 
     #[test]
     fn test_empty_header_rejected() {
         let qs = vec![Question {
-            id: "q1".into(), question: "A".into(), header: "".into(),
+            id: "q1".into(),
+            question: "A".into(),
+            header: "".into(),
             options: vec![
-                QuestionOption { id: "a".into(), label: "X".into(), description: "d".into() },
-                QuestionOption { id: "b".into(), label: "Y".into(), description: "d".into() },
+                QuestionOption {
+                    id: "a".into(),
+                    label: "X".into(),
+                    description: "d".into(),
+                },
+                QuestionOption {
+                    id: "b".into(),
+                    label: "Y".into(),
+                    description: "d".into(),
+                },
             ],
             multi_select: false,
         }];
@@ -314,13 +444,83 @@ mod tests {
     #[test]
     fn test_multi_select_default_false() {
         let qs = vec![Question {
-            id: "q1".into(), question: "A".into(), header: "H".into(),
+            id: "q1".into(),
+            question: "A".into(),
+            header: "H".into(),
             options: vec![
-                QuestionOption { id: "a".into(), label: "X".into(), description: "d".into() },
-                QuestionOption { id: "b".into(), label: "Y".into(), description: "d".into() },
+                QuestionOption {
+                    id: "a".into(),
+                    label: "X".into(),
+                    description: "d".into(),
+                },
+                QuestionOption {
+                    id: "b".into(),
+                    label: "Y".into(),
+                    description: "d".into(),
+                },
             ],
             multi_select: false,
         }];
         assert!(validate_questions(&qs).is_ok());
+    }
+
+    #[tokio::test]
+    async fn execute_waits_for_and_returns_the_matching_user_answer() {
+        let (request_tx, mut request_rx) = tokio::sync::mpsc::unbounded_channel();
+        let context = ToolContext {
+            session_id: "session-a".into(),
+            message_id: "message-a".into(),
+            tool_call_id: "call-a".into(),
+            working_dir: None,
+            stdin_request_tx: None,
+            pending_question_tx: Some(request_tx),
+            graceful_shutdown_signal: None,
+            execution_mode: super::super::ToolExecutionMode::AgentTurn,
+        };
+        let input = json!({
+            "questions": [{
+                "id": "format", "question": "Which format?", "header": "Format",
+                "options": [
+                    {"id":"brief","label":"Brief","description":"Short"},
+                    {"id":"full","label":"Full","description":"Detailed"}
+                ]
+            }]
+        });
+        let tool = AskUserQuestionTool::new();
+        let task = tokio::spawn(async move { tool.execute(input, context).await });
+        let request = tokio::time::timeout(std::time::Duration::from_secs(1), request_rx.recv())
+            .await
+            .expect("tool should request user input")
+            .expect("question request");
+        assert_eq!(request.session_id, "session-a");
+        assert_eq!(request.tool_call_id, "call-a");
+        request
+            .outcome_tx
+            .send(json!({
+                "status":"answered",
+                "answers":{"format":{"option_ids":["brief"]}}
+            }))
+            .expect("tool still waiting");
+        let output = task.await.expect("tool task").expect("tool result");
+        assert!(output.output.contains("brief"));
+        assert_eq!(output.title.as_deref(), Some("answered"));
+    }
+
+    #[tokio::test]
+    async fn execute_fails_closed_without_a_question_capability_channel() {
+        let context = ToolContext {
+            session_id: "session-a".into(),
+            message_id: "message-a".into(),
+            tool_call_id: "call-a".into(),
+            working_dir: None,
+            stdin_request_tx: None,
+            pending_question_tx: None,
+            graceful_shutdown_signal: None,
+            execution_mode: super::super::ToolExecutionMode::Direct,
+        };
+        let result = AskUserQuestionTool::new()
+                        .execute(json!({"questions":[{"id":"q","question":"Choose","header":"Choice","options":[{"id":"a","label":"A","description":""},{"id":"b","label":"B","description":""}]}]}), context)
+            .await;
+        assert!(result.is_err());
     }
 }

@@ -44,24 +44,17 @@ const MAX_REQUEST_TOKENS: usize = 30_000;
 /// Minimum compaction ratio to accept (below → fall back to LLM).
 const MIN_COMPACTION_RATIO: f64 = 0.25;
 
-/// TypeSafe / Jev API endpoints.
-const TYPESAFE_API_URL: &str = "https://api.typesafe.ai/v1/systemone";
-const OPENROUTER_API_URL: &str = "https://openrouter.ai/api/alpha/decisions";
-const DEFAULT_MODEL: &str = "jev-latest";
-const OPENROUTER_MODEL: &str = "~typesafe/jev-latest";
-
 /// Timeout for individual Jev API calls.
 const JEV_REQUEST_TIMEOUT_SECS: u64 = 10;
 const MAX_RETRIES: u32 = 1;
 
-static HTTP_CLIENT: std::sync::LazyLock<reqwest::Client> =
-    std::sync::LazyLock::new(|| {
-        reqwest::Client::builder()
-            .http2_prior_knowledge()
-            .timeout(Duration::from_secs(JEV_REQUEST_TIMEOUT_SECS))
-            .build()
-            .expect("build reqwest client")
-    });
+static HTTP_CLIENT: std::sync::LazyLock<reqwest::Client> = std::sync::LazyLock::new(|| {
+    reqwest::Client::builder()
+        .http2_prior_knowledge()
+        .timeout(Duration::from_secs(JEV_REQUEST_TIMEOUT_SECS))
+        .build()
+        .expect("build reqwest client")
+});
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -202,11 +195,7 @@ pub async fn try_jev_compact(
 
     // 8. Check minimum ratio.
     let applied = ratio >= MIN_COMPACTION_RATIO;
-    let result = if applied {
-        rebuilt
-    } else {
-        messages.to_vec()
-    };
+    let result = if applied { rebuilt } else { messages.to_vec() };
 
     Ok(JevCompactionResult {
         messages: result,
@@ -230,7 +219,9 @@ fn collect_tool_calls(messages: &[Message], preserve_recent: usize) -> Vec<ToolC
     for (idx, msg) in messages.iter().enumerate() {
         for block in &msg.content {
             if let ContentBlock::ToolResult {
-                tool_use_id, content, ..
+                tool_use_id,
+                content,
+                ..
             } = block
             {
                 results.insert(tool_use_id.clone(), (idx, content.clone()));
@@ -241,15 +232,17 @@ fn collect_tool_calls(messages: &[Message], preserve_recent: usize) -> Vec<ToolC
     // Collect tool uses.
     for (idx, msg) in messages.iter().enumerate() {
         for block in &msg.content {
-            if let ContentBlock::ToolUse { id, name, input, .. } = block {
+            if let ContentBlock::ToolUse {
+                id, name, input, ..
+            } = block
+            {
                 let result_pair = results.get(id);
                 let result_msg_idx = result_pair.map(|(ri, _)| *ri);
                 let tool_result = result_pair.map(|(_, content)| content.clone());
 
                 // Pin: message[0] (system prompt) and the last preserve_recent
                 // messages are never pruned.
-                let pinned = idx == 0
-                    || (total.saturating_sub(1 + idx) < preserve_recent);
+                let pinned = idx == 0 || (total.saturating_sub(1 + idx) < preserve_recent);
 
                 pairs.push(ToolCallPair {
                     call_msg_idx: idx,
@@ -305,7 +298,9 @@ fn fit_state(messages: &[Message], calls: &[ToolCallPair], max_state_tokens: usi
                 | ContentBlock::OpenAIReasoning { .. } => {
                     // Skip reasoning blocks — they're irrelevant to tool retention decisions
                 }
-                ContentBlock::ToolUse { id, name, input, .. } => {
+                ContentBlock::ToolUse {
+                    id, name, input, ..
+                } => {
                     blocks.push(serde_json::json!({
                         "type": "tool_use",
                         "id": id,
@@ -314,7 +309,9 @@ fn fit_state(messages: &[Message], calls: &[ToolCallPair], max_state_tokens: usi
                     }));
                 }
                 ContentBlock::ToolResult {
-                    tool_use_id, content, ..
+                    tool_use_id,
+                    content,
+                    ..
                 } => {
                     // Replace full tool results with short notes.
                     let note = format_result_note(content);
@@ -439,8 +436,7 @@ fn truncate_tool_inputs(state: &Value, max_chars: usize) -> Value {
                         if typ == "tool_use" {
                             if let Some(input) = block.get_mut("input") {
                                 if let &mut Value::String(ref s) = input {
-                                    let truncated: String =
-                                        s.chars().take(max_chars).collect();
+                                    let truncated: String = s.chars().take(max_chars).collect();
                                     *input = Value::String(truncated);
                                 }
                             }
@@ -468,8 +464,7 @@ fn abridge_long_texts(state: &Value) -> Value {
                                 if let &mut Value::String(ref s) = text {
                                     let chars: Vec<char> = s.chars().collect();
                                     if chars.len() > head + tail + 20 {
-                                        let head_str: String =
-                                            chars.iter().take(head).collect();
+                                        let head_str: String = chars.iter().take(head).collect();
                                         let tail_str: String = chars
                                             .iter()
                                             .rev()
@@ -478,9 +473,7 @@ fn abridge_long_texts(state: &Value) -> Value {
                                             .into_iter()
                                             .rev()
                                             .collect();
-                                        *text = Value::String(format!(
-                                            "{head_str}\n…\n{tail_str}"
-                                        ));
+                                        *text = Value::String(format!("{head_str}\n…\n{tail_str}"));
                                     }
                                 }
                             }
@@ -494,11 +487,7 @@ fn abridge_long_texts(state: &Value) -> Value {
 }
 
 /// Collapse old non-pinned messages to a placeholder.
-fn collapse_old_messages(
-    state: &Value,
-    calls: &[ToolCallPair],
-    total: usize,
-) -> Value {
+fn collapse_old_messages(state: &Value, calls: &[ToolCallPair], total: usize) -> Value {
     let mut cloned = state.clone();
     if let Value::Array(ref mut msgs) = cloned {
         let call_idxs: std::collections::HashSet<usize> =
@@ -507,28 +496,18 @@ fn collapse_old_messages(
             calls.iter().filter_map(|c| c.result_msg_idx).collect();
 
         for msg in msgs.iter_mut() {
-            if let Some(idx) = msg
-                .get("idx")
-                .and_then(|i| i.as_u64())
-                .map(|i| i as usize)
-            {
+            if let Some(idx) = msg.get("idx").and_then(|i| i.as_u64()).map(|i| i as usize) {
                 let is_old = total.saturating_sub(idx) > 8;
                 let has_call = call_idxs.contains(&idx);
                 let has_result = result_idxs.contains(&idx);
 
                 if is_old && !has_call && !has_result {
-                    if let Some(blocks) =
-                        msg.get_mut("content").and_then(|c| c.as_array_mut())
-                    {
+                    if let Some(blocks) = msg.get_mut("content").and_then(|c| c.as_array_mut()) {
                         let mut total_chars = 0usize;
                         for block in blocks.iter() {
-                            if let Some(typ) =
-                                block.get("type").and_then(|t| t.as_str())
-                            {
+                            if let Some(typ) = block.get("type").and_then(|t| t.as_str()) {
                                 if typ == "text" {
-                                    if let Some(text) =
-                                        block.get("text").and_then(|t| t.as_str())
-                                    {
+                                    if let Some(text) = block.get("text").and_then(|t| t.as_str()) {
                                         total_chars += text.chars().count();
                                     }
                                 }
@@ -557,32 +536,19 @@ fn reduce_old_calls(state: &Value, calls: &[ToolCallPair], total: usize) -> Valu
             if let Some(idx) = msg.get("idx").and_then(|i| i.as_u64()).map(|i| i as usize) {
                 let is_old = total.saturating_sub(idx) > 8;
                 if is_old {
-                    if let Some(blocks) =
-                        msg.get_mut("content").and_then(|c| c.as_array_mut())
-                    {
+                    if let Some(blocks) = msg.get_mut("content").and_then(|c| c.as_array_mut()) {
                         let mut new_blocks = Vec::new();
                         for block in blocks.iter() {
                             if let Some(typ) = block.get("type").and_then(|t| t.as_str()) {
                                 if typ == "tool_use" {
-                                    let name = block
-                                        .get("name")
-                                        .and_then(|n| n.as_str())
-                                        .unwrap_or("?");
-                                    let id = block
-                                        .get("id")
-                                        .and_then(|i| i.as_str())
-                                        .unwrap_or("?");
-                                    let result_note = if let Some(call) =
-                                        call_map.get(&idx)
-                                    {
+                                    let name =
+                                        block.get("name").and_then(|n| n.as_str()).unwrap_or("?");
+                                    let id =
+                                        block.get("id").and_then(|i| i.as_str()).unwrap_or("?");
+                                    let result_note = if let Some(call) = call_map.get(&idx) {
                                         call.tool_result
                                             .as_ref()
-                                            .map(|r| {
-                                                format!(
-                                                    " → {}",
-                                                    format_result_note(r)
-                                                )
-                                            })
+                                            .map(|r| format!(" → {}", format_result_note(r)))
                                             .unwrap_or_default()
                                     } else {
                                         String::new()
@@ -610,11 +576,7 @@ fn reduce_old_calls(state: &Value, calls: &[ToolCallPair], total: usize) -> Valu
 }
 
 /// Omit call-less messages from old context.
-fn omit_callless_messages(
-    state: &Value,
-    calls: &[ToolCallPair],
-    total: usize,
-) -> Value {
+fn omit_callless_messages(state: &Value, calls: &[ToolCallPair], total: usize) -> Value {
     let mut cloned = state.clone();
     if let Value::Array(ref mut msgs) = cloned {
         let call_idxs: std::collections::HashSet<usize> =
@@ -623,12 +585,9 @@ fn omit_callless_messages(
             calls.iter().filter_map(|c| c.result_msg_idx).collect();
 
         msgs.retain(|msg| {
-            if let Some(idx) =
-                msg.get("idx").and_then(|i| i.as_u64()).map(|i| i as usize)
-            {
+            if let Some(idx) = msg.get("idx").and_then(|i| i.as_u64()).map(|i| i as usize) {
                 let is_old = total.saturating_sub(idx) > 6;
-                if is_old && !call_idxs.contains(&idx) && !result_idxs.contains(&idx)
-                {
+                if is_old && !call_idxs.contains(&idx) && !result_idxs.contains(&idx) {
                     return false;
                 }
             }
@@ -649,27 +608,16 @@ fn fold_old_call_runs(state: &Value, calls: &[ToolCallPair], total: usize) -> Va
         let mut run: Vec<(usize, String)> = Vec::new();
 
         for msg in msgs.drain(..) {
-            let idx = msg
-                .get("idx")
-                .and_then(|i| i.as_u64())
-                .map(|i| i as usize);
+            let idx = msg.get("idx").and_then(|i| i.as_u64()).map(|i| i as usize);
 
             let is_old = idx.map(|i| total.saturating_sub(i) > 8).unwrap_or(false);
-            let has_call = idx
-                .map(|i| call_map.contains_key(&i))
-                .unwrap_or(false);
+            let has_call = idx.map(|i| call_map.contains_key(&i)).unwrap_or(false);
 
             if is_old && has_call {
                 // Accumulate into run.
                 if let Some(i) = idx {
                     if let Some(call) = call_map.get(&i) {
-                        run.push((
-                            i,
-                            format!(
-                                "t{} {}",
-                                i, call.tool_use.name,
-                            ),
-                        ));
+                        run.push((i, format!("t{} {}", i, call.tool_use.name,)));
                     }
                 }
             } else {
@@ -810,11 +758,8 @@ fn batch_questions(
         let q1_key = format!("keep_call_{}", i);
         let q2_key = format!("keep_result_{}", i);
 
-        let q1_tokens =
-            estimate_tokens(&serde_json::to_string(&keep_call_q).unwrap_or_default());
-        let q2_tokens = estimate_tokens(
-            &serde_json::to_string(&keep_result_q).unwrap_or_default(),
-        );
+        let q1_tokens = estimate_tokens(&serde_json::to_string(&keep_call_q).unwrap_or_default());
+        let q2_tokens = estimate_tokens(&serde_json::to_string(&keep_result_q).unwrap_or_default());
 
         let batch_size = current_tokens + q1_tokens + q2_tokens;
 
@@ -827,9 +772,7 @@ fn batch_questions(
                     questions: HashMap::new(),
                 },
             ));
-            current_tokens = estimate_tokens(
-                &serde_json::to_string(state).unwrap_or_default(),
-            );
+            current_tokens = estimate_tokens(&serde_json::to_string(state).unwrap_or_default());
         }
 
         current_batch.questions.insert(q1_key, keep_call_q);
@@ -846,7 +789,7 @@ fn batch_questions(
 
 // ── Step 4: Ask Jev ────────────────────────────────────────────────────────
 
-/// TypeSafe-compatible request body.
+/// System One request body.
 #[derive(Debug, Serialize)]
 struct TypeSafeRequest {
     state: Value,
@@ -854,7 +797,7 @@ struct TypeSafeRequest {
     questions: HashMap<String, Value>,
 }
 
-/// TypeSafe API response.
+/// System One API response.
 #[derive(Debug, Deserialize)]
 struct TypeSafeResponse {
     answers: HashMap<String, Value>,
@@ -865,12 +808,9 @@ struct TypeSafeResponse {
 }
 
 /// Send all batches to Jev and collect decisions.
-async fn ask_jev(
-    batches: &[QuestionBatch],
-    keep_threshold: f64,
-) -> Result<Vec<CallDecision>> {
-    let (api_url, api_key, default_model) = api_config()?;
-    let model = default_model.clone();
+async fn ask_jev(batches: &[QuestionBatch], keep_threshold: f64) -> Result<Vec<CallDecision>> {
+    let systemone = crate::systemone::resolve()?;
+    let model = systemone.default_model.clone();
     let mut all_decisions: HashMap<String, (f64, f64)> = HashMap::new();
 
     for batch in batches {
@@ -880,7 +820,13 @@ async fn ask_jev(
             questions: batch.questions.clone(),
         };
 
-        let response = send_with_retry(api_url, &api_key, &body, MAX_RETRIES).await?;
+        let response = send_with_retry(
+            &systemone.endpoint_url,
+            &systemone.api_key,
+            &body,
+            MAX_RETRIES,
+        )
+        .await?;
 
         for (key, answer) in &response.answers {
             // Extract probability from Noul response.
@@ -895,7 +841,9 @@ async fn ask_jev(
                 .or_else(|| key.strip_prefix("keep_result_"))
             {
                 if let Ok(_idx) = idx_str.parse::<usize>() {
-                    let entry = all_decisions.entry(idx_str.to_string()).or_insert((0.5, 0.5));
+                    let entry = all_decisions
+                        .entry(idx_str.to_string())
+                        .or_insert((0.5, 0.5));
                     if key.starts_with("keep_call_") {
                         entry.0 = prob;
                     } else {
@@ -921,7 +869,7 @@ async fn ask_jev(
             let keep = *keep_result >= keep_threshold || *keep_call >= keep_threshold;
             let keep_result_content = *keep_result >= keep_threshold;
             decisions.push(CallDecision {
-                call_msg_idx: *key, // This is the non-pinned call index — needs mapping later
+                call_msg_idx: *key,   // This is the non-pinned call index — needs mapping later
                 result_msg_idx: None, // Will be filled by apply_decisions
                 keep_call: *keep_call,
                 keep_result: *keep_result,
@@ -932,27 +880,6 @@ async fn ask_jev(
     }
 
     Ok(decisions)
-}
-
-/// Get API configuration: returns (url, key, default_model).
-fn api_config() -> Result<(&'static str, String, String)> {
-    if let Ok(key) = std::env::var("TYPESAFE_API_KEY") {
-        if !key.trim().is_empty() {
-            return Ok((TYPESAFE_API_URL, key, DEFAULT_MODEL.to_string()));
-        }
-    }
-    if let Ok(key) = std::env::var("OPENROUTER_API_KEY") {
-        if !key.trim().is_empty() {
-            return Ok((
-                OPENROUTER_API_URL,
-                key,
-                OPENROUTER_MODEL.to_string(),
-            ));
-        }
-    }
-    anyhow::bail!(
-        "Jev compaction requires TYPESAFE_API_KEY or OPENROUTER_API_KEY"
-    )
 }
 
 async fn send_with_retry(
@@ -987,31 +914,25 @@ async fn send_with_retry(
     Err(last_error.unwrap_or_else(|| anyhow::anyhow!("jev_compaction: unknown error")))
 }
 
-async fn send_once(
-    url: &str,
-    api_key: &str,
-    body: &TypeSafeRequest,
-) -> Result<TypeSafeResponse> {
+async fn send_once(url: &str, api_key: &str, body: &TypeSafeRequest) -> Result<TypeSafeResponse> {
     let response = HTTP_CLIENT
         .post(url)
         .header("Authorization", format!("Bearer {api_key}"))
         .json(body)
         .send()
         .await
-        .context("jev_compaction: failed to reach TypeSafe/OpenRouter API")?;
+        .context("jev_compaction: failed to reach the configured System One endpoint")?;
 
     let status = response.status();
     if !status.is_success() {
         let status_text = response.text().await.unwrap_or_default();
-        anyhow::bail!(
-            "jev_compaction: API returned HTTP {status}: {status_text}"
-        );
+        anyhow::bail!("jev_compaction: API returned HTTP {status}: {status_text}");
     }
 
     let parsed: TypeSafeResponse = response
         .json()
         .await
-        .context("jev_compaction: failed to parse TypeSafe response")?;
+        .context("jev_compaction: failed to parse System One response")?;
 
     Ok(parsed)
 }
@@ -1051,15 +972,10 @@ fn apply_decisions(messages: &[Message], decisions: &[CallDecision]) -> Vec<Mess
             // Truncate result content in this message.
             let mut msg = msg.clone();
             for block in &mut msg.content {
-                if let ContentBlock::ToolResult {
-                    content, ..
-                } = block
-                {
+                if let ContentBlock::ToolResult { content, .. } = block {
                     // Keep just the first 200 chars with note.
                     let truncated: String = content.chars().take(200).collect();
-                    *content = format!(
-                        "{truncated}… [result truncated by Jev compaction]"
-                    );
+                    *content = format!("{truncated}… [result truncated by Jev compaction]");
                 }
             }
             result.push(msg);
@@ -1083,10 +999,7 @@ fn apply_decisions(messages: &[Message], decisions: &[CallDecision]) -> Vec<Mess
 
     result.retain(|msg| {
         for block in &msg.content {
-            if let ContentBlock::ToolResult {
-                tool_use_id, ..
-            } = block
-            {
+            if let ContentBlock::ToolResult { tool_use_id, .. } = block {
                 if !call_ids.contains(tool_use_id) {
                     return false;
                 }
@@ -1131,10 +1044,7 @@ pub enum JevOutcome {
 
 /// Convenience wrapper that produces a `JevOutcome` from `try_jev_compact`,
 /// handling errors as Skip.
-pub async fn compact_with_jev(
-    messages: &[Message],
-    config: &JevCompactorConfig,
-) -> JevOutcome {
+pub async fn compact_with_jev(messages: &[Message], config: &JevCompactorConfig) -> JevOutcome {
     match try_jev_compact(messages, config).await {
         Ok(result) => {
             if !result.applied {
@@ -1159,9 +1069,7 @@ pub async fn compact_with_jev(
             }
         }
         Err(e) => {
-            logging::warn(&format!(
-                "Jev compaction failed, falling back to LLM: {e}"
-            ));
+            logging::warn(&format!("Jev compaction failed, falling back to LLM: {e}"));
             JevOutcome::Skip(format!("Jev error: {e}"))
         }
     }
@@ -1234,15 +1142,15 @@ mod tests {
     #[test]
     fn test_collect_tool_calls_pins_first_and_recent() {
         let msgs = vec![
-            make_text_msg("system", Role::User),                       // 0: pinned
-            make_tool_use_msg("c1", "read", "x"),                     // 1
-            make_tool_result_msg("c1", "ok"),                          // 2
-            make_tool_use_msg("c2", "bash", "ls"),                    // 3
-            make_tool_result_msg("c2", "files"),                       // 4
-            make_text_msg("user question", Role::User),                // 5: pinned (recent)
-            make_tool_use_msg("c3", "write", "z"),                    // 6: pinned (recent)
-            make_tool_result_msg("c3", "ok"),                          // 7: pinned (recent)
-            make_text_msg("user", Role::User),                         // 8: pinned (recent)
+            make_text_msg("system", Role::User),        // 0: pinned
+            make_tool_use_msg("c1", "read", "x"),       // 1
+            make_tool_result_msg("c1", "ok"),           // 2
+            make_tool_use_msg("c2", "bash", "ls"),      // 3
+            make_tool_result_msg("c2", "files"),        // 4
+            make_text_msg("user question", Role::User), // 5: pinned (recent)
+            make_tool_use_msg("c3", "write", "z"),      // 6: pinned (recent)
+            make_tool_result_msg("c3", "ok"),           // 7: pinned (recent)
+            make_text_msg("user", Role::User),          // 8: pinned (recent)
         ];
 
         let calls = collect_tool_calls(&msgs, 4);
@@ -1344,9 +1252,11 @@ mod tests {
 
         let result = apply_decisions(&msgs, &decisions);
         assert_eq!(result.len(), 2);
-        assert!(result
-            .iter()
-            .all(|m| !matches!(m.content.first(), Some(ContentBlock::ToolUse { .. }))));
+        assert!(
+            result
+                .iter()
+                .all(|m| !matches!(m.content.first(), Some(ContentBlock::ToolUse { .. })))
+        );
     }
 
     #[test]

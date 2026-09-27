@@ -182,6 +182,21 @@ pub(crate) fn hash_rendered_image_signature_fields(
     hash_rendered_image_anchor(image.anchor.as_ref(), hasher);
 }
 
+/// State for a structured question card awaiting user input.
+#[derive(Debug, Clone)]
+pub struct QuestionPromptState {
+    pub request_id: String,
+    pub tool_call_id: String,
+    pub session_id: String,
+    pub questions: serde_json::Value,
+    pub question_index: usize,
+    pub option_index: usize,
+    pub reviewing: bool,
+    pub selected: std::collections::BTreeMap<String, Vec<String>>,
+    pub free_text: std::collections::BTreeMap<String, String>,
+    pub editing_other: bool,
+}
+
 /// Trait for TUI state consumed by the shared renderer.
 ///
 /// This is a wide (114-method) presentation interface: the read-only surface the
@@ -605,6 +620,9 @@ pub trait TuiState {
     }
     /// Session picker overlay for /resume command
     fn session_picker_overlay(&self) -> Option<&std::cell::RefCell<session_picker::SessionPicker>>;
+    fn question_prompt(&self) -> Option<&QuestionPromptState> {
+        None
+    }
     /// Login picker overlay for /login command
     fn login_picker_overlay(&self) -> Option<&std::cell::RefCell<login_picker::LoginPicker>>;
     /// Account picker overlay for /account command

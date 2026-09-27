@@ -193,7 +193,7 @@ pub fn parse_poke_assessment(
 /// Returns the provider string (e.g. "openrouter" or "typesafe") or
 /// a message indicating no credentials are configured.
 pub fn shadow_provider_name() -> String {
-    jcode_system_one::resolve_service(None)
+    crate::systemone::resolve()
         .ok()
         .map(|cfg| cfg.provider.to_string())
         .unwrap_or_else(|| "no credentials configured".to_string())
@@ -472,10 +472,9 @@ pub async fn evaluate_shadow(
         }),
     );
 
-    let model = Some("jev-latest");
     let response = match tokio::time::timeout(
         std::time::Duration::from_secs(ASSESSMENT_DEADLINE_SECS),
-        service.evaluate(state, questions, model),
+        service.evaluate(state, questions, None),
     )
     .await
     {
@@ -521,7 +520,7 @@ pub async fn run_shadow_assessment(
         verification_fresh, background_work, awaiting_user,
     )?;
 
-    let config = jcode_system_one::resolve_service(None).ok()?;
+    let config = crate::system_one::service_config().ok()?;
     let service = jcode_system_one::LiveSystemOneService::with_timeout(
         config,
         std::time::Duration::from_secs(ASSESSMENT_DEADLINE_SECS),

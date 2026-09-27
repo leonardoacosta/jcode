@@ -8,7 +8,7 @@ use std::net::ToSocketAddrs;
 use std::path::{Path, PathBuf};
 use std::process::{Command as ProcessCommand, Stdio};
 
-use crate::{browser, gateway, memory, session, storage, tui};
+use crate::{gateway, memory, session, storage, tui};
 
 use super::{output::terminal_title, terminal::init_tui_runtime};
 
@@ -1906,63 +1906,18 @@ pub use gateway::{detect_tailscale_dns_name, parse_tailscale_dns_name, resolve_c
 
 pub async fn run_browser(action: &str) -> Result<()> {
     match action {
-        "setup" => browser::run_setup_command().await?,
+        "setup" => {
+            println!("Explicit optional setup (Python >=3.12, Chromium required):");
+            println!("uv venv ~/.jcode/browser-runtime --python 3.12");
+            println!("uv pip install --python ~/.jcode/browser-runtime/bin/python 'jev-ultrafast @ git+https://github.com/browser-use/jev-ultrafast@1231850a0bf1a0c0341fe408ef1668dbbfdfac46'");
+            println!("Set JCODE_BROWSER_PYTHON=~/.jcode/browser-runtime/bin/python and JCODE_BROWSER_CHROME to your Chromium executable.");
+            println!("Create/select a labeled profile with jcode browser-profiles. Existing legacy data is untouched.");
+        }
         "status" => {
-            let status = browser::ensure_browser_ready_noninteractive().await?;
-            println!("Browser automation");
-            println!("  backend: {}", status.backend);
-            println!("  browser: {}", status.browser);
-            println!(
-                "  binary: {}",
-                if status.binary_installed {
-                    "installed"
-                } else {
-                    "missing"
-                }
-            );
-            println!(
-                "  setup: {}",
-                if status.setup_complete {
-                    "complete"
-                } else {
-                    "not complete"
-                }
-            );
-            println!(
-                "  bridge: {}",
-                if status.responding {
-                    "responding"
-                } else {
-                    "not responding"
-                }
-            );
-            println!(
-                "  compatibility: {}",
-                if status.compatible {
-                    "ok"
-                } else {
-                    "extension/bridge mismatch"
-                }
-            );
-            if !status.missing_actions.is_empty() {
-                println!("  missing actions: {}", status.missing_actions.join(", "));
-            }
-
-            if status.ready {
-                println!("\nBuilt-in browser tool is ready.");
-            } else if status.responding && !status.compatible {
-                println!(
-                    "\nThe browser bridge is connected, but the installed Firefox extension is out of date for this jcode build. Run `jcode browser setup` to repair or update it."
-                );
-            } else {
-                println!("\nRun `jcode browser setup` to install or repair it.");
-            }
+            let result = crate::browser_profiles::invoke("browser-cli", serde_json::json!({"action":"status"}), false).await?;
+            println!("{}", serde_json::to_string_pretty(&result)?);
         }
-        other => {
-            eprintln!("Unknown browser action: {}", other);
-            eprintln!("Available: setup, status");
-            std::process::exit(1);
-        }
+        _ => anyhow::bail!("Available browser commands: setup, status; profile operations: jcode browser-profiles"),
     }
     Ok(())
 }
@@ -3465,16 +3420,16 @@ pub(crate) fn run_shell_history(
     }
 
     // If no API key is configured, silently return.
-    let api_key = match resolve_jev_api_key() {
-        Some(k) => k,
-        None => {
+    let systemone = match crate::systemone::resolve() {
+        Ok(config) => config,
+        Err(_) => {
             crate::logging::debug("Jev shell history: no API key configured, skipping");
             return Ok(());
         }
     };
 
     // Call Jev for fuzzy matching.
-    let matched = match match_command_sync(&buffer, &entries, &api_key) {
+    let matched = match match_command_sync(&buffer, &entries, &systemone) {
         Ok(Some(cmd)) => cmd,
         Ok(None) => return Ok(()),
         Err(e) => {
@@ -3530,27 +3485,12 @@ fn strip_zsh_timestamp(line: &str) -> &str {
     line
 }
 
-/// Resolve the Jev API key from environment variables.
-fn resolve_jev_api_key() -> Option<String> {
-    if let Ok(key) = std::env::var("TYPESAFE_API_KEY") {
-        if !key.trim().is_empty() {
-            return Some(key);
-        }
-    }
-    if let Ok(key) = std::env::var("OPENROUTER_API_KEY") {
-        if !key.trim().is_empty() {
-            return Some(key);
-        }
-    }
-    None
-}
-
 /// Call the Jev API synchronously (blocking) to match a partial buffer
 /// against shell history entries.
 fn match_command_sync(
     buffer: &str,
     history: &[String],
-    api_key: &str,
+    systemone: &crate::systemone::ResolvedSystemOneConfig,
 ) -> Result<Option<String>> {
     // Build criteria: cmd_0 → first entry, cmd_1 → second, etc.
     let mut criteria = serde_json::Map::new();
@@ -3563,7 +3503,7 @@ fn match_command_sync(
             "buffer": buffer,
             "history": history,
         }),
-        "model": "jev-latest",
+        "model": systemone.default_model,
         "questions": {
             "match": {
                 "type": "choice",
@@ -3579,32 +3519,33 @@ fn match_command_sync(
         .context("shell-history: cannot create HTTP client")?;
 
     let response = client
-        .post("https://api.typesafe.ai/v1/systemone")
-        .header("Authorization", format!("Bearer {api_key}"))
+        .post(&systemone.endpoint_url)
+        .header("Authorization", format!("Bearer {}", systemone.api_key))
         .json(&request)
         .send()
-        .context("shell-history: failed to reach TypeSafe API")?;
+        .context("shell-history: failed to reach System One API")?;
 
     if !response.status().is_success() {
-        anyhow::bail!(
-            "TypeSafe API returned HTTP {}",
-            response.status()
-        );
+        anyhow::bail!("System One API returned HTTP {}", response.status());
     }
 
-    let body: serde_json::Value = response.json()
-        .context("shell-history: failed to parse TypeSafe response")?;
+    let body: serde_json::Value = response
+        .json()
+        .context("shell-history: failed to parse System One response")?;
 
     // Extract match answer.
-    let answers = body.get("answers")
+    let answers = body
+        .get("answers")
         .and_then(|a| a.as_object())
         .ok_or_else(|| anyhow::anyhow!("shell-history: invalid response format"))?;
 
-    let match_answer = answers.get("match")
+    let match_answer = answers
+        .get("match")
         .ok_or_else(|| anyhow::anyhow!("shell-history: no match answer"))?;
 
     // Parse choice format: {"choice": "cmd_3", "confidence": 0.87, ...}
-    let choice = match_answer.get("choice")
+    let choice = match_answer
+        .get("choice")
         .and_then(|c| c.as_str())
         .unwrap_or("");
 

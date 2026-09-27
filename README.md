@@ -351,6 +351,22 @@ jcode works with subscription-backed OAuth flows and many provider integrations,
 
 For custom OpenAI-compatible endpoints, jcode now prompts for the API base and supports local localhost servers without requiring an API key.
 
+### Remote macOS desktop (SSH)
+
+Jcode can expose `remote_desktop` when you configure a named SSH target. The Mac must have `agent-desktop` installed and its SSH session must be able to access the logged-in GUI session. SSH host-key verification remains enabled; do not put credentials in Jcode config.
+
+```toml
+[[remote_desktop.targets]]
+id = "office-mac"
+ssh_destination = "mac" # SSH config alias
+executable_path = "/opt/homebrew/bin/agent-desktop"
+timeout_secs = 30
+max_output_bytes = 1048576
+enabled = true
+```
+
+Targets default to an empty list. The tool is registered only when a valid target is enabled and still follows the normal `[tools]` and session allow/disable policy. Its initial operation set is status, app/window listing, accessibility snapshot/find, property reads, and ref-based click/type. It does not expose arbitrary shell, screenshots, clipboard, scripting, batch, keyboard shortcuts, raw coordinates, permission prompts, or app termination. UI text returned by the tool can persist in conversation history under normal Jcode retention. Disable a target with `enabled = false` or remove it; no daemon or listener is installed.
+
 ### Config-file setup for self-hosted endpoints and MCP
 
 If you prefer to configure things by editing files instead of using the login UI, jcode supports both a custom OpenAI-compatible endpoint config and MCP config files.
@@ -634,7 +650,7 @@ The devil is in the details. There are many undocumented optimizations and nicet
 
 Anthropic's Claude cache goes cold after 5 minutes. If you initiate Claude after these 5 minutes, you have a cache miss, potentially costing you lots of tokens. The ui warns you when the cache went cold, and notfies you if there was an unexpected cache miss. 
 
-jcode comes with instructions on how to set up Firefox Agent Bridge. Ask you agent to set it up, and then you will have browser automation in jcode as well. 
+jcode uses pinned jev-ultrafast with labeled local Chrome profiles. Run `jcode browser setup` for explicit setup instructions, then create or attach a profile. See [local browser profiles](docs/BROWSER_PROFILES.md). Existing browser data is never imported or deleted during setup.
 
 Agent grep is a grep tool I made for the jcode agent. It adds file strucuture information (ie the list of functions, their displacement, etc) to the grep return, so that the agent can infer more of what the file doesn without actually reading the file. It also implements a harness-level integration that adaptively truncates returns based on what the agent has already seen. This saves on context a lot. 
 
@@ -710,25 +726,10 @@ and hotkey-friendly dictation without requiring a bundled speech-to-text stack.
 jcode includes a first-class built-in `browser` tool for browser control inside agent sessions.
 
 Current built-in backend:
-- Firefox via Firefox Agent Bridge
+- Local Chrome profiles via jev-ultrafast
 
-Current built-in tool actions include:
-- `status`
-- `setup`
-- `open`
-- `snapshot`
-- `get_content`
-- `interactables`
-- `click`
-- `type`
-- `fill_form`
-- `select`
-- `wait`
-- `screenshot`
-- `eval`
-- `scroll`
-- `upload`
-- `press`
+Profile actions: `create`, `attach`, `list`, `inspect`, `select`, `default`, `detach`, `close`, `recover`, `status`.
+Automation actions: `goal`, `observe`, `evaluate`. Explicit managed deletion requires the user CLI confirmation flag.
 
 Quick setup:
 
@@ -737,12 +738,7 @@ jcode browser status
 jcode browser setup
 ```
 
-Once setup is complete, the model can use the built-in `browser` tool directly. The UI also summarizes browser tool calls compactly, for example opening a URL, clicking a selector, or typing into a field without echoing sensitive typed text.
-
-Notes:
-- the provider/tool architecture is in place for additional backends
-- Firefox is the wired built-in backend today
-- Chrome bridge / remote debugging style providers can be added on top of the same browser tool later
+After setup, create or attach a labeled profile and select it explicitly. Each managed profile has its own Chrome data directory. Defaults affect new sessions only. Existing external state and legacy bridge files remain untouched. See [profile lifecycle and CLI examples](docs/BROWSER_PROFILES.md).
 
 ---
 

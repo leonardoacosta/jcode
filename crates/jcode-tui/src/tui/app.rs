@@ -957,6 +957,14 @@ pub struct App {
     /// list must not trigger another automatic turn: the agent may be parked on
     /// a worker, wake, or human decision, and repeated pokes cannot help.
     last_auto_poke_fingerprint: Option<String>,
+    /// Whether poke shadow assessment is enabled this session.
+    poke_shadow_enabled: bool,
+    /// Last shadow assessment result display line (or None if never assessed).
+    poke_shadow_last_result: Option<String>,
+    /// Remaining shadow assessment requests this consent session.
+    poke_shadow_remaining_budget: u8,
+    /// Current shadow assessment consent generation for invalidation.
+    poke_shadow_generation: u64,
     /// Set when the current turn ended with a provider guardrail/refusal stop
     /// (ServerEvent::ProviderGuardrail). Consumed by the Done handler to
     /// update `consecutive_guardrail_stops`.
@@ -1621,6 +1629,7 @@ pub struct App {
     model_status_content: String,
     /// Session picker overlay (None = not visible)
     session_picker_overlay: Option<RefCell<super::session_picker::SessionPicker>>,
+    question_prompt: Option<super::QuestionPromptState>,
     session_picker_mode: SessionPickerMode,
     pending_session_picker_load: Option<PendingSessionPickerLoad>,
     catchup_return_stack: Vec<String>,

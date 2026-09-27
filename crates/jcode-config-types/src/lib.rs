@@ -386,7 +386,6 @@ pub struct CompactionConfig {
     pub goal_window_turns: usize,
 
     // ── Jev compaction ────────────────────────────────────────────────────
-
     /// [jev] Probability threshold for keeping a tool call or result (0.0-1.0).
     /// Calls scored below this are dropped.
     pub jev_keep_threshold: f64,

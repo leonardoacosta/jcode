@@ -2673,6 +2673,154 @@ pub fn draw(frame: &mut Frame, app: &dyn TuiState) {
     // is reclaimed even when no image widget renders again.
     crate::tui::mermaid::render_pending_terminal_image_cleanup(frame.buffer_mut());
 }
+fn draw_question_prompt_overlay(
+    frame: &mut Frame,
+    area: Rect,
+    prompt: &super::QuestionPromptState,
+) {
+    let width = area.width.saturating_sub(4).min(76).max(1);
+    let height = area.height.saturating_sub(4).min(22).max(1);
+    let popup = Rect {
+        x: area.x + area.width.saturating_sub(width) / 2,
+        y: area.y + area.height.saturating_sub(height) / 2,
+        width,
+        height,
+    };
+    frame.render_widget(ratatui::widgets::Clear, popup);
+    let questions = prompt.questions.as_array().cloned().unwrap_or_default();
+    if prompt.reviewing {
+        let mut lines = vec![
+            Line::from("Review your answers before submitting"),
+            Line::from(""),
+        ];
+        for question in &questions {
+            let id = question
+                .get("id")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_default();
+            let text = question
+                .get("question")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("");
+            let selected = prompt.selected.get(id).cloned().unwrap_or_default();
+            let labels: Vec<&str> = question
+                .get("options")
+                .and_then(serde_json::Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter(|option| {
+                    option
+                        .get("id")
+                        .and_then(serde_json::Value::as_str)
+                        .is_some_and(|option_id| {
+                            selected.iter().any(|selected_id| selected_id == option_id)
+                        })
+                })
+                .filter_map(|option| option.get("label").and_then(serde_json::Value::as_str))
+                .collect();
+            let other = prompt.free_text.get(id).map(String::as_str).unwrap_or("");
+            let answer = if other.is_empty() {
+                labels.join(", ")
+            } else if labels.is_empty() {
+                other.to_string()
+            } else {
+                format!("{}, Other: {}", labels.join(", "), other)
+            };
+            lines.push(Line::from(format!("{text}\n  → {answer}")));
+        }
+        lines.push(Line::from(""));
+        lines.push(Line::from("Enter submit  Left edit answers  Esc cancel"));
+        frame.render_widget(
+            Paragraph::new(lines)
+                .block(
+                    ratatui::widgets::Block::default()
+                        .title("Review answers")
+                        .borders(ratatui::widgets::Borders::ALL),
+                )
+                .wrap(ratatui::widgets::Wrap { trim: true }),
+            popup,
+        );
+        return;
+    }
+    let Some(question) = questions.get(prompt.question_index) else {
+        return;
+    };
+    let header = question
+        .get("header")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("Question");
+    let text = question
+        .get("question")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("");
+    let options = question
+        .get("options")
+        .and_then(serde_json::Value::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let qid = question
+        .get("id")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or_default();
+    let selected = prompt.selected.get(qid).cloned().unwrap_or_default();
+    let mut lines = vec![
+        Line::from(format!(
+            "{header} ({}/{})",
+            prompt.question_index + 1,
+            questions.len()
+        )),
+        Line::from(text.to_string()),
+        Line::from(""),
+    ];
+    for (index, option) in options.iter().enumerate() {
+        let id = option
+            .get("id")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or_default();
+        let label = option
+            .get("label")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or(id);
+        let description = option
+            .get("description")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("");
+        let marker = if selected.iter().any(|item| item == id) {
+            "✓"
+        } else {
+            " "
+        };
+        let cursor = if index == prompt.option_index {
+            ">"
+        } else {
+            " "
+        };
+        lines.push(Line::from(format!(
+            "{cursor} [{marker}] {label}  {description}"
+        )));
+    }
+    lines.push(Line::from(""));
+    if prompt.editing_other {
+        lines.push(Line::from(format!(
+            "Other: {}█",
+            prompt.free_text.get(qid).map(String::as_str).unwrap_or("")
+        )));
+    } else if let Some(value) = prompt.free_text.get(qid) {
+        lines.push(Line::from(format!("Other: {value}")));
+    }
+    lines.push(Line::from(
+        "↑/↓ move  Space toggle  o other  Enter next/submit  Esc cancel",
+    ));
+    let widget = Paragraph::new(lines)
+        .block(
+            ratatui::widgets::Block::default()
+                .title("Agent asks")
+                .borders(ratatui::widgets::Borders::ALL),
+        )
+        .wrap(ratatui::widgets::Wrap { trim: true });
+    frame.render_widget(widget, popup);
+}
+
 fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
     let area = frame.area().intersection(*frame.buffer_mut().area());
     if area.width == 0 || area.height == 0 {
@@ -2692,6 +2840,18 @@ fn draw_inner(frame: &mut Frame, app: &dyn TuiState) {
     // Uses Color::Reset (terminal default bg) so text selection highlighting works
     // natively in all terminal emulators.
     clear_area(frame, area);
+
+    if let Some(question) = app.question_prompt() {
+        draw_question_prompt_overlay(frame, area, question);
+        finalize_frame_metrics(
+            app,
+            total_start,
+            Duration::ZERO,
+            total_start.elapsed(),
+            None,
+        );
+        return;
+    }
 
     if let Some(scroll) = app.changelog_scroll() {
         overlays::draw_changelog_overlay(frame, area, scroll, app);

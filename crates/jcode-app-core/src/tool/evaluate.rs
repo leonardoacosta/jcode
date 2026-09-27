@@ -1,4 +1,4 @@
-//! Jev evaluate tool — typed probabilistic judgments from TypeSafe's System One model.
+//! Jev evaluate tool — typed probabilistic judgments from System One.
 //!
 //! Delegates to `jcode_system_one::SystemOneService` for provider resolution and
 //! HTTP transport, preserving the tool's own cache, retry policy, and schema.
@@ -9,7 +9,7 @@ use super::{Tool, ToolContext, ToolOutput};
 use crate::tool::jev_cache::JevCache;
 use anyhow::Result;
 use async_trait::async_trait;
-use jcode_system_one::{resolve_service, LiveSystemOneService, SystemOneResponse, SystemOneService};
+use jcode_system_one::{LiveSystemOneService, SystemOneResponse, SystemOneService};
 use serde::Deserialize;
 use serde_json::{Value, json};
 use std::sync::Arc;
@@ -22,7 +22,7 @@ const MAX_RETRIES: u32 = 3;
 /// Returns the current System One provider name for display purposes.
 /// Returns None if neither credential is configured.
 pub fn provider_name() -> Option<String> {
-    jcode_system_one::resolve_service(None)
+    crate::systemone::resolve()
         .ok()
         .map(|cfg| cfg.provider.to_string())
 }
@@ -46,7 +46,7 @@ impl EvaluateTool {
         if let Some(svc) = self.service.get() {
             return Ok(Arc::clone(svc));
         }
-        let config = resolve_service(None)?;
+        let config = crate::system_one::service_config()?;
         let svc: Arc<dyn SystemOneService> = Arc::new(LiveSystemOneService::with_timeout(
             config,
             Duration::from_secs(REQUEST_TIMEOUT_SECS),
@@ -101,7 +101,7 @@ impl Tool for EvaluateTool {
     }
 
     fn description(&self) -> &str {
-        "Call TypeSafe Jev for typed probabilistic judgments. Use for yes/no questions (noul), \
+        "Call System One for typed probabilistic judgments. Use for yes/no questions (noul), \
          choosing from defined options (choice), or rating on ordered levels (score). \
          Send state (text or JSON) plus typed questions; get back probabilities your code \
          can branch on directly. Ask one narrow judgment per question. Include a no-match \

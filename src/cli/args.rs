@@ -123,6 +123,16 @@ pub(crate) enum Command {
     /// Manage recurring skills and the private HTMX bulletin.
     #[command(subcommand)]
     Automations(super::automations::AutomationCommand),
+    /// Manage local browser profiles. JSON request uses the browser tool contract.
+    BrowserProfiles {
+        /// JSON request. Deletion also requires --confirm-delete.
+        request: String,
+        #[arg(long, default_value = "browser-cli")]
+        session: String,
+        /// Confirm deletion of the named inactive managed profile.
+        #[arg(long)]
+        confirm_delete: bool,
+    },
     /// Start the agent server (background daemon)
     Serve {
         /// Internal: mark this server as temporary so it can self-clean when its owner exits.

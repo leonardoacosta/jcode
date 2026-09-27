@@ -354,6 +354,7 @@ impl RemoteConnection {
             client_has_local_history,
             allow_session_takeover,
             terminal_env: crate::terminal_launch::snapshot_client_terminal_env(),
+            supports_questions: true,
         })
         .await?;
         let subscribe_ms = subscribe_start.elapsed().as_millis();
@@ -865,6 +866,29 @@ impl RemoteConnection {
             id: self.next_request_id,
             request_id: request_id.to_string(),
             input: input.to_string(),
+        };
+        self.next_request_id += 1;
+        self.send_request(request).await
+    }
+
+    pub async fn send_question_response(
+        &mut self,
+        request_id: &str,
+        answers: serde_json::Value,
+    ) -> Result<()> {
+        let request = Request::QuestionResponse {
+            id: self.next_request_id,
+            request_id: request_id.to_string(),
+            answers,
+        };
+        self.next_request_id += 1;
+        self.send_request(request).await
+    }
+
+    pub async fn send_question_cancel(&mut self, request_id: &str) -> Result<()> {
+        let request = Request::QuestionCancel {
+            id: self.next_request_id,
+            request_id: request_id.to_string(),
         };
         self.next_request_id += 1;
         self.send_request(request).await
@@ -1642,6 +1666,34 @@ mod tests {
             serde_json::from_str::<Request>(&line).expect("clear request should deserialize"),
             Request::Clear { id: 1 }
         ));
+    }
+
+    #[tokio::test]
+    async fn question_response_and_cancel_use_correlated_wire_requests() {
+        let mut remote = RemoteConnection::dummy();
+        let peer = remote.take_dummy_peer().expect("dummy peer");
+        let (reader, _writer) = peer.into_split();
+        let mut reader = BufReader::new(reader);
+
+        remote
+            .send_question_response("qreq-7", serde_json::json!({"q1":{"option_ids":["a"]}}))
+            .await
+            .expect("answer should send");
+        let mut line = String::new();
+        reader.read_line(&mut line).await.expect("answer frame");
+        assert!(
+            matches!(serde_json::from_str::<Request>(&line).unwrap(), Request::QuestionResponse { id: 1, request_id, answers } if request_id == "qreq-7" && answers["q1"]["option_ids"][0] == "a")
+        );
+
+        remote
+            .send_question_cancel("qreq-8")
+            .await
+            .expect("cancel should send");
+        line.clear();
+        reader.read_line(&mut line).await.expect("cancel frame");
+        assert!(
+            matches!(serde_json::from_str::<Request>(&line).unwrap(), Request::QuestionCancel { id: 2, request_id } if request_id == "qreq-8")
+        );
     }
 
     /// Regression test for the "stuck on loading session…" bug.

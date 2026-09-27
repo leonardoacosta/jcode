@@ -99,6 +99,15 @@ pub struct StdinInputRequest {
     pub response_tx: tokio::sync::oneshot::Sender<String>,
 }
 
+/// A pending structured question that blocks tool execution until the user answers.
+pub struct PendingQuestionRequest {
+    pub request_id: String,
+    pub tool_call_id: String,
+    pub session_id: String,
+    pub questions: serde_json::Value,
+    pub outcome_tx: tokio::sync::oneshot::Sender<serde_json::Value>,
+}
+
 #[derive(Clone)]
 pub struct ToolContext {
     pub session_id: String,
@@ -106,6 +115,7 @@ pub struct ToolContext {
     pub tool_call_id: String,
     pub working_dir: Option<PathBuf>,
     pub stdin_request_tx: Option<tokio::sync::mpsc::UnboundedSender<StdinInputRequest>>,
+    pub pending_question_tx: Option<tokio::sync::mpsc::UnboundedSender<PendingQuestionRequest>>,
     pub graceful_shutdown_signal: Option<InterruptSignal>,
     pub execution_mode: ToolExecutionMode,
 }
@@ -124,6 +134,7 @@ impl ToolContext {
             tool_call_id,
             working_dir: self.working_dir.clone(),
             stdin_request_tx: self.stdin_request_tx.clone(),
+            pending_question_tx: self.pending_question_tx.clone(),
             graceful_shutdown_signal: self.graceful_shutdown_signal.clone(),
             execution_mode: self.execution_mode,
         }

@@ -18,6 +18,7 @@ use std::time::{Duration, Instant};
 
 mod input_dispatch;
 mod key_handling;
+mod question_prompt;
 mod queue_recovery;
 mod reconnect;
 mod server_event_handlers;
@@ -508,7 +509,26 @@ async fn apply_terminal_event(
         Some(Ok(Event::Paste(text))) => {
             input_attribution.event = Some(format!("paste:{}", text.len()));
             app.note_client_interaction();
-            app.handle_paste(text);
+            if let Some(prompt) = app
+                .question_prompt
+                .as_mut()
+                .filter(|prompt| prompt.editing_other)
+            {
+                let question_id = prompt
+                    .questions
+                    .as_array()
+                    .and_then(|questions| questions.get(prompt.question_index))
+                    .and_then(|question| question.get("id"))
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default()
+                    .to_string();
+                let value = prompt.free_text.entry(question_id).or_default();
+                if value.chars().count() + text.chars().count() <= 4_000 {
+                    value.push_str(&text);
+                }
+            } else if app.question_prompt.is_none() {
+                app.handle_paste(text);
+            }
             needs_redraw = true;
         }
         Some(Ok(Event::Mouse(mouse))) => {

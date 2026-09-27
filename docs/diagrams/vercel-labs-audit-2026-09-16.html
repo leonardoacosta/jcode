@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vercel Labs Deep Research — Exhaustive Library Audit</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0d0d12;
+    --bg-card: #14141c;
+    --bg-elevated: #1a1a24;
+    --text: #e4e4ec;
+    --text-muted: #8888a0;
+    --text-dim: #5c5c72;
+    --accent: #f0b429;
+    --accent-dim: #f0b42922;
+    --accent-glow: #f0b42944;
+    --green: #34d399;
+    --green-dim: #34d39922;
+    --red: #f87171;
+    --red-dim: #f8717122;
+    --blue: #60a5fa;
+    --blue-dim: #60a5fa22;
+    --border: #2a2a38;
+    --border-light: #3a3a4a;
+    --radius: 6px;
+    --radius-lg: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- noise texture overlay --- */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.022;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* --- layout --- */
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  /* --- hero --- */
+  .hero {
+    padding: 80px 0 64px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 120px;
+    height: 2px;
+    background: var(--accent);
+  }
+  .hero-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 52px;
+    font-weight: 900;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 20px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .hero-subtitle {
+    font-size: 17px;
+    color: var(--text-muted);
+    max-width: 640px;
+    line-height: 1.6;
+  }
+  .hero-meta {
+    display: flex;
+    gap: 28px;
+    margin-top: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .hero-meta span { color: var(--text-muted); }
+
+  /* --- stat strip --- */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin: 48px 0;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    padding: 22px 20px;
+    text-align: center;
+  }
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+  }
+
+  /* --- sections --- */
+  section {
+    padding: 56px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  section:last-of-type { border-bottom: none; }
+
+  h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+  }
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+
+  h3 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 32px 0 12px;
+    color: var(--text);
+  }
+
+  p { color: var(--text-muted); margin-bottom: 16px; }
+  strong { color: var(--text); font-weight: 600; }
+
+  /* --- data tables --- */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0 32px;
+    font-size: 13px;
+  }
+  .data-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-muted);
+  }
+  .data-table tr:hover td { background: var(--bg-elevated); }
+  .data-table .name { color: var(--text); font-weight: 600; }
+  .data-table .stars { font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+  .data-table .lang { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent-dim); }
+  .data-table .fit { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+  .fit-yes { color: var(--green); }
+  .fit-poc { color: var(--accent); }
+  .fit-eval { color: var(--blue); }
+  .fit-op { color: var(--text-muted); }
+  .fit-watch { color: var(--text-dim); }
+  .fit-na { color: var(--text-dim); }
+
+  /* --- callout cards --- */
+  .callout {
+    background: var(--bg-elevated);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 18px 22px;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+  .callout-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .callout.warn { border-left-color: var(--red); }
+  .callout.warn .callout-title { color: var(--red); }
+  .callout.info { border-left-color: var(--blue); }
+  .callout.info .callout-title { color: var(--blue); }
+
+  /* --- architecture diagram --- */
+  .arch-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 24px 0;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.55;
+    color: var(--text-muted);
+  }
+  .arch-code .key { color: var(--accent); }
+  .arch-code .com { color: var(--text-dim); font-style: italic; }
+  .arch-code .val { color: var(--green); }
+  .arch-code .warn { color: var(--red); }
+  .arch-code .hdr { color: var(--text); font-weight: 600; }
+
+  /* --- correction box --- */
+  .correction-box {
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    margin: 24px 0;
+  }
+  .correction-box .title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--red);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+  .correction-box .row {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 4px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .correction-box .row .old { color: var(--red); text-decoration: line-through; }
+  .correction-box .row .new { color: var(--green); }
+
+  /* --- footer --- */
+  .footer {
+    padding: 48px 0;
+    font-size: 12px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    margin-top: 32px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  /* --- responsiveness --- */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 34px; }
+    .stat-strip { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 0 18px; }
+  }
+  @media (max-width: 500px) {
+    .hero h1 { font-size: 28px; }
+    .stat-strip { grid-template-columns: 1fr; }
+  }
+
+  /* --- scrollbar --- */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header class="hero">
+  <div class="hero-label">Intelligence Briefing</div>
+  <h1>Vercel Labs<br><em>Exhaustive</em> Library Audit</h1>
+  <p class="hero-subtitle">
+    Full-spectrum evaluation of all 23 projects on
+    <strong>vercel.com/labs?experiment-in-public</strong> — eight Labs products,
+    eleven active experiments, and four past experiments — with deep focus on
+    <strong>json-render</strong>, the Generative UI framework.
+  </p>
+  <div class="hero-meta">
+    <div>Date <span>2026-09-16</span></div>
+    <div>Sources <span>50 primary</span></div>
+    <div>Depth <span>Exhaustive</span></div>
+    <div>Classification <span>Open</span></div>
+  </div>
+</header>
+
+<div class="stat-strip">
+  <div class="stat-card">
+    <div class="stat-value">23</div>
+    <div class="stat-label">Projects audited</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">16.2k</div>
+    <div class="stat-label">json-render stars</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">5.1M</div>
+    <div class="stat-label">Monthly npm downloads</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">79%</div>
+    <div class="stat-label">Single-maintainer share</div>
+  </div>
+</div>
+
+<!-- ─── §1 COMPLETE INVENTORY ─── -->
+<section>
+  <div class="section-num">§ 1</div>
+  <h2>Complete Inventory</h2>
+  <p>All 23 projects ranked by GitHub stars within tier. Fit ratings calibrated to the <strong>jcode</strong> coding-agent harness and the <strong>Priceless</strong> T3 Turbo fleet.</p>
+
+  <h3>Labs Products — Maintained &amp; Relied Upon</h3>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Project</th><th>Stars</th><th>Lang</th><th>License</th><th>jcode fit</th><th>Priceless fit</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">agent-browser</td><td class="stars">42.6k</td><td class="lang">Rust</td><td>Apache-2.0</td>
+        <td class="fit fit-op">dev tool</td><td class="fit fit-na">—</td>
+      </tr>
+      <tr>
+        <td class="name">skills</td><td class="stars">31.7k</td><td class="lang">TS</td><td>MIT</td>
+        <td class="fit fit-op">manifest</td><td class="fit fit-yes">ecosystem</td>
+      </tr>
+      <tr>
+        <td class="name">json-render</td><td class="stars">16.2k</td><td class="lang">TS</td><td>Apache-2.0</td>
+        <td class="fit fit-na">—</td><td class="fit fit-poc">POC</td>
+      </tr>
+      <tr>
+        <td class="name">portless</td><td class="stars">12.5k</td><td class="lang">TS</td><td>Apache-2.0</td>
+        <td class="fit fit-op">operational</td><td class="fit fit-op">operational</td>
+      </tr>
+      <tr>
+        <td class="name">deepsec</td><td class="stars">8.0k</td><td class="lang">TS</td><td>Apache-2.0</td>
+        <td class="fit fit-eval">evaluate</td><td class="fit fit-eval">evaluate</td>
+      </tr>
+      <tr>
+        <td class="name">just-bash</td><td class="stars">4.3k</td><td class="lang">TS</td><td>—</td>
+        <td class="fit fit-eval">evaluate</td><td class="fit fit-na">—</td>
+      </tr>
+      <tr>
+        <td class="name">fx</td><td class="stars">3.0k</td><td class="lang">Zig</td><td>Apache-2.0</td>
+        <td class="fit fit-watch">watch</td><td class="fit fit-na">—</td>
+      </tr>
+      <tr>
+        <td class="name">vgpu</td><td class="stars">2.1k</td><td class="lang">TS</td><td>MIT</td>
+        <td class="fit fit-na">—</td><td class="fit fit-na">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Active Experiments — Fast Iteration, Rough Edges</h3>
+
+  <table class="data-table">
+    <thead>
+      <tr><th>Project</th><th>Stars</th><th>Lang</th><th>What it does</th><th>Fit</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="name">Native SDK</td><td class="stars">7.7k</td><td class="lang">Zig</td><td>Native desktop apps from TS + markup</td><td class="fit fit-watch">watch</td>
+      </tr>
+      <tr>
+        <td class="name">zerolang</td><td class="stars">5.4k</td><td class="lang">C</td><td>Graph-native agent programming language</td><td class="fit fit-watch">watch</td>
+      </tr>
+      <tr>
+        <td class="name">scriptc</td><td class="stars">4.8k</td><td class="lang">TS</td><td>TypeScript → native / WASM compiler</td><td class="fit fit-watch">watch</td>
+      </tr>
+      <tr>
+        <td class="name">wterm</td><td class="stars">3.5k</td><td class="lang">TS/Zig</td><td>Web terminal emulator</td><td class="fit fit-watch">watch</td>
+      </tr>
+      <tr>
+        <td class="name">opensrc</td><td class="stars">3.0k</td><td class="lang">Rust</td><td>npm package source for agents</td><td class="fit fit-op">useful</td>
+      </tr>
+      <tr>
+        <td class="name">emulate</td><td class="stars">1.8k</td><td class="lang">TS</td><td>14 API emulations for CI/sandboxes</td><td class="fit fit-watch">watch</td>
+      </tr>
+      <tr>
+        <td class="name">visual-json</td><td class="stars">938</td><td class="lang">TS</td><td>Schema-aware visual JSON editor</td><td class="fit fit-na">—</td>
+      </tr>
+      <tr>
+        <td class="name">webreel</td><td class="stars">926</td><td class="lang">TS</td><td>Browser demo video recorder</td><td class="fit fit-op">demos</td>
+      </tr>
+      <tr>
+        <td class="name">run</td><td class="stars">91</td><td class="lang">TS</td><td>Secure eval alternative (QuickJS)</td><td class="fit fit-eval">evaluate</td>
+      </tr>
+      <tr>
+        <td class="name">callscript</td><td class="stars">81</td><td class="lang">TS</td><td>Code mode w/o sandbox</td><td class="fit fit-eval">evaluate</td>
+      </tr>
+      <tr>
+        <td class="name">phase</td><td class="stars">68</td><td class="lang">TS</td><td>Lifecycle-aware UI perf layer</td><td class="fit fit-na">—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Past Experiments — Deprecated or Absorbed</h3>
+  <table class="data-table">
+    <thead><tr><th>Project</th><th>Stars</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td class="name">next-skills</td><td class="stars">980</td><td>Maintained within Next.js</td></tr>
+      <tr><td class="name">ralph-loop-agent</td><td class="stars">832</td><td>Superseded by modern harnesses</td></tr>
+      <tr><td class="name">autoship</td><td class="stars">160</td><td>Handled by coding agents directly</td></tr>
+      <tr><td class="name">vercel-open</td><td class="stars">18</td><td>Built into Vercel CLI</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ─── §2 JSON-RENDER DEEP DIVE ─── -->
+<section>
+  <div class="section-num">§ 2</div>
+  <h2>json-render — The Generative UI Framework</h2>
+
+  <div class="callout">
+    <div class="callout-title">At a Glance</div>
+    v0.20.0 · 225 commits · 20 releases · ~1.08M weekly npm downloads<br>
+    ctate = 79% of contributions (177/223) — single-maintainer risk<br>
+    99 open issues · last push 2026-09-14 · Apache 2.0
+  </div>
+
+  <h3>Architecture: The Three-Guardrail Loop</h3>
+  <div class="arch-code"><span class="hdr">Catalog</span>                    <span class="com">← you define (Zod schemas)</span>
+  Components { Card, Metric, Chart, Table, … }
+  Actions    { export, refresh, navigate, … }
+         │
+         │  catalog.prompt() → system prompt
+         ▼
+<span class="hdr">LLM</span>                        <span class="com">← AI generates (constrained to catalog)</span>
+  Generates JSONL stream (SpecStream)
+  {"op":"add","path":"/elements/card-1",…}
+         │
+         │  streamed RFC 6902 patches
+         ▼
+<span class="hdr">Registry</span>                   <span class="com">← you implement (platform-native)</span>
+  Card → &lt;Card&gt; React component
+  Metric → &lt;Metric&gt;
+         │
+         │  &lt;Renderer spec={spec} registry={registry} /&gt;
+         ▼
+<span class="hdr">React | Vue | Svelte | Solid | RN | Remotion</span>
+<span class="hdr">react-pdf | react-email | Ink | r3f | Next.js</span>
+<span class="hdr">TanStack Start | image</span>         <span class="com">18 renderers from same spec</span></div>
+
+  <h3>Key Capabilities</h3>
+  <table class="data-table">
+    <thead><tr><th>Feature</th><th>Mechanism</th><th>Maturity</th></tr></thead>
+    <tbody>
+      <tr><td class="name">Type-safe catalog</td><td>Zod-validated component props + action params</td><td>✅ v0.1+</td></tr>
+      <tr><td class="name">Progressive streaming</td><td>JSONL + RFC 6902 JSON Patch (SpecStream)</td><td>✅ v0.1+</td></tr>
+      <tr><td class="name">Data binding</td><td>$state, $item, $index, $bindState, $template, $cond</td><td>✅ v0.1+</td></tr>
+      <tr><td class="name">Visibility conditions</td><td>eq/neq/gt/gte/lt/lte, AND/OR, auth, repeat-scoped</td><td>✅ v0.1+</td></tr>
+      <tr><td class="name">Nested repeats</td><td>Item-relative paths, filtered lists</td><td>✅ v0.20.0</td></tr>
+      <tr><td class="name">Named slots</td><td>header/footer + default, React + Vue renderers</td><td>✅ v0.20.0</td></tr>
+      <tr><td class="name">36 shadcn/ui components</td><td>Radix UI + Tailwind CSS, pre-built</td><td>✅ @json-render/shadcn</td></tr>
+      <tr><td class="name">Computed directives</td><td>$format, $math, $concat, $count, $pluralize, i18n</td><td>✅ v0.19.0</td></tr>
+      <tr><td class="name">Devtools</td><td>Spec/State/Actions/Stream/Catalog/Pick tabs</td><td>✅ v0.18.0</td></tr>
+      <tr><td class="name">Code export</td><td>@json-render/codegen → standalone Next.js/Remix</td><td>✅ v0.16+</td></tr>
+      <tr><td class="name">State adapters</td><td>Zustand, Redux, Jotai, XState</td><td>✅ optional pkgs</td></tr>
+      <tr><td class="name">Inline chat mode</td><td>Interleaved text + patches, AI SDK useChat</td><td>✅ v0.1+</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Competitor Landscape</h3>
+  <table class="data-table">
+    <thead><tr><th>Framework</th><th>Approach</th><th>Tokens</th><th>License</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td class="name">json-render</td><td>Catalog + JSONL stream → multi-platform renderer</td><td class="stars">3×</td><td>Apache 2.0</td><td>Vercel</td></tr>
+      <tr><td class="name">A2UI</td><td>Protocol: createSurface → updateComponents → updateDataModel</td><td class="stars">3×</td><td>Apache 2.0</td><td>Google</td></tr>
+      <tr><td class="name">OpenUI</td><td>Compact line-based language, built-in data fetching</td><td class="stars">1×</td><td>MIT</td><td>Thesys</td></tr>
+      <tr><td class="name">CopilotKit</td><td>AG-UI protocol, supports A2UI + MCP Apps + sandboxed iframes</td><td class="stars">4×</td><td>MIT</td><td>CopilotKit</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout info">
+    <div class="callout-title">Community Pulse (HN thread 46746570 · 77 pts · 8 comments)</div>
+    “Giving an AI accessible structure to this gets AI into the realm of the various 4GLs back in late 90s”<br>
+    “It is more robust than when I tried the exact thing with structured outputs API and GPT-4 era models”<br>
+    “OpenAPI, JsonSchema, GraphQL all describe <em>Data</em>. This describes <em>User Interfaces</em>.”<br>
+    Skeptic: “It's the vercel way — re-packaging as ‘the’ solution rather than just a tool.”
+  </div>
+</section>
+
+<!-- ─── §3 CORRECTIONS ─── -->
+<section>
+  <div class="section-num">§ 3</div>
+  <h2>Verified Corrections</h2>
+  <p>Claims that changed after cross-checking against the live jcode source tree and Priceless fleet dependencies.</p>
+
+  <div class="correction-box">
+    <div class="title">Corrections from Live Verification</div>
+    <div class="row"><span class="old">jcode integrates agent-browser in source</span> → <span class="new">dev uses it externally; no source integration</span></div>
+    <div class="row"><span class="old">jcode integrates skills via npx skills</span> → <span class="new">jcode loads skills from its own manifest</span></div>
+    <div class="row"><span class="old">ctate = 87% of json-render commits</span> → <span class="new">ctate = 79% (177/223, verified via GitHub API)</span></div>
+    <div class="row"><span class="old">POC target: cardscope-store (Vite template)</span> → <span class="new">cardscope-admin (Next.js 15 + Radix + Tailwind) is the better target</span></div>
+  </div>
+</section>
+
+<!-- ─── §4 ADOPTION PATH ─── -->
+<section>
+  <div class="section-num">§ 4</div>
+  <h2>Recommended Adoption Path</h2>
+
+  <table class="data-table">
+    <thead><tr><th>Priority</th><th>What</th><th>Where</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="fit fit-poc">POC</td>
+        <td class="name">json-render + shadcn</td>
+        <td>cardscope-admin</td>
+        <td>Next.js 15 + React 19 + Radix + Tailwind — just needs <code>pnpm add zod@^4 @json-render/core @json-render/react @json-render/shadcn</code></td>
+      </tr>
+      <tr>
+        <td class="fit fit-eval">Evaluate</td>
+        <td class="name">deepsec</td>
+        <td>jcode repo</td>
+        <td>Full-repo security review via npx at v2.3.9; <code>npx deepsec init --plan</code></td>
+      </tr>
+      <tr>
+        <td class="fit fit-op">Operational</td>
+        <td class="name">portless</td>
+        <td>all Priceless services</td>
+        <td>Named .localhost URLs, no port collisions, stable OAuth</td>
+      </tr>
+      <tr>
+        <td class="fit fit-eval">Evaluate</td>
+        <td class="name">callscript</td>
+        <td>jcode agent loop</td>
+        <td>Multi-step tool execution without LLM round-trips</td>
+      </tr>
+      <tr>
+        <td class="fit fit-eval">Evaluate</td>
+        <td class="name">run</td>
+        <td>jcode sandbox</td>
+        <td>Safe JS/TS eval in QuickJS for agent-generated code</td>
+      </tr>
+      <tr>
+        <td class="fit fit-watch">Watch</td>
+        <td class="name">zerolang</td>
+        <td>jcode future</td>
+        <td>Graph-native agent programming — paradigm shift</td>
+      </tr>
+      <tr>
+        <td class="fit fit-watch">Watch</td>
+        <td class="name">scriptc</td>
+        <td>jcode future</td>
+        <td>TS → native compilation for tooling</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <div class="callout-title">json-render Risk Profile</div>
+    <strong>Single-maintainer:</strong> ctate = 79% of commits. If Vercel reallocates or he leaves, the project could stall.<br>
+    <strong>React 19 + Zod 4 gates:</strong> cardscope-admin has React 19.1.0 but no Zod. Install zod@^4 first.<br>
+    <strong>Protocol fragmentation:</strong> json-render, A2UI (Google), and OpenUI solve overlapping problems with incompatible formats. A2UI v1.0 is a candidate release.<br>
+    <strong>Open issue #9:</strong> json-render interoperability with A2UI — 5 comments, no resolution.
+  </div>
+</section>
+
+<!-- ─── §5 METHODOLOGY ─── -->
+<section>
+  <div class="section-num">§ 5</div>
+  <h2>Methodology &amp; Source Map</h2>
+  <p>50 primary sources collected 2026-09-16 via WebFetch, GitHub REST API, npm Registry API, HN Algolia API, and local filesystem inspection:</p>
+
+  <table class="data-table">
+    <thead><tr><th>Category</th><th>Sources</th><th>Method</th></tr></thead>
+    <tbody>
+      <tr><td>Labs inventory</td><td>vercel.com/labs page</td><td>WebFetch</td></tr>
+      <tr><td>Repo metadata (×23)</td><td>GitHub API: stars, forks, issues, dates, lang, license</td><td>REST</td></tr>
+      <tr><td>json-render docs</td><td>11 pages: intro, quick-start, streaming, generation-modes, data-binding, visibility, catalog, specs, code-export, installation, react-api</td><td>WebFetch</td></tr>
+      <tr><td>json-render repo</td><td>README, CHANGELOG (v0.16→v0.20), releases, commits, contributors, issues</td><td>GitHub API + WebFetch</td></tr>
+      <tr><td>npm data</td><td>@json-render/core: monthly/weekly downloads, 30 versions, registry metadata</td><td>npm API</td></tr>
+      <tr><td>HN discussion</td><td>Thread 46746570: 77 pts, 8 top-level comments + nested replies</td><td>Algolia API</td></tr>
+      <tr><td>Press</td><td>InfoQ, TheNewStack, EuropeSays, AICrier, LogRocket, CopilotKit blog</td><td>WebFetch</td></tr>
+      <tr><td>Competitors</td><td>A2UI spec (v0.9.1, v1.0 candidate), OpenUI comparison, CopilotKit docs</td><td>WebFetch</td></tr>
+      <tr><td>Repo READMEs</td><td>18 additional vercel-labs repos (scriptc, zerolang, wterm, emulate, etc.)</td><td>GitHub Raw API</td></tr>
+      <tr><td>Product sites</td><td>agent-browser.dev, deepsec.sh, justbash.dev, skills.sh, portless.sh</td><td>WebFetch</td></tr>
+      <tr><td>Local verification</td><td>jcode source tree, cardscope-admin/package.json, agent-browser profile dirs</td><td>Filesystem + JSON parse</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<footer class="footer">
+  <p>Research conducted 2026-09-16 via <a href="https://github.com/1jehuang/jcode">Jcode</a> + <a href="https://firecrawl.dev">Firecrawl</a>.</p>
+  <p style="margin-top:6px">Source HTML at <code>docs/diagrams/vercel-labs-audit-2026-09-16.html</code> — viewable over Tailscale at your dev machine's IP.</p>
+</footer>
+
+</div>
+</body>
+</html>

@@ -164,7 +164,15 @@ mod tests {
 
     #[test]
     fn terminal_window_title_omits_product_and_animal_names() {
-        assert_eq!(terminal_window_title("🐙", Some("resume window title"), Some("jcode Octopus"), false), "resume window title");
+        assert_eq!(
+            terminal_window_title(
+                "🐙",
+                Some("resume window title"),
+                Some("jcode Octopus"),
+                false
+            ),
+            "resume window title"
+        );
         assert_eq!(
             terminal_window_title("🐙", None, Some("jcode Octopus"), false),
             "jcode Octopus"
@@ -182,9 +190,18 @@ mod tests {
 
     #[test]
     fn terminal_window_title_does_not_render_connection_icon_but_keeps_authored_emoji() {
-        assert_eq!(terminal_window_title("🌐", Some("Fix API"), Some("fallback"), false), "Fix API");
-        assert_eq!(terminal_window_title("🔌", Some("🛠 Fix API"), Some("fallback"), false), "🛠 Fix API");
-        assert_eq!(terminal_window_title("🌐", None, Some("fallback"), true), "fallback [self-dev]");
+        assert_eq!(
+            terminal_window_title("🌐", Some("Fix API"), Some("fallback"), false),
+            "Fix API"
+        );
+        assert_eq!(
+            terminal_window_title("🔌", Some("🛠 Fix API"), Some("fallback"), false),
+            "🛠 Fix API"
+        );
+        assert_eq!(
+            terminal_window_title("🌐", None, Some("fallback"), true),
+            "fallback [self-dev]"
+        );
         assert_eq!(terminal_window_title("🔌", None, None, false), "");
     }
 

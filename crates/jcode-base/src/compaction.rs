@@ -1022,8 +1022,7 @@ impl CompactionManager {
                     });
                     self.turns_since_last_compact = 0;
                     self.jev_compactions_run += 1;
-                    self.jev_calls_pruned +=
-                        calls_assessed.saturating_sub(calls_kept);
+                    self.jev_calls_pruned += calls_assessed.saturating_sub(calls_kept);
                     self.jev_last_outcome = Some(format!(
                         "Jev compaction: {} calls assessed, {} kept, {:.1}% reduction, {}ms",
                         calls_assessed,
@@ -1053,12 +1052,8 @@ impl CompactionManager {
                 }
             }
             crate::compaction_jev::JevOutcome::Unchanged(reason) => {
-                crate::logging::info(&format!(
-                    "[compaction/jev] Unchanged: {reason}"
-                ));
-                self.jev_last_outcome = Some(format!(
-                    "Jev compaction unchanged: {reason}"
-                ));
+                crate::logging::info(&format!("[compaction/jev] Unchanged: {reason}"));
+                self.jev_last_outcome = Some(format!("Jev compaction unchanged: {reason}"));
             }
             crate::compaction_jev::JevOutcome::Skip(reason) => {
                 crate::logging::warn(&format!(

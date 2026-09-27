@@ -138,6 +138,9 @@ pub(super) async fn cleanup_client_connection(
                     let sid = client_session_id.to_string();
                     let working_dir = agent.working_dir().map(|dir| dir.to_string());
                     drop(agent);
+                    if matches!(disposition, DisconnectDisposition::Closed) {
+                        crate::browser_profiles::close_session(client_session_id).await;
+                    }
                     let event = match disposition {
                         DisconnectDisposition::Closed => {
                             crate::runtime_memory_log::RuntimeMemoryLogEvent::new(

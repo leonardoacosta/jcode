@@ -10,9 +10,9 @@ pub use jcode_config_types::{
     KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
     MarkdownSpacingMode, NamedProviderAuth, NamedProviderConfig, NamedProviderModelConfig,
     NamedProviderType, NativeScrollbarConfig, NotificationsConfig, OverscrollStatusMode,
-    PowerConfig, ProviderConfig, ProviderTierConfig, ReasoningDisplayMode, RouterConfig, SafetyConfig, SessionPickerResumeAction,
-    SponsorsConfig, SwarmSpawnMode, SwarmStripLayout, TerminalConfig, UpdateChannel,
-    WebSearchConfig, WebSearchEngine,
+    PowerConfig, ProviderConfig, ProviderTierConfig, ReasoningDisplayMode, RouterConfig,
+    SafetyConfig, SessionPickerResumeAction, SponsorsConfig, SwarmSpawnMode, SwarmStripLayout,
+    TerminalConfig, UpdateChannel, WebSearchConfig, WebSearchEngine,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -29,6 +29,8 @@ const CONFIG_CACHE_CHECK_INTERVAL: Duration = if cfg!(test) {
 
 const CONFIG_ENV_KEYS: &[&str] = &[
     "HOME",
+    "SYSTEMONE_URL",
+    "SYSTEMONE_MODEL",
     "JCODE_ACP_PROFILE",
     "JCODE_ACP_TOOL_PROFILE",
     "JCODE_ACTIVE_SESSIONS_MANAGER",
@@ -154,6 +156,7 @@ const CONFIG_ENV_KEYS: &[&str] = &[
     "JCODE_SCROLL_UP_KEY",
     "JCODE_SEARXNG_URL",
     "JCODE_SHOW_AGENTGREP_OUTPUT",
+    "JCODE_SHOW_BASH_OUTPUT",
     "JCODE_SHOW_DIFFS",
     "JCODE_SHOW_THINKING",
     "JCODE_SIDE_PANEL_TOGGLE_KEY",
@@ -545,6 +548,101 @@ pub struct Config {
 
     /// Global "launch a new jcode" hotkeys (macOS). Baked once by auto-import.
     pub launch_hotkeys: LaunchHotkeysConfig,
+
+    /// Explicit SSH targets for the remote desktop tool. Empty by default.
+    pub remote_desktop: RemoteDesktopConfig,
+
+    /// System One endpoint selector or full URL. Defaults to the configured 9Router profile.
+    #[serde(alias = "SYSTEMONE_URL", skip_serializing_if = "String::is_empty")]
+    pub systemone_url: String,
+
+    /// Optional model override for System One calls.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub systemone_model: Option<String>,
+}
+
+/// Named SSH hosts that may be used by the opt-in remote desktop tool.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RemoteDesktopConfig {
+    pub targets: Vec<RemoteDesktopTarget>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RemoteDesktopTarget {
+    pub id: String,
+    pub ssh_destination: String,
+    pub executable_path: String,
+    #[serde(default = "remote_desktop_default_timeout")]
+    pub timeout_secs: u64,
+    #[serde(default = "remote_desktop_default_output_limit")]
+    pub max_output_bytes: usize,
+    #[serde(default = "remote_desktop_target_enabled")]
+    pub enabled: bool,
+}
+
+fn remote_desktop_default_timeout() -> u64 {
+    30
+}
+
+fn remote_desktop_default_output_limit() -> usize {
+    1_048_576
+}
+
+fn remote_desktop_target_enabled() -> bool {
+    true
+}
+
+impl RemoteDesktopConfig {
+    pub fn validate(&self) -> anyhow::Result<()> {
+        let mut ids = BTreeSet::new();
+        for target in &self.targets {
+            if target.id.is_empty()
+                || !target
+                    .id
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.'))
+                || !ids.insert(target.id.as_str())
+            {
+                anyhow::bail!("remote_desktop target IDs must be safe, non-empty, and unique");
+            }
+            if target.ssh_destination.is_empty()
+                || !target
+                    .ssh_destination
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"._-@:[]".contains(&b))
+                || target.ssh_destination.starts_with('-')
+            {
+                anyhow::bail!(
+                    "invalid SSH destination for remote_desktop target {}",
+                    target.id
+                );
+            }
+            if !target.executable_path.starts_with('/')
+                || !target
+                    .executable_path
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"/_-.".contains(&b))
+            {
+                anyhow::bail!("remote_desktop executable_path must be an absolute safe path");
+            }
+            if !(1..=300).contains(&target.timeout_secs)
+                || !(1..=16_777_216).contains(&target.max_output_bytes)
+            {
+                anyhow::bail!("remote_desktop limits are outside the supported bounds");
+            }
+        }
+        Ok(())
+    }
+
+    pub fn target(&self, id: &str) -> anyhow::Result<&RemoteDesktopTarget> {
+        self.validate()?;
+        self.targets
+            .iter()
+            .find(|target| target.enabled && target.id == id)
+            .ok_or_else(|| anyhow::anyhow!("unknown or disabled remote_desktop target: {id}"))
+    }
 }
 
 /// Agent Client Protocol adapter configuration.

@@ -379,6 +379,19 @@ impl Agent {
         self.stdin_request_tx = Some(tx);
     }
 
+    /// Set the pending question channel for structured user questions.
+    pub fn set_pending_question_tx(
+        &mut self,
+        capable: bool,
+        tx: Option<tokio::sync::mpsc::UnboundedSender<crate::tool::PendingQuestionRequest>>,
+    ) {
+        if self.question_client_capable != capable {
+            self.locked_tools = None;
+        }
+        self.question_client_capable = capable;
+        self.pending_question_tx = if capable { tx } else { None };
+    }
+
     pub(super) async fn tool_definitions(&mut self) -> Vec<ToolDefinition> {
         if self.session.is_canary {
             self.registry.register_selfdev_tools().await;
@@ -444,6 +457,9 @@ impl Agent {
     /// session's `allowed_tools`, `disabled_tools`, and self-dev filters.
     async fn build_filtered_tool_definitions(&self) -> Vec<ToolDefinition> {
         let mut tools = self.registry.definitions(self.allowed_tools.as_ref()).await;
+        if !self.question_client_capable {
+            tools.retain(|tool| tool.name != "ask_user_question");
+        }
         if !self.disabled_tools.is_empty() {
             tools.retain(|tool| {
                 !crate::tool::tool_name_is_disabled(&self.disabled_tools, &tool.name)
@@ -502,6 +518,9 @@ impl Agent {
             self.registry.register_selfdev_tools().await;
         }
         let mut tools = self.registry.definitions(self.allowed_tools.as_ref()).await;
+        if !self.question_client_capable {
+            tools.retain(|tool| tool.name != "ask_user_question");
+        }
         if !self.disabled_tools.is_empty() {
             tools.retain(|tool| {
                 !crate::tool::tool_name_is_disabled(&self.disabled_tools, &tool.name)
@@ -528,6 +547,7 @@ impl Agent {
             tool_call_id: call_id,
             working_dir: self.working_dir().map(PathBuf::from),
             stdin_request_tx: self.stdin_request_tx.clone(),
+            pending_question_tx: self.pending_question_tx.clone(),
             graceful_shutdown_signal: Some(self.graceful_shutdown.clone()),
             execution_mode: ToolExecutionMode::Direct,
         };

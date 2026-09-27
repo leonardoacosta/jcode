@@ -1,6 +1,6 @@
 use super::reconnect;
 use super::{
-    RemoteRunState, auth_provider_hint_for_login_provider, handle_post_connect,
+    RemoteRunState, auth_provider_hint_for_login_provider, handle_post_connect, handle_remote_key,
     handle_server_event, process_remote_followups,
 };
 use crate::protocol::{
@@ -10,9 +10,94 @@ use crate::protocol::{
 use crate::provider::Provider;
 use crate::tui::info_widget::{MemoryState, StepStatus};
 use anyhow::Result;
+use crossterm::event::{KeyCode, KeyModifiers};
 use std::sync::Arc;
 
 struct MockProvider;
+
+#[test]
+fn question_prompt_event_allows_keyboard_review_submit_without_changing_draft() {
+    let rt = tokio::runtime::Runtime::new().expect("runtime");
+    let _guard = rt.enter();
+    let mut app = create_test_app();
+    app.input = "keep this draft".into();
+    app.cursor_pos = app.input.len();
+    let mut remote = crate::tui::backend::RemoteConnection::dummy();
+
+    handle_server_event(
+        &mut app,
+        ServerEvent::Question {
+            request_id: "qreq-test".into(),
+            tool_call_id: "tool-test".into(),
+            session_id: "session-test".into(),
+            questions: serde_json::json!([{
+                "id":"format", "question":"Which format?", "header":"Format",
+                "multi_select":false,
+                "options":[
+                    {"id":"brief","label":"Brief","description":"Short"},
+                    {"id":"full","label":"Full","description":"Detailed"}
+                ]
+            }]),
+        },
+        &mut remote,
+    );
+    assert!(app.question_prompt.is_some());
+
+    rt.block_on(handle_remote_key(
+        &mut app,
+        KeyCode::Enter,
+        KeyModifiers::NONE,
+        &mut remote,
+    ))
+    .expect("select option and open review");
+    assert!(
+        app.question_prompt
+            .as_ref()
+            .is_some_and(|prompt| prompt.reviewing)
+    );
+    assert_eq!(app.input, "keep this draft");
+
+    rt.block_on(handle_remote_key(
+        &mut app,
+        KeyCode::Enter,
+        KeyModifiers::NONE,
+        &mut remote,
+    ))
+    .expect("submit reviewed answer");
+    assert!(app.question_prompt.is_none());
+    assert_eq!(app.input, "keep this draft");
+}
+
+#[test]
+fn question_prompt_escape_cancels_without_changing_draft() {
+    let rt = tokio::runtime::Runtime::new().expect("runtime");
+    let _guard = rt.enter();
+    let mut app = create_test_app();
+    app.input = "preserve".into();
+    let mut remote = crate::tui::backend::RemoteConnection::dummy();
+    handle_server_event(
+        &mut app,
+        ServerEvent::Question {
+            request_id: "qreq-cancel".into(),
+            tool_call_id: "tool-cancel".into(),
+            session_id: "session-test".into(),
+            questions: serde_json::json!([{
+                "id":"q", "question":"Choose", "header":"Choice", "multi_select":false,
+                "options":[{"id":"a","label":"A","description":""},{"id":"b","label":"B","description":""}]
+            }]),
+        },
+        &mut remote,
+    );
+    rt.block_on(handle_remote_key(
+        &mut app,
+        KeyCode::Esc,
+        KeyModifiers::NONE,
+        &mut remote,
+    ))
+    .expect("cancel question");
+    assert!(app.question_prompt.is_none());
+    assert_eq!(app.input, "preserve");
+}
 
 #[async_trait::async_trait]
 impl Provider for MockProvider {

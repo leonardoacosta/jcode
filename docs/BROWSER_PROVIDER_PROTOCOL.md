@@ -1,6 +1,6 @@
 # Browser Provider Protocol
 
-Status: draft
+Status: historical draft, superseded by [local browser profiles](BROWSER_PROFILES.md). The native bridge described below is no longer implemented.
 Owner: jcode
 Audience: jcode core, browser bridge authors, adapter authors
 

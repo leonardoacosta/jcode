@@ -33,6 +33,39 @@ impl Provider for MockProvider {
 }
 
 #[tokio::test]
+async fn ask_user_question_tool_is_hidden_until_client_capability_is_advertised() {
+    let provider: Arc<dyn Provider> = Arc::new(MockProvider);
+    let registry = Registry::new(provider.clone()).await;
+    let mut agent = crate::agent::Agent::new(provider, registry);
+    assert!(
+        !agent
+            .tool_names()
+            .await
+            .iter()
+            .any(|name| name == "ask_user_question")
+    );
+
+    let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+    agent.set_pending_question_tx(true, Some(tx));
+    assert!(
+        agent
+            .tool_names()
+            .await
+            .iter()
+            .any(|name| name == "ask_user_question")
+    );
+
+    agent.set_pending_question_tx(false, None);
+    assert!(
+        !agent
+            .tool_names()
+            .await
+            .iter()
+            .any(|name| name == "ask_user_question")
+    );
+}
+
+#[tokio::test]
 async fn maintainer_feedback_tool_is_registered() {
     let provider: Arc<dyn Provider> = Arc::new(MockProvider);
     let registry = Registry::new(provider).await;
@@ -232,6 +265,7 @@ async fn test_batch_resolves_function_namespaced_tools() {
         tool_call_id: "test".to_string(),
         working_dir: Some(std::env::temp_dir()),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: ToolExecutionMode::Direct,
     };
@@ -267,6 +301,7 @@ async fn test_batch_rejects_function_namespaced_batch_recursion() {
         tool_call_id: "test".to_string(),
         working_dir: Some(std::env::temp_dir()),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: ToolExecutionMode::Direct,
     };
@@ -297,6 +332,7 @@ async fn test_batch_resolves_oauth_names() {
         tool_call_id: "test".to_string(),
         working_dir: Some(temp_dir),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: ToolExecutionMode::Direct,
     };
@@ -321,6 +357,7 @@ async fn registry_execute_enforces_session_tool_policy_after_alias_resolution() 
         tool_call_id: "test".to_string(),
         working_dir: Some(temp_dir.clone()),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: ToolExecutionMode::Direct,
     };
@@ -371,6 +408,7 @@ async fn registry_execute_pre_tool_hook_blocks_and_allows() {
         tool_call_id: "test".to_string(),
         working_dir: Some(std::env::temp_dir()),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: ToolExecutionMode::Direct,
     };
@@ -948,6 +986,7 @@ async fn unknown_tool_error_lists_available_tools_and_suggestions() {
         tool_call_id: "test".to_string(),
         working_dir: None,
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: ToolExecutionMode::Direct,
     };
@@ -1179,6 +1218,7 @@ async fn execute_big_output(input: Value) -> String {
         tool_call_id: "test".to_string(),
         working_dir: Some(std::env::temp_dir()),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: ToolExecutionMode::Direct,
     };
@@ -1331,6 +1371,7 @@ async fn test_batch_guards_both_its_subcalls_and_its_own_aggregate() {
         tool_call_id: "test".to_string(),
         working_dir: Some(std::env::temp_dir()),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: ToolExecutionMode::Direct,
     };

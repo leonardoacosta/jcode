@@ -26,6 +26,31 @@ fn test_comm_propose_plan_roundtrip() -> Result<()> {
 }
 
 #[test]
+fn question_response_and_cancel_roundtrip() -> Result<()> {
+    let response = Request::QuestionResponse {
+        id: 73,
+        request_id: "qreq-1".into(),
+        answers: serde_json::json!({"format":{"option_ids":["brief"]}}),
+    };
+    let decoded = parse_request_json(&serde_json::to_string(&response)?)?;
+    assert_eq!(decoded.id(), 73);
+    assert!(
+        matches!(decoded, Request::QuestionResponse { request_id, .. } if request_id == "qreq-1")
+    );
+
+    let cancel = Request::QuestionCancel {
+        id: 74,
+        request_id: "qreq-2".into(),
+    };
+    let decoded = parse_request_json(&serde_json::to_string(&cancel)?)?;
+    assert_eq!(decoded.id(), 74);
+    assert!(
+        matches!(decoded, Request::QuestionCancel { request_id, .. } if request_id == "qreq-2")
+    );
+    Ok(())
+}
+
+#[test]
 fn test_stdin_response_roundtrip() -> Result<()> {
     let req = Request::StdinResponse {
         id: 99,
@@ -496,7 +521,13 @@ fn test_comm_spawn_decodes_without_model_or_effort() -> Result<()> {
     // Older clients omit the model/effort fields entirely.
     let json = r#"{"type":"comm_spawn","id":60,"session_id":"sess_coord"}"#;
     let decoded = parse_request_json(json)?;
-    let Request::CommSpawn { model, effort, label, .. } = decoded else {
+    let Request::CommSpawn {
+        model,
+        effort,
+        label,
+        ..
+    } = decoded
+    else {
         return Err(anyhow!("expected CommSpawn"));
     };
     assert_eq!(model, None);

@@ -121,7 +121,8 @@ async fn run_instance(
     provider: Arc<dyn crate::provider::Provider>,
     cancel: CancellationToken,
 ) -> Result<tokio::task::JoinHandle<()>> {
-    cfg.provider.get_or_insert_with(|| provider.name().to_string());
+    cfg.provider
+        .get_or_insert_with(|| provider.name().to_string());
     cfg.model.get_or_insert_with(|| provider.model());
     let store = Arc::new(Mutex::new(Store::open(dir.join("state.json"))?));
     store.lock().await.recover(Utc::now())?;
@@ -246,7 +247,10 @@ async fn execute_with_deadline(
             .map(jcode_provider_core::provider_key)
             .with_context(|| format!("unknown automation provider: {provider_name}"))?;
         if expected != provider_template.name() {
-            bail!("automation provider mismatch: configured {expected}, runtime is {}", provider_template.name());
+            bail!(
+                "automation provider mismatch: configured {expected}, runtime is {}",
+                provider_template.name()
+            );
         }
     }
     let source = format!("{}#{}", skill.path.display(), sha256(&skill.content));
@@ -278,7 +282,25 @@ async fn execute_with_deadline(
                 .with_context(|| format!("unknown automation provider: {provider_name}"))?,
         );
     }
-    let mut agent = Agent::new_with_session(provider, registry, session, None);
+    let allowed_tools = [
+        "read",
+        "bash",
+        "apply_patch",
+        "agentgrep",
+        "webfetch",
+        "websearch",
+        "jcode_docs",
+        "memory",
+        "todo",
+        "conversation_search",
+        "session_search",
+        "ask_user_question",
+        "request_permission",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect();
+    let mut agent = Agent::new_with_session(provider, registry, session, Some(allowed_tools));
     agent.set_working_dir_for_pending_context(Some(
         automation.working_dir.to_string_lossy().into_owned(),
     ));

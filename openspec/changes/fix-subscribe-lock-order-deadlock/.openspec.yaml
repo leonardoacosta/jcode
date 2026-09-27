@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-09-21
+goal: Ensure subscribe and reconnect bookkeeping cannot deadlock while removing
+  a swarm member.

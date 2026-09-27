@@ -1428,6 +1428,7 @@ impl RawClient {
             client_has_local_history: false,
             allow_session_takeover: false,
             terminal_env: Vec::new(),
+            supports_questions: false,
         })
         .await?;
         self.read_until(
@@ -1579,6 +1580,7 @@ fn test_ctx(session_id: &str, working_dir: &Path) -> ToolContext {
         tool_call_id: "call-1".to_string(),
         working_dir: Some(working_dir.to_path_buf()),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: ToolExecutionMode::Direct,
     }

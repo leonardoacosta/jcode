@@ -282,6 +282,7 @@ fn test_subscribe_request_roundtrip_preserves_session_takeover_flags() -> Result
         client_has_local_history: true,
         allow_session_takeover: true,
         terminal_env: vec![("ZELLIJ_SESSION_NAME".to_string(), "sessionB".to_string())],
+        supports_questions: false,
     };
     let json = serde_json::to_string(&req)?;
     assert!(json.contains("\"type\":\"subscribe\""));
@@ -295,6 +296,7 @@ fn test_subscribe_request_roundtrip_preserves_session_takeover_flags() -> Result
         client_has_local_history,
         allow_session_takeover,
         terminal_env,
+        ..
     } = decoded
     else {
         return Err(anyhow!("expected Subscribe"));
@@ -326,6 +328,7 @@ fn test_subscribe_request_defaults_optional_flags() -> Result<()> {
         client_has_local_history,
         allow_session_takeover,
         terminal_env,
+        supports_questions,
     } = decoded
     else {
         return Err(anyhow!("expected Subscribe"));
@@ -338,6 +341,25 @@ fn test_subscribe_request_defaults_optional_flags() -> Result<()> {
     assert!(!client_has_local_history);
     assert!(!allow_session_takeover);
     assert!(terminal_env.is_empty());
+    assert!(!supports_questions);
+    Ok(())
+}
+
+#[test]
+fn question_event_roundtrip_preserves_correlation_and_payload() -> Result<()> {
+    let event = ServerEvent::Question {
+        request_id: "qreq-1".into(),
+        tool_call_id: "tool-9".into(),
+        session_id: "sess-2".into(),
+        questions: serde_json::json!([{"id":"format","question":"Which?"}]),
+    };
+    let encoded = encode_event(&event);
+    let decoded = parse_event_json(&encoded)?;
+    assert!(
+        matches!(decoded, ServerEvent::Question { request_id, tool_call_id, session_id, questions }
+        if request_id == "qreq-1" && tool_call_id == "tool-9" && session_id == "sess-2"
+            && questions[0]["id"] == "format")
+    );
     Ok(())
 }
 

@@ -14,7 +14,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::time::Duration;
 
-pub use resolver::{resolve_service, Provider, ServiceConfig};
+pub use resolver::{Provider, ServiceConfig};
 
 /// Default request timeout for the live service.
 pub const DEFAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);

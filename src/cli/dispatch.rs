@@ -119,6 +119,14 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
         Some(Command::Automations(action)) => {
             super::automations::run(action, args.model.as_deref()).await?;
         }
+        Some(Command::BrowserProfiles { request, session, confirm_delete }) => {
+            let mut input: serde_json::Value = serde_json::from_str(&request)?;
+            if let Some(object) = input.as_object_mut() {
+                object.insert("confirmed".into(), confirm_delete.into());
+            }
+            let result = crate::browser_profiles::invoke(&session, input, true).await?;
+            println!("{}", serde_json::to_string_pretty(&result)?);
+        }
         Some(Command::Serve {
             temporary_server,
             owner_pid,

@@ -151,6 +151,7 @@ struct TestState {
     swarm_panel_selected: usize,
     swarm_panel_focused: bool,
     swarm_panel_full_page: bool,
+    question_prompt: Option<crate::tui::QuestionPromptState>,
 }
 
 impl crate::tui::TuiState for TestState {
@@ -455,6 +456,9 @@ impl crate::tui::TuiState for TestState {
     }
     fn session_picker_overlay(&self) -> Option<&std::cell::RefCell<session_picker::SessionPicker>> {
         None
+    }
+    fn question_prompt(&self) -> Option<&crate::tui::QuestionPromptState> {
+        self.question_prompt.as_ref()
     }
     fn login_picker_overlay(
         &self,

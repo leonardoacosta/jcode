@@ -19,7 +19,7 @@
 
 pub mod auth;
 pub mod background;
-pub mod browser;
+pub mod browser_profiles;
 pub mod bus;
 pub mod cache_invalidation;
 pub mod cache_tracker;
@@ -85,6 +85,7 @@ pub mod stdin_detect;
 pub mod storage;
 pub mod subscription_api;
 pub mod subscription_catalog;
+pub mod systemone;
 pub mod telegram;
 pub mod telemetry {
     pub use jcode_telemetry_core::*;

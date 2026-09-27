@@ -137,6 +137,9 @@ pub enum Request {
         /// to the client's terminal instead of its own stale startup env (#405).
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         terminal_env: Vec<(String, String)>,
+        /// Client can render and answer structured ask_user_question requests.
+        #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+        supports_questions: bool,
     },
 
     /// Get full conversation history (for TUI sync on connect)

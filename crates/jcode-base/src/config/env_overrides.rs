@@ -7,6 +7,12 @@ impl Config {
         reason = "Environment override parsing is intentionally explicit and grouped by config area"
     )]
     pub(crate) fn apply_env_overrides(&mut self) {
+        if let Ok(v) = std::env::var("SYSTEMONE_URL") {
+            self.systemone_url = v;
+        }
+        if let Ok(v) = std::env::var("SYSTEMONE_MODEL") {
+            self.systemone_model = Some(v);
+        }
         // Keybindings
         if let Ok(v) = std::env::var("JCODE_SCROLL_UP_KEY") {
             self.keybindings.scroll_up = v;

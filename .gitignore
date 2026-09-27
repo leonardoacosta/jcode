@@ -27,3 +27,21 @@ captures/
 /graft/
 
 !config.toml
+
+# Runtime state written by jcode into its own home directory. The repo *is*
+# `~/.jcode`, so these are live application state, not source. `.git/info/exclude`
+# covers most of them but pins a per-install telemetry UUID, so a rotated UUID
+# silently un-ignores every telemetry file. Match the tree, not the UUID.
+/automations/
+/goals/
+/intake/
+/side_panel/
+/reload-recovery/
+/devices.json
+/model-usage-v1.sqlite3
+/reload-context-session_*.json
+/telemetry_active_days_*.txt
+/telemetry_concurrency_v2/
+/telemetry_id.lock
+/telemetry_milestone_*
+/telemetry_session_starts_*.txt

@@ -1,8 +1,11 @@
 use super::{
     AmbientConfig, Config, DiffDisplayMode, DisplayConfig, HookCommands, LatexRenderingMode,
-    ProviderConfig, SessionPickerResumeAction, SwarmSpawnMode, ToolConfig, config_env_fingerprint,
-    populate_context_limits_from_config_ref,
+    ProviderConfig, RemoteDesktopConfig, RemoteDesktopTarget, SessionPickerResumeAction,
+    SwarmSpawnMode, ToolConfig, config_env_fingerprint, populate_context_limits_from_config_ref,
 };
+#[path = "remote_desktop_config_tests.rs"]
+mod remote_desktop_config_tests;
+
 use std::ffi::OsString;
 use std::path::Path;
 

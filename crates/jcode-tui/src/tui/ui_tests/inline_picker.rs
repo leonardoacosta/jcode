@@ -26,6 +26,89 @@ fn render_inline_picker(state: &TestState, width: u16, height: u16) -> Vec<Strin
     lines
 }
 
+#[test]
+fn question_prompt_overlay_renders_question_options_progress_and_controls() {
+    let _lock = crate::tui::ui::render_state_test_lock();
+    let state = TestState {
+        question_prompt: Some(crate::tui::QuestionPromptState {
+            request_id: "q1".into(),
+            tool_call_id: "tool-1".into(),
+            session_id: "session-1".into(),
+            questions: serde_json::json!([{
+                "id": "format",
+                "header": "Format",
+                "question": "Which format should I use?",
+                "multi_select": false,
+                "options": [
+                    {"id":"brief","label":"Brief","description":"Short summary"},
+                    {"id":"full","label":"Detailed","description":"Full explanation"}
+                ]
+            }]),
+            question_index: 0,
+            option_index: 0,
+            reviewing: false,
+            selected: Default::default(),
+            free_text: Default::default(),
+            editing_other: false,
+        }),
+        ..Default::default()
+    };
+    let backend = TestBackend::new(64, 18);
+    let mut terminal = Terminal::new(backend).expect("question test terminal");
+    terminal
+        .draw(|frame| crate::tui::ui::draw(frame, &state))
+        .expect("question frame");
+    let buf = terminal.backend().buffer();
+    let rendered = (0..18)
+        .map(|y| (0..64).map(|x| buf[(x, y)].symbol()).collect::<String>())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(
+        rendered.contains("Which format should I use?"),
+        "{rendered}"
+    );
+    assert!(rendered.contains("Brief"), "{rendered}");
+    assert!(rendered.contains("Detailed"), "{rendered}");
+    assert!(rendered.contains("Enter next/submit"), "{rendered}");
+}
+
+#[test]
+fn question_review_overlay_shows_selected_answer_and_submit_controls() {
+    let _lock = crate::tui::ui::render_state_test_lock();
+    let state = TestState {
+        question_prompt: Some(crate::tui::QuestionPromptState {
+            request_id: "q1".into(),
+            tool_call_id: "tool-1".into(),
+            session_id: "session-1".into(),
+            questions: serde_json::json!([{
+                "id": "format", "header": "Format", "question": "Which format?",
+                "multi_select": false,
+                "options": [{"id":"brief","label":"Brief","description":"Short summary"},{"id":"full","label":"Detailed","description":"Full explanation"}]
+            }]),
+            question_index: 0,
+            option_index: 0,
+            reviewing: true,
+            selected: std::collections::BTreeMap::from([("format".into(), vec!["brief".into()])]),
+            free_text: Default::default(),
+            editing_other: false,
+        }),
+        ..Default::default()
+    };
+    let backend = TestBackend::new(64, 18);
+    let mut terminal = Terminal::new(backend).expect("question review terminal");
+    terminal
+        .draw(|frame| crate::tui::ui::draw(frame, &state))
+        .expect("question review frame");
+    let buf = terminal.backend().buffer();
+    let rendered = (0..18)
+        .map(|y| (0..64).map(|x| buf[(x, y)].symbol()).collect::<String>())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(rendered.contains("Review your answers"), "{rendered}");
+    assert!(rendered.contains("Brief"), "{rendered}");
+    assert!(rendered.contains("Enter submit"), "{rendered}");
+}
+
 fn model_picker_entry() -> crate::tui::PickerEntry {
     crate::tui::PickerEntry {
         name: "gpt-5.4".to_string(),

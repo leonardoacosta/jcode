@@ -188,8 +188,7 @@ pub struct ResourceContent {
 /// MCP server configuration
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct McpServerConfig {
-    /// Command for stdio servers. Empty for HTTP/SSE servers, which jcode does
-    /// not yet support (such entries are skipped at load time).
+    /// Command for stdio servers. Empty for HTTP/SSE servers.
     #[serde(default)]
     pub command: String,
     #[serde(default)]
@@ -201,15 +200,13 @@ pub struct McpServerConfig {
     /// Stateful servers (Playwright browser) should not be shared.
     #[serde(default = "default_shared")]
     pub shared: bool,
-    /// Transport type from Claude Code configs ("stdio", "http", "sse"). Used
-    /// only to recognize and skip non-stdio servers; defaults to stdio.
+    /// Transport type from Claude Code configs ("stdio", "http", "sse").
     #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
     pub transport: Option<String>,
-    /// URL for HTTP/SSE servers (Claude Code compat). Unused by jcode today.
+    /// URL for HTTP/SSE servers (Claude Code compat).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub url: Option<String>,
-    /// Headers for HTTP/SSE servers (Claude Code compat). Unused by jcode today,
-    /// but retained so environment expansion is ready when those transports are.
+    /// Headers for HTTP/SSE servers (Claude Code compat).
     #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
     pub headers: std::collections::HashMap<String, String>,
     /// Whether this server is enabled (default: true). Disabled servers stay
@@ -224,9 +221,8 @@ pub struct McpServerConfig {
 }
 
 impl McpServerConfig {
-    /// jcode currently only supports stdio (command-based) MCP servers. A config
-    /// entry is stdio when it has a command and is not explicitly an http/sse
-    /// transport.
+    /// A config entry is stdio when it has a command and is not explicitly an
+    /// HTTP/SSE transport.
     pub fn is_stdio(&self) -> bool {
         if let Some(t) = &self.transport {
             let t = t.to_ascii_lowercase();
@@ -669,30 +665,12 @@ impl McpConfig {
         // support receives already-expanded URLs and headers as well.
         merged.expand_environment_variables();
 
-        // jcode only supports stdio servers today. Drop HTTP/SSE entries (common
-        // in Claude Code configs) so they don't fail to spawn, but log them so
-        // the omission is visible.
-        merged.servers.retain(|name, cfg| {
-            let keep = cfg.is_stdio();
-            if !keep {
-                crate::logging::info(&format!(
-                    "MCP: Skipping non-stdio server '{}' ({}); HTTP/SSE transports are not yet supported",
-                    name,
-                    cfg.transport.as_deref().unwrap_or("http")
-                ));
-            }
-            keep
-        });
-
         merged
     }
 
-    /// Merge `incoming` over `existing`, except that an entry jcode cannot run
-    /// (HTTP/SSE) never displaces a working stdio entry for the same name.
-    ///
-    /// Without this, a `type: http` entry in `~/.claude.json` would overwrite a
-    /// working stdio server from `~/.jcode/mcp.json` and then be dropped by the
-    /// non-stdio filter, silently losing the server (issue #653).
+    /// Merge `incoming` over `existing`, except that an entry from a lower
+    /// precedence source cannot displace a working stdio server of the same
+    /// name.
     fn merge_servers_preferring_runnable(
         existing: &mut std::collections::HashMap<String, McpServerConfig>,
         incoming: std::collections::HashMap<String, McpServerConfig>,

@@ -56,8 +56,7 @@ impl JevCache {
     /// Checks `JEVCACHE_DISABLE` env var — when set to `"true"` or `"1"`,
     /// the cache is disabled and all operations become no-ops.
     pub fn new(ledger_dir: &Path) -> Result<Self> {
-        let disabled = std::env::var("JEVCACHE_DISABLE")
-            .map_or(false, |v| v == "true" || v == "1");
+        let disabled = std::env::var("JEVCACHE_DISABLE").map_or(false, |v| v == "true" || v == "1");
 
         if disabled {
             crate::logging::debug(&"Jev cache: disabled (JEVCACHE_DISABLE set)".to_string());
@@ -98,20 +97,19 @@ impl JevCache {
             for line in reader.lines() {
                 match line {
                     Ok(line) if line.trim().is_empty() => continue,
-                    Ok(line) => {
-                        match serde_json::from_str::<serde_json::Value>(&line) {
-                            Ok(entry) => {
-                                if let (Some(fp), Some(answer)) =
-                                    (entry.get("fp").and_then(|v| v.as_str()), entry.get("answer"))
-                                {
-                                    index.insert(fp.to_string(), answer.clone());
-                                }
-                            }
-                            Err(_) => {
-                                load_errors += 1;
+                    Ok(line) => match serde_json::from_str::<serde_json::Value>(&line) {
+                        Ok(entry) => {
+                            if let (Some(fp), Some(answer)) = (
+                                entry.get("fp").and_then(|v| v.as_str()),
+                                entry.get("answer"),
+                            ) {
+                                index.insert(fp.to_string(), answer.clone());
                             }
                         }
-                    }
+                        Err(_) => {
+                            load_errors += 1;
+                        }
+                    },
                     Err(_) => {
                         load_errors += 1;
                     }
@@ -226,7 +224,9 @@ impl JevCache {
         match self.append_ledger_line(&line) {
             Ok(()) => {}
             Err(e) => {
-                crate::logging::warn(&format!("Jev cache: failed to persist entry to ledger: {e}"));
+                crate::logging::warn(&format!(
+                    "Jev cache: failed to persist entry to ledger: {e}"
+                ));
             }
         }
 
@@ -325,7 +325,11 @@ fn redact_state(state: &serde_json::Value) -> serde_json::Value {
 /// - Long digit runs (>6 consecutive) → `[DIGITS]`
 fn redact_string(s: &str) -> String {
     // Order matters: UUID before long digit runs, timestamp before phone.
-    let s = replace_pattern(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}", "[EMAIL]", s);
+    let s = replace_pattern(
+        r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}",
+        "[EMAIL]",
+        s,
+    );
     // UUID-like patterns (8-4-4-4-12 hex, optional prefix like id=)
     let s = replace_pattern(
         r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
@@ -385,7 +389,10 @@ mod tests {
 
         let fp1 = JevCache::fingerprint("jev-latest", &schema, &state, "");
         let fp2 = JevCache::fingerprint("jev-2", &schema, &state, "");
-        assert_ne!(fp1, fp2, "different models must produce different fingerprints");
+        assert_ne!(
+            fp1, fp2,
+            "different models must produce different fingerprints"
+        );
     }
 
     #[test]
@@ -421,10 +428,7 @@ mod tests {
 
         let fp1 = JevCache::fingerprint("jev-latest", &schema, &s1, "");
         let fp2 = JevCache::fingerprint("jev-latest", &schema, &s2, "");
-        assert_eq!(
-            fp1, fp2,
-            "UUID differences must be redacted away"
-        );
+        assert_eq!(fp1, fp2, "UUID differences must be redacted away");
     }
 
     #[test]
@@ -571,10 +575,7 @@ mod tests {
         let stats = cache.stats();
         assert_eq!(stats.calls, 3, "3 non-cache calls recorded");
         assert_eq!(stats.hits, 3, "3 cache hits");
-        assert!(
-            stats.cost_saved > 0.0,
-            "cost saved should be > 0 for hits"
-        );
+        assert!(stats.cost_saved > 0.0, "cost saved should be > 0 for hits");
 
         Ok(())
     }
@@ -606,5 +607,4 @@ mod tests {
         // under concurrent check+store from multiple threads.
         Ok(())
     }
-
-    }
+}

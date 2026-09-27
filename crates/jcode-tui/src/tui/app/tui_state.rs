@@ -1897,6 +1897,10 @@ impl crate::tui::TuiState for App {
         self.session_picker_overlay.as_ref()
     }
 
+    fn question_prompt(&self) -> Option<&crate::tui::QuestionPromptState> {
+        self.question_prompt.as_ref()
+    }
+
     fn login_picker_overlay(&self) -> Option<&RefCell<crate::tui::login_picker::LoginPicker>> {
         self.login_picker_overlay.as_ref()
     }

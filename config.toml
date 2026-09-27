@@ -119,113 +119,24 @@ trusted_external_source_paths = [
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpoy4hns/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/dev/jcode/scratch/.tmpqgvts1/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/dev/jcode/scratch/.tmpxy2cqp/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmp3rcoqz/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpagr69t/github-copilot/hosts.json",
     "copilot_hosts_json|/tmp/.tmpauujsn/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpiqhrck/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpjwzy53/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpnpy1a1/github-copilot/hosts.json",
     "copilot_hosts_json|/tmp/.tmpo0uktd/github-copilot/hosts.json",
     "copilot_hosts_json|/tmp/.tmprxzpk4/github-copilot/hosts.json",
     "copilot_hosts_json|/tmp/.tmpvfevk5/github-copilot/hosts.json",
     "copilot_hosts_json|/tmp/.tmpvq0udf/github-copilot/hosts.json",
     "copilot_hosts_json|/tmp/.tmpyjbahd/github-copilot/hosts.json",
     "copilot_hosts_json|/tmp/.tmpykfjii/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpyryihj/github-copilot/hosts.json",
 ]
-
-[providers.omni]
-type = "open-ai-compatible"
-base_url = "https://omni.leonardoacosta.dev:443/v1"
-auth = "bearer"
-api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
-env_file = "provider-omni.env"
-default_model = "gpt-6-luna"
-requires_api_key = true
-provider_routing = false
-model_catalog = false
-allow_provider_pinning = false
-supports_reasoning_effort = true
-
-[[providers.omni.models]]
-id = "gpt-6-luna"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "gpt-5.6-luna"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "gpt-5.6-sol"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "claude-fable-5-1-medium"
-input = ["text"]
-
-[[providers.omni.models]]
-id = "gpt-5.5-review"
-input = ["text"]
-
-[[providers.omni.models]]
-id = "DeepSeek-v4.1-flash"
-input = ["text"]
-
-[[providers.omni.models]]
-id = "claude-fable-5-1-medium"
-input = ["text"]
-
-[[providers.omni.models]]
-id = "claude-haiku-4.5"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "claude-opus-4.5"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "claude-sonnet-4.6"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "gpt-5.2"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "gpt-5.2-codex"
-input = ["text"]
-
-[[providers.omni.models]]
-id = "gpt-5.3-codex"
-input = ["text"]
-
-
-[[providers.omni.models]]
-id = "gemini-3-flash-preview"
-input = [
-    "text",
-    "image",
-]
-
 
 [provider]
-default_model = "gpt-6-luna"
-default_provider = "9router"
+default_model = "DeepSeek-v4.1-flash"
+default_provider = "omni"
 openai_reasoning_effort = "low"
 openai_service_tier = "off"
 openai_native_compaction_mode = "auto"
@@ -233,7 +144,7 @@ openai_native_compaction_threshold_tokens = 200000
 preserve_reasoning_context = true
 cross_provider_failover = "manual"
 same_provider_account_failover = true
-model_picker_providers = ["9router"]
+model_picker_providers = ["omni"]
 stream_idle_timeout_secs = 360
 max_retries = 3
 retry_backoff_cap_secs = 30
@@ -335,6 +246,98 @@ input = [
     "image",
 ]
 
+[providers.omni]
+type = "open-ai-compatible"
+base_url = "https://omni.leonardoacosta.dev:443/v1"
+auth = "bearer"
+api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
+env_file = "provider-omni.env"
+default_model = "DeepSeek-v4.1-flash"
+requires_api_key = true
+provider_routing = false
+model_catalog = false
+allow_provider_pinning = false
+supports_reasoning_effort = true
+
+[[providers.omni.models]]
+id = "gpt-6-luna"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "gpt-5.6-luna"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "gpt-5.6-sol"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "claude-fable-5-1-medium"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "gpt-5.5-review"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "DeepSeek-v4.1-flash"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "claude-fable-5-1-medium"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "claude-haiku-4.5"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "claude-opus-4.5"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "claude-sonnet-4.6"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "gpt-5.2"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "gpt-5.2-codex"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "gpt-5.3-codex"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "gemini-3-flash-preview"
+input = [
+    "text",
+    "image",
+]
 
 [agents]
 swarm_model = "omni:gpt-6-luna"
@@ -352,9 +355,7 @@ swarm_max_concurrent_agents = 32
 [hooks]
 turn_start = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
 turn_end = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
-session_start = [
-    "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report",
-]
+session_start = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
 session_end = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
 pre_tool_timeout_ms = 5000
 

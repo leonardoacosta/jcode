@@ -1,9 +1,9 @@
 use super::available_models_dedup::available_models_dedup_key;
 use super::client_actions::{
     AgentTaskContext, NotifySessionContext, handle_agent_task, handle_compact, handle_input_shell,
-    handle_notify_session, handle_question_cancel, handle_question_response,
-    handle_rename_session, handle_run_subagent, handle_set_feature, handle_set_subagent_model,
-    handle_split, handle_stdin_response, handle_transfer, handle_trigger_memory_extraction,
+    handle_notify_session, handle_question_cancel, handle_question_response, handle_rename_session,
+    handle_run_subagent, handle_set_feature, handle_set_subagent_model, handle_split,
+    handle_stdin_response, handle_transfer, handle_trigger_memory_extraction,
 };
 use super::client_comm::{
     handle_comm_channel_members, handle_comm_list, handle_comm_list_channels, handle_comm_message,
@@ -660,7 +660,7 @@ pub(super) async fn handle_client(
         Arc::new(Mutex::new(HashMap::new()));
 
     let pending_questions: super::client_actions::PendingQuestions =
-        Arc::new(Mutex::new(HashMap::new()));
+        super::client_actions::pending_questions_store();
 
     // Subscribe to bus events so we can forward ModelsUpdated to this client
     // (e.g. when Copilot finishes async init after the initial History was sent)
@@ -689,6 +689,65 @@ pub(super) async fn handle_client(
                     prompt: req.prompt,
                     is_password: req.is_password,
                     tool_call_id: tool_call_id.clone(),
+                });
+            }
+        })
+    };
+
+    // Set up pending question forwarding: tools send PendingQuestionRequest, we forward to TUI
+    let (question_req_tx, mut question_req_rx) =
+        tokio::sync::mpsc::unbounded_channel::<crate::tool::PendingQuestionRequest>();
+    let _question_forwarder = {
+        let client_event_tx = client_event_tx.clone();
+        let pending_questions = pending_questions.clone();
+        tokio::spawn(async move {
+            while let Some(req) = question_req_rx.recv().await {
+                let request_id = req.request_id.clone();
+                let mut outcome_tx = Some(req.outcome_tx);
+                let busy = {
+                    let mut questions = pending_questions.lock().await;
+                    questions.retain(|_, question| {
+                        question
+                            .response_tx
+                            .lock()
+                            .unwrap_or_else(|error| error.into_inner())
+                            .as_ref()
+                            .is_some_and(|sender| !sender.is_closed())
+                    });
+                    if questions
+                        .values()
+                        .any(|question| question.session_id == req.session_id)
+                    {
+                        true
+                    } else {
+                        let pq = super::client_actions::PendingQuestion {
+                            session_id: req.session_id.clone(),
+                            tool_call_id: req.tool_call_id.clone(),
+                            questions: req.questions.clone(),
+                            response_tx: Arc::new(std::sync::Mutex::new(outcome_tx.take())),
+                        };
+                        questions.insert(request_id.clone(), pq);
+                        false
+                    }
+                };
+                if busy {
+                    if let Some(outcome_tx) = outcome_tx.take() {
+                        let _ = outcome_tx.send(serde_json::json!({
+                            "status": "unavailable",
+                            "reason": "another question is already pending for this session"
+                        }));
+                    }
+                    let _ = client_event_tx.send(ServerEvent::QuestionUnavailable {
+                        request_id,
+                        reason: "another question is already pending for this session".into(),
+                    });
+                    continue;
+                }
+                let _ = client_event_tx.send(ServerEvent::Question {
+                    request_id,
+                    tool_call_id: req.tool_call_id,
+                    session_id: req.session_id,
+                    questions: req.questions,
                 });
             }
         })
@@ -985,6 +1044,11 @@ pub(super) async fn handle_client(
         // behind outbound bytes instead of signalling the agent's lock-free cancel
         // handle. Queue the Ack through the event channel and signal cancellation first.
         if let Request::Cancel { id } = request {
+            super::client_actions::cancel_pending_questions_for_session(
+                &pending_questions,
+                &client_session_id,
+            )
+            .await;
             let ack_queued = client_event_tx.send(ServerEvent::Ack { id }).is_ok();
             crate::logging::info(&format!(
                 "SERVER_INTERRUPT_CANCEL_PRE_ACK_DISPATCH id={} session={} ack_queued={} decoded_to_dispatch_ms={}",
@@ -1228,8 +1292,12 @@ pub(super) async fn handle_client(
                 ) {
                     continue;
                 }
-                crate::hooks::with_client_terminal_env(
-                    active_terminal_env.clone(),
+                crate::hooks::with_client_terminal_env(active_terminal_env.clone(), async {
+                    super::client_actions::cancel_pending_questions_for_session(
+                        &pending_questions,
+                        &client_session_id,
+                    )
+                    .await;
                     handle_clear_session(
                         id,
                         client_selfdev,
@@ -1252,8 +1320,9 @@ pub(super) async fn handle_client(
                         &event_counter,
                         &swarm_event_tx,
                         &client_event_tx,
-                    ),
-                )
+                    )
+                    .await
+                })
                 .await;
                 session_control = refresh_session_control_handle(
                     &client_session_id,
@@ -1415,6 +1484,7 @@ pub(super) async fn handle_client(
                 client_has_local_history,
                 allow_session_takeover,
                 terminal_env,
+                supports_questions,
             } => {
                 if let Err(message) =
                     required_subscribe_working_dir(subscribe_working_dir.as_deref())
@@ -1578,6 +1648,34 @@ pub(super) async fn handle_client(
                     .await;
                     if let Some(snapshot) = try_available_models_snapshot(&agent) {
                         last_available_models_snapshot = Some(snapshot);
+                    }
+                }
+                let question_agent = Arc::clone(&agent);
+                let question_tx = supports_questions.then(|| question_req_tx.clone());
+                if let Ok(mut guard) = question_agent.try_lock() {
+                    guard.set_pending_question_tx(supports_questions, question_tx);
+                } else {
+                    tokio::spawn(async move {
+                        question_agent
+                            .lock()
+                            .await
+                            .set_pending_question_tx(supports_questions, question_tx);
+                    });
+                }
+                if supports_questions {
+                    for (request_id, question) in
+                        super::client_actions::pending_questions_for_session(
+                            &pending_questions,
+                            &client_session_id,
+                        )
+                        .await
+                    {
+                        let _ = client_event_tx.send(ServerEvent::Question {
+                            request_id,
+                            tool_call_id: question.tool_call_id,
+                            session_id: question.session_id,
+                            questions: question.questions,
+                        });
                     }
                 }
                 client_subscribed = true;

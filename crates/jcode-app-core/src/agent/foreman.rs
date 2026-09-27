@@ -94,9 +94,8 @@ impl ForemanObserver {
             self.config.interval_seconds
         ));
 
-        let mut interval = tokio::time::interval(
-            std::time::Duration::from_secs(self.config.interval_seconds)
-        );
+        let mut interval =
+            tokio::time::interval(std::time::Duration::from_secs(self.config.interval_seconds));
 
         loop {
             tokio::select! {
@@ -157,9 +156,7 @@ impl ForemanObserver {
         worker: &ObservationState,
         max_chars: usize,
     ) -> Result<AssessmentResult> {
-        let api_key = std::env::var("TYPESAFE_API_KEY")
-            .or_else(|_| std::env::var("OPENROUTER_API_KEY"))
-            .context("Foreman: no API key configured")?;
+        let systemone = crate::systemone::resolve().context("Foreman: resolve System One route")?;
 
         // Build observation state, truncated to max_chars.
         let state_json = serde_json::to_string(worker)?;
@@ -171,7 +168,7 @@ impl ForemanObserver {
 
         let request = serde_json::json!({
             "state": { "worker": state_text },
-            "model": "jev-latest",
+            "model": systemone.default_model,
             "questions": {
                 "implementation_complete": {
                     "type": "noul",
@@ -223,8 +220,8 @@ impl ForemanObserver {
             .context("Foreman: cannot create HTTP client")?;
 
         let resp = client
-            .post("https://api.typesafe.ai/v1/systemone")
-            .header("Authorization", format!("Bearer {api_key}"))
+            .post(&systemone.endpoint_url)
+            .header("Authorization", format!("Bearer {}", systemone.api_key))
             .json(&request)
             .send()
             .await
@@ -234,10 +231,13 @@ impl ForemanObserver {
             anyhow::bail!("Foreman: HTTP {}", resp.status());
         }
 
-        let body: Value = resp.json().await
+        let body: Value = resp
+            .json()
+            .await
             .context("Foreman: invalid JSON response")?;
 
-        let answers = body["answers"].as_object()
+        let answers = body["answers"]
+            .as_object()
             .context("Foreman: missing answers")?;
 
         Ok(AssessmentResult {
@@ -256,11 +256,13 @@ impl ForemanObserver {
 }
 
 fn extract_noul(answers: &serde_json::Map<String, Value>, key: &str) -> f64 {
-    answers.get(key)
+    answers
+        .get(key)
         .and_then(|a| a.get("noul"))
         .and_then(|n| n.as_f64())
         .or_else(|| {
-            answers.get(key)
+            answers
+                .get(key)
                 .and_then(|a| a.get("probability"))
                 .and_then(|p| p.as_f64())
         })

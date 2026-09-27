@@ -61,6 +61,7 @@ fn make_ctx(stdin_tx: Option<mpsc::UnboundedSender<StdinInputRequest>>) -> ToolC
         tool_call_id: "test-call".to_string(),
         working_dir: Some(std::path::PathBuf::from("/tmp")),
         stdin_request_tx: stdin_tx,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: crate::tool::ToolExecutionMode::Direct,
     }
@@ -73,6 +74,7 @@ fn make_agent_ctx(signal: jcode_agent_runtime::InterruptSignal) -> ToolContext {
         tool_call_id: "test-call-agent".to_string(),
         working_dir: Some(std::path::PathBuf::from("/tmp")),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: Some(signal),
         execution_mode: crate::tool::ToolExecutionMode::AgentTurn,
     }
@@ -892,6 +894,7 @@ fn gate_ctx(working_dir: &str) -> ToolContext {
         tool_call_id: "c".to_string(),
         working_dir: Some(std::path::PathBuf::from(working_dir)),
         stdin_request_tx: None,
+        pending_question_tx: None,
         graceful_shutdown_signal: None,
         execution_mode: crate::tool::ToolExecutionMode::Direct,
     }

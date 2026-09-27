@@ -12,6 +12,7 @@ use crate::protocol::{FeatureToggle, NotificationType, ServerEvent};
 use crate::session::Session;
 use crate::util::truncate_str;
 use jcode_agent_runtime::{SoftInterruptSource, StreamError};
+use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use std::process::Stdio;
 use std::sync::Arc;
@@ -320,6 +321,7 @@ pub(super) fn handle_run_subagent(
             tool_call_id: tool_call_id.clone(),
             working_dir,
             stdin_request_tx: None,
+            pending_question_tx: None,
             graceful_shutdown_signal: None,
             execution_mode: crate::tool::ToolExecutionMode::Direct,
         };
@@ -1086,58 +1088,367 @@ pub(super) async fn handle_stdin_response(
 pub(super) struct PendingQuestion {
     pub(super) session_id: String,
     pub(super) tool_call_id: String,
-    /// oneshot sender: when the user answers/cancels, send the result to the waiting tool.
-    pub(super) response_tx: Arc<std::sync::Mutex<Option<tokio::sync::oneshot::Sender<QuestionOutcome>>>>,
+    pub(super) questions: serde_json::Value,
+    pub(super) response_tx:
+        Arc<std::sync::Mutex<Option<tokio::sync::oneshot::Sender<serde_json::Value>>>>,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
-pub(super) enum QuestionOutcome {
-    Answered {
-        answers: serde_json::Value,
-    },
-    Cancelled,
-    Unavailable {
-        reason: String,
-    },
+pub(super) type PendingQuestions = Arc<Mutex<HashMap<String, PendingQuestion>>>;
+
+static PENDING_QUESTIONS: std::sync::LazyLock<PendingQuestions> =
+    std::sync::LazyLock::new(|| Arc::new(Mutex::new(HashMap::new())));
+
+pub(super) fn pending_questions_store() -> PendingQuestions {
+    Arc::clone(&PENDING_QUESTIONS)
 }
 
-pub(super) type PendingQuestions =
-    Arc<Mutex<HashMap<String, PendingQuestion>>>;
+pub(super) async fn pending_questions_for_session(
+    pending_questions: &PendingQuestions,
+    session_id: &str,
+) -> Vec<(String, PendingQuestion)> {
+    let mut pending = pending_questions.lock().await;
+    pending.retain(|_, question| {
+        question
+            .response_tx
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .as_ref()
+            .is_some_and(|sender| !sender.is_closed())
+    });
+    pending
+        .iter()
+        .filter(|(_, question)| question.session_id == session_id)
+        .map(|(id, question)| (id.clone(), question.clone()))
+        .collect()
+}
 
-/// Handle a user's answer to a pending question.
+pub(super) async fn cancel_pending_questions_for_turn(
+    pending_questions: &PendingQuestions,
+    session_id: &str,
+    tool_call_id: Option<&str>,
+    reason: &str,
+) {
+    let removed = {
+        let mut pending = pending_questions.lock().await;
+        let ids: Vec<String> = pending
+            .iter()
+            .filter(|(_, question)| {
+                question.session_id == session_id
+                    && tool_call_id.is_none_or(|id| question.tool_call_id == id)
+            })
+            .map(|(id, _)| id.clone())
+            .collect();
+        ids.into_iter()
+            .filter_map(|id| pending.remove(&id))
+            .collect::<Vec<_>>()
+    };
+    for question in removed {
+        if let Some(sender) = question
+            .response_tx
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .take()
+        {
+            let _ = sender.send(serde_json::json!({
+                "status": "unavailable",
+                "reason": reason
+            }));
+        }
+    }
+}
+
+pub(super) async fn cancel_pending_questions_for_session(
+    pending_questions: &PendingQuestions,
+    session_id: &str,
+) {
+    cancel_pending_questions_for_turn(pending_questions, session_id, None, "session was cleared")
+        .await;
+}
+
+fn validate_question_answers(questions: &Value, answers: &Value) -> Result<(), String> {
+    const MAX_ANSWER_CHARS: usize = 4_000;
+    let questions = questions.as_array().ok_or("invalid stored questions")?;
+    let answers = answers.as_object().ok_or("answers must be an object")?;
+    if answers.len() != questions.len() {
+        return Err("answer every question exactly once".into());
+    }
+    for question in questions {
+        let qid = question
+            .get("id")
+            .and_then(Value::as_str)
+            .ok_or("question id missing")?;
+        let answer = answers
+            .get(qid)
+            .and_then(Value::as_object)
+            .ok_or_else(|| format!("answer missing for question {qid}"))?;
+        let selected = answer
+            .get("option_ids")
+            .and_then(Value::as_array)
+            .ok_or_else(|| format!("option_ids missing for {qid}"))?;
+        let options = question
+            .get("options")
+            .and_then(Value::as_array)
+            .ok_or("options missing")?;
+        let multi = question
+            .get("multi_select")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
+        let free_text = answer
+            .get("free_text")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        if selected.is_empty() && free_text.trim().is_empty() {
+            return Err(format!("choose an option or enter Other text for {qid}"));
+        }
+        if !multi && selected.len() > 1 {
+            return Err(format!("invalid selection count for {qid}"));
+        }
+        let valid: HashSet<&str> = options
+            .iter()
+            .filter_map(|o| o.get("id").and_then(Value::as_str))
+            .collect();
+        let mut seen = HashSet::new();
+        for id in selected {
+            let id = id.as_str().ok_or("option id must be a string")?;
+            if !valid.contains(id) || !seen.insert(id) {
+                return Err(format!("invalid or duplicate option id for {qid}"));
+            }
+        }
+        if let Some(text) = answer.get("free_text")
+            && (!text.is_string()
+                || text.as_str().unwrap_or_default().chars().count() > MAX_ANSWER_CHARS)
+        {
+            return Err(format!("free_text too long or not text for {qid}"));
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod question_validation_tests {
+    use super::validate_question_answers;
+    use serde_json::{Value, json};
+
+    fn questions() -> Value {
+        json!([{
+            "id": "q1",
+            "question": "Choose one",
+            "header": "Choice",
+            "multi_select": false,
+            "options": [
+                {"id": "a", "label": "A", "description": ""},
+                {"id": "b", "label": "B", "description": ""}
+            ]
+        }])
+    }
+
+    #[test]
+    fn accepts_single_valid_option() {
+        assert!(
+            validate_question_answers(&questions(), &json!({"q1":{"option_ids":["a"]}})).is_ok()
+        );
+    }
+
+    #[test]
+    fn accepts_other_text_without_an_option() {
+        assert!(
+            validate_question_answers(
+                &questions(),
+                &json!({"q1":{"option_ids":[],"free_text":"custom"}})
+            )
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn rejects_multiple_options_for_single_select() {
+        assert!(
+            validate_question_answers(&questions(), &json!({"q1":{"option_ids":["a","b"]}}))
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_or_duplicate_option_ids() {
+        assert!(
+            validate_question_answers(&questions(), &json!({"q1":{"option_ids":["missing"]}}))
+                .is_err()
+        );
+        assert!(
+            validate_question_answers(&questions(), &json!({"q1":{"option_ids":["a","a"]}}))
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn rejects_missing_question_answer() {
+        assert!(validate_question_answers(&questions(), &json!({})).is_err());
+    }
+
+    #[test]
+    fn rejects_empty_answer() {
+        assert!(validate_question_answers(&questions(), &json!({"q1":{"option_ids":[]}})).is_err());
+    }
+}
+
+#[cfg(test)]
+mod pending_question_tests {
+    use super::*;
+
+    fn one_question() -> Value {
+        serde_json::json!([{
+            "id":"q1", "question":"Choose", "header":"Choice", "multi_select":false,
+            "options":[{"id":"a","label":"A","description":""},{"id":"b","label":"B","description":""}]
+        }])
+    }
+
+    #[tokio::test]
+    async fn wrong_session_and_invalid_answers_leave_pending_question_available() {
+        let pending: PendingQuestions = Arc::new(Mutex::new(HashMap::new()));
+        let (answer_tx, mut answer_rx) = tokio::sync::oneshot::channel();
+        pending.lock().await.insert(
+            "q1".into(),
+            PendingQuestion {
+                session_id: "owner".into(),
+                tool_call_id: "tool".into(),
+                questions: one_question(),
+                response_tx: Arc::new(std::sync::Mutex::new(Some(answer_tx))),
+            },
+        );
+        let (event_tx, mut event_rx) = mpsc::unbounded_channel();
+
+        handle_question_response(
+            1,
+            "q1".into(),
+            serde_json::json!({"q1":{"option_ids":["a"]}}),
+            "intruder",
+            &pending,
+            &event_tx,
+        )
+        .await;
+        assert!(matches!(
+            event_rx.recv().await,
+            Some(ServerEvent::QuestionUnavailable { .. })
+        ));
+        assert!(matches!(
+            event_rx.recv().await,
+            Some(ServerEvent::Done { id: 1 })
+        ));
+        assert!(pending.lock().await.contains_key("q1"));
+
+        handle_question_response(
+            2,
+            "q1".into(),
+            serde_json::json!({"q1":{"option_ids":["unknown"]}}),
+            "owner",
+            &pending,
+            &event_tx,
+        )
+        .await;
+        assert!(matches!(
+            event_rx.recv().await,
+            Some(ServerEvent::QuestionUnavailable { .. })
+        ));
+        assert!(matches!(
+            event_rx.recv().await,
+            Some(ServerEvent::Done { id: 2 })
+        ));
+        assert!(pending.lock().await.contains_key("q1"));
+        assert!(answer_rx.try_recv().is_err());
+
+        let replay = pending_questions_for_session(&pending, "owner").await;
+        assert_eq!(replay.len(), 1);
+        assert_eq!(replay[0].0, "q1");
+    }
+
+    #[tokio::test]
+    async fn valid_answer_resolves_once_and_duplicate_is_acknowledged() {
+        let pending: PendingQuestions = Arc::new(Mutex::new(HashMap::new()));
+        let (answer_tx, answer_rx) = tokio::sync::oneshot::channel();
+        pending.lock().await.insert(
+            "q1".into(),
+            PendingQuestion {
+                session_id: "owner".into(),
+                tool_call_id: "tool".into(),
+                questions: one_question(),
+                response_tx: Arc::new(std::sync::Mutex::new(Some(answer_tx))),
+            },
+        );
+        let (event_tx, mut event_rx) = mpsc::unbounded_channel();
+        let answers = serde_json::json!({"q1":{"option_ids":["b"]}});
+        handle_question_response(
+            1,
+            "q1".into(),
+            answers.clone(),
+            "owner",
+            &pending,
+            &event_tx,
+        )
+        .await;
+        assert!(matches!(
+            event_rx.recv().await,
+            Some(ServerEvent::Done { id: 1 })
+        ));
+        assert_eq!(
+            answer_rx.await.unwrap(),
+            serde_json::json!({"status":"answered","answers":answers})
+        );
+
+        handle_question_response(2, "q1".into(), answers, "owner", &pending, &event_tx).await;
+        assert!(matches!(
+            event_rx.recv().await,
+            Some(ServerEvent::QuestionAlreadyAnswered { .. })
+        ));
+        assert!(matches!(
+            event_rx.recv().await,
+            Some(ServerEvent::Done { id: 2 })
+        ));
+    }
+}
+
+/// Handle a user's answer to a pending question. Validation and removal happen under
+/// one lock so duplicate or foreign-session responses cannot race the waiter.
 pub(super) async fn handle_question_response(
     id: u64,
     request_id: String,
-    answers: serde_json::Value,
+    answers: Value,
     client_session_id: &str,
     pending_questions: &PendingQuestions,
     client_event_tx: &mpsc::UnboundedSender<ServerEvent>,
 ) {
-    let pending = {
-        let mut guard = pending_questions.lock().await;
-        guard.remove(&request_id)
-    };
-    match pending {
-        Some(pq) if pq.session_id == client_session_id => {
-            let tx = pq.response_tx.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).take();
-            if let Some(tx) = tx {
-                let _ = tx.send(QuestionOutcome::Answered { answers });
+    let result = {
+        let mut pending = pending_questions.lock().await;
+        match pending.get(&request_id) {
+            None => Err("already_answered".to_string()),
+            Some(question) if question.session_id != client_session_id => {
+                Err("answer from different session".to_string())
             }
+            Some(question) => match validate_question_answers(&question.questions, &answers) {
+                Err(error) => Err(error),
+                Ok(()) => {
+                    let question = pending.remove(&request_id).expect("checked above");
+                    let tx = question
+                        .response_tx
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .take();
+                    Ok(tx)
+                }
+            },
         }
-        Some(pq) => {
-            let rid = request_id.clone();
-            // Wrong session: do not consume the answer channel
-            let _ = client_event_tx.send(ServerEvent::QuestionUnavailable {
-                request_id: rid,
-                reason: "answer from different session".into(),
-            });
-            // Re-insert for the correct session to consume
-            pending_questions.lock().await.insert(request_id, pq);
+    };
+    match result {
+        Ok(Some(tx)) => {
+            let _ = tx.send(serde_json::json!({"status":"answered","answers":answers}));
         }
-        None => {
-            let _ = client_event_tx.send(ServerEvent::QuestionAlreadyAnswered {
-                request_id,
-            });
+        Ok(None) => {
+            let _ = client_event_tx.send(ServerEvent::QuestionAlreadyAnswered { request_id });
+        }
+        Err(reason) if reason == "already_answered" => {
+            let _ = client_event_tx.send(ServerEvent::QuestionAlreadyAnswered { request_id });
+        }
+        Err(reason) => {
+            let _ = client_event_tx.send(ServerEvent::QuestionUnavailable { request_id, reason });
         }
     }
     let _ = client_event_tx.send(ServerEvent::Done { id });
@@ -1152,27 +1463,31 @@ pub(super) async fn handle_question_cancel(
     client_event_tx: &mpsc::UnboundedSender<ServerEvent>,
 ) {
     let pending = {
-        let mut guard = pending_questions.lock().await;
-        guard.remove(&request_id)
+        let mut pending = pending_questions.lock().await;
+        if pending
+            .get(&request_id)
+            .is_some_and(|q| q.session_id == client_session_id)
+        {
+            pending.remove(&request_id)
+        } else {
+            None
+        }
     };
     match pending {
-        Some(pq) if pq.session_id == client_session_id => {
-            let tx = pq.response_tx.lock().unwrap_or_else(|poisoned| poisoned.into_inner()).take();
+        Some(question) => {
+            let tx = question
+                .response_tx
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .take();
             if let Some(tx) = tx {
-                let _ = tx.send(QuestionOutcome::Cancelled);
+                let _ = tx.send(serde_json::json!({"status":"cancelled"}));
             }
         }
-        Some(pq) => {
-            // Re-insert for the correct session
-            pending_questions.lock().await.insert(request_id.clone(), pq);
+        None => {
             let _ = client_event_tx.send(ServerEvent::QuestionUnavailable {
                 request_id,
-                reason: "cancel from different session".into(),
-            });
-        }
-        None => {
-            let _ = client_event_tx.send(ServerEvent::QuestionAlreadyAnswered {
-                request_id,
+                reason: "unknown question or different session".into(),
             });
         }
     }

@@ -76,13 +76,11 @@ impl JevRouter {
     }
 
     async fn classify_inner(prompt: &str) -> Result<RoutingDecision> {
-        let api_key = std::env::var("TYPESAFE_API_KEY")
-            .or_else(|_| std::env::var("OPENROUTER_API_KEY"))
-            .context("JevRouter: no API key configured")?;
+        let systemone = crate::systemone::resolve().context("JevRouter: resolve System One route")?;
 
         let request = serde_json::json!({
             "state": { "prompt": prompt },
-            "model": "jev-latest",
+            "model": systemone.default_model,
             "questions": {
                 "complexity": {
                     "type": "score",
@@ -111,8 +109,8 @@ impl JevRouter {
             .context("JevRouter: cannot create HTTP client")?;
 
         let resp = client
-            .post("https://api.typesafe.ai/v1/systemone")
-            .header("Authorization", format!("Bearer {api_key}"))
+            .post(&systemone.endpoint_url)
+            .header("Authorization", format!("Bearer {}", systemone.api_key))
             .json(&request)
             .send()
             .await
@@ -122,14 +120,18 @@ impl JevRouter {
             anyhow::bail!("JevRouter: HTTP {}", resp.status());
         }
 
-        let body: Value = resp.json().await
+        let body: Value = resp
+            .json()
+            .await
             .context("JevRouter: invalid JSON response")?;
 
-        let answers = body["answers"].as_object()
+        let answers = body["answers"]
+            .as_object()
             .context("JevRouter: missing answers in response")?;
 
         // Extract complexity score (Score type returns {score: N, probabilities: {...}}).
-        let complexity_score = answers.get("complexity")
+        let complexity_score = answers
+            .get("complexity")
             .and_then(|a| a.get("score"))
             .and_then(|s| s.as_f64())
             .unwrap_or(2.0);
@@ -153,13 +155,14 @@ impl JevRouter {
         };
 
         // Confidence: how much the other signals agree.
-        let confidence = if tier == ModelTier::Fast && (reasoning_required > 0.3 || tool_complexity > 0.3) {
-            0.4
-        } else if tier == ModelTier::Balanced && reasoning_required > 0.6 {
-            0.5
-        } else {
-            0.75
-        };
+        let confidence =
+            if tier == ModelTier::Fast && (reasoning_required > 0.3 || tool_complexity > 0.3) {
+                0.4
+            } else if tier == ModelTier::Balanced && reasoning_required > 0.6 {
+                0.5
+            } else {
+                0.75
+            };
 
         Ok(RoutingDecision {
             tier,
@@ -173,11 +176,13 @@ impl JevRouter {
 }
 
 fn extract_noul(answers: &serde_json::Map<String, Value>, key: &str) -> f64 {
-    answers.get(key)
+    answers
+        .get(key)
         .and_then(|a| a.get("noul"))
         .and_then(|n| n.as_f64())
         .or_else(|| {
-            answers.get(key)
+            answers
+                .get(key)
                 .and_then(|a| a.get("probability"))
                 .and_then(|p| p.as_f64())
         })

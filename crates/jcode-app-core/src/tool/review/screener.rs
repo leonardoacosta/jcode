@@ -336,7 +336,7 @@ fn infer_related_tests(file_path: &str, repo_root: &Path) -> Vec<String> {
 
 /// Screen a single hunk through Jev, returning a risk matrix.
 ///
-/// Sends 5 Noul questions to the TypeSafe/OpenRouter API and parses the
+/// Sends 5 Noul questions to the configured System One endpoint and parses the
 /// response into a `RiskMatrix`. Each answer is clipped to [0, 1].
 ///
 /// Returns `Err` on API failure, timeout, or invalid response — the caller
@@ -395,7 +395,7 @@ static HTTP_CLIENT: std::sync::LazyLock<reqwest::Client> = std::sync::LazyLock::
         .expect("build reqwest client for jev-review screener")
 });
 
-/// Request body for TypeSafe API.
+/// Request body for System One.
 #[derive(Debug, Serialize)]
 struct TypeSafeRequest {
     state: Value,
@@ -403,7 +403,7 @@ struct TypeSafeRequest {
     questions: Value,
 }
 
-/// Response from the TypeSafe API.
+/// Response from System One.
 #[derive(Debug, Deserialize)]
 struct TypeSafeResponse {
     answers: HashMap<String, Value>,
@@ -411,7 +411,7 @@ struct TypeSafeResponse {
 
 /// Send an evaluate request to the Jev API and return parsed answers.
 ///
-/// Tries TypeSafe first, falls back to OpenRouter. Timeout is 5s per hunk.
+/// Sends each request to the configured System One endpoint. Timeout is 5s per hunk.
 /// Returns the `answers` map on success.
 async fn send_evaluate_request(state: &Value, questions: &Value) -> Result<TypeSafeResponse> {
     let (api_url, api_key, model) = resolve_api_config()?;
@@ -444,30 +444,10 @@ async fn send_evaluate_request(state: &Value, questions: &Value) -> Result<TypeS
     Ok(parsed)
 }
 
-/// Resolve API config: TypeSafe first, then OpenRouter fallback.
+/// Resolve API config from the shared System One settings.
 fn resolve_api_config() -> Result<(String, String, String)> {
-    if let Ok(key) = std::env::var("TYPESAFE_API_KEY") {
-        if !key.trim().is_empty() {
-            return Ok((
-                "https://api.typesafe.ai/v1/systemone".to_string(),
-                key,
-                "jev-latest".to_string(),
-            ));
-        }
-    }
-    if let Ok(key) = std::env::var("OPENROUTER_API_KEY") {
-        if !key.trim().is_empty() {
-            return Ok((
-                "https://openrouter.ai/api/alpha/decisions".to_string(),
-                key,
-                "~typesafe/jev-latest".to_string(),
-            ));
-        }
-    }
-    anyhow::bail!(
-        "jev-review: No TypeSafe or OpenRouter API key configured. \
-         Set TYPESAFE_API_KEY or OPENROUTER_API_KEY."
-    )
+    let config = crate::systemone::resolve()?;
+    Ok((config.endpoint_url, config.api_key, config.default_model))
 }
 
 /// Parse a Jev response into a RiskMatrix.
@@ -497,8 +477,8 @@ fn parse_risk_matrix(answers: &HashMap<String, Value>) -> Result<RiskMatrix> {
 /// Extract a Noul probability from a Jev answer value.
 ///
 /// Jev may return:
-/// - `{"noul": 0.85, "confidence": 0.92}` (TypeSafe format)
-/// - `{"probability": 0.85}` (OpenRouter format)
+/// - `{"noul": 0.85, "confidence": 0.92}`
+/// - `{"probability": 0.85}`
 /// - `true` / `false` (plain boolean)
 /// - Plain number
 fn extract_noul_probability(answer: Option<&Value>, label: &str) -> Result<f64> {
@@ -506,7 +486,7 @@ fn extract_noul_probability(answer: Option<&Value>, label: &str) -> Result<f64> 
         anyhow::anyhow!("jev-review: missing answer for '{label}'")
     })?;
 
-    // TypeSafe format: {"noul": 0.85}
+    // Standard Noul format: {"noul": 0.85}
     if let Some(obj) = value.as_object() {
         if let Some(noul_val) = obj.get("noul").or_else(|| obj.get("probability")) {
             if let Some(n) = noul_val.as_f64() {
