@@ -30,10 +30,10 @@ These tasks are independent of unfinished broad cleanup. Execution starts only a
 
 - [x] 7.1 Review and approve the written scoped continuation. Preserve earlier approval history without treating it as blanket approval of other batches.
 - [x] 7.2 Recheck current main/dirty checkout/worktrees, verify patch provenance and protected recovery evidence, and isolate existing main without creating an integration branch. Depends on 7.1.
-- [ ] 7.3 Port only the six production-file patch onto current main, preserving newer dispatcher/collision/custom-tool behavior. Add focused credential boundary and eager/deferred image regression coverage. Depends on 7.2.
-- [ ] 7.4 Obtain independent swarm review, fix findings, run focused tests and relevant workspace checks, and commit only scoped changes. Record exact commands/results and source identity. Depends on 7.3.
-- [ ] 7.5 Build normal committed main and verify evaluate primitives plus image transport against an isolated socket using the new executable. Retain existing runtime unchanged on failure. Depends on 7.4.
-- [ ] 7.6 Gracefully activate only the validated build with rollback retained. Verify daemon identity and repeat real evaluate/image acceptance. Record source-to-binary evidence and defer all other batches explicitly. Depends on 7.5.
+- [x] 7.3 Port only the six production-file patch onto current main, preserving newer dispatcher/collision/custom-tool behavior. Add focused credential boundary and eager/deferred image regression coverage. Depends on 7.2.
+- [x] 7.4 Obtain independent swarm review, fix findings, run focused tests and relevant workspace checks, and commit only scoped changes. Record exact commands/results and source identity. Depends on 7.3.
+- [x] 7.5 Build normal committed main and verify evaluate primitives plus image transport against an isolated socket using the new executable. Retain existing runtime unchanged on failure. Depends on 7.4.
+- [x] 7.6 Gracefully activate only the validated build with rollback retained. Verify daemon identity and repeat real evaluate/image acceptance. Record source-to-binary evidence and defer all other batches explicitly. Depends on 7.5.
 
 Phase 7 execution evidence: existing main worktree `/home/nyaptor/dev/jcode-worktrees/main-runtime-convergence` starts at `12020af75`. Original dirty checkout remains untouched. Saved patch SHA256 `c8e65166a77ecaf5cc1e455d0b3bce75f0b6ef1a612f383ffe449efc901b91db` matches `final-acceptance.json`. Root session owns integration/promotion, assigned swarm worker owns the six-file patch, independent reviewer owns review. Existing protected recovery archives remain under `scratch/worktree-integration-audit/`.
 
@@ -46,3 +46,7 @@ Phase 7 execution evidence: existing main worktree `/home/nyaptor/dev/jcode-work
 - Real evaluate `noul`, `choice`, `score` all passed on isolated build, model `jev-1.13.0`. Owned image MCP fixture connected successfully.
 - Real image-provider acceptance remains BLOCKED: explicitly configured `omni:gpt-6-luna` selected successfully, but actual model message returned `[400]: The requested model is not supported.` No silent provider substitution performed. Debug tool responses omit images and cannot substitute for this gate.
 - No promotion or activation performed. Known-working `12020af75-systemone-images2` remains deployed. Tasks 7.5 and 7.6 remain incomplete until real image acceptance succeeds. Broader consolidation remains out of scope.
+
+### Phase 7 completed acceptance
+
+The earlier400 was resolved by using the already-configured qualified identifier `omni:cx/gpt-6-luna` for the same model, without provider substitution. Real isolated image invocation succeeded. Final clean build `a65876997` passed isolated evaluate and image checks, then official guarded debug reload published it. Installed/build binary SHA256 both `61980104737a46a5441794a20303f31507ab92a2510cccb50fda6c27d787d2f3`. Graceful shared reload completed, both existing daemon executable links resolve to `builds/versions/a65876997/jcode`. Current/shared channels match. Rollback binary `12020af75-systemone-images2` retained. Live current-session evaluate passed all three primitives and real deferred `mcp_call` delivered the inline512px image showing white8142 on blue. This proves image transport, not blind recognition. No remote push or other consolidation batch performed.
