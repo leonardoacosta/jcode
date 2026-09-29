@@ -1,4 +1,5 @@
-systemone_url = "omni"
+systemone_url = "https://omni.leonardoacosta.dev:443/v1/systemone/typesafe"
+systemone_model = "jev-latest"
 
 [keybindings]
 scroll_up = "ctrl+shift+k"
@@ -135,7 +136,7 @@ trusted_external_source_paths = [
 ]
 
 [provider]
-default_model = "DeepSeek-v4.1-flash"
+default_model = "azure-ai/DeepSeek-V4.1-Flash"
 default_provider = "omni"
 openai_reasoning_effort = "low"
 openai_service_tier = "off"
@@ -163,88 +164,32 @@ allow_provider_pinning = false
 supports_reasoning_effort = true
 
 [[providers.9router.models]]
+id = "gpt-6-astra"
+input = ["text", "image"]
+
+[[providers.9router.models]]
 id = "gpt-6-luna"
-input = [
-    "text",
-    "image",
-]
+input = ["text", "image"]
 
 [[providers.9router.models]]
 id = "gpt-5.6-luna"
-input = [
-    "text",
-    "image",
-]
+input = ["text", "image"]
 
 [[providers.9router.models]]
 id = "gpt-5.6-sol"
-input = [
-    "text",
-    "image",
-]
+input = ["text", "image"]
 
 [[providers.9router.models]]
-id = "claude-fable-5-1-medium"
+id = "gh/claude-opus-5.5"
 input = ["text"]
 
 [[providers.9router.models]]
-id = "gpt-5.5-review"
+id = "gh/claude-haiku-4.5"
 input = ["text"]
 
 [[providers.9router.models]]
-id = "DeepSeek-v4.1-flash"
+id = "gh/claude-sonnet-5"
 input = ["text"]
-
-[[providers.9router.models]]
-id = "claude-fable-5-1-medium"
-input = ["text"]
-
-[[providers.9router.models]]
-id = "claude-haiku-4.5"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.9router.models]]
-id = "claude-opus-4.5"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.9router.models]]
-id = "claude-sonnet-4.6"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.9router.models]]
-id = "gpt-5.2"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.9router.models]]
-id = "gpt-5.2-codex"
-input = ["text"]
-
-[[providers.9router.models]]
-id = "gpt-5.3-codex"
-input = ["text"]
-
-[[providers.9router.models]]
-id = "pixel-canary"
-input = ["text"]
-
-[[providers.9router.models]]
-id = "gemini-3-flash-preview"
-input = [
-    "text",
-    "image",
-]
 
 [providers.omni]
 type = "open-ai-compatible"
@@ -252,7 +197,7 @@ base_url = "https://omni.leonardoacosta.dev:443/v1"
 auth = "bearer"
 api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
 env_file = "provider-omni.env"
-default_model = "DeepSeek-v4.1-flash"
+default_model = "azure-ai/DeepSeek-V4.1-Flash"
 requires_api_key = true
 provider_routing = false
 model_catalog = false
@@ -260,87 +205,67 @@ allow_provider_pinning = false
 supports_reasoning_effort = true
 
 [[providers.omni.models]]
+id = "gpt-6-astra"
+input = ["text", "image"]
+
+[[providers.omni.models]]
 id = "gpt-6-luna"
-input = [
-    "text",
-    "image",
-]
+input = ["text", "image"]
 
 [[providers.omni.models]]
 id = "gpt-5.6-luna"
-input = [
-    "text",
-    "image",
-]
+input = ["text", "image"]
 
 [[providers.omni.models]]
 id = "gpt-5.6-sol"
-input = [
-    "text",
-    "image",
-]
+input = ["text", "image"]
 
 [[providers.omni.models]]
-id = "claude-fable-5-1-medium"
+id = "gh/claude-opus-5.5"
 input = ["text"]
 
 [[providers.omni.models]]
-id = "gpt-5.5-review"
+id = "gh/claude-haiku-4.5"
 input = ["text"]
 
 [[providers.omni.models]]
-id = "DeepSeek-v4.1-flash"
+id = "gh/claude-sonnet-5"
 input = ["text"]
 
 [[providers.omni.models]]
-id = "claude-fable-5-1-medium"
+id = "cfp-glm-5.2"
 input = ["text"]
+
+[[providers.omni.models]]
+id = "cfp-deepseek-v4-flash-0731"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "cfp-qwen3"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "azure-ai/DeepSeek-V4.1-Flash"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "cx/gpt-6-luna"
+input = ["text", "image"]
 
 [[providers.omni.models]]
 id = "claude-haiku-4.5"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "claude-opus-4.5"
-input = [
-    "text",
-    "image",
-]
+input = ["text"]
 
 [[providers.omni.models]]
 id = "claude-sonnet-4.6"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "gpt-5.2"
-input = [
-    "text",
-    "image",
-]
-
-[[providers.omni.models]]
-id = "gpt-5.2-codex"
 input = ["text"]
 
 [[providers.omni.models]]
-id = "gpt-5.3-codex"
+id = "claude-opus-4.5"
 input = ["text"]
-
-[[providers.omni.models]]
-id = "gemini-3-flash-preview"
-input = [
-    "text",
-    "image",
-]
 
 [agents]
-swarm_model = "omni:gpt-6-luna"
+swarm_model = "omni:cx/gpt-6-luna"
 swarm_spawn_mode = "inline"
 swarm_strip_layout = "vertical"
 memory_sidecar_enabled = true
@@ -370,7 +295,8 @@ work_branch_prefix = "ambient/"
 visible = true
 
 [safety]
-ntfy_server = "https://ntfy.sh"
+ntfy_topic = "jcode-ambient"
+ntfy_server = "https://ntfy.leonardoacosta.dev"
 desktop_notifications = true
 email_enabled = false
 email_smtp_port = 587
