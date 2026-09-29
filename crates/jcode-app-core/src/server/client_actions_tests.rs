@@ -1066,3 +1066,34 @@ async fn daemon_saved_flag_survives_later_session_writes() {
         crate::env::remove_var("JCODE_HOME");
     }
 }
+
+#[cfg(unix)]
+#[tokio::test]
+async fn input_shell_applies_session_client_terminal_context() {
+    let _guard = crate::storage::lock_test_env();
+    let old_herdr = std::env::var_os("HERDR_PANE_ID");
+    crate::env::set_var("HERDR_PANE_ID", "stale-daemon-pane");
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    super::handle_input_shell(
+        1,
+        "printf '%s|%s|%s' \"$HERDR_PANE_ID\" \"$TMUX_PANE\" \"$JCODE_CLIENT_HERDR_PANE_ID\""
+            .into(),
+        None,
+        &tx,
+        vec![("TMUX_PANE".into(), "client-pane".into())],
+    );
+    let result = match timeout(Duration::from_secs(3), rx.recv())
+        .await
+        .unwrap()
+        .unwrap()
+    {
+        ServerEvent::InputShellResult { result, .. } => result.output,
+        other => panic!("expected shell result, got {other:?}"),
+    };
+    if let Some(value) = old_herdr {
+        crate::env::set_var("HERDR_PANE_ID", value);
+    } else {
+        crate::env::remove_var("HERDR_PANE_ID");
+    }
+    assert_eq!(result, "|client-pane|");
+}

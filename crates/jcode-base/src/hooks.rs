@@ -95,6 +95,11 @@ where
     CLIENT_TERMINAL_ENV.scope(env, future).await
 }
 
+/// Return the active client's terminal snapshot, if this task is in a client scope.
+pub fn client_terminal_env() -> Option<Vec<(String, String)>> {
+    CLIENT_TERMINAL_ENV.try_with(Clone::clone).ok()
+}
+
 /// The configured commands for `event`, in declaration order.
 pub fn hook_commands(event: &str) -> Vec<String> {
     if hooks_suppressed() {

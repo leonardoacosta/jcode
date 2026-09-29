@@ -2360,7 +2360,13 @@ pub(super) async fn handle_client(
             }
 
             Request::InputShell { id, command } => {
-                handle_input_shell(id, command, &agent, &client_event_tx);
+                handle_input_shell(
+                    id,
+                    command,
+                    agent.lock().await.working_dir().map(|dir| dir.to_string()),
+                    &client_event_tx,
+                    active_terminal_env.clone(),
+                );
             }
 
             // === Agent communication ===

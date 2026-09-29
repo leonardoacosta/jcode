@@ -177,20 +177,18 @@ pub(super) async fn handle_notify_session(
 pub(super) fn handle_input_shell(
     id: u64,
     command: String,
-    agent: &Arc<Mutex<Agent>>,
+    working_dir: Option<String>,
     client_event_tx: &mpsc::UnboundedSender<ServerEvent>,
+    client_terminal_env: Vec<(String, String)>,
 ) {
-    let agent = Arc::clone(agent);
     let tx = client_event_tx.clone();
 
     tokio::spawn(async move {
-        let cwd = {
-            let agent_guard = agent.lock().await;
-            agent_guard.working_dir().map(|dir| dir.to_string())
-        };
+        let cwd = working_dir;
 
         let started = Instant::now();
         let mut cmd = build_input_shell_command(&command);
+        crate::terminal_launch::apply_client_terminal_env(cmd.as_std_mut(), &client_terminal_env);
         cmd.stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
