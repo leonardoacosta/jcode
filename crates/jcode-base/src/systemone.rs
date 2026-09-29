@@ -199,30 +199,35 @@ fn resolve_full_url(
         ));
     }
 
-    if let Some(profile) = config.providers.get("9router")
-        && let Ok(base_url) = url::Url::parse(profile.base_url.trim())
-        && parsed.origin() == base_url.origin()
-    {
-        let base_path = base_url.path().trim_end_matches('/');
-        let endpoint_path = parsed.path();
-        let same_api_root = endpoint_path == base_path
-            || endpoint_path
-                .strip_prefix(base_path)
-                .is_some_and(|suffix| suffix.starts_with('/'));
-        if !base_path.is_empty() && same_api_root {
-            let key_env = profile.api_key_env.as_deref().ok_or_else(|| {
-                anyhow::anyhow!("System One: provider profile [9router] has no api_key_env")
-            })?;
-            return Ok((
-                SystemOneProvider::NineRouter,
-                endpoint_url.to_string(),
-                key_env.to_string(),
-                profile
-                    .env_file
-                    .clone()
-                    .unwrap_or_else(|| "provider-9router.env".to_string()),
-                NINEROUTER_MODEL,
-            ));
+    for (name, provider, default_model) in [
+        ("9router", SystemOneProvider::NineRouter, NINEROUTER_MODEL),
+        ("omni", SystemOneProvider::Omni, OMNI_MODEL),
+    ] {
+        if let Some(profile) = config.providers.get(name)
+            && let Ok(base_url) = url::Url::parse(profile.base_url.trim())
+            && parsed.origin() == base_url.origin()
+        {
+            let base_path = base_url.path().trim_end_matches('/');
+            let endpoint_path = parsed.path();
+            let same_api_root = endpoint_path == base_path
+                || endpoint_path
+                    .strip_prefix(base_path)
+                    .is_some_and(|suffix| suffix.starts_with('/'));
+            if !base_path.is_empty() && same_api_root {
+                let key_env = profile.api_key_env.as_deref().ok_or_else(|| {
+                    anyhow::anyhow!("System One: provider profile [{name}] has no api_key_env")
+                })?;
+                return Ok((
+                    provider,
+                    endpoint_url.to_string(),
+                    key_env.to_string(),
+                    profile
+                        .env_file
+                        .clone()
+                        .unwrap_or_else(|| format!("provider-{name}.env")),
+                    default_model,
+                ));
+            }
         }
     }
 
@@ -303,6 +308,47 @@ mod tests {
                 assert_eq!(resolved.api_key, "omni-test-key");
                 assert_eq!(resolved.default_model, OMNI_MODEL);
                 crate::env::remove_var("JCODE_PROVIDER_OMNI_API_KEY");
+            },
+        );
+    }
+
+    #[test]
+    fn omni_full_url_uses_exact_matching_profile_credentials() {
+        with_config(
+            r#"systemone_url = "https://omni.example.test/v1/systemone/typesafe"
+
+[providers.omni]
+base_url = "https://omni.example.test/v1"
+api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
+env_file = "provider-omni.env"
+"#,
+            || {
+                crate::env::set_var("JCODE_PROVIDER_OMNI_API_KEY", "omni-test-key");
+                let resolved = resolve().unwrap();
+                assert_eq!(resolved.provider, SystemOneProvider::Omni);
+                assert_eq!(
+                    resolved.endpoint_url,
+                    "https://omni.example.test/v1/systemone/typesafe"
+                );
+                assert_eq!(resolved.api_key, "omni-test-key");
+                assert_eq!(resolved.default_model, "jev-latest");
+                crate::env::remove_var("JCODE_PROVIDER_OMNI_API_KEY");
+            },
+        );
+    }
+
+    #[test]
+    fn omni_full_url_rejects_different_origin() {
+        with_config(
+            r#"systemone_url = "https://other.example.test/v1/systemone/typesafe"
+
+[providers.omni]
+base_url = "https://omni.example.test/v1"
+api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
+"#,
+            || {
+                let error = resolve().err().unwrap().to_string();
+                assert!(error.contains("no credential mapping"), "unexpected error: {error}");
             },
         );
     }
