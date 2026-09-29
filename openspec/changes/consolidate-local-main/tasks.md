@@ -36,3 +36,13 @@ These tasks are independent of unfinished broad cleanup. Execution starts only a
 - [ ] 7.6 Gracefully activate only the validated build with rollback retained. Verify daemon identity and repeat real evaluate/image acceptance. Record source-to-binary evidence and defer all other batches explicitly. Depends on 7.5.
 
 Phase 7 execution evidence: existing main worktree `/home/nyaptor/dev/jcode-worktrees/main-runtime-convergence` starts at `12020af75`. Original dirty checkout remains untouched. Saved patch SHA256 `c8e65166a77ecaf5cc1e455d0b3bce75f0b6ef1a612f383ffe449efc901b91db` matches `final-acceptance.json`. Root session owns integration/promotion, assigned swarm worker owns the six-file patch, independent reviewer owns review. Existing protected recovery archives remain under `scratch/worktree-integration-audit/`.
+
+### Phase 7 verification checkpoint (2026-09-29)
+
+- Source integrated on existing main in `afbbd12f5`. Six production files plus this change's three artifacts only. Independent swarm review found no production blocker. Original dirty checkout preserved.
+- Fresh commands passed: `scripts/dev_cargo.sh test -p jcode-base --lib systemone::tests` (8), `scripts/dev_cargo.sh test -p jcode-base --lib mcp::tool::tests` (3), `scripts/dev_cargo.sh test -p jcode-app-core --lib tool::mcp::tests` (13). Deferred regression invokes actual `McpCallTool.execute` through a Python stdio fixture. Earlier test-only mutex deadlock and malformed fixture were corrected before commit.
+- Clean committed-main build passed: `scripts/dev_cargo.sh build --profile selfdev -p jcode --bin jcode`. Executable reports `jcode v0.88.140-dev (afbbd12f5)`.
+- Isolated daemon requires its own `XDG_RUNTIME_DIR`, not merely another socket filename. Started exact new executable with `JCODE_REPO_DIR` and `JCODE_DEBUG_CONTROL=1`, session `session_owl_1790702761700_d94218193125774a`.
+- Real evaluate `noul`, `choice`, `score` all passed on isolated build, model `jev-1.13.0`. Owned image MCP fixture connected successfully.
+- Real image-provider acceptance remains BLOCKED: explicitly configured `omni:gpt-6-luna` selected successfully, but actual model message returned `[400]: The requested model is not supported.` No silent provider substitution performed. Debug tool responses omit images and cannot substitute for this gate.
+- No promotion or activation performed. Known-working `12020af75-systemone-images2` remains deployed. Tasks 7.5 and 7.6 remain incomplete until real image acceptance succeeds. Broader consolidation remains out of scope.
