@@ -50,3 +50,14 @@ Phase 7 execution evidence: existing main worktree `/home/nyaptor/dev/jcode-work
 ### Phase 7 completed acceptance
 
 The earlier400 was resolved by using the already-configured qualified identifier `omni:cx/gpt-6-luna` for the same model, without provider substitution. Real isolated image invocation succeeded. Final clean build `a65876997` passed isolated evaluate and image checks, then official guarded debug reload published it. Installed/build binary SHA256 both `61980104737a46a5441794a20303f31507ab92a2510cccb50fda6c27d787d2f3`. Graceful shared reload completed, both existing daemon executable links resolve to `builds/versions/a65876997/jcode`. Current/shared channels match. Rollback binary `12020af75-systemone-images2` retained. Live current-session evaluate passed all three primitives and real deferred `mcp_call` delivered the inline512px image showing white8142 on blue. This proves image transport, not blind recognition. No remote push or other consolidation batch performed.
+
+## 8. Remaining Jcode consolidation (2026-09-29)
+
+User requested "Swarm: Remaining Jcode consolidation". This authorizes continued integration of completed existing work, not finishing deferred features, publishing secrets, remote pushes or deleting recovery material. Original checkout's fresh dirty patch and refs are protected in private `scratch/worktree-integration-audit/remaining-20260929/`.
+
+- [ ] 8.1 Swarm-classify remaining own-branch commits, dirty source, stashes and preserved orphan work against main. Record duplicate/completed/unfinished dispositions and exact recovery pointers.
+- [x] 8.2 Integrate completed SSE recovery commit `bf08fe71e` by narrow patch, preserving newer stream fields. Verify concatenated JSON ordering at every chunk boundary and LF/CRLF/mixed delimiters using provider stream tests and independent review before commit. No provider routing/configuration changes.
+- [x] 8.3 Assess terminal-context propagation commit `00a1cb71b` independently. Port only if complete, preserving per-session environment isolation and trusted-variable filtering. Run focused hooks, shell and server-client tests before commit.
+- [ ] 8.4 Reconcile remaining inventory with fresh evidence. Keep machine-local configuration private and unfinished browser/question/desktop work recoverable rather than completing it implicitly.
+
+Phase8 evidence: SSE `ba9e4138a` (38 provider tests), terminal context `c85d46505` (15 client-actions,14 hooks,1 scoped real subprocess test). Both independently reviewed. Existing lock-order behavior revalidated with33 client-session and30 swarm tests, no duplicate source commit. First attempted broad filter matched zero tests and was corrected; no zero-test result counted. Mixed capability snapshot/stashes/orphans remain partially inventoried, so8.1/8.4 remain open. Deployment remains previously validated `a65876997` until a separately validated new build is activated.

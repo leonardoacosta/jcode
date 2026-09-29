@@ -42,3 +42,15 @@ Evidence snapshot: main `5b90904c7`. Source refs and stashes remain recoverable 
 - Current System One subscription additions were ported into shared Jev route; remaining custom service adapter consistency requires review, not an assumption of completion.
 - Stash comparisons: 1804 identical entries, 17 different, 12 absent locally, four deletions/non-files. Two differing code files add subscription enum/mapping; runtime/index differences remain preserved. Neither stash is dropped.
 - This inventory is a progress ledger, not final item-by-item closure. Do not remove worktrees until remaining acceptance and unique-item review are complete.
+
+## Remaining-work reconciliation, 2026-09-29
+
+- `bf08fe71e` → `ba9e4138a`: SSE recovery order and mixed newline delimiters. Independent review approved; entire OpenRouter provider suite38 passed.
+- `00a1cb71b` → `c85d46505`: terminal-context propagation into foreground/background shell and InputShell. Independent review approved; client-actions15, hooks14 and scoped subprocess regression passed.
+- `2ad3e7230`: machine-local config, MCP config and prompt snapshots, not a source feature. Retained on original branch; do not copy secrets/config into main.
+- `a81fb03dd`: mixed139-file capability snapshot, only partially converged. System One routing is integrated, but browser-profile, CLI, question UI, desktop and other capability groups require separate item-level review. Do not mark the entire commit equivalent or port wholesale.
+- MCP/evaluate commits `60db09a8d`, `50035dbee`, `bf9d2db37`, `c080c32d1`, `6f2af8f81`, `40ab1b4f4`, `a3980f858`: runtime behavior converged in `afbbd12f5` and live-verified `a65876997`; historical tests/evidence stay recoverable on source branch, not wholesale imported.
+- Eight dirty Rust files inspected on original checkout: formatting-only deltas, not a new functionality batch. Left untouched. Machine-local config/MCP changes and unrelated untracked data remain private.
+- Both stashes and two orphan source archives remain preserved. Their contents are not declared merged merely because backups exist. Detailed private reports: `scratch/worktree-integration-audit/remaining-{commits,dirty-source,preservation}-20260929.md`.
+- Fresh private tracked-delta snapshot: `scratch/worktree-integration-audit/remaining-20260929/working.patch`, with refs separately preserved. No reset/stash/pop/delete or remote push performed.
+- `bca5fa660` lock-order candidate: core implementation already present through main ancestry `d8de03c2a`. Main retains newer resume/prewarm behavior. No new source delta remains in its four paths, so no duplicate commit. Fresh client-session33 and swarm30 tests passed, including deterministic coordinator-election/subscribe coverage. Initial candidate readiness was corrected after examining exact main history, not inferred from branch reachability.
