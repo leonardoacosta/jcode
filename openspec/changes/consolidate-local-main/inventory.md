@@ -54,3 +54,19 @@ Evidence snapshot: main `5b90904c7`. Source refs and stashes remain recoverable 
 - Both stashes and two orphan source archives remain preserved. Their contents are not declared merged merely because backups exist. Detailed private reports: `scratch/worktree-integration-audit/remaining-{commits,dirty-source,preservation}-20260929.md`.
 - Fresh private tracked-delta snapshot: `scratch/worktree-integration-audit/remaining-20260929/working.patch`, with refs separately preserved. No reset/stash/pop/delete or remote push performed.
 - `bca5fa660` lock-order candidate: core implementation already present through main ancestry `d8de03c2a`. Main retains newer resume/prewarm behavior. No new source delta remains in its four paths, so no duplicate commit. Fresh client-session33 and swarm30 tests passed, including deterministic coordinator-election/subscribe coverage. Initial candidate readiness was corrected after examining exact main history, not inferred from branch reachability.
+
+### Remaining capability gates and recovery
+
+The mixed snapshot is **140 paths by `git diff-tree`** (earlier139-file label was approximate). Capability audit is preserved privately at `scratch/worktree-integration-audit/mixed-capabilities-20260929.md`; it is not proof of whole-commit equivalence.
+
+| Remaining group | Disposition / gate | Recovery |
+| --- | --- | --- |
+| Browser profile and ChatGPT browser runtime | Deferred: profile contract and implementation tasks remain open. Require scoped source comparison, supported profile contract and real isolated-browser acceptance before any port. | `a81fb03dd`, original dirty checkout, browser-profile proposal/evidence |
+| Question-pane, overnight and remote desktop | Deferred unfinished capability work. Require feature-specific design/implementation completion and TUI/desktop acceptance, not implicit completion during consolidation. | `a81fb03dd`, `feature/question-pane-and-overnight-advice`, retained stash |
+| Remaining CLI/TUI/agent compatibility and fixtures | Deferred/unclassified at item level. A matching identifier or already-integrated routing subset does not establish equivalence for whole files. Require scoped semantic comparison before inclusion or duplicate classification. | Own source branch `a3980f858`, mixed source commit `a81fb03dd` |
+| Machine-local config, MCP entries and runtime artifacts | Preserve privately, exclude from source ports. | Original checkout and private snapshots |
+| Generated Graft stash | No tracked-tree delta against parent; inspect untracked third parent separately if retrieval is needed. Do not pop into main. | `1fd03d9c31821987e2d55a0850fa5514bec412db` |
+| Unrelated workspace stash | 92 tracked paths, mixed unfinished work. Preserved without applying. Require per-capability extraction rather than whole-stash merge. | `b7095d47bb2d0136d172d5b3994aff6407ad053f` |
+| Orphan linked checkout source | Deferred: archived and checksummed, not proven equivalent to current main. Keep until individual source accounting and restore evidence permit retirement. | Private `scratch/worktree-integration-audit/` manifests/archives, original orphan directories |
+
+The two ready source batches are complete. Remaining item-level accounting is explicitly deferred, not silently marked done. Original dirty diff SHA256 still exactly matches the pre-integration snapshot. No recovery source, stash, branch or orphan directory was deleted. Combined main9109a7b10 passed isolated public-shell and configured Omni streaming acceptance; deployment was not changed.
