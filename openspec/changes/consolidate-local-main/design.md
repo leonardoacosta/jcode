@@ -66,7 +66,7 @@ No production API calls or paid account use solely for validation without necess
 
 ## Scoped continuation: evaluate and MCP images (2026-09-29)
 
-This continuation does not reopen history reconciliation or authorize the remaining repository cleanup. Fresh inspection finds local main at `12020af75` and the dirty working checkout on `codex/systemone-config-routing`. The user approved the first six-file batch in conversation; this written continuation requires review before execution.
+This continuation does not reopen history reconciliation or authorize the remaining repository cleanup. Fresh inspection finds local main at `12020af75` and the dirty working checkout on `codex/systemone-config-routing`. The user approved the first six-file batch in conversation; the user approved this written continuation with “Approve all” on 2026-09-29.
 
 ### Alternatives and selected approach
 

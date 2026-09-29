@@ -11,10 +11,12 @@ use crate::config::{SafetyConfig, config};
 use crate::logging;
 use crate::safety::AmbientTranscript;
 
+use futures::{SinkExt, StreamExt};
 use jcode_notify_email::{
     ReplyAction, SendEmailRequest, build_permission_email_html, poll_imap_once, send_email,
 };
 pub use jcode_notify_email::{extract_permission_id, parse_permission_reply};
+use tokio_tungstenite::tungstenite::{Message as WsMessage, client::IntoClientRequest};
 
 /// Stable schema version for files handed to the bundled macOS notification
 /// broker. The broker ignores payloads with a newer schema instead of guessing
@@ -275,9 +277,251 @@ impl NotificationDispatcher {
             });
         }
 
+        // AgentMail is an independent opt-in channel. Never include transcript
+        // content in logs or expose provider response bodies on failures.
+        if self.config.agentmail_enabled {
+            match (
+                self.config.agentmail_api_key.clone(),
+                self.config.agentmail_inbox_id.clone(),
+            ) {
+                (Some(api_key), Some(inbox_id)) if self.config.email_to.is_some() => {
+                    let client = self.client.clone();
+                    let title = format!("{title} [jcode:{}]", cycle_id.unwrap_or("ambient"));
+                    let body = detailed_body.to_string();
+                    let recipient = self.config.email_to.clone().unwrap_or_default();
+                    tokio::spawn(async move {
+                        if send_agentmail(&client, &api_key, &inbox_id, &recipient, &title, &body)
+                            .await
+                            .is_err()
+                        {
+                            logging::warn(
+                                "AgentMail notification failed (network, timeout, or provider error)",
+                            );
+                        }
+                    });
+                }
+                _ => logging::warn(
+                    "AgentMail delivery enabled but API key, inbox id, or recipient is missing; skipping",
+                ),
+            }
+        }
+
         // Message channels (Telegram, Discord, etc.) — uses DETAILED body
         let channel_text = format!("*{}*\n\n{}", title, detailed_body);
         self.channels.send_all(&channel_text);
+    }
+}
+
+async fn send_agentmail(
+    client: &reqwest::Client,
+    api_key: &str,
+    inbox_id: &str,
+    recipient: &str,
+    subject: &str,
+    text: &str,
+) -> anyhow::Result<()> {
+    send_agentmail_to(
+        client,
+        "https://api.agentmail.to",
+        api_key,
+        inbox_id,
+        recipient,
+        subject,
+        text,
+    )
+    .await
+}
+
+async fn send_agentmail_to(
+    client: &reqwest::Client,
+    api_base: &str,
+    api_key: &str,
+    inbox_id: &str,
+    recipient: &str,
+    subject: &str,
+    text: &str,
+) -> anyhow::Result<()> {
+    let inbox = urlencoding::encode(inbox_id);
+    let url = format!("{api_base}/v0/inboxes/{inbox}/messages/send");
+    let response = client
+        .post(url)
+        .bearer_auth(api_key)
+        .json(&serde_json::json!({ "to": recipient, "subject": subject, "text": text }))
+        .timeout(std::time::Duration::from_secs(20))
+        .send()
+        .await
+        .map_err(|_| anyhow::anyhow!("AgentMail request failed or timed out"))?;
+    if !response.status().is_success() {
+        anyhow::bail!("AgentMail returned HTTP {}", response.status());
+    }
+    Ok(())
+}
+
+/// Process only verified inbound messages from the configured inbox and
+/// explicit sender allowlist. Correlation is required in a reply subject.
+fn agentmail_reply_directive(
+    event: &serde_json::Value,
+    inbox: &str,
+    allowed: &[String],
+) -> Option<(String, String, String)> {
+    if event.get("type")?.as_str()? != "event"
+        || event.get("event_type")?.as_str()? != "message.received"
+    {
+        return None;
+    }
+    let message = event.get("message")?;
+    if message.get("inbox_id")?.as_str()? != inbox {
+        return None;
+    }
+    let sender_raw = message.get("from")?.as_str()?.trim();
+    let sender = sender_raw
+        .rsplit_once('<')
+        .map(|(_, address)| address.trim_end_matches('>'))
+        .unwrap_or(sender_raw)
+        .trim()
+        .to_ascii_lowercase();
+    if !allowed
+        .iter()
+        .any(|allowed| allowed.trim().eq_ignore_ascii_case(&sender))
+    {
+        return None;
+    }
+    let subject = message.get("subject")?.as_str()?;
+    let correlation = subject.split("[jcode:").nth(1)?.split(']').next()?.trim();
+    if correlation.is_empty() {
+        return None;
+    }
+    let text = message.get("text")?.as_str()?.trim();
+    if text.is_empty() {
+        return None;
+    }
+    let message_id = message.get("message_id")?.as_str()?;
+    let event_id = event.get("event_id")?.as_str()?;
+    Some((
+        correlation.to_string(),
+        format!("{event_id}_{message_id}"),
+        text.to_string(),
+    ))
+}
+
+fn record_agentmail_directive(id: &str, text: String, correlation: &str) -> anyhow::Result<()> {
+    crate::ambient::add_directive_with_id(format!("agentmail_{id}"), text, correlation.to_string())
+}
+
+fn known_ambient_correlation(correlation: &str) -> bool {
+    let Ok(dir) = crate::storage::jcode_dir() else {
+        return false;
+    };
+    let transcript_dir = dir.join("ambient").join("transcripts");
+    std::fs::read_dir(transcript_dir)
+        .ok()
+        .into_iter()
+        .flatten()
+        .flatten()
+        .any(|entry| {
+            crate::storage::read_json::<AmbientTranscript>(&entry.path())
+                .is_ok_and(|transcript| transcript.session_id == correlation)
+        })
+}
+
+fn agentmail_subscribe_message(inbox: &str) -> WsMessage {
+    WsMessage::Text(serde_json::json!({"type":"subscribe","inbox_ids":[inbox],"event_types":["message.received"]}).to_string().into())
+}
+
+fn agentmail_event_is_eligible(event: &serde_json::Value, subscribed: bool) -> bool {
+    subscribed
+        && event.get("type").and_then(|v| v.as_str()) == Some("event")
+        && event.get("event_type").and_then(|v| v.as_str()) == Some("message.received")
+}
+
+async fn connect_agentmail_websocket(
+    url: &str,
+    api_key: &str,
+) -> anyhow::Result<
+    tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
+> {
+    Ok(
+        tokio_tungstenite::connect_async(agentmail_handshake_request(url, api_key)?)
+            .await?
+            .0,
+    )
+}
+
+fn agentmail_handshake_request(
+    url: &str,
+    api_key: &str,
+) -> anyhow::Result<tokio_tungstenite::tungstenite::http::Request<()>> {
+    let mut request = url.into_client_request()?;
+    request.headers_mut().insert(
+        "Authorization",
+        format!("Bearer {api_key}")
+            .parse()
+            .map_err(|_| anyhow::anyhow!("invalid AgentMail credential header"))?,
+    );
+    Ok(request)
+}
+
+pub async fn agentmail_reply_loop(config: SafetyConfig) {
+    let (Some(api_key), Some(inbox)) = (
+        config.agentmail_api_key.clone(),
+        config.agentmail_inbox_id.clone(),
+    ) else {
+        logging::warn(
+            "AgentMail replies enabled without API key or inbox id; listener not started",
+        );
+        return;
+    };
+    if config.agentmail_allowed_senders.is_empty() {
+        logging::warn("AgentMail replies enabled without allowed senders; listener not started");
+        return;
+    }
+    let mut delay = std::time::Duration::from_secs(1);
+    loop {
+        let connection = connect_agentmail_websocket("wss://ws.agentmail.to/v0", &api_key).await;
+        match connection {
+            Ok(mut socket) => {
+                delay = std::time::Duration::from_secs(1);
+                if socket
+                    .send(agentmail_subscribe_message(&inbox))
+                    .await
+                    .is_err()
+                {
+                    continue;
+                }
+                let mut subscribed = false;
+                while let Some(Ok(frame)) = socket.next().await {
+                    let WsMessage::Text(text) = frame else {
+                        continue;
+                    };
+                    let Ok(event) = serde_json::from_str::<serde_json::Value>(&text) else {
+                        continue;
+                    };
+                    if event.get("type").and_then(|v| v.as_str()) == Some("subscribed") {
+                        subscribed = event
+                            .get("inbox_ids")
+                            .and_then(|ids| ids.as_array())
+                            .is_some_and(|ids| ids.iter().any(|id| id.as_str() == Some(&inbox)));
+                        continue;
+                    }
+                    if !agentmail_event_is_eligible(&event, subscribed) {
+                        continue;
+                    }
+                    if let Some((correlation, message_id, text)) =
+                        agentmail_reply_directive(&event, &inbox, &config.agentmail_allowed_senders)
+                        && known_ambient_correlation(&correlation)
+                        && let Err(error) =
+                            record_agentmail_directive(&message_id, text, &correlation)
+                    {
+                        logging::warn(&format!(
+                            "AgentMail directive rejected: storage failure ({error})"
+                        ));
+                    }
+                }
+            }
+            Err(_) => logging::warn("AgentMail WebSocket connection failed; retrying"),
+        }
+        tokio::time::sleep(delay).await;
+        delay = (delay * 2).min(std::time::Duration::from_secs(60));
     }
 }
 
@@ -421,10 +665,23 @@ fn macos_notification_broker_app_path() -> Option<std::path::PathBuf> {
     if let Some(path) = std::env::var_os("JCODE_MACOS_NOTIFICATION_BROKER_APP") {
         return Some(path.into());
     }
-    dirs::home_dir().map(|home| {
-        home.join("Applications")
-            .join(MACOS_NOTIFICATION_BROKER_APP_NAME)
-    })
+    let home = dirs::home_dir()?;
+    // Current location: hidden beside the inbox so Spotlight and Launchpad do
+    // not list the faceless helper as a second "Jcode" app. Older CLIs
+    // published it in ~/Applications; keep using that copy until the next
+    // interactive launch migrates it.
+    let current = home
+        .join(".jcode")
+        .join("notifications")
+        .join("macos")
+        .join(MACOS_NOTIFICATION_BROKER_APP_NAME);
+    if current.is_dir() {
+        return Some(current);
+    }
+    let legacy = home
+        .join("Applications")
+        .join(MACOS_NOTIFICATION_BROKER_APP_NAME);
+    Some(if legacy.is_dir() { legacy } else { current })
 }
 
 /// The durable inbox consumed by the bundled macOS broker.
@@ -655,8 +912,8 @@ pub fn activate_macos_notification_origin(origin: &MacosNotificationOrigin) {
 /// Send a local desktop notification without blocking.
 ///
 /// Uses Notification Center via `osascript` on macOS and `notify-send` on
-/// Linux. The child process is spawned detached and never waited on; failures
-/// are ignored (a missing notifier is not an error).
+/// Linux. The child process is reaped on a background thread; failures are
+/// ignored (a missing notifier is not an error).
 pub fn send_desktop_notification(title: &str, body: &str) {
     send_desktop_notification_rich(title, None, body, None);
 }
@@ -698,25 +955,31 @@ pub fn send_desktop_notification_rich(
         if let Some(sound) = sound.filter(|s| !s.trim().is_empty()) {
             script.push_str(&format!(" sound name \"{}\"", applescript_escape(sound)));
         }
-        let _ = std::process::Command::new("osascript")
+        if let Ok(child) = std::process::Command::new("osascript")
             .arg("-e")
             .arg(script)
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
-            .spawn();
+            .spawn()
+        {
+            reap_notification_child(child);
+        }
     }
     #[cfg(target_os = "linux")]
     {
         let _ = (subtitle, sound);
-        let _ = std::process::Command::new("notify-send")
+        if let Ok(child) = std::process::Command::new("notify-send")
             .arg("--app-name=jcode")
             .arg(title)
             .arg(body)
             .stdin(std::process::Stdio::null())
             .stdout(std::process::Stdio::null())
             .stderr(std::process::Stdio::null())
-            .spawn();
+            .spawn()
+        {
+            reap_notification_child(child);
+        }
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     {
@@ -934,6 +1197,223 @@ fn format_cycle_body_detailed(transcript: &AmbientTranscript) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    #[tokio::test]
+    async fn agentmail_send_uses_expected_authenticated_request_and_sanitizes_errors() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut bytes = vec![0; 8192];
+            let size = stream.read(&mut bytes).await.unwrap();
+            let request = String::from_utf8_lossy(&bytes[..size]);
+            assert!(request.starts_with("POST /v0/inboxes/inbox%40example/messages/send HTTP/1.1"));
+            assert!(
+                request
+                    .to_ascii_lowercase()
+                    .contains("authorization: bearer secret-test")
+            );
+            assert!(request.contains("recipient@example.com"));
+            stream.write_all(b"HTTP/1.1 500 Internal Server Error\r\nContent-Length: 14\r\nConnection: close\r\n\r\nsecret response").await.unwrap();
+        });
+        let client = reqwest::Client::new();
+        let error = send_agentmail_to(
+            &client,
+            &format!("http://{address}"),
+            "secret-test",
+            "inbox@example",
+            "recipient@example.com",
+            "subject",
+            "body",
+        )
+        .await
+        .unwrap_err();
+        assert!(!error.to_string().contains("secret response"));
+        server.await.unwrap();
+    }
+
+    #[test]
+    fn agentmail_reply_requires_inbox_allowlisted_sender_and_correlation() {
+        let event = serde_json::json!({"type":"event","event_type":"message.received","event_id":"evt-1","message":{"inbox_id":"inbox-1","message_id":"msg-1","from":"Owner@example.com","subject":"Re: status [jcode:ambient_1]","text":"please continue"}});
+        assert_eq!(
+            agentmail_reply_directive(&event, "inbox-1", &["owner@example.com".into()]).unwrap(),
+            (
+                "ambient_1".into(),
+                "evt-1_msg-1".into(),
+                "please continue".into()
+            )
+        );
+        assert!(
+            agentmail_reply_directive(&event, "other-inbox", &["owner@example.com".into()])
+                .is_none()
+        );
+        assert!(
+            agentmail_reply_directive(&event, "inbox-1", &["intruder@example.com".into()])
+                .is_none()
+        );
+        let mut unrelated = event;
+        unrelated["message"]["subject"] = "hello".into();
+        assert!(
+            agentmail_reply_directive(&unrelated, "inbox-1", &["owner@example.com".into()])
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn agentmail_reply_requires_received_event_and_provider_ids() {
+        let mut event = serde_json::json!({"type":"event","event_type":"message.received","event_id":"evt-1","message":{"inbox_id":"inbox-1","message_id":"msg-1","from":"Owner <owner@example.com>","subject":"[jcode:cycle-1]","text":"reply"}});
+        assert!(
+            agentmail_reply_directive(&event, "inbox-1", &["owner@example.com".into()]).is_some()
+        );
+        event["event_type"] = "message.received.spam".into();
+        assert!(
+            agentmail_reply_directive(&event, "inbox-1", &["owner@example.com".into()]).is_none()
+        );
+    }
+
+    #[tokio::test]
+    async fn agentmail_send_accepts_success_without_reading_body() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut bytes = vec![0; 4096];
+            let _ = stream.read(&mut bytes).await.unwrap();
+            stream
+                .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}")
+                .await
+                .unwrap();
+        });
+        let client = reqwest::Client::new();
+        send_agentmail_to(
+            &client,
+            &format!("http://{address}"),
+            "key",
+            "inbox",
+            "to@example.com",
+            "subject",
+            "body",
+        )
+        .await
+        .unwrap();
+        server.await.unwrap();
+    }
+
+    #[test]
+    fn agentmail_websocket_handshake_and_subscription_are_authenticated_and_scoped() {
+        let request = agentmail_handshake_request("ws://localhost:9000/v0", "test-key").unwrap();
+        assert_eq!(request.headers()["Authorization"], "Bearer test-key");
+        let subscribe = agentmail_subscribe_message("inbox-1");
+        let WsMessage::Text(payload) = subscribe else {
+            panic!("expected text frame");
+        };
+        let payload: serde_json::Value = serde_json::from_str(&payload).unwrap();
+        assert_eq!(payload["inbox_ids"][0], "inbox-1");
+        assert_eq!(payload["event_types"][0], "message.received");
+        let ack = serde_json::json!({"type":"subscribed","inbox_ids":["inbox-1"]});
+        let confirmed = ack["inbox_ids"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|v| v == "inbox-1");
+        assert!(confirmed);
+        let event = serde_json::json!({"type":"event","event_type":"message.received"});
+        assert!(!agentmail_event_is_eligible(&event, false));
+        assert!(agentmail_event_is_eligible(&event, true));
+    }
+
+    #[tokio::test]
+    async fn agentmail_websocket_fake_server_checks_bearer_and_subscription_ack() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (stream, _) = listener.accept().await.unwrap();
+            let mut socket = tokio_tungstenite::accept_hdr_async(
+                stream,
+                |request: &tokio_tungstenite::tungstenite::http::Request<()>,
+                 response: tokio_tungstenite::tungstenite::http::Response<()>| {
+                    assert_eq!(request.headers()["Authorization"], "Bearer fake-key");
+                    Ok(response)
+                },
+            )
+            .await
+            .unwrap();
+            let subscribe = socket.next().await.unwrap().unwrap();
+            let WsMessage::Text(body) = subscribe else {
+                panic!("expected subscribe frame");
+            };
+            let body: serde_json::Value = serde_json::from_str(&body).unwrap();
+            assert_eq!(body["inbox_ids"][0], "inbox-1");
+            socket
+                .send(WsMessage::Text(
+                    r#"{"type":"subscribed","inbox_ids":["inbox-1"]}"#.into(),
+                ))
+                .await
+                .unwrap();
+            socket
+                .send(WsMessage::Text(
+                    r#"{"type":"event","event_type":"message.received"}"#.into(),
+                ))
+                .await
+                .unwrap();
+        });
+        let mut socket = connect_agentmail_websocket(&format!("ws://{address}/v0"), "fake-key")
+            .await
+            .unwrap();
+        socket
+            .send(agentmail_subscribe_message("inbox-1"))
+            .await
+            .unwrap();
+        let ack: serde_json::Value = match socket.next().await.unwrap().unwrap() {
+            WsMessage::Text(text) => serde_json::from_str(&text).unwrap(),
+            _ => panic!("expected ack"),
+        };
+        let subscribed = ack["inbox_ids"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|id| id == "inbox-1");
+        assert!(subscribed);
+        let event: serde_json::Value = match socket.next().await.unwrap().unwrap() {
+            WsMessage::Text(text) => serde_json::from_str(&text).unwrap(),
+            _ => panic!("expected event"),
+        };
+        assert!(agentmail_event_is_eligible(&event, subscribed));
+        server.await.unwrap();
+    }
+
+    #[test]
+    fn agentmail_directive_storage_deduplicates_provider_message_ids() {
+        let _guard = crate::storage::lock_test_env();
+        let previous = std::env::var_os("JCODE_HOME");
+        let temp = tempfile::TempDir::new().unwrap();
+        crate::env::set_var("JCODE_HOME", temp.path());
+        record_agentmail_directive("event-a_message-a", "hello".into(), "cycle-a").unwrap();
+        record_agentmail_directive("event-a_message-a", "hello again".into(), "cycle-a").unwrap();
+        let directives = crate::ambient::load_directives();
+        assert_eq!(directives.len(), 1);
+        assert_eq!(directives[0].text, "hello");
+        match previous {
+            Some(value) => crate::env::set_var("JCODE_HOME", value),
+            None => crate::env::remove_var("JCODE_HOME"),
+        }
+    }
+
+    #[tokio::test]
+    async fn agentmail_reply_listener_is_noop_without_allowlist() {
+        let config = SafetyConfig {
+            agentmail_api_key: Some("key".into()),
+            agentmail_inbox_id: Some("inbox".into()),
+            ..SafetyConfig::default()
+        };
+        tokio::time::timeout(
+            std::time::Duration::from_secs(1),
+            agentmail_reply_loop(config),
+        )
+        .await
+        .unwrap();
+    }
 
     #[test]
     fn test_format_cycle_body_safe() {
@@ -1149,4 +1629,12 @@ mod tests {
             serde_json::from_slice(&encoded).expect("decode envelope");
         assert_eq!(decoded, envelope);
     }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod notification_process_tests {
+    include!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../tests/support/notification_reaping.rs"
+    ));
 }

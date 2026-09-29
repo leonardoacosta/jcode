@@ -157,7 +157,11 @@ async fn discover_openai_compatible_validation_model(
         &profile.api_key_env,
         &profile.env_file,
     ) {
-        request = request.bearer_auth(api_key);
+        request = crate::provider_catalog::apply_openai_compatible_catalog_auth(
+            request,
+            &profile.api_base,
+            &api_key,
+        );
     }
 
     let response = request.send().await.with_context(|| {
@@ -463,6 +467,23 @@ where
 
 pub(crate) fn auth_test_error_is_retryable(err: &anyhow::Error) -> bool {
     let text = format!("{err:#}").to_ascii_lowercase();
+    // A hard quota exhaustion ("usage limit reached, resets in 28d") cannot
+    // change within one auth-test run, so retrying it only burns the 120s
+    // smoke timeout up to three times (#1148). Check these deterministic
+    // markers before the generic transient 429 needles below.
+    if [
+        "usage_limit_reached",
+        "usage limit has been reached",
+        "usage limit reached",
+        "insufficient_quota",
+        "quota exceeded",
+        "quota_exceeded",
+    ]
+    .iter()
+    .any(|needle| text.contains(needle))
+    {
+        return false;
+    }
     [
         "http 429",
         "too many requests",

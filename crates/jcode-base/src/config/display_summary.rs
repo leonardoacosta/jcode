@@ -45,7 +45,6 @@ impl Config {
 - Markdown spacing: {}
 - LaTeX rendering: {}
 - Pin images: {}
-- Diff line wrap: {}
 - Queue mode: {}
 - Auto server reload: {}
 - Mouse capture: {}
@@ -81,6 +80,8 @@ impl Config {
 - Enabled allow-list: {}
 - Disabled tools: {}
 - Disable base tools: {}
+- MCP tools: {}
+- MCP auto threshold: {} tokens
 
 **Provider:**
 - Default model: {}
@@ -96,11 +97,13 @@ impl Config {
 **Agent models:**
 - Swarm / subagent: {}
 - Swarm spawn mode: {}
+- Swarm root effort: {}
+- Deep swarm root effort: {}
 - Spawn hook: {}
 - Review: {}
 - Judge: {}
-- Memory: {}
-- Memory sidecar: {}
+- System One route: {}
+- Memory extraction sidecar: {}
 - Ambient: {}
 
 **Gateway:**
@@ -126,6 +129,8 @@ impl Config {
 - Telegram replies: {}
 - Discord: {}
 - Discord replies: {}
+- AgentMail: {}
+- AgentMail replies: {}
 
 *Edit the config file or set environment variables to customize.*
 *Environment variables (e.g., `JCODE_SCROLL_UP_KEY`, `JCODE_GATEWAY_ENABLED`) override file settings.*"#,
@@ -171,7 +176,6 @@ impl Config {
             self.display.markdown_spacing.label(),
             self.display.latex_rendering.as_str(),
             self.display.pin_images,
-            self.display.diff_line_wrap,
             self.display.queue_mode,
             self.display.auto_server_reload,
             self.display.mouse_capture,
@@ -244,6 +248,8 @@ impl Config {
                 effective_disabled_tools.join(", ")
             },
             self.tools.disable_base_tools,
+            self.tools.mcp_tools.as_str(),
+            self.tools.mcp_tools_token_threshold,
             self.provider
                 .default_model
                 .as_deref()
@@ -276,6 +282,8 @@ impl Config {
                 .as_deref()
                 .unwrap_or("(inherit current session)"),
             self.agents.swarm_spawn_mode.as_str(),
+            self.agents.root_effort_for_swarm(false),
+            self.agents.root_effort_for_swarm(true),
             self.terminal
                 .spawn_hook
                 .as_deref()
@@ -288,10 +296,11 @@ impl Config {
                 .model
                 .as_deref()
                 .unwrap_or("(inherit current session)"),
-            self.agents
-                .memory_model
-                .as_deref()
-                .unwrap_or("(sidecar auto-select)"),
+            if self.systemone_url.trim().is_empty() {
+                "9router"
+            } else {
+                self.systemone_url.trim()
+            },
             if self.agents.memory_sidecar_enabled {
                 "enabled"
             } else {
@@ -364,6 +373,25 @@ impl Config {
                 "disabled"
             },
             if self.safety.discord_reply_enabled {
+                "enabled"
+            } else {
+                "disabled"
+            },
+            if self.safety.agentmail_enabled {
+                if self.safety.agentmail_api_key.is_some()
+                    && self.safety.agentmail_inbox_id.is_some()
+                    && self.safety.email_to.is_some()
+                {
+                    "enabled (configured)"
+                } else {
+                    "enabled (misconfigured)"
+                }
+            } else {
+                "disabled"
+            },
+            if self.safety.agentmail_reply_enabled
+                && !self.safety.agentmail_allowed_senders.is_empty()
+            {
                 "enabled"
             } else {
                 "disabled"

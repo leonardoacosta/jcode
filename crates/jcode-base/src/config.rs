@@ -60,6 +60,10 @@ const CONFIG_ENV_KEYS: &[&str] = &[
     "JCODE_COPY_BADGE_ALT_LABEL",
     "JCODE_COPY_SELECTION_TOGGLE_KEY",
     "JCODE_COPILOT_PREMIUM",
+    "JCODE_GEMINI_FORCE_OAUTH",
+    "GOOGLE_CLOUD_PROJECT",
+    "GOOGLE_CLOUD_PROJECT_ID",
+    "JCODE_WAKE_MODE",
     "JCODE_CROSS_PROVIDER_FAILOVER",
     "JCODE_DEBUG_SOCKET",
     "JCODE_DEFAULT_REASONING_DISPLAY",
@@ -82,6 +86,11 @@ const CONFIG_ENV_KEYS: &[&str] = &[
     "JCODE_EFFORT_DECREASE_KEY",
     "JCODE_EFFORT_INCREASE_KEY",
     "JCODE_EMAIL_REPLY_ENABLED",
+    "JCODE_AGENTMAIL_API_KEY",
+    "JCODE_AGENTMAIL_ENABLED",
+    "JCODE_AGENTMAIL_REPLY_ENABLED",
+    "JCODE_AGENTMAIL_INBOX_ID",
+    "JCODE_AGENTMAIL_ALLOWED_SENDERS",
     "JCODE_EMAIL_TO",
     "JCODE_FOCUS_HOOK",
     "JCODE_GATEWAY_BIND_ADDR",
@@ -89,6 +98,8 @@ const CONFIG_ENV_KEYS: &[&str] = &[
     "JCODE_GATEWAY_PORT",
     "JCODE_HOME",
     "JCODE_HOOK_PRE_TOOL",
+    "JCODE_HOOK_PRE_TOOL_TRANSFORM",
+    "JCODE_HOOK_PRE_TOOL_TRANSFORM_TIMEOUT_MS",
     "JCODE_HOOK_PRE_TOOL_TIMEOUT_MS",
     "JCODE_HOOK_POST_TOOL",
     "JCODE_HOOK_SESSION_END",
@@ -165,8 +176,13 @@ const CONFIG_ENV_KEYS: &[&str] = &[
     "JCODE_SPAWN_HOOK",
     "JCODE_STREAM_IDLE_TIMEOUT_SECS",
     "JCODE_MAX_RETRIES",
+    "JCODE_MCP_TOOLS",
+    "JCODE_MCP_TOOLS_TOKEN_THRESHOLD",
     "JCODE_RETRY_BACKOFF_CAP_SECS",
     "JCODE_SWARM_ENABLED",
+    "JCODE_SWARM_EFFORT",
+    "JCODE_SWARM_ROOT_EFFORT",
+    "JCODE_SWARM_DEEP_ROOT_EFFORT",
     "JCODE_SWARM_MODEL",
     "JCODE_SWARM_MAX_CONCURRENT_AGENTS",
     "JCODE_SWARM_SPAWN_MODE",
@@ -553,12 +569,16 @@ pub struct Config {
     pub remote_desktop: RemoteDesktopConfig,
 
     /// System One endpoint selector or full URL. Defaults to the configured 9Router profile.
-    #[serde(alias = "SYSTEMONE_URL", skip_serializing_if = "String::is_empty")]
+    #[serde(default = "default_systemone_url", alias = "SYSTEMONE_URL")]
     pub systemone_url: String,
 
     /// Optional model override for System One calls.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub systemone_model: Option<String>,
+    /// `[desktop.*]` tables owned by Jcode Desktop. Preserve them on CLI saves.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub desktop: Option<toml::Table>,
+    pub server: ServerConfig,
 }
 
 /// Named SSH hosts that may be used by the opt-in remote desktop tool.
@@ -645,6 +665,38 @@ impl RemoteDesktopConfig {
     }
 }
 
+fn default_systemone_url() -> String {
+    "9router".to_string()
+}
+
+/// Controls who owns autonomous wake execution.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum WakeMode {
+    /// The daemon starts idle turns and interrupts running turns itself.
+    #[default]
+    Internal,
+    /// The daemon emits a wake request and leaves turn scheduling to its operator.
+    External,
+}
+
+impl WakeMode {
+    pub fn parse(value: &str) -> Option<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "internal" => Some(Self::Internal),
+            "external" => Some(Self::External),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ServerConfig {
+    /// Ownership model for autonomous wake requests.
+    pub wake_mode: WakeMode,
+}
+
 /// Agent Client Protocol adapter configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -665,7 +717,7 @@ impl Default for AcpConfig {
 }
 
 /// Controls which tools are sent to the model.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ToolConfig {
     /// Tool profile: "full" (default), "acp", "minimal"/"lite", or "none".
@@ -677,6 +729,53 @@ pub struct ToolConfig {
     pub disabled: Vec<String>,
     /// Disable all built-in tools unless `enabled` is provided.
     pub disable_base_tools: bool,
+    /// MCP tool exposure mode: auto (default), eager, or deferred.
+    pub mcp_tools: McpToolsMode,
+    /// In auto mode, defer MCP tools when definitions exceed this token estimate.
+    #[serde(alias = "mcp_tools_threshold", alias = "mcp_tools_auto_threshold", alias = "mcp_tools_auto_threshold_tokens")]
+    pub mcp_tools_token_threshold: usize,
+}
+
+impl Default for ToolConfig {
+    fn default() -> Self {
+        Self {
+            profile: String::new(),
+            enabled: Vec::new(),
+            disabled: Vec::new(),
+            disable_base_tools: false,
+            mcp_tools: McpToolsMode::Auto,
+            mcp_tools_token_threshold: 8_000,
+        }
+    }
+}
+
+/// Controls how MCP server tools are exposed to the model.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum McpToolsMode {
+    #[default]
+    Auto,
+    Eager,
+    Deferred,
+}
+
+impl McpToolsMode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Auto => "auto",
+            Self::Eager => "eager",
+            Self::Deferred => "deferred",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "auto" => Some(Self::Auto),
+            "eager" => Some(Self::Eager),
+            "deferred" => Some(Self::Deferred),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -739,6 +838,7 @@ impl ToolConfig {
                     "read",
                     "write",
                     "edit",
+                    "replace",
                     "multiedit",
                     "apply_patch",
                     "patch",
@@ -810,6 +910,8 @@ pub struct DictationConfig {
     pub key: String,
     /// Maximum time to wait for the command to finish (0 = no timeout).
     pub timeout_secs: u64,
+    /// Extra names or terms sent as recognition context to built-in voice transcription.
+    pub vocabulary: Vec<String>,
 }
 
 impl Default for DictationConfig {
@@ -819,6 +921,7 @@ impl Default for DictationConfig {
             mode: crate::protocol::TranscriptMode::Send,
             key: "off".to_string(),
             timeout_secs: 90,
+            vocabulary: Vec::new(),
         }
     }
 }
@@ -836,6 +939,10 @@ mod tests;
 #[cfg(test)]
 #[path = "config_color_tests.rs"]
 mod color_tests;
+
+#[cfg(test)]
+#[path = "config/agentmail_tests.rs"]
+mod agentmail_tests;
 
 /// Whether integration discovery settings carry no information beyond the shipped
 /// default, so `[sponsors]` can be left out of written config files.

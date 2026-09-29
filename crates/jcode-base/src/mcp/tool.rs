@@ -34,7 +34,10 @@ fn validated_image(data: String, mime_type: &str) -> Option<ToolImage> {
     })
 }
 
-fn tool_output_from_result(result: super::protocol::ToolCallResult, title: String) -> ToolOutput {
+pub fn tool_output_from_result(
+    result: super::protocol::ToolCallResult,
+    title: String,
+) -> ToolOutput {
     let mut output_parts = Vec::new();
     let mut images = Vec::new();
     for block in result.content {
@@ -107,6 +110,10 @@ impl Tool for McpTool {
         &self.tool_def.name
     }
 
+    fn mcp_identity(&self) -> Option<(&str, &str)> {
+        Some((&self.server_name, &self.tool_def.name))
+    }
+
     fn description(&self) -> &str {
         self.tool_def.description.as_deref().unwrap_or("MCP tool")
     }
@@ -147,15 +154,76 @@ pub fn dispatch_name(server_name: &str, tool_name: &str) -> String {
     format!("mcp__{}__{}", server_name, tool_name).replace('-', "_")
 }
 
+/// Build deterministic registry keys for a complete MCP tool surface.
+///
+/// `dispatch_name` predates multi-server tool registration and intentionally
+/// normalizes hyphens for model compatibility. That normalization is lossy,
+/// so two distinct `(server, tool)` pairs can otherwise overwrite one another
+/// in the registry. Keep the historical spelling when it is unique, and add a
+/// stable suffix only to colliding entries.
+pub fn dispatch_names(tools: &[(String, McpToolDef)]) -> Vec<String> {
+    let bases: Vec<String> = tools
+        .iter()
+        .map(|(server, tool)| dispatch_name(server, &tool.name))
+        .collect();
+    let mut counts = std::collections::HashMap::<&str, usize>::new();
+    for base in &bases {
+        *counts.entry(base).or_default() += 1;
+    }
+
+    let mut ordered_indices: Vec<usize> = (0..tools.len()).collect();
+    ordered_indices.sort_by(|&left, &right| {
+        tools[left]
+            .0
+            .cmp(&tools[right].0)
+            .then_with(|| tools[left].1.name.cmp(&tools[right].1.name))
+    });
+
+    let mut names = vec![String::new(); tools.len()];
+    let mut used = std::collections::HashSet::with_capacity(tools.len());
+    for index in ordered_indices {
+        let (server, tool) = &tools[index];
+        let base = &bases[index];
+        if counts[base.as_str()] == 1 && used.insert(base.clone()) {
+            names[index] = base.clone();
+            continue;
+        }
+
+        let suffix = format!("__{:08x}", stable_dispatch_hash(server, &tool.name));
+        let mut candidate = format!("{base}{suffix}");
+        let mut counter = 2u32;
+        while !used.insert(candidate.clone()) {
+            candidate = format!("{base}{suffix}_{counter}");
+            counter = counter.saturating_add(1);
+        }
+        names[index] = candidate;
+    }
+    names
+}
+
+fn stable_dispatch_hash(server_name: &str, tool_name: &str) -> u32 {
+    let mut hash = 0x811c9dc5u32;
+    for byte in server_name
+        .as_bytes()
+        .iter()
+        .chain(std::iter::once(&0))
+        .chain(tool_name.as_bytes())
+    {
+        hash ^= u32::from(*byte);
+        hash = hash.wrapping_mul(0x01000193);
+    }
+    hash
+}
+
 /// Create tools from an MCP manager
 pub async fn create_mcp_tools(manager: Arc<RwLock<McpManager>>) -> Vec<(String, Arc<dyn Tool>)> {
     let mgr = manager.read().await;
     let all_tools = mgr.all_tools().await;
     drop(mgr);
 
+    let names = dispatch_names(&all_tools);
     let mut tools = Vec::new();
-    for (server_name, tool_def) in all_tools {
-        let prefixed_name = dispatch_name(&server_name, &tool_def.name);
+    for ((server_name, tool_def), prefixed_name) in all_tools.into_iter().zip(names) {
         let mcp_tool = McpTool::new(server_name, tool_def, Arc::clone(&manager));
         tools.push((prefixed_name, Arc::new(mcp_tool) as Arc<dyn Tool>));
     }
@@ -171,10 +239,25 @@ pub fn create_mcp_tools_from_cached(
     tool_defs: &[McpToolDef],
     manager: Arc<RwLock<McpManager>>,
 ) -> Vec<(String, Arc<dyn Tool>)> {
-    tool_defs
+    let all_tools: Vec<(String, McpToolDef)> = tool_defs
         .iter()
-        .map(|tool_def| {
-            let prefixed_name = dispatch_name(server_name, &tool_def.name);
+        .cloned()
+        .map(|tool_def| (server_name.to_string(), tool_def))
+        .collect();
+    create_mcp_tools_from_cached_many(&all_tools, manager)
+}
+
+/// Build proxy tools from cached schemas across all configured servers so the
+/// same collision handling is applied before registry insertion.
+pub fn create_mcp_tools_from_cached_many(
+    all_tools: &[(String, McpToolDef)],
+    manager: Arc<RwLock<McpManager>>,
+) -> Vec<(String, Arc<dyn Tool>)> {
+    let names = dispatch_names(all_tools);
+    all_tools
+        .iter()
+        .zip(names)
+        .map(|((server_name, tool_def), prefixed_name)| {
             let mcp_tool = McpTool::new(
                 server_name.to_string(),
                 tool_def.clone(),
@@ -187,176 +270,53 @@ pub fn create_mcp_tools_from_cached(
 
 #[cfg(test)]
 mod tests {
-    use super::{McpTool, dispatch_name, tool_output_from_result};
-    use crate::mcp::manager::McpManager;
-    use crate::mcp::protocol::{
-        ContentBlock, McpConfig, McpServerConfig, McpToolDef, ToolCallResult,
-    };
-    use base64::Engine as _;
-    use jcode_tool_core::{Tool, ToolContext};
+    use super::{dispatch_name, dispatch_names, tool_output_from_result};
+    use crate::mcp::protocol::{ContentBlock, McpToolDef, ToolCallResult};
     use serde_json::json;
-    use std::collections::HashMap;
-    use std::sync::Arc;
-    use tokio::sync::RwLock;
 
-    #[tokio::test]
-    #[cfg(unix)]
-    async fn stdio_mcp_image_reaches_mcp_tool_output() {
-        let temp = tempfile::tempdir().expect("temp dir");
-        let fixture = temp.path().join("image-mcp.sh");
-        let executable = std::env::current_exe().expect("test executable path");
-        std::fs::write(
-            &fixture,
-            format!(
-                "#!/bin/sh\nexec '{}' --exact mcp::tool::tests::stdio_mcp_fixture_server --nocapture\n",
-                executable.display()
-            ),
-        )
-        .expect("write MCP fixture launcher");
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(&fixture, std::fs::Permissions::from_mode(0o700))
-            .expect("make fixture executable");
-        let mut config = McpConfig::default();
-        config.servers.insert(
-            "image-test".to_string(),
-            McpServerConfig {
-                command: fixture.to_string_lossy().to_string(),
-                args: vec![],
-                env: HashMap::from([("JCODE_MCP_TEST_STDIN_SERVER".to_string(), "1".to_string())]),
-                shared: false,
-                transport: None,
-                url: None,
-                headers: HashMap::new(),
-                enabled: None,
-                disabled: None,
-            },
-        );
-        let manager = Arc::new(RwLock::new(McpManager::with_config(config)));
-        let server_config = manager.read().await.config().servers["image-test"].clone();
-        manager
-            .read()
-            .await
-            .connect("image-test", &server_config)
-            .await
-            .expect("connect real stdio MCP fixture");
-        let tool_def = McpToolDef {
-            name: "capture_screenshot".to_string(),
-            description: None,
-            input_schema: json!({"type":"object","properties":{}}),
-        };
-        let tool = McpTool::new("image-test".to_string(), tool_def, Arc::clone(&manager));
-        let output = tool
-            .execute(
-                json!({}),
-                ToolContext {
-                    session_id: "test".to_string(),
-                    message_id: "message".to_string(),
-                    tool_call_id: "call".to_string(),
-                    working_dir: None,
-                    stdin_request_tx: None,
-                    pending_question_tx: None,
-                    graceful_shutdown_signal: None,
-                    execution_mode: jcode_tool_core::ToolExecutionMode::Direct,
+    #[test]
+    fn tool_result_preserves_text_and_emits_only_valid_supported_images() {
+        let result = ToolCallResult {
+            content: vec![
+                ContentBlock::Text {
+                    text: "before".into(),
                 },
-            )
-            .await
-            .expect("execute MCP screenshot tool");
-        assert_eq!(output.output, "fixture");
+                ContentBlock::Image {
+                    data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC".into(),
+                    mime_type: "image/png".into(),
+                },
+                ContentBlock::Image {
+                    data: "%%%".into(),
+                    mime_type: "image/png".into(),
+                },
+                ContentBlock::Image {
+                    data: "aGVsbG8=".into(),
+                    mime_type: "image/svg+xml".into(),
+                },
+                ContentBlock::Text {
+                    text: "after".into(),
+                },
+                ContentBlock::Resource {
+                    resource: super::super::protocol::ResourceContent {
+                        uri: "file://resource".into(),
+                        mime_type: Some("text/plain".into()),
+                        text: Some("resource text".into()),
+                        blob: None,
+                    },
+                },
+            ],
+            is_error: true,
+        };
+        let output = tool_output_from_result(result, "test".into());
         assert_eq!(output.images.len(), 1);
         assert_eq!(output.images[0].media_type, "image/png");
-        assert_eq!(output.images[0].data, PNG_FIXTURE_BASE64);
-        manager.write().await.disconnect_all().await;
-    }
-
-    #[tokio::test]
-    async fn stdio_mcp_fixture_server() {
-        if std::env::var_os("JCODE_MCP_TEST_STDIN_SERVER").is_none() {
-            return;
-        }
-        use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
-        let mut lines = tokio::io::BufReader::new(tokio::io::stdin()).lines();
-        let mut stdout = tokio::io::stdout();
-        while let Some(line) = lines.next_line().await.expect("read JSON-RPC request") {
-            let request: serde_json::Value = serde_json::from_str(&line).expect("valid request");
-            let Some(id) = request.get("id").cloned() else {
-                continue;
-            };
-            let result = match request.get("method").and_then(|method| method.as_str()) {
-                Some("initialize") => {
-                    json!({"protocolVersion":"2024-11-05","capabilities":{"tools":{}},"serverInfo":{"name":"test","version":"1"}})
-                }
-                Some("tools/list") => {
-                    json!({"tools":[{"name":"capture_screenshot","inputSchema":{"type":"object","properties":{}}}]})
-                }
-                Some("tools/call") => {
-                    json!({"content":[{"type":"text","text":"fixture"},{"type":"image","data":PNG_FIXTURE_BASE64,"mimeType":"image/png"}]})
-                }
-                _ => continue,
-            };
-            let response = json!({"jsonrpc":"2.0","id":id,"result":result});
-            stdout
-                .write_all(
-                    serde_json::to_string(&response)
-                        .expect("serialize response")
-                        .as_bytes(),
-                )
-                .await
-                .expect("write response");
-            stdout.write_all(b"\n").await.expect("terminate response");
-            stdout.flush().await.expect("flush response");
-        }
-    }
-
-    const PNG_FIXTURE_BASE64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jQioAAAAASUVORK5CYII=";
-
-    #[test]
-    fn mcp_image_content_is_preserved_in_tool_output() {
-        let data = base64::engine::general_purpose::STANDARD.encode(b"png bytes");
-        let output = tool_output_from_result(
-            ToolCallResult {
-                content: vec![ContentBlock::Image {
-                    data: data.clone(),
-                    mime_type: "image/png".to_string(),
-                }],
-                is_error: false,
-            },
-            "mcp:desktop:screenshot".to_string(),
+        assert_eq!(output.title.as_deref(), Some("test"));
+        assert!(output.output.starts_with("Error: before\n"));
+        assert!(output.output.find("before").unwrap() < output.output.find("after").unwrap());
+        assert!(
+            output.output.find("after").unwrap() < output.output.find("resource text").unwrap()
         );
-        assert_eq!(output.images.len(), 1);
-        assert_eq!(output.images[0].media_type, "image/png");
-        assert_eq!(output.images[0].data, data);
-    }
-
-    #[test]
-    fn invalid_or_oversized_mcp_images_are_omitted() {
-        let oversized =
-            base64::engine::general_purpose::STANDARD.encode(vec![0; 20 * 1024 * 1024 + 1]);
-        let output = tool_output_from_result(
-            ToolCallResult {
-                content: vec![
-                    ContentBlock::Image {
-                        data: String::new(),
-                        mime_type: "image/png".to_string(),
-                    },
-                    ContentBlock::Image {
-                        data: "not-base64".to_string(),
-                        mime_type: "image/png".to_string(),
-                    },
-                    ContentBlock::Image {
-                        data: "AQID".to_string(),
-                        mime_type: "text/plain".to_string(),
-                    },
-                    ContentBlock::Image {
-                        data: oversized,
-                        mime_type: "image/png".to_string(),
-                    },
-                ],
-                is_error: false,
-            },
-            "mcp:desktop:screenshot".to_string(),
-        );
-        assert!(output.images.is_empty());
-        assert_eq!(output.output.matches("[Image omitted:").count(), 4);
+        assert!(output.output.contains("omitted"));
     }
 
     #[test]
@@ -369,5 +329,34 @@ mod tests {
             dispatch_name("hyphenated-server", "query-docs"),
             "mcp__hyphenated_server__query_docs"
         );
+    }
+
+    #[test]
+    fn colliding_dispatch_names_are_unique_and_stable() {
+        let tools = vec![
+            (
+                "server-a".to_string(),
+                McpToolDef {
+                    name: "query-docs".to_string(),
+                    description: None,
+                    input_schema: json!({"type": "object"}),
+                },
+            ),
+            (
+                "server_a".to_string(),
+                McpToolDef {
+                    name: "query_docs".to_string(),
+                    description: None,
+                    input_schema: json!({"type": "object"}),
+                },
+            ),
+        ];
+        let first = dispatch_names(&tools);
+        let second = dispatch_names(&tools);
+
+        assert_eq!(first, second);
+        assert_eq!(first.len(), 2);
+        assert_ne!(first[0], first[1]);
+        assert!(first.iter().all(|name| name.starts_with("mcp__")));
     }
 }

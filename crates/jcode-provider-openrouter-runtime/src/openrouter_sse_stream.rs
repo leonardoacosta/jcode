@@ -1,6 +1,135 @@
 use super::*;
 use jcode_provider_openrouter::stream::OpenRouterStream;
 
+type StreamActivity = Arc<Mutex<tokio::time::Instant>>;
+
+fn track_stream_activity(
+    stream: impl futures::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Send,
+) -> (
+    impl futures::Stream<Item = Result<bytes::Bytes, reqwest::Error>> + Send,
+    StreamActivity,
+) {
+    let activity = Arc::new(Mutex::new(tokio::time::Instant::now()));
+    let observed = Arc::clone(&activity);
+    let stream = stream.inspect(move |chunk| {
+        if matches!(chunk, Ok(bytes) if !bytes.is_empty()) {
+            *observed.lock().unwrap() = tokio::time::Instant::now();
+        }
+    });
+    (stream, activity)
+}
+
+async fn next_stream_event(
+    stream: &mut OpenRouterStream,
+    activity: &StreamActivity,
+    idle_timeout: std::time::Duration,
+) -> Result<Option<Result<StreamEvent>>, tokio::time::error::Elapsed> {
+    loop {
+        let deadline = *activity.lock().unwrap() + idle_timeout;
+        match tokio::time::timeout_at(deadline, stream.next()).await {
+            Err(_) if activity.lock().unwrap().elapsed() < idle_timeout => continue,
+            result => return result,
+        }
+    }
+}
+
+#[cfg(test)]
+mod stream_idle_tests {
+    use super::*;
+    use bytes::Bytes;
+    use std::time::Duration;
+
+    fn parser(
+        chunks: impl futures::Stream<Item = Result<Bytes, reqwest::Error>> + Send + 'static,
+    ) -> (OpenRouterStream, StreamActivity) {
+        let (chunks, activity) = track_stream_activity(chunks);
+        (
+            OpenRouterStream::new(chunks, "test".into(), Arc::new(Mutex::new(None))),
+            activity,
+        )
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn tool_arguments_keep_stream_alive_until_complete() {
+        let chunks = futures::stream::unfold(0, |index| async move {
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            let chunk = match index {
+                0 => {
+                    "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"function\":{\"name\":\"bash\",\"arguments\":\"{\\\"command\\\":\\\"\"}}]}}]}\n\n"
+                }
+                1..=5 => {
+                    "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"x\"}}]}}]}\n\n"
+                }
+                6 => {
+                    "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}]}\n\n"
+                }
+                _ => return None,
+            };
+            Some((Ok(Bytes::from_static(chunk.as_bytes())), index + 1))
+        });
+        let (mut stream, activity) = parser(chunks);
+        let event = next_stream_event(&mut stream, &activity, Duration::from_secs(2))
+            .await
+            .expect("incoming tool fragments must reset idle timeout")
+            .unwrap()
+            .unwrap();
+        assert!(matches!(event, StreamEvent::ToolUseStart { ref name, .. } if name == "bash"));
+        let input = next_stream_event(&mut stream, &activity, Duration::from_secs(2))
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert!(
+            matches!(input, StreamEvent::ToolInputDelta(ref json) if json == "{\"command\":\"xxxxx\"}")
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn silent_stream_still_times_out() {
+        let (mut stream, activity) = parser(futures::stream::pending());
+        assert!(
+            next_stream_event(&mut stream, &activity, Duration::from_secs(2))
+                .await
+                .is_err()
+        );
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn empty_chunks_do_not_extend_idle_timeout() {
+        let chunks = futures::stream::unfold((), |()| async {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            Some((Ok(Bytes::new()), ()))
+        });
+        let (mut stream, activity) = parser(chunks);
+        let started = tokio::time::Instant::now();
+        assert!(
+            next_stream_event(&mut stream, &activity, Duration::from_secs(2))
+                .await
+                .is_err()
+        );
+        assert_eq!(started.elapsed(), Duration::from_secs(2));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn heartbeat_bytes_keep_stream_alive_then_silence_times_out() {
+        let chunks = futures::stream::unfold(0, |index| async move {
+            if index == 4 {
+                futures::future::pending::<()>().await;
+            }
+            tokio::time::sleep(Duration::from_secs(1)).await;
+            Some((Ok(Bytes::from_static(b": keepalive\n\n")), index + 1))
+        });
+        let (mut stream, activity) = parser(chunks);
+        let started = tokio::time::Instant::now();
+        assert!(
+            next_stream_event(&mut stream, &activity, Duration::from_secs(2))
+                .await
+                .is_err()
+        );
+        assert_eq!(started.elapsed(), Duration::from_secs(6));
+    }
+}
+
 fn local_endpoint_troubleshooting_hint(api_base: &str, model: &str) -> &'static str {
     let lower = api_base.to_ascii_lowercase();
     if lower.contains("localhost:11434") || lower.contains("127.0.0.1:11434") {
@@ -32,6 +161,7 @@ pub(super) async fn run_stream_with_retries(
     api_base: String,
     auth: ProviderAuth,
     send_openrouter_headers: bool,
+    conversation_id: String,
     request: Value,
     tx: mpsc::Sender<Result<StreamEvent>>,
     provider_pin: Arc<Mutex<Option<ProviderPin>>>,
@@ -92,6 +222,7 @@ pub(super) async fn run_stream_with_retries(
             api_base.clone(),
             auth.clone(),
             send_openrouter_headers,
+            &conversation_id,
             request.clone(),
             attempt_tx,
             Arc::clone(&provider_pin),
@@ -160,6 +291,7 @@ async fn stream_response(
     api_base: String,
     auth: ProviderAuth,
     send_openrouter_headers: bool,
+    conversation_id: &str,
     request: Value,
     tx: mpsc::Sender<Result<StreamEvent>>,
     provider_pin: Arc<Mutex<Option<ProviderPin>>>,
@@ -192,6 +324,7 @@ async fn stream_response(
             .header("HTTP-Referer", "https://github.com/jcode")
             .header("X-Title", "jcode");
     }
+    req = apply_opencode_session_header(req, &api_base, conversation_id);
 
     let response = jcode_provider_core::transport::send_with_initial_response_timeout(
         req.json(&request),
@@ -241,8 +374,11 @@ async fn stream_response(
         }))
         .await;
 
-    let mut stream = OpenRouterStream::new(response.bytes_stream(), model.clone(), provider_pin);
+    let (bytes, activity) = track_stream_activity(response.bytes_stream());
+    let mut stream = OpenRouterStream::new(bytes, model.clone(), provider_pin);
 
+    // Measure transport activity, including tool fragments and SSE comments
+    // which the parser consumes without yielding a model event.
     // Idle timeout between streamed chunks. Configurable so slow reasoning
     // models (e.g. DeepSeek) that think silently for minutes before emitting
     // tokens don't trip a premature timeout (issue #196). Resolved from
@@ -251,7 +387,7 @@ async fn stream_response(
     let idle_timeout_secs = stream_idle_timeout.as_secs();
 
     loop {
-        let event = match tokio::time::timeout(stream_idle_timeout, stream.next()).await {
+        let event = match next_stream_event(&mut stream, &activity, stream_idle_timeout).await {
             Ok(Some(Ok(event))) => event,
             Ok(Some(Err(e))) => anyhow::bail!(
                 "OpenAI-compatible stream error\n  endpoint: {}\n  model: {}\n  auth: {}\n  error: {}",

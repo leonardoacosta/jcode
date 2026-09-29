@@ -22,6 +22,7 @@ path = "src/lib.rs"
 # Async runtime
 tokio = { version = "1", features = ["fs", "io-std", "io-util", "macros", "net", "process", "rt-multi-thread", "signal", "sync", "time"] }
 tokio-util = { version = "0.7", features = ["rt"] }
+tokio-tungstenite = { version = "0.24", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
 futures = "0.3"
 async-trait = "0.1"
 axum = { version = "0.8", default-features = false, features = ["form", "http1", "json", "query", "tokio"] }
@@ -37,6 +38,7 @@ serde_json = { version = "1", features = ["raw_value"] }
 
 # File operations
 glob = "0.3"
+ignore = "0.4"
 similar = "2"            # diffing for edits
 
 # Utilities
@@ -51,6 +53,7 @@ uuid = { version = "1", features = ["v4", "v5"] }
 
 # Embeddings (local inference) live in jcode-base; this crate forwards the
 # `embeddings` feature to jcode-base rather than depending on jcode-embedding.
+jcode-harness-api = { path = "../jcode-harness-api" }
 jcode-import-core = { path = "../jcode-import-core" }
 
 # OAuth
@@ -110,7 +113,7 @@ tempfile = "3"
 agentgrep = { git = "https://github.com/1jehuang/agentgrep.git", tag = "v0.1.6" }
 
 [features]
-default = ["pdf", "embeddings", "bedrock"]
+default = ["pdf", "bedrock"]
 # jemalloc allocator stats live in jcode-base (process_memory); forward there.
 jemalloc = ["jcode-base/jemalloc"]
 jemalloc-prof = ["jcode-base/jemalloc-prof"]

@@ -161,7 +161,7 @@ impl Tool for AskUserQuestionTool {
     }
 
     fn description(&self) -> &str {
-        "Ask the user one to four structured questions. Use only for choices you cannot resolve from context or defaults. Each question presents options; the user may select options and provide free text."
+        "Ask up to four structured questions when context cannot resolve a choice."
     }
 
     fn parameters_schema(&self) -> Value {

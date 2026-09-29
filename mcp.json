@@ -1,11 +1,5 @@
 {
   "mcpServers": {
-    "desktop-workspace": {
-      "command": "/home/nyaptor/.local/bin/jcode-desktop",
-      "args": ["mcp", "--headless"],
-      "shared": false,
-      "enabled": true
-    },
     "1password": {
       "command": "/usr/bin/1password-mcp"
     },

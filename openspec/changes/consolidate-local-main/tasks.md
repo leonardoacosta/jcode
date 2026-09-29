@@ -1,5 +1,5 @@
 ## 1. Written review and recovery snapshot
-- [x] 1.1 Obtain user review of this complete written plan. User approved execution on 2026-09-29 at 17:02:23Z.
+- [ ] 1.1 Obtain user review of this complete written plan. Design sections are approved, but execution has not started.
 - [ ] 1.2 Re-inventory both repositories, all branches/worktrees/stashes, active sessions and source drift. Record exact refs, current deployed process/artifact and protected backup destination. Coordinate affected writers. Depends on 1.1.
 - [ ] 1.3 Back up refs, stash objects, dirty/index patches and untracked content separately; verify bundle integrity and restore checks without exposing secrets. Record batch-abort and deployment rollback commands. Depends on 1.2.
 
@@ -28,9 +28,36 @@
 
 These tasks are independent of unfinished broad cleanup. Execution starts only after review of the scoped written continuation in design.md.
 
-- [ ] 7.1 Review and approve the written scoped continuation. Preserve earlier approval history without treating it as blanket approval of other batches.
-- [ ] 7.2 Recheck current main/dirty checkout/worktrees, verify patch provenance and protected recovery evidence, and isolate existing main without creating an integration branch. Depends on 7.1.
-- [ ] 7.3 Port only the six production-file patch onto current main, preserving newer dispatcher/collision/custom-tool behavior. Add focused credential boundary and eager/deferred image regression coverage. Depends on 7.2.
-- [ ] 7.4 Obtain independent swarm review, fix findings, run focused tests and relevant workspace checks, and commit only scoped changes. Record exact commands/results and source identity. Depends on 7.3.
-- [ ] 7.5 Build normal committed main and verify evaluate primitives plus image transport against an isolated socket using the new executable. Retain existing runtime unchanged on failure. Depends on 7.4.
-- [ ] 7.6 Gracefully activate only the validated build with rollback retained. Verify daemon identity and repeat real evaluate/image acceptance. Record source-to-binary evidence and defer all other batches explicitly. Depends on 7.5.
+- [x] 7.1 Review and approve the written scoped continuation. Preserve earlier approval history without treating it as blanket approval of other batches.
+- [x] 7.2 Recheck current main/dirty checkout/worktrees, verify patch provenance and protected recovery evidence, and isolate existing main without creating an integration branch. Depends on 7.1.
+- [x] 7.3 Port only the six production-file patch onto current main, preserving newer dispatcher/collision/custom-tool behavior. Add focused credential boundary and eager/deferred image regression coverage. Depends on 7.2.
+- [x] 7.4 Obtain independent swarm review, fix findings, run focused tests and relevant workspace checks, and commit only scoped changes. Record exact commands/results and source identity. Depends on 7.3.
+- [x] 7.5 Build normal committed main and verify evaluate primitives plus image transport against an isolated socket using the new executable. Retain existing runtime unchanged on failure. Depends on 7.4.
+- [x] 7.6 Gracefully activate only the validated build with rollback retained. Verify daemon identity and repeat real evaluate/image acceptance. Record source-to-binary evidence and defer all other batches explicitly. Depends on 7.5.
+
+Phase 7 execution evidence: existing main worktree `/home/nyaptor/dev/jcode-worktrees/main-runtime-convergence` starts at `12020af75`. Original dirty checkout remains untouched. Saved patch SHA256 `c8e65166a77ecaf5cc1e455d0b3bce75f0b6ef1a612f383ffe449efc901b91db` matches `final-acceptance.json`. Root session owns integration/promotion, assigned swarm worker owns the six-file patch, independent reviewer owns review. Existing protected recovery archives remain under `scratch/worktree-integration-audit/`.
+
+### Phase 7 verification checkpoint (2026-09-29)
+
+- Source integrated on existing main in `afbbd12f5`. Six production files plus this change's three artifacts only. Independent swarm review found no production blocker. Original dirty checkout preserved.
+- Fresh commands passed: `scripts/dev_cargo.sh test -p jcode-base --lib systemone::tests` (8), `scripts/dev_cargo.sh test -p jcode-base --lib mcp::tool::tests` (3), `scripts/dev_cargo.sh test -p jcode-app-core --lib tool::mcp::tests` (13). Deferred regression invokes actual `McpCallTool.execute` through a Python stdio fixture. Earlier test-only mutex deadlock and malformed fixture were corrected before commit.
+- Clean committed-main build passed: `scripts/dev_cargo.sh build --profile selfdev -p jcode --bin jcode`. Executable reports `jcode v0.88.140-dev (afbbd12f5)`.
+- Isolated daemon requires its own `XDG_RUNTIME_DIR`, not merely another socket filename. Started exact new executable with `JCODE_REPO_DIR` and `JCODE_DEBUG_CONTROL=1`, session `session_owl_1790702761700_d94218193125774a`.
+- Real evaluate `noul`, `choice`, `score` all passed on isolated build, model `jev-1.13.0`. Owned image MCP fixture connected successfully.
+- Real image-provider acceptance remains BLOCKED: explicitly configured `omni:gpt-6-luna` selected successfully, but actual model message returned `[400]: The requested model is not supported.` No silent provider substitution performed. Debug tool responses omit images and cannot substitute for this gate.
+- No promotion or activation performed. Known-working `12020af75-systemone-images2` remains deployed. Tasks 7.5 and 7.6 remain incomplete until real image acceptance succeeds. Broader consolidation remains out of scope.
+
+### Phase 7 completed acceptance
+
+The earlier400 was resolved by using the already-configured qualified identifier `omni:cx/gpt-6-luna` for the same model, without provider substitution. Real isolated image invocation succeeded. Final clean build `a65876997` passed isolated evaluate and image checks, then official guarded debug reload published it. Installed/build binary SHA256 both `61980104737a46a5441794a20303f31507ab92a2510cccb50fda6c27d787d2f3`. Graceful shared reload completed, both existing daemon executable links resolve to `builds/versions/a65876997/jcode`. Current/shared channels match. Rollback binary `12020af75-systemone-images2` retained. Live current-session evaluate passed all three primitives and real deferred `mcp_call` delivered the inline512px image showing white8142 on blue. This proves image transport, not blind recognition. No remote push or other consolidation batch performed.
+
+## 8. Remaining Jcode consolidation (2026-09-29)
+
+User requested "Swarm: Remaining Jcode consolidation". This authorizes continued integration of completed existing work, not finishing deferred features, publishing secrets, remote pushes or deleting recovery material. Original checkout's fresh dirty patch and refs are protected in private `scratch/worktree-integration-audit/remaining-20260929/`.
+
+- [ ] 8.1 Swarm-classify remaining own-branch commits, dirty source, stashes and preserved orphan work against main. Record duplicate/completed/unfinished dispositions and exact recovery pointers.
+- [x] 8.2 Integrate completed SSE recovery commit `bf08fe71e` by narrow patch, preserving newer stream fields. Verify concatenated JSON ordering at every chunk boundary and LF/CRLF/mixed delimiters using provider stream tests and independent review before commit. No provider routing/configuration changes.
+- [x] 8.3 Assess terminal-context propagation commit `00a1cb71b` independently. Port only if complete, preserving per-session environment isolation and trusted-variable filtering. Run focused hooks, shell and server-client tests before commit.
+- [ ] 8.4 Reconcile remaining inventory with fresh evidence. Keep machine-local configuration private and unfinished browser/question/desktop work recoverable rather than completing it implicitly.
+
+Phase8 evidence: SSE `ba9e4138a` (38 provider tests), terminal context `c85d46505` (15 client-actions,14 hooks,1 scoped real subprocess test). Both independently reviewed. Existing lock-order behavior revalidated with33 client-session and30 swarm tests, no duplicate source commit. First attempted broad filter matched zero tests and was corrected; no zero-test result counted. Mixed capability snapshot/stashes/orphans remain partially inventoried, so8.1/8.4 remain open. Deployment remains previously validated `a65876997` until a separately validated new build is activated.

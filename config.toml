@@ -1,6 +1,9 @@
 systemone_url = "https://omni.leonardoacosta.dev:443/v1/systemone/typesafe"
 systemone_model = "jev-latest"
 
+[server]
+wake_mode = "internal"
+
 [keybindings]
 scroll_up = "ctrl+shift+k"
 scroll_down = "ctrl+shift+j"
@@ -39,6 +42,7 @@ command = ""
 mode = "send"
 key = "off"
 timeout_secs = 90
+vocabulary = []
 
 [display]
 diff_mode = "inline"
@@ -58,7 +62,6 @@ pin_todos = true
 idle_animation = false
 prompt_entry_animation = true
 disabled_animations = ["orbit_rings"]
-diff_line_wrap = true
 performance = "full"
 animation_fps = 30
 redraw_fps = 30
@@ -104,6 +107,8 @@ profile = ""
 enabled = []
 disabled = []
 disable_base_tools = false
+mcp_tools = "auto"
+mcp_tools_token_threshold = 8000
 
 [acp]
 profile = "standard"
@@ -118,6 +123,8 @@ trusted_external_source_paths = [
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpkzm3lb/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpmw5haq/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpoy4hns/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/cargo-tmp/.tmp2m3btc/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/cargo-tmp/.tmpkinusa/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/dev/jcode/scratch/.tmpqgvts1/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/dev/jcode/scratch/.tmpxy2cqp/github-copilot/hosts.json",
     "copilot_hosts_json|/tmp/.tmp3rcoqz/github-copilot/hosts.json",
@@ -139,12 +146,14 @@ trusted_external_source_paths = [
 default_model = "azure-ai/DeepSeek-V4.1-Flash"
 default_provider = "omni"
 openai_reasoning_effort = "low"
+anthropic_cache_ttl_1h = true
 openai_service_tier = "off"
 openai_native_compaction_mode = "auto"
 openai_native_compaction_threshold_tokens = 200000
 preserve_reasoning_context = true
 cross_provider_failover = "manual"
 same_provider_account_failover = true
+gemini_force_oauth = false
 model_picker_providers = ["omni"]
 stream_idle_timeout_secs = 360
 max_retries = 3
@@ -162,22 +171,35 @@ provider_routing = false
 model_catalog = false
 allow_provider_pinning = false
 supports_reasoning_effort = true
+disable_reasoning_heuristics = false
 
 [[providers.9router.models]]
 id = "gpt-6-astra"
-input = ["text", "image"]
+input = [
+    "text",
+    "image",
+]
 
 [[providers.9router.models]]
 id = "gpt-6-luna"
-input = ["text", "image"]
+input = [
+    "text",
+    "image",
+]
 
 [[providers.9router.models]]
 id = "gpt-5.6-luna"
-input = ["text", "image"]
+input = [
+    "text",
+    "image",
+]
 
 [[providers.9router.models]]
 id = "gpt-5.6-sol"
-input = ["text", "image"]
+input = [
+    "text",
+    "image",
+]
 
 [[providers.9router.models]]
 id = "gh/claude-opus-5.5"
@@ -203,22 +225,35 @@ provider_routing = false
 model_catalog = false
 allow_provider_pinning = false
 supports_reasoning_effort = true
+disable_reasoning_heuristics = false
 
 [[providers.omni.models]]
 id = "gpt-6-astra"
-input = ["text", "image"]
+input = [
+    "text",
+    "image",
+]
 
 [[providers.omni.models]]
 id = "gpt-6-luna"
-input = ["text", "image"]
+input = [
+    "text",
+    "image",
+]
 
 [[providers.omni.models]]
 id = "gpt-5.6-luna"
-input = ["text", "image"]
+input = [
+    "text",
+    "image",
+]
 
 [[providers.omni.models]]
 id = "gpt-5.6-sol"
-input = ["text", "image"]
+input = [
+    "text",
+    "image",
+]
 
 [[providers.omni.models]]
 id = "gh/claude-opus-5.5"
@@ -250,7 +285,10 @@ input = ["text"]
 
 [[providers.omni.models]]
 id = "cx/gpt-6-luna"
-input = ["text", "image"]
+input = [
+    "text",
+    "image",
+]
 
 [[providers.omni.models]]
 id = "claude-haiku-4.5"
@@ -268,6 +306,7 @@ input = ["text"]
 swarm_model = "omni:cx/gpt-6-luna"
 swarm_spawn_mode = "inline"
 swarm_strip_layout = "vertical"
+memory_jev_threshold = 0.800000011920929
 memory_sidecar_enabled = true
 memory_rerank_cadence = 3
 memory_rerank_votes = 2
@@ -278,6 +317,7 @@ swarm_max_concurrent_agents = 32
 [terminal]
 
 [hooks]
+pre_tool_transform_timeout_ms = 500
 turn_start = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
 turn_end = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
 session_start = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
@@ -309,6 +349,9 @@ discord_reply_enabled = false
 jade_relay_enabled = false
 jade_relay_reply_enabled = false
 jade_relay_launch_enabled = false
+agentmail_enabled = false
+agentmail_reply_enabled = false
+agentmail_allowed_senders = []
 
 [notifications]
 turn_complete = true
@@ -335,6 +378,7 @@ relevance_keep_threshold = 0.6499999761581421
 goal_window_turns = 5
 jev_keep_threshold = 0.5
 jev_preserve_recent = 4
+max_context_tokens = 0
 
 [router]
 enabled = false
@@ -367,6 +411,3 @@ chord = "cmd+'"
 dir = "$HOME"
 label = "home"
 self_dev = false
-
-[remote_desktop]
-targets = []

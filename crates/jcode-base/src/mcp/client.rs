@@ -11,19 +11,6 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::{Mutex, mpsc, oneshot};
 
-enum McpTransport {
-    Stdio {
-        pending: Arc<Mutex<HashMap<u64, oneshot::Sender<JsonRpcResponse>>>>,
-        writer_tx: mpsc::Sender<String>,
-    },
-    Http {
-        client: reqwest::Client,
-        url: String,
-        headers: HashMap<String, String>,
-        session_id: Arc<Mutex<Option<String>>>,
-    },
-}
-
 /// Shared communication handle for an MCP server.
 /// Multiple sessions can hold clones of this and send concurrent requests.
 /// Request/response correlation by ID ensures no interference.
@@ -31,88 +18,55 @@ enum McpTransport {
 pub struct McpHandle {
     pub(crate) name: String,
     request_id: Arc<AtomicU64>,
-    transport: Arc<McpTransport>,
+    pending: Arc<Mutex<HashMap<u64, oneshot::Sender<JsonRpcResponse>>>>,
+    writer_tx: mpsc::Sender<String>,
     server_info: Arc<std::sync::RwLock<Option<ServerInfo>>>,
     capabilities: Arc<std::sync::RwLock<ServerCapabilities>>,
     tools: Arc<std::sync::RwLock<Vec<McpToolDef>>>,
+    /// Reply timeout applied to every request on this server.
+    request_timeout: std::time::Duration,
+}
+
+/// Default reply timeout when a server config does not set `timeout_secs`.
+pub const DEFAULT_MCP_REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+
+/// Resolve the per-request reply timeout for a server config.
+pub fn request_timeout_for(config: &McpServerConfig) -> std::time::Duration {
+    config
+        .timeout_secs
+        .filter(|secs| *secs > 0)
+        .map(std::time::Duration::from_secs)
+        .unwrap_or(DEFAULT_MCP_REQUEST_TIMEOUT)
 }
 
 impl McpHandle {
-    async fn send_notification(&self, notification: JsonRpcNotification) -> Result<()> {
-        match self.transport.as_ref() {
-            McpTransport::Stdio { writer_tx, .. } => {
-                writer_tx
-                    .send(serde_json::to_string(&notification)? + "\n")
-                    .await
-                    .context("Failed to send notification")?;
-            }
-            McpTransport::Http {
-                client,
-                url,
-                headers,
-                session_id,
-            } => {
-                let mut builder = client
-                    .post(url)
-                    .header("content-type", "application/json")
-                    .header("accept", "application/json, text/event-stream");
-                for (key, value) in headers {
-                    builder = builder.header(key, value);
-                }
-                if let Some(session) = session_id.lock().await.as_deref() {
-                    builder = builder.header("mcp-session-id", session);
-                }
-                builder
-                    .json(&notification)
-                    .send()
-                    .await?
-                    .error_for_status()?;
-            }
-        }
-        Ok(())
-    }
-
     /// Send a request and wait for response
     pub async fn request(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse> {
         let id = self.request_id.fetch_add(1, Ordering::SeqCst);
         let request = JsonRpcRequest::new(id, method, params);
 
-        let response = match self.transport.as_ref() {
-            McpTransport::Stdio { pending, writer_tx } => {
-                let (tx, rx) = oneshot::channel();
-                pending.lock().await.insert(id, tx);
-                writer_tx
-                    .send(serde_json::to_string(&request)? + "\n")
-                    .await
-                    .context("Failed to send request")?;
-                tokio::time::timeout(std::time::Duration::from_secs(30), rx)
-                    .await
-                    .context("Request timeout")?
-                    .context("Channel closed")?
-            }
-            McpTransport::Http {
-                client,
-                url,
-                headers,
-                session_id,
-            } => {
-                let mut builder = client
-                    .post(url)
-                    .header("content-type", "application/json")
-                    .header("accept", "application/json, text/event-stream");
-                for (key, value) in headers {
-                    builder = builder.header(key, value);
-                }
-                if let Some(session) = session_id.lock().await.as_deref() {
-                    builder = builder.header("mcp-session-id", session);
-                }
-                let response = builder.json(&request).send().await?.error_for_status()?;
-                if let Some(session) = response.headers().get("mcp-session-id") {
-                    *session_id.lock().await = Some(session.to_str()?.to_string());
-                }
-                parse_http_jsonrpc_response(&response.text().await?)?
-            }
-        };
+        let (tx, rx) = oneshot::channel();
+        {
+            let mut pending = self.pending.lock().await;
+            pending.insert(id, tx);
+        }
+
+        let msg = serde_json::to_string(&request)? + "\n";
+        self.writer_tx
+            .send(msg)
+            .await
+            .context("Failed to send request")?;
+
+        let response = tokio::time::timeout(self.request_timeout, rx)
+            .await
+            .with_context(|| {
+                format!(
+                    "Request timeout after {}s (raise `timeout_secs` for MCP server '{}' if its tools legitimately run longer)",
+                    self.request_timeout.as_secs(),
+                    self.name
+                )
+            })?
+            .context("Channel closed")?;
 
         if let Some(err) = &response.error {
             anyhow::bail!("MCP error {}: {}", err.code, err.message);
@@ -185,7 +139,7 @@ impl McpHandle {
 /// clones can be distributed to different sessions.
 pub struct McpClient {
     handle: McpHandle,
-    child: Option<Child>,
+    child: Child,
 }
 
 impl McpClient {
@@ -203,9 +157,6 @@ impl McpClient {
         config: &McpServerConfig,
         working_dir: Option<&std::path::Path>,
     ) -> Result<Self> {
-        if !config.is_stdio() {
-            return Self::connect_http(name, config).await;
-        }
         let working_dir = working_dir.filter(|dir| dir.is_dir());
         crate::logging::info(&format!(
             "MCP: Connecting to '{}' ({} {:?}) cwd={:?}",
@@ -320,16 +271,15 @@ impl McpClient {
         let handle = McpHandle {
             name: name.clone(),
             request_id: Arc::new(AtomicU64::new(1)),
-            transport: Arc::new(McpTransport::Stdio { pending, writer_tx }),
+            pending,
+            writer_tx,
             server_info: Arc::new(std::sync::RwLock::new(None)),
             capabilities: Arc::new(std::sync::RwLock::new(ServerCapabilities::default())),
             tools: Arc::new(std::sync::RwLock::new(Vec::new())),
+            request_timeout: request_timeout_for(config),
         };
 
-        let mut client = Self {
-            handle,
-            child: Some(child),
-        };
+        let mut client = Self { handle, child };
 
         client
             .initialize()
@@ -348,42 +298,6 @@ impl McpClient {
             client.handle.tools().len()
         ));
 
-        Ok(client)
-    }
-
-    async fn connect_http(name: String, config: &McpServerConfig) -> Result<Self> {
-        let url = config
-            .url
-            .as_deref()
-            .filter(|url| !url.trim().is_empty())
-            .context("HTTP MCP server is missing a URL")?
-            .to_string();
-        let handle = McpHandle {
-            name,
-            request_id: Arc::new(AtomicU64::new(1)),
-            transport: Arc::new(McpTransport::Http {
-                client: reqwest::Client::new(),
-                url,
-                headers: config.headers.clone(),
-                session_id: Arc::new(Mutex::new(None)),
-            }),
-            server_info: Arc::new(std::sync::RwLock::new(None)),
-            capabilities: Arc::new(std::sync::RwLock::new(ServerCapabilities::default())),
-            tools: Arc::new(std::sync::RwLock::new(Vec::new())),
-        };
-        let mut client = Self {
-            handle,
-            child: None,
-        };
-        client
-            .initialize()
-            .await
-            .context("HTTP MCP server failed to initialize")?;
-        client
-            .handle
-            .refresh_tools()
-            .await
-            .context("HTTP MCP server failed to list tools")?;
         Ok(client)
     }
 
@@ -424,14 +338,15 @@ impl McpClient {
 
         // Send initialized notification
         let notif = JsonRpcNotification::new("notifications/initialized", None);
-        self.handle.send_notification(notif).await?;
+        let msg = serde_json::to_string(&notif)? + "\n";
+        self.handle.writer_tx.send(msg).await?;
 
         Ok(())
     }
 
     /// Check if server is still running
     pub fn is_running(&mut self) -> bool {
-        match self.child.as_mut().map(Child::try_wait).transpose() {
+        match self.child.try_wait() {
             Ok(None) => true,
             Ok(Some(_)) => false,
             Err(_) => false,
@@ -440,18 +355,15 @@ impl McpClient {
 
     /// Shutdown the server
     pub async fn shutdown(&mut self) {
-        if matches!(self.handle.transport.as_ref(), McpTransport::Stdio { .. }) {
-            let _ = self
-                .handle
-                .send_notification(JsonRpcNotification::new("shutdown", None))
-                .await;
-        }
+        let _ = self
+            .handle
+            .writer_tx
+            .send("{\"jsonrpc\":\"2.0\",\"method\":\"shutdown\"}\n".to_string())
+            .await;
 
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
-        if let Some(child) = self.child.as_mut() {
-            let _ = child.kill().await;
-        }
+        let _ = self.child.kill().await;
     }
 
     // === Legacy compatibility methods that delegate to handle ===
@@ -505,33 +417,15 @@ fn mcp_child_env(
     inherited
 }
 
-fn parse_http_jsonrpc_response(body: &str) -> Result<JsonRpcResponse> {
-    if let Ok(response) = serde_json::from_str(body.trim()) {
-        return Ok(response);
-    }
-    for line in body.lines() {
-        if let Some(data) = line.strip_prefix("data:") {
-            if let Ok(response) = serde_json::from_str(data.trim()) {
-                return Ok(response);
-            }
-        }
-    }
-    anyhow::bail!("HTTP MCP response did not contain a JSON-RPC response")
-}
-
 impl Drop for McpClient {
     fn drop(&mut self) {
-        if let Some(child) = self.child.as_mut() {
-            let _ = child.start_kill();
-        }
+        let _ = self.child.start_kill();
     }
 }
 
 #[cfg(all(test, unix))]
 mod tests {
-    use super::{
-        McpClient, is_sensitive_inherited_env_key, mcp_child_env, parse_http_jsonrpc_response,
-    };
+    use super::{McpClient, is_sensitive_inherited_env_key, mcp_child_env};
     use crate::mcp::protocol::McpServerConfig;
     use std::collections::HashMap;
 
@@ -571,17 +465,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn parses_streamable_http_and_sse_jsonrpc_responses() {
-        let json = r#"{"jsonrpc":"2.0","id":1,"result":{"tools":[]}}"#;
-        assert_eq!(parse_http_jsonrpc_response(json).unwrap().id, Some(1));
-
-        let sse = r#"event: message
-data: {"jsonrpc":"2.0","id":2,"result":{}}
-"#;
-        assert_eq!(parse_http_jsonrpc_response(sse).unwrap().id, Some(2));
-    }
-
     /// A minimal fake stdio MCP server (shell script) that reports its own
     /// process cwd as the serverInfo name.
     fn fake_server_config() -> McpServerConfig {
@@ -607,6 +490,7 @@ done
             headers: std::collections::HashMap::new(),
             enabled: None,
             disabled: None,
+            timeout_secs: None,
         }
     }
 
