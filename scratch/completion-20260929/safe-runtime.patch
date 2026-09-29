@@ -1,0 +1,342 @@
+--- a/crates/jcode-base/src/mcp/tool.rs
++++ b/crates/jcode-base/src/mcp/tool.rs
+@@ -5,10 +5,79 @@
+ use anyhow::Result;
+ use async_trait::async_trait;
+ use jcode_tool_core::{Tool, ToolContext};
+-use jcode_tool_types::ToolOutput;
++use jcode_tool_types::{ToolImage, ToolOutput};
+ use serde_json::Value;
+ use std::sync::Arc;
+ use tokio::sync::RwLock;
++
++const MAX_MCP_IMAGE_SIZE: usize = 20 * 1024 * 1024;
++const MAX_MCP_IMAGE_BASE64_SIZE: usize = MAX_MCP_IMAGE_SIZE.div_ceil(3) * 4;
++
++fn validated_image(data: String, mime_type: &str) -> Option<ToolImage> {
++    use base64::Engine as _;
++
++    if !matches!(
++        mime_type,
++        "image/png" | "image/jpeg" | "image/gif" | "image/webp"
++    ) || data.is_empty()
++        || data.len() > MAX_MCP_IMAGE_BASE64_SIZE
++    {
++        return None;
++    }
++    let decoded = base64::engine::general_purpose::STANDARD
++        .decode(&data)
++        .ok()?;
++    (decoded.len() <= MAX_MCP_IMAGE_SIZE).then(|| ToolImage {
++        media_type: mime_type.to_string(),
++        data,
++        label: None,
++    })
++}
++
++pub fn tool_output_from_result(result: super::protocol::ToolCallResult, title: String) -> ToolOutput {
++    let mut output_parts = Vec::new();
++    let mut images = Vec::new();
++    for block in result.content {
++        match block {
++            ContentBlock::Text { text } => output_parts.push(text),
++            ContentBlock::Image { data, mime_type } => {
++                if let Some(image) = validated_image(data, &mime_type) {
++                    images.push(image);
++                } else {
++                    output_parts.push(format!(
++                        "[Image omitted: invalid or unsupported {} payload]",
++                        mime_type
++                    ));
++                }
++            }
++            ContentBlock::Resource { resource } => {
++                if let Some(text) = resource.text {
++                    output_parts.push(text);
++                } else if let Some(blob) = resource.blob {
++                    output_parts.push(format!(
++                        "[Resource: {} ({} bytes)]",
++                        resource.uri,
++                        blob.len()
++                    ));
++                } else {
++                    output_parts.push(format!("[Resource: {}]", resource.uri));
++                }
++            }
++        }
++    }
++    let output = output_parts.join("\n");
++    let output = if result.is_error {
++        format!("Error: {}", output)
++    } else {
++        output
++    };
++    ToolOutput {
++        output,
++        title: Some(title),
++        metadata: None,
++        images,
++    }
++}
+ 
+ /// A tool that proxies to an MCP server
+ pub struct McpTool {
+@@ -73,40 +142,8 @@
+             .call_tool(&self.server_name, &self.tool_def.name, input)
+             .await?;
+ 
+-        // Convert MCP content blocks to output string
+-        let mut output_parts = Vec::new();
+-        for block in result.content {
+-            match block {
+-                ContentBlock::Text { text } => {
+-                    output_parts.push(text);
+-                }
+-                ContentBlock::Image { data, mime_type } => {
+-                    output_parts.push(format!("[Image: {} ({} bytes)]", mime_type, data.len()));
+-                }
+-                ContentBlock::Resource { resource } => {
+-                    if let Some(text) = resource.text {
+-                        output_parts.push(text);
+-                    } else if let Some(blob) = resource.blob {
+-                        output_parts.push(format!(
+-                            "[Resource: {} ({} bytes)]",
+-                            resource.uri,
+-                            blob.len()
+-                        ));
+-                    } else {
+-                        output_parts.push(format!("[Resource: {}]", resource.uri));
+-                    }
+-                }
+-            }
+-        }
+-
+-        let output = output_parts.join("\n");
+         let title = format!("mcp:{}:{}", self.server_name, self.tool_def.name);
+-
+-        if result.is_error {
+-            Ok(ToolOutput::new(format!("Error: {}", output)).with_title(title))
+-        } else {
+-            Ok(ToolOutput::new(output).with_title(title))
+-        }
++        Ok(tool_output_from_result(result, title))
+     }
+ }
+ 
+--- a/crates/jcode-base/src/mcp/mod.rs
++++ b/crates/jcode-base/src/mcp/mod.rs
+@@ -18,5 +18,5 @@
+ pub use schema_cache::{McpSchemaCache, fingerprint_config};
+ pub use tool::{
+     McpTool, create_mcp_tools, create_mcp_tools_from_cached, create_mcp_tools_from_cached_many,
+-    dispatch_name, dispatch_names,
++    dispatch_name, dispatch_names, tool_output_from_result,
+ };
+--- a/crates/jcode-base/src/systemone.rs
++++ b/crates/jcode-base/src/systemone.rs
+@@ -8,11 +8,13 @@
+ const TYPESAFE_URL: &str = "https://api.typesafe.ai/v1/systemone";
+ const OPENROUTER_MODEL: &str = "~typesafe/jev-latest";
+ const TYPESAFE_MODEL: &str = "jev-latest";
++const OMNI_MODEL: &str = "jev-latest";
+ const NINEROUTER_MODEL: &str = "openrouter/typesafe/jev-1.13";
+ 
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ pub enum SystemOneProvider {
+     NineRouter,
++    Omni,
+     OpenRouter,
+     TypeSafe,
+ }
+@@ -21,6 +23,7 @@
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         match self {
+             Self::NineRouter => f.write_str("9router"),
++            Self::Omni => f.write_str("omni"),
+             Self::OpenRouter => f.write_str("openrouter"),
+             Self::TypeSafe => f.write_str("typesafe"),
+         }
+@@ -148,30 +151,35 @@
+         ));
+     }
+ 
+-    if let Some(profile) = config.providers.get("9router")
+-        && let Ok(base_url) = url::Url::parse(profile.base_url.trim())
+-        && parsed.origin() == base_url.origin()
+-    {
+-        let base_path = base_url.path().trim_end_matches('/');
+-        let endpoint_path = parsed.path();
+-        let same_api_root = endpoint_path == base_path
+-            || endpoint_path
+-                .strip_prefix(base_path)
+-                .is_some_and(|suffix| suffix.starts_with('/'));
+-        if !base_path.is_empty() && same_api_root {
+-            let key_env = profile.api_key_env.as_deref().ok_or_else(|| {
+-                anyhow::anyhow!("System One: provider profile [9router] has no api_key_env")
+-            })?;
+-            return Ok((
+-                SystemOneProvider::NineRouter,
+-                endpoint_url.to_string(),
+-                key_env.to_string(),
+-                profile
+-                    .env_file
+-                    .clone()
+-                    .unwrap_or_else(|| "provider-9router.env".to_string()),
+-                NINEROUTER_MODEL,
+-            ));
++    for (name, provider, default_model) in [
++        ("9router", SystemOneProvider::NineRouter, NINEROUTER_MODEL),
++        ("omni", SystemOneProvider::Omni, OMNI_MODEL),
++    ] {
++        if let Some(profile) = config.providers.get(name)
++            && let Ok(base_url) = url::Url::parse(profile.base_url.trim())
++            && parsed.origin() == base_url.origin()
++        {
++            let base_path = base_url.path().trim_end_matches('/');
++            let endpoint_path = parsed.path();
++            let same_api_root = endpoint_path == base_path
++                || endpoint_path
++                    .strip_prefix(base_path)
++                    .is_some_and(|suffix| suffix.starts_with('/'));
++            if !base_path.is_empty() && same_api_root {
++                let key_env = profile.api_key_env.as_deref().ok_or_else(|| {
++                    anyhow::anyhow!("System One: provider profile [{name}] has no api_key_env")
++                })?;
++                return Ok((
++                    provider,
++                    endpoint_url.to_string(),
++                    key_env.to_string(),
++                    profile
++                        .env_file
++                        .clone()
++                        .unwrap_or_else(|| format!("provider-{name}.env")),
++                    default_model,
++                ));
++            }
+         }
+     }
+ 
+@@ -182,6 +190,48 @@
+ mod tests {
+     use super::*;
+     use std::sync::Mutex;
++
++    #[test]
++    fn omni_full_url_uses_exact_matching_profile_credentials() {
++        with_config(
++            r#"systemone_url = "https://omni.example.test/v1/systemone/typesafe"
++
++[providers.omni]
++base_url = "https://omni.example.test/v1"
++api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
++env_file = "provider-omni.env"
++"#,
++            || {
++                crate::env::set_var("JCODE_PROVIDER_OMNI_API_KEY", "omni-test-key");
++                let resolved = resolve().unwrap();
++                assert_eq!(resolved.provider, SystemOneProvider::Omni);
++                assert_eq!(
++                    resolved.endpoint_url,
++                    "https://omni.example.test/v1/systemone/typesafe"
++                );
++                assert_eq!(resolved.api_key, "omni-test-key");
++                assert_eq!(resolved.default_model, "jev-latest");
++                crate::env::remove_var("JCODE_PROVIDER_OMNI_API_KEY");
++            },
++        );
++    }
++
++    #[test]
++    fn omni_full_url_rejects_different_origin() {
++        with_config(
++            r#"systemone_url = "https://other.example.test/v1/systemone/typesafe"
++
++[providers.omni]
++base_url = "https://omni.example.test/v1"
++api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
++"#,
++            || {
++                let error = resolve().err().unwrap().to_string();
++                assert!(error.contains("no credential mapping"), "unexpected error: {error}");
++            },
++        );
++    }
++
+ 
+     static TEST_LOCK: Mutex<()> = Mutex::new(());
+ 
+--- a/crates/jcode-system-one/src/resolver.rs
++++ b/crates/jcode-system-one/src/resolver.rs
+@@ -10,6 +10,7 @@
+ #[serde(rename_all = "kebab-case")]
+ pub enum Provider {
+     NineRouter,
++    Omni,
+     TypeSafe,
+     OpenRouter,
+ }
+@@ -18,6 +19,7 @@
+     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+         match self {
+             Provider::NineRouter => f.write_str("9router"),
++            Provider::Omni => f.write_str("omni"),
+             Provider::TypeSafe => f.write_str("typesafe"),
+             Provider::OpenRouter => f.write_str("openrouter"),
+         }
+--- a/crates/jcode-app-core/src/system_one.rs
++++ b/crates/jcode-app-core/src/system_one.rs
+@@ -7,6 +7,7 @@
+     let resolved = crate::systemone::resolve()?;
+     let provider = match resolved.provider {
+         crate::systemone::SystemOneProvider::NineRouter => Provider::NineRouter,
++        crate::systemone::SystemOneProvider::Omni => Provider::Omni,
+         crate::systemone::SystemOneProvider::TypeSafe => Provider::TypeSafe,
+         crate::systemone::SystemOneProvider::OpenRouter => Provider::OpenRouter,
+     };
+--- a/crates/jcode-app-core/src/tool/mcp.rs
++++ b/crates/jcode-app-core/src/tool/mcp.rs
+@@ -1,6 +1,6 @@
+ //! MCP management tool - connect, disconnect, list, reload MCP servers
+ 
+-use crate::mcp::{ContentBlock, McpManager, McpServerConfig, dispatch_name};
++use crate::mcp::{ McpManager, McpServerConfig, dispatch_name};
+ use crate::tool::{Tool, ToolContext, ToolOutput};
+ use anyhow::Result;
+ use async_trait::async_trait;
+@@ -272,35 +272,7 @@
+             .await?;
+         drop(manager);
+ 
+-        let mut output_parts = Vec::new();
+-        for block in result.content {
+-            match block {
+-                ContentBlock::Text { text } => output_parts.push(text),
+-                ContentBlock::Image { data, mime_type } => {
+-                    output_parts.push(format!("[Image: {} ({} bytes)]", mime_type, data.len()));
+-                }
+-                ContentBlock::Resource { resource } => {
+-                    if let Some(text) = resource.text {
+-                        output_parts.push(text);
+-                    } else if let Some(blob) = resource.blob {
+-                        output_parts.push(format!(
+-                            "[Resource: {} ({} bytes)]",
+-                            resource.uri,
+-                            blob.len()
+-                        ));
+-                    } else {
+-                        output_parts.push(format!("[Resource: {}]", resource.uri));
+-                    }
+-                }
+-            }
+-        }
+-        let output = output_parts.join("\n");
+-        let title = format!("mcp:{}:{}", params.server, params.tool);
+-        if result.is_error {
+-            Ok(ToolOutput::new(format!("Error: {}", output)).with_title(title))
+-        } else {
+-            Ok(ToolOutput::new(output).with_title(title))
+-        }
++        Ok(crate::mcp::tool_output_from_result(result, format!("mcp:{}:{}", params.server, params.tool)))
+     }
+ }
+ 

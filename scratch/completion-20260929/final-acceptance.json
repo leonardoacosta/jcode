@@ -1,0 +1,19 @@
+{
+  "base": "12020af75",
+  "version": "0.88.141",
+  "hash": "12020af75-systemone-images2",
+  "files": [
+    "crates/jcode-base/src/mcp/tool.rs",
+    "crates/jcode-base/src/mcp/mod.rs",
+    "crates/jcode-base/src/systemone.rs",
+    "crates/jcode-system-one/src/resolver.rs",
+    "crates/jcode-app-core/src/system_one.rs",
+    "crates/jcode-app-core/src/tool/mcp.rs"
+  ],
+  "patch_sha256": "c8e65166a77ecaf5cc1e455d0b3bce75f0b6ef1a612f383ffe449efc901b91db",
+  "binary_sha256": "764281ae15209d5ae30cb7fb52dcfd674dad896abab57b0a6ba9c0aba82ce460",
+  "acceptance": {
+    "evaluate": "Current tool success jev-1.13.0 after final reload",
+    "image": "Current mcp_call returned actual inline512px image, visible white8142 on blue background, not text marker"
+  }
+}
