@@ -50,3 +50,27 @@ The executor SHALL remove a worktree only after confirming its work and artifact
 #### Scenario: Deferred custom work remains
 - **WHEN** a candidate worktree contains unfinished unique work
 - **THEN** the executor SHALL retain it until verified recovery storage and remaining-task records exist, and SHALL preserve that recovery material after cleanup
+
+### Requirement: Scoped evaluate/image source convergence
+
+The first continuation batch MUST port only the approved six-file runtime fix and focused tests onto current main, preserve newer dispatcher behavior and unrelated dirty work, and validate the resulting executable before promotion.
+
+#### Scenario: Full URL selects Omni credentials safely
+- **WHEN** an explicit System One endpoint matches the configured Omni origin and API-path boundary
+- **THEN** its credential profile resolves without changing the selected provider
+- **AND** mismatched origins, ports, schemes and sibling paths do not receive that profile's credentials
+
+#### Scenario: Both MCP dispatch paths preserve valid images
+- **WHEN** eager or deferred MCP invocation returns valid supported image content with text
+- **THEN** both paths produce actual image output and preserve the text
+- **AND** malformed, unsupported or oversized images are handled without panic or trusted image output
+
+#### Scenario: Build or acceptance fails
+- **WHEN** scoped regression tests, build, or isolated runtime acceptance fails
+- **THEN** the known-working deployment remains active and the failure is recorded
+- **AND** source or deployment completion is not claimed
+
+#### Scenario: Validated main is activated
+- **WHEN** the independently reviewed main-based build passes scoped tests and isolated acceptance
+- **THEN** activation retains rollback and verifies actual daemon executable identity
+- **AND** real evaluate primitives and inline MCP images are checked again through the live tool surface

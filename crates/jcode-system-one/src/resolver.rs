@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "kebab-case")]
 pub enum Provider {
     NineRouter,
+    Omni,
     TypeSafe,
     OpenRouter,
 }
@@ -18,6 +19,7 @@ impl std::fmt::Display for Provider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Provider::NineRouter => f.write_str("9router"),
+            Provider::Omni => f.write_str("omni"),
             Provider::TypeSafe => f.write_str("typesafe"),
             Provider::OpenRouter => f.write_str("openrouter"),
         }

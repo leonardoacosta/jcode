@@ -63,3 +63,40 @@ History-preserving reconciliation is approved. Selective porting without joining
 ## Boundaries
 
 No production API calls or paid account use solely for validation without necessity and authorization. No remote push. No unrelated refactoring. No secrets in tracked inventories or logs. Permission to consolidate does not authorize deleting unaccounted work. Written-plan approval is the next gate, then `apply consolidate-local-main` owns execution.
+
+## Scoped continuation: evaluate and MCP images (2026-09-29)
+
+This continuation does not reopen history reconciliation or authorize the remaining repository cleanup. Fresh inspection finds local main at `12020af75` and the dirty working checkout on `codex/systemone-config-routing`. The user approved the first six-file batch in conversation; the user approved this written continuation with “Approve all” on 2026-09-29.
+
+### Alternatives and selected approach
+
+1. **Selected: port the saved narrow runtime patch onto current main.** This preserves main's newer dispatcher and custom-tool collision handling while making the deployed fixes ordinary source commits. Recheck applicability against the actual main tip.
+2. Merge the divergent old branch. Rejected: unrelated changes and old architecture would greatly expand scope.
+3. Replace main files with deployed archive files. Rejected: whole-file replacement could silently remove newer code. The archive is comparison evidence, not an authoritative replacement tree.
+
+### Source and boundaries
+
+Baseline: `scratch/completion-20260929/safe-runtime.patch`, with acceptance/provenance recorded beside the installed `12020af75-systemone-images2` binary and in `scratch/completion-20260929/final-acceptance.json`. Verify hashes before use. Exactly these production files are in scope:
+
+- `crates/jcode-base/src/systemone.rs`
+- `crates/jcode-system-one/src/resolver.rs`
+- `crates/jcode-app-core/src/system_one.rs`
+- `crates/jcode-base/src/mcp/tool.rs`
+- `crates/jcode-base/src/mcp/mod.rs`
+- `crates/jcode-app-core/src/tool/mcp.rs`
+
+Focused tests and these canonical workflow artifacts are allowed. No ChatGPT browser runtime work, unrelated refactor, provider substitution, purchase, remote push, other-repository merge, or orphan retirement belongs to this batch.
+
+### Behavior and failure handling
+
+System One's configured full Omni endpoint must resolve the appropriate credential profile by parsed origin and API-path boundary, not loose string prefix. Cover scheme, host, effective port and path mismatches, trailing slash behavior, and alias compatibility. Credentials must not be sent to an unrelated origin or sibling path. Keep explicit TypeSafe/OpenRouter selection, without fallback.
+
+Eager MCP tools and deferred `McpCallTool` must use the same validated content conversion. Valid supported images become actual image output, with text preserved. Invalid base64, unsupported MIME and oversized content must not become trusted image output or panic. Preserve main's dispatcher, collision, custom-tool, and error semantics.
+
+### Execution, verification and promotion
+
+Preserve the current dirty checkout and refs. Use the existing main branch in an isolated clean worktree if needed, without creating another integration branch. Record the pre-integration main tip and reject concurrent unexpected changes. Never reset or stash unrelated work. Independently review the applied delta and regression tests before committing only scoped files.
+
+Run focused resolver/credential and eager/deferred image regressions, relevant workspace checks, and a normal main-based build. Record command outcomes without treating previous runtime acceptance as proof of the new build. Use an isolated daemon socket and verify executable identity before runtime acceptance. Exercise real evaluate `noul`, `choice`, and `score` via the explicitly configured TypeSafe route and real deferred image output, plus eager-path regression coverage. Do not claim blind visual recognition from a known image fixture. A rejected OpenRouter call due to credits is an external limitation, not a successful paid-path acceptance.
+
+Only promote after the build, scoped tests and isolated runtime acceptance pass. Retain the working binary and channel targets for rollback. Gracefully activate the validated build, confirm the actual shared daemon identity, then repeat evaluate and inline-image acceptance through the live public tool surface. If a gate fails, keep the known-working deployment, record the failure, and fix or stop without claiming completion. Broader consolidation tasks remain unchanged.

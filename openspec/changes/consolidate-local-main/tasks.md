@@ -1,5 +1,5 @@
 ## 1. Written review and recovery snapshot
-- [x] 1.1 Written plan and execution approved by user; resumed with explicit swarm-managed integration instruction on 2026-09-26.
+- [ ] 1.1 Obtain user review of this complete written plan. Design sections are approved, but execution has not started.
 - [ ] 1.2 Re-inventory both repositories, all branches/worktrees/stashes, active sessions and source drift. Record exact refs, current deployed process/artifact and protected backup destination. Coordinate affected writers. Depends on 1.1.
 - [ ] 1.3 Back up refs, stash objects, dirty/index patches and untracked content separately; verify bundle integrity and restore checks without exposing secrets. Record batch-abort and deployment rollback commands. Depends on 1.2.
 
@@ -23,3 +23,16 @@
 - [ ] 5.1 Verify prior deployed artifact is retained and stale activation metadata ownership is understood. Publish/promote validated artifact with supported guards, gracefully reload, verify actual daemon executable hash, socket readiness and session continuity. Roll back on failure. Depends on 4.4.
 - [ ] 5.2 Audit worktree process usage, artifacts and item accounting. Remove only proven redundant inactive worktrees, retaining common Git directory dependencies, recovery backups and deferred work. Do not automatically delete stashes or branch refs. Depends on 5.1.
 - [ ] 5.3 Record final main commit, deployed source commit/hash, complete item mapping, test outcomes, deferred items and removed/retained worktrees. Distinguish any subsequent evidence-only commit from the built source commit. Close only when each acceptance row in design.md has observed evidence. Depends on 5.2.
+
+## 7. Scoped continuation: six-file evaluate/image batch (2026-09-29)
+
+These tasks are independent of unfinished broad cleanup. Execution starts only after review of the scoped written continuation in design.md.
+
+- [x] 7.1 Review and approve the written scoped continuation. Preserve earlier approval history without treating it as blanket approval of other batches.
+- [x] 7.2 Recheck current main/dirty checkout/worktrees, verify patch provenance and protected recovery evidence, and isolate existing main without creating an integration branch. Depends on 7.1.
+- [ ] 7.3 Port only the six production-file patch onto current main, preserving newer dispatcher/collision/custom-tool behavior. Add focused credential boundary and eager/deferred image regression coverage. Depends on 7.2.
+- [ ] 7.4 Obtain independent swarm review, fix findings, run focused tests and relevant workspace checks, and commit only scoped changes. Record exact commands/results and source identity. Depends on 7.3.
+- [ ] 7.5 Build normal committed main and verify evaluate primitives plus image transport against an isolated socket using the new executable. Retain existing runtime unchanged on failure. Depends on 7.4.
+- [ ] 7.6 Gracefully activate only the validated build with rollback retained. Verify daemon identity and repeat real evaluate/image acceptance. Record source-to-binary evidence and defer all other batches explicitly. Depends on 7.5.
+
+Phase 7 execution evidence: existing main worktree `/home/nyaptor/dev/jcode-worktrees/main-runtime-convergence` starts at `12020af75`. Original dirty checkout remains untouched. Saved patch SHA256 `c8e65166a77ecaf5cc1e455d0b3bce75f0b6ef1a612f383ffe449efc901b91db` matches `final-acceptance.json`. Root session owns integration/promotion, assigned swarm worker owns the six-file patch, independent reviewer owns review. Existing protected recovery archives remain under `scratch/worktree-integration-audit/`.

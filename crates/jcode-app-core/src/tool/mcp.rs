@@ -1,6 +1,6 @@
 //! MCP management tool - connect, disconnect, list, reload MCP servers
 
-use crate::mcp::{ContentBlock, McpManager, McpServerConfig, dispatch_name};
+use crate::mcp::{McpManager, McpServerConfig, dispatch_name};
 use crate::tool::{Tool, ToolContext, ToolOutput};
 use anyhow::Result;
 use async_trait::async_trait;
@@ -272,35 +272,10 @@ impl Tool for McpCallTool {
             .await?;
         drop(manager);
 
-        let mut output_parts = Vec::new();
-        for block in result.content {
-            match block {
-                ContentBlock::Text { text } => output_parts.push(text),
-                ContentBlock::Image { data, mime_type } => {
-                    output_parts.push(format!("[Image: {} ({} bytes)]", mime_type, data.len()));
-                }
-                ContentBlock::Resource { resource } => {
-                    if let Some(text) = resource.text {
-                        output_parts.push(text);
-                    } else if let Some(blob) = resource.blob {
-                        output_parts.push(format!(
-                            "[Resource: {} ({} bytes)]",
-                            resource.uri,
-                            blob.len()
-                        ));
-                    } else {
-                        output_parts.push(format!("[Resource: {}]", resource.uri));
-                    }
-                }
-            }
-        }
-        let output = output_parts.join("\n");
-        let title = format!("mcp:{}:{}", params.server, params.tool);
-        if result.is_error {
-            Ok(ToolOutput::new(format!("Error: {}", output)).with_title(title))
-        } else {
-            Ok(ToolOutput::new(output).with_title(title))
-        }
+        Ok(crate::mcp::tool_output_from_result(
+            result,
+            format!("mcp:{}:{}", params.server, params.tool),
+        ))
     }
 }
 
@@ -897,6 +872,56 @@ mod tests {
         assert!(schema["properties"]["action"].is_object());
         assert!(schema["properties"]["server"].is_object());
         assert!(schema["properties"]["command"].is_object());
+    }
+
+    #[tokio::test]
+    async fn deferred_mcp_call_emits_validated_images_from_stdio_server() {
+        let script = r##"import json, sys
+for line in sys.stdin:
+    request = json.loads(line)
+    method, request_id = request.get("method"), request.get("id")
+    if request_id is None:
+        continue
+    if method == "initialize":
+        result = {"protocolVersion":"2024-11-05", "capabilities":{}, "serverInfo":{"name":"fixture","version":"1"}}
+    elif method == "tools/list":
+        result = {"tools":[{"name":"show","inputSchema":{"type":"object"}}]}
+    elif method == "tools/call":
+        result = {"content":[{"type":"text","text":"deferred text"},{"type":"image","data":"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC","mimeType":"image/png"},{"type":"image","data":"%%%","mimeType":"image/png"}],"isError":False}
+    else:
+        continue
+    print(json.dumps({"jsonrpc":"2.0", "id":request_id, "result":result}), flush=True)"##;
+        let config = crate::mcp::McpConfig {
+            servers: [(
+                "fixture".into(),
+                crate::mcp::McpServerConfig {
+                    command: "python3".into(),
+                    args: vec!["-u".into(), "-c".into(), script.into()],
+                    env: Default::default(),
+                    shared: false,
+                    transport: None,
+                    url: None,
+                    headers: Default::default(),
+                    enabled: Some(false),
+                    disabled: None,
+                    timeout_secs: Some(3),
+                },
+            )]
+            .into(),
+        };
+        let manager = Arc::new(RwLock::new(McpManager::with_config(config)));
+        let tool = McpCallTool::new(manager);
+        let output = tool
+            .execute(
+                json!({"server":"fixture","tool":"show","arguments":{}}),
+                create_test_context(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(output.images.len(), 1);
+        assert_eq!(output.images[0].media_type, "image/png");
+        assert!(output.output.contains("deferred text"));
+        assert!(output.output.contains("omitted"));
     }
 
     #[test]

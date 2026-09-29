@@ -8,11 +8,13 @@ const OPENROUTER_URL: &str = "https://openrouter.ai/api/alpha/decisions";
 const TYPESAFE_URL: &str = "https://api.typesafe.ai/v1/systemone";
 const OPENROUTER_MODEL: &str = "~typesafe/jev-latest";
 const TYPESAFE_MODEL: &str = "jev-latest";
+const OMNI_MODEL: &str = "jev-latest";
 const NINEROUTER_MODEL: &str = "openrouter/typesafe/jev-1.13";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SystemOneProvider {
     NineRouter,
+    Omni,
     OpenRouter,
     TypeSafe,
 }
@@ -21,6 +23,7 @@ impl std::fmt::Display for SystemOneProvider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NineRouter => f.write_str("9router"),
+            Self::Omni => f.write_str("omni"),
             Self::OpenRouter => f.write_str("openrouter"),
             Self::TypeSafe => f.write_str("typesafe"),
         }
@@ -148,30 +151,35 @@ fn resolve_full_url(
         ));
     }
 
-    if let Some(profile) = config.providers.get("9router")
-        && let Ok(base_url) = url::Url::parse(profile.base_url.trim())
-        && parsed.origin() == base_url.origin()
-    {
-        let base_path = base_url.path().trim_end_matches('/');
-        let endpoint_path = parsed.path();
-        let same_api_root = endpoint_path == base_path
-            || endpoint_path
-                .strip_prefix(base_path)
-                .is_some_and(|suffix| suffix.starts_with('/'));
-        if !base_path.is_empty() && same_api_root {
-            let key_env = profile.api_key_env.as_deref().ok_or_else(|| {
-                anyhow::anyhow!("System One: provider profile [9router] has no api_key_env")
-            })?;
-            return Ok((
-                SystemOneProvider::NineRouter,
-                endpoint_url.to_string(),
-                key_env.to_string(),
-                profile
-                    .env_file
-                    .clone()
-                    .unwrap_or_else(|| "provider-9router.env".to_string()),
-                NINEROUTER_MODEL,
-            ));
+    for (name, provider, default_model) in [
+        ("9router", SystemOneProvider::NineRouter, NINEROUTER_MODEL),
+        ("omni", SystemOneProvider::Omni, OMNI_MODEL),
+    ] {
+        if let Some(profile) = config.providers.get(name)
+            && let Ok(base_url) = url::Url::parse(profile.base_url.trim())
+            && parsed.origin() == base_url.origin()
+        {
+            let base_path = base_url.path().trim_end_matches('/');
+            let endpoint_path = parsed.path();
+            let same_api_root = endpoint_path == base_path
+                || endpoint_path
+                    .strip_prefix(base_path)
+                    .is_some_and(|suffix| suffix.starts_with('/'));
+            if !base_path.is_empty() && same_api_root {
+                let key_env = profile.api_key_env.as_deref().ok_or_else(|| {
+                    anyhow::anyhow!("System One: provider profile [{name}] has no api_key_env")
+                })?;
+                return Ok((
+                    provider,
+                    endpoint_url.to_string(),
+                    key_env.to_string(),
+                    profile
+                        .env_file
+                        .clone()
+                        .unwrap_or_else(|| format!("provider-{name}.env")),
+                    default_model,
+                ));
+            }
         }
     }
 
@@ -183,21 +191,106 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
 
+    #[test]
+    fn omni_full_url_uses_exact_matching_profile_credentials() {
+        with_config(
+            r#"systemone_url = "https://omni.example.test/v1/systemone/typesafe"
+
+[providers.omni]
+base_url = "https://omni.example.test/v1"
+api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
+env_file = "provider-omni.env"
+"#,
+            || {
+                crate::env::set_var("JCODE_PROVIDER_OMNI_API_KEY", "omni-test-key");
+                let resolved = resolve().unwrap();
+                assert_eq!(resolved.provider, SystemOneProvider::Omni);
+                assert_eq!(
+                    resolved.endpoint_url,
+                    "https://omni.example.test/v1/systemone/typesafe"
+                );
+                assert_eq!(resolved.api_key, "omni-test-key");
+                assert_eq!(resolved.default_model, "jev-latest");
+            },
+        );
+    }
+
+    #[test]
+    fn omni_full_url_rejects_different_origin() {
+        with_config(
+            r#"systemone_url = "https://other.example.test/v1/systemone/typesafe"
+
+[providers.omni]
+base_url = "https://omni.example.test/v1"
+api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
+"#,
+            || {
+                let error = resolve().err().unwrap().to_string();
+                assert!(
+                    error.contains("no credential mapping"),
+                    "unexpected error: {error}"
+                );
+            },
+        );
+    }
+
+    #[test]
+    fn omni_full_url_rejects_sibling_path_and_effective_port_mismatch() {
+        for endpoint in [
+            "https://omni.example.test/v10/systemone/typesafe",
+            "https://omni.example.test:444/v1/systemone/typesafe",
+            "http://omni.example.test/v1/systemone/typesafe",
+            "https://omni.example.test.evil.test/v1/systemone/typesafe",
+        ] {
+            with_config(
+                &format!(
+                    "systemone_url = \"{endpoint}\"\n\n[providers.omni]\nbase_url = \"https://omni.example.test/v1\"\napi_key_env = \"JCODE_PROVIDER_OMNI_API_KEY\"\n"
+                ),
+                || {
+                    let error = resolve().err().unwrap().to_string();
+                    assert!(
+                        error.contains("no credential mapping"),
+                        "unexpected error: {error}"
+                    );
+                },
+            );
+        }
+    }
+
+    #[test]
+    fn omni_full_url_accepts_trailing_slash_and_equivalent_default_port() {
+        with_config(
+            "systemone_url = \"https://omni.example.test:443/v1/\"\n\n[providers.omni]\nbase_url = \"https://omni.example.test/v1\"\napi_key_env = \"JCODE_PROVIDER_OMNI_API_KEY\"\n",
+            || {
+                crate::env::set_var("JCODE_PROVIDER_OMNI_API_KEY", "omni-test-key");
+                assert_eq!(resolve().unwrap().api_key, "omni-test-key");
+            },
+        );
+    }
+
     static TEST_LOCK: Mutex<()> = Mutex::new(());
 
     fn with_config(contents: &str, test: impl FnOnce()) {
         let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let omni_key = std::env::var_os("JCODE_PROVIDER_OMNI_API_KEY");
         let dir = tempfile::tempdir().unwrap();
         unsafe { std::env::set_var("JCODE_HOME", dir.path()) };
         std::fs::write(dir.path().join("config.toml"), contents).unwrap();
         unsafe { std::env::set_var("JCODE_PROVIDER_TEST_SYSTEMONE_KEY", "systemone-test-key") };
         crate::config::invalidate_config_cache();
-        test();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(test));
+        match omni_key {
+            Some(value) => crate::env::set_var("JCODE_PROVIDER_OMNI_API_KEY", value),
+            None => crate::env::remove_var("JCODE_PROVIDER_OMNI_API_KEY"),
+        }
         unsafe {
             std::env::remove_var("JCODE_PROVIDER_TEST_SYSTEMONE_KEY");
             std::env::remove_var("JCODE_HOME");
         }
         crate::config::invalidate_config_cache();
+        if let Err(error) = result {
+            std::panic::resume_unwind(error);
+        }
     }
 
     #[test]
@@ -239,7 +332,8 @@ api_key_env = "JCODE_PROVIDER_TEST_SYSTEMONE_KEY"
     #[test]
     fn accepts_url_and_rejects_unmapped_host() {
         let config = crate::config::Config::default();
-        let result = resolve_full_url(&config, "https://openrouter.ai/api/alpha/decisions").unwrap();
+        let result =
+            resolve_full_url(&config, "https://openrouter.ai/api/alpha/decisions").unwrap();
         assert_eq!(result.0, SystemOneProvider::OpenRouter);
         assert_eq!(result.4, OPENROUTER_MODEL);
         assert!(resolve_full_url(&config, "https://unknown.example/systemone").is_err());
