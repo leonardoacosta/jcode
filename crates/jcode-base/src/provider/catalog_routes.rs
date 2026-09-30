@@ -1286,9 +1286,14 @@ mod tests {
             let vars = vec![
                 ("JCODE_HOME", std::env::var_os("JCODE_HOME")),
                 ("OPENCODE_API_KEY", std::env::var_os("OPENCODE_API_KEY")),
+                (
+                    "JCODE_NAMED_PROVIDER_PROFILE",
+                    std::env::var_os("JCODE_NAMED_PROVIDER_PROFILE"),
+                ),
             ];
             crate::env::set_var("JCODE_HOME", temp.path());
             crate::env::set_var("OPENCODE_API_KEY", "sk-test-opencode");
+            crate::env::remove_var("JCODE_NAMED_PROVIDER_PROFILE");
             Self {
                 vars,
                 _temp: temp,

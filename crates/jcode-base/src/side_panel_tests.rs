@@ -398,6 +398,7 @@ fn pdf_aggregate_budget_rejects_before_mutation_and_bounds_hydration() {
     let _home = EnvVarGuard::set_path("JCODE_HOME", temp.path());
     let first = temp.path().join("one.pdf");
     let second = temp.path().join("two.pdf");
+    let third = temp.path().join("three.pdf");
     let make_pdf = |path: &Path, size: u64| {
         std::fs::write(path, synthetic_pdf("budget")).unwrap();
         std::fs::OpenOptions::new()
@@ -409,11 +410,12 @@ fn pdf_aggregate_budget_rejects_before_mutation_and_bounds_hydration() {
     };
     make_pdf(&first, 16 * 1024 * 1024);
     make_pdf(&second, 16 * 1024 * 1024);
+    make_pdf(&third, 17 * 1024 * 1024);
     load_file("budget", "one", None, &first, true).unwrap();
     let initial = load_file("budget", "two", None, &second, true).unwrap();
     let index = std::fs::read(state_file("budget").unwrap()).unwrap();
     assert!(
-        load_file("budget", "three", None, &second, true)
+        load_file("budget", "three", None, &third, true)
             .unwrap_err()
             .to_string()
             .contains("aggregate")

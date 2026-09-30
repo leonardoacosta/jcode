@@ -298,7 +298,7 @@ async fn hanging_browser_cli_times_out_instead_of_blocking_forever() {
     let temp = tempfile::tempdir().expect("temp dir");
     let bin = temp.path().join("browser");
     // Stands in for a CLI waiting on a bridge that will never answer.
-    write_executable(&bin, "#!/bin/sh\nsleep 600\n");
+    write_executable(&bin, "#!/bin/sh\nexec sleep 600\n");
 
     let started = std::time::Instant::now();
     let result = run_browser_cli_capped(&bin, &["ping"], std::time::Duration::from_millis(300))

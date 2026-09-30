@@ -1010,12 +1010,14 @@ fn matrix_openai_compatible_profile_overrides_read_from_env_file() {
 fn matrix_openai_compatible_localhost_override_allows_no_auth() {
     let _lock = crate::storage::lock_test_env();
     let _guard = EnvGuard::save(&[
+        "JCODE_NAMED_PROVIDER_PROFILE",
         "JCODE_OPENAI_COMPAT_API_BASE",
         "JCODE_OPENAI_COMPAT_API_KEY_NAME",
         "JCODE_OPENAI_COMPAT_ENV_FILE",
         "JCODE_OPENAI_COMPAT_LOCAL_ENABLED",
     ]);
 
+    crate::env::remove_var("JCODE_NAMED_PROVIDER_PROFILE");
     crate::env::set_var("JCODE_OPENAI_COMPAT_API_BASE", "http://localhost:11434/v1");
     crate::env::remove_var("JCODE_OPENAI_COMPAT_API_KEY_NAME");
     crate::env::remove_var("JCODE_OPENAI_COMPAT_ENV_FILE");

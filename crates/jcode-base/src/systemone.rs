@@ -237,7 +237,6 @@ fn resolve_full_url(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
 
     #[test]
     fn omni_full_url_uses_exact_matching_profile_credentials() {
@@ -316,25 +315,32 @@ api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
         );
     }
 
-    static TEST_LOCK: Mutex<()> = Mutex::new(());
-
     fn with_config(contents: &str, test: impl FnOnce()) {
-        let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = crate::storage::lock_test_env();
+        let previous_home = std::env::var_os("JCODE_HOME");
         let omni_key = std::env::var_os("JCODE_PROVIDER_OMNI_API_KEY");
+        struct RestoreEnv(Option<std::ffi::OsString>, Option<std::ffi::OsString>);
+        impl Drop for RestoreEnv {
+            fn drop(&mut self) {
+                match self.0.take() {
+                    Some(value) => crate::env::set_var("JCODE_HOME", value),
+                    None => crate::env::remove_var("JCODE_HOME"),
+                }
+                match self.1.take() {
+                    Some(value) => crate::env::set_var("JCODE_PROVIDER_OMNI_API_KEY", value),
+                    None => crate::env::remove_var("JCODE_PROVIDER_OMNI_API_KEY"),
+                }
+                crate::env::remove_var("JCODE_PROVIDER_TEST_SYSTEMONE_KEY");
+                crate::config::invalidate_config_cache();
+            }
+        }
+        let _restore = RestoreEnv(previous_home, omni_key);
         let dir = tempfile::tempdir().unwrap();
-        unsafe { std::env::set_var("JCODE_HOME", dir.path()) };
+        crate::env::set_var("JCODE_HOME", dir.path());
         std::fs::write(dir.path().join("config.toml"), contents).unwrap();
         unsafe { std::env::set_var("JCODE_PROVIDER_TEST_SYSTEMONE_KEY", "systemone-test-key") };
         crate::config::invalidate_config_cache();
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(test));
-        match omni_key {
-            Some(value) => crate::env::set_var("JCODE_PROVIDER_OMNI_API_KEY", value),
-            None => crate::env::remove_var("JCODE_PROVIDER_OMNI_API_KEY"),
-        }
-        unsafe {
-            std::env::remove_var("JCODE_PROVIDER_TEST_SYSTEMONE_KEY");
-            std::env::remove_var("JCODE_HOME");
-        }
         crate::config::invalidate_config_cache();
         if let Err(error) = result {
             std::panic::resume_unwind(error);

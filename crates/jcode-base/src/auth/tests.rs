@@ -9,6 +9,14 @@ fn restore_env_var(key: &str, previous: Option<OsString>) {
     }
 }
 
+struct RestoreEnvVar(&'static str, Option<OsString>);
+
+impl Drop for RestoreEnvVar {
+    fn drop(&mut self) {
+        restore_env_var(self.0, self.1.take());
+    }
+}
+
 #[cfg(unix)]
 fn write_mock_cursor_agent(dir: &std::path::Path, script_body: &str) -> std::path::PathBuf {
     use std::os::unix::fs::PermissionsExt;
@@ -536,8 +544,13 @@ fn openrouter_like_status_is_provider_specific() {
     let prev_home = std::env::var_os("JCODE_HOME");
     let prev_chutes = std::env::var_os("CHUTES_API_KEY");
     let prev_opencode = std::env::var_os("OPENCODE_API_KEY");
+    let _named_profile = RestoreEnvVar(
+        "JCODE_NAMED_PROVIDER_PROFILE",
+        std::env::var_os("JCODE_NAMED_PROVIDER_PROFILE"),
+    );
 
     crate::env::set_var("JCODE_HOME", temp.path());
+    crate::env::remove_var("JCODE_NAMED_PROVIDER_PROFILE");
     crate::env::set_var("CHUTES_API_KEY", "chutes-test-key");
     crate::env::remove_var("OPENCODE_API_KEY");
     AuthStatus::invalidate_cache();
