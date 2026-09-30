@@ -72,6 +72,28 @@ impl JsonRpcMessage {
                 "JSON-RPC message must include jsonrpc=\"2.0\"".to_string(),
             ));
         }
+        for (field, valid) in [
+            (
+                "id",
+                object
+                    .get("id")
+                    .is_none_or(|id| id.is_null() || id.is_string() || id.is_number()),
+            ),
+            ("method", object.get("method").is_none_or(Value::is_string)),
+            (
+                "params",
+                object.get("params").is_none_or(|params| {
+                    params.is_null() || params.is_object() || params.is_array()
+                }),
+            ),
+        ] {
+            if !valid {
+                return Err((
+                    JSONRPC_INVALID_REQUEST,
+                    format!("Invalid JSON-RPC {field} type"),
+                ));
+            }
+        }
         Ok(Self {
             id: object.get("id").cloned(),
             method: object
@@ -1907,6 +1929,45 @@ mod tests {
         let (code, message) = JsonRpcMessage::parse(r#"{"method":"initialize"}"#).unwrap_err();
         assert_eq!(code, JSONRPC_INVALID_REQUEST);
         assert!(message.contains("jsonrpc"));
+    }
+
+    #[test]
+    fn json_rpc_rejects_invalid_envelope_fields() {
+        for field in [
+            json!({"id": true}),
+            json!({"id": []}),
+            json!({"id": {}}),
+            json!({"method": null}),
+            json!({"method": 42}),
+            json!({"params": "text"}),
+            json!({"params": false}),
+            json!({"params": 42}),
+        ] {
+            let mut message = json!({"jsonrpc": "2.0", "method": "initialize"});
+            message
+                .as_object_mut()
+                .unwrap()
+                .extend(field.as_object().unwrap().clone());
+            let (code, _) = JsonRpcMessage::parse(&message.to_string()).unwrap_err();
+            assert_eq!(code, JSONRPC_INVALID_REQUEST, "{message}");
+        }
+    }
+
+    #[test]
+    fn json_rpc_accepts_valid_envelope_fields() {
+        for message in [
+            json!({"jsonrpc": "2.0", "method": "initialize"}),
+            json!({"jsonrpc": "2.0", "id": null, "method": "initialize", "params": null}),
+            json!({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}),
+            json!({"jsonrpc": "2.0", "id": "1", "method": "initialize", "params": []}),
+            json!({"jsonrpc": "2.0", "id": 1, "result": {}}),
+            json!({"jsonrpc": "2.0", "id": 1, "error": {"code": -32601, "message": "unknown"}}),
+        ] {
+            assert!(
+                JsonRpcMessage::parse(&message.to_string()).is_ok(),
+                "{message}"
+            );
+        }
     }
 
     #[test]
