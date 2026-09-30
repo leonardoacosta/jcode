@@ -1,7 +1,8 @@
 {
   "mcpServers": {
     "1password": {
-      "command": "/usr/bin/1password-mcp"
+      "command": "/usr/bin/1password-mcp",
+      "timeout_secs": 300
     },
     "aperture": {
       "command": "npx",
@@ -11,6 +12,10 @@
       "command": "graft",
       "args": ["mcp"],
       "shared": true
+    },
+    "xapi": {
+      "command": "/home/nyaptor/.local/bin/mcp-x",
+      "timeout_secs": 120
     }
   }
 }

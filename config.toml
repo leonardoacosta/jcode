@@ -1,9 +1,6 @@
 systemone_url = "https://omni.leonardoacosta.dev:443/v1/systemone/typesafe"
 systemone_model = "jev-latest"
 
-[server]
-wake_mode = "internal"
-
 [keybindings]
 scroll_up = "ctrl+shift+k"
 scroll_down = "ctrl+shift+j"
@@ -118,11 +115,22 @@ tool_profile = "acp"
 trusted_external_sources = []
 trusted_external_source_paths = [
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmp0qoxyh/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmp5s8vlu/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpi9jrht/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpinpxyg/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpioqqma/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpjb8mat/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpkzm3lb/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpliq5hs/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpmw5haq/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpnrtwb8/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpoy4hns/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpqueulg/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmprkqpoz/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpsdjwxu/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpvoem1o/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpvvuzkn/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpxjjf2u/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/cargo-tmp/.tmp2m3btc/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/.jcode/scratch/cargo-tmp/.tmpkinusa/github-copilot/hosts.json",
     "copilot_hosts_json|/home/nyaptor/dev/jcode/scratch/.tmpqgvts1/github-copilot/hosts.json",
@@ -144,7 +152,7 @@ trusted_external_source_paths = [
 
 [provider]
 default_model = "azure-ai/DeepSeek-V4.1-Flash"
-default_provider = "omni"
+default_provider = "openai"
 openai_reasoning_effort = "low"
 anthropic_cache_ttl_1h = true
 openai_service_tier = "off"
@@ -249,7 +257,7 @@ input = [
 ]
 
 [[providers.omni.models]]
-id = "gpt-5.6-sol"
+id = "gpt-6.1-sol"
 input = [
     "text",
     "image",
@@ -411,3 +419,9 @@ chord = "cmd+'"
 dir = "$HOME"
 label = "home"
 self_dev = false
+
+[remote_desktop]
+targets = []
+
+[server]
+wake_mode = "internal"
