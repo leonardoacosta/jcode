@@ -652,6 +652,16 @@ fn validate_answers(value: &Value, questions: &Map<String, Value>) -> Result<()>
             answer["type"] == question["type"],
             "Jev answer type does not match its question"
         );
+        if question["type"] == "choice" {
+            ensure!(
+                answer["choice"].as_str().is_some_and(|choice| {
+                    question["criteria"]
+                        .as_object()
+                        .is_some_and(|criteria| criteria.contains_key(choice))
+                }),
+                "Jev returned an invalid choice"
+            );
+        }
         if question["type"] == "noul" {
             ensure!(
                 answer["noul"]
@@ -1637,6 +1647,21 @@ mod tests {
             serde_json::from_str(requests[1].split_once("\r\n\r\n").unwrap().1).unwrap();
         assert_eq!(body["questions"], Value::Object(browser_questions()));
         assert!(body["state"].is_string());
+    }
+
+    #[tokio::test]
+    async fn browser_rejects_invalid_choice_answers() {
+        for choice in [Value::Null, json!(42), json!("unrequested-action")] {
+            let answer = json!({"answers": {"action": {"type": "choice", "choice": choice, "confidence": 0.9}}});
+            let (base, worker) = mock_server(vec![(200, answer.to_string(), vec![])]);
+            let mut client = mock_client(&base, JevProvider::TypeSafe);
+            client.purpose = JevPurpose::Browser;
+            let result = client
+                .evaluate(json!({"page": "test"}), browser_questions())
+                .await;
+            assert_eq!(worker.join().unwrap().len(), 1);
+            assert!(result.is_err(), "Accepted invalid choice: {choice}");
+        }
     }
 
     #[tokio::test]
