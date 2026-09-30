@@ -30,7 +30,7 @@ across it).
 
 Usage
 -----
-  python3 scripts/repro_startup_lag.py --binary PATH [--duration 25]
+  python3 scripts/repro_startup_lag.py --binary PATH --socket PATH [--duration 25]
 
 Exit codes:
   0 = latency does not depend on the startup phase (hypothesis refuted)
@@ -42,7 +42,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import statistics
+import subprocess
 import sys
 import tempfile
 import time
@@ -73,6 +75,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--binary", required=True)
+    ap.add_argument("--socket", required=True,
+                    help="isolated server socket; never points at a shared daemon")
+    ap.add_argument(
+        "--home",
+        help="home directory; defaults to a temporary copy of ~/.jcode/config.toml",
+    )
     ap.add_argument("--duration", type=float, default=25.0,
                     help="how long to keep typing, in seconds. Must comfortably "
                          "outlast catalog resolution or there is nothing to "
@@ -89,15 +97,42 @@ def main() -> int:
 
     root = Path(tempfile.mkdtemp(prefix="jcode-startup-lag-"))
     run = root / "run"
+    home = Path(args.home).resolve() if args.home else root / "home"
+    home.mkdir(parents=True, exist_ok=True)
     run.mkdir(parents=True)
+    socket_path = Path(args.socket).resolve()
+    debug_sock = socket_path.with_name(
+        socket_path.name.replace(".sock", "-debug.sock"))
+    shared_runtime = Path(os.environ.get("JCODE_RUNTIME_DIR") or
+                          f"/run/user/{os.getuid()}").resolve()
+    shared_sockets = {
+        (shared_runtime / "jcode.sock").resolve(),
+        (shared_runtime / "jcode-debug.sock").resolve(),
+    }
+    if socket_path in shared_sockets or debug_sock in shared_sockets:
+        print("refusing shared daemon socket path")
+        shutil.rmtree(root, ignore_errors=True)
+        return 3
+    if socket_path.exists() or debug_sock.exists():
+        print(f"socket path already exists: {socket_path} or {debug_sock}")
+        shutil.rmtree(root, ignore_errors=True)
+        return 3
+    socket_path.parent.mkdir(parents=True, exist_ok=True)
 
     env = os.environ.copy()
-    # Live server and real home: catalog resolution is the thing under test, so a
-    # throwaway home with no providers would skip it entirely.
-    runtime = Path(env.get("JCODE_RUNTIME_DIR") or f"/run/user/{os.getuid()}")
-    env["JCODE_SOCKET"] = env.get("JCODE_SOCKET") or str(runtime / "jcode.sock")
+    env["JCODE_SOCKET"] = str(socket_path)
+    env["JCODE_HOME"] = str(home)
+    env["JCODE_RUNTIME_DIR"] = str(run)
+    env["JCODE_TEMP_SERVER"] = "1"
+    env["JCODE_SERVER_OWNER_PID"] = str(os.getpid())
+    env["JCODE_NO_TELEMETRY"] = "1"
     env["JCODE_DEBUG_CONTROL"] = "1"
-    debug_sock = runtime / "jcode-debug.sock"
+    if not env.get("ANTHROPIC_API_KEY"):
+        env["ANTHROPIC_API_KEY"] = "sk-ant-repro-startup-lag"
+    if not args.home:
+        config = Path.home() / ".jcode" / "config.toml"
+        if config.exists():
+            shutil.copy2(config, home / "config.toml")
     cmd_path, resp_path = run / "cmd", run / "resp"
 
     if not args.json:
@@ -105,10 +140,21 @@ def main() -> int:
         print(f"  binary  : {binary}")
         print(f"  duration: {args.duration}s @ {args.interval}s/keystroke")
 
-    session_id = flicker.create_session(debug_sock, Path.cwd())
-    client = flicker.launch_client(binary, env, session_id, cmd_path, resp_path)
+    server_log = root / "server.log"
+    server = None
+    client = None
     samples: list[dict] = []
     try:
+        server = subprocess.Popen(
+            [binary, "serve", "--socket", env["JCODE_SOCKET"], "--debug-socket",
+             "--no-update", "--no-selfdev"],
+            env=env, stdout=server_log.open("wb"), stderr=subprocess.STDOUT,
+            preexec_fn=os.setsid,
+        )
+        flicker.wait_for_socket(Path(env["JCODE_SOCKET"]))
+        flicker.wait_for_socket(debug_sock)
+        session_id = flicker.create_session(debug_sock, Path.cwd())
+        client = flicker.launch_client(binary, env, session_id, cmd_path, resp_path)
         spawn_t0 = time.monotonic()
         if not flicker.settle(cmd_path, resp_path, timeout_s=60.0):
             print("client never came up on the debug channel")
@@ -148,7 +194,22 @@ def main() -> int:
                 flicker.client_cmd(cmd_path, resp_path, "set_input:", timeout_s=5.0)
                 typed = ""
     finally:
-        client.shutdown()
+        if client is not None:
+            client.shutdown()
+        if server is not None:
+            try:
+                os.killpg(server.pid, 15)
+            except ProcessLookupError:
+                pass
+            try:
+                server.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(server.pid, 9)
+                except ProcessLookupError:
+                    pass
+                server.wait()
+        shutil.rmtree(root, ignore_errors=True)
 
     painted = [s for s in samples if s["paint_ms"] is not None]
     during = [s["paint_ms"] for s in painted if s["startup_active"] is True]
