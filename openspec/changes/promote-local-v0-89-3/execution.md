@@ -28,3 +28,9 @@ Remaining limitations: automatic provider selection chose invalid Cerebras crede
 ## Post-promotion audit correction
 
 Pending activation is now None. Current and shared-server targets remain 290744e84. Shared daemon PID 454202 remains live and coordinator continuity was observed after supported reload. Debug `sessions` audit was rejected because debug control is disabled; no shared settings were changed to bypass it. Therefore other-session continuity and explicit owner-by-owner coordination remain unverified, not passed. The task checklist's coordination item denotes supported reload completion only and must not be interpreted as proof all owners were contacted. Promotion already occurred; this audit records the evidence gap rather than requesting retroactive authorization.
+
+## Final public-interface check
+
+Post-promotion launcher `~/.local/bin/jcode run` against `/run/user/1000/jcode.sock`, explicit 9router/gpt-6-luna, returned exactly `PROMOTED_0893_OK` (task 951625kd8y, exit 0, exact text assertion passed). This verifies actual promoted shared inference, not only candidate startup.
+
+Requirement mapping: candidate provenance/build -> snapshot 290744e84 plus actual-workspace build; regressions -> full actual snapshot base/core/root passes; live provider -> exact isolated and shared replies; MCP -> recorded actual management/search/call and resumed-session read-only call; channels -> current/shared/launcher all 290744e84; rollback -> prior immutable executable retained; coordinator continuity -> same session resumed after SocketReady; pending activation -> None. All-other-session continuity/owner coordination -> unverified, debug audit refused. Failed candidate gates initially blocked reload, then corrected validation workspace and minimal prompt fixture cleared the gate. No rollback drill executed because it would interrupt the now-working shared daemon.
