@@ -649,6 +649,10 @@ fn classify_effort_distinguishes_reasoning_from_swarm_modes() {
 #[test]
 fn project_system_prompt_file_replaces_default_base_prompt() {
     use crate::prompt::load_base_system_prompt;
+    let _guard = crate::storage::lock_test_env();
+    let home = tempfile::tempdir().unwrap();
+    let previous_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", home.path());
 
     let dir = std::env::temp_dir().join(format!("jcode-sysprompt-{}", std::process::id()));
     let jcode_dir = dir.join(".jcode");
@@ -673,6 +677,10 @@ fn project_system_prompt_file_replaces_default_base_prompt() {
     assert_eq!(load_base_system_prompt(Some(&dir)), DEFAULT_SYSTEM_PROMPT);
 
     std::fs::remove_dir_all(&dir).ok();
+    match previous_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
 }
 
 fn desktop_prompt_checkout() -> tempfile::TempDir {
