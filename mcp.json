@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "1password": {
+      "command": "/usr/bin/1password-mcp",
+      "timeout_secs": 300
+    },
+    "aperture": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://ai.tail296462.ts.net/v1/mcp"]
+    },
+    "graft": {
+      "command": "graft",
+      "args": ["mcp"],
+      "shared": true
+    },
+    "xapi": {
+      "command": "/home/nyaptor/.local/bin/mcp-x",
+      "timeout_secs": 120
+    }
+  }
+}

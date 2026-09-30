@@ -1,0 +1,427 @@
+systemone_url = "https://omni.leonardoacosta.dev:443/v1/systemone/typesafe"
+systemone_model = "jev-latest"
+
+[keybindings]
+scroll_up = "ctrl+shift+k"
+scroll_down = "ctrl+shift+j"
+scroll_page_up = "alt+u"
+scroll_page_down = "alt+d"
+model_switch_next = "ctrl+tab"
+model_switch_prev = "ctrl+shift+tab"
+fallback_switch = "ctrl+y"
+effort_increase = "alt+up"
+effort_decrease = "alt+down"
+centered_toggle = "alt+c"
+scroll_prompt_up = "ctrl+k"
+scroll_prompt_down = "ctrl+j"
+scroll_bookmark = "ctrl+g"
+auto_poke_toggle = "ctrl+p"
+scroll_up_fallback = ""
+scroll_down_fallback = ""
+workspace_left = "alt+h"
+workspace_down = "alt+j"
+workspace_up = "alt+k"
+workspace_right = "alt+l"
+side_panel_toggle = "alt+m"
+copy_selection_toggle = "alt+y"
+diagram_pane_toggle = "alt+t"
+typing_scroll_lock_toggle = "alt+s"
+diff_mode_cycle = "alt+g"
+info_widget_toggle = "alt+i"
+todo_card_toggle = "alt+x"
+swarm_panel_focus = "alt+n"
+new_terminal = "alt+shift+;"
+open_resume = "alt+r"
+session_picker_enter = "current-terminal"
+
+[dictation]
+command = ""
+mode = "send"
+key = "off"
+timeout_secs = 90
+vocabulary = []
+
+[display]
+diff_mode = "inline"
+queue_mode = false
+auto_server_reload = true
+mouse_capture = true
+debug_socket = false
+emoji = true
+centered = false
+show_thinking = false
+reasoning_display = "off"
+diagram_mode = "none"
+markdown_spacing = "document"
+latex_rendering = "image"
+pin_images = true
+pin_todos = true
+idle_animation = false
+prompt_entry_animation = true
+disabled_animations = ["orbit_rings"]
+performance = "full"
+animation_fps = 30
+redraw_fps = 30
+prompt_preview = true
+compact_notifications = false
+copy_badge_alt_label = ""
+show_agentgrep_output = false
+show_bash_output = false
+tool_call_details = false
+keybinding_hints = true
+theme = ""
+active_sessions_manager = false
+external_sessions = true
+usage_display = "left"
+overscroll_status = "overscroll"
+
+[display.native_scrollbars]
+chat = true
+side_panel = true
+
+[display.colors]
+
+[features]
+check_updates = true
+memory = true
+swarm = true
+mermaid = true
+auto_poke = true
+message_timestamps = true
+persist_memory_injections = false
+kv_cache_miss_notices = true
+update_channel = "stable"
+
+[websearch]
+engine = "duckduckgo"
+fallback_engines = ["bing"]
+bing_api_key_env = "JCODE_BING_API_KEY"
+bing_market = "en-US"
+searxng_url_env = "JCODE_SEARXNG_URL"
+
+[tools]
+profile = ""
+enabled = []
+disabled = []
+disable_base_tools = false
+mcp_tools = "auto"
+mcp_tools_token_threshold = 8000
+
+[acp]
+profile = "standard"
+tool_profile = "acp"
+
+[auth]
+trusted_external_sources = []
+trusted_external_source_paths = [
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmp0qoxyh/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmp5s8vlu/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpi9jrht/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpinpxyg/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpioqqma/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpjb8mat/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpkzm3lb/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpliq5hs/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpmw5haq/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpnrtwb8/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpoy4hns/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpqueulg/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmprkqpoz/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpsdjwxu/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpvoem1o/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpvvuzkn/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/.tmpxjjf2u/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/cargo-tmp/.tmp2m3btc/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/.jcode/scratch/cargo-tmp/.tmpkinusa/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/dev/jcode/scratch/.tmpqgvts1/github-copilot/hosts.json",
+    "copilot_hosts_json|/home/nyaptor/dev/jcode/scratch/.tmpxy2cqp/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmp3rcoqz/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpagr69t/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpauujsn/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpiqhrck/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpjwzy53/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpnpy1a1/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpo0uktd/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmprxzpk4/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpvfevk5/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpvq0udf/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpyjbahd/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpykfjii/github-copilot/hosts.json",
+    "copilot_hosts_json|/tmp/.tmpyryihj/github-copilot/hosts.json",
+]
+
+[provider]
+default_model = "azure-ai/DeepSeek-V4.1-Flash"
+default_provider = "openai"
+openai_reasoning_effort = "low"
+anthropic_cache_ttl_1h = true
+openai_service_tier = "off"
+openai_native_compaction_mode = "auto"
+openai_native_compaction_threshold_tokens = 200000
+preserve_reasoning_context = true
+cross_provider_failover = "manual"
+same_provider_account_failover = true
+gemini_force_oauth = false
+model_picker_providers = ["omni"]
+stream_idle_timeout_secs = 360
+max_retries = 3
+retry_backoff_cap_secs = 30
+
+[providers.9router]
+type = "open-ai-compatible"
+base_url = "https://9router.leonardoacosta.dev:443/v1"
+auth = "bearer"
+api_key_env = "JCODE_PROVIDER_9ROUTER_API_KEY"
+env_file = "provider-9router.env"
+default_model = "gpt-6-luna"
+requires_api_key = true
+provider_routing = false
+model_catalog = false
+allow_provider_pinning = false
+supports_reasoning_effort = true
+disable_reasoning_heuristics = false
+
+[[providers.9router.models]]
+id = "gpt-6-astra"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.9router.models]]
+id = "gpt-6-luna"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.9router.models]]
+id = "gpt-5.6-luna"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.9router.models]]
+id = "gpt-5.6-sol"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.9router.models]]
+id = "gh/claude-opus-5.5"
+input = ["text"]
+
+[[providers.9router.models]]
+id = "gh/claude-haiku-4.5"
+input = ["text"]
+
+[[providers.9router.models]]
+id = "gh/claude-sonnet-5"
+input = ["text"]
+
+[providers.omni]
+type = "open-ai-compatible"
+base_url = "https://omni.leonardoacosta.dev:443/v1"
+auth = "bearer"
+api_key_env = "JCODE_PROVIDER_OMNI_API_KEY"
+env_file = "provider-omni.env"
+default_model = "azure-ai/DeepSeek-V4.1-Flash"
+requires_api_key = true
+provider_routing = false
+model_catalog = false
+allow_provider_pinning = false
+supports_reasoning_effort = true
+disable_reasoning_heuristics = false
+
+[[providers.omni.models]]
+id = "gpt-6-astra"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "gpt-6-luna"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "gpt-5.6-luna"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "gpt-6.1-sol"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "gh/claude-opus-5.5"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "gh/claude-haiku-4.5"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "gh/claude-sonnet-5"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "cfp-glm-5.2"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "cfp-deepseek-v4-flash-0731"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "cfp-qwen3"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "azure-ai/DeepSeek-V4.1-Flash"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "cx/gpt-6-luna"
+input = [
+    "text",
+    "image",
+]
+
+[[providers.omni.models]]
+id = "claude-haiku-4.5"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "claude-sonnet-4.6"
+input = ["text"]
+
+[[providers.omni.models]]
+id = "claude-opus-4.5"
+input = ["text"]
+
+[agents]
+swarm_model = "omni:cx/gpt-6-luna"
+swarm_spawn_mode = "inline"
+swarm_strip_layout = "vertical"
+memory_jev_threshold = 0.800000011920929
+memory_sidecar_enabled = true
+memory_rerank_cadence = 3
+memory_rerank_votes = 2
+memory_rerank_min_agree = 2
+memory_embedding_backend = "local"
+swarm_max_concurrent_agents = 32
+
+[terminal]
+
+[hooks]
+pre_tool_transform_timeout_ms = 500
+turn_start = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
+turn_end = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
+session_start = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
+session_end = "\"/home/nyaptor/dev/herdr-jcode/target/release/herdr-jcode\" report"
+pre_tool_timeout_ms = 5000
+
+[ambient]
+enabled = true
+allow_api_keys = false
+min_interval_minutes = 5
+max_interval_minutes = 120
+pause_on_active_session = true
+proactive_work = true
+work_branch_prefix = "ambient/"
+visible = true
+
+[safety]
+ntfy_topic = "jcode-ambient"
+ntfy_server = "https://ntfy.leonardoacosta.dev"
+desktop_notifications = true
+email_enabled = false
+email_smtp_port = 587
+email_imap_port = 993
+email_reply_enabled = false
+telegram_enabled = false
+telegram_reply_enabled = false
+discord_enabled = false
+discord_reply_enabled = false
+jade_relay_enabled = false
+jade_relay_reply_enabled = false
+jade_relay_launch_enabled = false
+agentmail_enabled = false
+agentmail_reply_enabled = false
+agentmail_allowed_senders = []
+
+[notifications]
+turn_complete = true
+turn_complete_min_secs = 120
+turn_complete_todo_min_secs = 30
+turn_complete_only_when_unfocused = true
+turn_complete_sound = "Glass"
+
+[gateway]
+enabled = false
+port = 7643
+bind_addr = "0.0.0.0"
+
+[compaction]
+mode = "reactive"
+lookahead_turns = 15
+ewma_alpha = 0.30000001192092896
+proactive_floor = 0.4000000059604645
+min_samples = 3
+stall_window = 5
+min_turns_between_compactions = 10
+topic_shift_threshold = 0.44999998807907104
+relevance_keep_threshold = 0.6499999761581421
+goal_window_turns = 5
+jev_keep_threshold = 0.5
+jev_preserve_recent = 4
+max_context_tokens = 0
+
+[router]
+enabled = false
+
+[router.provider_tiers]
+
+[power]
+prevent_sleep_while_streaming = true
+
+[autoreview]
+enabled = true
+model = "omni:gpt-5-5-review"
+
+[autojudge]
+enabled = true
+model = "omni:gpt-6-luna"
+
+[launch_hotkeys]
+enabled = true
+imported = true
+
+[[launch_hotkeys.entries]]
+chord = "cmd+;"
+dir = "/home/nyaptor/dev/jcode"
+label = "jcode"
+self_dev = false
+
+[[launch_hotkeys.entries]]
+chord = "cmd+'"
+dir = "$HOME"
+label = "home"
+self_dev = false
+
+[remote_desktop]
+targets = []
+
+[server]
+wake_mode = "internal"
