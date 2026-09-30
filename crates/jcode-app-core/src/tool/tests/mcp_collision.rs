@@ -181,6 +181,12 @@ fn mcp_collision_manual_lifecycle_real_stdio() {
             eprintln!("SKIP: python3 unavailable for real MCP stdio test");
             return;
         }
+        let python = std::process::Command::new("python3")
+            .args(["-c", "import sys; print(sys.executable)"])
+            .output()
+            .expect("resolve python3 executable");
+        assert!(python.status.success(), "python3 executable lookup failed");
+        let python = String::from_utf8(python.stdout).unwrap().trim().to_string();
         let home = tempfile::tempdir().unwrap();
         let mut child = std::process::Command::new(std::env::current_exe().unwrap());
         child.env_clear();
@@ -199,7 +205,7 @@ fn mcp_collision_manual_lifecycle_real_stdio() {
             child.env(key, home.path());
         }
         let status = child
-            .env(MARKER, "1")
+            .env(MARKER, &python)
             .env("JCODE_HOME", home.path().join("jcode"))
             .env("JCODE_RUNTIME_DIR", home.path().join("runtime"))
             .current_dir(home.path())
@@ -216,6 +222,7 @@ fn mcp_collision_manual_lifecycle_real_stdio() {
         );
         return;
     }
+    let python = std::env::var(MARKER).expect("child interpreter path provided by parent");
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         tokio::time::timeout(std::time::Duration::from_secs(30), async {
             let registry = Registry::new(Arc::new(MockProvider)).await;
@@ -229,7 +236,7 @@ fn mcp_collision_manual_lifecycle_real_stdio() {
             let legacy = crate::mcp::dispatch_name(&catalog[0].0, &catalog[0].1.name);
             for (index, (server, tool)) in catalog.iter().enumerate() {
                 let output = management.execute(serde_json::json!({
-                    "action":"connect", "server":server, "command":"python3",
+                    "action":"connect", "server":server, "command":python,
                     "args":["-I", "-S", "-u", "-c", SERVER, server, serde_json::to_string(&vec![&tool.name]).unwrap()]
                 }), ctx.clone()).await.unwrap();
                 assert!(output.output.contains("Connected to MCP server"), "{}", output.output);
