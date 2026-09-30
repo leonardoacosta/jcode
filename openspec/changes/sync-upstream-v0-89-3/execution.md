@@ -21,3 +21,22 @@ Known limitations: live credential-dependent tests remain ignored. Build emits e
 ## Future update procedure
 
 Start with a clean, coordinated main. `git fetch --no-tags upstream master refs/tags/<release>` then independently verify the selected release commit. Create a unique recovery branch at HEAD. `git merge --no-commit --no-ff <verified-release-commit>`, resolve compatibility, run relevant regression/build and isolated-runtime checks, then commit and verify both baseline and release ancestry. Keep main tracking origin/main. Do not use FETCH_HEAD as the release target when fetching multiple refs. Push and deployment require separate authorization.
+
+## Post-commit requirement traceability
+
+Committed source f73abfb6a was re-tested in coordinated job 6472722k23: all base/core/root regression gates passed again.
+
+| Requirement or output | Concrete observation | Result |
+| --- | --- | --- |
+| Preserve both ancestries | merge-base --is-ancestor for pinned release and recovery ref | Both pass; release-to-HEAD missing commits = 0 |
+| Repeatable upstream alignment | upstream URL and main tracking queried after commit | Authoritative upstream configured, origin/main unchanged |
+| Local routing and credential preservation | systemone_custom_url_binds_only_to_matching_provider; selected-key/no-fallback/subscription tests | All pass |
+| MCP compatibility and error paths | streamable_http_initialize_list_and_call_roundtrip; redirect/error/SSE bounds; connect_fails_fast_when_server_exits_before_initialize | All pass |
+| Local question public workflow | question_socket_protocol_multi_question_success_and_closed_rejection; cancel/socket/capability tests | All pass |
+| Terminal environment propagation | concurrent_client_terminal_environments_remain_isolated; hook_process_replaces_daemon_terminal_env_with_client_snapshot | Both pass |
+| Source updater behavior | source_update_check_real_git_upstream_states; invalid checkout and status mapping tests | All pass |
+| Provider-sendable applet/tool outputs | tool_schemas_are_sendable_to_every_provider_dialect; description caps; documented_shapes_validate | All pass |
+| Actual TUI build and daemon startup | build 440457rffa and fresh isolated runtime debug sessions | Build passes, daemon returns empty session list |
+| Shared daemon/config unchanged | shared-server symlink and config file mtimes checked | Old binary retained and mtimes unchanged; independent other-session MCP invocation not tested |
+
+These observations establish the requested source-history improvement and representative compatibility, not all possible upstream behavior. Live inference, all-features CI/clippy, oversized-test ratchet remediation, and production deployment remain outside the completed validation.
