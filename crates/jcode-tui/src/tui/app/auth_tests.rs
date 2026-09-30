@@ -15,24 +15,33 @@ fn with_temp_jcode_home<T>(f: impl FnOnce() -> T) -> T {
         "JCODE_OPENAI_COMPAT_DEFAULT_MODEL",
         "JCODE_OPENAI_COMPAT_LOCAL_ENABLED",
         "OPENAI_COMPAT_API_KEY",
+        "JCODE_NAMED_PROVIDER_PROFILE",
+        "JCODE_PROVIDER_PROFILE_ACTIVE",
+        "JCODE_PROVIDER_PROFILE_NAME",
+        "JCODE_OPENROUTER_API_BASE",
     ]
     .map(|key| (key, std::env::var_os(key)));
+
+    struct RestoreEnv<'a>(&'a [(&'static str, Option<std::ffi::OsString>)]);
+    impl Drop for RestoreEnv<'_> {
+        fn drop(&mut self) {
+            for &(key, ref value) in self.0 {
+                if let Some(value) = value {
+                    crate::env::set_var(key, value);
+                } else {
+                    crate::env::remove_var(key);
+                }
+            }
+        }
+    }
+    let _restore = RestoreEnv(&saved_env);
 
     crate::env::set_var("JCODE_HOME", temp.path());
     for (key, _) in saved_env.iter().skip(1) {
         crate::env::remove_var(key);
     }
 
-    let result = f();
-
-    for (key, value) in saved_env {
-        if let Some(value) = value {
-            crate::env::set_var(key, value);
-        } else {
-            crate::env::remove_var(key);
-        }
-    }
-    result
+    f()
 }
 
 #[test]

@@ -89,12 +89,8 @@ fn test_remote_model_command_opens_picker_without_catalog_request() {
     let mut remote = crate::tui::backend::RemoteConnection::dummy();
     let request_id_before = remote.next_request_id_for_test();
 
-    rt.block_on(app.handle_remote_key(
-        KeyCode::Enter,
-        KeyModifiers::empty(),
-        &mut remote,
-    ))
-    .unwrap();
+    rt.block_on(app.handle_remote_key(KeyCode::Enter, KeyModifiers::empty(), &mut remote))
+        .unwrap();
 
     assert!(app.inline_interactive_state.is_some());
     assert_eq!(
@@ -545,54 +541,59 @@ fn test_subagent_model_large_catalog_uses_cached_searchable_picker() {
     app.handle_key(KeyCode::Char('3'), KeyModifiers::empty())
         .unwrap();
     let picker = app.inline_interactive_state.as_ref().unwrap();
-    assert!(!picker.filtered.is_empty(), "typed input should filter models");
+    assert!(
+        !picker.filtered.is_empty(),
+        "typed input should filter models"
+    );
     assert!(picker.filtered.len() < picker.entries.len());
 
-    app.handle_key(KeyCode::Enter, KeyModifiers::empty()).unwrap();
-    app.handle_key(KeyCode::Enter, KeyModifiers::empty()).unwrap();
+    app.handle_key(KeyCode::Enter, KeyModifiers::empty())
+        .unwrap();
+    app.handle_key(KeyCode::Enter, KeyModifiers::empty())
+        .unwrap();
     assert!(app.session.subagent_model.is_some());
     assert_eq!(app.provider.model(), "counting-a");
 }
 
 #[test]
 fn test_model_picker_reuses_cached_entries_until_invalidated() {
-    ensure_test_jcode_home_if_unset();
-    clear_persisted_test_ui_state();
-    crate::tui::ui::clear_test_render_state_for_tests();
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        crate::perf::pin_full_profile_for_tests();
+        crate::tui::ui::clear_test_render_state_for_tests();
+        let calls = StdArc::new(AtomicUsize::new(0));
+        let provider: Arc<dyn Provider> = Arc::new(CountingModelRoutesProvider {
+            calls: StdArc::clone(&calls),
+            route_count: 2,
+            delay: Duration::ZERO,
+        });
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let registry = rt.block_on(crate::tool::Registry::new(provider.clone()));
+        let mut app = App::new_for_test_harness(provider, registry);
+        app.queue_mode = false;
+        app.diff_mode = crate::config::DiffDisplayMode::Inline;
 
-    let calls = StdArc::new(AtomicUsize::new(0));
-    let provider: Arc<dyn Provider> = Arc::new(CountingModelRoutesProvider {
-        calls: StdArc::clone(&calls),
-        route_count: 2,
-        delay: Duration::ZERO,
+        app.open_model_picker();
+        wait_for_model_picker_load(&mut app);
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert!(app.model_picker_cache.is_some());
+
+        app.open_model_picker();
+        wait_for_model_picker_load(&mut app);
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            1,
+            "second open should reuse cached picker entries"
+        );
+
+        app.invalidate_model_picker_cache();
+        app.open_model_picker();
+        wait_for_model_picker_load(&mut app);
+        assert_eq!(
+            calls.load(Ordering::SeqCst),
+            2,
+            "invalidating should force rebuilding provider routes"
+        );
     });
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let registry = rt.block_on(crate::tool::Registry::new(provider.clone()));
-    let mut app = App::new_for_test_harness(provider, registry);
-    app.queue_mode = false;
-    app.diff_mode = crate::config::DiffDisplayMode::Inline;
-
-    app.open_model_picker();
-    wait_for_model_picker_load(&mut app);
-    assert_eq!(calls.load(Ordering::SeqCst), 1);
-    assert!(app.model_picker_cache.is_some());
-
-    app.open_model_picker();
-    wait_for_model_picker_load(&mut app);
-    assert_eq!(
-        calls.load(Ordering::SeqCst),
-        1,
-        "second open should reuse cached picker entries"
-    );
-
-    app.invalidate_model_picker_cache();
-    app.open_model_picker();
-    wait_for_model_picker_load(&mut app);
-    assert_eq!(
-        calls.load(Ordering::SeqCst),
-        2,
-        "invalidating should force rebuilding provider routes"
-    );
 }
 
 #[test]
@@ -1222,114 +1223,113 @@ fn test_tui_openai_compatible_local_refresh_failure_is_pending_not_final_failure
 
 #[test]
 fn test_model_picker_opens_simplified_state_before_async_routes_complete() {
-    ensure_test_jcode_home_if_unset();
-    clear_persisted_test_ui_state();
-    crate::tui::ui::clear_test_render_state_for_tests();
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        crate::perf::pin_full_profile_for_tests();
+        crate::tui::ui::clear_test_render_state_for_tests();
+        let calls = StdArc::new(AtomicUsize::new(0));
+        let provider: Arc<dyn Provider> = Arc::new(CountingModelRoutesProvider {
+            calls: StdArc::clone(&calls),
+            route_count: 2,
+            delay: Duration::from_millis(75),
+        });
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let registry = rt.block_on(crate::tool::Registry::new(provider.clone()));
+        let mut app = App::new_for_test_harness(provider, registry);
+        app.queue_mode = false;
+        app.diff_mode = crate::config::DiffDisplayMode::Inline;
 
-    let calls = StdArc::new(AtomicUsize::new(0));
-    let provider: Arc<dyn Provider> = Arc::new(CountingModelRoutesProvider {
-        calls: StdArc::clone(&calls),
-        route_count: 2,
-        delay: Duration::from_millis(75),
+        app.open_model_picker();
+
+        let picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("loading picker should open immediately");
+        assert_eq!(picker.entries.len(), 1);
+        assert_eq!(picker.entries[0].name, "counting-a");
+        assert_eq!(picker.entries[0].options[0].detail, "simplified catalog");
+        assert!(app.pending_model_picker_load.is_some());
+        assert_eq!(
+            app.status_notice(),
+            Some("Updating model routes…".to_string())
+        );
+
+        wait_for_model_picker_load(&mut app);
+        let picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("hydrated picker should still be open");
+        assert!(picker.entries.len() >= 2);
+        assert_eq!(app.status_notice(), Some("Model list updated".to_string()));
     });
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let registry = rt.block_on(crate::tool::Registry::new(provider.clone()));
-    let mut app = App::new_for_test_harness(provider, registry);
-    app.queue_mode = false;
-    app.diff_mode = crate::config::DiffDisplayMode::Inline;
-
-    app.open_model_picker();
-
-    let picker = app
-        .inline_interactive_state
-        .as_ref()
-        .expect("loading picker should open immediately");
-    assert_eq!(picker.entries.len(), 1);
-    assert_eq!(picker.entries[0].name, "counting-a");
-    assert_eq!(picker.entries[0].options[0].detail, "simplified catalog");
-    assert!(app.pending_model_picker_load.is_some());
-    assert_eq!(
-        app.status_notice(),
-        Some("Updating model routes…".to_string())
-    );
-
-    wait_for_model_picker_load(&mut app);
-    let picker = app
-        .inline_interactive_state
-        .as_ref()
-        .expect("hydrated picker should still be open");
-    assert!(picker.entries.len() >= 2);
-    assert_eq!(app.status_notice(), Some("Model list updated".to_string()));
 }
 
 #[test]
 fn test_model_picker_state_space_preserves_provider_labels_after_route_hydration() {
-    ensure_test_jcode_home_if_unset();
-    clear_persisted_test_ui_state();
-    crate::tui::ui::clear_test_render_state_for_tests();
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        crate::tui::ui::clear_test_render_state_for_tests();
+        let provider: Arc<dyn Provider> = Arc::new(MixedModelRoutesProvider {
+            model: StdArc::new(StdMutex::new("gpt-5.5".to_string())),
+        });
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let registry = rt.block_on(crate::tool::Registry::new(provider.clone()));
+        let mut app = App::new_for_test_harness(provider, registry);
+        app.queue_mode = false;
+        app.diff_mode = crate::config::DiffDisplayMode::Inline;
+        app.recent_authenticated_provider = Some(("chutes".to_string(), Instant::now()));
 
-    let provider: Arc<dyn Provider> = Arc::new(MixedModelRoutesProvider {
-        model: StdArc::new(StdMutex::new("gpt-5.5".to_string())),
-    });
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let registry = rt.block_on(crate::tool::Registry::new(provider.clone()));
-    let mut app = App::new_for_test_harness(provider, registry);
-    app.queue_mode = false;
-    app.diff_mode = crate::config::DiffDisplayMode::Inline;
-    app.recent_authenticated_provider = Some(("chutes".to_string(), Instant::now()));
+        app.open_model_picker();
+        wait_for_model_picker_load(&mut app);
 
-    app.open_model_picker();
-    wait_for_model_picker_load(&mut app);
-
-    let picker = app
-        .inline_interactive_state
-        .as_ref()
-        .expect("hydrated mixed-provider model picker should be open");
-    let mut routes_by_model = std::collections::BTreeMap::new();
-    for entry in &picker.entries {
-        let route = entry
-            .active_option()
-            .expect("model picker entry should have an active route");
-        routes_by_model.insert(
-            entry.name.clone(),
-            (route.provider.clone(), route.api_method.clone()),
-        );
-    }
-
-    // Models with reasoning-effort support expand into effort rows (issue
-    // #458); the hydrated route must be preserved on each variant.
-    assert_eq!(
-        routes_by_model.get("gpt-5.5 (high)"),
-        Some(&("OpenAI".to_string(), "openai-oauth".to_string()))
-    );
-    assert_eq!(
-        routes_by_model.get("claude-opus-4-6 (high)"),
-        Some(&("Anthropic".to_string(), "claude-oauth".to_string()))
-    );
-    assert_eq!(
-        routes_by_model.get("Qwen/Qwen3-Coder-480B-A35B-Instruct"),
-        Some(&("Chutes".to_string(), "openai-compatible:chutes".to_string()))
-    );
-    assert_eq!(
-        routes_by_model.get("deepseek/deepseek-v4-pro (high)"),
-        Some(&("auto".to_string(), "openrouter".to_string()))
-    );
-
-    let chutes_rows = picker
-        .entries
-        .iter()
-        .filter(|entry| {
-            entry
+        let picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("hydrated mixed-provider model picker should be open");
+        let mut routes_by_model = std::collections::BTreeMap::new();
+        for entry in &picker.entries {
+            let route = entry
                 .active_option()
-                .map(|route| route.provider == "Chutes")
-                .unwrap_or(false)
-        })
-        .count();
-    assert_eq!(
-        chutes_rows, 1,
-        "opening the model list must not collapse every route to the recently authenticated direct provider: {:?}",
-        routes_by_model
-    );
+                .expect("model picker entry should have an active route");
+            routes_by_model.insert(
+                entry.name.clone(),
+                (route.provider.clone(), route.api_method.clone()),
+            );
+        }
+
+        // Models with reasoning-effort support expand into effort rows (issue
+        // #458); the hydrated route must be preserved on each variant.
+        assert_eq!(
+            routes_by_model.get("gpt-5.5 (high)"),
+            Some(&("OpenAI".to_string(), "openai-oauth".to_string()))
+        );
+        assert_eq!(
+            routes_by_model.get("claude-opus-4-6 (high)"),
+            Some(&("Anthropic".to_string(), "claude-oauth".to_string()))
+        );
+        assert_eq!(
+            routes_by_model.get("Qwen/Qwen3-Coder-480B-A35B-Instruct"),
+            Some(&("Chutes".to_string(), "openai-compatible:chutes".to_string()))
+        );
+        assert_eq!(
+            routes_by_model.get("deepseek/deepseek-v4-pro (high)"),
+            Some(&("auto".to_string(), "openrouter".to_string()))
+        );
+
+        let chutes_rows = picker
+            .entries
+            .iter()
+            .filter(|entry| {
+                entry
+                    .active_option()
+                    .map(|route| route.provider == "Chutes")
+                    .unwrap_or(false)
+            })
+            .count();
+        assert_eq!(
+            chutes_rows, 1,
+            "opening the model list must not collapse every route to the recently authenticated direct provider: {:?}",
+            routes_by_model
+        );
+    });
 }
 
 #[test]
@@ -1438,87 +1438,86 @@ fn test_login_completed_spawns_auth_refresh_when_runtime_is_available() {
 
 #[test]
 fn test_model_picker_waits_for_async_post_login_catalog_activation() {
-    ensure_test_jcode_home_if_unset();
-    clear_persisted_test_ui_state();
-    crate::tui::ui::clear_test_render_state_for_tests();
-
-    let logged_in = StdArc::new(StdMutex::new(false));
-    let provider: Arc<dyn Provider> = Arc::new(AuthRefreshingMockProvider {
-        logged_in: StdArc::clone(&logged_in),
-    });
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let registry = rt.block_on(crate::tool::Registry::new(provider.clone()));
-    let mut app = App::new_for_test_harness(provider, registry);
-    let mut bus_rx = crate::bus::Bus::global().subscribe();
-
-    {
-        let _guard = rt.enter();
-        app.handle_login_completed(crate::bus::LoginCompleted {
-            provider: "auto-import".to_string(),
-            success: true,
-            message: "Imported existing logins".to_string(),
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        crate::tui::ui::clear_test_render_state_for_tests();
+        let logged_in = StdArc::new(StdMutex::new(false));
+        let provider: Arc<dyn Provider> = Arc::new(AuthRefreshingMockProvider {
+            logged_in: StdArc::clone(&logged_in),
         });
-        app.open_model_picker();
-    }
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let registry = rt.block_on(crate::tool::Registry::new(provider.clone()));
+        let mut app = App::new_for_test_harness(provider, registry);
+        let mut bus_rx = crate::bus::Bus::global().subscribe();
 
-    let picker = app
-        .inline_interactive_state
-        .as_ref()
-        .expect("loading model picker should be open");
-    assert_eq!(picker.entries.len(), 1);
-    assert!(
-        picker.entries[0].options[0]
-            .detail
-            .contains("updating model list")
-    );
-    // The single loading row labels the *current* model (which may legitimately
-    // still be the pre-import one until async activation lands), so check the
-    // route metadata: the stale pre-import catalog route must not be shown as a
-    // selectable ready entry.
-    assert!(
-        !picker
-            .entries
-            .iter()
-            .flat_map(|entry| entry.options.iter())
-            .any(|option| option.api_method == "openai-oauth"),
-        "the stale pre-import catalog must not be presented as ready"
-    );
+        {
+            let _guard = rt.enter();
+            app.handle_login_completed(crate::bus::LoginCompleted {
+                provider: "auto-import".to_string(),
+                success: true,
+                message: "Imported existing logins".to_string(),
+            });
+            app.open_model_picker();
+        }
 
-    let ready = rt.block_on(async {
-        tokio::time::timeout(Duration::from_secs(2), async {
-            loop {
-                let event = bus_rx.recv().await.expect("auth catalog event");
-                if matches!(event, crate::bus::BusEvent::AuthCatalogRefreshReady) {
-                    break event;
+        let picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("loading model picker should be open");
+        assert_eq!(picker.entries.len(), 1);
+        assert!(
+            picker.entries[0].options[0]
+                .detail
+                .contains("updating model list")
+        );
+        // The single loading row labels the *current* model (which may legitimately
+        // still be the pre-import one until async activation lands), so check the
+        // route metadata: the stale pre-import catalog route must not be shown as a
+        // selectable ready entry.
+        assert!(
+            !picker
+                .entries
+                .iter()
+                .flat_map(|entry| entry.options.iter())
+                .any(|option| option.api_method == "openai-oauth"),
+            "the stale pre-import catalog must not be presented as ready"
+        );
+
+        let ready = rt.block_on(async {
+            tokio::time::timeout(Duration::from_secs(2), async {
+                loop {
+                    let event = bus_rx.recv().await.expect("auth catalog event");
+                    if matches!(event, crate::bus::BusEvent::AuthCatalogRefreshReady) {
+                        break event;
+                    }
                 }
-            }
-        })
-        .await
-        .expect("post-login activation should finish")
-    });
-    assert!(crate::tui::app::local::handle_bus_event(
-        &mut app,
-        Ok(ready)
-    ));
-    assert!(*logged_in.lock().unwrap());
-    wait_for_model_picker_load(&mut app);
+            })
+            .await
+            .expect("post-login activation should finish")
+        });
+        assert!(crate::tui::app::local::handle_bus_event(
+            &mut app,
+            Ok(ready)
+        ));
+        assert!(*logged_in.lock().unwrap());
+        wait_for_model_picker_load(&mut app);
 
-    let picker = app
-        .inline_interactive_state
-        .as_ref()
-        .expect("model picker should refresh in place");
-    assert!(
-        picker
-            .entries
-            .iter()
-            .any(|entry| entry.name == "claude-opus-4.6")
-    );
-    assert!(
-        picker
-            .entries
-            .iter()
-            .any(|entry| entry.name == "grok-code-fast-1")
-    );
+        let picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("model picker should refresh in place");
+        assert!(
+            picker
+                .entries
+                .iter()
+                .any(|entry| entry.name == "claude-opus-4.6")
+        );
+        assert!(
+            picker
+                .entries
+                .iter()
+                .any(|entry| entry.name == "grok-code-fast-1")
+        );
+    });
 }
 
 #[test]
@@ -1825,36 +1824,37 @@ fn test_local_model_picker_openrouter_bare_openai_route_uses_openai_catalog_pref
 
 #[test]
 fn test_agent_model_picker_openrouter_bare_openai_route_saves_openai_catalog_prefix() {
-    let (mut app, _set_model_calls) = create_openrouter_spec_capture_test_app();
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        let (mut app, _set_model_calls) = create_openrouter_spec_capture_test_app();
+        app.open_agent_model_picker(crate::tui::AgentModelTarget::Swarm);
 
-    app.open_agent_model_picker(crate::tui::AgentModelTarget::Swarm);
+        let picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("agent model picker should be open");
+        let model_idx = picker
+            .entries
+            .iter()
+            .position(|entry| entry.name == "gpt-5.4 (high)")
+            .expect("openrouter-backed OpenAI effort entry should be in picker");
+        let filtered_pos = picker
+            .filtered
+            .iter()
+            .position(|&i| i == model_idx)
+            .expect("entry should be in filtered list");
 
-    let picker = app
-        .inline_interactive_state
-        .as_ref()
-        .expect("agent model picker should be open");
-    let model_idx = picker
-        .entries
-        .iter()
-        .position(|entry| entry.name == "gpt-5.4 (high)")
-        .expect("openrouter-backed OpenAI effort entry should be in picker");
-    let filtered_pos = picker
-        .filtered
-        .iter()
-        .position(|&i| i == model_idx)
-        .expect("entry should be in filtered list");
+        app.inline_interactive_state.as_mut().unwrap().selected = filtered_pos;
+        app.handle_key(KeyCode::Enter, KeyModifiers::empty())
+            .expect("agent model picker selection should succeed");
 
-    app.inline_interactive_state.as_mut().unwrap().selected = filtered_pos;
-    app.handle_key(KeyCode::Enter, KeyModifiers::empty())
-        .expect("agent model picker selection should succeed");
-
-    let last = app.display_messages.last().expect("display message");
-    assert_eq!(last.role, "system");
-    assert!(
-        last.content.contains("openai/gpt-5.4@OpenAI"),
-        "message should show normalized saved spec, got: {}",
-        last.content
-    );
+        let last = app.display_messages.last().expect("display message");
+        assert_eq!(last.role, "system");
+        assert!(
+            last.content.contains("openai/gpt-5.4@OpenAI"),
+            "message should show normalized saved spec, got: {}",
+            last.content
+        );
+    });
 }
 
 #[test]

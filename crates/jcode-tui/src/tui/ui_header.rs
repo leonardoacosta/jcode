@@ -1047,6 +1047,19 @@ mod tests {
             return;
         }
 
+        // Scoped-home tests use this same process-global lock. Serialize the
+        // unset -> shared-home transition, but never block because callers may
+        // already hold the non-reentrant lock.
+        let _env_lock = match crate::storage::test_env_lock().try_lock() {
+            Ok(guard) => Some(guard),
+            // The lock owner is responsible for the scoped JCODE_HOME. Never
+            // write through another thread's environment scope.
+            Err(_) => return,
+        };
+        if std::env::var_os("JCODE_HOME").is_some() {
+            return;
+        }
+
         let path = TEST_HOME.get_or_init(|| {
             let path = std::env::temp_dir().join(format!("jcode-test-home-{}", std::process::id()));
             let _ = std::fs::create_dir_all(&path);

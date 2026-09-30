@@ -144,8 +144,7 @@ fn test_model_command_provider_suggestions_include_auto_for_normalized_bare_open
 
 #[test]
 fn test_remote_fallback_provider_suggestions_normalize_bare_openai_openrouter_routes() {
-    with_temp_jcode_home(|| {
-        let prev_api_key = std::env::var_os("OPENROUTER_API_KEY");
+    with_temp_jcode_home_and_clean_provider_env(|| {
         crate::env::set_var("OPENROUTER_API_KEY", "test-openrouter-key");
         crate::auth::AuthStatus::invalidate_cache();
 
@@ -161,11 +160,6 @@ fn test_remote_fallback_provider_suggestions_normalize_bare_openai_openrouter_ro
         assert!(commands.contains(&"/model openai/gpt-5.4@auto"));
         assert!(commands.contains(&"/model openai/gpt-5.4@OpenAI"));
 
-        if let Some(prev_api_key) = prev_api_key {
-            crate::env::set_var("OPENROUTER_API_KEY", prev_api_key);
-        } else {
-            crate::env::remove_var("OPENROUTER_API_KEY");
-        }
         crate::auth::AuthStatus::invalidate_cache();
     });
 }
@@ -212,27 +206,29 @@ fn test_model_autocomplete_completes_unique_provider_match() {
 
 #[test]
 fn test_model_picker_preview_stays_open_and_updates_filter() {
-    let mut app = create_test_app();
-    configure_test_remote_models(&mut app);
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        let mut app = create_test_app();
+        configure_test_remote_models(&mut app);
 
-    for c in "/model g52c".chars() {
-        app.handle_key(KeyCode::Char(c), KeyModifiers::empty())
-            .unwrap();
-    }
+        for c in "/model g52c".chars() {
+            app.handle_key(KeyCode::Char(c), KeyModifiers::empty())
+                .unwrap();
+        }
 
-    let picker = app
-        .inline_interactive_state
-        .as_ref()
-        .expect("model picker preview should be open");
-    assert!(picker.preview);
-    assert_eq!(picker.filter, "g52c");
-    assert!(
-        picker
-            .filtered
-            .iter()
-            .any(|&i| picker.entries[i].name.starts_with("gpt-5.2-codex ("))
-    );
-    assert_eq!(app.input(), "/model g52c");
+        let picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("model picker preview should be open");
+        assert!(picker.preview);
+        assert_eq!(picker.filter, "g52c");
+        assert!(
+            picker
+                .filtered
+                .iter()
+                .any(|&i| picker.entries[i].name.starts_with("gpt-5.2-codex ("))
+        );
+        assert_eq!(app.input(), "/model g52c");
+    });
 }
 
 #[test]

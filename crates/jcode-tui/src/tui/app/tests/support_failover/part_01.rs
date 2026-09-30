@@ -378,11 +378,14 @@ fn ensure_test_jcode_home_if_unset() {
     // several tests hold it while calling `create_test_app` (e.g. the
     // pinned-todo-band test), so a blocking `lock_test_env()` here would
     // self-deadlock whenever a preceding test removed JCODE_HOME on drop.
-    // `try_lock` keeps the serialization when the lock is free and degrades
-    // to the caller's own exclusion when this thread already holds it: if
-    // try_lock fails because *we* hold the lock, no other thread can race
-    // this read-modify-write anyway.
-    let _env_lock = crate::storage::test_env_lock().try_lock();
+    // Never mutate JCODE_HOME when another test owns the environment scope.
+    // A failed try_lock may mean another thread holds it, so skip the fallback
+    // rather than racing that test. If this thread already owns it, its scoped
+    // HOME is authoritative and the same early return is safe.
+    let _env_lock = match crate::storage::test_env_lock().try_lock() {
+        Ok(guard) => Some(guard),
+        Err(_) => return,
+    };
 
     if std::env::var_os("JCODE_HOME").is_some() {
         return;
@@ -439,6 +442,77 @@ fn with_temp_jcode_home<T>(f: impl FnOnce() -> T) -> T {
     // test, which is process-global state shared across this suite.
     crate::config::invalidate_config_cache();
     result
+}
+
+fn with_temp_jcode_home_and_clean_provider_env<T>(f: impl FnOnce() -> T) -> T {
+    let _env_guard = crate::storage::lock_test_env();
+    let keys = [
+        "JCODE_NAMED_PROVIDER_PROFILE",
+        "JCODE_CURSOR_CLI_PATH",
+        "JCODE_PROVIDER_PROFILE_ACTIVE",
+        "JCODE_PROVIDER_PROFILE_NAME",
+        "JCODE_RUNTIME_PROVIDER",
+        "JCODE_ACTIVE_PROVIDER",
+        "JCODE_INITIAL_PROVIDER_EXPLICIT",
+        "JCODE_OPENROUTER_API_BASE",
+        "JCODE_OPENROUTER_API_KEY_NAME",
+        "JCODE_OPENROUTER_ENV_FILE",
+        "JCODE_OPENROUTER_CACHE_NAMESPACE",
+        "JCODE_OPENROUTER_PROVIDER_FEATURES",
+        "JCODE_OPENROUTER_TRANSPORT_STATE",
+        "JCODE_OPENROUTER_ALLOW_NO_AUTH",
+        "JCODE_OPENROUTER_MODEL_CATALOG",
+        "JCODE_OPENROUTER_MODEL",
+        "JCODE_OPENROUTER_STATIC_MODELS",
+        "JCODE_OPENROUTER_AUTH_HEADER",
+        "JCODE_OPENROUTER_AUTH_HEADER_NAME",
+        "JCODE_OPENROUTER_DYNAMIC_BEARER_PROVIDER",
+        "JCODE_OPENROUTER_PROVIDER",
+        "JCODE_OPENROUTER_NO_FALLBACK",
+        "OPENROUTER_API_KEY",
+    ];
+    let saved = keys.map(|key| (key, std::env::var_os(key)));
+    let temp = tempfile::tempdir().expect("tempdir");
+    let prev_home = std::env::var_os("JCODE_HOME");
+    struct RestoreProviderEnv<'a> {
+        saved: &'a [(&'static str, Option<std::ffi::OsString>)],
+        prev_home: Option<std::ffi::OsString>,
+    }
+    impl Drop for RestoreProviderEnv<'_> {
+        fn drop(&mut self) {
+            for &(key, ref value) in self.saved {
+                if let Some(value) = value {
+                    crate::env::set_var(key, value);
+                } else {
+                    crate::env::remove_var(key);
+                }
+            }
+            if let Some(home) = self.prev_home.take() {
+                crate::env::set_var("JCODE_HOME", home);
+            } else {
+                crate::env::remove_var("JCODE_HOME");
+            }
+            crate::auth::claude::set_active_account_override(None);
+            crate::auth::codex::set_active_account_override(None);
+            crate::auth::AuthStatus::invalidate_cache();
+            crate::tui::app::helpers::clear_ambient_info_cache_for_tests();
+            crate::config::invalidate_config_cache();
+        }
+    }
+    let _restore = RestoreProviderEnv {
+        saved: &saved,
+        prev_home,
+    };
+    for key in keys {
+        crate::env::remove_var(key);
+    }
+    crate::env::set_var("JCODE_HOME", temp.path());
+    crate::auth::claude::set_active_account_override(None);
+    crate::auth::codex::set_active_account_override(None);
+    crate::config::invalidate_config_cache();
+    crate::tui::app::helpers::clear_ambient_info_cache_for_tests();
+    crate::auth::AuthStatus::invalidate_cache();
+    f()
 }
 
 /// Run `f` in a hermetic `JCODE_HOME` with reasoning display pinned to

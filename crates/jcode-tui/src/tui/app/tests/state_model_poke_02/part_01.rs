@@ -1050,7 +1050,10 @@ fn test_logout_clear_anthropic_accounts_removes_all_accounts_once() {
                 .unwrap(),
             );
         }
-        let last = assigned.last().expect("three accounts were created").clone();
+        let last = assigned
+            .last()
+            .expect("three accounts were created")
+            .clone();
         crate::auth::claude::set_active_account(&last).unwrap();
 
         let labels: Vec<_> = crate::auth::claude::list_accounts()
@@ -1369,43 +1372,47 @@ fn test_login_picker_preview_filter_parsing() {
 
 #[test]
 fn test_agents_command_opens_agent_picker() {
-    let mut app = create_test_app();
-    app.input = "/agents".to_string();
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        let mut app = create_test_app();
+        app.input = "/agents".to_string();
 
-    app.submit_input();
+        app.submit_input();
 
-    let picker = app
-        .inline_interactive_state
-        .as_ref()
-        .expect("/agents should open the agent picker");
-    assert!(
-        picker
+        let picker = app
+            .inline_interactive_state
+            .as_ref()
+            .expect("/agents should open the agent picker");
+        assert!(
+            picker
+                .entries
+                .iter()
+                .any(|entry| entry.name == "Code review")
+        );
+        assert!(picker.entries.iter().any(|entry| matches!(
+            entry.action,
+            crate::tui::PickerAction::AgentTarget(crate::tui::AgentModelTarget::Swarm)
+        )));
+        let swarm_entry = picker
             .entries
             .iter()
-            .any(|entry| entry.name == "Code review")
-    );
-    assert!(picker.entries.iter().any(|entry| matches!(
-        entry.action,
-        crate::tui::PickerAction::AgentTarget(crate::tui::AgentModelTarget::Swarm)
-    )));
-    let swarm_entry = picker
-        .entries
-        .iter()
-        .find(|entry| {
-            matches!(
-                entry.action,
-                crate::tui::PickerAction::AgentTarget(crate::tui::AgentModelTarget::Swarm)
-            )
-        })
-        .expect("swarm entry");
-    assert!(swarm_entry.options[0].detail.contains("/swarm-prompt"));
+            .find(|entry| {
+                matches!(
+                    entry.action,
+                    crate::tui::PickerAction::AgentTarget(crate::tui::AgentModelTarget::Swarm)
+                )
+            })
+            .expect("swarm entry");
+        assert!(swarm_entry.options[0].detail.contains("/swarm-prompt"));
+    });
 }
 
 #[test]
 fn test_agents_command_suggestions_include_targets() {
-    let app = create_test_app();
-    let suggestions = app.get_suggestions_for("/agents re");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/agents review"));
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        let app = create_test_app();
+        let suggestions = app.get_suggestions_for("/agents re");
+        assert!(suggestions.iter().any(|(cmd, _)| cmd == "/agents review"));
+    });
 }
 
 #[test]

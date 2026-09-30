@@ -635,6 +635,7 @@ fn test_light_theme_adapted_frame_has_readable_contrast() {
 /// guards the hook's presence and its ordering relative to the light/dark pass.
 #[test]
 fn test_configured_palette_recolors_a_real_rendered_frame() {
+    jcode_tui_style::color::pin_truecolor_for_tests();
     fn render() -> ratatui::buffer::Buffer {
         let messages = vec![
             DisplayMessage {
@@ -679,9 +680,9 @@ fn test_configured_palette_recolors_a_real_rendered_frame() {
     jcode_tui_style::set_palette(jcode_tui_style::Palette::default());
     let baseline = render();
 
-    // Recolor the user role to a color nothing in the default palette is near.
+    // User message body text uses UserText, while User styles its role marker.
     let mut palette = jcode_tui_style::Palette::default();
-    palette.set(jcode_tui_style::Role::User, (250, 40, 200));
+    palette.set(jcode_tui_style::Role::UserText, (250, 40, 200));
     jcode_tui_style::set_palette(palette);
     let configured = render();
 

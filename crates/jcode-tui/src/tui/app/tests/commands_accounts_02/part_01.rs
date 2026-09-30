@@ -558,8 +558,9 @@ fn test_account_switch_shorthand_switches_openai_account_by_label() {
         // switching to the account that is already active would pass even if the
         // `/account switch` command did nothing. The first insert stays active
         // and the switch below has to move it to the second.
-        let first = crate::auth::codex::upsert_account(open_account("acct_first", "first@example.com"))
-            .unwrap();
+        let first =
+            crate::auth::codex::upsert_account(open_account("acct_first", "first@example.com"))
+                .unwrap();
         let second =
             crate::auth::codex::upsert_account(open_account("acct_second", "second@example.com"))
                 .unwrap();
@@ -587,19 +588,21 @@ fn test_account_switch_shorthand_switches_openai_account_by_label() {
 
 #[test]
 fn test_account_picker_prompt_new_openai_label_cancel_clears_prompt() {
-    let mut app = create_test_app();
-    app.prompt_new_account_label(crate::tui::account_picker::AccountProviderKind::OpenAi);
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        let mut app = create_test_app();
+        app.prompt_new_account_label(crate::tui::account_picker::AccountProviderKind::OpenAi);
 
-    assert!(matches!(
-        app.pending_account_input,
-        Some(super::auth::PendingAccountInput::NewAccountLabel { ref provider_id, .. }) if provider_id == "openai"
-    ));
+        assert!(matches!(
+            app.pending_account_input,
+            Some(super::auth::PendingAccountInput::NewAccountLabel { ref provider_id, .. }) if provider_id == "openai"
+        ));
 
-    app.input = "/cancel".to_string();
-    app.submit_input();
+        app.input = "/cancel".to_string();
+        app.submit_input();
 
-    assert!(app.pending_account_input.is_none());
-    assert!(app.pending_login.is_none());
+        assert!(app.pending_account_input.is_none());
+        assert!(app.pending_login.is_none());
+    });
 }
 
 #[test]
@@ -618,18 +621,20 @@ fn test_login_command_opens_inline_login_picker() {
 
 #[test]
 fn test_account_openai_compatible_settings_renders_provider_settings() {
-    let mut app = create_test_app();
-    app.input = "/account openai-compatible settings".to_string();
-    app.submit_input();
+    with_temp_jcode_home_and_clean_provider_env(|| {
+        let mut app = create_test_app();
+        app.input = "/account openai-compatible settings".to_string();
+        app.submit_input();
 
-    let msg = app
-        .display_messages()
-        .last()
-        .expect("missing settings output");
-    assert_eq!(msg.role, "system");
-    assert!(msg.content.contains("OpenAI-compatible"));
-    assert!(msg.content.contains("API base"));
-    assert!(msg.content.contains("default-model"));
+        let msg = app
+            .display_messages()
+            .last()
+            .expect("missing settings output");
+        assert_eq!(msg.role, "system");
+        assert!(msg.content.contains("OpenAI-compatible"));
+        assert!(msg.content.contains("API base"));
+        assert!(msg.content.contains("default-model"));
+    });
 }
 
 #[test]

@@ -230,6 +230,7 @@ fn dispatch_single_local_command(app: &mut App, trimmed: &str) -> bool {
         || super::commands::handle_log_command(app, trimmed)
         || super::commands::handle_diff_command(app, trimmed)
         || super::commands::handle_model_status_command(app, trimmed)
+        || super::commands::handle_agents_command(app, trimmed)
         || super::debug::handle_debug_command(app, trimmed)
         || super::model_context::handle_model_command(app, trimmed)
         || app.handle_usage_reset_command(trimmed)
@@ -390,7 +391,6 @@ mod tests {
     /// that drift apart. Both entry points must call this shared table and
     /// must not rebuild a chain of their own.
     #[test]
-    #[test]
     fn agents_command_opens_picker_through_shared_dispatch() {
         let mut app = crate::tui::app::tests::create_test_app();
 
@@ -398,6 +398,7 @@ mod tests {
         assert!(app.inline_interactive_state.is_some());
     }
 
+    #[test]
     fn both_entry_points_use_the_shared_dispatch_table() {
         for (path, source) in [
             ("input.rs", include_str!("input.rs")),
