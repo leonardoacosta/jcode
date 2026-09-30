@@ -55,7 +55,9 @@ for line in sys.stdin:
 
 #[test]
 fn real_stdio_collision_aliases_preserve_original_targets() {
-    if std::env::var_os(CHILD_MARKER).is_none() {
+    let python = if let Ok(path) = std::env::var(CHILD_MARKER) {
+        path
+    } else {
         if !Command::new("python3")
             .arg("--version")
             .stdout(Stdio::null())
@@ -66,11 +68,15 @@ fn real_stdio_collision_aliases_preserve_original_targets() {
             eprintln!("SKIP {TEST_NAME}: python3 is unavailable for real stdio fixtures");
             return;
         }
+        let python = Command::new("python3")
+            .args(["-c", "import sys; print(sys.executable)"])
+            .output()
+            .expect("resolve python3 executable");
+        assert!(python.status.success(), "python3 executable lookup failed");
+        let python = String::from_utf8(python.stdout).unwrap().trim().to_string();
         let sandbox = tempfile::tempdir().expect("isolated MCP test home");
         let mut child = Command::new(std::env::current_exe().expect("test executable"));
         child.env_clear();
-        // Only executable/dynamic-library search and Windows process setup are
-        // inherited. In particular, no provider credentials or JCODE_* config.
         for key in ["PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH", "SYSTEMROOT"] {
             if let Some(value) = std::env::var_os(key) {
                 child.env(key, value);
@@ -86,7 +92,7 @@ fn real_stdio_collision_aliases_preserve_original_targets() {
             child.env(key, sandbox.path());
         }
         let status = child
-            .env(CHILD_MARKER, "1")
+            .env(CHILD_MARKER, &python)
             .env("JCODE_HOME", sandbox.path().join("jcode"))
             .env("JCODE_RUNTIME_DIR", sandbox.path().join("runtime"))
             .current_dir(sandbox.path())
@@ -95,23 +101,26 @@ fn real_stdio_collision_aliases_preserve_original_targets() {
             .expect("run isolated MCP integration test");
         assert!(status.success(), "isolated MCP test failed: {status}");
         return;
-    }
+    };
     tokio::runtime::Runtime::new()
         .expect("test runtime")
         .block_on(async {
-            tokio::time::timeout(std::time::Duration::from_secs(30), exercise_proxies())
-                .await
-                .expect("real MCP fixture test exceeded 30 seconds");
+            tokio::time::timeout(
+                std::time::Duration::from_secs(30),
+                exercise_proxies(&python),
+            )
+            .await
+            .expect("real MCP fixture test exceeded 30 seconds");
         });
 }
 
-fn config() -> McpConfig {
+fn config(python: &str) -> McpConfig {
     McpConfig {
         servers: SERVERS
             .iter()
             .map(|(server, names)| {
                 let config: McpServerConfig = serde_json::from_value(json!({
-                    "command": "python3",
+                    "command": python,
                     "args": ["-I", "-S", "-u", "-c", SERVER, server,
                              serde_json::to_string(names).unwrap()],
                     "shared": false,
@@ -206,21 +215,21 @@ async fn targets(proxies: &Proxies) -> Targets {
     targets
 }
 
-async fn exercise_proxies() {
-    let manager = Arc::new(RwLock::new(McpManager::with_config(config())));
+async fn exercise_proxies(python: &str) {
+    let manager = Arc::new(RwLock::new(McpManager::with_config(config(python))));
     let (connected, failures) = manager.read().await.connect_all().await.unwrap();
-    assert_eq!(connected, 2);
     assert!(
         failures.is_empty(),
         "fixture connections failed: {failures:?}"
     );
+    assert_eq!(connected, 2);
     let eager = create_mcp_tools(manager.clone()).await;
     let eager_targets = targets(&eager).await;
     manager.read().await.disconnect_all().await;
 
     // Cached proxies are built with neither server connected. Executing them
     // exercises the actual connect-on-first-call path, not a warmed manager.
-    let manager = Arc::new(RwLock::new(McpManager::with_config(config())));
+    let manager = Arc::new(RwLock::new(McpManager::with_config(config(python))));
     let mut definitions = cached_definitions();
     let cached = create_mcp_tools_from_cached_many(&definitions, manager.clone());
     assert!(!manager.read().await.has_connections().await);
@@ -241,7 +250,7 @@ async fn exercise_proxies() {
     // A partial live surface is intentionally a different naming set. Document
     // that adding a colliding server renames the old key, but never retargets
     // its existing proxy. Registry owners must reconcile obsolete aliases.
-    let configs = config();
+    let configs = config(python);
     let manager = Arc::new(RwLock::new(McpManager::with_config(configs.clone())));
     let partial_definitions: Vec<_> = cached_definitions()
         .into_iter()
