@@ -360,7 +360,33 @@ fn resolve_systemone_with(
             let base = trusted_gateway_base(&base)?;
             Ok((JevProvider::Jcode, key, format!("{base}/decisions")))
         }
-        _ => bail!("System One: systemone_url must be 9router, openrouter, typesafe, or jcode"),
+        _ => {
+            ensure!(selected.starts_with("https://") || selected.starts_with("http://"), "System One: systemone_url must be 9router, openrouter, typesafe, jcode, or a configured provider System One URL");
+            let endpoint = trusted_gateway_base(selected)?;
+            let url = Url::parse(&endpoint)?;
+            let matches = config.providers.iter().filter(|(_, profile)| {
+                Url::parse(profile.base_url.trim()).is_ok_and(|base| {
+                    base.origin() == url.origin()
+                        && base.username().is_empty()
+                        && base.password().is_none()
+                        && base.query().is_none()
+                        && base.fragment().is_none()
+                        && { let path = format!("{}/systemone", base.path().trim_end_matches('/')); url.path() == path || url.path().starts_with(&format!("{path}/")) }
+                })
+            }).collect::<Vec<_>>();
+            ensure!(matches.len() == 1, "System One custom URL requires exactly one matching provider base_url");
+            let (name, profile) = matches[0];
+            let env = profile.api_key_env.as_deref().ok_or_else(|| anyhow!("System One matching provider has no api_key_env"))?;
+            let default_file = format!("provider-{name}.env");
+            let file = profile.env_file.as_deref().unwrap_or(&default_file);
+            let key = load_key(env, file).ok_or_else(|| anyhow!("System One matching provider credential is unavailable"))?;
+            let provider = if url.path().ends_with("/systemone/typesafe") {
+                JevProvider::TypeSafe
+            } else {
+                JevProvider::NineRouter
+            };
+            Ok((provider, key, endpoint))
+        },
     }
 }
 
@@ -691,6 +717,30 @@ mod tests {
     fn browser_questions() -> Map<String, Value> {
         json!({"action": {"type": "choice", "instructions": "Choose the next browser action", "criteria": {"click": "Click the button", "stop": "Return control"}}})
             .as_object().unwrap().clone()
+    }
+
+    #[test]
+    fn systemone_custom_url_binds_only_to_matching_provider() {
+        let mut config = crate::config::Config::default();
+        let mut profile = crate::config::NamedProviderConfig::default();
+        profile.base_url = "https://router.example/v1".into();
+        profile.api_key_env = Some("ROUTER_KEY".into());
+        config.providers.insert("router".into(), profile.clone());
+        config.systemone_url = "https://router.example/v1/systemone/typesafe".into();
+        let (provider, key, endpoint) = resolve_systemone_with(&config, |env, file| {
+            assert_eq!((env, file), ("ROUTER_KEY", "provider-router.env"));
+            Some("test-key".into())
+        }).unwrap();
+        assert_eq!(provider, JevProvider::TypeSafe);
+        assert_eq!(key, "test-key");
+        assert_eq!(endpoint, config.systemone_url);
+        for url in ["https://other.example/v1/systemone", "http://router.example/v1/systemone", "https://router.example/v1/systemone-evil", "https://router.example/v1/systemone?key=x"] {
+            config.systemone_url = url.into();
+            assert!(resolve_systemone_with(&config, |_, _| panic!("credential accessed for invalid URL")).is_err());
+        }
+        config.systemone_url = endpoint;
+        config.providers.insert("duplicate".into(), profile);
+        assert!(resolve_systemone_with(&config, |_, _| panic!("credential accessed for ambiguous URL")).is_err());
     }
 
     #[test]
