@@ -19,6 +19,12 @@
   the user asks you to review or integrate a PR or branch, you may inspect, test,
   and integrate that contribution regardless of author status. Do not pull in
   unrelated branches or merge a PR without user authorization.
+- **Validate and commit narrowly** - Validate changes before committing. In a dirty
+  workspace, stage and commit only explicitly owned paths, never indiscriminately
+  stage everything. Preserve unrelated or active-agent changes and coordinate or
+  quiesce their owners before any commit that could include them. Never commit
+  secrets. Report the resulting commit ID, or explain why committing was unsafe
+  or impossible.
 
 ## Install Notes
 - `~/.local/bin/jcode` is the launcher symlink used from `PATH`.
