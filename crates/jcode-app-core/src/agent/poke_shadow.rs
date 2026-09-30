@@ -142,7 +142,9 @@ pub fn parse_poke_assessment(
         Some(map) => {
             let mut probs = HashMap::new();
             for (k, v) in map {
-                let p = v.as_f64().unwrap_or(0.0);
+                let Some(p) = v.as_f64() else {
+                    return Some(Err(AbstainReason::MalformedResponse));
+                };
                 if p.is_finite() && p >= 0.0 && p <= 1.0 {
                     probs.insert(k.clone(), p);
                 } else {
@@ -567,6 +569,47 @@ mod tests {
             model: "jev-latest".to_string(),
             usage: None,
         }
+    }
+
+    #[test]
+    fn test_nonnumeric_probabilities_are_malformed() {
+        for value in [
+            serde_json::json!("0"),
+            Value::Null,
+            serde_json::json!(false),
+            serde_json::json!([]),
+            serde_json::json!({}),
+        ] {
+            let mut answer = make_choice_answer(
+                "continue",
+                vec![("continue", 1.0), ("unknown", 0.0)],
+                None,
+            );
+            answer["probabilities"]["unknown"] = value.clone();
+            let response = make_response(HashMap::from([("poke_action".to_string(), answer)]));
+            assert!(
+                matches!(
+                    parse_poke_assessment(&response, &DisplayThresholds::default()),
+                    Some(Err(AbstainReason::MalformedResponse))
+                ),
+                "accepted nonnumeric probability: {value}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_numeric_zero_probability_is_valid() {
+        let answer = make_choice_answer(
+            "continue",
+            vec![("continue", 1.0), ("unknown", 0.0)],
+            None,
+        );
+        let response = make_response(HashMap::from([("poke_action".to_string(), answer)]));
+        let assessment = parse_poke_assessment(&response, &DisplayThresholds::default())
+            .unwrap()
+            .unwrap();
+        assert_eq!(assessment.probabilities["unknown"], 0.0);
+        assert_eq!(assessment.recommendation, PokeRecommendation::Continue);
     }
 
     #[test]
