@@ -202,6 +202,7 @@ mod tests {
             tool_call_id: "first-batch".into(),
             working_dir: None,
             stdin_request_tx: None,
+            pending_question_tx: None,
             graceful_shutdown_signal: None,
             execution_mode: ToolExecutionMode::AgentTurn,
         };
