@@ -6,7 +6,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::{Mutex, mpsc, oneshot};
@@ -33,6 +33,8 @@ pub struct McpHandle {
     pub(crate) name: String,
     request_id: Arc<AtomicU64>,
     transport: Arc<McpTransport>,
+    /// Set by the reader on stdout EOF: no reply can arrive, so requests fail fast.
+    closed: Arc<AtomicBool>,
     server_info: Arc<std::sync::RwLock<Option<ServerInfo>>>,
     capabilities: Arc<std::sync::RwLock<ServerCapabilities>>,
     tools: Arc<std::sync::RwLock<Vec<McpToolDef>>>,
@@ -222,12 +224,27 @@ impl McpHandle {
         let response = match self.transport.as_ref() {
             McpTransport::Stdio { pending, writer_tx } => {
                 let (tx, rx) = oneshot::channel();
-                pending.lock().await.insert(id, tx);
+                {
+                    let mut pending = pending.lock().await;
+                    if self.closed.load(Ordering::SeqCst) {
+                        anyhow::bail!("MCP server '{}' exited (stdout closed)", self.name);
+                    }
+                    pending.insert(id, tx);
+                }
                 writer_tx
                     .send(serde_json::to_string(&request)? + "\n")
                     .await
                     .context("Failed to send request")?;
-                tokio::time::timeout(self.request_timeout, rx).await.with_context(|| format!("Request timeout after {}s (raise `timeout_secs` for MCP server '{}' if its tools legitimately run longer)", self.request_timeout.as_secs(), self.name))?.context("Channel closed")?
+                match tokio::time::timeout(self.request_timeout, rx)
+                    .await
+                    .with_context(|| format!("Request timeout after {}s (raise `timeout_secs` for MCP server '{}' if its tools legitimately run longer)", self.request_timeout.as_secs(), self.name))?
+                {
+                    Ok(response) => response,
+                    Err(_) if self.closed.load(Ordering::SeqCst) => {
+                        anyhow::bail!("MCP server '{}' exited (stdout closed)", self.name);
+                    }
+                    Err(_) => anyhow::bail!("MCP server '{}' response channel closed", self.name),
+                }
             }
             McpTransport::Http {
                 client,
@@ -460,6 +477,8 @@ impl McpClient {
 
         // Spawn reader task
         let pending_clone = Arc::clone(&pending);
+        let closed = Arc::new(AtomicBool::new(false));
+        let closed_clone = Arc::clone(&closed);
         let reader_name = name.clone();
         let mut reader = BufReader::new(stdout);
         tokio::spawn(async move {
@@ -495,12 +514,17 @@ impl McpClient {
                     }
                 }
             }
+            // Server can never reply now: drop in-flight senders, fail later requests fast.
+            closed_clone.store(true, Ordering::SeqCst);
+            let mut pending = pending_clone.lock().await;
+            pending.clear();
         });
 
         let handle = McpHandle {
             name: name.clone(),
             request_id: Arc::new(AtomicU64::new(1)),
             transport: Arc::new(McpTransport::Stdio { pending, writer_tx }),
+            closed,
             server_info: Arc::new(std::sync::RwLock::new(None)),
             capabilities: Arc::new(std::sync::RwLock::new(ServerCapabilities::default())),
             tools: Arc::new(std::sync::RwLock::new(Vec::new())),
@@ -542,6 +566,7 @@ impl McpClient {
         let handle = McpHandle {
             name,
             request_id: Arc::new(AtomicU64::new(1)),
+            closed: Arc::new(AtomicBool::new(false)),
             transport: Arc::new(McpTransport::Http {
                 client: reqwest::Client::builder()
                     .timeout(request_timeout_for(config))
@@ -917,6 +942,7 @@ mod tests {
         let handle = super::McpHandle {
             name: "redirect".into(),
             request_id: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(1)),
+            closed: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
             transport: std::sync::Arc::new(super::McpTransport::Http {
                 client: reqwest::Client::builder()
                     .redirect(reqwest::redirect::Policy::none())
@@ -997,6 +1023,7 @@ mod tests {
             let handle = super::McpHandle {
                 name: "bad-response".into(),
                 request_id: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(1)),
+                closed: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
                 transport: std::sync::Arc::new(super::McpTransport::Http {
                     client: reqwest::Client::new(),
                     url: format!("http://{addr}"),
@@ -1030,6 +1057,7 @@ mod tests {
         let handle = super::McpHandle {
             name: "header-timeout".into(),
             request_id: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(1)),
+            closed: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
             transport: std::sync::Arc::new(super::McpTransport::Http {
                 client: reqwest::Client::new(),
                 url: format!("http://{addr}"),
@@ -1069,6 +1097,7 @@ mod tests {
         let handle = super::McpHandle {
             name: "timeout".into(),
             request_id: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(1)),
+            closed: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
             transport: std::sync::Arc::new(super::McpTransport::Http {
                 client: reqwest::Client::new(),
                 url: format!("http://{addr}"),
@@ -1157,6 +1186,27 @@ done
             disabled: None,
             timeout_secs: None,
         }
+    }
+
+    #[tokio::test]
+    async fn connect_fails_fast_when_server_exits_before_initialize() {
+        // A server that prints to stderr and exits before answering
+        // `initialize` must fail connect promptly, even with a huge
+        // `timeout_secs` (previously the pending request waited it out).
+        let config = McpServerConfig {
+            command: "/bin/sh".to_string(),
+            args: vec!["-c".to_string(), "echo boom >&2; exit 1".to_string()],
+            timeout_secs: Some(86_400),
+            ..fake_server_config()
+        };
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            McpClient::connect("dead".to_string(), &config),
+        )
+        .await
+        .expect("connect must not hang on a server that exited");
+        let err = format!("{:#}", result.err().expect("connect must fail"));
+        assert!(err.contains("exited"), "unexpected error: {err}");
     }
 
     #[tokio::test]

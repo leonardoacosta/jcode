@@ -19,11 +19,12 @@
 )]
 
 pub mod account_login;
+pub mod applets;
 pub mod auth;
 pub mod background;
 pub mod browser;
-pub mod browser_profiles;
 pub mod browser_detect;
+pub mod browser_profiles;
 pub mod bus;
 pub mod cache_invalidation;
 pub mod cache_tracker;
@@ -51,6 +52,8 @@ pub mod hooks;
 pub mod id;
 pub mod import;
 pub mod jev;
+pub mod kv_cache_monitor;
+pub mod lid_override;
 pub mod live_tests;
 pub mod logging;
 pub mod login_qr;
@@ -94,6 +97,7 @@ pub mod stdin_detect;
 pub mod storage;
 pub mod subscription_api;
 pub mod subscription_catalog;
+pub mod subscription_notice;
 pub mod systemone;
 pub mod telegram;
 pub mod telemetry {

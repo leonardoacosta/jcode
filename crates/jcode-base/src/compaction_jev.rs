@@ -321,6 +321,12 @@ fn fit_state(messages: &[Message], calls: &[ToolCallPair], max_state_tokens: usi
                         "content": note,
                     }));
                 }
+                ContentBlock::ToolReference { tool_name, .. } => {
+                    blocks.push(serde_json::json!({
+                        "type": "tool_reference",
+                        "tool_name": tool_name,
+                    }));
+                }
                 ContentBlock::Image { .. } => {
                     blocks.push(serde_json::json!({
                         "type": "image",
@@ -1080,6 +1086,18 @@ pub async fn compact_with_jev(messages: &[Message], config: &JevCompactorConfig)
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fit_state_preserves_tool_reference() {
+        let mut message = Message::user("");
+        message.content = vec![ContentBlock::ToolReference {
+            tool_use_id: "call-1".into(),
+            tool_name: "mcp__weather__forecast".into(),
+        }];
+        let state = fit_state(&[message], &[], 10_000).to_string();
+        assert!(state.contains("tool_reference"));
+        assert!(state.contains("mcp__weather__forecast"));
+    }
 
     fn make_text_msg(text: &str, role: Role) -> Message {
         Message {

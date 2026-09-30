@@ -167,7 +167,8 @@ mod tests {
         let temp = tempfile::tempdir().expect("tempdir");
         let socket_path = temp.path().join("refused.sock");
         {
-            let _listener = crate::transport::Listener::bind(&socket_path).expect("bind listener");
+            let _listener =
+                std::os::unix::net::UnixListener::bind(&socket_path).expect("bind listener");
         }
 
         let err = connect_swarm_socket(&socket_path)

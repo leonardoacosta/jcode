@@ -21,6 +21,16 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 #[cfg(unix)]
+struct EmojiRestoreGuard(bool);
+
+#[cfg(unix)]
+impl Drop for EmojiRestoreGuard {
+    fn drop(&mut self) {
+        crate::output_style::set_emoji_enabled(self.0);
+    }
+}
+
+#[cfg(unix)]
 static ENV_LOCK: Mutex<()> = Mutex::new(());
 
 #[cfg(unix)]
@@ -129,6 +139,9 @@ fn spawn_resume_in_new_terminal_uses_handterm_exec_mode() {
 #[test]
 fn resumed_window_title_includes_server_name_when_registry_matches_socket() {
     let _guard = crate::storage::lock_test_env();
+    let _previous_emoji = crate::output_style::emoji_enabled();
+    crate::output_style::set_emoji_enabled(true);
+    let _emoji_guard = EmojiRestoreGuard(_previous_emoji);
     let temp_home = tempfile::tempdir().expect("temp home");
     let temp_runtime = tempfile::tempdir().expect("temp runtime");
     let socket_path = temp_runtime.path().join("jcode.sock");
@@ -157,7 +170,7 @@ fn resumed_window_title_includes_server_name_when_registry_matches_socket() {
 
     assert_eq!(
         resumed_window_title("session_parrot_123"),
-        "🦜 jcode/blazing Parrot"
+        "jcode/blazing Parrot"
     );
 }
 

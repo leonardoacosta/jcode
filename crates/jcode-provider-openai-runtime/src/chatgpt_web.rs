@@ -97,7 +97,11 @@ impl ChatGptWebState {
         }
 
         let _turn_guard = self.turn_lock.lock().await;
-        let mut browser = jcode_base::browser_profiles::BrowserSession::open(next_owned_tab_name(), CHATGPT_WEB_URL).await?;
+        let mut browser = jcode_base::browser_profiles::BrowserSession::open(
+            next_owned_tab_name(),
+            CHATGPT_WEB_URL,
+        )
+        .await?;
         let tab_id = &mut browser;
         let result = async {
             send_phase(tx, jcode_message_types::ConnectionPhase::Authenticating).await?;
@@ -161,10 +165,14 @@ async fn wait_for_editor(tab_id: &mut jcode_base::browser_profiles::BrowserSessi
         }
         tokio::time::sleep(Duration::from_millis(200)).await;
     }
-    anyhow::bail!("ChatGPT composer did not load; select an attached Chrome profile signed in at chatgpt.com")
+    anyhow::bail!(
+        "ChatGPT composer did not load; select an attached Chrome profile signed in at chatgpt.com"
+    )
 }
 
-async fn prepare_chatgpt_page(tab_id: &mut jcode_base::browser_profiles::BrowserSession) -> Result<()> {
+async fn prepare_chatgpt_page(
+    tab_id: &mut jcode_base::browser_profiles::BrowserSession,
+) -> Result<()> {
     // Temporary chat has a one-time explanatory screen. It is safe to dismiss,
     // but workspace migration/onboarding is deliberately never auto-confirmed.
     let preparation = evaluate(
@@ -257,7 +265,10 @@ fn page_verification_ready(verification: &Value) -> bool {
         && verification.get("temporary").and_then(Value::as_bool) == Some(true)
 }
 
-async fn insert_prompt(tab_id: &mut jcode_base::browser_profiles::BrowserSession, prompt: &str) -> Result<()> {
+async fn insert_prompt(
+    tab_id: &mut jcode_base::browser_profiles::BrowserSession,
+    prompt: &str,
+) -> Result<()> {
     let chunks = split_utf8_chunks(prompt, PROMPT_CHUNK_BYTES);
     let Some((first, rest)) = chunks.split_first() else {
         anyhow::bail!("Refusing to submit an empty ChatGPT web prompt");
@@ -266,9 +277,13 @@ async fn insert_prompt(tab_id: &mut jcode_base::browser_profiles::BrowserSession
     for (index, chunk) in std::iter::once(first).chain(rest.iter()).enumerate() {
         let script = format!(
             "const editor = document.querySelector({}); if (!editor) throw new Error('Composer unavailable'); editor.focus(); if ({}) {{ const range=document.createRange(); range.selectNodeContents(editor); const selection=getSelection(); selection.removeAllRanges(); selection.addRange(range); }} if (!document.execCommand('insertText', false, {})) throw new Error('Text input failed'); return true;",
-            serde_json::to_string(EDITOR_SELECTOR)?, index == 0, serde_json::to_string(chunk)?
+            serde_json::to_string(EDITOR_SELECTOR)?,
+            index == 0,
+            serde_json::to_string(chunk)?
         );
-        evaluate(tab_id, &script).await.context("Failed to populate ChatGPT composer")?;
+        evaluate(tab_id, &script)
+            .await
+            .context("Failed to populate ChatGPT composer")?;
     }
 
     let verification = evaluate(
@@ -309,7 +324,10 @@ return { length: text.length, hash: hash >>> 0, submitDisabled: !submit || submi
     Ok(())
 }
 
-async fn poll_for_response(tab_id: &mut jcode_base::browser_profiles::BrowserSession, tx: &mpsc::Sender<Result<StreamEvent>>) -> Result<String> {
+async fn poll_for_response(
+    tab_id: &mut jcode_base::browser_profiles::BrowserSession,
+    tx: &mpsc::Sender<Result<StreamEvent>>,
+) -> Result<String> {
     let timeout_secs = std::env::var("JCODE_CHATGPT_WEB_TIMEOUT_SECS")
         .ok()
         .and_then(|raw| raw.parse::<u64>().ok())
@@ -576,7 +594,8 @@ fn build_web_prompt(
                 | ContentBlock::ReasoningTrace { .. }
                 | ContentBlock::AnthropicThinking { .. }
                 | ContentBlock::OpenAIReasoning { .. }
-                | ContentBlock::OpenAICompaction { .. } => {}
+                | ContentBlock::OpenAICompaction { .. }
+                | ContentBlock::ToolReference { .. } => {}
             }
         }
         conversation.push(json!({
@@ -641,7 +660,10 @@ fn utf16_fingerprint(value: &str) -> (usize, u32) {
     (len, hash)
 }
 
-async fn evaluate(tab_id: &mut jcode_base::browser_profiles::BrowserSession, script: &str) -> Result<Value> {
+async fn evaluate(
+    tab_id: &mut jcode_base::browser_profiles::BrowserSession,
+    script: &str,
+) -> Result<Value> {
     tab_id.evaluate(&format!("(() => {{ {script} }})()")).await
 }
 

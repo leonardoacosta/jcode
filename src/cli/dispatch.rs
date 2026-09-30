@@ -138,7 +138,11 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
         Some(Command::Automations(action)) => {
             super::automations::run(action, args.model.as_deref()).await?;
         }
-        Some(Command::BrowserProfiles { request, session, confirm_delete }) => {
+        Some(Command::BrowserProfiles {
+            request,
+            session,
+            confirm_delete,
+        }) => {
             let mut input: serde_json::Value = serde_json::from_str(&request)?;
             if let Some(object) = input.as_object_mut() {
                 object.insert("confirmed".into(), confirm_delete.into());
@@ -461,8 +465,13 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
         Some(Command::Ambient(subcmd)) => {
             commands::run_ambient_command(map_ambient_subcommand(subcmd)).await?;
         }
+        Some(Command::Cloud(CloudCommand::Sessions { action })) => {
+            commands::run_cloud_command(commands::CloudSubcommand::Sessions(
+                map_cloud_sessions_subcommand(action),
+            ))?;
+        }
         Some(Command::Cloud(subcmd)) => {
-            commands::run_cloud_command(map_cloud_subcommand(subcmd))?;
+            super::cloud_move::run_cli(subcmd)?;
         }
         Some(Command::Pair { list, revoke }) => {
             commands::run_pair_command(list, revoke)?;
@@ -779,14 +788,6 @@ fn map_ambient_subcommand(subcmd: AmbientCommand) -> commands::AmbientSubcommand
         AmbientCommand::Trigger => commands::AmbientSubcommand::Trigger,
         AmbientCommand::Stop => commands::AmbientSubcommand::Stop,
         AmbientCommand::RunVisible => commands::AmbientSubcommand::RunVisible,
-    }
-}
-
-fn map_cloud_subcommand(subcmd: CloudCommand) -> commands::CloudSubcommand {
-    match subcmd {
-        CloudCommand::Sessions { action } => {
-            commands::CloudSubcommand::Sessions(map_cloud_sessions_subcommand(action))
-        }
     }
 }
 

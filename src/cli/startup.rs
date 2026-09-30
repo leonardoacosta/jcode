@@ -204,13 +204,7 @@ fn is_telemetry_subcommand_invocation(
 pub fn register_external_provider_runtimes() {
     crate::provider::external::register_external_provider(
         crate::provider::external::GROK_BUILD_RUNTIME,
-        || {
-            let mut process = jcode_provider_grok_build_runtime::GrokBuildProcess::from_env();
-            process.command = crate::auth::grok_build::cli_path();
-            std::sync::Arc::new(
-                jcode_provider_grok_build_runtime::GrokBuildProvider::with_process(process),
-            )
-        },
+        || std::sync::Arc::new(jcode_provider_grok_build_runtime::GrokBuildProvider::new()),
     );
     crate::provider::external::register_external_provider(
         crate::provider::external::GEMINI_RUNTIME,
@@ -553,6 +547,8 @@ mod tests {
 
     #[test]
     fn source_update_check_real_git_upstream_states() {
+        let _guard = crate::storage::lock_test_env();
+        let _git_env = GitEnvGuard::clear();
         let repo = tempfile::tempdir().expect("temporary source checkout");
         let git = |args: &[&str]| {
             let output = ProcessCommand::new("git")
@@ -647,7 +643,13 @@ mod tests {
 
     #[test]
     fn source_update_check_invalid_checkout_reports_error() {
+        let _guard = crate::storage::lock_test_env();
+        let _git_env = GitEnvGuard::clear();
         let directory = tempfile::tempdir().unwrap();
+        crate::env::set_var(
+            "GIT_CEILING_DIRECTORIES",
+            directory.path().parent().unwrap(),
+        );
         let result = hot_exec::check_for_updates_in(directory.path(), || {
             panic!("invalid checkouts must not fetch")
         });
@@ -655,6 +657,38 @@ mod tests {
             source_update_check_status(result),
             crate::bus::UpdateStatus::Error(_)
         ));
+    }
+
+    struct GitEnvGuard(Vec<(&'static str, Option<std::ffi::OsString>)>);
+
+    impl GitEnvGuard {
+        fn clear() -> Self {
+            let vars = [
+                "GIT_DIR",
+                "GIT_WORK_TREE",
+                "GIT_INDEX_FILE",
+                "GIT_COMMON_DIR",
+                "GIT_CEILING_DIRECTORIES",
+                "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+            ]
+            .map(|key| (key, std::env::var_os(key)));
+            for (key, _) in &vars {
+                crate::env::remove_var(key);
+            }
+            Self(vars.to_vec())
+        }
+    }
+
+    impl Drop for GitEnvGuard {
+        fn drop(&mut self) {
+            for (key, value) in &self.0 {
+                if let Some(value) = value {
+                    crate::env::set_var(key, value);
+                } else {
+                    crate::env::remove_var(key);
+                }
+            }
+        }
     }
 
     #[test]

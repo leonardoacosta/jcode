@@ -1934,8 +1934,7 @@ impl App {
             .collect();
 
         let gen_before = self.poke_shadow_generation;
-        self.poke_shadow_remaining_budget =
-            self.poke_shadow_remaining_budget.saturating_sub(1);
+        self.poke_shadow_remaining_budget = self.poke_shadow_remaining_budget.saturating_sub(1);
 
         // Block synchronously: the runtime is always available in the TUI.
         let result = tokio::runtime::Handle::current().block_on(
@@ -2482,6 +2481,14 @@ pub(super) fn handle_pre_control_shortcuts(
         return true;
     }
 
+    if app
+        .toggle_keys
+        .diagram_pane_visibility
+        .matches(code, modifiers)
+    {
+        app.toggle_diagram_pane();
+        return true;
+    }
     if app.toggle_keys.side_panel.matches(code, modifiers) {
         app.toggle_side_panel();
         return true;
@@ -3328,6 +3335,10 @@ impl App {
     fn commit_resize_redraw(&mut self, now: std::time::Instant) -> bool {
         self.last_resize_redraw = Some(now);
         self.resize_redraw_pending = false;
+        // A paused viewport holds a wrapped line index; capture the reading
+        // position in content coordinates before the rewrap, so the same
+        // message stays under the reader (issue #1412, persistent half).
+        self.capture_resize_anchor();
         self.handle_diagram_geometry_change();
         // A resize rewraps the transcript, so the wrapped-line extent changes
         // without the user scrolling. While following the tail that reads as a

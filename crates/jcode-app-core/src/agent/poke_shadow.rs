@@ -125,7 +125,10 @@ pub fn parse_poke_assessment(
         return Some(Err(AbstainReason::MalformedResponse));
     }
 
-    let label = answer_obj.get("choice").and_then(|v| v.as_str()).unwrap_or("");
+    let label = answer_obj
+        .get("choice")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
 
     let recommendation = match label {
         "continue" => PokeRecommendation::Continue,
@@ -371,8 +374,10 @@ impl AssessmentState {
     /// Enable shadow mode, returning the disclosure message.
     pub fn enable(&mut self, provider: &str) -> String {
         if self.enabled {
-            return format!("Shadow assessment is already enabled. Provider: {provider}. Launched: {}/{}.",
-                self.launched, MAX_REQUESTS_PER_SESSION);
+            return format!(
+                "Shadow assessment is already enabled. Provider: {provider}. Launched: {}/{}.",
+                self.launched, MAX_REQUESTS_PER_SESSION
+            );
         }
         self.enabled = true;
         // Reset budget on fresh enable. Re-enabling within the same session
@@ -420,11 +425,7 @@ impl AssessmentState {
     }
 
     /// Record that the in-flight request completed (or timed out / was cancelled).
-    pub fn record_complete(
-        &mut self,
-        outcome: AssessmentOutcome,
-        current_generation: u64,
-    ) {
+    pub fn record_complete(&mut self, outcome: AssessmentOutcome, current_generation: u64) {
         if self.generation != current_generation {
             // Stale: a new generation started while this request was in flight.
             return;
@@ -518,8 +519,12 @@ pub async fn run_shadow_assessment(
     awaiting_user: bool,
 ) -> Option<String> {
     let evidence = build_evidence_snapshot(
-        user_request, todos, recent_tools,
-        verification_fresh, background_work, awaiting_user,
+        user_request,
+        todos,
+        recent_tools,
+        verification_fresh,
+        background_work,
+        awaiting_user,
     )?;
 
     let config = crate::system_one::service_config().ok()?;
@@ -533,9 +538,11 @@ pub async fn run_shadow_assessment(
 
     Some(match outcome {
         AssessmentOutcome::Recommendation(a) => {
-            format!("Shadow: → {} (conf: {:.0}%)",
+            format!(
+                "Shadow: → {} (conf: {:.0}%)",
                 a.recommendation,
-                a.provider_confidence.unwrap_or(0.0) * 100.0)
+                a.provider_confidence.unwrap_or(0.0) * 100.0
+            )
         }
         AssessmentOutcome::Abstained(r) => {
             format!("Shadow: — ({})", r.as_reason())
@@ -580,11 +587,8 @@ mod tests {
             serde_json::json!([]),
             serde_json::json!({}),
         ] {
-            let mut answer = make_choice_answer(
-                "continue",
-                vec![("continue", 1.0), ("unknown", 0.0)],
-                None,
-            );
+            let mut answer =
+                make_choice_answer("continue", vec![("continue", 1.0), ("unknown", 0.0)], None);
             answer["probabilities"]["unknown"] = value.clone();
             let response = make_response(HashMap::from([("poke_action".to_string(), answer)]));
             assert!(
@@ -599,11 +603,8 @@ mod tests {
 
     #[test]
     fn test_numeric_zero_probability_is_valid() {
-        let answer = make_choice_answer(
-            "continue",
-            vec![("continue", 1.0), ("unknown", 0.0)],
-            None,
-        );
+        let answer =
+            make_choice_answer("continue", vec![("continue", 1.0), ("unknown", 0.0)], None);
         let response = make_response(HashMap::from([("poke_action".to_string(), answer)]));
         let assessment = parse_poke_assessment(&response, &DisplayThresholds::default())
             .unwrap()
@@ -617,10 +618,22 @@ mod tests {
         let mut answers = HashMap::new();
         answers.insert(
             "poke_action".to_string(),
-            make_choice_answer("continue", vec![("continue", 0.90), ("verify", 0.05), ("replan", 0.02), ("wait_for_user", 0.02), ("unknown", 0.01)], Some(0.85)),
+            make_choice_answer(
+                "continue",
+                vec![
+                    ("continue", 0.90),
+                    ("verify", 0.05),
+                    ("replan", 0.02),
+                    ("wait_for_user", 0.02),
+                    ("unknown", 0.01),
+                ],
+                Some(0.85),
+            ),
         );
         let response = make_response(answers);
-        let result = parse_poke_assessment(&response, &DisplayThresholds::default()).unwrap().unwrap();
+        let result = parse_poke_assessment(&response, &DisplayThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(result.recommendation, PokeRecommendation::Continue);
         assert_eq!(result.probabilities.len(), 5);
     }
@@ -630,10 +643,22 @@ mod tests {
         let mut answers = HashMap::new();
         answers.insert(
             "poke_action".to_string(),
-            make_choice_answer("verify", vec![("verify", 0.92), ("continue", 0.03), ("replan", 0.02), ("wait_for_user", 0.02), ("unknown", 0.01)], None),
+            make_choice_answer(
+                "verify",
+                vec![
+                    ("verify", 0.92),
+                    ("continue", 0.03),
+                    ("replan", 0.02),
+                    ("wait_for_user", 0.02),
+                    ("unknown", 0.01),
+                ],
+                None,
+            ),
         );
         let response = make_response(answers);
-        let result = parse_poke_assessment(&response, &DisplayThresholds::default()).unwrap().unwrap();
+        let result = parse_poke_assessment(&response, &DisplayThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(result.recommendation, PokeRecommendation::Verify);
     }
 
@@ -642,10 +667,22 @@ mod tests {
         let mut answers = HashMap::new();
         answers.insert(
             "poke_action".to_string(),
-            make_choice_answer("wait_for_user", vec![("wait_for_user", 0.88), ("continue", 0.05), ("verify", 0.03), ("replan", 0.02), ("unknown", 0.02)], Some(0.82)),
+            make_choice_answer(
+                "wait_for_user",
+                vec![
+                    ("wait_for_user", 0.88),
+                    ("continue", 0.05),
+                    ("verify", 0.03),
+                    ("replan", 0.02),
+                    ("unknown", 0.02),
+                ],
+                Some(0.82),
+            ),
         );
         let response = make_response(answers);
-        let result = parse_poke_assessment(&response, &DisplayThresholds::default()).unwrap().unwrap();
+        let result = parse_poke_assessment(&response, &DisplayThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(result.recommendation, PokeRecommendation::WaitForUser);
     }
 
@@ -654,7 +691,17 @@ mod tests {
         let mut answers = HashMap::new();
         answers.insert(
             "poke_action".to_string(),
-            make_choice_answer("continue", vec![("continue", 0.75), ("verify", 0.10), ("replan", 0.05), ("wait_for_user", 0.05), ("unknown", 0.05)], None),
+            make_choice_answer(
+                "continue",
+                vec![
+                    ("continue", 0.75),
+                    ("verify", 0.10),
+                    ("replan", 0.05),
+                    ("wait_for_user", 0.05),
+                    ("unknown", 0.05),
+                ],
+                None,
+            ),
         );
         let response = make_response(answers);
         let result = parse_poke_assessment(&response, &DisplayThresholds::default()).unwrap();
@@ -666,7 +713,17 @@ mod tests {
         let mut answers = HashMap::new();
         answers.insert(
             "poke_action".to_string(),
-            make_choice_answer("continue", vec![("continue", 0.55), ("verify", 0.40), ("replan", 0.02), ("wait_for_user", 0.02), ("unknown", 0.01)], None),
+            make_choice_answer(
+                "continue",
+                vec![
+                    ("continue", 0.55),
+                    ("verify", 0.40),
+                    ("replan", 0.02),
+                    ("wait_for_user", 0.02),
+                    ("unknown", 0.01),
+                ],
+                None,
+            ),
         );
         let response = make_response(answers);
         // Relax thresholds so top=0.55 passes min_top but margin=0.15 fails.
@@ -683,7 +740,15 @@ mod tests {
         let mut answers = HashMap::new();
         answers.insert(
             "poke_action".to_string(),
-            make_choice_answer("invalid_label", vec![("invalid_label", 0.90), ("continue", 0.05), ("unknown", 0.05)], None),
+            make_choice_answer(
+                "invalid_label",
+                vec![
+                    ("invalid_label", 0.90),
+                    ("continue", 0.05),
+                    ("unknown", 0.05),
+                ],
+                None,
+            ),
         );
         let response = make_response(answers);
         let result = parse_poke_assessment(&response, &DisplayThresholds::default()).unwrap();
@@ -699,7 +764,10 @@ mod tests {
     #[test]
     fn test_abstain_wrong_type() {
         let mut answers = HashMap::new();
-        answers.insert("poke_action".to_string(), serde_json::json!({"type": "noul", "noul": 0.95}));
+        answers.insert(
+            "poke_action".to_string(),
+            serde_json::json!({"type": "noul", "noul": 0.95}),
+        );
         let response = make_response(answers);
         let result = parse_poke_assessment(&response, &DisplayThresholds::default()).unwrap();
         assert_eq!(result.unwrap_err(), AbstainReason::MalformedResponse);
@@ -727,7 +795,11 @@ mod tests {
         let mut answers = HashMap::new();
         answers.insert(
             "poke_action".to_string(),
-            make_choice_answer("continue", vec![("continue", 0.50), ("verify", 0.30), ("unknown", 0.10)], None),
+            make_choice_answer(
+                "continue",
+                vec![("continue", 0.50), ("verify", 0.30), ("unknown", 0.10)],
+                None,
+            ),
         );
         let response = make_response(answers);
         let result = parse_poke_assessment(&response, &DisplayThresholds::default()).unwrap();
@@ -739,7 +811,11 @@ mod tests {
         let mut answers = HashMap::new();
         answers.insert(
             "poke_action".to_string(),
-            make_choice_answer("verify", vec![("continue", 0.90), ("verify", 0.05), ("unknown", 0.05)], None),
+            make_choice_answer(
+                "verify",
+                vec![("continue", 0.90), ("verify", 0.05), ("unknown", 0.05)],
+                None,
+            ),
         );
         let response = make_response(answers);
         let result = parse_poke_assessment(&response, &DisplayThresholds::default()).unwrap();
@@ -867,10 +943,7 @@ mod tests {
             );
         }
         // Next launch should be blocked.
-        assert_eq!(
-            state.can_launch(),
-            Some(AbstainReason::BudgetExhausted)
-        );
+        assert_eq!(state.can_launch(), Some(AbstainReason::BudgetExhausted));
     }
 
     #[test]

@@ -76,7 +76,8 @@ impl JevRouter {
     }
 
     async fn classify_inner(prompt: &str) -> Result<RoutingDecision> {
-        let systemone = crate::systemone::resolve().context("JevRouter: resolve System One route")?;
+        let systemone =
+            crate::systemone::resolve().context("JevRouter: resolve System One route")?;
 
         let request = serde_json::json!({
             "state": { "prompt": prompt },

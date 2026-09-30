@@ -24,4 +24,4 @@ Git ancestry, upstream remote configuration, conflicting source and tests, build
 
 ## Approval status
 
-User approved the history-preserving merge scope on 2026-09-30. Written artifacts await review before execution.
+User approved the history-preserving merge scope on 2026-09-30. User approved execution of the written scope on 2026-09-30 after reviewing ancestry and reconciliation.

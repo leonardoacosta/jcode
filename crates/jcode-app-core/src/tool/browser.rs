@@ -414,7 +414,6 @@ impl Tool for BrowserTool {
     }
 }
 
-
 /// jev_select: snapshot the page, ask Jev which operation + element to target,
 /// then execute the chosen browser action.
 async fn jev_select_action(
@@ -514,11 +513,18 @@ async fn call_jev_select(goal: &str, page_text: &str) -> Result<(String, String)
     }
 
     let body: Value = resp.json().await.context("jev_select: bad response")?;
-    let answers = body["answers"].as_object()
+    let answers = body["answers"]
+        .as_object()
         .ok_or_else(|| anyhow::anyhow!("jev_select: invalid response"))?;
 
-    let op = answers["operation"]["choice"].as_str().unwrap_or("click").to_string();
-    let target = answers["target"]["choice"].as_str().unwrap_or("auto").to_string();
+    let op = answers["operation"]["choice"]
+        .as_str()
+        .unwrap_or("click")
+        .to_string();
+    let target = answers["target"]["choice"]
+        .as_str()
+        .unwrap_or("auto")
+        .to_string();
 
     Ok((op, target))
 }

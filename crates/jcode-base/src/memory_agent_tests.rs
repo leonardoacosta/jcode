@@ -83,7 +83,10 @@ async fn automatic_recall_uses_jev_http_without_embeddings_or_sidecar() {
     .unwrap();
     let _env = TestEnv::set(&[
         ("JCODE_HOME", dir.path().to_str().unwrap()),
-        ("JCODE_PROVIDER_9ROUTER_API_KEY", "jcode_test_only_never_a_real_key"),
+        (
+            "JCODE_PROVIDER_9ROUTER_API_KEY",
+            "jcode_test_only_never_a_real_key",
+        ),
     ]);
     let server = std::thread::spawn(move || {
         let deadline = Instant::now() + Duration::from_secs(10);

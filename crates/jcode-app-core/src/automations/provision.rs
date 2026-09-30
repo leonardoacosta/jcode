@@ -128,9 +128,8 @@ pub fn inspect_serve_status(json: &str, port: u16, local_port: u16) -> ServeStat
     }
     let wanted_port = port.to_string();
     if funnel.iter().any(|(hp, allowed)| {
-        hp.rsplit_once(':').is_none_or(|(_, p)| {
-            p == wanted_port && allowed.as_bool() != Some(false)
-        })
+        hp.rsplit_once(':')
+            .is_none_or(|(_, p)| p == wanted_port && allowed.as_bool() != Some(false))
     }) {
         return ServeStatus::Blocked {
             reason: "Funnel enabled or unknown".into(),

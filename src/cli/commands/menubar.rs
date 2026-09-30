@@ -763,6 +763,29 @@ mod tests {
     use super::*;
     use crate::session::SessionCounts;
 
+    struct EmojiGuard {
+        previous: bool,
+        _lock: std::sync::MutexGuard<'static, ()>,
+    }
+
+    impl EmojiGuard {
+        fn enabled() -> Self {
+            let lock = crate::storage::lock_test_env();
+            let previous = crate::output_style::emoji_enabled();
+            crate::output_style::set_emoji_enabled(true);
+            Self {
+                previous,
+                _lock: lock,
+            }
+        }
+    }
+
+    impl Drop for EmojiGuard {
+        fn drop(&mut self) {
+            crate::output_style::set_emoji_enabled(self.previous);
+        }
+    }
+
     #[test]
     fn title_no_sessions_is_icon_only() {
         let title = format_menubar_title(SessionCounts {
@@ -810,6 +833,7 @@ mod tests {
 
     #[test]
     fn session_menu_item_title_uses_meaningful_title_instead_of_animal_name() {
+        let _emoji = EmojiGuard::enabled();
         let session_id = "session_buffalo_1781229104969_6d487ff77287de4f";
         assert_eq!(
             format_session_menu_item_title_with_display(
@@ -817,7 +841,7 @@ mod tests {
                 Some("Improve menu labels"),
                 false
             ),
-            "🐃 Improve menu labels"
+            "Improve menu labels"
         );
         assert_eq!(
             format_session_menu_item_title_with_display(
@@ -825,26 +849,27 @@ mod tests {
                 Some("Improve menu labels"),
                 true
             ),
-            "🐃 Improve menu labels · streaming"
+            "Improve menu labels · streaming"
         );
     }
 
     #[test]
     fn session_menu_item_title_is_icon_only_without_meaningful_title() {
+        let _emoji = EmojiGuard::enabled();
         let session_id = "session_buffalo_1781229104969_6d487ff77287de4f";
         assert_eq!(
             format_session_menu_item_title_with_display(session_id, None, false),
-            "🐃"
+            ""
         );
         assert_eq!(
             format_session_menu_item_title_with_display("weird-id", None, false),
-            "💫"
+            ""
         );
     }
 
     #[test]
     fn session_menu_item_title_loads_persisted_todo_title() {
-        let _guard = crate::storage::lock_test_env();
+        let _emoji = EmojiGuard::enabled();
         let previous_home = std::env::var_os("JCODE_HOME");
         let temp = tempfile::tempdir().expect("create temporary JCODE_HOME");
         crate::env::set_var("JCODE_HOME", temp.path());
@@ -875,7 +900,7 @@ mod tests {
 
         assert_eq!(
             format_session_menu_item_title(session_id, false),
-            "🐃 Meaningful menu labels"
+            "Meaningful menu labels"
         );
 
         if let Some(previous_home) = previous_home {

@@ -1317,6 +1317,7 @@ mod tests {
                         context_length: None,
                         pricing: jcode_provider_openrouter::ModelPricing::default(),
                         created: None,
+                        ..Default::default()
                     })
                     .collect(),
             };
@@ -1650,6 +1651,7 @@ mod tests {
                     context_length: None,
                     pricing: jcode_provider_openrouter::ModelPricing::default(),
                     created: None,
+                    ..Default::default()
                 })
                 .collect(),
         };

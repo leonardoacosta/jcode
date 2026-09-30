@@ -4,11 +4,14 @@ use super::{
 };
 use crate::session::Session;
 use std::ffi::OsString;
+use std::sync::MutexGuard;
 
 struct TestEnvGuard {
     prev_home: Option<OsString>,
+    prev_runtime_dir: Option<OsString>,
+    prev_env_overrides: Vec<(&'static str, Option<OsString>)>,
     _temp_home: tempfile::TempDir,
-    _lock: std::sync::MutexGuard<'static, ()>,
+    _lock: MutexGuard<'static, ()>,
 }
 
 impl TestEnvGuard {
@@ -18,9 +21,31 @@ impl TestEnvGuard {
             .prefix("jcode-cli-restart-test-home-")
             .tempdir()?;
         let prev_home = std::env::var_os("JCODE_HOME");
+        let prev_runtime_dir = std::env::var_os("JCODE_RUNTIME_DIR");
+        let env_keys = [
+            "JCODE_DEBUG_CONTROL",
+            "JCODE_DEBUG_SOCKET",
+            "JCODE_DEBUG",
+            "JCODE_SOCKET",
+        ];
+        let prev_env_overrides = env_keys
+            .into_iter()
+            .map(|key| (key, std::env::var_os(key)))
+            .collect();
         crate::env::set_var("JCODE_HOME", temp_home.path());
+        crate::env::set_var("JCODE_RUNTIME_DIR", temp_home.path().join("runtime"));
+        for key in env_keys {
+            crate::env::remove_var(key);
+        }
+        std::fs::write(
+            temp_home.path().join("config.toml"),
+            "[display]\ndebug_socket = true\n",
+        )?;
+        crate::config::Config::invalidate_cache();
         Ok(Self {
             prev_home,
+            prev_runtime_dir,
+            prev_env_overrides,
             _temp_home: temp_home,
             _lock: lock,
         })
@@ -34,6 +59,19 @@ impl Drop for TestEnvGuard {
         } else {
             crate::env::remove_var("JCODE_HOME");
         }
+        if let Some(prev_runtime_dir) = &self.prev_runtime_dir {
+            crate::env::set_var("JCODE_RUNTIME_DIR", prev_runtime_dir);
+        } else {
+            crate::env::remove_var("JCODE_RUNTIME_DIR");
+        }
+        for (key, value) in &self.prev_env_overrides {
+            if let Some(value) = value {
+                crate::env::set_var(key, value);
+            } else {
+                crate::env::remove_var(key);
+            }
+        }
+        crate::config::Config::invalidate_cache();
     }
 }
 

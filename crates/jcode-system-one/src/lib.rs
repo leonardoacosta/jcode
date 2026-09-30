@@ -194,7 +194,10 @@ mod tests {
             response: SystemOneResponse {
                 answers: {
                     let mut m = HashMap::new();
-                    m.insert("a".into(), serde_json::json!({"type": "choice", "choice": "yes"}));
+                    m.insert(
+                        "a".into(),
+                        serde_json::json!({"type": "choice", "choice": "yes"}),
+                    );
                     m
                 },
                 model: "test".into(),
@@ -202,11 +205,7 @@ mod tests {
             },
         };
         let result = svc
-            .evaluate(
-                serde_json::json!("test"),
-                HashMap::new(),
-                None,
-            )
+            .evaluate(serde_json::json!("test"), HashMap::new(), None)
             .await
             .unwrap();
         assert_eq!(result.answers["a"]["choice"], "yes");

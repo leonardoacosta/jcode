@@ -1,3 +1,4 @@
+#![cfg_attr(test, allow(clippy::await_holding_lock))]
 use super::{Tool, ToolContext, ToolOutput};
 use crate::bus::{Bus, BusEvent, TodoEvent};
 use crate::todo::{
@@ -723,11 +724,7 @@ impl Tool for TodoTool {
     }
 
     fn description(&self) -> &str {
-        // SECURITY/EVAL: This is model-visible calibration text. Keep it
-        // deliberately handwritten. Never generate it from gate constants or
-        // interpolate private thresholds, because that would teach the model
-        // how to target the evaluator instead of reporting an honest assessment.
-        "Read or update structured todo items and optional goal-level assessments."
+        "Manage structured todos and optional goal assessments."
     }
 
     fn parameters_schema(&self) -> Value {
@@ -737,7 +734,7 @@ impl Tool for TodoTool {
                 "intent": super::intent_schema_property(),
                 "todos": {
                     "type": "array",
-                    "description": "Todo list to save.",
+                    "description": "For multi-step tasks, list the plan first; update statuses promptly and add newly found tasks.",
                     "items": {
                         "type": "object",
                         "required": ["content", "status", "priority", "id", "confidence"],
@@ -2024,7 +2021,7 @@ mod tests {
             ..before.clone()
         };
 
-        let changes = goal_changes(&[before.clone()], &[after.clone()]);
+        let changes = goal_changes(std::slice::from_ref(&before), std::slice::from_ref(&after));
 
         assert_eq!(changes.len(), 1);
         assert_eq!(changes[0].before.as_ref(), Some(&before));

@@ -587,9 +587,8 @@ pub(super) fn handle_poke_shadow_on(app: &mut App) {
     if app.poke_shadow_enabled {
         app.push_display_message(DisplayMessage::system(format!(
             "Shadow assessment is already enabled. Provider: {provider}. Budget: {}/{}.",
-            crate::agent::poke_shadow::MAX_REQUESTS_PER_SESSION.saturating_sub(
-                app.poke_shadow_remaining_budget as u32
-            ),
+            crate::agent::poke_shadow::MAX_REQUESTS_PER_SESSION
+                .saturating_sub(app.poke_shadow_remaining_budget as u32),
             crate::agent::poke_shadow::MAX_REQUESTS_PER_SESSION
         )));
         return;
@@ -1749,6 +1748,12 @@ pub(super) fn handle_session_command(app: &mut App, trimmed: &str) -> bool {
         || handle_judge_command_local(app, trimmed)
         || handle_selfdev_command(app, trimmed)
     {
+        return true;
+    }
+
+    if super::commands_cloud::parse_cloud_command(trimmed).is_some() {
+        let session_id = active_session_id(app);
+        super::commands_cloud::handle_cloud_command(app, trimmed, &session_id);
         return true;
     }
 
@@ -2934,6 +2939,18 @@ pub(super) fn active_working_dir(app: &App) -> Option<std::path::PathBuf> {
 }
 
 pub(super) fn handle_dictation_command(app: &mut App, trimmed: &str) -> bool {
+    if trimmed == "/voice" {
+        app.toggle_voice_input();
+        return true;
+    }
+    if trimmed.starts_with("/voice ") {
+        let key = app.voice_input_key_label().unwrap_or("unbound").to_string();
+        app.push_display_message(DisplayMessage::error(format!(
+            "Usage: /voice (or {key}) starts recording, run it again to send, Esc cancels.\n\
+             Needs a Nari API key (NARI_API_KEY or ~/.config/jcode/nari.env)."
+        )));
+        return true;
+    }
     if trimmed == "/dictate" || trimmed == "/dictation" {
         app.handle_dictation_trigger();
         return true;
