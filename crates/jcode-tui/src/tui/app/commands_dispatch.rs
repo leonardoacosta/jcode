@@ -390,6 +390,14 @@ mod tests {
     /// that drift apart. Both entry points must call this shared table and
     /// must not rebuild a chain of their own.
     #[test]
+    #[test]
+    fn agents_command_opens_picker_through_shared_dispatch() {
+        let mut app = crate::tui::app::tests::create_test_app();
+
+        assert!(super::dispatch_local_command(&mut app, "/agents"));
+        assert!(app.inline_interactive_state.is_some());
+    }
+
     fn both_entry_points_use_the_shared_dispatch_table() {
         for (path, source) in [
             ("input.rs", include_str!("input.rs")),
