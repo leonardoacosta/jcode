@@ -23,3 +23,8 @@ Verified repair fast-forwarded main to 290744e84. Clean coordinated build 617745
 Post-promotion MCP discovery and real read-only Graft call succeeded in resumed session. Graft itself warned graph refresh skipped due maximum call stack size and returned a ranked result; MCP transport succeeded, graph indexing has a separate limitation. config.toml unchanged. mcp.json mtime differs from initial preflight, so unchanged MCP file bytes cannot be claimed without prior hash. No deliberate credential edits were made.
 
 Remaining limitations: automatic provider selection chose invalid Cerebras credential; explicit configured 9router passed. Full all-features/clippy gates not run; oversized-test baseline previously failed. No remote push. All other-session continuity not independently observed; coordinator continuity verified.
+
+
+## Post-promotion audit correction
+
+Pending activation is now None. Current and shared-server targets remain 290744e84. Shared daemon PID 454202 remains live and coordinator continuity was observed after supported reload. Debug `sessions` audit was rejected because debug control is disabled; no shared settings were changed to bypass it. Therefore other-session continuity and explicit owner-by-owner coordination remain unverified, not passed. The task checklist's coordination item denotes supported reload completion only and must not be interpreted as proof all owners were contacted. Promotion already occurred; this audit records the evidence gap rather than requesting retroactive authorization.
