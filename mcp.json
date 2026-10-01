@@ -4,18 +4,154 @@
       "command": "/usr/bin/1password-mcp",
       "timeout_secs": 300
     },
-    "aperture": {
-      "command": "npx",
-      "args": ["-y", "mcp-remote", "https://ai.tail296462.ts.net/v1/mcp"]
-    },
     "graft": {
       "command": "graft",
       "args": ["mcp"],
       "shared": true
     },
+    "shadcn": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "export CODEDVISUALS_TOKEN=$(op read 'op://JCode CLI/CODEDVISUALS_TOKEN/credential'); exec npx -y shadcn@latest mcp"
+      ],
+      "timeout_secs": 120,
+      "shared": false
+    },
     "xapi": {
       "command": "/home/nyaptor/.local/bin/mcp-x",
       "timeout_secs": 120
+    },
+    "aperture": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://ai.tail296462.ts.net/v1/mcp"],
+      "timeout_secs": 180,
+      "disabled": true
+    },
+
+    "Inspo": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://inspomcp.dev/api/mcp"],
+      "timeout_secs": 120
+    },
+    "Jev": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://homelab.tail296462.ts.net:8790/jev/mcp"],
+      "timeout_secs": 120
+    },
+    "Grafana": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://homelab.tail296462.ts.net:8790/grafana/mcp"],
+      "timeout_secs": 120
+    },
+    "gmail": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://homelab.tail296462.ts.net:8790/gmail/mcp"],
+      "timeout_secs": 120
+    },
+    "Azure": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://homelab.tail296462.ts.net:8790/azure/mcp"],
+      "timeout_secs": 120
+    },
+    "AzureDevops": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://homelab.tail296462.ts.net:8790/azure-devops/mcp"],
+      "timeout_secs": 120
+    },
+    "Teams": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://homelab.tail296462.ts.net:8790/teams/mcp"],
+      "timeout_secs": 120
+    },
+    "Outlook": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://homelab.tail296462.ts.net:8790/outlook/mcp"],
+      "timeout_secs": 120
+    },
+    "Discord": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://homelab.tail296462.ts.net:8790/discord/mcp"],
+      "timeout_secs": 120
+    },
+    "Context7": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.context7.com/mcp"],
+      "timeout_secs": 120
+    },
+
+    "Beeper": {
+      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "args": ["https://beeper.mcp.leonardoacosta.dev/v0/mcp", "Authorization", "Bearer ", "BEEPER_API_KEY"],
+      "timeout_secs": 120
+    },
+    "Mermaid": {
+      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "args": ["https://mcp.mermaid.ai/mcp", "Authorization", "Bearer ", "MERMAID_API_KEY"],
+      "timeout_secs": 120
+    },
+    "Firecrawl": {
+      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "args": ["https://mcp.firecrawl.dev/v2/mcp", "Authorization", "Bearer ", "FIRECRAWL_API_KEY"],
+      "timeout_secs": 120
+    },
+    "GitHub": {
+      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "args": ["https://api.githubcopilot.com/mcp/", "Authorization", "Bearer ", "GITHUB_PERSONAL_ACCESS_TOKEN"],
+      "timeout_secs": 120
+    },
+    "AgentMail": {
+      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "args": ["https://mcp.agentmail.to/mcp", "X-api-key", "", "AGENTMAIL_API_KEY"],
+      "timeout_secs": 120
+    },
+    "Supermemory": {
+      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "args": ["https://mcp.supermemory.ai/mcp", "Authorization", "Bearer ", "SUPERMEMORY_API_KEY"],
+      "timeout_secs": 120
+    },
+    "omniroute": {
+      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "args": ["https://homelab.tail296462.ts.net:8790/omniroute/api/mcp/stream", "Authorization", "Bearer ", "JCODE_PROVIDER_OMNI_API_KEY"],
+      "timeout_secs": 120
+    },
+    "Linear": {
+      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "args": ["https://mcp.linear.app/mcp", "Authorization", "Bearer ", "LINEAR_API_KEY"],
+      "timeout_secs": 120
+    },
+    "Hyprland": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "exec npx -y mcp-remote https://hyperland.mcp.leonardoacosta.dev/mcp --header \"Authorization: Bearer $(cat \"$HOME/.local/share/hyprland-mcp/token\")\""
+      ],
+      "timeout_secs": 120
+    },
+
+    "Notion": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.notion.com/mcp"],
+      "timeout_secs": 120,
+      "disabled": true
+    },
+    "Wisprflow": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://api.wisprflow.ai/connect/mcp"],
+      "timeout_secs": 120,
+      "disabled": true
+    },
+    "Tailnet": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://api.tailscale.com/mcp"],
+      "timeout_secs": 120,
+      "disabled": true
+    },
+    "TailnetSSH": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://api.tailscale.com/mcp"],
+      "timeout_secs": 120,
+      "disabled": true
     }
   }
 }
