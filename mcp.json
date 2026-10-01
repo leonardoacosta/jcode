@@ -197,8 +197,7 @@
     "Wisprflow": {
       "command": "npx",
       "args": ["-y", "mcp-remote", "https://api.wisprflow.ai/connect/mcp"],
-      "timeout_secs": 120,
-      "disabled": true
+      "timeout_secs": 120
     },
     "Tailnet": {
       "command": "npx",
