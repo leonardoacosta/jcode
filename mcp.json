@@ -13,7 +13,7 @@
       "command": "sh",
       "args": [
         "-c",
-        "export CODEDVISUALS_TOKEN=$(op read 'op://JCode CLI/CODEDVISUALS_TOKEN/credential'); exec npx -y shadcn@latest mcp"
+        "if [ -z \"${OP_SERVICE_ACCOUNT_TOKEN:-}\" ]; then OP_SERVICE_ACCOUNT_TOKEN=$(sed -n 's/^OP_SERVICE_ACCOUNT_TOKEN=//p' \"$HOME/.env\" | head -1); export OP_SERVICE_ACCOUNT_TOKEN; fi; export CODEDVISUALS_TOKEN=$(op read 'op://JCode CLI/CODEDVISUALS_TOKEN/credential'); exec npx -y shadcn@latest mcp"
       ],
       "timeout_secs": 120,
       "shared": false
