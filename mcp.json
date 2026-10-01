@@ -8,7 +8,7 @@
       "command": "sh",
       "args": [
         "-c",
-        "if [ -z \"${OP_SERVICE_ACCOUNT_TOKEN:-}\" ]; then OP_SERVICE_ACCOUNT_TOKEN=$(sed -n 's/^OP_SERVICE_ACCOUNT_TOKEN=//p' \"$HOME/.env\" | head -1); export OP_SERVICE_ACCOUNT_TOKEN; fi; export CODEDVISUALS_TOKEN=$(op read 'op://JCode CLI/CODEDVISUALS_TOKEN/credential'); exec npx -y shadcn@latest mcp"
+        "CODEDVISUALS_TOKEN=$(op read 'op://JCode CLI/CODEDVISUALS_TOKEN/credential') || exit; export CODEDVISUALS_TOKEN; exec npx -y shadcn@latest mcp"
       ],
       "timeout_secs": 120,
       "shared": false
@@ -96,82 +96,66 @@
       "timeout_secs": 120
     },
     "Beeper": {
-      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "command": "sh",
       "args": [
-        "https://macbook.tail296462.ts.net:23373/v0/mcp",
-        "Authorization",
-        "Bearer ",
-        "BEEPER_API_KEY"
+        "-c",
+        "BEEPER_API_KEY=$(op read 'op://JCode CLI/BEEPER_API_KEY/credential') || exit; export BEEPER_API_KEY; exec npx -y mcp-remote https://macbook.tail296462.ts.net:23373/v0/mcp --header 'Authorization: Bearer ${BEEPER_API_KEY}'"
       ],
       "timeout_secs": 120
     },
     "Mermaid": {
-      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "command": "sh",
       "args": [
-        "https://mcp.mermaid.ai/mcp",
-        "Authorization",
-        "Bearer ",
-        "MERMAID_API_KEY"
+        "-c",
+        "MERMAID_API_KEY=$(op read 'op://JCode CLI/MERMAID_API_KEY/credential') || exit; export MERMAID_API_KEY; exec npx -y mcp-remote https://mcp.mermaid.ai/mcp --header 'Authorization: Bearer ${MERMAID_API_KEY}'"
       ],
       "timeout_secs": 120
     },
     "Firecrawl": {
-      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "command": "sh",
       "args": [
-        "https://mcp.firecrawl.dev/v2/mcp",
-        "Authorization",
-        "Bearer ",
-        "FIRECRAWL_API_KEY"
+        "-c",
+        "FIRECRAWL_API_KEY=$(op read 'op://JCode CLI/FIRECRAWL_API_KEY/credential') || exit; export FIRECRAWL_API_KEY; exec npx -y mcp-remote https://mcp.firecrawl.dev/v2/mcp --header 'Authorization: Bearer ${FIRECRAWL_API_KEY}'"
       ],
       "timeout_secs": 120
     },
     "GitHub": {
-      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "command": "sh",
       "args": [
-        "https://api.githubcopilot.com/mcp/",
-        "Authorization",
-        "Bearer ",
-        "GITHUB_PERSONAL_ACCESS_TOKEN"
+        "-c",
+        "GITHUB_PERSONAL_ACCESS_TOKEN=$(op read 'op://JCode CLI/GITHUB_PERSONAL_ACCESS_TOKEN/credential') || exit; export GITHUB_PERSONAL_ACCESS_TOKEN; exec npx -y mcp-remote https://api.githubcopilot.com/mcp/ --header 'Authorization: Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}'"
       ],
       "timeout_secs": 120
     },
     "AgentMail": {
-      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "command": "sh",
       "args": [
-        "https://mcp.agentmail.to/mcp",
-        "X-api-key",
-        "",
-        "AGENTMAIL_API_KEY"
+        "-c",
+        "AGENTMAIL_API_KEY=$(op read 'op://JCode CLI/AGENTMAIL_API_KEY/credential') || exit; export AGENTMAIL_API_KEY; exec npx -y agentmail-mcp"
       ],
       "timeout_secs": 120
     },
     "Supermemory": {
-      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "command": "sh",
       "args": [
-        "https://mcp.supermemory.ai/mcp",
-        "Authorization",
-        "Bearer ",
-        "SUPERMEMORY_API_KEY"
+        "-c",
+        "SUPERMEMORY_API_KEY=$(op read 'op://JCode CLI/SUPERMEMORY_API_KEY/credential') || exit; export SUPERMEMORY_API_KEY; exec npx -y mcp-remote https://mcp.supermemory.ai/mcp --header 'Authorization: Bearer ${SUPERMEMORY_API_KEY}'"
       ],
       "timeout_secs": 120
     },
     "omniroute": {
-      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "command": "sh",
       "args": [
-        "https://homelab.tail296462.ts.net:8790/omniroute/api/mcp/stream",
-        "Authorization",
-        "Bearer ",
-        "JCODE_PROVIDER_OMNI_API_KEY"
+        "-c",
+        "JCODE_PROVIDER_OMNI_API_KEY=$(op read 'op://JCode CLI/JCODE_PROVIDER_OMNI_API_KEY/credential') || exit; export JCODE_PROVIDER_OMNI_API_KEY; exec npx -y mcp-remote https://homelab.tail296462.ts.net:8790/omniroute/api/mcp/stream --header 'Authorization: Bearer ${JCODE_PROVIDER_OMNI_API_KEY}'"
       ],
       "timeout_secs": 120
     },
     "Linear": {
-      "command": "/home/nyaptor/.local/bin/mcp-remote-op",
+      "command": "sh",
       "args": [
-        "https://mcp.linear.app/mcp",
-        "Authorization",
-        "Bearer ",
-        "LINEAR_API_KEY"
+        "-c",
+        "LINEAR_API_KEY=$(op read 'op://JCode CLI/LINEAR_API_KEY/credential') || exit; export LINEAR_API_KEY; exec npx -y mcp-remote https://mcp.linear.app/mcp --header 'Authorization: Bearer ${LINEAR_API_KEY}'"
       ],
       "timeout_secs": 120
     },
