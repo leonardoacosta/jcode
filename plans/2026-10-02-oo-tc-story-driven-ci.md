@@ -156,3 +156,18 @@ Lifecycle author is stopped with no retained lifecycle edits. Source inspection 
 User decision requested: approve a narrow submitted-vendor story fixture without Stripe operations, preserving admission checks, or retain the broad fixture with a separate submitted application. Separately, approve bounded production dependency remediation in TC after a complete audit, excluding new risk exceptions and framework-major changes. No answer received yet. Automated incomplete-todo reminders do not resolve these decisions.
 
 Remaining lifecycle, security remediation, native confirmed-defect export, live Neon activation and hosted proof/retirement/deployment are deferred, not completed. Resume automatically when their explicit prerequisites are supplied. No live operations or additional lifecycle edits occurred.
+
+## Whole-result revalidation, 2026-10-02 18:45 UTC
+
+Fresh checks against committed OO result: 10/10 CLI subprocess regressions, 19/19 Neon adapter fake-boundary tests, `@oo/scripts typecheck`, scoped Prettier and `git diff --check` all passed. Public `pnpm --silent neon:acceptance:preflight` accepted valid synthetic arguments with `mode=preflight-only` and `readinessAssertion=user-asserted`; missing arguments exited 2. No provider calls were made.
+
+Requirement-to-check mapping:
+- CLI dispatch/output: actual package script invocation confirms honest preflight-only output, not readiness verification or acceptance.
+- Input rejection: subprocess tests cover missing readiness, duplicate readiness/project, unknown/positional args, 41-character SHA, zero run/attempt; valid 40/64-character SHA passes. Invalid project syntax was checked in the initial implementation, not retested in this latest suite.
+- Newly created resource failure cleanup: fake runner observed delete after readiness and URL-resolution failures; reused branch failure never deleted.
+- Deletion authorization boundaries: tests reject mismatched/unverifiable create identity, changed parent/protection, wrong project/name, duplicate identity and lookup failure; missing resource is idempotent success.
+- Cleanup error behavior: test observes generic surfaced failure without raw provider details. Normal original errors remain preserved when rollback succeeds; this is not a general secret-redaction audit.
+- Existing integration compatibility: scripts package typecheck and reuse-path regressions passed. Actual preview workflow, live Neon deletion and hosted story execution remain untested.
+- Working-tree preservation: only pre-existing `.env.test`, `.neon`, `.firecrawl`, and `neon.ts` remain dirty/untracked.
+
+Evidence supports the bounded prerequisite changes, not the full user outcome. Lifecycle fixture conflict and approval gates remain unresolved; no full acceptance/deployment claim is warranted.
