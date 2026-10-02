@@ -171,3 +171,11 @@ Requirement-to-check mapping:
 - Working-tree preservation: only pre-existing `.env.test`, `.neon`, `.firecrawl`, and `neon.ts` remain dirty/untracked.
 
 Evidence supports the bounded prerequisite changes, not the full user outcome. Lifecycle fixture conflict and approval gates remain unresolved; no full acceptance/deployment claim is warranted.
+
+## User decisions, 2026-10-02 19:11 UTC
+
+- TC choice B approved: upgrade affected dependencies, including necessary framework-major upgrades. Dedicated exclusive owner is establishing a complete fresh audit and compatibility checks. No audit bypass or new exception authorized.
+- Complete other work before live Neon. Credential remediation remains owned elsewhere; require sanitized readiness before activation, not an assumption of completion.
+- Native Linear export waits for a legitimate finding during acceptance testing.
+- OO fixture A/B not selected: user requested the rationale. Explained narrow fixture should reuse seed primitives rather than duplicate seed architecture; broad fixture remains viable if shared upcoming stories justify its dependencies.
+- Fresh baseline `pnpm security:audit:test` passes all 14 checks. Actual current root engine wants Node24 while shell runs Node25, so prior runtime-pin summary is stale and must not drive edits.
