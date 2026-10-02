@@ -44,6 +44,8 @@ Repository `/home/nyaptor/dev/priceless/tribal-cities`, `dev`, inspected HEAD `d
 - No disposable Neon branch lifecycle was found in the inspected workflow/e2e/db/scripts/change paths. Existing disposable PostgreSQL integration is a useful cheap correctness layer, not proof of Neon branch acceptance and not automatically redundant.
 - Both pilots declare `e2e` `0.15.0-canary-20260928184528` and `@e2e-dev/web` `0.11.0-canary-20260928184528`. TC's lockfile records a `playwright >=1.63.0 <2` engine peer. Preserve that browser-engine dependency even when deleting `@playwright/test` architecture. TC's existing agent auth checks staff session email/role, not the participant auth stories below. Do not copy OO's provider/seed/deployment topology by assumption.
 
+Native reconciliation completed: OO and TC proposals/designs/specs/tasks now express the pivot with concrete future implementation/acceptance sequences. Both preserve prior task documents byte-for-byte in `references/legacy-task-history.md`; current acceptance tasks remain unchecked. Strict OpenSpec JSON validation has `valid: true`, no issues, for both changes. Authored Markdown formatting, unique task/delta/link integrity and unchanged environment/Neon diff checks pass; independent planning review found no remaining actionable defect. OO commit `c1917a5d22`, TC commit `bf16c9d7d`, each on local `feat/story-driven-ci-plan`. These are planning-only changes, not runtime implementation, hosted acceptance, deployment or archive.
+
 ## Ordered execution plan
 
 Complete the skill and reference validation first, then use it for repository-native planning. Task labels below are unique planning IDs, not claims of completion in either OpenSpec change.
