@@ -140,3 +140,11 @@ These do not block completing this skill or planning safely. Ask once when execu
 Only after both pilots, publish a compact adoption checklist with story ledger, resource lifecycle guard checklist, trusted trigger/admission pattern, native Linear mapping, deletion manifest, and measured results. This requires explicit publishing/remote-mutation authorization. Keep project-specific seeds/auth/deployment/provider configuration local. Do not add a third pilot, browser/device matrix, or shared framework to this planning scope.
 
 Required evidence ledger: project, final tested SHA, hosted run URL/result, required story IDs/statuses, branch IDs and sanitized cleanup events, cold/warm model-call counts, runner duration/cost if measurable, known flakes/exclusions, native Linear issue/ticket mapping and re-export result. Numeric cost targets stay unset until baseline evidence exists.
+
+## Offline integration checkpoint, 2026-10-02 18:39 UTC
+
+- OO `0ed3f2fd8b`: explicit `neon:acceptance:preflight` CLI validates pinned IDs, exact SHA length, positive run/attempt, and a user readiness assertion. It does not verify external readiness or invoke providers. Ten real CLI subprocess regressions passed.
+- OO `4ec1d469e3`: verified newly created candidates are rolled back after readiness/connection failures. Reused or unverifiable create responses are not deleted; rollback rechecks exact parent alongside project/name/ID/protection. Nineteen fake-boundary tests, scripts typecheck and scoped formatting passed. Ambiguous create failures still need expiry/reconciliation, not unsafe guessed deletion. No live cleanup proof.
+- Both commits are local on OO dev, not yet pushed. Existing user working-tree files were preserved.
+- Actual acceptance orchestration remains in progress with exclusive script ownership. It must preserve genuine CI context, canonical database ownership marker, nonproduction environment and Stripe test-mode admission. Preflight is not lifecycle completion.
+- TC audit investigation used an incomplete cached hosted log. Package groups include Next/sharp, Expo/Metro/RN transitive dependencies, undici, brace-expansion and image-size. Exact remaining advisory scope requires a complete fresh sanitized report. No broader dependency updates or exception changes authorized/performed.
