@@ -148,3 +148,11 @@ Required evidence ledger: project, final tested SHA, hosted run URL/result, requ
 - Both commits are local on OO dev, not yet pushed. Existing user working-tree files were preserved.
 - Actual acceptance orchestration remains in progress with exclusive script ownership. It must preserve genuine CI context, canonical database ownership marker, nonproduction environment and Stripe test-mode admission. Preflight is not lifecycle completion.
 - TC audit investigation used an incomplete cached hosted log. Package groups include Next/sharp, Expo/Metro/RN transitive dependencies, undici, brace-expansion and image-size. Exact remaining advisory scope requires a complete fresh sanitized report. No broader dependency updates or exception changes authorized/performed.
+
+## Paused at decision boundary, 2026-10-02 18:44 UTC
+
+Lifecycle author is stopped with no retained lifecycle edits. Source inspection confirmed a fixture conflict: `seed-test-personas.ts:1125-1129` creates the submitted vendor required by the first story, while `seed-test-con.ts:3301-3340` promotes that persona to approved for legacy invoice tests. The full test-con seed also requires Stripe-backed work. No safe compatible existing submitted-state route was established.
+
+User decision requested: approve a narrow submitted-vendor story fixture without Stripe operations, preserving admission checks, or retain the broad fixture with a separate submitted application. Separately, approve bounded production dependency remediation in TC after a complete audit, excluding new risk exceptions and framework-major changes. No answer received yet. Automated incomplete-todo reminders do not resolve these decisions.
+
+Remaining lifecycle, security remediation, native confirmed-defect export, live Neon activation and hosted proof/retirement/deployment are deferred, not completed. Resume automatically when their explicit prerequisites are supplied. No live operations or additional lifecycle edits occurred.
