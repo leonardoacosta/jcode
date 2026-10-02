@@ -115,7 +115,16 @@ All are assertion-grounded **inventory only**, not passing tester-army acceptanc
 
 Do not label these as generic trade/social or checkout completion. Select exact requirements with independent scenarios so auth/setup failure does not suppress every result.
 
-## Decisions needed before external execution
+## Execution decisions and external dependencies (updated 2026-10-02)
+
+- **Branches:** jcode coordination stays on `main`; OO and TC delivery work belongs on each project's `dev`. Existing local planning feature commits must be fast-forwarded/reconciled to `dev` before implementation, without losing unrelated changes.
+- **Approved execution:** scoped pushes, supported test-workflow dispatches, and disposable Neon operations after local checks pass. Deployment is permitted only after the given project is green; verify project-specific admission and tested revision before any deployment. No deployment has occurred.
+- **Neon remediation:** the user assigns credential investigation/remediation to another session. Assume that session will handle it for scheduling, not that it is already resolved. Remove incident investigation from this execution team's work; request a sanitized readiness confirmation before actual DB/branch/credential operations. No credential values required. Safe local planning/guard work can proceed in parallel.
+- **Destinations:** OO hosted project `priceless-workspace/projects/bKutI8aFf99c`, Linear `otaku-odyssey-b2d8dffd23ac`. TC hosted project must be created in `priceless-workspace`, Linear `tribal-cities-e93462970209`.
+- **Approved integration actions:** create TC's TesterArmy project and export exactly one confirmed defect through native Linear to verify integration. Do not fabricate a defect or ticket, create duplicates, or infer approval for a new OAuth/access grant. Use existing authorized connection where possible; human approval may still be required by the provider.
+- **Current access evidence:** native browser bridge navigation failed with a broken-pipe error; handoff route lacked its Jev credential. An isolated CLI browser reached TesterArmy sign-in but has no authenticated workspace session. The supplied OO project path returned 404 on `tester.army`, which does not prove the project is absent or identify its actual app route. Neither TC creation nor defect export has completed. Need authenticated TesterArmy access before those actions.
+
+### Historical prerequisites, now superseded where approvals above settle them
 
 1. **Neon incident and resource identity:** authoritative confirmation that the exposed credential is invalidated or account-specific scope is safe, plus approved OO/TC project and non-production parent IDs. Until then no DB/branch/credential operations. Recommend schema-only synthetic fixtures and independent attempt ownership.
 2. **Hosted acceptance authorization:** permission to push the exact scoped delivery commits and dispatch the supported test workflows when local implementation is ready. Existing authorization for hosted `OMNI_API_KEY` use is not permission to weaken local network isolation or deploy. Model bounds/provider compatibility still need the pinned-type check.
