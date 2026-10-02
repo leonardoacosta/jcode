@@ -1,0 +1,128 @@
+# OO → TC pilot rollout
+
+Status: **planning only**, 2026-10-02. No acceptance tests, database operations, hosted runs, OAuth connections, or ticket exports have been performed by this work. Evidence sources were repository inspection, the handoff, and live framework documentation.
+
+Artifact validation: skill frontmatter valid; four synthetic decision regressions passed all 16 assertions; local reference links and OO/TC inventory source paths verified; new skill passed scoped privacy boundary patterns and is discoverable as `/story-driven-ci`. Framework contract review corrected obsolete config/reporting guidance. The full skill-store public-release boundary gate failed on pre-existing unrelated skill content, not this new skill. No live CI, DB lifecycle, or Linear workflow is validated yet. Main policy: [story-driven-ci](/home/nyaptor/.agents/skills/story-driven-ci/SKILL.md). Contracts: [framework-contracts](/home/nyaptor/.agents/skills/story-driven-ci/references/framework-contracts.md).
+
+## Target architecture
+
+```text
+candidate SHA + trust decision
+  → cheap existing checks
+  → owned attempt-scoped Neon schema-only branch + synthetic seed
+  → app built/started once on approved hosted acceptance runner
+  → one Chromium e2e execution: narrow agent goals + exact business assertions
+  → JSON/JUnit + essential diagnostics + story ledger + resource cleanup
+  → stable admission result on the exact candidate SHA
+
+confirmed product defect in hosted TesterArmy Issues
+  → authorized native Linear export → existing linked ticket on re-export
+```
+
+The second route is not an established automatic consumer of CLI report.json. Keep the CLI-to-platform bridge explicitly unresolved. Do not make report upload or ticket export part of the critical pass/fail path. Keep secrets out of untrusted code and preserve deploy admission.
+
+## Current state and gaps
+
+### Otaku Odyssey
+
+Repository `/home/nyaptor/dev/priceless/otaku-odyssey`, `dev`, inspected HEAD `6d0cecaab29b26239e017be9f690b7009ed115b2`, ahead of `origin/dev` by two commits. Pre-existing modified `.env.test`, `.neon`, and `openspec/changes/add-agentic-e2e-lane/tasks.md`; untracked `.firecrawl/`, `neon.ts`. Preserve these and do not stage secret-bearing files.
+
+- `.github/workflows/ci.yml` supports PRs to `main/dev`, pushes to `main`, and manual scopes. Docs paths are ignored. A manual signed-lane acceptance job does not provision a DB/start the app/run browser acceptance. Existing required status names and release/production admission need inspection before redesign, not assumptions from stale specs.
+- `packages/e2e/e2e.config.ts` already imports `e2e` and `@e2e-dev/web`, selects `tests/agent/**/*.e2e.ts`, and uses the configured OmniRoute model path with `OMNI_API_KEY`. `packages/e2e/scripts/run-e2e.mjs` admits only loopback targets and requires prepared-target admission in CI. Treat this as an existing boundary, not a need for arbitrary remote browser origins.
+- Pinned source package versions at inspection: `e2e` `0.15.0-canary-20260928184528`, `@e2e-dev/web` `0.11.0-canary-20260928184528`, Playwright packages `1.63.0`. New docs may outpace these types. Verify installed support before updating config.
+- `apps/scripts/src/preview-refresh/neon.ts` has `provisionNeonCandidate` and `deleteNeonCandidate`; preparation in `actions/prepare.ts` retains successful preview candidates, and `actions/cleanup.ts` is not a turnkey PR-attempt teardown. Reuse validated identity/ready/URL logic, not preview retention semantics. Unit coverage lives in `preview-refresh/__tests__/neon.test.ts`.
+- Native change `openspec/changes/add-agentic-e2e-lane/` still requires staged legacy parity and an owned prepared-target architecture. Tasks have two prior completion marks and a pre-existing duplicate `3`. These are history, not proof of new acceptance.
+- **External blocker:** exposed Neon child credential scope/invalidation is unresolved. No branch, database, or credential operation before authoritative account-specific resolution. Generic role-inheritance docs are insufficient.
+
+### Tribal Cities
+
+Repository `/home/nyaptor/dev/priceless/tribal-cities`, `dev`, inspected HEAD `d8b5ec480b396c777071ce563c6f7c6e4d24b606`. Pre-existing `.env.test` modification. Preserve it without reading values.
+
+- `.github/workflows/ci.yml` is `workflow_dispatch` only. Jobs include lint, format, typecheck, unit tests, disposable PostgreSQL integration, security, build, and fallow. Unit job excludes `@tc/e2e`; there is no active E2E job despite comments about a PR-only lane.
+- `packages/e2e/e2e.config.ts`, `scripts/run-e2e.mjs`, and `src/agent/auth-login.e2e.ts` are the current tester-style foothold. Package scripts still invoke the legacy `scripts/run-playwright.mjs`; there are legacy config/projects and lint gates. Do not call the current workflow a working e2e standard.
+- `openspec/changes/add-agentic-e2e-lane/` still frames replacement as cohorts/parity/second lane. Reconcile with the new single bounded cutover.
+- No disposable Neon branch lifecycle was found in the inspected workflow/e2e/db/scripts/change paths. Existing disposable PostgreSQL integration is a useful cheap correctness layer, not proof of Neon branch acceptance and not automatically redundant.
+- Both pilots declare `e2e` `0.15.0-canary-20260928184528` and `@e2e-dev/web` `0.11.0-canary-20260928184528`. TC's lockfile records a `playwright >=1.63.0 <2` engine peer. Preserve that browser-engine dependency even when deleting `@playwright/test` architecture. TC's existing agent auth checks staff session email/role, not the participant auth stories below. Do not copy OO's provider/seed/deployment topology by assumption.
+
+## Ordered execution plan
+
+Complete the skill and reference validation first, then use it for repository-native planning. Task labels below are unique planning IDs, not claims of completion in either OpenSpec change.
+
+### Phase A: OO plan reconciliation, safe while Neon is blocked
+
+1. **OO-A1: Rewrite native change coherently.** Update `proposal.md`, `design.md`, `specs/ci-cd/spec.md`, `specs/e2e-testing/spec.md`, and `tasks.md` to story-led acceptance, Neon attempt isolation, trust, evidence, and deletion criteria. Inspect/preserve the existing task diff first; record dispositions for prior tasks rather than overwriting their history. Remove duplicate IDs and superseded parity requirements. Preserve release admission and repository verification routing.
+2. **OO-A2: Establish story ledger and deletion manifest.** Use the initial inventory below. Identify actual stable required checks, supported dispatch inputs, candidate revision binding, fixture dependencies, and which legacy scripts/config/docs/dependencies become obsolete. Mark unverified terminal payment outcomes as discovery, not requirements already proven.
+3. **OO-A3: Verify local contracts without secrets.** Inspect pinned package types/CLI help and existing Neon unit helpers. Use offline/unit tests for target allowlist, branch ownership, partial provisioning, stale-cache behavior, artifact retention, empty selection, and cleanup failure. Do not invoke wrappers that decrypt `.env.test`, pretend to be CI, or touch shared DBs.
+
+Exit A: coherent native artifacts, classified critical stories and legacy deletion map, local guard tests where safe, unresolved external blockers listed separately. No hosted acceptance claim.
+
+### Phase B: OO isolated vertical slice
+
+Depends on authoritative incident resolution, approved pinned project/parent, supported branch creation mode, and authorization for cloud operations/hosted execution.
+
+1. **OO-B1: Own resource lifecycle.** Adapt the smallest existing provision/delete helper path for one PR/SHA/run/attempt. Preserve strict project/parent/branch/endpoint checks and use schema-only synthetic fixtures. Keep the Neon control-plane credential isolated from app/test/model steps. Never reuse/delete a preview branch simply because its name matches.
+2. **OO-B2: Start one candidate app.** Keep a test-owned loopback app on the hosted runner with the isolated Neon connection. Choose supported config `app.command` or a tiny existing lifecycle wrapper based on installed types. This need not allow remote origins. Retire prepared-target assumptions that exist only for legacy compatibility, but retain target ownership and synthetic-data enforcement. Do not open the internally isolated local Docker network to the model gateway.
+3. **OO-B3: Prove the existing vendor story.** Seed only the fixed submitted application and test-owned `vendorManager` user. Use the actual tester-style test as the first slice, then strengthen exact resource identity/authorization oracles where needed. Run one worker initially, retries `0`, documented model bounds, read-only replay.
+4. **OO-B4: Hosted evidence and fault paths.** Through supported GitHub Actions, prove the visible outcome, candidate SHA, branch identity, report, and teardown on pass/fail/partial setup/cancellation. Capture warm and deliberately cold replay plus a deliberate test failure. Expiration/reconciliation protect runner-loss cases. Preserve original evidence when diagnosing a failure.
+
+Exit B: one genuine story proven in authorized hosted CI with isolated state and lifecycle evidence, not list output or a mocked acceptance marker.
+
+### Phase C: OO critical stories, native Linear, and cutover
+
+1. **OO-C1: Add high-value outcomes, not cohorts.** Prioritize auth/RBAC, submitted vendor queue/detail, badge/cart behavior, and exact pricing/checkout only as product risks require. Keep monetary/RBAC assertions deterministic. Use test-owned payment resources only after their scope is approved; no production Stripe side effects. Keep exact terminal assertions/fixture lifecycle visible in the ledger.
+2. **OO-C2: Enable native Linear per project.** Select intended TesterArmy project, Linear workspace, and default team, approve project-shared OAuth scope, then connect under Integrations → Linear. Determine how confirmed CI defects legitimately enter hosted Issues before promising automation. With ticket-export authorization, prove one confirmed defect export and repeat-export behavior. If ingestion is unsupported, document a supported hosted-testing/manual triage route rather than add a custom bot.
+3. **OO-C3: Make replacement authoritative.** Required selected-story completeness and execution exit govern admission. Keep existing release admission connected to the exact candidate SHA. Do not let path skips, empty selection, untrusted PR restrictions, or cleanup steps manufacture green acceptance.
+4. **OO-C4: Delete classified legacy architecture.** After replacement proof, remove obsolete Playwright test-runner configs/scripts/cohorts/duplicate workflow invocation and stale docs/specs. Retain `playwright` or other engine dependencies when `@e2e-dev/web` needs them. Independently review, run fresh relevant gates and supported hosted acceptance on the final cutover revision, then mark tasks complete. Archive only when all native acceptance requirements are satisfied.
+
+Exit C: no permanent legacy second lane, required critical stories proven, native Linear path verified or explicitly still blocked, final candidate admission and cleanup evidence recorded.
+
+### Phase D: TC adapts the proven standard
+
+1. **TC-D1: Reconcile native planning.** Rewrite TC's same-named change around product outcomes and one replacement gate. Classify legacy stories, scripts, configs, E2E lint gates, and dependencies. Preserve useful deterministic API/DB/unit checks, not old browser conventions by inertia.
+2. **TC-D2: Make trigger/admission real.** Current CI is manual only. Design supported PR admission plus any manual diagnostics, consistent with repository policy and existing deployment admission. Verify required status names and permissions before changing external settings. Do not just append a permanently optional `test:agentic` job.
+3. **TC-D3: Add isolated Neon lifecycle.** Reuse the proven minimal lifecycle policy, not OO's preview binding stack. Approve TC project/parent and synthetic seed independently. Verify target/app readiness, migrations, permissions, per-attempt identity, and teardown. Keep disposable PostgreSQL unit/integration where it cheaply exercises independent invariants.
+4. **TC-D4: Prove login slice then real TC outcomes.** Verify current auth test with seeded isolated users, strengthen an authenticated-session oracle, and add selected city/admin/attendee outcomes from the actual ledger. Exact permissions and mutations need deterministic assertions and isolated records.
+5. **TC-D5: Connect native Linear and delete legacy.** Confirm TC's own hosted project/team mapping, prove an authorized native export, then cut over and remove classified old runner pieces after fresh hosted proof. Measure the same warm/cold cost, runtime, reliability and cleanup criteria as OO.
+
+Exit D: TC has its own hosted evidence and deletion manifest, not only OO's results or a transplanted config.
+
+## Initial OO story inventory
+
+All rows below are **inventory only**, not passed, migrated, or approved for shared external services.
+
+| Candidate | Source | Observable result / exact oracle to preserve | Planning status |
+| --- | --- | --- | --- |
+| Submitted vendor application | `packages/e2e/tests/agent/vendor-application-readonly.e2e.ts` | Vendor manager sees seeded `Test Anime Goods Co.` pending/submitted row; UUID detail URL, selected-application region, Submitted status, business/contact/product fields. Verify identity/access against the synthetic record. | Existing tester-style foothold, first hosted slice. |
+| Vendor queue/workspace | `packages/e2e/tests/staff/vendor-applications-workspace.spec.ts` | Owned UUID-prefixed records and queue/search behavior. Read terminal assertions before selecting the required result. | Legacy behavior inventory, no parity mandate. |
+| Badge/cart reader | `packages/e2e/tests/web/badge/badge-purchase-readers.spec.ts` | Reader/cart behavior isolates browser context and excludes DB/Stripe/email/webhooks. Extract exact cart assertions. | Prefer lower-side-effect story before payment integrations. |
+| Payment smoke | `packages/e2e/tests/payments/badge-purchase-smoke.spec.ts` | Attendee adds GA badge then T-shirt, cart counts `1 → 2`; terminal checkout state requires further inspection and approved test payment fixture. | Do not infer payment completion from cart assertions. |
+| Promo pricing | `packages/e2e/tests/wave-5/purchase-promo-fee-display.spec.ts` | Product/type/tier scope and correct coupon inclusion/exclusion, precise displayed totals if required. | Conditional on approved test-owned payment resources. |
+| Admin RBAC mutation | `packages/e2e/tests/web/admin/admin-rbac-writer-journey.spec.ts` | Exact allow/deny and persisted tenant/department/session boundaries. | High-risk isolated writer story, not part of first read-only slice. |
+
+## Initial TC story inventory
+
+All are assertion-grounded **inventory only**, not passing tester-army acceptance. Existing source setup is not a requirement to preserve brittle seed context or browser mocks.
+
+| Candidate | Source | Persona / observable outcome / exact oracle | Planning status |
+| --- | --- | --- | --- |
+| Participant valid/invalid login | `packages/e2e/src/tests/auth/login.spec.ts` | Logged-out participant submits credentials, chooses burn, reaches dashboard with nonempty identity; invalid email never authenticates and supported syntax errors show `Please enter a valid email address`. | Strong first product story beyond staff setup. |
+| Staff authenticated identity | `packages/e2e/src/agent/auth-login.e2e.ts` | `staff-admin` signs in, reaches dashboard/admin, session endpoint returns normalized email and role `admin`. | Existing tester-style foothold, not participant-story parity. |
+| City planning + zone lifecycle | `packages/e2e/src/tests/admin/city-planning.spec.ts` | `placementLead` with `MANAGE_CITY_PLANNING` sees title/cards/description; owned zone create/rename/delete has HTTP `200` and corresponding rendered state, department `PLACEMENT`, readiness `true`. | Distinct writer story with exact ownership/permission checks. Historic map/popover cases are skipped and not current product behavior. |
+| Admin roster/commerce controls | `packages/e2e/src/tests/admin/admin-attendees-commerce.spec.ts` | Admin sees `Sell Ticket`, not `Invite Attendee`; refund dialog explains access revocation without deleting record; bulk actions appear on selection; legal name visible under approved permission. | Current source is read-only refund preview, **not completed purchase/refund**. Preserve that distinction. |
+| Attendee guidance and tour persistence | `packages/e2e/src/tests/attendee/onboarding-guidance.spec.ts` | No-membership user sees `Join a Burn`/`Create a Burn`; member sees Tickets/Camp/shift cards in row-major order; closing tour persists `skipped: true` and prevents restart after reload. | Replace mutable historic seed selection with deterministic fixture state. Post-purchase toast test is skipped pending a real test payment harness. |
+
+Do not label these as generic trade/social or checkout completion. Select exact requirements with independent scenarios so auth/setup failure does not suppress every result.
+
+## Decisions needed before external execution
+
+1. **Neon incident and resource identity:** authoritative confirmation that the exposed credential is invalidated or account-specific scope is safe, plus approved OO/TC project and non-production parent IDs. Until then no DB/branch/credential operations. Recommend schema-only synthetic fixtures and independent attempt ownership.
+2. **Hosted acceptance authorization:** permission to push the exact scoped delivery commits and dispatch the supported test workflows when local implementation is ready. Existing authorization for hosted `OMNI_API_KEY` use is not permission to weaken local network isolation or deploy. Model bounds/provider compatibility still need the pinned-type check.
+3. **Linear destination and access:** hosted TesterArmy project for OO/TC, intended Linear workspace/team(s), and approval for project-shared OAuth plus a confirmed test defect export. Recommend native connection and triaged export, no custom bot or automatic every-red-run ticket policy. A plan alone does not authorize consequential access changes.
+
+These do not block completing this skill or planning safely. Ask once when executing work reaches these boundaries.
+
+## Rollout to other projects
+
+Only after both pilots, publish a compact adoption checklist with story ledger, resource lifecycle guard checklist, trusted trigger/admission pattern, native Linear mapping, deletion manifest, and measured results. This requires explicit publishing/remote-mutation authorization. Keep project-specific seeds/auth/deployment/provider configuration local. Do not add a third pilot, browser/device matrix, or shared framework to this planning scope.
+
+Required evidence ledger: project, final tested SHA, hosted run URL/result, required story IDs/statuses, branch IDs and sanitized cleanup events, cold/warm model-call counts, runner duration/cost if measurable, known flakes/exclusions, native Linear issue/ticket mapping and re-export result. Numeric cost targets stay unset until baseline evidence exists.
