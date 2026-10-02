@@ -179,3 +179,11 @@ Evidence supports the bounded prerequisite changes, not the full user outcome. L
 - Native Linear export waits for a legitimate finding during acceptance testing.
 - OO fixture A/B not selected: user requested the rationale. Explained narrow fixture should reuse seed primitives rather than duplicate seed architecture; broad fixture remains viable if shared upcoming stories justify its dependencies.
 - Fresh baseline `pnpm security:audit:test` passes all 14 checks. Actual current root engine wants Node24 while shell runs Node25, so prior runtime-pin summary is stale and must not drive edits.
+
+## Fresh TC audit inventory, 2026-10-02 19:16 UTC
+
+Complete local `pnpm audit --prod --json` artifact at `/home/nyaptor/.jcode/scratch/tc-audit.json` was parsed independently, rather than relying on truncated hosted logs. Ten high/critical package families: tar, sharp, js-yaml, image-size, fast-uri, undici, brace-expansion, next, @grpc/grpc-js, node-forge. Reported fixed ranges include Next >=16.3.6, sharp >=0.35.4 and grpc-js >=1.14.5; remaining exact ranges are in the artifact and must be validated against compatible upstream package sets.
+
+Two important paths: tar6.2.1 enters through `apps__scripts>drizzle-orm>sqlite3>tar`, not Expo; node-forge1.4.0 enters through `apps__expo>expo>@expo/cli>node-forge`. The latter advisory1240912 reports no patched release (`<0.0.0`). Investigate supported upstream removal, not a risk exception or dependency-scope relabeling. Other remediation continues independently of this potential residual blocker.
+
+Fresh baseline CI trigger contract tests passed3/3, alongside audit policy tests14/14. These checks preserve lane isolation and security policy; they do not make the production audit green. Dependency editing/installation remains exclusively owned by the upgrade worker; no upgrade verification claimed yet.
