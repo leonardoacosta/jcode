@@ -159,6 +159,161 @@ async fn test_basic_command_no_stdin() {
     assert!(result.output.contains("hello"));
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn bash_client_terminal_context_is_isolated_and_refreshed() {
+    async fn run(pane: &str) -> String {
+        crate::hooks::with_client_terminal_env(
+            vec![
+                ("HERDR_ENV".into(), "1".into()),
+                ("HERDR_PANE_ID".into(), pane.into()),
+                ("HERDR_BIN_PATH".into(), "/verified/herdr/bin/herdr".into()),
+                ("UNTRUSTED_ENV".into(), "must-not-be-forwarded".into()),
+            ],
+            async {
+                BashTool::new()
+                    .execute(
+                        json!({"command": "printf '%s|%s|%s|%s|%s' \"$HERDR_ENV\" \"$HERDR_PANE_ID\" \"$JCODE_CLIENT_HERDR_PANE_ID\" \"${UNTRUSTED_ENV:-}\" \"${PATH%%:*}\""}),
+                        make_ctx(None),
+                    )
+                    .await
+                    .unwrap()
+                    .output
+            },
+        )
+        .await
+    }
+    let (a, b) = tokio::join!(run("client-a"), run("client-b"));
+    assert_eq!(a.trim(), "1|client-a|client-a||/verified/herdr/bin");
+    assert_eq!(b.trim(), "1|client-b|client-b||/verified/herdr/bin");
+    assert_eq!(
+        run("reconnected-pane").await.trim(),
+        "1|reconnected-pane|reconnected-pane||/verified/herdr/bin"
+    );
+    let empty = crate::hooks::with_client_terminal_env(Vec::new(), async {
+        BashTool::new()
+            .execute(
+                json!({"command": "printf '%s' \"${HERDR_ENV:-absent}\""}),
+                make_ctx(None),
+            )
+            .await
+            .unwrap()
+            .output
+    })
+    .await;
+    assert_eq!(empty.trim(), "absent");
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn bash_client_terminal_context_reaches_detached_foreground() {
+    let output = crate::hooks::with_client_terminal_env(
+        vec![("HERDR_PANE_ID".into(), "detached-pane".into())],
+        async {
+            BashTool::new()
+                .execute(
+                    json!({"command": "printf '%s' \"$HERDR_PANE_ID\""}),
+                    make_agent_ctx(jcode_agent_runtime::InterruptSignal::new()),
+                )
+                .await
+                .unwrap()
+                .output
+        },
+    )
+    .await;
+    assert_eq!(output.lines().next(), Some("detached-pane"));
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn bash_client_terminal_context_reaches_background() {
+    let result = crate::hooks::with_client_terminal_env(
+        vec![("HERDR_PANE_ID".into(), "background-pane".into())],
+        BashTool::new().execute(
+            json!({"command": "printf '%s' \"$HERDR_PANE_ID\"", "run_in_background": true, "notify": false}),
+            make_ctx(None),
+        ),
+    ).await.unwrap();
+    let task_id = result.metadata.unwrap()["task_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        loop {
+            let status = crate::background::global().status(&task_id).await.unwrap();
+            if status.status == BackgroundTaskStatus::Completed {
+                break;
+            }
+            assert_ne!(status.status, BackgroundTaskStatus::Failed);
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(
+        crate::background::global()
+            .output(&task_id)
+            .await
+            .unwrap()
+            .lines()
+            .next(),
+        Some("background-pane")
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn bash_client_terminal_context_masks_stale_identity_and_rejects_relative_bin() {
+    let mut command = std::process::Command::new("bash");
+    command.arg("-c").arg("printf '%s|%s|%s' \"${HERDR_ENV:-absent}\" \"${JCODE_CLIENT_HERDR_ENV:-absent}\" \"$PATH\"");
+    command
+        .env("HERDR_ENV", "stale")
+        .env("JCODE_CLIENT_HERDR_ENV", "stale");
+    configure_client_terminal_env(
+        &mut command,
+        &[("HERDR_BIN_PATH".into(), "relative/herdr".into())],
+    );
+    let output = command.output().unwrap();
+    assert!(output.status.success());
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        format!(
+            "absent|absent|{}",
+            std::env::var("PATH").unwrap_or_default()
+        )
+    );
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn bash_client_terminal_context_discovers_executable() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let bin = dir.path().join("jcode-terminal-context-probe");
+    std::fs::write(&bin, "#!/bin/sh\nprintf executable-found").unwrap();
+    std::fs::set_permissions(&bin, std::fs::Permissions::from_mode(0o700)).unwrap();
+    let output = crate::hooks::with_client_terminal_env(
+        vec![("HERDR_BIN_PATH".into(), bin.to_str().unwrap().into())],
+        BashTool::new().execute(
+            json!({"command": "jcode-terminal-context-probe"}),
+            make_ctx(None),
+        ),
+    )
+    .await
+    .unwrap();
+    assert_eq!(output.output.trim(), "executable-found");
+    let output = crate::hooks::with_client_terminal_env(
+        vec![("HERDR_BIN_PATH".into(), bin.to_str().unwrap().into())],
+        BashTool::new().execute(
+            json!({"command": "jcode-terminal-context-probe"}),
+            make_agent_ctx(jcode_agent_runtime::InterruptSignal::new()),
+        ),
+    )
+    .await
+    .unwrap();
+    assert_eq!(output.output.lines().next(), Some("executable-found"));
+}
+
 #[tokio::test]
 async fn test_basic_command_with_unused_stdin_channel() {
     let (tx, _rx) = mpsc::unbounded_channel();

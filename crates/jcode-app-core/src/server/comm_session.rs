@@ -1,4 +1,3 @@
-use super::ClientConnectionInfo;
 use super::client_lifecycle::process_message_streaming_mpsc;
 use super::swarm_mutation_state::{
     PersistedSwarmMutationResponse, SwarmMutationRuntime, begin_or_replay, finish_request,
@@ -26,7 +25,6 @@ use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
 type SessionAgents = Arc<RwLock<HashMap<String, Arc<Mutex<Agent>>>>>;
 type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
-type ClientConnections = Arc<RwLock<HashMap<String, ClientConnectionInfo>>>;
 
 /// Serialize spawn admission through member registration within one swarm.
 /// Without a reservation or lock, many recursive agents can all observe the same
@@ -47,21 +45,11 @@ fn spawn_admission_lock(swarm_id: &str) -> Arc<Mutex<()>> {
     lock
 }
 
-/// Look up the most recent terminal env snapshot for the live client connection
-/// driving `session_id`, so spawn hooks target that client's terminal instead
-/// of the long-lived server's stale startup env (#405). Prefers the most
-/// recently seen connection when a session has more than one client attached.
-async fn client_terminal_env_for_session(
-    session_id: &str,
-    client_connections: &ClientConnections,
-) -> Vec<(String, String)> {
-    let connections = client_connections.read().await;
-    connections
-        .values()
-        .filter(|info| info.session_id == session_id && !info.terminal_env.is_empty())
-        .max_by_key(|info| info.last_seen)
-        .map(|info| info.terminal_env.clone())
-        .unwrap_or_default()
+/// Capture only the terminal snapshot explicitly scoped to this request.
+/// Lightweight requests without an attached client scope must not borrow
+/// another client's terminal environment.
+fn request_client_terminal_env() -> Vec<(String, String)> {
+    crate::hooks::client_terminal_env().unwrap_or_default()
 }
 
 fn create_visible_spawn_session(
@@ -595,17 +583,14 @@ pub(super) async fn spawn_swarm_agent(
     swarm_event_tx: &broadcast::Sender<SwarmEvent>,
     mcp_pool: &Arc<crate::mcp::SharedMcpPool>,
     soft_interrupt_queues: &SessionInterruptQueues,
-    client_connections: &ClientConnections,
 ) -> anyhow::Result<String> {
     let resolved_working_dir =
         resolve_spawn_working_dir(working_dir, req_session_id, sessions, swarm_members).await;
     let coordinator = resolve_coordinator_spawn_identity(req_session_id, sessions).await;
     let coordinator_is_canary = coordinator.is_canary;
-    // Capture the requesting client's terminal env so spawn hooks place the new
-    // window in the terminal the user is attached to, not the server's stale
-    // startup env (#405).
-    let client_terminal_env =
-        client_terminal_env_for_session(req_session_id, client_connections).await;
+    // Use only the request-scoped client terminal snapshot, never another
+    // attached client's environment or the server's stale startup env (#405).
+    let client_terminal_env = request_client_terminal_env();
     let agents_config = &crate::config::config().agents;
     let configured_swarm_model = agents_config.swarm_model.clone();
     let resolved_spawn_mode = spawn_mode.unwrap_or(agents_config.swarm_spawn_mode);
@@ -873,7 +858,6 @@ pub(super) async fn handle_comm_spawn(
     mcp_pool: &Arc<crate::mcp::SharedMcpPool>,
     soft_interrupt_queues: &SessionInterruptQueues,
     swarm_mutation_runtime: &SwarmMutationRuntime,
-    client_connections: &ClientConnections,
 ) {
     // Hold this swarm's admission through member registration so concurrent
     // recursive requests cannot all pass the population check against stale
@@ -952,7 +936,6 @@ pub(super) async fn handle_comm_spawn(
         swarm_event_tx,
         mcp_pool,
         soft_interrupt_queues,
-        client_connections,
     )
     .await
     {

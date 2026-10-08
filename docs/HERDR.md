@@ -9,6 +9,8 @@ This covers visible swarm spawns, resume-in-new-terminal, self-development launc
 Jcode already:
 
 - forwards `HERDR_ENV`, `HERDR_SOCKET_PATH`, `HERDR_PANE_ID`, `HERDR_TAB_ID`, `HERDR_WORKSPACE_ID`, `HERDR_BIN_PATH`, `HERDR_SESSION`, and `HERDR_AGENT` from the requesting client to server-side spawn and focus paths;
+- applies the requesting client's terminal snapshot to foreground, detached and background Bash tools, including batched calls; absent snapshot keys mask stale daemon values, and reconnects use the new connection's snapshot;
+- prepends the absolute `HERDR_BIN_PATH` parent to Bash children's `PATH` without copying the client's full environment or mutating the shared daemon;
 - recognizes Herdr as a masking terminal multiplexer for Mermaid graphics capability detection;
 - exports stable lifecycle observer hooks for `session_start`, `session_end`, `turn_start`, and `turn_end`;
 - exports `JCODE_HOOK_SESSION_ID`, `JCODE_HOOK_CWD`, event fields, and a JSON `JCODE_HOOK_PAYLOAD`;

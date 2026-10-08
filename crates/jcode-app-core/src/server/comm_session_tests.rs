@@ -2,9 +2,9 @@
 
 use super::{
     CoordinatorSpawnIdentity, ensure_spawn_coordinator_swarm, prepare_visible_spawn_session,
-    register_visible_spawned_member, resolve_coordinator_spawn_identity, resolve_spawn_working_dir,
-    resolve_stop_target_session, resolve_swarm_spawn_selection, spawn_admission_lock,
-    swarm_stop_allowed_by_owner,
+    register_visible_spawned_member, request_client_terminal_env,
+    resolve_coordinator_spawn_identity, resolve_spawn_working_dir, resolve_stop_target_session,
+    resolve_swarm_spawn_selection, spawn_admission_lock, swarm_stop_allowed_by_owner,
 };
 use crate::agent::Agent;
 use crate::message::{Message, ToolDefinition};
@@ -19,6 +19,24 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU64;
 use std::time::Instant;
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
+
+#[tokio::test]
+async fn comm_spawn_terminal_env_uses_request_scope_and_never_other_client() {
+    let scoped =
+        crate::hooks::with_client_terminal_env(Vec::new(), async { request_client_terminal_env() })
+            .await;
+    assert!(scoped.is_empty());
+
+    let scoped_nonempty = crate::hooks::with_client_terminal_env(
+        vec![("TMUX".to_string(), "request-terminal".to_string())],
+        async { request_client_terminal_env() },
+    )
+    .await;
+    assert_eq!(
+        scoped_nonempty,
+        vec![("TMUX".to_string(), "request-terminal".to_string())]
+    );
+}
 
 struct MockProvider;
 

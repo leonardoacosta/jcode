@@ -1586,10 +1586,14 @@ impl Agent {
                 let registry_clone = self.registry.clone();
                 let tool_name_for_spawn = tc.name.clone();
                 let tool_input_for_spawn = tc.input.clone();
+                let client_terminal_env = crate::hooks::client_terminal_env()
+                    .unwrap_or_else(crate::terminal_launch::snapshot_client_terminal_env);
                 let tool_handle = tokio::spawn(async move {
-                    registry_clone
-                        .execute(&tool_name_for_spawn, tool_input_for_spawn, ctx)
-                        .await
+                    crate::hooks::with_client_terminal_env(
+                        client_terminal_env,
+                        registry_clone.execute(&tool_name_for_spawn, tool_input_for_spawn, ctx),
+                    )
+                    .await
                 });
 
                 // Reset background signal before waiting

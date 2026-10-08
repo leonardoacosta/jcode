@@ -654,6 +654,22 @@ impl Drop for ProcessGroupKillGuard {
     }
 }
 
+fn configure_client_terminal_env(command: &mut StdCommand, env: &[(String, String)]) {
+    crate::terminal_launch::apply_client_terminal_env(command, env);
+    if let Some((_, bin)) = env.iter().find(|(key, _)| key == "HERDR_BIN_PATH")
+        && std::path::Path::new(bin).is_absolute()
+        && let Some(parent) = std::path::Path::new(bin).parent()
+    {
+        let mut paths = vec![parent.to_path_buf()];
+        paths.extend(std::env::split_paths(
+            &std::env::var_os("PATH").unwrap_or_default(),
+        ));
+        if let Ok(path) = std::env::join_paths(paths) {
+            command.env("PATH", path);
+        }
+    }
+}
+
 fn build_shell_command(cmd_str: &str) -> TokioCommand {
     #[cfg(windows)]
     {
@@ -670,6 +686,9 @@ fn build_shell_command(cmd_str: &str) -> TokioCommand {
         // selects the documented quote handling used with this form.
         cmd.args(["/D", "/S", "/C"])
             .raw_arg(format!("\"{cmd_str}\""));
+        if let Some(env) = crate::hooks::client_terminal_env() {
+            configure_client_terminal_env(cmd.as_std_mut(), &env);
+        }
         cmd
     }
     #[cfg(not(windows))]
@@ -677,6 +696,9 @@ fn build_shell_command(cmd_str: &str) -> TokioCommand {
         let mut cmd = TokioCommand::new("bash");
         cmd.arg("-c").arg(cmd_str);
         configure_tool_scratch(&mut cmd);
+        if let Some(env) = crate::hooks::client_terminal_env() {
+            configure_client_terminal_env(cmd.as_std_mut(), &env);
+        }
         cmd
     }
 }
@@ -691,6 +713,9 @@ fn configure_background_command_stdio(command: &mut TokioCommand) {
 #[cfg(unix)]
 fn build_detached_shell_wrapper(command: &str) -> StdCommand {
     let mut cmd = StdCommand::new("bash");
+    if let Some(env) = crate::hooks::client_terminal_env() {
+        configure_client_terminal_env(&mut cmd, &env);
+    }
     cmd.arg("-lc")
         .arg(
             r#"eval "$JCODE_RELOAD_DETACH_COMMAND"; status=$?; printf '\n--- Command finished with exit code: %s ---\n' "$status"; exit "$status""#,
@@ -1372,6 +1397,7 @@ impl BashTool {
     /// Execute a command in the background
     async fn execute_background(&self, params: BashInput, ctx: ToolContext) -> Result<ToolOutput> {
         let command = params.command.clone();
+        let client_terminal_env = crate::hooks::client_terminal_env();
         let description = params.intent.clone();
         let display_name = summarize_background_command(description.as_deref(), &command);
         let working_dir = ctx.working_dir.clone();
@@ -1390,6 +1416,9 @@ impl BashTool {
                 wake,
 				move |output_path| async move {
 					let mut cmd = build_shell_command(&command);
+					if let Some(env) = client_terminal_env {
+						configure_client_terminal_env(cmd.as_std_mut(), &env);
+					}
 					cmd.env("JCODE_SESSION_ID", &session_id_env);
 					#[cfg(unix)]
 					unsafe {

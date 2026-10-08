@@ -1488,15 +1488,22 @@ impl Provider for SdkCallbackProvider {
         _: Option<&str>,
     ) -> Result<EventStream> {
         assert_eq!(tools.len(), 1);
-        assert_eq!(tools[0].name, "read");
-        assert_eq!(tools[0].description, "SDK read callback");
+        let bash = tools[0].name == "bash";
+        if !bash {
+            assert_eq!(tools[0].name, "read");
+            assert_eq!(tools[0].description, "SDK read callback");
+        }
         let events = if self.calls.fetch_add(1, Ordering::SeqCst).is_multiple_of(2) {
             vec![
                 StreamEvent::ToolUseStart {
                     id: "model-call".into(),
-                    name: "read".into(),
+                    name: tools[0].name.clone(),
                 },
-                StreamEvent::ToolInputDelta("{}".into()),
+                StreamEvent::ToolInputDelta(if bash {
+                    serde_json::json!({"command": "printf '%s|%s' \"${HERDR_PANE_ID:-absent}\" \"${JCODE_CLIENT_HERDR_PANE_ID:-absent}\""}).to_string()
+                } else {
+                    "{}".into()
+                }),
                 StreamEvent::ToolUseEnd,
                 StreamEvent::MessageEnd {
                     stop_reason: Some("tool_use".into()),
@@ -1524,7 +1531,8 @@ impl Provider for SdkCallbackProvider {
 async fn sdk_socket_configure_list_callback_and_busy_rejection() {
     let _lock = crate::storage::lock_test_env();
     let home = IsolatedReloadRecoveryEnv::new();
-    let provider_template: Arc<dyn Provider> = Arc::new(SdkCallbackProvider::default());
+    let provider = SdkCallbackProvider::default();
+    let provider_template: Arc<dyn Provider> = Arc::new(provider.clone());
 
     let sessions: SessionAgents = Arc::new(RwLock::new(HashMap::new()));
     let global_session_id = Arc::new(RwLock::new(String::new()));
@@ -1824,6 +1832,70 @@ async fn sdk_socket_configure_list_callback_and_busy_rejection() {
         .unwrap()
         .unwrap()
         .unwrap();
+
+    let (neighbor_task, neighbor_stream) = connect();
+    let (neighbor_reader, mut neighbor_writer) = neighbor_stream.into_split();
+    let mut neighbor_reader = BufReader::new(neighbor_reader);
+    send(&mut neighbor_writer, json!({"type":"subscribe","id":29,"target_session_id":"sdk_other_session","terminal_env":[["HERDR_PANE_ID","neighbor-pane"]]})).await;
+    until(&mut neighbor_reader, |e| matches!(e, ServerEvent::Done { id: 29 })).await;
+
+    // Reconnect the retained session with a new, authoritative snapshot each time.
+    for pane in [Some("socket-pane-a"), Some("socket-pane-b"), None] {
+        let (task, stream) = connect();
+        let (reader, mut writer) = stream.into_split();
+        let mut reader = BufReader::new(reader);
+        let terminal_env = pane
+            .map(|pane| vec![("HERDR_PANE_ID", pane)])
+            .unwrap_or_default();
+        send(&mut writer, json!({"type":"subscribe","id":30,"target_session_id":session_a,"terminal_env":terminal_env})).await;
+        until(&mut reader, |e| matches!(e, ServerEvent::Done { id: 30 })).await;
+        send(
+            &mut writer,
+            json!({"type":"configure_tools","id":31,"tools":{"enabled":["bash"]}}),
+        )
+        .await;
+        let configured = until(&mut reader, |e| {
+            matches!(
+                e,
+                ServerEvent::Ack { id: 31 } | ServerEvent::Error { id: 31, .. }
+            )
+        })
+        .await;
+        assert!(
+            matches!(configured, ServerEvent::Ack { .. }),
+            "{configured:?}"
+        );
+        provider.calls.store(0, Ordering::SeqCst);
+        send(
+            &mut writer,
+            json!({"type":"message","id":32,"content":"verify terminal snapshot with bash"}),
+        )
+        .await;
+        let output = until(&mut reader, |e| {
+            matches!(
+                e,
+                ServerEvent::ToolDone { .. } | ServerEvent::Error { id: 32, .. }
+            )
+        })
+        .await;
+        let expected = pane.unwrap_or("absent");
+        assert!(
+            matches!(output, ServerEvent::ToolDone { output, .. } if output.lines().next() == Some(format!("{expected}|{expected}").as_str())),
+            "terminal snapshot not forwarded"
+        );
+        until(&mut reader, |e| matches!(e, ServerEvent::Done { id: 32 })).await;
+        drop(writer);
+        drop(reader);
+        tokio::time::timeout(Duration::from_secs(5), task)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+    }
+    drop(neighbor_writer);
+    drop(neighbor_reader);
+    neighbor_task.abort();
+    let _ = neighbor_task.await;
 }
 
 #[test]

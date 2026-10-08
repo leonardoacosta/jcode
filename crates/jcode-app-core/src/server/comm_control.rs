@@ -1939,7 +1939,6 @@ pub(super) async fn handle_comm_assign_next(
                 swarm_event_tx,
                 mcp_pool,
                 soft_interrupt_queues,
-                client_connections,
             )
             .await
             {

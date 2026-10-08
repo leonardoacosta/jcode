@@ -75,6 +75,58 @@ async fn setup() -> (Agent, tokio_mpsc::Sender<Result<StreamEvent>>, InputLog) {
     (agent, tx, log)
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn streaming_bash_preserves_requesting_client_terminal_context() {
+    let _sandbox = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+    let (mut agent, provider_tx, _) = setup().await;
+    agent.registry = Registry::new(agent.provider.clone()).await;
+    let (tx, _rx) = tokio_mpsc::unbounded_channel();
+    provider_tx
+        .send(Ok(StreamEvent::ToolUseStart {
+            id: "terminal-check".into(),
+            name: "bash".into(),
+        }))
+        .await
+        .unwrap();
+    provider_tx
+        .send(Ok(delta(
+            "terminal-check",
+            &json!({"command": "printf '%s' \"$HERDR_PANE_ID\""}).to_string(),
+        )))
+        .await
+        .unwrap();
+    provider_tx.send(Ok(end("terminal-check"))).await.unwrap();
+    provider_tx.send(Ok(finish())).await.unwrap();
+    drop(provider_tx);
+    crate::hooks::with_client_terminal_env(
+        vec![("HERDR_PANE_ID".into(), "requesting-pane".into())],
+        agent.run_turn_streaming_mpsc(tx),
+    )
+    .await
+    .unwrap();
+    let output = agent
+        .session
+        .messages
+        .iter()
+        .flat_map(|message| message.content.iter())
+        .find_map(|block| {
+            if let ContentBlock::ToolResult {
+                tool_use_id,
+                content,
+                ..
+            } = block
+            {
+                if tool_use_id == "terminal-check" {
+                    return Some(content.as_str());
+                }
+            }
+            None
+        })
+        .expect("Bash result recorded");
+    assert!(output.contains("requesting-pane"), "{output}");
+}
+
 fn start(id: &str) -> StreamEvent {
     StreamEvent::ToolUseStart {
         id: id.into(),

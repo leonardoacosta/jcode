@@ -47,6 +47,28 @@ async fn registry_with_batch_and_echo() -> Registry {
     registry
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn batch_bash_preserves_client_terminal_context() {
+    let registry = registry_with_batch_and_echo().await;
+    registry
+        .register("bash".into(), Arc::new(super::super::bash::BashTool::new()))
+        .await;
+    let output = crate::hooks::with_client_terminal_env(
+        vec![("HERDR_PANE_ID".into(), "batch-pane".into())],
+        registry.execute("batch", json!({"tool_calls": [
+            {"tool": "bash", "parameters": {"command": "printf '%s' \"$HERDR_PANE_ID\""}},
+            {"tool": "bash", "parameters": {"command": "printf '%s' \"$JCODE_CLIENT_HERDR_PANE_ID\""}}
+        ]}), test_context()),
+    ).await.unwrap();
+    assert_eq!(
+        output.output.matches("batch-pane").count(),
+        2,
+        "{}",
+        output.output
+    );
+}
+
 #[tokio::test]
 async fn registry_tool_map_drops_after_external_owners_are_dropped() {
     let registry = Registry::empty();
