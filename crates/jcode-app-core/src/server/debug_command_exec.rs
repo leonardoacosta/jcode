@@ -797,6 +797,7 @@ mod tests {
         let _debug_control = EnvGuard::set("JCODE_DEBUG_CONTROL", "1");
 
         let mut reload_rx = crate::server::subscribe_reload_signal_for_tests();
+        reload_rx.borrow_and_update();
 
         let provider: Arc<dyn Provider> = Arc::new(TestProvider);
         let registry = Registry::new(provider.clone()).await;
@@ -810,14 +811,14 @@ mod tests {
         let started = Instant::now();
         let ack_task = tokio::spawn(async move {
             loop {
-                if let Some(signal) = reload_rx.borrow_and_update().clone() {
-                    crate::server::acknowledge_reload_signal(&signal);
-                    return;
-                }
                 reload_rx
                     .changed()
                     .await
                     .expect("reload signal channel should remain open");
+                if let Some(signal) = reload_rx.borrow_and_update().clone() {
+                    crate::server::acknowledge_reload_signal(&signal);
+                    return;
+                }
             }
         });
         let output = tokio::time::timeout(
