@@ -53,4 +53,6 @@ This evidence is synthetic action/decision behavior, not end-to-end service/tool
 
 Only owned paths are committed. Unrelated source Graft edits, inactive readiness drafts, logs and Jcode changes remain untouched. Reviewer-created root report files are local untracked evidence, not release artifacts. Validation worktree uses standard-managed provenance and is preserved, not deleted without consent.
 
-The outcome can close only after real committed-source gates, native task reconciliation, spec synchronization, archive, scoped Jcode commit and post-archive validation. No required push exists under the explicit local-only scope, and none is claimed.
+Source persistence is commit `406202e`; reviewed execution/task evidence was committed in Jcode as `b0031b6d8`. Native OpenSpec observed `21/21` tasks and `all_done`, then synchronized ten requirements across the two main specifications and archived this change to `2026-10-20-improve-workflow-suite`. The archive prefix is the native machine-local date; behavioral evidence is dated 2026-10-21 UTC. Post-archive `validate --specs --strict --json` passed both specifications, with informational long-requirement notes only and no failures. The selected active change no longer exists; unrelated `open-user-clicked-links` remains untouched.
+
+The final scoped Jcode archive/spec/evidence commit and its verified history complete local persistence. No required push exists under the explicit local-only scope, and no push, remote CI, installation or publication is claimed.
