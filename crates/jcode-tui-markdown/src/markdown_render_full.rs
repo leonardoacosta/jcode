@@ -18,6 +18,13 @@ pub fn thread_render_count() -> u64 {
 }
 
 pub fn render_markdown_with_width(text: &str, max_width: Option<usize>) -> Vec<Line<'static>> {
+    render_markdown_with_width_and_links(text, max_width).lines
+}
+
+pub fn render_markdown_with_width_and_links(
+    text: &str,
+    max_width: Option<usize>,
+) -> RenderedMarkdown {
     let render_start = Instant::now();
     let text = jcode_render_core::normalize_latex_math(text);
     let text = escape_currency_dollars(&text);
@@ -119,8 +126,12 @@ pub fn render_markdown_with_width(text: &str, max_width: Option<usize>) -> Vec<L
                     let heading_spans: Vec<Span<'static>> = current_spans
                         .drain(..)
                         .map(|s| {
-                            let mut style = Style::default().fg(color).bold();
-                            if underline {
+                            let is_link = s.style.add_modifier.contains(Modifier::UNDERLINED)
+                                && s.style.fg == Some(link_fg());
+                            let mut style = Style::default()
+                                .fg(if is_link { link_fg() } else { color })
+                                .bold();
+                            if underline || is_link {
                                 style = style.underlined();
                             }
                             Span::styled(s.content.to_string(), style)
@@ -1051,6 +1062,8 @@ pub fn render_markdown_with_width(text: &str, max_width: Option<usize>) -> Vec<L
         center_structured_block_ranges(&mut lines, width, &centered_blocks.ranges);
     }
 
+    let links = link_hit_ranges(&lines);
+
     THREAD_RENDER_COUNT.with(|c| c.set(c.get() + 1));
     if let Ok(mut state) = MARKDOWN_DEBUG.lock() {
         state.stats.total_renders += 1;
@@ -1065,5 +1078,58 @@ pub fn render_markdown_with_width(text: &str, max_width: Option<usize>) -> Vec<L
         state.stats.last_blockquotes = dbg_blockquotes;
     }
 
-    lines
+    RenderedMarkdown { lines, links }
+}
+
+pub fn link_hit_ranges(lines: &[Line<'static>]) -> Vec<RenderedLink> {
+    let mut ranges = Vec::new();
+    let mut pending: Vec<(usize, usize, usize)> = Vec::new();
+    for (line_idx, line) in lines.iter().enumerate() {
+        let mut col = 0usize;
+        let mut span_idx = 0usize;
+        while span_idx < line.spans.len() {
+            let span = &line.spans[span_idx];
+            let width = UnicodeWidthStr::width(span.content.as_ref());
+            if span.style.add_modifier.contains(Modifier::UNDERLINED)
+                && span.style.fg == Some(link_fg())
+            {
+                let start_col = col;
+                let mut end_col = col;
+                while span_idx < line.spans.len()
+                    && line.spans[span_idx]
+                        .style
+                        .add_modifier
+                        .contains(Modifier::UNDERLINED)
+                    && line.spans[span_idx].style.fg == Some(link_fg())
+                {
+                    end_col += UnicodeWidthStr::width(line.spans[span_idx].content.as_ref());
+                    span_idx += 1;
+                }
+                pending.push((line_idx, start_col, end_col));
+                col = end_col;
+                continue;
+            }
+            if let Some(target) = span
+                .content
+                .strip_prefix(" (")
+                .and_then(|s| s.strip_suffix(')'))
+            {
+                ranges.extend(
+                    pending
+                        .drain(..)
+                        .map(|(line, start_col, end_col)| RenderedLink {
+                            line,
+                            start_col,
+                            end_col,
+                            target: target.to_string(),
+                        }),
+                );
+            } else if !span.content.trim().is_empty() {
+                pending.clear();
+            }
+            col += width;
+            span_idx += 1;
+        }
+    }
+    ranges
 }

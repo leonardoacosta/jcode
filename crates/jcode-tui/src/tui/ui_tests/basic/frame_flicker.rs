@@ -282,6 +282,7 @@ fn make_prepared_messages_with_content_bytes(bytes: usize, marker: &str) -> Arc<
         image_regions: Vec::new(),
         edit_tool_ranges: Vec::new(),
         copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
     })

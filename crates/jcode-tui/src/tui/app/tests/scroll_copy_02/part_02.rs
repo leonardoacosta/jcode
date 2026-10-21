@@ -575,15 +575,45 @@ fn test_try_open_link_at_opens_clicked_url_and_sets_notice() {
     let _render_lock = scroll_render_test_lock();
     let mut app = create_test_app();
     crate::tui::ui::clear_copy_viewport_snapshot();
-    crate::tui::ui::record_copy_viewport_snapshot(
-        std::sync::Arc::new(vec!["Docs: https://example.com/docs".to_string()]),
-        std::sync::Arc::new(vec![0]),
-        std::sync::Arc::new(vec!["Docs: https://example.com/docs".to_string()]),
-        std::sync::Arc::new(vec![crate::tui::ui::WrappedLineMap {
-            raw_line: 0,
-            start_col: 0,
-            end_col: 30,
-        }]),
+    let rendered = crate::tui::markdown::render_markdown_with_width_and_links(
+        "Docs: [guide](https://example.com/docs)",
+        None,
+    );
+    let text = jcode_tui_render::line_plain_text(&rendered.lines[0]);
+    let targets = rendered
+        .links
+        .into_iter()
+        .map(|hit| jcode_tui_messages::LinkHitTarget {
+            line: hit.line,
+            start_col: hit.start_col,
+            end_col: hit.end_col,
+            target: hit.target,
+        })
+        .collect();
+    crate::tui::ui::record_copy_viewport_frame_snapshot_for_test(
+        std::sync::Arc::new(jcode_tui_messages::PreparedChatFrame::from_single(
+            std::sync::Arc::new(jcode_tui_messages::PreparedMessages {
+                wrapped_lines: rendered.lines,
+                wrapped_plain_lines: std::sync::Arc::new(vec![text.clone()]),
+                wrapped_copy_offsets: std::sync::Arc::new(vec![0]),
+                raw_plain_lines: std::sync::Arc::new(vec![text]),
+                wrapped_line_map: std::sync::Arc::new(vec![crate::tui::ui::WrappedLineMap {
+                    raw_line: 0,
+                    start_col: 0,
+                    end_col: 37,
+                }]),
+                wrapped_user_indices: Vec::new(),
+                wrapped_user_prompt_starts: Vec::new(),
+                wrapped_user_prompt_ends: Vec::new(),
+                user_prompt_texts: Vec::new(),
+                image_regions: Vec::new(),
+                edit_tool_ranges: Vec::new(),
+                copy_targets: Vec::new(),
+                link_hit_targets: targets,
+                message_boundaries: Vec::new(),
+                mermaid_pending_epoch: None,
+            }),
+        )),
         0,
         1,
         Rect::new(0, 0, 80, 5),
@@ -606,6 +636,12 @@ fn test_try_open_link_at_opens_clicked_url_and_sets_notice() {
     assert_eq!(
         app.status_notice(),
         Some("Opened link: https://example.com/docs".to_string())
+    );
+
+    assert!(app.try_open_link_at_with(10, 0, |_| Err::<(), _>("opener unavailable")));
+    assert_eq!(
+        app.status_notice(),
+        Some("Failed to open link: opener unavailable".to_string())
     );
 }
 

@@ -42,6 +42,14 @@ pub struct CopyTarget {
     pub badge_line: usize,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LinkHitTarget {
+    pub line: usize,
+    pub start_col: usize,
+    pub end_col: usize,
+    pub target: String,
+}
+
 #[derive(Clone, Debug)]
 pub struct EditToolRange {
     pub edit_index: usize,
@@ -92,6 +100,7 @@ pub struct PreparedMessages {
     /// Line ranges for edit tool messages.
     pub edit_tool_ranges: Vec<EditToolRange>,
     pub copy_targets: Vec<CopyTarget>,
+    pub link_hit_targets: Vec<LinkHitTarget>,
     /// Per-message cumulative boundaries in transcript order, used for prefix
     /// reuse on rebuild. Empty when boundary tracking is not available (e.g.
     /// synthetic/test prepared bodies); prefix reuse simply degrades to a full
@@ -141,6 +150,7 @@ pub struct PreparedChatFrame {
     pub image_regions: Vec<ImageRegion>,
     pub edit_tool_ranges: Vec<EditToolRange>,
     pub copy_targets: Vec<CopyTarget>,
+    pub link_hit_targets: Vec<LinkHitTarget>,
 }
 
 impl PreparedChatFrame {
@@ -169,6 +179,7 @@ impl PreparedChatFrame {
         let mut image_regions = Vec::new();
         let mut edit_tool_ranges = Vec::new();
         let mut copy_targets = Vec::new();
+        let mut link_hit_targets = Vec::new();
 
         for (kind, prepared) in sections {
             if prepared.wrapped_lines.is_empty()
@@ -222,6 +233,17 @@ impl PreparedChatFrame {
                 end_line: target.end_line + line_start,
                 badge_line: target.badge_line + line_start,
             }));
+            link_hit_targets.extend(
+                prepared
+                    .link_hit_targets
+                    .iter()
+                    .map(|target| LinkHitTarget {
+                        line: target.line + line_start,
+                        start_col: target.start_col,
+                        end_col: target.end_col,
+                        target: target.target.clone(),
+                    }),
+            );
             prepared_sections.push(PreparedSection {
                 kind,
                 prepared: prepared.clone(),
@@ -243,6 +265,7 @@ impl PreparedChatFrame {
             image_regions,
             edit_tool_ranges,
             copy_targets,
+            link_hit_targets,
         }
     }
 
@@ -300,6 +323,15 @@ impl PreparedChatFrame {
     pub fn wrapped_copy_offset(&self, abs_line: usize) -> Option<usize> {
         let (section, local) = self.line_section(abs_line)?;
         section.prepared.wrapped_copy_offsets.get(local).copied()
+    }
+
+    pub fn link_target_at(&self, abs_line: usize, column: usize) -> Option<&str> {
+        self.link_hit_targets
+            .iter()
+            .find(|target| {
+                target.line == abs_line && column >= target.start_col && column < target.end_col
+            })
+            .map(|target| target.target.as_str())
     }
 
     pub fn raw_plain_line(&self, raw_line: usize) -> Option<&str> {

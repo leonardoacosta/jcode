@@ -1,7 +1,64 @@
 #[test]
 fn test_link_target_from_screen_detects_chat_url() {
     let _lock = viewport_snapshot_test_lock();
-    record_test_chat_snapshot("Docs: https://example.com/docs).");
+    clear_copy_viewport_snapshot();
+    let rendered = crate::tui::markdown::render_markdown_with_width_and_links(
+        "Docs: [guide](https://example.com/docs)",
+        None,
+    );
+    let hits = crate::tui::markdown::link_hit_ranges(&rendered.lines);
+    let prepared = jcode_tui_messages::PreparedMessages {
+        wrapped_lines: rendered.lines.clone(),
+        wrapped_plain_lines: std::sync::Arc::new(
+            rendered
+                .lines
+                .iter()
+                .map(crate::tui::ui::line_plain_text)
+                .collect(),
+        ),
+        wrapped_copy_offsets: std::sync::Arc::new(vec![0; rendered.lines.len()]),
+        raw_plain_lines: std::sync::Arc::new(
+            rendered
+                .lines
+                .iter()
+                .map(crate::tui::ui::line_plain_text)
+                .collect(),
+        ),
+        wrapped_line_map: std::sync::Arc::new(
+            rendered
+                .lines
+                .iter()
+                .enumerate()
+                .map(|(raw_line, line)| WrappedLineMap {
+                    raw_line,
+                    start_col: 0,
+                    end_col: line.width(),
+                })
+                .collect(),
+        ),
+        wrapped_user_indices: Vec::new(),
+        wrapped_user_prompt_starts: Vec::new(),
+        wrapped_user_prompt_ends: Vec::new(),
+        user_prompt_texts: Vec::new(),
+        image_regions: Vec::new(),
+        edit_tool_ranges: Vec::new(),
+        copy_targets: Vec::new(),
+        link_hit_targets: hits
+            .into_iter()
+            .map(|hit| jcode_tui_messages::LinkHitTarget {
+                line: hit.line,
+                start_col: hit.start_col,
+                end_col: hit.end_col,
+                target: hit.target,
+            })
+            .collect(),
+        message_boundaries: Vec::new(),
+        mermaid_pending_epoch: None,
+    };
+    let frame = std::sync::Arc::new(jcode_tui_messages::PreparedChatFrame::from_single(
+        std::sync::Arc::new(prepared),
+    ));
+    record_copy_viewport_frame_snapshot_for_test(frame, 0, 1, Rect::new(0, 0, 80, 5), &[0]);
 
     assert_eq!(
         link_target_from_screen(10, 0),
@@ -10,7 +67,77 @@ fn test_link_target_from_screen_detects_chat_url() {
 }
 
 #[test]
-fn test_link_target_from_screen_detects_side_pane_url() {
+fn test_link_target_from_screen_uses_prepared_hit_ranges_after_scroll() {
+    let _lock = viewport_snapshot_test_lock();
+    clear_copy_viewport_snapshot();
+    let prepared = jcode_tui_messages::PreparedMessages {
+        wrapped_lines: vec![
+            Line::from("old 0"),
+            Line::from("old 1"),
+            Line::from("old 2"),
+            Line::from("old 3"),
+            Line::from("old 4"),
+            Line::from("old 5"),
+            Line::from("prefix docs suffix"),
+        ],
+        wrapped_plain_lines: std::sync::Arc::new(vec![
+            "old 0".into(),
+            "old 1".into(),
+            "old 2".into(),
+            "old 3".into(),
+            "old 4".into(),
+            "old 5".into(),
+            "prefix docs suffix".into(),
+        ]),
+        wrapped_copy_offsets: std::sync::Arc::new(vec![0; 7]),
+        raw_plain_lines: std::sync::Arc::new(vec![
+            "old 0".into(),
+            "old 1".into(),
+            "old 2".into(),
+            "old 3".into(),
+            "old 4".into(),
+            "old 5".into(),
+            "prefix docs suffix".into(),
+        ]),
+        wrapped_line_map: std::sync::Arc::new(
+            (0..7)
+                .map(|raw_line| WrappedLineMap {
+                    raw_line,
+                    start_col: 0,
+                    end_col: if raw_line == 6 { 18 } else { 5 },
+                })
+                .collect(),
+        ),
+        wrapped_user_indices: Vec::new(),
+        wrapped_user_prompt_starts: Vec::new(),
+        wrapped_user_prompt_ends: Vec::new(),
+        user_prompt_texts: Vec::new(),
+        image_regions: Vec::new(),
+        edit_tool_ranges: Vec::new(),
+        copy_targets: Vec::new(),
+        link_hit_targets: vec![jcode_tui_messages::LinkHitTarget {
+            line: 6,
+            start_col: 7,
+            end_col: 11,
+            target: "https://example.com/exact".into(),
+        }],
+        message_boundaries: Vec::new(),
+        mermaid_pending_epoch: None,
+    };
+    let frame = std::sync::Arc::new(jcode_tui_messages::PreparedChatFrame::from_single(
+        std::sync::Arc::new(prepared),
+    ));
+    record_copy_viewport_frame_snapshot_for_test(frame, 6, 7, Rect::new(20, 5, 40, 4), &[3]);
+
+    assert_eq!(
+        link_target_from_screen(30, 5),
+        Some("https://example.com/exact".into())
+    );
+    assert_eq!(link_target_from_screen(29, 5), None);
+}
+
+#[test]
+fn test_link_target_from_screen_ignores_bare_url_without_markdown_link_metadata() {
     let _lock = viewport_snapshot_test_lock();
     clear_copy_viewport_snapshot();
     record_side_pane_snapshot(
@@ -20,10 +147,7 @@ fn test_link_target_from_screen_detects_side_pane_url() {
         Rect::new(40, 0, 40, 5),
     );
 
-    assert_eq!(
-        link_target_from_screen(45, 0),
-        Some("https://example.com/side".to_string())
-    );
+    assert_eq!(link_target_from_screen(45, 0), None);
 }
 
 #[test]
@@ -118,6 +242,7 @@ fn test_active_file_diff_context_resolves_visible_edit() {
             },
         ],
         copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
     };

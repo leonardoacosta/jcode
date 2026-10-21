@@ -1639,6 +1639,23 @@ struct CopyViewportSnapshot {
 }
 
 impl CopyViewportSnapshot {
+    fn link_target_at_screen_point(&self, column: u16, row: u16) -> Option<String> {
+        let point = copy_point_from_snapshot(self, column, row)?;
+        let CopyViewportData::ChatFrame { prepared } = &self.data else {
+            return None;
+        };
+        let left_margin = self
+            .left_margins
+            .get(row.saturating_sub(self.content_area.y) as usize)
+            .copied()
+            .unwrap_or(0) as usize;
+        let visual_col =
+            (column.saturating_sub(self.content_area.x) as usize).saturating_sub(left_margin);
+        prepared
+            .link_target_at(point.abs_line, visual_col)
+            .map(str::to_owned)
+    }
+
     fn wrapped_plain_line_count(&self) -> usize {
         match &self.data {
             CopyViewportData::Dense {
@@ -1735,11 +1752,7 @@ mod draw_recovery;
 mod profile;
 #[path = "ui/selection_highlight.rs"]
 pub(crate) mod selection_highlight;
-#[path = "ui/url.rs"]
-mod url_regex_support;
-use self::copy_selection::{
-    copy_point_from_snapshot, copy_selection_text_from_raw_lines, link_target_from_snapshot,
-};
+use self::copy_selection::{copy_point_from_snapshot, copy_selection_text_from_raw_lines};
 use self::display_width::{clamp_display_col, display_col_slice, line_display_width};
 use self::draw_recovery::render_recovered_panic_frame;
 use self::profile::{profile_enabled, record_profile};
@@ -2502,14 +2515,8 @@ pub(crate) fn copy_selection_metrics(
 }
 
 pub(crate) fn link_target_from_screen(column: u16, row: u16) -> Option<String> {
-    let point = copy_point_from_screen(column, row)?;
-    // Clicking a URL you are still composing should reposition the caret, not
-    // open the link; only transcript/side-pane links are click-to-open.
-    if point.pane == crate::tui::CopySelectionPane::Input {
-        return None;
-    }
-    let snapshot = copy_snapshot_for_pane(point.pane)?;
-    link_target_from_snapshot(&snapshot, point)
+    let snapshot = copy_snapshot_for_pane(crate::tui::CopySelectionPane::Chat)?;
+    snapshot.link_target_at_screen_point(column, row)
 }
 
 /// If a screen click landed on an inline-image label line, return the image

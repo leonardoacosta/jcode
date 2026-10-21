@@ -139,7 +139,10 @@ fn test_blockquote_blank_lines_keep_continuous_gutters() {
             "> Outer\n>\n>> Inner one\n>>\n>> Inner two\n>\n> Outer again",
             "│ Outer\n│ \n│ │ Inner one\n│ │ \n│ │ Inner two\n│ \n│ Outer again",
         ),
-        ("> First quote\n\n> Separate quote", "│ First quote\n\n│ Separate quote"),
+        (
+            "> First quote\n\n> Separate quote",
+            "│ First quote\n\n│ Separate quote",
+        ),
         ("> Single paragraph\n>\n", "│ Single paragraph"),
     ];
     for mode in [MarkdownSpacingMode::Compact, MarkdownSpacingMode::Document] {
@@ -150,7 +153,10 @@ fn test_blockquote_blank_lines_keep_continuous_gutters() {
                 let lazy = render_markdown_lazy(markdown, None, 0..100);
                 assert_eq!(lazy, full);
                 assert_eq!(lines_to_string(&wrap_lines(full.clone(), 80)), expected);
-                for line in full.iter().filter(|line| line_to_string(line).trim() == "│") {
+                for line in full
+                    .iter()
+                    .filter(|line| line_to_string(line).trim() == "│")
+                {
                     assert_eq!(line.spans[0].style.fg, Some(md_dim_color()));
                     assert_eq!(line.alignment, Some(Alignment::Left));
                 }
@@ -169,7 +175,8 @@ fn test_blockquote_copy_preserves_paragraph_breaks() {
 
 #[test]
 fn test_blockquote_streaming_and_narrow_wrapping_keep_gutters() {
-    let markdown = "> A long opening paragraph with several words.\n>\n> A second paragraph.\n>\n> Thanks";
+    let markdown =
+        "> A long opening paragraph with several words.\n>\n> A second paragraph.\n>\n> Thanks";
     let mut incremental = IncrementalMarkdownRenderer::new(Some(16));
     for end in 1..=markdown.len() {
         let prefix = &markdown[..end];
@@ -337,8 +344,14 @@ fn test_math_in_table_stays_within_constrained_width() {
         .map(line_to_string)
         .collect();
 
-    assert!(rendered.iter().any(|line| line.contains("x+1")), "{rendered:?}");
-    assert!(rendered.iter().any(|line| line.contains("α₂")), "{rendered:?}");
+    assert!(
+        rendered.iter().any(|line| line.contains("x+1")),
+        "{rendered:?}"
+    );
+    assert!(
+        rendered.iter().any(|line| line.contains("α₂")),
+        "{rendered:?}"
+    );
     assert!(
         rendered.iter().map(|line| line.width()).max().unwrap_or(0) <= 24,
         "table math exceeded width: {rendered:?}"
@@ -354,8 +367,14 @@ fn test_math_in_list_and_blockquote_wraps_without_losing_gutter() {
         .filter(|line| !line.is_empty())
         .collect();
 
-    assert!(rendered.iter().any(|line| line.contains("x+1")), "{rendered:?}");
-    assert!(rendered.iter().any(|line| line.contains("α₂")), "{rendered:?}");
+    assert!(
+        rendered.iter().any(|line| line.contains("x+1")),
+        "{rendered:?}"
+    );
+    assert!(
+        rendered.iter().any(|line| line.contains("α₂")),
+        "{rendered:?}"
+    );
     assert!(
         rendered.iter().any(|line| line.starts_with("│ ")),
         "blockquote gutter was not preserved: {rendered:?}"
@@ -588,6 +607,60 @@ fn test_link_strike_and_image_render() {
     assert!(rendered.contains("old"));
     assert!(rendered.contains("docs (https://example.com)"));
     assert!(rendered.contains("[image: chart] (https://img.example/chart.png)"));
+}
+
+#[test]
+fn test_rendered_link_ranges_retain_exact_href() {
+    let rendered =
+        render_markdown_with_width_and_links("See [docs](https://example.com/docs) now", None);
+    assert_eq!(rendered.links.len(), 1);
+    assert_eq!(rendered.links[0].target, "https://example.com/docs");
+    let line = &rendered.lines[rendered.links[0].line];
+    let text: String = line
+        .spans
+        .iter()
+        .map(|span| span.content.as_ref())
+        .collect();
+    assert_eq!(rendered.links[0].start_col, 4);
+    assert_eq!(rendered.links[0].end_col, 8);
+    assert_eq!(
+        &text[rendered.links[0].start_col..rendered.links[0].end_col],
+        "docs"
+    );
+}
+
+#[test]
+fn test_rendered_link_ranges_cover_multiline_labels_but_not_underlined_headings() {
+    let rendered = render_markdown_with_width_and_links(
+        "# Ordinary heading\n\n[**first** line\nsecond](file:///tmp/diagram.svg)",
+        None,
+    );
+    assert_eq!(
+        rendered.links.len(),
+        2,
+        "links={:?}, lines={:?}",
+        rendered.links,
+        rendered.lines
+    );
+    assert!(
+        rendered
+            .links
+            .iter()
+            .all(|link| link.target == "file:///tmp/diagram.svg")
+    );
+    let file_links: Vec<_> = rendered
+        .links
+        .iter()
+        .filter(|link| link.target == "file:///tmp/diagram.svg")
+        .collect();
+    assert_eq!(
+        file_links.len(),
+        2,
+        "each wrapped line needs a click target"
+    );
+    for link in file_links {
+        assert!(link.start_col < link.end_col);
+    }
 }
 
 #[test]

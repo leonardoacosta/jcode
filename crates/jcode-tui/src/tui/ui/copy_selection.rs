@@ -1,7 +1,6 @@
 use unicode_width::UnicodeWidthStr;
 
 use super::display_width::{clamp_display_col, display_col_slice, line_display_width};
-use super::url_regex_support::link_target_for_display_column;
 use super::{CopyViewportData, CopyViewportSnapshot};
 
 pub(super) fn copy_point_from_snapshot(
@@ -236,15 +235,6 @@ pub(super) fn copy_selection_metrics_from_raw_lines(
     Some((chars, lines.max(1)))
 }
 
-pub(super) fn link_target_from_snapshot(
-    snapshot: &CopyViewportSnapshot,
-    point: crate::tui::CopySelectionPoint,
-) -> Option<String> {
-    let raw_point = raw_selection_point(snapshot, point)?;
-    let raw_text = snapshot.raw_plain_line(raw_point.raw_line)?;
-    link_target_for_display_column(raw_text, raw_point.column)
-}
-
 fn raw_selection_point(
     snapshot: &CopyViewportSnapshot,
     point: crate::tui::CopySelectionPoint,
@@ -312,6 +302,7 @@ mod tests {
                 end_line: 4,
                 badge_line: 1,
             }],
+            link_hit_targets: Vec::new(),
             message_boundaries: Vec::new(),
             mermaid_pending_epoch: None,
         };

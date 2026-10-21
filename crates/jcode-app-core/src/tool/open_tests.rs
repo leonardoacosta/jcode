@@ -89,6 +89,19 @@ async fn execute_rejects_removed_mode_parameter() {
     );
 }
 
+#[tokio::test]
+async fn generic_open_tool_remains_suppressed_in_test_harness() {
+    let tool = OpenTool::new();
+    let err = tool
+        .execute(
+            json!({"action": "open", "target": "https://example.com"}),
+            make_ctx(),
+        )
+        .await
+        .unwrap_err();
+    assert!(err.to_string().contains("opening files/URLs is suppressed"));
+}
+
 #[test]
 fn expand_home_handles_plain_non_tilde_paths() {
     let path = expand_home("docs/spec.pdf").unwrap();

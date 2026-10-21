@@ -1,6 +1,48 @@
 use super::*;
 
 #[test]
+fn wrapped_link_hit_targets_follow_label_cells() {
+    let rendered = markdown::render_markdown_with_width_and_links(
+        "prefix [a long documentation label](https://example.com/docs) suffix",
+        Some(24),
+    );
+    let wrapped = wrap_lines_with_map(
+        rendered.lines,
+        &[],
+        &[],
+        &[],
+        &[],
+        &[],
+        24,
+        &[],
+        &[],
+        &[],
+        &rendered
+            .links
+            .into_iter()
+            .map(|link| jcode_tui_messages::LinkHitTarget {
+                line: link.line,
+                start_col: link.start_col,
+                end_col: link.end_col,
+                target: link.target,
+            })
+            .collect::<Vec<_>>(),
+    );
+
+    let frame = jcode_tui_messages::PreparedChatFrame::from_single(Arc::new(wrapped));
+    assert!(frame.link_hit_targets.len() > 1);
+    assert!(frame.link_hit_targets.iter().all(|target| {
+        target.target == "https://example.com/docs" && target.start_col < target.end_col
+    }));
+    for target in &frame.link_hit_targets {
+        assert_eq!(
+            frame.link_target_at(target.line, target.start_col),
+            Some("https://example.com/docs")
+        );
+    }
+}
+
+#[test]
 fn centered_mode_centers_unstructured_messages_and_preserves_structured_left_blocks() {
     for role in ["user", "assistant", "meta", "usage", "error", "memory"] {
         assert_eq!(
@@ -72,7 +114,8 @@ fn wrapped_row_map_tiles_raw_line_and_skips_repeated_prefix() {
             .unwrap_or_else(|| panic!("case should render a line wider than 40: {case:?}"));
         let raw_width = unicode_width::UnicodeWidthStr::width(ui::line_plain_text(&line).as_str());
 
-        let prepared = wrap_lines_with_map(vec![line], &[], &[], &[], &[], &[], 40, &[], &[], &[]);
+        let prepared =
+            wrap_lines_with_map(vec![line], &[], &[], &[], &[], &[], 40, &[], &[], &[], &[]);
         let maps = prepared.wrapped_line_map.as_ref();
 
         assert!(maps.len() > 1, "case should wrap at width 40: {case:?}");
@@ -143,6 +186,7 @@ fn wrapped_copy_rows_match_visible_content_at_reported_widths() {
                 &[],
                 &[],
                 &[],
+                &[],
             ));
         }
 
@@ -170,6 +214,7 @@ fn wrapped_copy_rows_match_visible_content_at_reported_widths() {
             &users,
             &[],
             width,
+            &[],
             &[],
             &[],
             &[],
@@ -203,6 +248,7 @@ fn matching_suffix_len_detects_prepended_history() {
         image_regions: Vec::new(),
         edit_tool_ranges: Vec::new(),
         copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: old
             .iter()
             .map(|m| MessageBoundary {

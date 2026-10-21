@@ -135,6 +135,7 @@ mod tests {
                 image_regions: Vec::new(),
                 edit_tool_ranges: Vec::new(),
                 copy_targets: Vec::new(),
+                link_hit_targets: Vec::new(),
                 message_boundaries: boundaries,
                 mermaid_pending_epoch: None,
             }),
@@ -361,6 +362,7 @@ mod section_pos_tests {
             image_regions: Vec::new(),
             edit_tool_ranges: Vec::new(),
             copy_targets: Vec::new(),
+            link_hit_targets: Vec::new(),
             message_boundaries: Vec::new(),
             mermaid_pending_epoch: None,
         })

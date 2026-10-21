@@ -430,6 +430,7 @@ fn empty_prepared_messages() -> PreparedMessages {
         image_regions: Vec::new(),
         edit_tool_ranges: Vec::new(),
         copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
     }
@@ -650,7 +651,7 @@ fn prepare_active_batch_progress(
         super::left_pad_lines_to_block_width(&mut lines, width, block_width);
     }
 
-    wrap_lines_with_map(lines, &[], &[], &[], &[], &[], width, &[], &[], &[])
+    wrap_lines_with_map(lines, &[], &[], &[], &[], &[], width, &[], &[], &[], &[])
 }
 
 pub(super) fn prepare_messages(
@@ -927,6 +928,7 @@ fn prepare_messages_inner(app: &dyn TuiState, width: u16, height: u16) -> Prepar
             image_regions: Vec::new(),
             edit_tool_ranges: Vec::new(),
             copy_targets: Vec::new(),
+            link_hit_targets: Vec::new(),
             message_boundaries: Vec::new(),
             mermaid_pending_epoch: None,
         });
@@ -965,6 +967,7 @@ fn prepare_messages_inner(app: &dyn TuiState, width: u16, height: u16) -> Prepar
             image_regions: Vec::new(),
             edit_tool_ranges: Vec::new(),
             copy_targets: Vec::new(),
+            link_hit_targets: Vec::new(),
             message_boundaries: Vec::new(),
             mermaid_pending_epoch: None,
         })
@@ -1326,6 +1329,7 @@ struct BodyAcc {
     user_prompt_texts: Vec<String>,
     edit_tool_line_ranges: Vec<(usize, String, usize, usize, bool)>,
     copy_targets: Vec<RawCopyTarget>,
+    link_hit_targets: Vec<jcode_tui_messages::LinkHitTarget>,
     /// One entry per rendered message, in order: `(msg_hash, lines_len_after,
     /// raw_len_after, user_prompt_len_after)`. `lines_len_after` counts any
     /// separator blank pushed at the start of that message, so truncating the
@@ -1450,6 +1454,16 @@ fn render_message_into(
                 app.diff_mode(),
                 render_assistant_message,
             );
+            let message_line_start = acc.lines.len();
+            for hit in markdown::link_hit_ranges(&cached) {
+                acc.link_hit_targets
+                    .push(jcode_tui_messages::LinkHitTarget {
+                        line: message_line_start + hit.line,
+                        start_col: hit.start_col,
+                        end_col: hit.end_col,
+                        target: hit.target,
+                    });
+            }
             let message_copy_targets = assistant_message_copy_targets(&msg.content, &cached);
             for target in message_copy_targets {
                 acc.copy_targets
@@ -1832,6 +1846,7 @@ pub(super) fn prepare_body_incremental(
         &acc.edit_tool_line_ranges,
         &acc.copy_targets,
         &acc.segments,
+        &acc.link_hit_targets,
     );
 
     let prepared = Arc::make_mut(&mut prev);
@@ -1927,6 +1942,14 @@ pub(super) fn prepare_body_incremental(
             }),
     );
     prepared
+        .link_hit_targets
+        .extend(new_wrapped.link_hit_targets.into_iter().map(|target| {
+            jcode_tui_messages::LinkHitTarget {
+                line: target.line + prev_len,
+                ..target
+            }
+        }));
+    prepared
         .message_boundaries
         .extend(
             new_wrapped
@@ -1990,6 +2013,9 @@ pub(super) fn truncate_prepared_to_boundary(prepared: &mut PreparedMessages, kee
         .edit_tool_ranges
         .retain(|r| r.start_line < wrapped_len);
     prepared.copy_targets.retain(|t| t.start_line < wrapped_len);
+    prepared
+        .link_hit_targets
+        .retain(|target| target.line < wrapped_len);
 
     // The pending-mermaid placeholder may have lived in the dropped tail;
     // recompute so a stale-positive stamp cannot force rebuilds forever.
@@ -2154,6 +2180,7 @@ pub(super) fn prepare_body_prepended(
         &acc.edit_tool_line_ranges,
         &acc.copy_targets,
         &acc.segments,
+        &acc.link_hit_targets,
     );
 
     // Blank-separator continuity at the seam: the suffix's first message baked
@@ -2294,6 +2321,23 @@ pub(super) fn prepare_body_prepended(
     }
 
     {
+        let mut targets = head.link_hit_targets;
+        targets.extend(
+            prepared
+                .link_hit_targets
+                .iter()
+                .filter(|target| target.line >= cut_wrapped)
+                .map(|target| jcode_tui_messages::LinkHitTarget {
+                    line: shift_wrapped(target.line),
+                    start_col: target.start_col,
+                    end_col: target.end_col,
+                    target: target.target.clone(),
+                }),
+        );
+        prepared.link_hit_targets = targets;
+    }
+
+    {
         let mut boundaries = head.message_boundaries;
         boundaries.extend(prepared.message_boundaries[drop_msgs..].iter().map(|b| {
             MessageBoundary {
@@ -2429,6 +2473,7 @@ pub(super) fn prepare_body(
         &acc.edit_tool_line_ranges,
         &acc.copy_targets,
         &acc.segments,
+        &acc.link_hit_targets,
     );
     stamp_mermaid_pending(&mut prepared, mermaid_epoch_before);
     prepared
@@ -2530,6 +2575,7 @@ fn wrap_lines(
         image_regions,
         edit_tool_ranges: Vec::new(),
         copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
     }
@@ -2550,6 +2596,7 @@ fn wrap_lines_with_map(
     edit_ranges: &[(usize, String, usize, usize, bool)],
     copy_ranges: &[RawCopyTarget],
     segments: &[(u64, usize, usize, usize)],
+    link_hit_targets: &[jcode_tui_messages::LinkHitTarget],
 ) -> PreparedMessages {
     let full_width = width.saturating_sub(1) as usize;
     let user_width = width.saturating_sub(2) as usize;
@@ -2559,6 +2606,7 @@ fn wrap_lines_with_map(
     let mut raw_plain_lines: Vec<String> = seeded_raw_plain_lines.to_vec();
     let mut wrapped_line_map: Vec<WrappedLineMap> = Vec::new();
     let mut wrapped_copy_offsets: Vec<usize> = Vec::new();
+    let mut wrapped_link_hit_targets = Vec::new();
     let mut user_line_mask = vec![false; lines.len()];
     for &idx in user_line_indices {
         if idx < user_line_mask.len() {
@@ -2617,6 +2665,21 @@ fn wrap_lines_with_map(
                 end_col: segment_end,
             });
             wrapped_copy_offsets.push(visual_prefix.min(width));
+            for target in link_hit_targets
+                .iter()
+                .filter(|target| target.line == orig_idx)
+            {
+                let intersection_start = target.start_col.max(segment_start);
+                let intersection_end = target.end_col.min(segment_end);
+                if intersection_start < intersection_end {
+                    wrapped_link_hit_targets.push(jcode_tui_messages::LinkHitTarget {
+                        line: wrapped_idx + row_idx,
+                        start_col: visual_prefix + intersection_start.saturating_sub(segment_start),
+                        end_col: visual_prefix + intersection_end.saturating_sub(segment_start),
+                        target: target.target.clone(),
+                    });
+                }
+            }
             segment_start = segment_end;
         }
 
@@ -2711,6 +2774,7 @@ fn wrap_lines_with_map(
         image_regions,
         edit_tool_ranges,
         copy_targets,
+        link_hit_targets: wrapped_link_hit_targets,
         message_boundaries,
         mermaid_pending_epoch: None,
     }

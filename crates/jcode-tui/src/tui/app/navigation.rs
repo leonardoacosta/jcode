@@ -259,7 +259,7 @@ impl App {
             return true;
         }
 
-        match super::helpers::open_path_or_url_detached(&target) {
+        match super::helpers::open_user_clicked_link_detached(&target) {
             Ok(()) => self.set_status_notice(format!("Opened link: {}", target)),
             Err(e) => self.set_status_notice(format!("Failed to open link: {}", e)),
         }

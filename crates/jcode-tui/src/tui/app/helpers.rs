@@ -115,6 +115,64 @@ pub(crate) fn invalidate_ambient_info_cache() {
     }
 }
 
+pub(crate) fn open_user_clicked_link_detached(target: &str) -> std::io::Result<()> {
+    if cfg!(test) {
+        return Err(std::io::Error::other(
+            "external opening is suppressed in tests",
+        ));
+    }
+    open_user_clicked_link_with(target, |target| open::that_detached(target))
+}
+
+fn open_user_clicked_link_with<F>(target: &str, mut open_target: F) -> std::io::Result<()>
+where
+    F: FnMut(&std::ffi::OsStr) -> std::io::Result<()>,
+{
+    if env_truthy("NO_BROWSER") || env_truthy("JCODE_NO_BROWSER") {
+        return Err(std::io::Error::other(
+            "opening files/URLs is disabled by NO_BROWSER/JCODE_NO_BROWSER",
+        ));
+    }
+    let parsed = url::Url::parse(target).map_err(|error| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!("invalid link target: {error}"),
+        )
+    })?;
+    match parsed.scheme() {
+        "http" | "https" => open_target(std::ffi::OsStr::new(parsed.as_str())),
+        "file" => {
+            let path = parsed.to_file_path().map_err(|()| {
+                std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "file URL must target a local path",
+                )
+            })?;
+            if !path.exists() {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    format!("file does not exist: {}", path.display()),
+                ));
+            }
+            open_target(path.as_os_str())
+        }
+        scheme => Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            format!("unsupported link scheme: {scheme}"),
+        )),
+    }
+}
+
+fn env_truthy(key: &str) -> bool {
+    std::env::var(key)
+        .ok()
+        .map(|value| {
+            let value = value.trim();
+            !value.is_empty() && value != "0" && !value.eq_ignore_ascii_case("false")
+        })
+        .unwrap_or(false)
+}
+
 /// Open a file/URL with the system opener, unless suppressed.
 ///
 /// Every TUI-initiated `open::that_detached` must go through here: it honors
@@ -1678,5 +1736,83 @@ pub(crate) fn porcelain_status_letter(index: u8, worktree: u8) -> char {
         b'D' => 'D',
         b'R' | b'C' => 'R',
         _ => 'M',
+    }
+}
+
+#[cfg(test)]
+mod user_clicked_link_tests {
+    use super::*;
+    use std::ffi::OsString;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn clear_opt_outs() {
+        unsafe {
+            std::env::remove_var("NO_BROWSER");
+            std::env::remove_var("JCODE_NO_BROWSER");
+        }
+    }
+
+    #[test]
+    fn explicit_click_accepts_http_and_local_file_targets_without_launching_in_test() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        clear_opt_outs();
+        let seen = Mutex::new(Vec::<OsString>::new());
+        open_user_clicked_link_with("https://example.com/a", |target| {
+            seen.lock().unwrap().push(target.to_os_string());
+            Ok(())
+        })
+        .unwrap();
+
+        let file = tempfile::NamedTempFile::with_suffix(".svg").unwrap();
+        let uri = url::Url::from_file_path(file.path()).unwrap().to_string();
+        open_user_clicked_link_with(&uri, |target| {
+            seen.lock().unwrap().push(target.to_os_string());
+            Ok(())
+        })
+        .unwrap();
+
+        let seen = seen.lock().unwrap();
+        assert_eq!(seen.len(), 2);
+        assert_eq!(seen[0], "https://example.com/a");
+        assert_eq!(seen[1], file.path().as_os_str());
+    }
+
+    #[test]
+    fn explicit_click_rejects_unsupported_and_missing_local_targets_before_opening() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        clear_opt_outs();
+        let mut calls = 0;
+        assert!(
+            open_user_clicked_link_with("javascript:alert(1)", |_| {
+                calls += 1;
+                Ok(())
+            })
+            .is_err()
+        );
+        assert!(
+            open_user_clicked_link_with("file:///not/a/real/jcode-file.png", |_| {
+                calls += 1;
+                Ok(())
+            })
+            .is_err()
+        );
+        assert_eq!(calls, 0);
+    }
+
+    #[test]
+    fn explicit_no_browser_opt_out_blocks_user_click() {
+        let _lock = ENV_LOCK.lock().unwrap();
+        unsafe { std::env::set_var("NO_BROWSER", "1") };
+        unsafe { std::env::remove_var("JCODE_NO_BROWSER") };
+        let mut calls = 0;
+        let result = open_user_clicked_link_with("https://example.com", |_| {
+            calls += 1;
+            Ok(())
+        });
+        clear_opt_outs();
+        assert!(result.is_err());
+        assert_eq!(calls, 0);
     }
 }

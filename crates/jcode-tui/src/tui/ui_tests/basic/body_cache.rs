@@ -31,6 +31,7 @@ fn test_body_cache_state_keeps_multiple_width_entries() {
         image_regions: Vec::new(),
         edit_tool_ranges: Vec::new(),
         copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
     });
@@ -47,6 +48,7 @@ fn test_body_cache_state_keeps_multiple_width_entries() {
         image_regions: Vec::new(),
         edit_tool_ranges: Vec::new(),
         copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
     });
@@ -127,6 +129,7 @@ fn test_body_cache_state_evicts_oldest_entries() {
             image_regions: Vec::new(),
             edit_tool_ranges: Vec::new(),
             copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
         });
@@ -509,6 +512,7 @@ fn test_full_prep_cache_state_keeps_multiple_width_entries() {
         image_regions: Vec::new(),
         edit_tool_ranges: Vec::new(),
         copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
     }));
@@ -525,6 +529,7 @@ fn test_full_prep_cache_state_keeps_multiple_width_entries() {
         image_regions: Vec::new(),
         edit_tool_ranges: Vec::new(),
         copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
     }));
@@ -611,6 +616,7 @@ fn test_full_prep_cache_state_evicts_oldest_entries() {
             image_regions: Vec::new(),
             edit_tool_ranges: Vec::new(),
             copy_targets: Vec::new(),
+        link_hit_targets: Vec::new(),
         message_boundaries: Vec::new(),
         mermaid_pending_epoch: None,
         }));

@@ -24,6 +24,20 @@ pub use types::{
     CopyTargetKind, DiagramDisplayMode, LatexRenderingMode, MarkdownSpacingMode, RawCopyTarget,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenderedLink {
+    pub line: usize,
+    pub start_col: usize,
+    pub end_col: usize,
+    pub target: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RenderedMarkdown {
+    pub lines: Vec<Line<'static>>,
+    pub links: Vec<RenderedLink>,
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct MarkdownConfigSnapshot {
     pub diagram_mode: DiagramDisplayMode,
@@ -130,7 +144,10 @@ pub use render_core_adapter::{
     styled_line_to_line,
 };
 
-pub use render_full::{render_markdown_with_width, thread_render_count};
+pub use render_full::{
+    link_hit_ranges, render_markdown_with_width, render_markdown_with_width_and_links,
+    thread_render_count,
+};
 pub use render_lazy::render_markdown_lazy;
 pub use render_support::extract_copy_targets_from_rendered_lines;
 
