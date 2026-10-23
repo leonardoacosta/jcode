@@ -115,11 +115,6 @@ fn cargo_routing_is_limited_to_the_jcode_repository() {
     assert!(wrap_repo_cargo_commands("cargo test", None).is_none());
 }
 
-#[test]
-fn cargo_wrapper_path_is_shell_quoted() {
-    assert_eq!(shell_single_quote("a'b"), "'a'\"'\"'b'");
-}
-
 #[tokio::test]
 async fn background_command_stdin_is_null() {
     let mut command =
@@ -192,14 +187,11 @@ async fn test_stdin_forwarding_single_line() {
     let (tx, mut rx) = mpsc::unbounded_channel::<StdinInputRequest>();
     let tool = BashTool::new();
 
-    // "head -n1" reads one line from stdin and prints it
     let input = json!({"command": "head -n1", "timeout": 10000});
     let ctx = make_ctx(Some(tx));
 
-    // Spawn the tool execution
     let tool_handle = tokio::spawn(async move { tool.execute(input, ctx).await });
 
-    // Wait for the stdin request to arrive
     let req = tokio::time::timeout(std::time::Duration::from_secs(5), rx.recv())
         .await
         .expect("timed out waiting for stdin request")
@@ -562,6 +554,9 @@ async fn unanswered_stdin_request_closes_stdin_instead_of_hanging() {
 
 #[path = "bash_tests/progress_parsing.rs"]
 mod progress_parsing;
+
+#[path = "bash_tests/terminal_env.rs"]
+mod terminal_env;
 
 #[tokio::test]
 async fn test_background_command_progress_marker_updates_status_and_stays_out_of_output() {

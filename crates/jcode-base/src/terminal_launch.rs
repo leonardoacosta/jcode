@@ -6,6 +6,18 @@ pub use jcode_terminal_launch::{
 };
 use std::path::Path;
 
+pub fn apply_scoped_client_terminal_env(command: &mut std::process::Command) {
+    let env = client_terminal_env_snapshot();
+    apply_client_terminal_env(command, &env);
+}
+
+pub fn client_terminal_env_snapshot() -> Vec<(String, String)> {
+    match crate::hooks::client_terminal_env() {
+        Some(env) => env,
+        None => snapshot_client_terminal_env(),
+    }
+}
+
 /// The configured external spawn hook, if any.
 ///
 /// Resolution order: `JCODE_SPAWN_HOOK` env (handled by config env overrides;

@@ -4,7 +4,7 @@ use crate::bus::{
     BackgroundTaskProgress, BackgroundTaskProgressKind, BackgroundTaskProgressSource,
 };
 use crate::stdin_detect::{self, StdinState};
-use crate::util::truncate_str;
+use crate::{terminal_launch::apply_client_terminal_env, util::truncate_str};
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::Utc;
@@ -614,11 +614,7 @@ fn tool_scratch_dir() -> Option<std::path::PathBuf> {
     let dir = std::env::var_os("JCODE_SCRATCH_DIR")
         .filter(|value| !value.is_empty())
         .map(std::path::PathBuf::from)
-        .or_else(|| {
-            crate::storage::jcode_dir()
-                .ok()
-                .map(|dir| dir.join("scratch"))
-        })?;
+        .or_else(|| crate::storage::jcode_dir().ok().map(|d| d.join("scratch")))?;
     crate::storage::ensure_dir(&dir).ok()?;
     Some(dir)
 }
@@ -1012,6 +1008,7 @@ impl BashTool {
         let has_stdin_channel = ctx.stdin_request_tx.is_some();
 
         let mut command = build_shell_command(&params.command);
+        crate::terminal_launch::apply_scoped_client_terminal_env(command.as_std_mut());
         command
             .env("JCODE_SESSION_ID", &ctx.session_id)
             .kill_on_drop(true)
@@ -1245,6 +1242,7 @@ impl BashTool {
         let display_name = summarize_background_command(params.intent.as_deref(), &params.command);
 
         let mut cmd = build_detached_shell_wrapper(&params.command);
+        crate::terminal_launch::apply_scoped_client_terminal_env(&mut cmd);
         cmd.env("JCODE_SESSION_ID", &ctx.session_id);
         let stdout = OpenOptions::new()
             .create(true)
@@ -1388,6 +1386,7 @@ impl BashTool {
         let display_name = summarize_background_command(description.as_deref(), &command);
         let working_dir = ctx.working_dir.clone();
         let session_id_env = ctx.session_id.clone();
+        let client_terminal_env = crate::terminal_launch::client_terminal_env_snapshot();
         let timeout_ms = params.timeout.map(|timeout| timeout.min(600000));
         let timeout_duration = timeout_ms.map(Duration::from_millis);
 
@@ -1402,6 +1401,7 @@ impl BashTool {
                 wake,
 				move |output_path| async move {
 					let mut cmd = build_shell_command(&command);
+					apply_client_terminal_env(cmd.as_std_mut(), &client_terminal_env);
 					cmd.env("JCODE_SESSION_ID", &session_id_env);
 					#[cfg(unix)]
 					unsafe {

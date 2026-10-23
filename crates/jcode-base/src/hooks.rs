@@ -102,6 +102,18 @@ where
     CLIENT_TERMINAL_ENV.scope(env, future).await
 }
 
+/// Returns `None` when called outside a client request scope.
+#[expect(
+    clippy::manual_ok_err,
+    reason = "Missing task-local request scope is expected absence, not an operational error"
+)]
+pub fn client_terminal_env() -> Option<Vec<(String, String)>> {
+    match CLIENT_TERMINAL_ENV.try_with(Clone::clone) {
+        Ok(env) => Some(env),
+        Err(_) => None,
+    }
+}
+
 /// The configured commands for `event`, in declaration order.
 pub fn hook_commands(event: &str) -> Vec<String> {
     if hooks_suppressed() {
