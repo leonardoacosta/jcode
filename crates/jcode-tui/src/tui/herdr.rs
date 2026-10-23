@@ -8,8 +8,9 @@
 //!
 //! Reports go through `"$HERDR_BIN_PATH" pane report-agent ...` on a single
 //! background thread. Only the latest pending report is kept, every command
-//! has a short timeout, and failures are ignored so herdr can never slow down
-//! or break the TUI. Outside herdr every entry point is a no-op.
+//! has a short timeout. A session change clears the previous identity before
+//! reporting its replacement. Failures never block the TUI. Outside herdr
+//! every entry point is a no-op.
 
 use std::process::{Command, ExitStatus, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -84,7 +85,7 @@ struct Slot {
 struct Reporter {
     env: HerdrEnv,
     slot: Arc<(Mutex<Slot>, Condvar)>,
-    last_submitted: Mutex<Option<StateReport>>,
+    last_submitted: Arc<Mutex<Option<StateReport>>>,
 }
 
 static REPORTER: OnceLock<Option<Reporter>> = OnceLock::new();
@@ -104,10 +105,12 @@ fn reporter() -> Option<&'static Reporter> {
             ));
             let slot = Arc::new((Mutex::new(Slot::default()), Condvar::new()));
             let worker_slot = Arc::clone(&slot);
+            let last_submitted = Arc::new(Mutex::new(None));
+            let worker_last_submitted = Arc::clone(&last_submitted);
             let worker_env = env.clone();
             let spawned = std::thread::Builder::new()
                 .name("herdr-reporter".into())
-                .spawn(move || worker_loop(worker_env, worker_slot));
+                .spawn(move || worker_loop(worker_env, worker_slot, worker_last_submitted));
             if let Err(error) = spawned {
                 crate::logging::warn(&format!("herdr: failed to start reporter: {error}"));
                 return None;
@@ -115,7 +118,7 @@ fn reporter() -> Option<&'static Reporter> {
             Some(Reporter {
                 env,
                 slot,
-                last_submitted: Mutex::new(None),
+                last_submitted,
             })
         })
         .as_ref()
@@ -161,20 +164,26 @@ pub fn release() {
     let Some(reporter) = reporter() else {
         return;
     };
-    {
+    let seq = {
         let mut slot = lock(&reporter.slot.0);
         if slot.released {
             return;
         }
         slot.released = true;
         slot.pending = None;
-    }
-    let seq = next_seq();
+        reporter.slot.1.notify_one();
+        next_seq()
+    };
     run_herdr(&reporter.env.bin, &release_args(&reporter.env.pane_id, seq));
 }
 
-fn worker_loop(env: HerdrEnv, slot: Arc<(Mutex<Slot>, Condvar)>) {
+fn worker_loop(
+    env: HerdrEnv,
+    slot: Arc<(Mutex<Slot>, Condvar)>,
+    last_submitted: Arc<Mutex<Option<StateReport>>>,
+) {
     let (lock_slot, wake) = &*slot;
+    let mut attempted_id: Option<String> = None;
     loop {
         let job = {
             let mut guard = lock(lock_slot);
@@ -190,31 +199,77 @@ fn worker_loop(env: HerdrEnv, slot: Arc<(Mutex<Slot>, Condvar)>) {
         };
         match job {
             Job::Report(report) => {
-                send_report(&env, report);
+                if attempted_id.is_some() && attempted_id != report.session_id {
+                    let clear = StateReport {
+                        state: report.state,
+                        session_id: None,
+                        resume_argv: None,
+                    };
+                    if !send_report(&env, &slot, &clear) {
+                        let mut last = lock(&last_submitted);
+                        if last.as_ref() == Some(&report) {
+                            *last = None;
+                        }
+                        continue;
+                    }
+                    attempted_id = None;
+                    if report.session_id.is_none() {
+                        continue;
+                    }
+                }
+                if lock(lock_slot).released {
+                    return;
+                }
+                if report.session_id.is_some() {
+                    attempted_id = report.session_id.clone();
+                }
+                if send_report(&env, &slot, &report) && report.session_id.is_none() {
+                    attempted_id = None;
+                }
             }
         }
     }
 }
 
-fn send_report(env: &HerdrEnv, mut report: StateReport) {
+fn send_report(env: &HerdrEnv, slot: &Arc<(Mutex<Slot>, Condvar)>, report: &StateReport) -> bool {
+    let mut report = report.clone();
     if RESUME_UNSUPPORTED.load(Ordering::Relaxed) {
         report.resume_argv = None;
     }
-    let status = run_herdr(&env.bin, &report_args(&env.pane_id, &report, next_seq()));
+    let sequence = || {
+        let guard = lock(&slot.0);
+        if guard.released {
+            None
+        } else {
+            Some(next_seq())
+        }
+    };
+    let Some(seq) = sequence() else {
+        return false;
+    };
+    let status = run_herdr(&env.bin, &report_args(&env.pane_id, &report, seq));
     // Only a usage error on a report that carried a resume command means
     // "this herdr predates resume". Timeouts and other failures are retried
     // naturally by the next state change and must not disable resume.
+    if status.is_some_and(|status| status.success()) {
+        return true;
+    }
     if !(is_usage_error(status) && resume_command(&report).is_some()) {
-        return;
+        return false;
     }
     report.resume_argv = None;
-    let retry = run_herdr(&env.bin, &report_args(&env.pane_id, &report, next_seq()));
+    let Some(seq) = sequence() else {
+        return false;
+    };
+    let retry = run_herdr(&env.bin, &report_args(&env.pane_id, &report, seq));
     if retry.is_some_and(|status| status.success()) {
         RESUME_UNSUPPORTED.store(true, Ordering::Relaxed);
         crate::logging::info(
             "herdr: this herdr rejects resume commands (needs 0.9.2+), reporting state only",
         );
+        return true;
     }
+    false
 }
 
 /// Exit code clap-based CLIs such as herdr use for argument/usage errors.
@@ -560,7 +615,7 @@ mod tests {
             std::fs::write(
                 &bin,
                 format!(
-                    "#!/bin/sh\necho \"$*\" >> \"$(dirname \"$0\")/calls.log\"\nfor a in \"$@\"; do [ \"$a\" = -- ] && exit {resume_exit_code}; done\nexit 0\n"
+                    "#!/bin/sh\necho \"$*\" >> \"$(dirname \"$0\")/calls.log\"\ncase \" $* \" in *\" --agent-session-id \"*) ;; *) marker=\"$(dirname \"$0\")/clear-failed\"; if [ ! -e \"$marker\" ]; then touch \"$marker\"; exit 1; fi ;; esac\nfor a in \"$@\"; do [ \"$a\" = -- ] && exit {resume_exit_code}; done\nexit 0\n"
                 ),
             )
             .unwrap();
@@ -607,9 +662,10 @@ mod tests {
     fn report_falls_back_to_state_only_when_herdr_rejects_resume() {
         // herdr < 0.9.2 treats the `--` resume separator as a usage error.
         let herdr = FakeHerdr::new(USAGE_ERROR_EXIT_CODE);
-        send_report(&herdr.env, idle_report_with_resume());
+        let slot = Arc::new((Mutex::new(Slot::default()), Condvar::new()));
+        send_report(&herdr.env, &slot, &idle_report_with_resume());
         assert!(RESUME_UNSUPPORTED.load(Ordering::Relaxed));
-        send_report(&herdr.env, idle_report_with_resume());
+        send_report(&herdr.env, &slot, &idle_report_with_resume());
 
         let calls = herdr.calls();
         assert_eq!(calls.len(), 3, "{calls:?}");
@@ -625,11 +681,61 @@ mod tests {
     fn report_keeps_resume_after_non_usage_failure() {
         // A transient failure (not a usage error) must not disable resume.
         let herdr = FakeHerdr::new(1);
-        send_report(&herdr.env, idle_report_with_resume());
+        let slot = Arc::new((Mutex::new(Slot::default()), Condvar::new()));
+        send_report(&herdr.env, &slot, &idle_report_with_resume());
         assert!(!RESUME_UNSUPPORTED.load(Ordering::Relaxed));
 
         let calls = herdr.calls();
         assert_eq!(calls.len(), 1, "no state-only retry expected: {calls:?}");
         assert!(calls[0].contains(" -- jcode --resume session_fox_1"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn worker_clears_old_identity_before_reporting_replacement() {
+        let herdr = FakeHerdr::new(0);
+        let slot = Arc::new((Mutex::new(Slot::default()), Condvar::new()));
+        let worker_slot = Arc::clone(&slot);
+        let last_submitted = Arc::new(Mutex::new(None));
+        let worker_last_submitted = Arc::clone(&last_submitted);
+        let env = herdr.env.clone();
+        let worker =
+            std::thread::spawn(move || worker_loop(env, worker_slot, worker_last_submitted));
+        let submit = |session_id: &str| {
+            let report = StateReport {
+                state: AgentState::Working,
+                session_id: Some(session_id.into()),
+                resume_argv: None,
+            };
+            *lock(&last_submitted) = Some(report.clone());
+            lock(&slot.0).pending = Some(Job::Report(report));
+            slot.1.notify_one();
+        };
+        let wait_for_calls = |n| {
+            let deadline = Instant::now() + Duration::from_secs(2);
+            while herdr.calls().len() < n && Instant::now() < deadline {
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            herdr.calls()
+        };
+        submit("session_a");
+        assert_eq!(wait_for_calls(1).len(), 1);
+        submit("session_b");
+        let calls = wait_for_calls(2);
+        assert_eq!(calls.len(), 2, "{calls:?}");
+        assert!(!calls[1].contains("--agent-session-id"));
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while lock(&last_submitted).is_some() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        assert!(lock(&last_submitted).is_none());
+        submit("session_b");
+        let calls = wait_for_calls(4);
+        assert_eq!(calls.len(), 4, "{calls:?}");
+        assert!(!calls[2].contains("--agent-session-id"));
+        assert!(calls[3].contains("--agent-session-id session_b"));
+        lock(&slot.0).released = true;
+        slot.1.notify_one();
+        worker.join().unwrap();
     }
 }
