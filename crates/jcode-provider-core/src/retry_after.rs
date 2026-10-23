@@ -2,8 +2,8 @@
 //!
 //! Provider runtimes keep their own retry classification and request logic, but
 //! parsing an untrusted server delay and carrying it through an `anyhow::Error`
-//! should be consistent. Delays are capped so a malformed or hostile upstream
-//! cannot stall a turn indefinitely.
+//! should be consistent. Legacy retry helpers cap server delays; callers that
+//! preserve full deadlines must enforce their own elapsed-time budget.
 
 use anyhow::Error;
 use reqwest::header::{HeaderMap, RETRY_AFTER};

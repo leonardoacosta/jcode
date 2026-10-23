@@ -25,6 +25,34 @@ const RESPONSES_MODELS: &[&str] = &[
     "muse-spark-1.2-contributor",
 ];
 
+pub(crate) fn named_profile_responses_api(
+    profile_name: &str,
+    profile: &jcode_base::config::NamedProviderConfig,
+) -> anyhow::Result<bool> {
+    let responses_api = match profile.api.as_deref().map(str::trim) {
+        None | Some("") | Some("chat") | Some("chat/completions") | Some("openai-completions") => {
+            false
+        }
+        Some("responses") | Some("openai-responses") => true,
+        Some(api) => anyhow::bail!(
+            "Unsupported API selector '{}' for provider profile '{}'",
+            api,
+            profile_name
+        ),
+    };
+    if responses_api
+        && (profile.provider_routing
+            || profile.allow_provider_pinning
+            || matches!(
+                profile.provider_type,
+                jcode_base::config::NamedProviderType::OpenRouter
+            ))
+    {
+        anyhow::bail!("Responses profiles do not support OpenRouter routing or pinning");
+    }
+    Ok(responses_api)
+}
+
 pub(crate) fn model_uses_responses_api(
     api_base: &str,
     profile_id: Option<&str>,
@@ -502,7 +530,28 @@ impl Stream for ResponsesStream {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::*;
     use futures::StreamExt;
+    use std::io::{Read, Write};
+
+    fn fake_responses_server(body: &'static str) -> (String, std::sync::mpsc::Receiver<String>) {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let addr = listener.local_addr().unwrap();
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = vec![0; 8192];
+            let n = stream.read(&mut request).unwrap_or(0);
+            let _ = tx.send(String::from_utf8_lossy(&request[..n]).into_owned());
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream.write_all(response.as_bytes()).unwrap();
+        });
+        (format!("http://{addr}/v1"), rx)
+    }
 
     #[test]
     fn only_open_code_go_responses_models_use_responses() {
@@ -547,6 +596,79 @@ mod tests {
             Some("muse-subscription"),
             "muse-wonder-1.0"
         ));
+    }
+
+    #[test]
+    fn named_responses_profile_uses_route_reasoning_and_extra_body() {
+        let _lock = crate::tests::ENV_LOCK.lock();
+        let _namespace = crate::tests::EnvVarGuard::remove("JCODE_OPENROUTER_CACHE_NAMESPACE");
+        let body = "data: {\"type\":\"response.output_text.delta\",\"delta\":\"OK\"}\n\ndata: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\",\"output\":[]}}\n\n";
+        let (base_url, request_rx) = fake_responses_server(body);
+        let profile = jcode_base::config::NamedProviderConfig {
+            base_url,
+            api: Some("responses".into()),
+            api_key: Some("test-key".into()),
+            default_model: Some("gpt-6.1-sol".into()),
+            supports_reasoning_effort: Some(true),
+            extra_body: Some(serde_json::json!({"metadata":{"source":"test"}})),
+            ..Default::default()
+        };
+        let provider =
+            OpenRouterProvider::new_named_openai_compatible("responses-test", &profile).unwrap();
+        provider.set_reasoning_effort("medium").unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let text = rt.block_on(async {
+            let mut events = provider.complete(&[], &[], "Reply OK", None).await.unwrap();
+            let mut text = String::new();
+            while let Some(event) = events.next().await {
+                if let StreamEvent::TextDelta(delta) = event.unwrap() {
+                    text.push_str(&delta);
+                }
+            }
+            text
+        });
+        let wire = request_rx
+            .recv_timeout(std::time::Duration::from_secs(2))
+            .unwrap();
+        assert!(wire.starts_with("POST /v1/responses "), "wrong endpoint");
+        assert!(
+            wire.to_ascii_lowercase()
+                .contains("authorization: bearer test-key")
+        );
+        assert_eq!(text, "OK");
+        let request: Value = serde_json::from_str(wire.split("\r\n\r\n").nth(1).unwrap()).unwrap();
+        assert_eq!(request["model"], "gpt-6.1-sol");
+        assert_eq!(request["instructions"], "Reply OK");
+        assert_eq!(request["reasoning"]["effort"], "medium");
+        assert_eq!(request["metadata"]["source"], "test");
+        assert!(request.get("reasoning_effort").is_none());
+    }
+
+    #[test]
+    fn named_responses_selector_is_explicit_and_requires_auth() {
+        let _lock = crate::tests::ENV_LOCK.lock();
+        let _namespace = crate::tests::EnvVarGuard::remove("JCODE_OPENROUTER_CACHE_NAMESPACE");
+        let mut profile = jcode_base::config::NamedProviderConfig {
+            base_url: "http://127.0.0.1:1/v1".into(),
+            default_model: Some("test-model".into()),
+            ..Default::default()
+        };
+        assert!(!named_profile_responses_api("test", &profile).unwrap());
+        profile.api = Some("chat/completions".into());
+        assert!(!named_profile_responses_api("test", &profile).unwrap());
+        profile.api = Some("invalid-api".into());
+        assert!(named_profile_responses_api("test", &profile).is_err());
+        profile.api = Some("responses".into());
+        assert!(OpenRouterProvider::new_named_openai_compatible("test", &profile).is_err());
+        profile.api_key = Some("test-key".into());
+        assert!(
+            OpenRouterProvider::new_named_openai_compatible("test", &profile)
+                .unwrap()
+                .responses_api
+        );
     }
 
     #[test]

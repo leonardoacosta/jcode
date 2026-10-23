@@ -51,8 +51,8 @@ impl Provider for OpenRouterProvider {
             return self.complete_azure_responses(messages, tools, system).await;
         }
         let model = self.model.read().await.clone();
-        let responses_api =
-            model_uses_responses_api(&self.api_base, self.profile_id.as_deref(), &model);
+        let responses_api = self.responses_api
+            || model_uses_responses_api(&self.api_base, self.profile_id.as_deref(), &model);
         let reasoning_effort = self.reasoning_effort();
         let thinking_override = Self::thinking_override();
         // Moonshot's dedicated Kimi coding endpoint enables thinking server-side
@@ -233,15 +233,39 @@ impl Provider for OpenRouterProvider {
         // provider-only fields cannot leak into `/responses`; configured extra
         // body fields remain an intentional escape hatch and are merged last.
         if responses_api {
-            request = super::opencode_go_responses::build_request(
-                &effective_messages,
-                tools,
-                system,
-                &model,
-                reasoning_effort.as_deref(),
-                self.max_tokens,
-                jcode_provider_openrouter::request::sanitize_tool_parameters_schema,
-            );
+            if self.responses_api {
+                let mut input = jcode_provider_openai::build_responses_input(messages);
+                jcode_provider_openai::insert_additional_tools(&mut input, messages, tools);
+                request = serde_json::json!({
+                    "model": model,
+                    "instructions": system,
+                    "input": input,
+                    "tools": jcode_provider_openai::build_tools(tools),
+                    "tool_choice": "auto",
+                    "parallel_tool_calls": false,
+                    "stream": true,
+                    "store": false,
+                    "include": ["reasoning.encrypted_content"],
+                });
+                if let Some(limit) = self.max_tokens {
+                    request["max_output_tokens"] = serde_json::json!(limit);
+                }
+                if let Some(effort) = reasoning_effort.as_deref() {
+                    let resolved =
+                        jcode_base::prompt::swarm_root_reasoning_effort(effort).unwrap_or(effort);
+                    request["reasoning"] = serde_json::json!({"effort": resolved});
+                }
+            } else {
+                request = super::opencode_go_responses::build_request(
+                    &effective_messages,
+                    tools,
+                    system,
+                    &model,
+                    reasoning_effort.as_deref(),
+                    self.max_tokens,
+                    jcode_provider_openrouter::request::sanitize_tool_parameters_schema,
+                );
+            }
             if let Some(extra) = self.extra_body.as_ref()
                 && let Some(request_obj) = request.as_object_mut()
             {
@@ -305,6 +329,7 @@ impl Provider for OpenRouterProvider {
         let conversation_id = self.conversation_id.clone();
         let request_for_retries = request;
         let model_for_stream = model.clone();
+        let openai_responses_api = self.responses_api;
         let provider_pin = Arc::clone(&self.provider_pin);
 
         tokio::spawn(async move {
@@ -329,6 +354,7 @@ impl Provider for OpenRouterProvider {
                 provider_pin,
                 model_for_stream,
                 responses_api,
+                openai_responses_api,
             )
             .await;
         });
@@ -833,6 +859,7 @@ impl Provider for OpenRouterProvider {
 
     fn fork(&self) -> Arc<dyn Provider> {
         Arc::new(Self {
+            responses_api: self.responses_api,
             client: self.client.clone(),
             model: Arc::new(RwLock::new(
                 self.model.try_read().map(|m| m.clone()).unwrap_or_default(),
@@ -958,6 +985,7 @@ impl OpenRouterProvider {
                 tx,
                 provider_pin,
                 model,
+                false,
                 false,
             )
             .await;

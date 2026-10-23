@@ -823,6 +823,7 @@ pub fn maybe_schedule_standard_openrouter_catalog_refresh(context: &'static str)
 type AuthResolver = Arc<dyn Fn() -> anyhow::Result<ProviderAuth> + Send + Sync>;
 
 pub struct OpenRouterProvider {
+    responses_api: bool,
     client: Client,
     model: Arc<RwLock<String>>,
     reasoning_effort: Arc<RwLock<Option<String>>>,
@@ -840,10 +841,7 @@ pub struct OpenRouterProvider {
     /// Per-model `(supports effort, default effort)` overrides from a named profile.
     static_reasoning_config: HashMap<String, (Option<bool>, Option<String>)>,
     max_tokens: Option<u32>,
-    /// Extra top-level JSON object fields merged into every chat/completions
-    /// request body (e.g. NVIDIA NIM DeepSeek-V4 `chat_template_kwargs`).
-    /// Resolved once at construction from named-profile config or the
-    /// `JCODE_OPENAI_EXTRA_BODY` env/env-file value.
+    /// Extra request-body fields merged after protocol-specific construction.
     extra_body: Option<serde_json::Map<String, Value>>,
     static_models: Vec<String>,
     static_context_limits: HashMap<String, usize>,
@@ -1345,11 +1343,8 @@ impl OpenRouterProvider {
         profile_name: &str,
         profile: &jcode_base::config::NamedProviderConfig,
     ) -> Result<Self> {
-        // The OpenRouter/OpenAI-compatible catalog cache helpers are currently
-        // process-env scoped. Named provider profiles are constructed directly
-        // in several CLI/TUI paths, so make sure their cache namespace is active
-        // before any model-cache reads/writes happen. Without this, a custom
-        // endpoint can accidentally display the default OpenRouter catalog.
+        let responses_api =
+            opencode_go_responses::named_profile_responses_api(profile_name, profile)?;
         jcode_base::env::set_var("JCODE_OPENROUTER_CACHE_NAMESPACE", profile_name);
         let api_base = normalize_api_base(&profile.base_url).ok_or_else(|| {
             anyhow::anyhow!("Provider profile '{}' has invalid base_url", profile_name)
@@ -1447,6 +1442,7 @@ impl OpenRouterProvider {
             })
             .collect::<HashMap<_, _>>();
         let provider = Self {
+            responses_api,
             client: jcode_provider_core::shared_http_client(),
             model: Arc::new(RwLock::new(model)),
             reasoning_effort: Arc::new(RwLock::new(None)),
@@ -1698,6 +1694,7 @@ impl OpenRouterProvider {
         ));
 
         Ok(Self {
+            responses_api: false,
             client: jcode_provider_core::shared_http_client(),
             model: Arc::new(RwLock::new(model)),
             reasoning_effort: Arc::new(RwLock::new(if builtin_azure {
@@ -1755,6 +1752,7 @@ impl OpenRouterProvider {
             })
             .collect();
         Self {
+            responses_api: false,
             client: jcode_provider_core::shared_http_client(),
             model: Arc::new(RwLock::new(model.to_string())),
             reasoning_effort: Arc::new(RwLock::new(None)),
@@ -1810,6 +1808,7 @@ impl OpenRouterProvider {
         auth()?;
 
         Ok(Self {
+            responses_api: false,
             client: jcode_provider_core::shared_http_client(),
             model: Arc::new(RwLock::new(DEFAULT_MODEL.to_string())),
             reasoning_effort: Arc::new(RwLock::new(None)),
@@ -2017,6 +2016,7 @@ impl OpenRouterProvider {
 
         handle.spawn(async move {
             let provider = OpenRouterProvider {
+                responses_api: false,
                 client,
                 model: Arc::new(RwLock::new(model_name.clone())),
                 reasoning_effort: Arc::new(RwLock::new(None)),
@@ -2852,7 +2852,7 @@ mod openrouter_sse_stream;
 #[cfg(test)]
 #[allow(clippy::await_holding_lock)]
 #[path = "openrouter_tests.rs"]
-mod tests;
+pub(crate) mod tests;
 
 #[cfg(test)]
 #[path = "ollama_context_tests.rs"]

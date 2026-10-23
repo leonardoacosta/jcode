@@ -2,6 +2,24 @@
 
 use super::*;
 
+#[test]
+fn openrouter_profile_exposes_unified_reasoning_effort() {
+    let provider = crate::tests::make_provider();
+
+    assert_eq!(
+        provider.available_efforts(),
+        vec!["none", "minimal", "low", "medium", "high", "xhigh", "swarm"]
+    );
+    provider
+        .set_reasoning_effort("minimal")
+        .expect("OpenRouter minimal effort should be accepted");
+    assert_eq!(provider.reasoning_effort().as_deref(), Some("minimal"));
+    provider
+        .set_reasoning_effort("max")
+        .expect("OpenRouter max alias should be accepted");
+    assert_eq!(provider.reasoning_effort().as_deref(), Some("xhigh"));
+}
+
 /// Issue #1167: OpenCode Go/Zen require a stable per-conversation
 /// `x-opencode-session` header; other OpenAI-compatible hosts must not get it.
 #[test]
@@ -100,6 +118,7 @@ fn captured_request_for_host(host: &str, conversation_id: &str) -> String {
             tx,
             Arc::new(Mutex::new(None)),
             "m".to_string(),
+            false,
             false,
         )
         .await;

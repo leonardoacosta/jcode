@@ -1373,16 +1373,17 @@ fn make_endpoint(name: &str, throughput: f64, uptime: f64, cache: bool, cost: f6
     }
 }
 
-fn make_provider() -> OpenRouterProvider {
+pub(super) fn make_provider() -> OpenRouterProvider {
     OpenRouterProvider {
+        responses_api: false,
         client: jcode_provider_core::shared_http_client(),
         model: Arc::new(RwLock::new(DEFAULT_MODEL.to_string())),
         reasoning_effort: Arc::new(RwLock::new(None)),
         api_base: DEFAULT_API_BASE.to_string(),
         auth: Arc::new(|| {
             Ok(ProviderAuth::AuthorizationBearer {
-                token: "test".to_string(),
-                label: DEFAULT_API_KEY_NAME.to_string(),
+                token: "test".into(),
+                label: DEFAULT_API_KEY_NAME.into(),
             })
         }),
         supports_provider_features: true,
@@ -1410,14 +1411,15 @@ fn make_provider() -> OpenRouterProvider {
 
 fn make_custom_compatible_provider() -> OpenRouterProvider {
     OpenRouterProvider {
+        responses_api: false,
         client: jcode_provider_core::shared_http_client(),
         model: Arc::new(RwLock::new(DEFAULT_MODEL.to_string())),
         reasoning_effort: Arc::new(RwLock::new(None)),
         api_base: "https://compat.example.test/v1".to_string(),
         auth: Arc::new(|| {
             Ok(ProviderAuth::AuthorizationBearer {
-                token: "test".to_string(),
-                label: "OPENAI_COMPAT_API_KEY".to_string(),
+                token: "test".into(),
+                label: "OPENAI_COMPAT_API_KEY".into(),
             })
         }),
         supports_provider_features: false,
@@ -1556,24 +1558,6 @@ fn direct_zai_profile_applies_configured_effort_on_construction_and_model_switch
     };
     provider.set_model("glm-5.3-flash").unwrap();
     assert_eq!(provider.reasoning_effort(), configured);
-}
-
-#[test]
-fn openrouter_profile_exposes_unified_reasoning_effort() {
-    let provider = make_provider();
-
-    assert_eq!(
-        provider.available_efforts(),
-        vec!["none", "minimal", "low", "medium", "high", "xhigh", "swarm"]
-    );
-    provider
-        .set_reasoning_effort("minimal")
-        .expect("OpenRouter minimal effort should be accepted");
-    assert_eq!(provider.reasoning_effort().as_deref(), Some("minimal"));
-    provider
-        .set_reasoning_effort("max")
-        .expect("OpenRouter max alias should be accepted");
-    assert_eq!(provider.reasoning_effort().as_deref(), Some("xhigh"));
 }
 
 #[test]
@@ -3155,6 +3139,7 @@ fn midstream_transport_fault_emits_retry_rollback_before_replay() {
             tx,
             Arc::new(Mutex::new(None)),
             "test-model".to_string(),
+            false,
             false,
         )
         .await;

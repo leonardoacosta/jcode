@@ -3,6 +3,133 @@ use futures::Stream;
 use jcode_provider_openrouter::stream::OpenRouterStream;
 use std::pin::Pin;
 
+const GATEWAY_RETRY_BUDGET: std::time::Duration = std::time::Duration::from_secs(120);
+
+#[derive(Debug)]
+struct GatewayEligibilityError {
+    retry_delay: Option<std::time::Duration>,
+    observed: std::time::Instant,
+}
+
+impl GatewayEligibilityError {
+    fn remaining(&self) -> Option<std::time::Duration> {
+        self.retry_delay
+            .map(|delay| delay.saturating_sub(self.observed.elapsed()))
+    }
+}
+
+impl std::fmt::Display for GatewayEligibilityError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.remaining() {
+            Some(delay) => write!(
+                formatter,
+                "Gateway next-eligible hint: {}s remaining; retries are bounded to 120s elapsed.",
+                delay.as_secs()
+            ),
+            None => write!(
+                formatter,
+                "Gateway supplied no valid retry deadline; automatic retry stopped."
+            ),
+        }
+    }
+}
+
+impl std::error::Error for GatewayEligibilityError {}
+
+#[derive(Debug)]
+struct ErrorBodyReadTimeout {
+    status: u16,
+    endpoint: String,
+    model: String,
+    timeout: std::time::Duration,
+}
+
+impl std::fmt::Display for ErrorBodyReadTimeout {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            formatter,
+            "Timed out reading HTTP {} error body from {} for model {} after {:?}",
+            self.status, self.endpoint, self.model, self.timeout
+        )
+    }
+}
+
+impl std::error::Error for ErrorBodyReadTimeout {}
+
+async fn read_http_error_body(
+    response: reqwest::Response,
+    status: u16,
+    endpoint: &str,
+    model: &str,
+    tx: &mpsc::Sender<Result<StreamEvent>>,
+    timeout: std::time::Duration,
+) -> Result<Option<String>> {
+    tokio::select! {
+        _ = tx.closed() => Ok(None),
+        body = tokio::time::timeout(timeout, jcode_base::util::http_error_body(response, "HTTP error")) => {
+            body.map(Some).map_err(|_| anyhow::Error::new(ErrorBodyReadTimeout {
+                status,
+                endpoint: endpoint.to_owned(),
+                model: model.to_owned(),
+                timeout,
+            }))
+        }
+    }
+}
+
+fn gateway_retry_delay_within_budget(
+    delay: std::time::Duration,
+    elapsed: std::time::Duration,
+) -> bool {
+    delay < GATEWAY_RETRY_BUDGET.saturating_sub(elapsed)
+}
+
+fn retryable_attempt_allowed(attempt: u32, max_retries: u32, gateway_retry: bool) -> bool {
+    attempt + 1
+        < if gateway_retry {
+            max_retries.min(8)
+        } else {
+            max_retries
+        }
+}
+
+fn gateway_retry_allowed(
+    saw_output: bool,
+    attempt: u32,
+    max_retries: u32,
+    delay: Option<std::time::Duration>,
+    elapsed: std::time::Duration,
+) -> bool {
+    !saw_output
+        && attempt + 1 < max_retries.min(8)
+        && delay.is_some_and(|delay| gateway_retry_delay_within_budget(delay, elapsed))
+}
+
+async fn wait_for_retry_or_close(
+    tx: &mpsc::Sender<Result<StreamEvent>>,
+    delay: std::time::Duration,
+) -> bool {
+    tokio::select! {
+        _ = tx.closed() => false,
+        _ = tokio::time::sleep(delay) => true,
+    }
+}
+fn is_gateway_eligibility_failure(status: u16, body: &str) -> bool {
+    if status != 503 {
+        return false;
+    }
+    let Ok(value) = serde_json::from_str::<Value>(body) else {
+        return false;
+    };
+    matches!(
+        value.pointer("/error/code").and_then(Value::as_str),
+        Some("ALL_TARGETS_SKIPPED" | "PROVIDER_CIRCUIT_OPEN" | "CIRCUIT_OPEN")
+    ) || value
+        .pointer("/diagnostics/terminalReason")
+        .and_then(Value::as_str)
+        == Some("all_targets_skipped")
+}
+
 fn local_endpoint_troubleshooting_hint(api_base: &str, model: &str) -> &'static str {
     let lower = api_base.to_ascii_lowercase();
     if lower.contains("localhost:11434") || lower.contains("127.0.0.1:11434") {
@@ -68,9 +195,12 @@ pub(super) async fn run_stream_with_retries(
     provider_pin: Arc<Mutex<Option<ProviderPin>>>,
     model: String,
     responses_api: bool,
+    openai_responses_api: bool,
 ) {
     let mut last_error = None;
     let mut next_retry_delay = None;
+    let mut gateway_retry = false;
+    let started = std::time::Instant::now();
     let config = jcode_base::config::config();
     let max_retries = config.provider.max_retries.max(1);
     let retry_backoff_cap =
@@ -78,13 +208,35 @@ pub(super) async fn run_stream_with_retries(
 
     for attempt in 0..max_retries {
         if attempt > 0 {
-            let delay = jcode_provider_core::retry_after::retry_delay(
+            let requested = jcode_provider_core::retry_after::retry_delay(
                 attempt,
                 RETRY_BASE_DELAY_MS,
                 next_retry_delay.take(),
-            )
-            .min(retry_backoff_cap);
-            tokio::time::sleep(delay).await;
+            );
+            let delay = if gateway_retry {
+                requested
+            } else {
+                requested.min(retry_backoff_cap)
+            };
+            if gateway_retry && !gateway_retry_delay_within_budget(delay, started.elapsed()) {
+                let terminal_error = last_error.take().unwrap_or_else(|| {
+                    anyhow::anyhow!(
+                        "Gateway eligibility deadline exceeds the remaining retry budget"
+                    )
+                });
+                if tx.send(Err(terminal_error)).await.is_err() {
+                    jcode_base::logging::info(
+                        "Gateway retry budget exhausted after the consumer disconnected",
+                    );
+                }
+                return;
+            }
+            if gateway_retry && !wait_for_retry_or_close(&tx, delay).await {
+                return;
+            }
+            if !gateway_retry {
+                tokio::time::sleep(delay).await;
+            }
             jcode_base::logging::info(&format!(
                 "Retrying API request using {} (attempt {}/{})",
                 auth.label(),
@@ -130,7 +282,10 @@ pub(super) async fn run_stream_with_retries(
             attempt_tx,
             Arc::clone(&provider_pin),
             model.clone(),
+            started + GATEWAY_RETRY_BUDGET,
+            gateway_retry.then(|| started + GATEWAY_RETRY_BUDGET),
             responses_api,
+            openai_responses_api,
         )
         .await
         {
@@ -142,7 +297,38 @@ pub(super) async fn run_stream_with_retries(
                 let saw_output = attempt_guard.finish().await;
                 // Full anyhow chain ({:#}) so a `.context(...)`-wrapped transport
                 // cause (e.g. TLS BadRecordMac) is visible to the classifier.
-                if retryable_stream_failure(&e) && attempt + 1 < max_retries {
+                if e.downcast_ref::<ErrorBodyReadTimeout>().is_some() {
+                    if tx.send(Err(e)).await.is_err() {
+                        jcode_base::logging::info(
+                            "HTTP error-body read timed out after the consumer disconnected",
+                        );
+                    }
+                    return;
+                }
+                if let Some(eligibility) = e.downcast_ref::<GatewayEligibilityError>() {
+                    let delay = eligibility.remaining();
+                    if !gateway_retry_allowed(
+                        saw_output,
+                        attempt,
+                        max_retries,
+                        delay,
+                        started.elapsed(),
+                    ) {
+                        if tx.send(Err(e)).await.is_err() {
+                            jcode_base::logging::info(
+                                "Gateway retry stopped after the consumer disconnected",
+                            );
+                        }
+                        return;
+                    }
+                    gateway_retry = true;
+                    next_retry_delay = delay;
+                    last_error = Some(e);
+                    continue;
+                }
+                if retryable_stream_failure(&e)
+                    && retryable_attempt_allowed(attempt, max_retries, gateway_retry)
+                {
                     if saw_output {
                         // Partial output already reached the consumer; tell it
                         // to discard the partial attempt so the retried
@@ -200,7 +386,10 @@ async fn stream_response(
     tx: mpsc::Sender<Result<StreamEvent>>,
     provider_pin: Arc<Mutex<Option<ProviderPin>>>,
     model: String,
+    error_body_deadline: std::time::Instant,
+    gateway_deadline: Option<std::time::Instant>,
     responses_api: bool,
+    openai_responses_api: bool,
 ) -> Result<()> {
     use jcode_message_types::ConnectionPhase;
     let _ = tx
@@ -211,13 +400,17 @@ async fn stream_response(
     let connect_start = std::time::Instant::now();
     let stream_idle_timeout = jcode_base::provider::stream_idle_timeout();
 
-    let route = if azure_responses || responses_api {
+    let route = if azure_responses || responses_api || openai_responses_api {
         "responses"
     } else {
         "chat/completions"
     };
     let request_kind = if azure_responses {
         "Azure OpenAI Responses"
+    } else if openai_responses_api {
+        "OpenAI Responses"
+    } else if responses_api {
+        "OpenCode Go Responses"
     } else {
         "OpenAI-compatible chat"
     };
@@ -242,9 +435,16 @@ async fn stream_response(
     req = apply_opencode_session_header(req, &api_base, conversation_id);
     req = apply_grok_cli_turn_headers(req, &auth, &model, conversation_id);
 
+    let response_timeout = gateway_deadline
+        .map(|deadline| {
+            deadline
+                .saturating_duration_since(std::time::Instant::now())
+                .min(stream_idle_timeout)
+        })
+        .unwrap_or(stream_idle_timeout);
     let response = jcode_provider_core::transport::send_with_initial_response_timeout(
         req.json(&request),
-        stream_idle_timeout,
+        response_timeout,
     )
     .await
     .with_context(|| {
@@ -272,7 +472,36 @@ async fn stream_response(
     if !response.status().is_success() {
         let status = response.status();
         let retry_after = jcode_provider_core::retry_after::retry_after(response.headers());
-        let body = jcode_base::util::http_error_body(response, "HTTP error").await;
+        let gateway_delay =
+            jcode_provider_core::retry_after::uncapped_retry_after_delay(response.headers());
+        let observed = std::time::Instant::now();
+        let error_body_timeout = if status.as_u16() == 503 || gateway_deadline.is_some() {
+            error_body_deadline
+                .saturating_duration_since(std::time::Instant::now())
+                .min(stream_idle_timeout)
+        } else {
+            stream_idle_timeout
+        };
+        let body = match read_http_error_body(
+            response,
+            status.as_u16(),
+            &url,
+            &model,
+            &tx,
+            error_body_timeout,
+        )
+        .await
+        {
+            Ok(Some(body)) => body,
+            Ok(None) => return Ok(()),
+            Err(error) => return Err(error),
+        };
+        if is_gateway_eligibility_failure(status.as_u16(), &body) {
+            return Err(anyhow::Error::new(GatewayEligibilityError {
+                retry_delay: gateway_delay,
+                observed,
+            }).context(format!("Gateway eligibility request failed\\n  endpoint: {url}\\n  model: {model}\\n  status: {status}\\n  response: {body}")));
+        }
         let hint = if azure_responses {
             match status.as_u16() {
                 401 | 402 | 403 | 500..=599 => http_status_hint(status.as_u16(), &api_base, &model),
@@ -306,21 +535,22 @@ async fn stream_response(
         }))
         .await;
 
-    let mut stream: Pin<Box<dyn Stream<Item = Result<StreamEvent>> + Send>> = if azure_responses {
-        Box::pin(jcode_provider_openai::stream::OpenAIResponsesStream::new(
-            response.bytes_stream(),
-        ))
-    } else if responses_api {
-        Box::pin(super::opencode_go_responses::ResponsesStream::new(
-            response.bytes_stream(),
-        ))
-    } else {
-        Box::pin(OpenRouterStream::new(
-            response.bytes_stream(),
-            model.clone(),
-            provider_pin,
-        ))
-    };
+    let mut stream: Pin<Box<dyn Stream<Item = Result<StreamEvent>> + Send>> =
+        if azure_responses || openai_responses_api {
+            Box::pin(jcode_provider_openai::stream::OpenAIResponsesStream::new(
+                response.bytes_stream(),
+            ))
+        } else if responses_api {
+            Box::pin(super::opencode_go_responses::ResponsesStream::new(
+                response.bytes_stream(),
+            ))
+        } else {
+            Box::pin(OpenRouterStream::new(
+                response.bytes_stream(),
+                model.clone(),
+                provider_pin,
+            ))
+        };
 
     // Idle timeout between streamed chunks. Configurable so slow reasoning
     // models (e.g. DeepSeek) that think silently for minutes before emitting
@@ -356,17 +586,18 @@ async fn stream_response(
                 );
             }
         };
-        if azure_responses {
+        if azure_responses || openai_responses_api {
             if let StreamEvent::Error {
                 message,
                 retry_after_secs,
             } = &event
             {
-                return Err(azure_response_failure(message, *retry_after_secs));
+                if azure_responses {
+                    return Err(azure_response_failure(message, *retry_after_secs));
+                }
+                anyhow::bail!("Responses request failed: {}", message);
             }
-            if matches!(event, StreamEvent::MessageEnd { .. }) {
-                saw_message_end = true;
-            }
+            saw_message_end |= matches!(event, StreamEvent::MessageEnd { .. });
         }
         if tx.send(Ok(event)).await.is_err() {
             return Ok(());
@@ -376,13 +607,16 @@ async fn stream_response(
         }
     }
 
-    if azure_responses && !saw_message_end {
-        return Err(anyhow::Error::new(AzureResponseFailure {
-            retryable: true,
-            source: anyhow::anyhow!(
-                "Azure OpenAI Responses stream ended before response.completed"
-            ),
-        }));
+    if (azure_responses || openai_responses_api) && !saw_message_end {
+        if azure_responses {
+            return Err(anyhow::Error::new(AzureResponseFailure {
+                retryable: true,
+                source: anyhow::anyhow!(
+                    "Azure OpenAI Responses stream ended before response.completed"
+                ),
+            }));
+        }
+        anyhow::bail!("Responses stream ended before message completion marker");
     }
 
     Ok(())
@@ -519,6 +753,70 @@ mod tests {
     use super::*;
 
     #[test]
+    fn generic_failure_after_gateway_eligibility_keeps_eight_attempt_limit() {
+        let configured_max = 12;
+        let eligibility_body = r#"{"error":{"code":"ALL_TARGETS_SKIPPED"}}"#;
+        let gateway_retry = is_gateway_eligibility_failure(503, eligibility_body);
+        let generic_500 = "chat request failed\\n  status: 500 internal server error";
+        assert!(is_retryable_error(generic_500));
+        assert!(retryable_attempt_allowed(1, configured_max, gateway_retry));
+        assert!(retryable_attempt_allowed(6, configured_max, gateway_retry));
+        assert!(!retryable_attempt_allowed(7, configured_max, gateway_retry));
+
+        // Ordinary retries retain the configured limit when no gateway
+        // eligibility response has activated the bounded policy.
+        let ordinary_retries = false;
+        assert!(retryable_attempt_allowed(
+            7,
+            configured_max,
+            ordinary_retries
+        ));
+    }
+    #[test]
+    fn gateway_eligibility_requires_matching_503_response() {
+        let skipped = r#"{"error":{"code":"ALL_TARGETS_SKIPPED"}}"#;
+        assert!(is_gateway_eligibility_failure(503, skipped));
+        assert!(!is_gateway_eligibility_failure(429, skipped));
+        assert!(!is_gateway_eligibility_failure(503, "unavailable"));
+    }
+
+    #[test]
+    fn gateway_retry_waits_until_full_hint_and_stays_inside_120_second_budget() {
+        assert!(gateway_retry_delay_within_budget(
+            std::time::Duration::from_secs(119),
+            std::time::Duration::ZERO
+        ));
+        assert!(!gateway_retry_delay_within_budget(
+            GATEWAY_RETRY_BUDGET,
+            std::time::Duration::ZERO
+        ));
+        assert!(!gateway_retry_delay_within_budget(
+            std::time::Duration::from_secs(119),
+            std::time::Duration::from_secs(1)
+        ));
+        assert!(gateway_retry_allowed(
+            false,
+            0,
+            8,
+            Some(std::time::Duration::from_secs(119)),
+            std::time::Duration::ZERO
+        ));
+        assert!(!gateway_retry_allowed(
+            true,
+            0,
+            8,
+            Some(std::time::Duration::from_secs(1)),
+            std::time::Duration::ZERO
+        ));
+    }
+
+    #[tokio::test]
+    async fn gateway_retry_wait_is_cancelled_when_consumer_closes() {
+        let (tx, rx) = mpsc::channel(1);
+        drop(rx);
+        assert!(!wait_for_retry_or_close(&tx, std::time::Duration::from_secs(120)).await);
+    }
+    #[test]
     fn local_endpoint_hint_mentions_ollama_actions() {
         let hint = local_endpoint_troubleshooting_hint("http://localhost:11434/v1", "llama3.2");
         assert!(hint.contains("ollama serve"));
@@ -636,5 +934,50 @@ mod tests {
         assert!(
             http_status_hint(503, "http://localhost:11434/v1", "llama3.2").contains("ollama serve")
         );
+    }
+
+    #[tokio::test]
+    async fn stalled_http_error_body_is_bounded_by_deadline() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || {
+            use std::io::{Read, Write};
+            for _ in 0..2 {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut request = [0; 2048];
+                let _ = stream.read(&mut request).unwrap();
+                stream
+                    .write_all(
+                        b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 1024\r\nConnection: close\r\n\r\n{\"error\":",
+                    )
+                    .unwrap();
+                stream.flush().unwrap();
+                std::thread::sleep(std::time::Duration::from_millis(200));
+            }
+        });
+
+        let client = reqwest::Client::builder().no_proxy().build().unwrap();
+        let url = format!("http://{address}/v1/chat/completions");
+        let response = client.get(&url).send().await.unwrap();
+        assert_eq!(response.status().as_u16(), 503);
+
+        let (tx, _rx) = mpsc::channel(1);
+        let timeout = std::time::Duration::from_millis(25);
+        let error = read_http_error_body(response, 503, "fixture", "model", &tx, timeout)
+            .await
+            .unwrap_err();
+        assert!(error.downcast_ref::<ErrorBodyReadTimeout>().is_some());
+        assert!(error.to_string().contains("HTTP 503 error body"));
+
+        let response = client.get(&url).send().await.unwrap();
+        let (tx, rx) = mpsc::channel(1);
+        drop(rx);
+        assert!(
+            read_http_error_body(response, 503, "fixture", "model", &tx, timeout)
+                .await
+                .unwrap()
+                .is_none()
+        );
+        server.join().unwrap();
     }
 }

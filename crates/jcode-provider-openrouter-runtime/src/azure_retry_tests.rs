@@ -115,6 +115,7 @@ fn run_azure(base: String) -> Vec<Result<StreamEvent>> {
                 Arc::new(Mutex::new(None)),
                 "deployment".into(),
                 false,
+                false,
             ),
         )
         .await
