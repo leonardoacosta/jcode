@@ -74,30 +74,33 @@ fn positive_seconds(value: &serde_json::Value) -> Option<u64> {
     (seconds.is_finite() && seconds > 0.0).then(|| seconds.ceil() as u64)
 }
 
+/// Preserve a full server deadline for callers with a stricter elapsed-time budget.
+/// Legacy `retry_after` continues to cap values at [`MAX_RETRY_AFTER`].
+pub fn uncapped_retry_after_delay(headers: &HeaderMap) -> Option<Duration> {
+    uncapped_retry_after_delay_at(headers, SystemTime::now())
+}
+
 fn retry_after_delay_at(headers: &HeaderMap, now: SystemTime) -> Option<Duration> {
+    uncapped_retry_after_delay_at(headers, now).map(|delay| delay.min(MAX_RETRY_AFTER))
+}
+
+fn uncapped_retry_after_delay_at(headers: &HeaderMap, now: SystemTime) -> Option<Duration> {
     let value = headers.get(RETRY_AFTER)?.to_str().ok()?.trim();
     if value.is_empty() {
         return None;
     }
 
     if value.bytes().all(|byte| byte.is_ascii_digit()) {
-        let max_secs = MAX_RETRY_AFTER.as_secs();
         let seconds = value.bytes().fold(0u64, |seconds, byte| {
             seconds
                 .saturating_mul(10)
                 .saturating_add(u64::from(byte - b'0'))
-                .min(max_secs)
         });
         return Some(Duration::from_secs(seconds));
     }
 
     let retry_at = httpdate::parse_http_date(value).ok()?;
-    Some(
-        retry_at
-            .duration_since(now)
-            .unwrap_or(Duration::ZERO)
-            .min(MAX_RETRY_AFTER),
-    )
+    Some(retry_at.duration_since(now).unwrap_or(Duration::ZERO))
 }
 
 /// A bounded server retry hint represented as a monotonic deadline.
@@ -182,6 +185,30 @@ mod tests {
                 SystemTime::UNIX_EPOCH,
             ),
             Some(Duration::from_secs(7))
+        );
+    }
+
+    #[test]
+    fn uncapped_retry_after_preserves_long_gateway_deadline() {
+        let headers = headers(HeaderValue::from_static("120"));
+        assert_eq!(
+            uncapped_retry_after_delay_at(&headers, SystemTime::UNIX_EPOCH),
+            Some(Duration::from_secs(120))
+        );
+        assert_eq!(
+            retry_after_delay_at(&headers, SystemTime::UNIX_EPOCH),
+            Some(Duration::from_secs(60))
+        );
+    }
+
+    #[test]
+    fn uncapped_retry_after_saturates_oversized_delta_seconds() {
+        let headers = headers(HeaderValue::from_static(
+            "999999999999999999999999999999999999",
+        ));
+        assert_eq!(
+            uncapped_retry_after_delay_at(&headers, SystemTime::UNIX_EPOCH),
+            Some(Duration::from_secs(u64::MAX))
         );
     }
 
