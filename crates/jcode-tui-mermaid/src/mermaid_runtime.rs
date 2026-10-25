@@ -389,6 +389,19 @@ fn fast_picker() -> Picker {
 /// probe's *protocol* decision. Any probe failure leaves the env-based fast
 /// picker untouched.
 fn probe_picker() -> Picker {
+    if detect_multiplexer_from_env() == Multiplexer::Herdr {
+        // Restored panes can start before their pixel dimensions arrive.
+        for _ in 0..20 {
+            if matches!(
+                crossterm::terminal::window_size(),
+                Ok(ws) if ws.columns > 0 && ws.rows > 0
+                    && ws.width >= ws.columns && ws.height >= ws.rows
+            ) {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(25));
+        }
+    }
     let mut picker = fast_picker();
     match Picker::from_query_stdio() {
         Ok(probed) => {
