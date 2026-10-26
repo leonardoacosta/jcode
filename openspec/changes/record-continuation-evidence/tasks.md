@@ -54,7 +54,7 @@ Files: no production edit by default. A confirmed gap may justify a bounded meta
 ## 4. Verify and close this evidence slice truthfully
 
 - [x] 4.1 Review the coverage map below, source references, fixture privacy and scoped diff. Confirm there is no new receipt schema/store, capture flag/path, raw log importer/exporter, public replay API, SDK change, gateway dependency or duplicate executable ledger. Record source-only versus runtime-verified findings and any unavailable evidence explicitly; no exact live-session replay or general privacy guarantee for existing logs is claimed.
-- [ ] 4.2 Run the applicable offline recipes, native strict OpenSpec validation and link checks. Report exact tests/cases, results and blockers, including zero-match filters, missing cache and untested platforms. Do not equate artifact validity, tool success or fewer turns with acceptance or phase completion. Commit only verified owned changes with configured identity and preserve unrelated work; retain native review/archive gates for later execution closeout.
+- [x] 4.2 Run the applicable offline recipes, native strict OpenSpec validation and link checks. Report exact tests/cases, results and blockers, including zero-match filters, missing cache and untested platforms. Do not equate artifact validity, tool success or fewer turns with acceptance or phase completion. Commit only verified owned changes with configured identity and preserve unrelated work; retain native review/archive gates for later execution closeout.
 
 ## Execution evidence and remaining gate
 
@@ -85,7 +85,7 @@ Fresh final-byte results above are native tasks `74143924al` (format/tests/polic
 
 Independent review of `a9f44ba3e..9f6710cc2` completed on 2026-10-26. A separate non-implementing worker inspected all six requirements/sixteen scenarios, the actual five-file commit, native callers/helpers, both final gate outputs/status records and full baseline/final/working bytes of the six lint-affected files. It found **no additional blocking or actionable defect in the scoped implementation**, confirmed the fourteen unchanged-source diagnostics, and explicitly withheld overall Apply approval. The four named baseline tests ran; unsupported native-tool/provenance dimensions remain documented rather than fabricated. No extra Cargo calls, repository edits or gate waivers were part of that review.
 
-Task **4.2 remains open** pending independent re-review and lifecycle/persistence closeout, not a failed lint gate. The initial 14-diagnostic result above is historical. Following the continuation instruction, minimal, behavior-preserving repairs were confined to the six existing test sections: explicit NUL bytes, two collapsed test conditions, a private test-case alias, an immutable test borrow, and three render-test lint repairs. No lint was suppressed; production prefixes of the shared files and all unrelated byte fingerprints remain unchanged.
+**Task 4.2 implementation gates are verified.** The initial 14-diagnostic result above is historical. Following the continuation instruction, minimal, behavior-preserving repairs were confined to the six existing test sections: explicit NUL bytes, two collapsed test conditions, a private test-case alias, an immutable test borrow, and three render-test lint repairs. No lint was suppressed; production prefixes of the shared files and all unrelated byte fingerprints remain unchanged.
 
 Native final-byte gate `970431uhib` passed (exit 0):
 
@@ -99,7 +99,7 @@ Native final-byte gate `970431uhib` passed (exit 0):
 | Same TUI command with `reload_overflow_preflight` | 2 passed |
 | `cargo clippy --offline --locked -p jcode-todo-policy -p jcode-tui --all-targets --all-features -- -D warnings` | Passed; all 14 diagnostics resolved without production changes or suppressions |
 
-These are **70 policy + 41 selected TUI tests**, not a claim that the complete TUI suite ran. Repaired-range independent review must still pass before completing 4.2 and archiving. Main tracks `origin/main`, with eight pre-existing local commits ahead of that ref at execution start; no publication or explicit local-only scope has been inferred from the continuation reminder.
+These are **70 policy + 41 selected TUI tests**, not a claim that the complete TUI suite ran. Independent re-review of `a9f44ba3e..54ca63b7c` approved the local implementation and exercised gates, with no blocking/actionable findings. It inspected the exact repaired range, test-only boundaries, NUL byte equivalence, preserved production prefixes and actual final gate outputs/status. All eleven implementation tasks are now verified, including the explicitly not-applicable logging branch. Specification synchronization, archive, final lifecycle/history review and persistence confirmation remain mandatory workflow steps, not implied by the checked tasks. Main tracks `origin/main`, with eight pre-existing local commits ahead of that ref at execution start; no publication or explicit local-only scope has been inferred from the continuation reminder.
 
 ## Requirement and scenario coverage
 
