@@ -2,38 +2,31 @@
 
 ## Why
 
-Repeated validation can consume agent turns after an outcome already works, but task labels and model-written confidence fields do not establish which controller, inputs or native observations caused a follow-up. P01 needs an observable, replayable baseline before P03 can judge whether Jev improves continuation decisions.
+Unnecessary repeated validation should be diagnosed from existing evidence before adding another recording layer. P01 needs a source-grounded baseline for continuation decisions before later work can evaluate them. Jcode already emits selected `AUTO_POKE_DECISION` reasons and a `queue_continuation` event, but log coverage, correlation, provenance, and deployed behavior are not established by those source observations. OmniRoute observes routed inference traffic only; native early-return stop/wait paths may involve no inference. Missing calls or log entries do not prove that an event did not occur.
 
-Roadmap owner: [P01: trusted core and acceptance/evidence baseline](../../../docs/plans/PRODUCT_ROADMAP.md#p01-trusted-core-and-acceptanceevidence-baseline). This change covers one evidence slice, not completion of P01.
+Roadmap owner: [P01: trusted core and acceptance/evidence baseline](../../../docs/plans/PRODUCT_ROADMAP.md#p01-trusted-core-and-acceptanceevidence-baseline). This change defines one evidence slice, not P01 completion, loop reduction, or a behavior fix.
 
 ## What Changes
 
-- Add a versioned native continuation receipt that separates typed agent-claim metadata, observed tool-event references, controller metadata, runtime provenance, selected follow-up kind and effects. Production receipts exclude user-authored free text by construction.
-- Add opt-in, owner-private, bounded local trace capture through `features.continuation_trace`, defaulting to false. Reuse existing session/storage helpers with a new private trace subdirectory, not a new database or service. Do not store raw todo/plan/goal text, generated messages, serialized fingerprints, tool outputs, command arguments, credentials or complete session transcripts.
-- Record the actual TUI scheduler and shared Rust policy as distinct controller engines. Preserve their existing decisions, messages, caps, ordering and effects; do not silently replace the TUI implementation with the SDK policy or assert parity.
-- Add offline replay of complete, sanitized synthetic fixtures against the real policy and TUI test entry points, not a second implementation of their rules. Metadata-only production receipts are explicitly incomplete for exact replay; no automatic raw-trace export is included.
-- Add sanitized, in-repository regression fixtures for repeated validation, changed evidence, legitimate missing checks, blocked/queued work, stale identity and malformed/truncated traces. Record baseline outcomes without claiming a semantic fix or improvement.
-- Expose the pure receipt/replay types to Rust SDK consumers. No new harness endpoint, TypeScript wire contract, provider call or user-facing command is needed in this slice.
+- Assess current Jcode logging and OmniRoute visibility before proposing additional logging. Distinguish source-verified capability from deployed properties assessed as `verified`, `unknown`, `unavailable`, or demonstrably `missing`. Source-pinned OmniRoute v3.8.52 docs/source do not verify deployed capabilities, capture, or retention. Existing OmniRoute log privacy is not automatically certified.
+- Reuse current Jcode logging and existing OmniRoute logs where relevant. Do not introduce a receipt store, capture flag, trace path, typed production receipt, public replay schema, SDK/export API, or automatic raw-log export/import.
+- Add bounded metadata fields or reason events to existing logging only if the assessment demonstrates a concrete, reproducible evidence gap. Do not presume new fields are needed. Tests must demonstrate the gap and cover any authorized logging change.
+- Preserve offline, reviewed synthetic regression fixtures using the actual `FollowUpPolicy::decide` and TUI `schedule_auto_poke_followup_if_needed` test entry points. Keep the pure policy and TUI scheduler distinct. Do not copy decision rules into a replay engine or promise production-trace replay.
+- Treat `ToolDone` success, `PASS` text, and confidence labels alone as insufficient proof of acceptance. Unknown or missing correlation and provenance remain unknown. Fixtures and docs use reviewed synthetic data, never raw transcripts, tool arguments, outputs, message bodies, or credentials from user sessions.
+- Keep baseline tests independent of gateway availability and live log access. Record outcomes and limits in the existing test-module docs, not another executable ledger. `tasks.md` remains the sole executable ledger.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `continuation-evidence`: Native, provenance-aware continuation receipts, private opt-in capture and non-executing replay of current controller decisions.
+- `continuation-evidence`: A source-grounded baseline and offline synthetic regression evidence for existing continuation decisions, without a new production capture or replay architecture.
 
 ### Modified Capabilities
 
-None. Existing local workflow specifications provide research context but do not define this native recording contract or become committed dependencies through this proposal.
+None.
 
 ## Impact
 
-Planned implementation surfaces:
+Planning and validation focus on existing logging and tests, including [`input.rs`](../../../crates/jcode-tui/src/tui/app/input.rs), [`followup.rs`](../../../crates/jcode-todo-policy/src/followup.rs), and existing TUI scheduler tests. Inspect current coverage before changing logging. Any narrowly justified logging adjustment remains part of existing logging; it must not add persisted receipt data, raw content, or an export path.
 
-- `crates/jcode-todo-policy/src/followup.rs` and a focused `continuation.rs`: read-only state projection, receipt types, validation and replay adapter.
-- `crates/jcode-todo-policy/src/lib.rs` and focused tests: public exports and deterministic baseline cases.
-- `crates/jcode-base/src/todo.rs` and existing pure store helpers: bounded private per-session trace read/write, without rewriting existing todo/goal files.
-- `crates/jcode-config-types/src/lib.rs` and existing config defaults/tests: default-off diagnostic feature switch.
-- `crates/jcode-tui/src/tui/app/input.rs`, native event handling and existing app/test helpers: capture the actual scheduler boundary and available native event references.
-- `crates/jcode-sdk/src/lib.rs`: export the pure contract, retaining existing API compatibility.
-
-No live Jev inference, decision/admission changes, autonomous retries, new permissions, planning sandbox, overnight recovery, scheduler activation, provider/account changes, automatic export, historical-state migration or remote publication is included. The isolated verification lane needs no provider credentials. Implementation remains a separate execution request; native artifact validity does not authorize running the feature.
+Actual behavior changes have a separate gate. This design does not authorize implementing a behavior fix, claim that current behavior is correct, or make gateway deployment changes or a new journal prerequisite. Design is not implementation approval.

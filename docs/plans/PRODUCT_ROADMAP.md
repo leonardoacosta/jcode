@@ -100,8 +100,9 @@ workflow contract before treating it as a committed requirement.
 ([requirements](../../openspec/changes/record-continuation-evidence/specs/continuation-evidence/spec.md),
 [design](../../openspec/changes/record-continuation-evidence/design.md),
 [tasks](../../openspec/changes/record-continuation-evidence/tasks.md)). This is the
-metadata-only native receipt and sanitized replay-baseline slice, not all of P01.
-The proposal is authored; no implementation or runtime improvement is claimed.
+existing OmniRoute/Jcode log-coverage and synthetic offline regression-baseline
+slice, not all of P01. It does not add a separate receipt store or require gateway
+changes. The proposal is authored; no implementation or runtime improvement is claimed.
 **Gates/evidence:** actual plan-only actions cannot cross the declared capability
 boundary; explicit approval transitions work; cancellation and pending required
 checks survive session transitions. Verify scoped revision/check attribution,

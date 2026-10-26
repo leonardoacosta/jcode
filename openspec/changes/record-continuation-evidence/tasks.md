@@ -1,99 +1,70 @@
-# Tasks: record continuation evidence
+# Tasks: reuse continuation logs and establish an offline baseline
 
-This is the sole executable checklist for this change. All tasks are unimplemented. Read [proposal.md](proposal.md), [design.md](design.md) and the [delta spec](specs/continuation-evidence/spec.md) before execution. Proposal authoring does not authorize implementation, Jev inference, external publication or a shared-daemon restart.
+This is the sole executable checklist for `record-continuation-evidence`. All tasks remain unimplemented. Read the [proposal](proposal.md), [design](design.md) and [delta spec](specs/continuation-evidence/spec.md) first. This revision authorizes planning only, not implementation, private-log ingestion, inference, gateway changes, publication or a shared-daemon restart. The change ID stays the same.
 
 ## Execution prerequisites and recipes
 
-| Prerequisite | Exact target / safe configuration | Authoring evidence and dependent work |
+| Prerequisite | Bounded target | Authoring evidence / limitation |
 | --- | --- | --- |
-| Native authoring CLI | OpenSpec 1.13.2, current checkout, `spec-driven` | CLI/root/schema observed; proposal validation is separate from code verification |
-| Rust toolchain and dependencies | Repository workspace/lockfile, no new package or network requirement | Implementation builds and cache availability not exercised here; missing dependencies block build tasks, not source drafting |
-| Test coordination | Run Cargo through `selfdev` action `test`; use its compile lock | Do not bypass a busy shared compile or run a release/signoff build |
-| Runtime data | Existing isolated test-home helpers, synthetic session/call IDs, temporary files only | Do not enable capture in the real user profile or read private transcripts |
-| Providers / credentials | None for initial acceptance; replay uses real local controllers and synthetic native events | No API key, OAuth change, live Jev route or paid call is required |
-| Platform privacy | Unix private-directory/file tests; other capture platforms explicitly unavailable until verified | Do not change existing permissions or claim Windows capture passed from Unix results |
+| Native authoring | OpenSpec 1.13.2, current checkout, `spec-driven` | Root/schema observed; validity is not implementation approval |
+| Existing evidence | OmniRoute log capability and current Jcode logging sources | Gateway deployment/version, enabled capture, retention, route coverage and reliable cross-log correlation are not verified here. Unavailable access stays unknown and does not block synthetic tests |
+| Rust checks | Workspace lockfile and already-cached dependencies; native `selfdev` action `test` compile lock | Toolchain/cache and implementation checks have not been exercised by authoring. Do not download dependencies or bypass a busy shared build |
+| Test isolation | Existing `todo`/`done`/`snapshot` helpers and TUI `with_temp_jcode_home`/`create_test_app` | Reviewed synthetic state only; no real user profile, private log body, credentials, provider or gateway availability required |
 
-Use these exact Cargo commands as the `command` value of the native `selfdev` test tool. `--offline --locked` prevents dependency downloads; report a missing cache as a prerequisite blocker, not a passing check. Run each command only after its tests exist, and confirm the named tests appear with `-- --list` before treating a filtered pass as evidence.
-
-```json
-{"action":"test","command":"cargo test --offline --locked -p jcode-todo-policy continuation_ -- --nocapture","intent":"Verify the continuation receipt and replay contract"}
-```
-
-Additional commands used below:
+Use these commands as the `command` argument to `selfdev` action `test` during separately authorized execution. Confirm named tests exist with `-- --list` before counting a filtered pass. `--offline --locked` forbids dependency downloads; a missing cache is a blocker for that check, not a pass.
 
 ```bash
-cargo test --offline --locked -p jcode-base continuation_trace -- --nocapture
-cargo test --offline --locked -p jcode-tui continuation_ -- --nocapture
+cargo test --offline --locked -p jcode-todo-policy followup::tests -- --list
+cargo test --offline --locked -p jcode-tui auto_poke -- --list
+cargo test --offline --locked -p jcode-todo-policy continuation_baseline_ -- --list
+cargo test --offline --locked -p jcode-tui continuation_baseline_ -- --list
+cargo test --offline --locked -p jcode-todo-policy followup::tests -- --nocapture
 cargo test --offline --locked -p jcode-tui auto_poke -- --nocapture
-cargo test --offline --locked -p jcode-sdk continuation_ -- --nocapture
-cargo test --offline --locked -p jcode-todo-policy
-cargo check --offline --locked -p jcode-tui -p jcode-sdk
+cargo test --offline --locked -p jcode-todo-policy continuation_baseline_ -- --nocapture
+cargo test --offline --locked -p jcode-tui continuation_baseline_ -- --nocapture
 cargo fmt --all -- --check
 ```
 
-For every code slice: add its failing named tests, demonstrate the failure, implement the smallest change, rerun its checks, inspect the scoped diff and commit only verified owned files with the configured identity. Never fix or stage the unrelated MCP/swarm changes as a prerequisite shortcut. Preserve final review and archive requirements from the native execution workflow.
+For an optional logging edit, also list and run its focused tests in its actual owner package. Use `cargo check --offline --locked -p jcode-tui` if the native call site changes, and the corresponding existing logger-package tests if the shared logger changes. Do not add SDK/public replay interfaces, capture configuration or a new fixture framework to satisfy these recipes. Add regression assertions against observed current decisions and effects, including undesirable outcomes; do not silently fix the controller to make an aspirational baseline pass. Future behavior fixes require their own authorized scope and failing regression test.
+
+## 1. Establish existing coverage before adding anything
+
+Files: update the evidence/limitations sections of `design.md` after inspecting `crates/jcode-tui/src/tui/app/input.rs`, `crates/jcode-todo-policy/src/followup.rs`, `crates/jcode-base/src/logging.rs` and `crates/jcode-logging/src/lib.rs`. Do not create another checklist or log store.
+
+- [ ] 1.1 Confirm the actual target revision and source log boundaries. Document existing `AUTO_POKE_DECISION` events and logger context, which native branches can return without an inference request, and the two distinct controller entry points. Verify that source comments suggesting parity do not substitute for observed engine-specific outcomes.
+- [ ] 1.2 Assess the available OmniRoute/Jcode evidence for one bounded repeated-validation diagnosis. Separate source-verified capability from observed deployed metadata, unknown/unavailable access and demonstrated missing evidence. Check actual route coverage, capture/retention and safe correlation/provenance only where authorized, without reading or copying private request bodies, enabling logs, changing routes or credentials. Do not attribute a request by timestamp alone, infer a stop from no request, or call source-pinned upstream behavior deployed proof. If metadata/access is unavailable, record the limitation and continue offline work.
+- [ ] 1.3 Classify the result as sufficient existing evidence, one demonstrated gap, or inconclusive. A gap must identify the concrete decision/observation, missing field or event and why existing logs/context cannot answer that bounded question. Verify that model confidence, a successful `ToolDone` and `PASS` text are not acceptance proof. Record no logging addition for sufficient or inconclusive coverage; no new journal is a fallback.
+
+## 2. Build the engine-specific synthetic baseline
+
+Files: extend `crates/jcode-todo-policy/src/followup_tests.rs` and `crates/jcode-tui/src/tui/app/tests/auto_poke_cycles.rs` using their existing helpers and direct production entry points. Use adjacent existing TUI event tests only if a case genuinely needs native event delivery; no copied decision function, new replay API or SDK export.
+
+- [ ] 2.1 Add and run `continuation_baseline_repeated_and_changed_work` and `continuation_baseline_required_checks_and_limits` in the pure-policy tests. Use complete synthetic `TodoSnapshot` and controller state to cover unchanged/metadata-only repetition, genuinely changed work/evidence, required completion gates, stop/disable behavior and gate-budget boundaries. Assert actual follow-up kind, effects and next state through `FollowUpPolicy::decide`; confirm the existing policy suite still passes.
+- [ ] 2.2 Add and run `continuation_baseline_auto_poke_repeated_and_required` and `continuation_baseline_auto_poke_wait_stop_and_errors` in the TUI tests. Invoke `schedule_auto_poke_followup_if_needed` through isolated apps to cover repetition versus newly required work, queued/busy waits, disabled/stop paths and relevant error/stale-state paths supported by the real boundary. Check generated/queued messages, flags/counters, ordering and read-versus-ack effects. Do not fabricate tool-error inputs for the pure policy if it does not consume them, require engine parity or translate an unattributed log into complete engine state.
+- [ ] 2.3 Document case inputs, engine identity, actual expected outcomes and evidence limits beside the tests. Where logs have missing/stale/conflicting identity, state that attribution is unknown rather than inventing fixtures from them. Include a negative example showing why absent traffic, claimed confidence or tool success alone cannot establish accepted completion. Verify all fixture data is reviewed synthetic, contains no private log payload, and runs without live gateway/provider access. A known undesirable baseline is not an improvement claim.
+
+## 3. Close only a demonstrated logging gap, if any
+
+Files: no production edit by default. A confirmed gap may justify a bounded metadata event/field at the existing call site in `crates/jcode-tui/src/tui/app/input.rs` or existing `crates/jcode-logging/src/lib.rs` context machinery, with tests in that owner package. A different boundary requires a documented exact owner and a scope check first.
+
+- [ ] 3.1 Apply the result of 1.3: for sufficient or inconclusive coverage, record that no logging change is required/permitted by this slice and continue to final verification. Only for a demonstrated gap, define the smallest bounded metadata field/event and a focused named test showing the missing observation. Verify existing session/task context cannot already supply it. Do not prescribe fields before this check or expand into provider transport, deployment, capture or retention changes.
+- [ ] 3.2 If justified, implement only that existing-log addition and run its focused tests, first demonstrating the missing observation and then the emitted metadata. Verify no private free text/body/arguments/output, credentials or transcript enter the added fields and no existing data permissions, capture/retention settings or services change. If safe correlation cannot be established, leave it unknown rather than adding raw content or a new store. If 3.1 skips the addition, record this task as not applicable with the evidence, not as an executed code test.
+- [ ] 3.3 For an addition, rerun the existing and new policy/TUI recipes and focused logger tests. Assert unchanged controller decisions, messages, counters, ordering and effects, including existing read/ack separation and an error/disabled-log case. Logging cannot become a decision input or cause clearing, retrying or sending work. Without an addition, verify the scoped diff contains no production change and run the baseline suites only. Do not claim unexecuted branch checks passed.
+
+## 4. Verify and close this evidence slice truthfully
+
+- [ ] 4.1 Review the coverage map below, source references, fixture privacy and scoped diff. Confirm there is no new receipt schema/store, capture flag/path, raw log importer/exporter, public replay API, SDK change, gateway dependency or duplicate executable ledger. Record source-only versus runtime-verified findings and any unavailable evidence explicitly; no exact live-session replay or general privacy guarantee for existing logs is claimed.
+- [ ] 4.2 Run the applicable offline recipes, native strict OpenSpec validation and link checks. Report exact tests/cases, results and blockers, including zero-match filters, missing cache and untested platforms. Do not equate artifact validity, tool success or fewer turns with acceptance or phase completion. Commit only verified owned changes with configured identity and preserve unrelated work; retain native review/archive gates for later execution closeout.
 
 ## Requirement and scenario coverage
 
-The names below match the delta exactly. Each task includes its own tests; this table is a map, not a second checklist.
+This table maps every requirement and scenario to execution tasks. Names match the delta exactly; the table is not a second checklist.
 
-| Requirement | Scenarios covered | Task slices |
+| Requirement | Scenarios | Execution tasks |
 | --- | --- | --- |
-| Versioned provenance | Available native provenance; Stale or legacy identity; Success is not acceptance | 1.1-1.3, 4.2-4.3 |
-| Exact engine inputs | Stateful policy capture; Scheduler no-op capture; Missing context | 1.1-1.3, 2.1-2.2, 4.1-4.4 |
-| Noninterfering capture | Capture parity; Effects without follow-up; Capture failure isolation | 2.1-2.3, 3.4, 4.1-4.4, 6.2 |
-| Private opt-in storage | Disabled capture; Private enabled trace; Unsafe storage boundary | 3.1-3.4, 6.2 |
-| Bounded trace integrity | Retention boundary; Oversized input; Corrupt or unknown trace | 3.1, 3.3-3.4 |
-| Isolated engine replay | Shared policy match; TUI adapter boundary; Untrusted replay input | 2.1-2.3, 4.4, 5.3 |
-| Sanitized baseline coverage | Repetition and necessary check; Waiting and cancellation; Error and identity controls; Incomplete baseline controls | 5.1-5.2 |
-| Observation-only claims | Baseline without measurement; Unmatched comparison | 1.3, 5.2, 6.1-6.3 |
-
-## 1. Versioned receipt and fixture contract
-
-Files: create `crates/jcode-todo-policy/src/continuation.rs` and `crates/jcode-todo-policy/src/continuation_tests.rs`; modify `crates/jcode-todo-policy/src/lib.rs` to export the module and wire its tests. Follow existing `followup.rs`/`followup_tests.rs` patterns.
-
-- [ ] 1.1 Add failing `continuation_receipt_metadata_only`, `continuation_fixture_unknown_version`, `continuation_claim_is_not_observation` and `continuation_receipt_redacted_replay_is_incomplete` tests using the two distinct v1 types defined in design.md; run the policy `continuation_` recipe and retain the expected missing-contract failure.
-- [ ] 1.2 Implement `ContinuationReceiptV1`, `ContinuationReplayFixtureV1`, controller/provenance/coverage/effect/result types and strict validation. The runtime type must not have fields for raw task/goal/plan text, messages, fingerprints, tool payloads or command arguments. Verify all four tests pass and unknown/invalid input never becomes `matched`.
-- [ ] 1.3 Add a fixture with distinct sentinel strings in todo text, goal text, message, fingerprint, tool output, arguments and error prose; assert no sentinel appears in serialized production metadata. Document the fixture-only versus production-type boundary in module docs and verify through `continuation_receipt_metadata_only`.
-
-## 2. Pure policy state and offline replay
-
-Files: modify `crates/jcode-todo-policy/src/followup.rs`, `crates/jcode-todo-policy/src/continuation.rs` and `crates/jcode-todo-policy/src/continuation_tests.rs`. No filesystem/network code belongs in the pure policy.
-
-- [ ] 2.1 Add failing `continuation_policy_replay_matches`, `continuation_policy_replay_state_is_required`, `continuation_policy_capture_does_not_ack` and `continuation_policy_tui_engine_is_unsupported` tests. Use complete synthetic state for the nine actual policy fields, explicit no-follow-up with effects, and a mismatched expected decision; verify the policy recipe fails before implementation.
-- [ ] 2.2 Implement read-only `PolicyReplayStateV1` projection, a crate-private fresh-instance replay constructor and `replay_policy_fixture` using the real `FollowUpPolicy::decide` once. Never load a trace into a live controller. Verify exact kind/message/requested-effect equality, `mismatched` for differing expectations and explicit incomplete/unsupported/invalid results.
-- [ ] 2.3 Compare trace off/on on identical fresh engine states, including disabled, open work, digest, gate budget, final response, reset and no-op cases. Assert unchanged decision/messages/state/effects and zero acknowledgement/I/O/provider calls; run the full `jcode-todo-policy` suite and document engine-specific limits with the tests.
-
-## 3. Private bounded local capture and default-off configuration
-
-Files: modify `crates/jcode-todo-policy/src/store.rs`, `crates/jcode-base/src/todo.rs` (including its focused test boundary), `crates/jcode-config-types/src/lib.rs`, `crates/jcode-base/src/config/default_file.rs` and `crates/jcode-base/src/config_tests.rs`. Do not add a database, user command or migration.
-
-- [ ] 3.1 Add failing `continuation_trace_disabled_is_no_io`, `continuation_trace_private_path`, `continuation_trace_limits`, `continuation_trace_unsafe_boundary` and `continuation_trace_corrupt_file` tests in the existing storage/config test boundaries. Use temporary homes and verify the `jcode-base` continuation-trace recipe fails before implementation.
-- [ ] 3.2 Add `features.continuation_trace`, default false, and document its metadata-only/local nature in the existing generated-default surface. Implement the safe-session path under `todos/continuation-traces/`, strict metadata-only serialization, Unix 0700/0600 creation and bounded atomic read/write. Verify absent configuration and disabled capture create no trace files and existing directories/data are unchanged.
-- [ ] 3.3 Enforce at most 64 records and 512 KiB for the entire serialized file, with bounded reads and coverage/drop metadata. Exercise the 65th record, byte-cap pressure and a single oversized record; verify oldest retention/omission is explicit, output remains within both caps and no incomplete record is replayed successfully.
-- [ ] 3.4 Reject unsafe IDs, symlink destinations, unavailable ownership/privacy, corrupt data and unsupported platform capture without repair or raw diagnostics. Assert capture failure leaves original files and requested policy effects unchanged; rerun the base recipe and config tests touched by 3.2. Document unsupported-platform behavior rather than widening ACLs.
-
-## 4. Actual TUI observation and test-only replay
-
-Files: modify `crates/jcode-tui/src/tui/app/input.rs`, `crates/jcode-tui/src/tui/app.rs`, `crates/jcode-tui/src/tui/app/tui_lifecycle.rs`, `crates/jcode-tui/src/tui/app/remote/server_events.rs` and `crates/jcode-tui/src/tui/app/tests/auto_poke_cycles.rs`; add `crates/jcode-tui/src/tui/app/tests/continuation_evidence.rs` only if it keeps the existing module pattern clearer. Reuse `with_temp_jcode_home` and `create_test_app`.
-
-- [ ] 4.1 Enumerate the actual reads and outcomes of `schedule_auto_poke_followup_if_needed` and add failing `continuation_tui_capture_parity`, `continuation_tui_pending_is_noop`, `continuation_tui_effects_are_not_acknowledged_by_capture` and `continuation_tui_runtime_identity_unknown` tests. Run the TUI `continuation_` recipe and record failures before adding hooks.
-- [ ] 4.2 Implement read-only `TuiReplayStateV1`/context projection and metadata capture at the existing branch boundary. Obtain controller process identity from existing `jcode_build_meta` helpers; keep daemon/checkout identity separate and unknown when unavailable. Verify capture on/off schedules exactly the same messages/kinds/effects in the same order and never resets/re-arms the controller or applies an effect itself.
-- [ ] 4.3 Add `continuation_tui_interleaved_refs` and `continuation_tui_tool_success_is_not_acceptance` tests using synthetic native events. Preserve same-session/call correlation, unknown legacy IDs and typed failures; assert `PASS` output, claims and tool success cannot create an acceptance verdict or leak payload strings. Implement only the necessary bounded event-reference adapter and rerun the TUI recipe.
-- [ ] 4.4 Implement the test-only TUI replay adapter using the real scheduler, fixed clock/eligibility and isolated fixture state, not copied rules. Exercise queued/blocked/cancelled, missing context, final-response and no-follow-up cases with `continuation_tui_replay_fixture`; run both the TUI `continuation_` and existing `auto_poke` recipes. Do not make the pure crate depend on TUI or add a live state importer.
-
-## 5. Balanced baseline and Rust SDK boundary
-
-Files: keep sanitized fixtures with the policy/TUI tests above; modify `crates/jcode-sdk/src/lib.rs` and `crates/jcode-sdk/src/sdk_tests/parity.rs` for the export test. No raw session fixture, harness endpoint or TypeScript wire change is included.
-
-- [ ] 5.1 Add and run `continuation_baseline_repeated_and_required`, `continuation_baseline_wait_and_stop`, `continuation_baseline_stale_and_error` and `continuation_baseline_incomplete_and_version` tests. Include unchanged/metadata-only repetition alongside a genuine newly required check, changed evidence, queued/blocked work, stop precedence, stale identity, interleaved tool errors, malformed/version-mismatched/incomplete inputs and budget boundaries. All fixtures must be reviewed synthetic data, not extracted private transcripts.
-- [ ] 5.2 Record each engine's actual baseline case outcomes and limitations in fixture/module documentation, explicitly distinguishing derived fixtures from observed production receipts. Verify no case treats fewer turns alone as improvement, no raw metadata receipt is promoted to complete replay, and engine differences remain visible. Rerun the policy/TUI `continuation_` recipes with all expected case names present.
-- [ ] 5.3 Export the pure receipt/fixture/replay contract through the existing Rust SDK and add `continuation_sdk_exports`. Run its SDK recipe plus the TUI/SDK compile check. Verify legacy snapshot and harness wire shapes remain unchanged and there is no new provider access or public TUI replay implementation in the pure SDK.
-
-## 6. Integration evidence and native closeout inputs
-
-- [ ] 6.1 Run the full policy suite, TUI continuation/auto-poke regression filters, base storage/config filters, SDK export check, TUI/SDK compile check and formatter recipe under coordinated test execution. Confirm filtered tests actually exist, and record exact commands, source revision, package/test counts, failures and offline-cache/platform limitations. Do not report an unrelated baseline failure as a pass or silently repair it here.
-- [ ] 6.2 Perform the isolated end-to-end diagnostic check: enable capture only in a temporary test home, feed the native controller fixtures, read the resulting metadata JSON and verify bounds/privacy/provenance/coverage and unchanged native decisions/effect counts. Disable capture and verify no new trace writes. Observe results through the actual storage and TUI entry points, not a separate mock serializer; no shared daemon or provider is needed.
-- [ ] 6.3 Review the final diff independently under the native execution workflow, repair actionable findings and rerun affected gates/review. Verify only this feature's code/tests/docs are included, no raw fixture data or external side effects occurred, and the metadata-versus-complete-fixture boundary is intact. Record review and acceptance evidence in this change before final task completion.
-
-After implementation tasks pass, native `apply` owns verified scoped commits, archival and required persistence. Archive only after the final gates/review/commits pass; then update roadmap links to actual archived artifacts while preserving this ID. Do not add a circular "archive this change" implementation checkbox. Do not mark all of P01 Complete merely because this evidence slice closes. Publication and consequential external actions retain their normal authorization boundaries.
+| Existing-log reuse and coverage assessment | Existing sources assessed first; Local stop is not inferred from gateway absence; Source coverage is bounded | 1.1-1.3, 4.1 |
+| Evidence limits and provenance | Deployment facts lack evidence; Correlation cannot be verified; Success signals are not proof | 1.2-1.3, 2.3, 4.1 |
+| Engine-specific offline regression baseline | Repeated verification and required checks; Changed evidence and continuation states; Missing metadata, errors, and limits | 2.1-2.3, 4.2 |
+| Behavioral noninterference | Pure policy remains unchanged; TUI scheduling remains unchanged; Offline test boundary | 2.1-2.2, 3.3, 4.1-4.2 |
+| Demonstrated-gap logging only | Reproducible evidence gap; No demonstrated gap | 1.3, 3.1-3.3, 4.1 |
+| Privacy without a new trace store | No private transcript material; Existing gateway privacy is unverified | 1.2, 2.3, 3.2, 4.1 |

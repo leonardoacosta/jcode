@@ -2,126 +2,104 @@
 
 ## Purpose
 
-Observe native continuation metadata and replay complete sanitized fixtures without changing existing controller behavior or re-logging private text.
+Assess whether existing logs can support diagnosis of continuation decisions, then establish a bounded, offline regression baseline for the existing engines. This evidence-only capability does not change continuation behavior.
 
 ## ADDED Requirements
 
-### Requirement: Versioned provenance
-The system SHALL identify production metadata receipts as `ContinuationReceiptV1` version 1 and separate typed AGENT CLAIM metadata, NATIVE OBSERVATIONS and RUNTIME IDENTITY. Claims SHALL remain untrusted. Available safe native session/call/turn references and observed controller/daemon identity SHALL remain distinct; unavailable or stale provenance SHALL remain unknown. Untrusted identifiers SHALL use capture-local opaque tokens. Git HEAD or an on-disk binary SHALL NOT establish running-daemon identity. Tool success, output text or confidence SHALL NOT establish acceptance or satisfied tests.
+### Requirement: Existing-log reuse and coverage assessment
+The system SHALL assess existing OmniRoute log coverage and existing Jcode logs before proposing or adding logging. The assessment SHALL state the target diagnosis, which existing sources were examined, the events and fields each source can evidence, and gaps or limits. Current source verifies `AUTO_POKE_DECISION` idle reasons `no_todos`, `unchanged_ownership_assessment`, and `unchanged_todos`, plus `queue_continuation`, at `crates/jcode-tui/src/tui/app/input.rs`; this does not establish coverage of every branch or session correlation. The assessment SHALL distinguish routed inference traffic visible to OmniRoute from local decisions that do not route traffic.
 
-#### Scenario: Available native provenance
-- **WHEN** capture observes a native call and controller identity but no daemon identity
-- **THEN** the metadata receipt retains available safe references, labels daemon identity unknown and separates claim metadata from observations
+#### Scenario: Existing sources assessed first
+- **GIVEN** a target continuation diagnosis and existing OmniRoute and Jcode logs
+- **WHEN** coverage is assessed
+- **THEN** the assessment documents relevant events and fields from both sources before recommending any logging addition
 
-#### Scenario: Stale or legacy identity
-- **WHEN** usable event identity is missing, stale or supplied only by Git HEAD or a disk binary
-- **THEN** affected provenance remains unknown and no running-daemon attribution is invented
+#### Scenario: Local stop is not inferred from gateway absence
+- **GIVEN** OmniRoute can observe routed inference traffic but not a local TUI stop or wait decision
+- **WHEN** no gateway request appears for the relevant interval
+- **THEN** the assessment does not treat that absence as proof of a local decision or its reason
 
-#### Scenario: Success is not acceptance
-- **WHEN** a native tool returns no error, its output says `PASS`, or an agent reports high confidence
-- **THEN** only typed return/claim metadata is recorded, with no copied payload or assertion that acceptance or tests passed
+#### Scenario: Source coverage is bounded
+- **GIVEN** the current source identifies the stated idle reasons and `queue_continuation` at the specified file
+- **WHEN** the assessment describes source coverage
+- **THEN** it does not claim every decision branch or session correlation is covered without additional evidence
 
-### Requirement: Exact engine inputs
-Complete offline replay SHALL use a distinct `ContinuationReplayFixtureV1` containing reviewed synthetic input, the selected engine's exact decision-relevant before-state and fixed eligibility/clock context. The shared Rust policy and existing TUI scheduler SHALL be distinct engines, without serializing the whole TUI application or assuming equivalence. Production receipts SHALL contain metadata only, excluding raw todo/plan/goal text, serialized fingerprints and generated messages by construction. They SHALL NOT be automatically exported as complete fixtures; their exact replay coverage SHALL be incomplete with reason `redacted_input`.
+### Requirement: Evidence limits and provenance
+The system SHALL record deployed capture, retention, correlation, and provenance as `verified`, `unknown`, `unavailable`, or `missing` only when the assessment identifies supporting evidence. Unknown or missing data SHALL NOT support an attributed conclusion. Source-pinned upstream documentation SHALL NOT be represented as evidence of deployed behavior. Agent claims, confidence, tool success, isolated output text including `PASS`, and unsupported reports of test success alone SHALL NOT count as acceptance proof. Acceptance conclusions SHALL require behavior-relevant checks with established scope and provenance.
 
-#### Scenario: Stateful policy capture
-- **WHEN** a complete sanitized fixture supplies the actual shared-policy input and before-state
-- **THEN** replay can evaluate that engine's decision while its state/input remain separate from the production metadata type
+#### Scenario: Deployment facts lack evidence
+- **GIVEN** upstream documentation describes capture or retention but no deployment evidence verifies it
+- **WHEN** the assessment records those properties
+- **THEN** it marks them `unknown` or `unavailable` and does not present the documentation as deployed evidence
 
-#### Scenario: Scheduler no-op capture
-- **WHEN** the actual TUI scheduler encounters disabled or pending/queued work
-- **THEN** capture records typed no-follow-up/eligibility metadata without storing its private text or substituting the SDK controller
+#### Scenario: Correlation cannot be verified
+- **GIVEN** logs lack a verified session or event correlation field
+- **WHEN** a diagnosis would attribute events to a session
+- **THEN** the attribution is recorded as unknown or missing and no causal conclusion is drawn from it
 
-#### Scenario: Missing context
-- **WHEN** replay receives production metadata, omitted input or missing decision-relevant context
-- **THEN** it reports incomplete coverage rather than supplying guessed defaults or a successful replay
+#### Scenario: Success signals are not proof
+- **GIVEN** an agent claims success, reports high confidence, a tool returns successfully, or output contains `PASS`
+- **WHEN** evidence is assessed for acceptance
+- **THEN** those signals alone do not establish acceptance or successful tests
 
-### Requirement: Noninterfering capture
-Capture SHALL preserve existing decisions, in-memory messages, ordering, state transitions, caps and requested effects with tracing enabled or disabled. It SHALL NOT make a second decision, reset/re-arm a controller, send messages, acknowledge effects, clear observations or mark reviews delivered. Requested effects SHALL remain separate from observed application, defaulting to `not_observed` without confirmation from the existing native path. Capture failure SHALL NOT cause an agent turn, retry or changed decision.
+### Requirement: Engine-specific offline regression baseline
+The system SHALL define a reviewed synthetic baseline for each existing engine at its real existing tests: `FollowUpPolicy::decide` tests for the pure policy and TUI `schedule_auto_poke_followup_if_needed` app tests. The engines SHALL remain distinct. The baseline SHALL use those implementations and tests directly, not copied rules, a serialized replay framework, or an exact live-session replay claim. It SHALL cover repeated verification and legitimate required checks, changed evidence, stop, wait and queued behavior, stale or absent metadata, tool errors, and limits, recording truthful observed outcomes without promising semantic improvement. Cases SHALL be allocated to the boundary that actually consumes the relevant state or events; unsupported dimensions SHALL be documented, not fabricated as new engine inputs.
 
-#### Scenario: Capture parity
-- **WHEN** matched native controller states are evaluated with capture off and on
-- **THEN** selected follow-ups, in-memory messages, requested effects and acknowledgement counts are identical
+#### Scenario: Repeated verification and required checks
+- **GIVEN** reviewed synthetic cases for unchanged repeated verification and a genuinely required check
+- **WHEN** each engine's existing tests evaluate its cases
+- **THEN** the baseline records both outcomes and does not treat reduced activity as improvement if required checks are suppressed
 
-#### Scenario: Effects without follow-up
-- **WHEN** a controller requests effects but no follow-up message
-- **THEN** the receipt preserves that distinction and capture itself does not apply or acknowledge those effects
+#### Scenario: Changed evidence and continuation states
+- **GIVEN** reviewed synthetic cases with changed evidence and stop, wait, and queued states
+- **WHEN** the pure policy and TUI app tests evaluate those cases separately
+- **THEN** the baseline records each engine's observed behavior without asserting the engines are equivalent
 
-#### Scenario: Capture failure isolation
-- **WHEN** storage, serialization or privacy checks prevent capture
-- **THEN** the original controller outcome remains unchanged and only a bounded redacted diagnostic is permitted
+#### Scenario: Missing metadata, errors, and limits
+- **GIVEN** reviewed synthetic cases with stale or absent metadata, tool errors, or reached limits
+- **WHEN** the existing tests evaluate them
+- **THEN** the baseline records observed outcomes and uncertainty without inventing attribution, replay results, or guaranteed improvements
 
-### Requirement: Private opt-in storage
-`features.continuation_trace` SHALL default to false and disabled capture SHALL perform no trace I/O. Enabled production capture SHALL accept only metadata receipts, never complete fixtures or arbitrary JSON. It SHALL store no raw user-authored task/plan/goal text, generated messages, serialized fingerprints, tool outputs, command arguments, arbitrary error prose, credential payloads or full transcript. It SHALL use the safe-session path `<JCODE_HOME>/todos/continuation-traces/<safe-session-id>.json`, creating the new Unix directory/file with 0700/0600 without modifying existing directory permissions or widening ACLs. Unsafe paths, symlinks or unverified privacy SHALL make capture unavailable. Non-Unix capture SHALL remain explicitly unavailable until equivalent privacy is verified. No automatic export, upload, provider call or migration is permitted.
+### Requirement: Behavioral noninterference
+This evidence-only slice SHALL preserve the existing decisions, messages, ordering, counters, and read-versus-acknowledgment effects of the pure policy and TUI scheduler as distinct engines. Direct tests SHALL run without OmniRoute, live logs, or provider access. Production logs SHALL NOT become inputs to continuation decisions.
 
-#### Scenario: Disabled capture
-- **WHEN** the setting is missing or false
-- **THEN** no trace directory/file is read or written and existing configuration behavior remains unchanged
+#### Scenario: Pure policy remains unchanged
+- **GIVEN** a reviewed synthetic input evaluated by the existing `FollowUpPolicy::decide` tests
+- **WHEN** evidence assessment or baseline checks run
+- **THEN** the policy's existing decision and message behavior remain unchanged
 
-#### Scenario: Private enabled trace
-- **WHEN** Unix capture is explicitly enabled in an isolated private test home
-- **THEN** only the metadata type is written under the new private subdirectory within its declared limits, with no raw sentinel payload text
+#### Scenario: TUI scheduling remains unchanged
+- **GIVEN** a reviewed synthetic input evaluated by the existing `schedule_auto_poke_followup_if_needed` app tests
+- **WHEN** evidence assessment or baseline checks run
+- **THEN** the TUI's existing decisions, ordering, counters, and read-versus-acknowledgment effects remain unchanged
 
-#### Scenario: Unsafe storage boundary
-- **WHEN** a session path is unsafe, a destination is a symlink, ownership/privacy is unavailable or equivalent platform privacy is unverified
-- **THEN** capture writes nothing, changes no existing permissions and preserves the native decision
+#### Scenario: Offline test boundary
+- **GIVEN** the direct pure-policy and TUI app tests
+- **WHEN** they run
+- **THEN** they require no OmniRoute, live production logs, or provider access, and production logs are not read as decision inputs
 
-### Requirement: Bounded trace integrity
-The whole serialized trace SHALL contain at most 64 records and 512 KiB. Reads and writes SHALL be bounded and replacement atomic. Retention SHALL record dropped/truncated coverage when evicting oldest complete records. Oversized records SHALL become bounded omission metadata or be skipped without implying complete history. Malformed existing data SHALL remain untouched; unsupported versions SHALL fail explicitly rather than being silently repaired or treated as current.
+### Requirement: Demonstrated-gap logging only
+Logging additions SHALL be conditional on a specific, reproducible missing evidence field or event that obstructs a target diagnosis after existing-log coverage has been assessed. If such a gap is demonstrated, any addition SHALL use existing native logging and include focused tests. If no specific gap is demonstrated, or evidence is inconclusive, the assessment SHALL record no logging addition or an inconclusive result. The assessment SHALL NOT presume that gateway deployment, capture, or retention changes are necessary.
 
-#### Scenario: Retention boundary
-- **WHEN** a 65th record or byte-cap pressure is encountered
-- **THEN** output stays within both caps and coverage explicitly records loss of earlier observations
+#### Scenario: Reproducible evidence gap
+- **GIVEN** an assessed target diagnosis and a reproducible missing field or event that blocks it
+- **WHEN** an addition is justified
+- **THEN** the addition is bounded to existing native logging and has focused tests for the needed evidence
 
-#### Scenario: Oversized input
-- **WHEN** even one record cannot fit safely
-- **THEN** bounded omission metadata or an explicit skipped capture replaces a full entry, never a successful complete replay
+#### Scenario: No demonstrated gap
+- **GIVEN** existing logs support the target diagnosis, or the evidence does not identify a reproducible missing field or event
+- **WHEN** the assessment concludes
+- **THEN** it records no logging addition or an inconclusive result and does not presume a gateway change is required
 
-#### Scenario: Corrupt or unknown trace
-- **WHEN** an existing journal is malformed or its version is unsupported
-- **THEN** the existing file is not repaired or overwritten, the problem is explicit and the native controller continues unchanged
+### Requirement: Privacy without a new trace store
+This capability SHALL NOT add a trace store, capture flag, raw-body capture, automatic export or import, or private session fixtures. Documentation and tests SHALL use reviewed synthetic data, never production prompts, tool arguments, tool output, credentials, or private transcript content. Synthetic expected messages MAY assert existing behavior without copying user-session content. The assessment SHALL NOT claim that existing gateway logs are metadata-only or private by default; it SHALL state what evidence supports any privacy characterization and leave unverified properties unknown.
 
-### Requirement: Isolated engine replay
-Complete fixture replay SHALL use the actual `FollowUpPolicy::decide` or the actual TUI scheduler under existing isolated test helpers, not copied rules. The pure SDK replayer SHALL return `unsupported_engine` for TUI records; a TUI test-only adapter SHALL verify that engine separately. Replay SHALL distinguish matched, mismatched, incomplete, unsupported version/engine and invalid results. It SHALL NOT execute tools, commands, providers or follow-up messages; apply recorded effects; open paths named by fixture content; import state into a live controller; or mutate original session data.
+#### Scenario: No private transcript material
+- **GIVEN** documentation or tests are authored for the baseline or log assessment
+- **WHEN** examples and cases are added
+- **THEN** they use reviewed synthetic data and contain no private session fixtures, production prompts, tool arguments, tool output, credentials, or transcript content
 
-#### Scenario: Shared policy match
-- **WHEN** a complete valid synthetic SDK-policy fixture is replayed
-- **THEN** a fresh native policy is evaluated once and its actual decision/messages/requested effects are compared to the fixture expectation
-
-#### Scenario: TUI adapter boundary
-- **WHEN** a complete TUI fixture is presented to the pure public SDK and separately to the TUI test adapter
-- **THEN** the SDK returns unsupported engine and the isolated TUI adapter calls the real scheduler without introducing a pure-crate dependency on TUI
-
-#### Scenario: Untrusted replay input
-- **WHEN** input is malformed, unsupported, incomplete, metadata-only or includes command/path-like text
-- **THEN** replay reports its explicit non-success category without executing that text or touching original session state
-
-### Requirement: Sanitized baseline coverage
-The baseline SHALL include reviewed synthetic cases derived from observed failure patterns, not raw private transcripts or automatic snapshot exports. It SHALL cover repeated unchanged/metadata-only validation alongside genuinely required checks and changed state, queued/blocked work, cancellation, stale/unknown identity, interleaved tool failures, missing context, budget boundaries and malformed/version-mismatched inputs. Each engine SHALL be evaluated against its own baseline, with differences and limitations retained.
-
-#### Scenario: Repetition and necessary check
-- **WHEN** both unchanged repetition and a newly required check are present in matched fixtures
-- **THEN** both native outcomes are recorded without equating less activity with improvement or suppressing the required-check control
-
-#### Scenario: Waiting and cancellation
-- **WHEN** work is pending, blocked, queued or cancelled
-- **THEN** the baseline exercises actual engine eligibility and stop behavior with capture parity preserved
-
-#### Scenario: Error and identity controls
-- **WHEN** same/different-session native calls interleave or identity/error evidence is missing or stale
-- **THEN** the fixture verifies explicit unknowns and correct attribution without promoting claims or tool success to acceptance
-
-#### Scenario: Incomplete baseline controls
-- **WHEN** fixture state/version is incomplete or a receipt contains only redacted metadata
-- **THEN** the baseline expects an explicit incomplete/invalid/unsupported result rather than a fabricated match
-
-### Requirement: Observation-only claims
-This capability SHALL provide observations and a baseline only. It SHALL NOT claim to fix repeated pokes, merge the controllers, reduce turns/cost/latency, satisfy a user's goal or authorize P03/overnight implementation. Future improvement claims require matched behavioral evidence including required-check and authorization/stop negative controls, not a count or quieter output alone.
-
-#### Scenario: Baseline without measurement
-- **WHEN** receipts and fixtures have been implemented but no later comparison was run
-- **THEN** reporting describes baseline coverage and limitations, not measured improvement or completion of P01's other outcomes
-
-#### Scenario: Unmatched comparison
-- **WHEN** future results use different inputs, omit required-check controls or provide no serving/provenance evidence
-- **THEN** this baseline does not validate the improvement claim and the comparison remains explicitly unverified
+#### Scenario: Existing gateway privacy is unverified
+- **GIVEN** no deployed evidence establishes that gateway logs contain only metadata or are private by default
+- **WHEN** the assessment describes those logs
+- **THEN** it makes neither claim and records the relevant privacy properties as unknown
