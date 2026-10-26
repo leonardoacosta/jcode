@@ -43,8 +43,9 @@ are committed and available in a clean checkout. Existing local work can inform
 that authoring after its scope, evidence and publication boundaries are reviewed.
 All ten phases started Planned; no implementation, cost saving or outcome improvement
 was claimed by creating the roadmap. P01 now has one committed proposal,
-`record-continuation-evidence`; implementation is archived locally, with final
-lifecycle/history and persistence confirmation still pending.
+`record-continuation-evidence`; its implemented baseline and canonical capability
+are archived and committed locally. Broader P01 completion and remote publication
+are not claimed.
 
 ## Cross-cutting acceptance contract
 
@@ -78,7 +79,7 @@ other candidate ships. Independent slices may proceed concurrently.
 
 | Stable ID | Phase | Depends on | Status | Real OpenSpec changes | Phase evidence |
 | --- | --- | --- | --- | --- | --- |
-| P01 | Trusted core and evidence baseline | None | In progress | [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md) | Baseline archived locally; persistence pending |
+| P01 | Trusted core and evidence baseline | None | In progress | [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md) | Baseline archived; remote scope unresolved |
 | P02 | Discoverable native tools, MCP and skills | P01 | Planned | Not cut | Not established |
 | P03 | Jev semantic poke continuation | P01 | Planned | Not cut | Not established |
 | P04 | Swarm collaboration and handoffs | P01 | Planned | Not cut | Not established |
@@ -105,9 +106,9 @@ existing OmniRoute/Jcode log-coverage and synthetic offline regression-baseline
 slice, not all of P01. It does not add a separate receipt store or require gateway
 changes. The native baseline and bounded test-only repairs pass local regression
 and strict lint checks and independent implementation review. The [canonical
-specification](../../openspec/specs/continuation-evidence/spec.md) is synchronized;
-final lifecycle/history and persistence confirmation remain pending. No runtime
-improvement or completion of all P01 is claimed.
+specification](../../openspec/specs/continuation-evidence/spec.md) is synchronized
+and the archive is committed locally. Broader P01 work and remote publication
+remain outside the completion claim; no runtime improvement is asserted.
 **Gates/evidence:** actual plan-only actions cannot cross the declared capability
 boundary; explicit approval transitions work; cancellation and pending required
 checks survive session transitions. Verify scoped revision/check attribution,
