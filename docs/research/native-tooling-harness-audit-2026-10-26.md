@@ -10,7 +10,7 @@ This investigation does not implement features, create proposals, publish findin
 
 Evidence baseline: Jcode checkout `b7dbb0287d862ca7e77e40a5522c5c29f9466e76`, inspected 2026-10-26. The session banner identifies a different running build, so source findings must not be described as observations of that binary. Checkout remains on `main`; local `origin/HEAD` points to `dev`. No branch switch or remote action is needed for research.
 
-Two separate native swarm workers completed OMP and empryo audits. The coordinator rechecked the strongest claims against source, installed CLI help and primary documentation. No model-backed harness task runs or UI acceptance tests were performed; empryo version/help probes were run.
+Two separate native swarm workers completed OMP and empryo audits. The coordinator rechecked the strongest claims against source, installed CLI help and primary documentation. A follow-up exercised the actual installed Jcode TUI on an isolated socket at 120 and 40 columns, plus real CLI help/parser interfaces. No model-backed harness task was submitted and no proposed feature was implemented.
 
 ## Terms and falsification
 
@@ -187,11 +187,33 @@ No unresolved decision blocks completion of this research. No Feature/implementa
 - **Unverified harness/runtime claims:** empryo's implementation provenance is unknown; OMP subagent documentation is older than the installed package; neither harness's model-backed behaviors were exercised. Current Jcode feedback admission, complete recovery contracts, repair-loop reuse and headless-review semantics need targeted tracing before related proposals can claim a confirmed gap.
 - **Parked ideas:** no demonstrated need yet for an always-on locator, recurring routines, universal arbiters, automatic plan approval, new workflow DSL, restored initiative tool or replacement orchestration framework. Reopen only for a concrete requirement or measured failure.
 
+## Real-interface follow-up: observed baseline, not an implemented improvement
+
+The first research pass depended too heavily on source inspection. The follow-up used the **actual installed executable**, `jcode v0.99.37-dev (b7dbb0287)`, resolved to `builds/rc/herdr-geometry-b7dbb0287/jcode`. An independent `serve --socket <isolated-path> --debug-socket --no-update --no-selfdev` process and a real PTY client exercised the normal CLI/server/TUI boundary. The driver retained the real user environment/configuration, supplied no fake provider or credentials, typed queries through terminal input, never pressed Enter, and shut down only its own process groups. Shared-daemon state and the caller's session were not changed.
+
+| Public acceptance surface | Observed result | What it establishes |
+| --- | --- | --- |
+| TUI `/omp`, `/review`, `/explore` at both 120 and 40 columns | All six final cases reached the intended input, opened suggestions, and remained idle with zero submitted prompts | The tested rows came from the running product, not a copied renderer or stub |
+| Real skill rows | `/omp  Activate skill` and `/explore  Activate skill`; no inline source label at either width | The requested description/provenance improvement addresses an observed user-visible gap |
+| Native versus skill selected-name colors | Native `/review` and both skill rows used the same foreground-color set: `#7f6a40`, `#ffeabf` | Selection currently does not communicate native-versus-skill identity by color |
+| Narrow native row | At 40 columns, `/review  Launch a one-shot review immedi` was visibly clipped without an ellipsis | Width-safe source/description budgeting belongs in the same selector feature |
+| Installed Jcode public CLI | `--version`, `--help`, `run --help` each exited 0; help exposed both `--json` and `--ndjson` | The duplicate JSONL recommendation is disproved by the real interface, not only by source |
+| Jcode parser rejection | Unknown global/run flags exited 2; `jcode run --json --ndjson` with no message also exited 2 | Invalid invocations are rejected before any model task is submitted; output modes are mutually exclusive |
+| Installed OMP public CLI | `omp --version` returned `omp/18.12.5`; `--help` exited 0 and advertised advisor, restoration, and the plan auto-approval flags | Package/version assumptions and the rejected auto-approval recommendation match the installed advertised contract |
+
+Actual terminal bytes were decoded with an already-installed `pyte` package solely to inspect the product's emitted rows/cell colors; native debug frames independently recorded input, terminal size, suggestion visibility and idle state. No renderer, server, provider, skill registry, or protocol implementation was replaced. Raw terminal/cell/frame evidence lives in ignored `scratch/native-ui-br3qxryl/`; parallel public-CLI transcripts are `scratch/jcode-cli-acceptance.md`, `scratch/omp-interface-acceptance.md` and `scratch/jcode-output-conflict.txt`.
+
+The initial PTY capture lost its first query during startup. It was not counted as a passing case. The rerun waited for startup and asserted each actual input before collecting the six cases above. The installed native review description also differs from the inspected source's “headed review session” wording, so the version/hash must not be treated as proof of an identical source build. These observations supersede source-only assumptions about the visible copy.
+
+The shared `debug_socket help` path initially refused control with `Error: Debug control is disabled.` That permission was not changed. An explicitly isolated test process enabled its own debug capture instead. Direct document opening was separately attempted and suppressed by `NO_BROWSER/JCODE_NO_BROWSER or test harness`; artifact auto-presentation therefore remains unverified, with the committed Markdown path available.
+
+This closes the research claim that the selector gap is real and the JSONL proposal is redundant. It does **not** establish that a redesigned selector, responsive overnight cancellation, structured headless reviews, actual streaming JSON events, or OMP/empryo model-backed workflows now work. No before/after feature improvement can be claimed because this Explore task created research only. The report is better supported by observed product behavior; the proposed feature acceptance checks remain future work.
+
 ## Verification and closeout evidence
 
-Performed: two separate native swarm audits; direct Jcode source/caller/protocol inspection; direct OMP package/advisor/launch-help inspection; successful empryo version/help probes; primary workflow/routines documentation reads; overlap checks against archived/current OpenSpec; coordinator rejection of the duplicate JSONL proposal.
+Performed: two separate native swarm audits and parallel real CLI probes; direct Jcode source/caller/protocol inspection; actual installed Jcode CLI/server/TUI observations across six cases; direct OMP package/advisor/launch-help inspection; successful OMP, Jcode and empryo version/help probes and Jcode parser-negative checks; primary workflow/routines documentation reads; overlap checks against archived/current OpenSpec; coordinator rejection of the duplicate JSONL proposal.
 
-Not performed: model-backed harness task execution, changed-code tests, UI tester frames, release build, new feature implementation, OpenSpec proposal creation, issue mutations or publication. These are research findings, not a claim that any proposed behavior now exists.
+Not performed: model-backed task execution, actual generated JSON/NDJSON event-stream validation, new-feature behavior tests, release build, new feature implementation, OpenSpec proposal creation, issue mutations or publication. Proposed overnight cancellation remains source evidence only. These are research findings and observed baseline behavior, not a claim that proposed features now exist.
 
 Artifact checks passed: required-section and unfinished-draft checks, balanced Markdown fences, 21 fully qualified repository citation path/line-range checks, and `git diff --no-index --check /dev/null docs/research/native-tooling-harness-audit-2026-10-26.md`. Citation-range checks establish that locations exist, not that every behavioral inference is proven.
 
