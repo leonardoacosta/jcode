@@ -4,7 +4,7 @@
 
 Unnecessary repeated validation should be diagnosed from existing evidence before adding another recording layer. P01 needs a source-grounded baseline for continuation decisions before later work can evaluate them. Jcode already emits selected `AUTO_POKE_DECISION` reasons and a `queue_continuation` event, but log coverage, correlation, provenance, and deployed behavior are not established by those source observations. OmniRoute observes routed inference traffic only; native early-return stop/wait paths may involve no inference. Missing calls or log entries do not prove that an event did not occur.
 
-Roadmap owner: [P01: trusted core and acceptance/evidence baseline](../../../docs/plans/PRODUCT_ROADMAP.md#p01-trusted-core-and-acceptanceevidence-baseline). This change defines one evidence slice, not P01 completion, loop reduction, or a behavior fix.
+Roadmap owner: [P01: trusted core and acceptance/evidence baseline](../../../../docs/plans/PRODUCT_ROADMAP.md#p01-trusted-core-and-acceptanceevidence-baseline). This change defines one evidence slice, not P01 completion, loop reduction, or a behavior fix.
 
 ## What Changes
 
@@ -27,6 +27,6 @@ None.
 
 ## Impact
 
-Planning and validation focus on existing logging and tests, including [`input.rs`](../../../crates/jcode-tui/src/tui/app/input.rs), [`followup.rs`](../../../crates/jcode-todo-policy/src/followup.rs), and existing TUI scheduler tests. Inspect current coverage before changing logging. Any narrowly justified logging adjustment remains part of existing logging; it must not add persisted receipt data, raw content, or an export path.
+Planning and validation focus on existing logging and tests, including [`input.rs`](../../../../crates/jcode-tui/src/tui/app/input.rs), [`followup.rs`](../../../../crates/jcode-todo-policy/src/followup.rs), and existing TUI scheduler tests. Inspect current coverage before changing logging. Any narrowly justified logging adjustment remains part of existing logging; it must not add persisted receipt data, raw content, or an export path.
 
 Actual behavior changes have a separate gate. This design does not authorize implementing a behavior fix, claim that current behavior is correct, or make gateway deployment changes or a new journal prerequisite. Design is not implementation approval.

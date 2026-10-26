@@ -4,12 +4,12 @@
 
 See [proposal.md](proposal.md) for intent. This is a bounded planning design, not implementation approval.
 
-Source inspection confirms `AUTO_POKE_DECISION` logging for `idle/no_todos`, `idle/unchanged_ownership_assessment`, `idle/unchanged_todos`, and `queue_continuation` in [`input.rs`](../../../crates/jcode-tui/src/tui/app/input.rs). The shared pure policy entry point is [`FollowUpPolicy::decide`](../../../crates/jcode-todo-policy/src/followup.rs). These source facts do not establish complete log coverage, runtime/deployed behavior, or whether events correlate across components.
+Source inspection confirms `AUTO_POKE_DECISION` logging for `idle/no_todos`, `idle/unchanged_ownership_assessment`, `idle/unchanged_todos`, and `queue_continuation` in [`input.rs`](../../../../crates/jcode-tui/src/tui/app/input.rs). The shared pure policy entry point is [`FollowUpPolicy::decide`](../../../../crates/jcode-todo-policy/src/followup.rs). These source facts do not establish complete log coverage, runtime/deployed behavior, or whether events correlate across components.
 
 | Layer | Source-verified fact | Not established here |
 | --- | --- | --- |
 | Native decisions | The selected TUI events above exist | Complete branch coverage or observed daemon behavior |
-| Native log context | [`LogContext`](../../../crates/jcode-logging/src/lib.rs) supports optional server/session/provider/model; [`logging.rs`](../../../crates/jcode-base/src/logging.rs) is its facade | Context propagation at each decision or a reliable cross-gateway join |
+| Native log context | [`LogContext`](../../../../crates/jcode-logging/src/lib.rs) supports optional server/session/provider/model; [`logging.rs`](../../../../crates/jcode-base/src/logging.rs) is its facade | Context propagation at each decision or a reliable cross-gateway join |
 | Gateway logging | [Pinned OmniRoute request-log endpoint](https://raw.githubusercontent.com/diegosouzapw/OmniRoute/dbe703a0000b303cd7b1cf5879cb8740e5bfce71/src/app/api/usage/request-logs/route.ts) reads existing gateway logs | Deployed version, route coverage, enabled capture, retention or privacy |
 
 OmniRoute sees routed inference traffic only. A native early-return stop/wait may produce no inference request, so absence from OmniRoute is not evidence of absence of a native decision. Source-pinned OmniRoute v3.8.52 documentation/source are not verification of the deployed version, configuration, capture, or retention. Existing OmniRoute log privacy remains unassessed here, not certified.

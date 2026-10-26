@@ -74,7 +74,7 @@ Execution baseline: `a9f44ba3e`, 2026-10-26, Rust/Cargo 1.98.1. Commands below r
 
 Fresh final-byte results above are native tasks `74143924al` (format/tests/policy lint, exit 0) and `749673zsde` (combined lint, exit 101). Earlier fixture assumptions about notice ownership, armed versus enabled state, and queued-work precedence were corrected against native source without changing production rules. One introduced TUI lint was fixed before these reruns. Baseline fixtures and engine-specific unsupported dimensions are documented beside the tests, not inferred from production logs.
 
-| Existing strict-lint blocker | Diagnostics |
+| Initial strict-lint site (resolved) | Diagnostics |
 | --- | --- |
 | `crates/jcode-tui/src/tui/cloud_git.rs` | 3 octal-looking escape diagnostics |
 | `crates/jcode-tui/src/tui/cloud_status.rs` | 4 octal-looking escape diagnostics |
@@ -99,7 +99,13 @@ Native final-byte gate `970431uhib` passed (exit 0):
 | Same TUI command with `reload_overflow_preflight` | 2 passed |
 | `cargo clippy --offline --locked -p jcode-todo-policy -p jcode-tui --all-targets --all-features -- -D warnings` | Passed; all 14 diagnostics resolved without production changes or suppressions |
 
-These are **70 policy + 41 selected TUI tests**, not a claim that the complete TUI suite ran. Independent re-review of `a9f44ba3e..54ca63b7c` approved the local implementation and exercised gates, with no blocking/actionable findings. It inspected the exact repaired range, test-only boundaries, NUL byte equivalence, preserved production prefixes and actual final gate outputs/status. All eleven implementation tasks are now verified, including the explicitly not-applicable logging branch. Specification synchronization, archive, final lifecycle/history review and persistence confirmation remain mandatory workflow steps, not implied by the checked tasks. Main tracks `origin/main`, with eight pre-existing local commits ahead of that ref at execution start; no publication or explicit local-only scope has been inferred from the continuation reminder.
+These are **70 policy + 41 selected TUI tests**, not a claim that the complete TUI suite ran. Independent re-review of `a9f44ba3e..54ca63b7c` approved the local implementation and exercised gates, with no blocking/actionable findings. It inspected the exact repaired range, test-only boundaries, NUL byte equivalence, preserved production prefixes and actual final gate outputs/status. All eleven implementation tasks are now verified, including the explicitly not-applicable logging branch. Specification synchronization and archive were then executed with the native validator; final lifecycle/history review and persistence confirmation remain mandatory and are not implied by checked tasks. Main tracks `origin/main`, with eight pre-existing local commits ahead of that ref at execution start; no publication or explicit local-only scope has been inferred from the continuation reminder.
+
+## Local lifecycle evidence
+
+`openspec archive record-continuation-evidence --yes --json` succeeded on 2026-10-26, after all eleven tasks, fresh implementation gates, independent re-review and required implementation commits passed. Native output records `specsUpdated: true`, six requirements added, zero modified/removed/renamed, and actual archive ID `2026-10-26-record-continuation-evidence`. No validation or spec-sync skip flag was used.
+
+The [canonical capability](../../../specs/continuation-evidence/spec.md) has the real Purpose and all six requirements/sixteen scenarios. Native strict canonical validation passes with five **INFO-only** long-requirement advisories, no warnings/errors; the approved normative body is preserved rather than split during synchronization. All 28 local archive/canonical/roadmap links and fragments pass, and the canonical Purpose/requirement body exactly matches the delta. The original active change directory was moved, not duplicated; archived source links and roadmap bindings were repaired for the extra directory level. No ignored historical spec/config or unrelated source change is part of synchronization. This local archive is not proof of broader P01 completion or remote publication; final committed-export/history and independent lifecycle checks follow.
 
 ## Requirement and scenario coverage
 
