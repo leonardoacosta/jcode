@@ -341,6 +341,11 @@ fn muse_subscription_stale_events_after_cancel_are_ignored() {
 fn muse_subscription_canonical_success_publishes_untagged_event_and_updates_local_state()
 -> anyhow::Result<()> {
     with_temp_jcode_home(|| {
+        crate::setup_hints::SetupHintsState {
+            onboarding_start_choice_shown: true,
+            ..Default::default()
+        }
+        .save()?;
         let prev_opt_in = std::env::var(crate::auth::muse::EXPERIMENTAL_ENV_VAR).ok();
         crate::env::set_var(crate::auth::muse::EXPERIMENTAL_ENV_VAR, "1");
         struct RestoreOptIn(Option<String>);
