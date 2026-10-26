@@ -12,6 +12,7 @@ Reference documentation for the jcode codebase.
 
 ## Key entry points
 
+- Product roadmap: [phases, acceptance outcomes, and OpenSpec change IDs](plans/PRODUCT_ROADMAP.md)
 - Architecture: `SERVER_ARCHITECTURE.md`, `MODULAR_ARCHITECTURE_RFC.md`, `CRATE_OWNERSHIP_BOUNDARIES.md`
 - Swarm: `SWARM_ARCHITECTURE.md`
 - Memory: `MEMORY_ARCHITECTURE.md`, `MEMORY_BUDGET.md`, `MEMORY_INCIDENT_RUNBOOK.md`
