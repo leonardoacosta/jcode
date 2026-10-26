@@ -3,6 +3,19 @@ use crate::{
     ConfidenceState, DeliveryState, GateObservationKind, IntentUnderstanding, is_auto_poke_message,
 };
 
+// Reviewed synthetic baseline for the pure todo-policy engine. Expected outcomes below are
+// current `FollowUpPolicy::decide` behavior, not proof of runtime acceptance or a loop fix.
+// Expected: identical open work repeats quietly; details-only change emits another poke;
+// added work pokes again; speculative completion requests validation, verified completion
+// advances to one final response. Gate order is digest (clear observations), ownership,
+// validation, final response; MAX_GATE_ATTEMPTS permits five gate turns then notice-only stop.
+// Disable stays quiet; new open work re-arms after the breaker. These may be undesirable
+// baseline outcomes, not accepted behavior improvements.
+// This input has a complete TodoSnapshot/controller state, but no native ToolDone/errors or
+// route provenance: those are not inputs to this pure policy. Do not synthesize them from logs.
+// Absent gateway traffic, claimed confidence, or successful tool completion alone cannot prove
+// that a continuation occurred or that work was accepted; identity gaps remain unattributed.
+
 fn todo(content: &str, status: &str) -> TodoItem {
     TodoItem {
         content: content.into(),
@@ -224,6 +237,147 @@ fn disable_sticks_until_enabled() {
         policy.decide(&snapshot(vec![todo("a", "pending")])),
         Decision::default()
     );
+}
+
+#[test]
+fn continuation_baseline_repeated_and_changed_work() {
+    let mut policy = FollowUpPolicy::new(true);
+    let open = snapshot(vec![todo("compile", "pending")]);
+
+    let first = policy.decide(&open);
+    assert_eq!(kind(&first), Some(FollowUpKind::IncompleteTodos));
+    assert!(first.effects.is_empty());
+    assert!(first.notice.is_none());
+    assert!(is_auto_poke_message(&first.follow_up.unwrap().message));
+    assert_eq!(policy.decide(&open), Decision::default());
+
+    // Repeated identical metadata stays quiet. A metadata-only change (details) currently
+    // changes the full todo fingerprint and emits another poke: this is baseline behavior,
+    // not evidence that the extra continuation is useful.
+    let mut metadata_changed = todo("compile", "pending");
+    metadata_changed.details = Some("same work, more context".into());
+    let metadata_only = snapshot(vec![metadata_changed]);
+    let metadata_decision = policy.decide(&metadata_only);
+    assert_eq!(
+        kind(&metadata_decision),
+        Some(FollowUpKind::IncompleteTodos)
+    );
+    assert!(metadata_decision.effects.is_empty());
+    assert!(metadata_decision.notice.is_none());
+    assert!(
+        metadata_decision
+            .follow_up
+            .as_ref()
+            .unwrap()
+            .notice
+            .contains("1 incomplete todo")
+    );
+    assert_eq!(policy.decide(&metadata_only), Decision::default());
+
+    // New required work changes the todo set and re-arms a poke.
+    let newly_required = snapshot(vec![todo("compile", "pending"), todo("test", "pending")]);
+    let changed_work = policy.decide(&newly_required);
+    assert_eq!(kind(&changed_work), Some(FollowUpKind::IncompleteTodos));
+    assert!(
+        changed_work
+            .follow_up
+            .unwrap()
+            .notice
+            .contains("2 incomplete todos")
+    );
+
+    // Changed confidence claims are consumed by the gate, not proof of accepted completion.
+    let mut evidence_policy = FollowUpPolicy::new(true);
+    let speculative = snapshot(vec![done("compile", ConfidenceState::Speculative)]);
+    let validation = evidence_policy.decide(&speculative);
+    assert_eq!(kind(&validation), Some(FollowUpKind::CompletionValidation));
+    assert!(validation.effects.is_empty());
+    let verified = snapshot(vec![done("compile", ConfidenceState::Verified)]);
+    let final_response = evidence_policy.decide(&verified);
+    assert_eq!(kind(&final_response), Some(FollowUpKind::FinalResponse));
+    assert!(final_response.notice.is_none());
+    assert!(
+        final_response
+            .follow_up
+            .as_ref()
+            .unwrap()
+            .notice
+            .contains("verified")
+    );
+    assert_eq!(evidence_policy.decide(&verified), Decision::default());
+}
+
+#[test]
+fn continuation_baseline_required_checks_and_limits() {
+    let mut policy = FollowUpPolicy::new(true);
+    let mut state = TodoSnapshot {
+        todos: vec![done("ship", ConfidenceState::Speculative)],
+        goals: vec![TodoGoal {
+            delivery_state: Some(DeliveryState::ChangeMade),
+            ..Default::default()
+        }],
+        gate_observations: vec![GateObservation {
+            kind: GateObservationKind::IntentUnderstanding,
+            group: None,
+            state: Some("partial".into()),
+        }],
+        ..Default::default()
+    };
+
+    // Deferred evidence is handled before ownership, then ownership before validation.
+    let digest = policy.decide(&state);
+    assert_eq!(kind(&digest), Some(FollowUpKind::GateDigest));
+    assert!(digest.effects.clear_gate_observations);
+    assert!(!digest.effects.mark_long_session_review_delivered);
+    state.gate_observations.clear();
+    let ownership = policy.decide(&state);
+    assert_eq!(kind(&ownership), Some(FollowUpKind::Ownership));
+    assert!(ownership.effects.is_empty());
+
+    // Once delivery is sufficient, low completion confidence gets validation, then verified
+    // confidence claims advance the policy. The same final fingerprint is quiet afterwards.
+    state.goals.clear();
+    let validation = policy.decide(&state);
+    assert_eq!(kind(&validation), Some(FollowUpKind::CompletionValidation));
+    state.todos = vec![done("ship", ConfidenceState::Verified)];
+    let final_response = policy.decide(&state);
+    assert_eq!(kind(&final_response), Some(FollowUpKind::FinalResponse));
+    assert_eq!(policy.decide(&state), Decision::default());
+
+    // Gate budget allows exactly MAX_GATE_ATTEMPTS validation continuations. The next
+    // unresolved gate produces a notice-only stop and disarms until new open work appears.
+    let mut budget_policy = FollowUpPolicy::new(true);
+    for attempt in 0..MAX_GATE_ATTEMPTS {
+        let unresolved = snapshot(vec![done(
+            &format!("ship {attempt}"),
+            ConfidenceState::Speculative,
+        )]);
+        let decision = budget_policy.decide(&unresolved);
+        assert_eq!(kind(&decision), Some(FollowUpKind::CompletionValidation));
+        assert!(decision.notice.is_none());
+        assert!(decision.effects.is_empty());
+    }
+    let unresolved = snapshot(vec![done(
+        "ship beyond budget",
+        ConfidenceState::Speculative,
+    )]);
+    let stopped = budget_policy.decide(&unresolved);
+    assert!(stopped.follow_up.is_none());
+    assert!(stopped.notice.is_some());
+    assert!(stopped.effects.is_empty());
+    assert!(budget_policy.is_enabled());
+    assert!(!budget_policy.armed);
+    assert!(budget_policy.default_on);
+    assert_eq!(budget_policy.gate_attempts, 0);
+    assert_eq!(budget_policy.decide(&unresolved), Decision::default());
+    let new_work = budget_policy.decide(&snapshot(vec![todo("new", "pending")]));
+    assert_eq!(kind(&new_work), Some(FollowUpKind::IncompleteTodos));
+
+    let mut disabled = FollowUpPolicy::new(true);
+    disabled.disable();
+    let disabled_decision = disabled.decide(&snapshot(vec![todo("pending", "pending")]));
+    assert_eq!(disabled_decision, Decision::default());
+    assert!(!disabled.is_enabled());
 }
 
 #[test]

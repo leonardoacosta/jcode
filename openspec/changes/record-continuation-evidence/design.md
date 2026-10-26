@@ -51,3 +51,19 @@ Current source logging may not expose enough scope, correlation, or provenance t
 ## Validation boundary
 
 The coordinator verifies the current test recipes and schema validation. This design adds no test dependency on a gateway or live logs. Local validation of these planning files does not establish runtime behavior, deployed configuration, log retention/privacy, or phase completion.
+
+## Execution evidence: 2026-10-26
+
+Execution starts from `a9f44ba3e`. The bounded diagnosis is whether unchanged todo state causes another continuation and whether available evidence can attribute that decision, rather than whether every session is correct.
+
+| Observation | Evidence / limit |
+| --- | --- |
+| Native decision coverage | `rg -n AUTO_POKE_DECISION crates/jcode-tui/src/tui/app/input.rs` identifies the three idle reasons and queue event above. Early guards can return without routing inference. This is source evidence, not a captured daemon trace |
+| Existing context | `crates/jcode-logging/src/lib.rs` defines optional server/session/provider/model context; its facade is unchanged. Propagation at a specific decision and a cross-gateway join are not established |
+| Deployed gateway access | `omniroute` is absent from `PATH`; `OMNIROUTE_BASE_URL` is unset. No target was guessed or probed. Deployed version, route coverage, capture, retention, correlation and privacy remain unknown, not confirmed missing |
+| Running versus tested code | Native `selfdev` status reports daemon/build `9385b6eeb`, older than this source revision. Offline tests compile the selected source; the shared daemon is not reloaded |
+| Test prerequisites | Cargo/rustc 1.98.1, rustfmt 1.9.0 and Clippy are available; `Cargo.lock` is readable. Actual offline gate results, not tool presence, determine cache/test success |
+
+**Assessment result: inconclusive for live attribution, no logging addition.** Unknown gateway access/correlation is not a reproducible missing native event. Existing source evidence and isolated synthetic tests suffice to establish this engine-specific baseline without a new store, flag, context field or service change. No live log bodies or private sessions were read or converted into fixtures. An absent gateway call, confidence claim, `ToolDone` success or isolated `PASS` text cannot supply an accepted outcome or verified attribution. A behavior-relevant check still needs its actual scope and provenance.
+
+The optional logging implementation branch is **not applicable**, not an executed logging test. Existing capture/retention/permissions and production controller code remain outside this change. Test outcomes and engine limits are documented with the existing regression tests; `tasks.md` remains the sole executable ledger. This records a baseline, not a claim of fewer loops, engine parity or completion of all P01 work.

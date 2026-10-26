@@ -272,3 +272,247 @@ fn peer_auto_poke_is_shown_and_suppresses_duplicate_local_poke() {
         );
     });
 }
+
+// Synthetic native TUI scheduler-only baseline. This observes local TUI decisions and
+// persisted-state effects, not inference acceptance: absent/unmatched gateway
+// traffic has no attributable scheduler meaning, and claimed confidence,
+// ToolDone, or PASS text alone cannot establish accepted completion. The
+// scheduler cannot attribute missing, stale, or conflicting external identity.
+// Tool-level errors are not scheduler inputs; the error case below uses a real
+// persisted review-state read failure, not a fabricated ToolDone input.
+// Expected behavior below is the current baseline, not a loop-fix or a parity
+// promise for another engine.
+#[test]
+fn continuation_baseline_auto_poke_repeated_and_required() {
+    with_temp_jcode_home(|| {
+        let mut app = create_test_app();
+        app.auto_poke_incomplete_todos = true;
+        app.auto_poke_default_on = true;
+        app.todo_completion_gate_attempts = 2;
+        let pending = |id: &str, content: &str| crate::todo::TodoItem {
+            id: id.to_string(),
+            content: content.to_string(),
+            status: "pending".to_string(),
+            priority: "high".to_string(),
+            confidence: Some(crate::todo::ConfidenceState::from_legacy_score(80)),
+            ..Default::default()
+        };
+
+        crate::todo::save_todos(&app.session.id, &[pending("todo-1", "Review the result")])
+            .expect("save synthetic open todo");
+        assert!(app.schedule_auto_poke_followup_if_needed());
+        assert_eq!(
+            app.queued_messages,
+            vec![crate::todo::build_auto_poke_message(1)]
+        );
+        assert!(app.pending_queued_dispatch);
+        assert_eq!(app.todo_completion_gate_attempts, 0);
+        let first_fingerprint = app.last_auto_poke_fingerprint.clone();
+        let notice = app
+            .display_messages()
+            .iter()
+            .find(|message| message.content.contains("1 incomplete todo"))
+            .expect("scheduler displays its queue decision");
+        assert_eq!(notice.role, "system");
+
+        // Model a consumed queue boundary without claiming that the model
+        // accepted or completed the prompt. Goal/plan metadata alone does not
+        // change the open-todo fingerprint used by this scheduler path.
+        app.queued_messages.clear();
+        app.pending_queued_dispatch = false;
+        crate::todo::save_goals(
+            &app.session.id,
+            &[crate::todo::TodoGoal {
+                feedback_loop: Some("metadata-only assessment change".to_string()),
+                ..Default::default()
+            }],
+        )
+        .expect("save synthetic metadata-only goal");
+        crate::todo::save_plan(
+            &app.session.id,
+            &crate::todo::TodoPlan {
+                user_intention: Some("metadata-only plan change".to_string()),
+                ..Default::default()
+            },
+        )
+        .expect("save synthetic metadata-only plan");
+        assert!(!app.schedule_auto_poke_followup_if_needed());
+        assert!(app.queued_messages.is_empty());
+        assert!(!app.pending_queued_dispatch);
+        assert_eq!(app.todo_completion_gate_attempts, 0);
+        assert!(app.last_auto_poke_fingerprint.is_some());
+
+        // Existing queued work wins even when new required work appears.
+        // Consume that queue boundary before asking for a new continuation.
+        let prior = "synthetic user follow-up".to_string();
+        app.queued_messages.push(prior.clone());
+        crate::todo::save_todos(
+            &app.session.id,
+            &[
+                pending("todo-1", "Review the result"),
+                pending("todo-2", "Verify the required outcome"),
+            ],
+        )
+        .expect("add synthetic required work");
+        assert!(!app.schedule_auto_poke_followup_if_needed());
+        assert_eq!(app.queued_messages, vec![prior]);
+        assert!(!app.pending_queued_dispatch);
+        assert_eq!(app.last_auto_poke_fingerprint, first_fingerprint);
+        app.queued_messages.clear();
+        assert!(app.schedule_auto_poke_followup_if_needed());
+        assert_eq!(
+            app.queued_messages,
+            vec![crate::todo::build_auto_poke_message(2)]
+        );
+        assert!(app.pending_queued_dispatch);
+        assert_eq!(app.todo_completion_gate_attempts, 0);
+        assert_ne!(app.last_auto_poke_fingerprint, first_fingerprint);
+        let messages = app.display_messages();
+        assert!(
+            messages.iter().any(|message| message.role == "system"
+                && message.content.contains("2 incomplete todos"))
+        );
+    });
+}
+
+#[test]
+fn continuation_baseline_auto_poke_wait_stop_and_errors() {
+    with_temp_jcode_home(|| {
+        let pending = || crate::todo::TodoItem {
+            id: "todo-wait".to_string(),
+            content: "Inspect the synthetic result".to_string(),
+            status: "pending".to_string(),
+            priority: "high".to_string(),
+            confidence: Some(crate::todo::ConfidenceState::from_legacy_score(80)),
+            ..Default::default()
+        };
+
+        // Missing todo state is read as empty work: no queue or fingerprint
+        // effect, and default-on remains armed for later work.
+        let mut missing = create_test_app();
+        missing.auto_poke_default_on = true;
+        assert!(!missing.schedule_auto_poke_followup_if_needed());
+        assert!(missing.auto_poke_incomplete_todos);
+        assert!(missing.queued_messages.is_empty());
+        assert!(!missing.pending_queued_dispatch);
+        assert!(missing.last_auto_poke_fingerprint.is_none());
+
+        // Queued follow-up and pending-turn state are scheduler wait gates.
+        // These inputs remain untouched for the other dispatch owner to read.
+        for wait in ["queued", "pending turn"] {
+            let mut app = create_test_app();
+            app.auto_poke_incomplete_todos = true;
+            app.auto_poke_default_on = true;
+            crate::todo::save_todos(&app.session.id, &[pending()]).expect("save open todo");
+            let queued = "already queued work".to_string();
+            app.queued_messages.clear();
+            if wait == "pending turn" {
+                app.pending_turn = true;
+            } else {
+                app.queued_messages.push(queued.clone());
+            }
+            let before = app.queued_messages.clone();
+            assert!(!app.schedule_auto_poke_followup_if_needed(), "{wait}");
+            assert_eq!(app.queued_messages, before);
+            assert!(app.auto_poke_incomplete_todos);
+            assert!(!app.pending_queued_dispatch);
+            assert!(app.last_auto_poke_fingerprint.is_none());
+            assert_eq!(app.todo_completion_gate_attempts, 0);
+        }
+
+        // Explicit /poke off wins over the configured default, including the
+        // pre-guard auto-rearm path. It leaves no generated message or ack.
+        let mut stopped = create_test_app();
+        stopped.auto_poke_incomplete_todos = true;
+        stopped.auto_poke_default_on = true;
+        crate::tui::app::commands::disable_auto_poke(&mut stopped);
+        crate::todo::save_todos(&stopped.session.id, &[pending()]).expect("save open todo");
+        assert!(!stopped.schedule_auto_poke_followup_if_needed());
+        assert!(!stopped.auto_poke_incomplete_todos);
+        assert!(!stopped.auto_poke_default_on);
+        assert!(stopped.queued_messages.is_empty());
+        assert!(!stopped.pending_queued_dispatch);
+        assert!(stopped.last_auto_poke_fingerprint.is_none());
+
+        // A changed todo invalidates stale final-response latches before a new
+        // open-work continuation is queued; stale state is not treated as an
+        // accepted completion receipt.
+        let mut stale = create_test_app();
+        stale.auto_poke_incomplete_todos = true;
+        stale.auto_poke_default_on = true;
+        stale.todo_final_response_requested = true;
+        stale.final_response_todo_fingerprint = Some("stale synthetic fingerprint".to_string());
+        stale.todo_completion_gate_attempts = 2;
+        crate::todo::save_todos(&stale.session.id, &[pending()]).expect("save open todo");
+        assert!(stale.schedule_auto_poke_followup_if_needed());
+        assert!(!stale.todo_final_response_requested);
+        assert!(stale.final_response_todo_fingerprint.is_none());
+        assert_eq!(stale.todo_completion_gate_attempts, 0);
+        assert_eq!(
+            stale.queued_messages,
+            vec![crate::todo::build_auto_poke_message(1)]
+        );
+        assert!(stale.pending_queued_dispatch);
+
+        // A malformed review-state file is a real read error consumed by the
+        // boundary: review errors become not-due; the ordinary open-work poke
+        // proceeds, and the failed read does not acknowledge/overwrite it.
+        let mut errored = create_test_app();
+        errored.auto_poke_incomplete_todos = true;
+        crate::todo::save_todos(&errored.session.id, &[pending()]).expect("save open todo");
+        let review_path = crate::storage::jcode_dir()
+            .expect("isolated jcode home")
+            .join("todos")
+            .join(format!("{}-review-state.json", errored.session.id));
+        std::fs::create_dir_all(review_path.parent().expect("todo directory"))
+            .expect("create synthetic todo directory");
+        let malformed_review = b"{ reviewed synthetic malformed state";
+        std::fs::write(&review_path, malformed_review).expect("write synthetic malformed state");
+        assert!(errored.schedule_auto_poke_followup_if_needed());
+        assert_eq!(
+            errored.queued_messages,
+            vec![crate::todo::build_auto_poke_message(1)]
+        );
+        assert!(errored.pending_queued_dispatch);
+        assert_eq!(
+            std::fs::read(&review_path).expect("review state remains"),
+            malformed_review
+        );
+
+        // Due review state is read and acknowledged before the review message
+        // is queued. This is a local persisted write, not an inference ack.
+        let mut due = create_test_app();
+        due.auto_poke_incomplete_todos = true;
+        crate::todo::save_todos(&due.session.id, &[pending()]).expect("save open todo");
+        let due_path = crate::storage::jcode_dir()
+            .expect("isolated jcode home")
+            .join("todos")
+            .join(format!("{}-review-state.json", due.session.id));
+        std::fs::create_dir_all(due_path.parent().expect("todo directory"))
+            .expect("create synthetic todo directory");
+        std::fs::write(
+            &due_path,
+            serde_json::to_vec(&serde_json::json!({
+                "cycle_started_at": "2020-01-01T00:00:00Z",
+                "review_delivered": false,
+            }))
+            .expect("encode due synthetic review"),
+        )
+        .expect("write due synthetic review");
+        assert!(due.schedule_auto_poke_followup_if_needed());
+        assert_eq!(
+            due.queued_messages,
+            vec![crate::todo::TODO_LONG_SESSION_REVIEW_MESSAGE.to_string()]
+        );
+        assert!(due.pending_queued_dispatch);
+        let acknowledged: serde_json::Value =
+            crate::storage::read_json(&due_path).expect("read acknowledged review state");
+        assert_eq!(acknowledged["review_delivered"], true);
+        assert!(
+            due.display_messages()
+                .iter()
+                .any(|message| message.role == "system"
+                    && message.content.contains("Rechecking the plan"))
+        );
+    });
+}
