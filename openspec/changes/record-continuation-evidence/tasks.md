@@ -69,7 +69,7 @@ Execution baseline: `a9f44ba3e`, 2026-10-26, Rust/Cargo 1.98.1. Commands below r
 | Policy baseline / regression | `cargo test --offline --locked -p jcode-todo-policy`: **70 passed**, 0 failed; this includes the two new direct-policy cases |
 | TUI baseline / regression | `cargo test --offline --locked -p jcode-tui auto_poke -- --nocapture`: **31 passed**, 0 failed; 2,836 other TUI unit tests were not selected. Both new isolated-app cases ran |
 | Policy strict lint | `cargo clippy --offline --locked -p jcode-todo-policy --all-targets --all-features -- -D warnings`: passed |
-| Combined strict lint | `cargo clippy --offline --locked -p jcode-todo-policy -p jcode-tui --all-targets --all-features -- -D warnings`: **failed**, 14 diagnostics in six files unchanged from `a9f44ba3e`; none in the new baseline test files |
+| Initial combined strict lint | `cargo clippy --offline --locked -p jcode-todo-policy -p jcode-tui --all-targets --all-features -- -D warnings`: **failed initially**, 14 diagnostics in six files unchanged from `a9f44ba3e`; none in the new baseline test files. Resolved by the bounded test-only repairs below |
 | Scope / 3.3 | Only the existing test files and execution documentation changed. No production controller/logger/config/API, capture/retention, gateway or daemon change. Unrelated MCP files and `swarm-prompt.md` match preflight byte fingerprints |
 
 Fresh final-byte results above are native tasks `74143924al` (format/tests/policy lint, exit 0) and `749673zsde` (combined lint, exit 101). Earlier fixture assumptions about notice ownership, armed versus enabled state, and queued-work precedence were corrected against native source without changing production rules. One introduced TUI lint was fixed before these reruns. Baseline fixtures and engine-specific unsupported dimensions are documented beside the tests, not inferred from production logs.
@@ -85,7 +85,21 @@ Fresh final-byte results above are native tasks `74143924al` (format/tests/polic
 
 Independent review of `a9f44ba3e..9f6710cc2` completed on 2026-10-26. A separate non-implementing worker inspected all six requirements/sixteen scenarios, the actual five-file commit, native callers/helpers, both final gate outputs/status records and full baseline/final/working bytes of the six lint-affected files. It found **no additional blocking or actionable defect in the scoped implementation**, confirmed the fourteen unchanged-source diagnostics, and explicitly withheld overall Apply approval. The four named baseline tests ran; unsupported native-tool/provenance dimensions remain documented rather than fabricated. No extra Cargo calls, repository edits or gate waivers were part of that review.
 
-Task **4.2 remains blocked** on the strict TUI lint gate and subsequent mandatory closeout. Fixing the six unrelated test sections needs a scope decision; they have not been edited or suppressed. Any authorized cleanup requires fresh affected gates and independent review of the repaired range. Do not archive this change, mark Apply complete, or imply a successful push while required gates/persistence remain unresolved. Main tracks `origin/main`, with eight pre-existing local commits ahead of that ref at execution start; publication or explicit local-only closeout remains a separate decision.
+Task **4.2 remains open** pending independent re-review and lifecycle/persistence closeout, not a failed lint gate. The initial 14-diagnostic result above is historical. Following the continuation instruction, minimal, behavior-preserving repairs were confined to the six existing test sections: explicit NUL bytes, two collapsed test conditions, a private test-case alias, an immutable test borrow, and three render-test lint repairs. No lint was suppressed; production prefixes of the shared files and all unrelated byte fingerprints remain unchanged.
+
+Native final-byte gate `970431uhib` passed (exit 0):
+
+| Command / discovered test filter | Result |
+| --- | --- |
+| `cargo fmt --all -- --check` | Passed |
+| `cargo test --offline --locked -p jcode-todo-policy` | 70 passed |
+| `cargo test --offline --locked -p jcode-tui --lib -- --list` | All selected filters discovered before execution |
+| `cargo test --offline --locked -p jcode-tui --lib auto_poke -- --nocapture` | 31 passed, including both native baseline cases |
+| Same TUI command with each filter: `snapshot_handles_rename_newline_and_independent_counts`, `complete_sample_and_individually_invalid_fields`, `partial_invalid_and_cpu_deltas`, `acceptance_refuses_unsent_state_without_consuming_it`, `safe_dispatch_rechecks_new_unsent_work_without_spawning`, `muse_subscription_canonical_success_publishes_untagged_event_and_updates_local_state`, `muse_subscription_old_success_arriving_after_new_attempt_leaves_new_pending_intact`, `test_paste_again_expands_matching_placeholder_not_newer_same_sized_paste` | 1 passed per filter, 8 additional tests |
+| Same TUI command with `reload_overflow_preflight` | 2 passed |
+| `cargo clippy --offline --locked -p jcode-todo-policy -p jcode-tui --all-targets --all-features -- -D warnings` | Passed; all 14 diagnostics resolved without production changes or suppressions |
+
+These are **70 policy + 41 selected TUI tests**, not a claim that the complete TUI suite ran. Repaired-range independent review must still pass before completing 4.2 and archiving. Main tracks `origin/main`, with eight pre-existing local commits ahead of that ref at execution start; no publication or explicit local-only scope has been inferred from the continuation reminder.
 
 ## Requirement and scenario coverage
 

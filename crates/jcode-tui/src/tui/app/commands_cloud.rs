@@ -695,7 +695,9 @@ mod tests {
         )
     }
 
-    fn unsent_cases() -> Vec<(&'static str, fn(&mut App))> {
+    type UnsentCase = (&'static str, fn(&mut App));
+
+    fn unsent_cases() -> Vec<UnsentCase> {
         vec![
             ("draft", |app| app.input = "save this draft".into()),
             ("message", |app| {

@@ -1,11 +1,9 @@
-use super::*;
-
 #[test]
 fn reload_overflow_preflight_is_conservative() {
     let empty = DisplayMessage::assistant("");
     let prompt = DisplayMessage::user("");
     assert!(!transcript_definitely_overflows(&[], 0));
-    assert!(!transcript_definitely_overflows(&[empty.clone()], 0));
+    assert!(!transcript_definitely_overflows(std::slice::from_ref(&empty), 0));
     assert!(!transcript_definitely_overflows(std::slice::from_ref(&prompt), 1));
     assert!(transcript_definitely_overflows(std::slice::from_ref(&prompt), 0));
     // Even an empty assistant contributes a separator after a rendered prompt.
@@ -25,7 +23,7 @@ fn reload_overflow_preflight_is_conservative() {
 #[test]
 fn reload_overflow_preflight_never_exceeds_rendered_body() {
     let _lock = viewport_snapshot_test_lock();
-    let messages = vec![
+    let messages = [
         DisplayMessage::assistant(""),
         DisplayMessage::user("one\n\ntwo"),
         DisplayMessage::assistant("paragraph\n\n```rust\nfn main() {}\n```"),

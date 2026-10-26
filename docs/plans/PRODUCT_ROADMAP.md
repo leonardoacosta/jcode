@@ -102,9 +102,9 @@ workflow contract before treating it as a committed requirement.
 [tasks](../../openspec/changes/record-continuation-evidence/tasks.md)). This is the
 existing OmniRoute/Jcode log-coverage and synthetic offline regression-baseline
 slice, not all of P01. It does not add a separate receipt store or require gateway
-changes. The native baseline is implemented and verified by its local tests;
-strict TUI lint findings outside this slice still block closeout. No runtime
-improvement or completion of all P01 work is claimed.
+changes. The native baseline and bounded test-only gate repairs pass their local
+regression and strict lint checks. Independent re-review and lifecycle/persistence
+closeout remain pending; no runtime improvement or completion of all P01 is claimed.
 **Gates/evidence:** actual plan-only actions cannot cross the declared capability
 boundary; explicit approval transitions work; cancellation and pending required
 checks survive session transitions. Verify scoped revision/check attribution,
