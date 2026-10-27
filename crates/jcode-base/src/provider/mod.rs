@@ -3142,12 +3142,13 @@ mod bedrock_placeholder_default_tests {
             route(bedrock::BedrockProvider::PLACEHOLDER_DEFAULT_MODEL, true),
             route("anthropic.claude-sonnet-4-20250514-v1:0", true),
             route("us.anthropic.claude-opus-4-6-v1", true),
+            route("anthropic.claude-opus-6-20261001-v1:0", true),
             route("amazon.nova-pro-v1:0", true),
         ];
         assert_eq!(
             bedrock_promoted_default(bedrock::BedrockProvider::PLACEHOLDER_DEFAULT_MODEL, &routes)
                 .as_deref(),
-            Some("us.anthropic.claude-opus-4-6-v1")
+            Some("anthropic.claude-opus-6-20261001-v1:0")
         );
     }
 
@@ -3156,19 +3157,19 @@ mod bedrock_placeholder_default_tests {
         // A newer Opus that needs a missing inference profile is unavailable
         // and must not become the default.
         let routes = vec![
-            route("anthropic.claude-opus-5-20260101-v1:0", false),
-            route("anthropic.claude-sonnet-4-20250514-v1:0", true),
+            route("anthropic.claude-opus-6-20261001-v1:0", false),
+            route("anthropic.claude-opus-4-20250514-v1:0", true),
         ];
         assert_eq!(
             bedrock_promoted_default(bedrock::BedrockProvider::PLACEHOLDER_DEFAULT_MODEL, &routes)
                 .as_deref(),
-            Some("anthropic.claude-sonnet-4-20250514-v1:0")
+            Some("anthropic.claude-opus-4-20250514-v1:0")
         );
     }
 
     /// End to end through the real construction path: a cached Bedrock catalog
     /// on disk must make a freshly built provider start on the newest Claude
-    /// flagship instead of the 2024 placeholder; with no catalog it stays put.
+    /// flagship instead of the built-in placeholder; with no catalog it stays put.
     #[test]
     fn new_bedrock_provider_starts_on_newest_cached_flagship() {
         let _guard = crate::storage::lock_test_env();
@@ -3204,6 +3205,7 @@ mod bedrock_placeholder_default_tests {
                     "anthropic.claude-3-5-sonnet-20241022-v2:0",
                     "anthropic.claude-sonnet-4-20250514-v1:0",
                     "anthropic.claude-opus-4-20250514-v1:0",
+                    "anthropic.claude-opus-6-20261001-v1:0",
                 ],
                 "inference_profiles": [],
                 "region": null,
@@ -3226,7 +3228,7 @@ mod bedrock_placeholder_default_tests {
                 None => crate::env::remove_var(key),
             }
         }
-        assert_eq!(promoted, "anthropic.claude-opus-4-20250514-v1:0");
+        assert_eq!(promoted, "anthropic.claude-opus-6-20261001-v1:0");
         assert_eq!(pinned, "anthropic.claude-3-5-haiku-20241022-v1:0");
     }
 
