@@ -517,6 +517,19 @@ class CampaignArtifacts(unittest.TestCase):
             trial.unlink()
             with self.assertRaisesRegex(ValueError, "Trial record digest"):
                 evaluation.verify_campaign(self.root)
+            fifo, copied = child / "record.fifo", child / "record-copy.json"
+            os.mkfifo(fifo)
+            copied.write_bytes(original)
+            original_read = Path.read_text
+            def read_text(path, *args, **kwargs):
+                self.assertNotEqual(path, trial, "Untrusted trial was opened before file-type validation")
+                return original_read(path, *args, **kwargs)
+            for target in (fifo, copied):
+                trial.symlink_to(target)
+                with mock.patch.object(Path, "read_text", read_text):
+                    with self.assertRaisesRegex(ValueError, "Trial record is not a regular file"):
+                        evaluation.verify(child)
+                trial.unlink()
         finally:
             source.write_bytes(original_source)
             evaluation.save_bytes(trial, original)

@@ -1,5 +1,37 @@
 # Automation execution evidence
 
+## Current outcome: blocked; no demonstrated prompt benefit
+
+The automation is implemented locally. Required live execution remains incomplete. V3 stopped at its registered common-runtime boundary after an OmniRoute `/v1/responses` request returned **HTTP 404** in isolation slot-016. No candidate has been submitted, nominated, confirmed or adopted. The change is **not ready to archive**.
+
+| Family | V3 actor attempts / runtime-valid | Current result |
+| --- | --- | --- |
+| Planning | 24 / 24 | Blocked: 5 of 24 semantic responses cite nonexistent evidence pointers. |
+| Isolation | 16 / 15 | Blocked: one upstream HTTP 404; 8 scheduled slots unattempted. |
+| Scope | 0 / 0 | Blocked by the common runtime failure; 24 scheduled slots unattempted. |
+| Routing | 0 / 0 | Unsupported: matched native skill-loader/catalog recording route unavailable. |
+| Continuity | 0 / 0 | Unsupported: actual compaction model route and complete handoff unbound. |
+
+V3 totals: **40 actor attempts, 39 runtime-valid, 1 invalid, 32 unattempted**; 24 assessor attempts, all runtime-valid, with five unresolved semantic judgments. Runtime validity does not imply task success. Observed V3 usage is 2,562,218 actor input / 50,706 actor output tokens and 229,054 assessor input / 8,174 assessor output tokens; cost unknown. Across all three retained registrations: **58 actor attempts, 55 valid, 3 invalid**. Historical pilot and independent review calls are separate from these denominators.
+
+Fresh frozen-driver checks passed for V1/V2/V3: descriptor/snapshot/bank/child/cache digests, audit chain, unique trial sessions, exact OmniRoute Luna/medium identities, and original disposable-target restoration. All eleven protected live/unrelated files and both serving-build links match V3's preservation snapshot. No global route/config or live prompt changed.
+
+After V3 terminated, the runner was repaired to capture frozen initial and confined final staged index entries/flags. Cache-only `.git/index` refresh is neutral only when valid semantic evidence matches exactly; actual staging and missing evidence still fail. All five flagged planning slots have matching initial-template index hashes, unchanged staged entries/flags and unchanged staged diffs; their original packets/grades remain untouched. The assessor now receives an explicit list of top-level evidence pointers; invalid pointers still remain unknown. New behavior requires new bound evidence, not rewriting V3's history or replacing slots.
+
+Index-repair gates: **38 tests passed in 12.351s**, including a real Git cache refresh, actual staging, missing semantic evidence, and symlink rejection; historical 36-slot verification, strict OpenSpec validation and whitespace checks passed. Repair commit: `29b469f12`, limited to the runner and focused tests, with configured user attribution. Independent repair/report review and persistence are recorded below when observed. Required campaign tasks remain pending; repeated route failure is not permission to keep registering campaigns until one succeeds.
+
+Read-only gateway diagnosis after the stop: `/api/health` returned `ok`, authenticated `/v1/models` returned HTTP 200 and included exact `gpt-6-luna`, and an intentionally invalid `{}` POST to `/v1/responses` returned validation HTTP 400 without model inference. Current Context7 OmniRoute documentation confirms that Responses path. These checks establish current route/validation availability, not reliable upstream model access or an explanation for the earlier 404. No gateway configuration, credential, model, endpoint or provider was changed.
+
+### Independent repair review and record-integrity follow-up
+
+Rehearsal V18's fresh tool-free Luna review inspected the actual repair commit range, complete source/tests, requirements, blocked task state and retained campaign results. It identified a separate actionable recovery gap: before assessment packets were frozen, a parseable trial record could redefine its own expected final workspace inventory. Source approval was withheld.
+
+New registrations now bind every durable trial-record checkpoint into the campaign audit, including the initial marker before message submission. Verification rejects absent receipts, altered records, deleted spent markers, and symlinks; invalid evidence cannot redefine expected workspace state or cause silent resubmission. Native teardown runs even if partial-record persistence fails. The existing callback/submission path is reused; no new service or dependency was introduced. Existing registrations retain their historical driver and evidence; no retroactive integrity assurance, replacement actor, or reopened confirmation is claimed. Offline injection checks cover receipt failure before send and combined record/workspace tampering. Final gates, independent re-review and scoped persistence follow.
+
+Receipt-binding commit: `6b5816aa7`. V19's fresh native zero-tool review observed two matching audit checkpoints and passed root verification, then identified a file-type ordering gap: a substituted trial symlink was read before rejection. Verification now rejects symlinks and non-regular trial paths before hashing/parsing. A regression probe substitutes both a FIFO symlink and a regular-JSON symlink and asserts neither target is opened. Final source gates: **40 tests passed in 11.462s**; historical 36-slot verification, strict OpenSpec and whitespace passed.
+
+Final V20 review (`automation-rehearsal-v20/runs/final-integrity-and-blocked-results-review/trials/slot-001.json`) returned **approve, no findings** for the repaired implementation and truthful blocked report. The separate private session used exact OmniRoute Luna/medium with zero tools; native audit-receipt/root verification passed. Its packet binds final source/test hashes, complete source/tests, scoped commit range, pending diff, requirements and retained result evidence. Later reviewer inference success demonstrates intermittent access after the 404; it does not reopen spent actor slots or complete a stopped campaign. Review explicitly leaves all four remaining tasks incomplete. No archive, live adoption, remote push, main-spec edit or global gateway mutation is claimed.
+
 ## Apply preflight — 2026-10-27
 
 The user explicitly invoked `$apply automate-personal-prompt-experiments`; the new controller design is approved for implementation and its registered local trials. Existing uncapped OmniRoute `gpt-6-luna` / `medium` scope remains in force. Publication and live prompt adoption remain excluded.
@@ -91,3 +123,19 @@ Error recovery now restores stable accepted bytes before continuing an independe
 Fresh focused verification: **37 tests passed** (including actual reader deadline/real alarm, failed-confirmation transport, injected audit failure and cross-family rollback). An intermediate test-placement error was corrected; final source/fixture checks pass. Historical pilot verification, strict OpenSpec validation and whitespace checks have also passed after the watchdog repairs and will be refreshed before the next source commit. Independent source review remains a prerequisite for new registered inference. The new registration is justified by actual harness repairs; prior evidence remains immutable and no statistical or boundary threshold changed.
 
 Final source-review disposition after supplying completed fresh gate outputs: rehearsal v17 returned **approve, no findings**. Source/test bytes were unchanged after the passing 37-test run. Fresh historical verification, strict OpenSpec and whitespace gates passed. This approval covers the bounded implementation and conservative rollback, not a completed live benchmark or superiority claim. The next source commit/registration carries these actual repairs; earlier partial/invalid evidence remains linked.
+
+## Corrected registered campaign
+
+Source commit `9955ed740`; root `target/personal-prompt-eval/2026-10-27-automated-campaign-v3/`. Its initial audit binds both predecessor descriptors/reports and all prior denominators. All 72 supported tier-1 slots passed fresh no-inference preflight with the final frame cap/watchdog. No scientific thresholds, candidate atoms, model/effort, or sealed confirmation inputs changed. The previously stalled slot-008 analogue completed in 82.364 seconds, with native cancellation/resumption and no watchdog/runtime error; semantic grading remains separate. Continued results follow below.
+
+### Interim planning assessment
+
+Planning tier 1 completed all 24 actor slots and 24 separate zero-tool assessor slots, each runtime-valid. Five semantic responses contain nonexistent JSON pointers and remain unresolved; the frozen controller correctly records this family as blocked and continues independent registered families. No candidate was tested or nominated. Actor usage is 1,420,834 input / 25,719 output tokens; assessor usage is 229,054 / 8,174; price unknown.
+
+Both controls used zero plan calls on all six simple challenges per condition. Personal complex counterexamples used four or five plan calls; default counterexamples used four. These observations do not establish a completed two-tier baseline or candidate benefit. Outcome grading is pass for 19/24 and unjudged for 5/24; the latter remain in the denominator.
+
+Five packets flag `.git/index` byte changes. Original-template versus final-workspace `git ls-files --stage` entries match in checked slot-008, suggesting stat-cache changes rather than staging; semantic-state preservation still needs complete evidence. A disposable no-model probe confirms plain read-only status can refresh index bytes without changing entries/HEAD, whereas `GIT_OPTIONAL_LOCKS=0` suppresses that refresh. The runner already supplies this variable to provider and callbacks, so this probe does not identify the actual writer. Do not interpret these flags as proven unauthorized staging or silently change their frozen grading. A fresh isolated Luna review is examining the evidence.
+
+Refreshed unchanged-source gates during continued execution: **37 tests passed in 12.859s**; historical 36-slot verification, strict OpenSpec validation and whitespace checks passed. Final campaign checks/review remain pending. Source, slots and thresholds remain frozen while V3 runs.
+
+Interim independent review (`automation-rehearsal-v17/runs/assessment-failure-review`, fresh tool-free OmniRoute Luna/medium session) returned one actionable grading finding: compare semantic index entries rather than treating cache-only `.git/index` byte churn as unauthorized staging. Invalid JSON pointers must still block. The review did not approve campaign completion. Its initial no-inference launch failed on a missing local `PYTHONPATH`; the corrected launch used the already prepared child and submitted exactly one review slot. Repair is pending until the frozen run reaches its terminal state; no current result has been rewritten.

@@ -31,6 +31,8 @@ Dependencies: groups 1–2. Tools/environment: existing bwrap, pinned Jcode exec
 
 Dependencies: group 3's relevant fresh preflights. Existing uncapped usage authorization applies to actor and assessment calls on the required route; record cost as unknown when unobservable. No publication or adoption is included. A common route/confinement failure stops submissions; family-local blockers remain local. No invalid slot is silently replaced.
 
+Current blocker: V3 terminated at the registered common-runtime stop after isolation slot-016 received OmniRoute HTTP 404. Planning's five invalid semantic references also remain unresolved. Across retained registrations, 58 actor attempts include 55 runtime-valid and three invalid trials; no candidate or holdout was opened. Tasks 4.1/4.2 remain incomplete. See evaluation.md; do not reopen spent slots or archive this blocked execution.
+
 ## 5. Final verification and local closeout
 
 - [ ] 5.1 Run fresh focused offline tests, native strict OpenSpec validation, campaign evidence/digest/session-count checks, and live prompt/shared-daemon preservation checks. Obtain independent review against the final implementation, requirements, report and commit range; fix actionable findings and repeat affected gates/review before marking tasks complete.

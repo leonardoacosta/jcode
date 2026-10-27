@@ -31,4 +31,8 @@ Extend `scripts/prepare_personal_prompt_eval.py` with a frozen family queue, one
 - Existing log search: no project `.learnings/` or matching home/agent/Codex learning store found before creation.
 - Promotion: none; one campaign is not evidence across distinct tasks for a permanent instruction change.
 
+### Execution progress — 2026-10-27
+
+The isolated controller is implemented in the existing runner, with local commits `3b91b6c2a`, `791e7ed20` and `9955ed740`; index-grading repair `29b469f12` adds semantic preservation checks, and `6b5816aa7` binds trial checkpoints into the audit. Three retained registrations contain 58 actor attempts: 55 runtime-valid, 3 invalid; V3 also contains 24 separate assessor attempts, five with unresolved semantic pointers. No candidate has been tested, confirmed or adopted. V3 stopped on OmniRoute HTTP 404; routing and compaction remain unsupported by the reduced adapter. Final independent Luna review approved the repaired implementation and truthful blocked report with no findings; 40 focused tests pass. Required live execution and Apply archive remain pending; this request is not resolved. See `openspec/changes/automate-personal-prompt-experiments/evaluation.md`.
+
 ---

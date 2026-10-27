@@ -348,10 +348,12 @@ def verify(output):
     for slot in slots:
         workspace = output / "workspaces" / slot["slot"]
         attempted = output / "trials" / (slot["slot"] + ".json")
-        observed = json.loads(attempted.read_text()) if attempted.exists() else None
-        if manifest.get("trial_record_binding") and (observed is not None or slot["slot"] in receipts):
-            if not attempted.is_file() or attempted.is_symlink() or receipts.get(slot["slot"]) != digest(attempted):
+        if attempted.is_symlink() or (attempted.exists() and not attempted.is_file()):
+            raise ValueError(f"Trial record is not a regular file: {slot['slot']}")
+        if manifest.get("trial_record_binding") and (attempted.exists() or slot["slot"] in receipts):
+            if not attempted.is_file() or receipts.get(slot["slot"]) != digest(attempted):
                 raise ValueError(f"Trial record digest missing or changed: {slot['slot']}")
+        observed = json.loads(attempted.read_text()) if attempted.exists() else None
         expected_files = observed.get("final_files") if observed else slot["initial_files"]
         if expected_files is not None and inventory(workspace) != expected_files:
             raise ValueError(f"Initial fixture drift: {slot['slot']}")
