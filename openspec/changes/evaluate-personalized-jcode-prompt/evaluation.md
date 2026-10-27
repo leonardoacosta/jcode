@@ -274,3 +274,13 @@ in `output` with its exit code), and the shell omitted `GIT_OPTIONAL_LOCKS=0`, a
 final attributable comparison**, not repeated or replaced; its actual findings,
 actions and index change remain visible. `first-slot-route-incident.json` records
 the incident. Remaining slots keep the declared case/condition/repetition mapping.
+
+### Private socket startup recovery
+
+After slot 011, the next daemon handshake failed with `Connection refused` on the
+reused run-owned socket before slot 012 received any message. No behavioral slot
+was consumed or replaced. The launcher now allocates a fresh run-owned host socket
+directory per process; its in-namespace path remains `/runtime/daemon.sock`. Context,
+tools, model, effort and fixture bytes are unchanged. The all-condition no-model
+preflight is refreshed; its previous version and the startup incident are retained
+privately. This is infrastructure recovery, not a model trial retry.

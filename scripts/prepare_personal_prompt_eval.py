@@ -371,8 +371,15 @@ def run_pilot(output, preflight_only=False):
     active = None
     trace = (output / "api-trace.ndjson").open("a")
     errors = (output / "runtime.stderr").open("a")
-    process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                               stderr=errors, text=True, env=environment)
+
+    def launch():
+        private_command = command[:]
+        socket_directory = tempfile.mkdtemp(prefix="process-", dir=sockets)
+        private_command[private_command.index(str(sockets))] = socket_directory
+        return subprocess.Popen(private_command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=errors, text=True, env=environment), socket_directory
+
+    process, socket_directory = launch()
 
     def send(payload):
         nonlocal request_id
@@ -524,8 +531,7 @@ def run_pilot(output, preflight_only=False):
                 # This pinned API reuses a connection's session on create_session.
                 # A new owned process namespace guarantees a fresh daemon/connection.
                 stop_process()
-                process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                           stderr=errors, text=True, env=environment)
+                process, socket_directory = launch()
                 request({"req": "hello", "min_version": 1, "max_version": 1,
                          "client": "personal-prompt-pilot/1"})
             used_process = True
@@ -570,11 +576,13 @@ def run_pilot(output, preflight_only=False):
                     raise ValueError("Context/tools drifted since all-slot preflight")
             if preflight_only:
                 preflights.append({"slot": slot["slot"], "identity": identity, "context": context,
-                                   "tools": effective, "serving_processes": serving})
+                                   "tools": effective, "serving_processes": serving,
+                                   "socket_directory": socket_directory})
                 request({"req": "detach_session", "session_id": session_id})
                 continue
             active = {"slot": slot["slot"], "case": slot["case"], "session_id": session_id,
                       "identity": identity, "context": context, "binary": binary, "serving_processes": serving,
+                      "socket_directory": socket_directory,
                       "effective_tools": effective,
                       "events": [], "tool_calls": [], "started_at": datetime.now(timezone.utc).isoformat()}
             result_file.write_text(json.dumps(active, indent=2) + "\n")
