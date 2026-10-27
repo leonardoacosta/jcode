@@ -87,7 +87,7 @@ Prefer an existing supported runtime/manual procedure with its current trace sur
 
 Keep raw local snapshots, traces and run manifests under an isolated run directory such as gitignored `target/personal-prompt-eval/<run-id>/`. Save a curated result summary through the existing change artifacts; keep `tasks.md` the only execution ledger. Record source/fixture hashes, binary path/version/hash, actual provider/model identity where observable, effort/settings/tools, context provenance, run order, assertions and evidence references. Unsupported model-version/seed control remains a limitation. Redact credentials and unrelated private material; do not publish raw personal context.
 
-Written-spec review is approved and local preparation may proceed through Apply. Before inference, the operator must establish the selected model/provider, observable access, finite per-trial and campaign limits, and any spending/disclosure authorization needed by the actual route. The 36-trial schedule bounds trial count, not tokens or money. Do not guess a price or copy credentials to make isolation work. Missing prerequisites block inference, not local preparation; no live access or cost observation is claimed here.
+Written-spec review is approved and local preparation may proceed through Apply. Before inference, establish the selected model/provider, observable access, user-agreed usage policy, and spending/disclosure authorization. The latest user instruction authorizes uncapped usage through OmniRoute `gpt-6-luna`; effort is matched at `medium`. The 36-trial schedule bounds trial count, not tokens or money. Do not guess a price or copy credentials to make isolation work. Missing prerequisites block inference, not local preparation; no live access or cost observation is claimed here.
 
 ### 6. Test assembly independently of model behavior
 
@@ -107,7 +107,7 @@ Observe base, overlay, repository-policy and skill snapshot behavior at the real
 
 No live prompt, configuration, provider, or runtime migration occurs. Review these artifacts before entering the canonical Apply workflow. Future execution prepares isolated snapshots and fixtures, verifies capture/limits/access, runs only the authorized campaign, and reports results. Independent review and fresh checks precede any required scoped commits and archival. Publication and live prompt adoption remain excluded unless separately requested. Cleanup is limited to identified run-owned resources and must preserve evidence required for review.
 
-## Readiness and evidence limits
+## Preparation-era readiness and evidence limits
 
 The pre-draft/handoff assessment uses `proposal-readiness-v1-shadow`; it is advisory, not a behavioral quality score. Local source and snapshot checks were performed on 2026-10-27. No live access probe, model trial, budget enforcement, serving-process binding or final implementation review has run.
 

@@ -1,17 +1,17 @@
 ## Execution boundary
 
-Written-spec review is approved; local preparation is executing through Apply. Design approval and schema completeness do not authorize paid trials, host permission/configuration changes, shared-daemon replacement, publication, or live prompt adoption. `tasks.md` is the sole execution ledger.
+Written-spec review and execution are approved. The latest user instruction authorizes the fixed 36 trials without a usage cap, exclusively through OmniRoute model `gpt-6-luna`. Reasoning effort is matched at `medium`. Host permission/configuration changes, shared-daemon replacement, publication, and live prompt adoption remain outside scope. `tasks.md` is the sole execution ledger.
 
 ## 1. Bind Inputs and Execution Prerequisites
 
 - [x] 1.1 Freeze the default/personal bases, proposed single-change candidate, surrounding policy/overlays/skills and fixture inputs in a run-owned location; verify hashes, record default source/build provenance, and prove that the candidate differs only by the scope-boundary replacement in design section 2. Requires local read/write access to the run directory; no provider inference.
-- [ ] 1.2 Resolve a supported existing evaluation/manual path using the inspected runtime and benchmark surfaces; verify actual serving binary identity, separate socket/session ownership, bounded fixture effects, available trace/context capture, and cleanup ownership without touching shared sessions or changing host permissions. Record each capability as observed or unavailable; an absent safe route blocks trial execution, not fixture authoring.
-- [ ] 1.3 Before any model trial, establish the execution request, selected provider/model/effort, permitted disclosure, existing access, and finite enforced per-trial/campaign limits; verify that the route exposes enough usage/limit evidence to honor the authorized budget. Do not copy credentials, invent prices or count the 36-trial schedule as a spending cap. Missing authority/access/limits blocks only model-dependent tasks.
+- [x] 1.2 Resolve a supported existing evaluation/manual path using the inspected runtime and benchmark surfaces; verify actual serving binary identity, separate socket/session ownership, bounded fixture effects, available trace/context capture, and cleanup ownership without touching shared sessions or changing host permissions. Record each capability as observed or unavailable; an absent safe route blocks trial execution, not fixture authoring.
+- [x] 1.3 Before any model trial, establish the execution request, selected provider/model/effort, permitted disclosure, existing access, and the user-agreed usage policy; record available usage evidence. The user explicitly selected no usage cap for this campaign. Do not copy credentials, invent prices or count the 36-trial schedule as a spending cap. Missing authority/access blocks only model-dependent tasks.
 
 ## 2. Author Observable Fixtures and Checks
 
 - [x] 2.1 Create the four disposable S1-S4 pilot fixtures and independent grading oracles, with a useful local verification path even when S4 integration is unavailable; verify the oracle rejects the known defect, accepts the reference fix, detects forbidden target/Git mutations and attempted effects, and remains outside agent-writable grading scope. Document the exact local checks and their observed results alongside the fixture procedure.
-- [ ] 2.2 Define the other four families and unseen transfer/negative controls using existing fixture conventions where suitable; verify each case has observable expected/forbidden behavior, neutral agent-visible inputs, resettable state, and bounded stand-ins for external effects. Check both authorized and unauthorized paths so a universally passive agent cannot pass. Preserve existing workflow evaluation fixtures and requirements.
+- [x] 2.2 Define the other four families and unseen transfer/negative controls using existing fixture conventions where suitable; verify each case has observable expected/forbidden behavior, neutral agent-visible inputs, resettable state, and bounded stand-ins for external effects. Check both authorized and unauthorized paths so a universally passive agent cannot pass. Preserve existing workflow evaluation fixtures and requirements.
 - [x] 2.3 Add or reuse deterministic assembly/session coverage for both bases: correct override/layers, full-session override consequences, late skill trigger/exclusion loss, and actual snapshot/refresh boundaries. Run relevant existing entry-point checks, including `cargo test -p jcode-base --test prompt_guidance_integration` and the applicable prompt/session tests; document failures and evidence limits without changing production prompt or lifecycle behavior to make the evaluation pass.
 
 ## 3. Prepare Matched Trials and Grading
@@ -44,20 +44,41 @@ See [design.md](design.md#local-preparation-observations) for deterministic obse
 and command-level evidence. Do not interpret completed preparation tasks as measured
 behavioral improvement.
 
-Tasks 1.2/1.3/4.1/4.2 remain pending: no selected/authorized provider-model-effort,
-finite enforced inference limits, closed frozen-context mapping or end-to-end
-confined tool/trace route is established. A local `bwrap` namespace probe succeeded;
-that does not validate a Jcode provider/tool execution route. No shared daemon was
-started, stopped or repointed. The task 2.1 fixture-role confinement probe verifies
-hidden grader/snapshot absence, a denied assessment edit with a recorded synthetic
-attempt, authorized implementation writes with unrelated notes preserved, and
-independent defect/reference grading in the minimal namespace. Results are in the
-selected run's `confinement-checks.json`. This does not validate Jcode's end-to-end
-tool route; that remains task 1.2. Task 2.2 has authored later-family definitions,
-but its executable recording stand-ins on that route remain unverified.
+At preparation time, the integrated Jcode route and later-family stand-ins were
+unverified. Those historical blockers are superseded by the current preflight and
+synthetic fixture evidence below. Earlier `confinement-checks.json` is fixture-role
+evidence only; current callback probes verify the actual pilot executor.
 
 Independent preparation review found no blocking defect and confirmed the task 3.2
 synthetic manual grading decisions. All four template commit author/committer pairs
 match the user's configured identity here. Checkout-local-only identity remains a
 portability advisory for other environments. Final campaign review, spec synchronization
 and archival remain unfinished.
+
+## Current execution preflight (2026-10-27)
+
+The latest user authorization supersedes the preparation-era finite-cap decision:
+no usage limit; exact OmniRoute `gpt-6-luna`; matched `medium` reasoning. Gateway
+health/model/combos discovery succeeded without inference or routing edits. Existing
+credentials are injected into the private provider process only, never copied.
+`runtime-preflight.json` verifies all 36 fresh-session contexts, base bindings,
+common tools and actual private serving executable hashes. `callback-preflight.json`
+checks the same shell executor used by trials: hidden graders/snapshots/other slots,
+no provider key, no network, read-only base, accessible frozen canonical policy and
+permitted disposable workspace writes. The first no-model startup refreshed only
+Git index stat-cache bytes; verified template bytes were restored before any
+inference, recorded in `preflight-index-refresh.json`, and optional locks disabled.
+
+`family-rehearsal/checks.json` records synthetic fixture/stand-in verification for
+task 2.2. This does not run or claim behavioral results for later families. See
+`evaluation.md` for scope, limitations and commands. Tasks 4.1/4.2 remain uncompleted
+until actual trial execution and grading.
+
+Pre-inference independent review found the original bash-only implementation surface
+inadequate for the prompt's edit-tool rule. It was repaired before any inference:
+all conditions now expose isolated native-schema `write`, plus `bash` and native
+`todo`; the reference-write/test and denied-base-write probes pass. A subsequent
+review found overly broad run-file modes; the run-owned tree is now owner-only and
+new artifacts use umask `077`. No host-wide permissions were changed. Final
+pre-inference review and fresh no-model preflight are recorded under the selected
+run; no failed preflight consumed a behavioral slot.

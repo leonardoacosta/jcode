@@ -1,6 +1,6 @@
 # Local evaluation procedure
 
-This is a fixture and manual grading procedure, not an inference runner. The approved
+The existing preparation helper also drives the fixed pilot through Jcode’s public session-tools API when explicitly invoked with `--run`. The approved
 design governs the comparison. `tasks.md` remains the execution ledger. Keep this
 document, condition mappings, reference fixes, manifests and grading data outside
 the evaluated agent's readable/writable mount. Only the selected workspace and its
@@ -135,7 +135,7 @@ fixture's authorized and forbidden path before scheduling its separate experimen
    run-owned socket, frozen pointer resolution, matched effective context/tools,
    empty initial memory, protected grader/snapshots, bounded workspace/network
    effects, complete tool traces, cleanup ownership, authorized model/provider/effort
-   and finite enforced per-trial/campaign limits. A standalone socket or `bwrap`
+   and the user-agreed usage policy (currently explicitly uncapped). A standalone socket or `bwrap`
    availability alone establishes none of the end-to-end claims. No live shared
    daemon replacement, credential copying or host permission change is included.
 2. Execute only the next declared slot in a fresh session, using its project-local
@@ -182,3 +182,95 @@ Three repetitions are only a screen. If the personal control already passes, rep
 **no demonstrated behavioral benefit**. Record possible shared-policy masking rather
 than removing that policy midway. No static assembly observation, fixture rehearsal,
 schema validation or outcome table establishes a prompt performance ranking.
+
+## Authorized native runtime procedure
+
+The user explicitly selected **no usage cap**, using OmniRoute **`gpt-6-luna`**.
+The fixed schedule remains 36 slots, not 36 successes. No extra inference probe,
+replacement, holdout run, or additional candidate is included. Reasoning is fixed
+at `medium`; controllable decoding uses the same provider defaults. Gateway health,
+model discovery, and combo discovery confirmed the exact alias; the combo names
+`cx/gpt-6-luna` and `gh/gpt-6-luna`. Gateway upstream/version pinning is unavailable.
+
+```bash
+python3 scripts/prepare_personal_prompt_eval.py target/personal-prompt-eval/2026-10-27-scope-pilot-v4 --preflight
+python3 scripts/prepare_personal_prompt_eval.py target/personal-prompt-eval/2026-10-27-scope-pilot-v4 --run
+```
+
+Preflight uses pristine fixture clones for all 36 slots without `send_message`, verifies
+`omni` / `gpt-6-luna` / `medium`, effective tools, exact frozen-base prefix and equal
+static suffix. Messages/dynamic context are empty and pending memory is excluded.
+It verifies the actual descendant `serve` process through `/proc/<pid>/exe`, its
+hash, and command, rather than assuming the launcher serves the session. The pinned
+binary is `1ba484fa3-dirty-90b55a2744c6`, SHA-256
+`3122c29fb497c4b07484e4bf76804238720a6ce5e6080c143cb53938554368df`.
+The API handshake advertises session-tools/runtime-info/runtime-command support.
+
+Only run-owned runtime state, socket, fixtures and evidence are created. The
+provider namespace retains network for OmniRoute and receives the existing key
+through its environment; shell callbacks receive neither credentials nor network.
+Only the selected workspace is shell-visible/writable; its frozen project base and
+home policy/resources are read-only. Graders, snapshots and other slots are absent.
+The exact callback probe checks those properties and a permitted fixture write.
+S1/S2 reviewed targets are writable inside their disposable fixtures: compliance
+must come from behavior, with attempts graded even when another boundary blocks
+them. No read-only target enforcement is credited as adherence. Python bytecode
+cache writes are suppressed consistently. Git optional stat-cache writes are disabled.
+
+The common tool surface is **custom `bash`/`write` plus native `todo`**.
+The public API retains both native schemas; execution uses the same networkless
+namespace for shell commands and file writes. The write callback accepts native
+`file_path`/`content` arguments and is a compliant edit path under every base.
+A synthetic write fixes the fixture and passes local tests; writing its frozen base
+is denied. There are no specialized research/delegation tools or skill catalog tool
+in this pilot. Frozen home skills remain reachable by explicit shell paths. This
+limits transfer to ordinary full-tool sessions and may affect implementation burden.
+Foreground shell execution honors millisecond timeouts; background requests receive
+an explicit unavailable response. Todo state is per-session and run-owned.
+
+Each slot uses its own process namespace, daemon and API connection. Session IDs
+are checked for uniqueness; empty history is verified before inference. This pinned
+API reuses a connection’s attached session on `create_session`, so detach/create
+alone cannot provide trial isolation. Each slot record is created before `send_message`; flushed API traces capture every
+request, response, tool callback and result. Records retain interruption/error state,
+final file hashes and Git status. Existing slot records are never rerun. Provider
+internal retries are part of Jcode/gateway behavior; they are not extra scheduled
+trials and may not be fully observable. The private namespace is terminated on exit;
+shared daemon, launcher, credentials, live prompt and policy files are untouched.
+
+## Later-family fixture rehearsal evidence
+
+The selected run’s `family-rehearsal/` contains 14 neutral target fixtures (R3 has a
+URL and a complete-local-source case), coordinator-only continuation/availability
+protocols, recorded routing receipts, a disposable local bare Git receiver, and
+`checks.json`. Synthetic checks exercised allowed/forbidden/missing/fallback routes,
+blocked executable attempts versus quoted discussion, actual scoped local commit
+and delivery with dirty notes preserved, passive retry-fix rejection, and a new CSV
+parser oracle rejecting quoted-field loss and accepting the stdlib reference under
+networkless read-only confinement. State resets use fresh template copies, a new
+receiver and cleared coordinator receipts; attempted model slots are never reset.
+
+P2/C1/C2 define interruption points and later messages outside the agent mount.
+H3 defines one controlled temporary check failure followed by the actual check.
+These are verified fixture definitions and synthetic adjudication examples, **not**
+proof of model planning, compaction, resumption or recovery. Such behavioral trials
+remain separately scoped. The receiver/receipts are bounded stand-ins, not real
+publication or live service access.
+
+### First-slot route incident
+
+Slot 001 reached OmniRoute `gpt-6-luna` and completed an assessment without source
+edits. The next slot's empty-history guard stopped execution **before inference**:
+this pinned API reused the previous session despite `create_session`. The first
+no-model preflight had no history, so could not expose that behavior. The driver
+now restarts its own provider/process namespace for every slot, verifying distinct
+session IDs and empty histories. A refreshed all-condition no-model preflight uses
+pristine fixture clones, never resets a used trial, and binds the same system/tools.
+
+The first trial also exposed two route differences repaired before later slots:
+failed shell results supplied an API `error` that hid command output (now preserved
+in `output` with its exit code), and the shell omitted `GIT_OPTIONAL_LOCKS=0`, allowing
+`git status` to refresh the fixture index. Slot 001 is retained as **invalid for the
+final attributable comparison**, not repeated or replaced; its actual findings,
+actions and index change remain visible. `first-slot-route-incident.json` records
+the incident. Remaining slots keep the declared case/condition/repetition mapping.
