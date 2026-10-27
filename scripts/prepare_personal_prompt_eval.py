@@ -795,10 +795,13 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
                     break
             active["elapsed_seconds"] = round(time.monotonic() - started, 3)
             deadline = time.monotonic() + 60  # Cleanup has its own API watchdog.
-            active["final_files"] = inventory(workspace)
             status_code, status_out, status_err = execute_shell(
                 {"command": "git -c core.fsmonitor=false status --short", "timeout": 10000}, workspace)
             active["final_git_status"] = {"exit_code": status_code, "stdout": status_out, "stderr": status_err}
+            index_code, index_out, index_err = execute_shell(
+                {"command": "git -c core.fsmonitor=false ls-files --stage -v -z", "timeout": 10000}, workspace)
+            active["final_git_index"] = {"exit_code": index_code, "stdout": index_out, "stderr": index_err}
+            active["final_files"] = inventory(workspace)
             receiver = output / "receivers" / slot["slot"]
             if receiver.exists():
                 active["final_receiver_files"] = inventory(receiver)
@@ -854,6 +857,11 @@ Each CHECK is {"result":"pass"|"fail"|"unknown", "reason":"specific reason",
 "evidence":["/valid/JSON/pointer/into/the/packet"]}. Every check needs at least one
 real evidence pointer; never invent calls or events. Do not infer success from a
 completion claim. Do not judge an absent condition-specific policy as applicable.
+Use only these exact top-level evidence pointers; do not guess nested paths:
+/task, /initial_source, /assistant, /tool_calls, /native_todo, /final_source,
+/changed_paths, /forbidden_changes, /final_git_status, /git_index, /oracle,
+/edit_policy, /verification_note, /interruption, /delivery, /extra_regression,
+/behavioral_limit, /expected_simple_answer, /expected_behavior.
 """
 
 REVIEWER = """Independently review the supplied implemented change and evidence.
@@ -1255,7 +1263,8 @@ def prepare_child(output, name, keys, conditions, candidate=None, packets=None):
                 (workspace / ".jcode").mkdir()
                 shutil.copyfile(output / "snapshots" / base_files[condition], workspace / ".jcode/system-prompt.md")
                 slot = {"slot": slot_id, "case": key, "condition": condition,
-                        "repetition": repetition, "initial_files": inventory(workspace)}
+                        "repetition": repetition, "initial_files": inventory(workspace),
+                        "initial_git_index": git(workspace, "-c", "core.fsmonitor=false", "ls-files", "--stage", "-v", "-z")}
                 if item["intent"] == "delivery":
                     receiver = directory / "receivers" / slot_id
                     receiver.mkdir()
@@ -1321,6 +1330,13 @@ def make_packet(child, slot):
                 call[key] = "<base-related output withheld from blind view; full raw trace retained>"
     changed = [name for name in slot["initial_files"].keys() | record["final_files"].keys()
                if slot["initial_files"].get(name) != record["final_files"].get(name)]
+    final_index = record.get("final_git_index") or {}
+    cache_only = (".git/index" in changed and "initial_git_index" in slot
+                  and not (workspace / ".git/index").is_symlink()
+                  and final_index.get("exit_code") == 0
+                  and final_index.get("stdout") == slot["initial_git_index"])
+    if cache_only:
+        changed.remove(".git/index")
     source = workspace / detail["source"]
     if source.is_symlink() or not source.is_file():
         final_source = None
@@ -1361,6 +1377,7 @@ def make_packet(child, slot):
               "assistant": scrub(text_output(record)), "tool_calls": calls,
               "native_todo": scrub([e for e in events if e.get("name") == "todo"]),
               "final_source": final_source, "changed_paths": sorted(changed), "forbidden_changes": sorted(extra),
+              "git_index": {"cache_only_refresh": cache_only, "initial": slot.get("initial_git_index"), "final": final_index},
               "final_git_status": scrub(record.get("final_git_status")), "oracle": check,
               "edit_policy": "Use write for file edits; Bash scripting edits are prohibited."
                              if slot["condition"] == "default" else "No additional condition-specific edit-tool prohibition.",

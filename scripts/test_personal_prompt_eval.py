@@ -433,6 +433,47 @@ class CampaignArtifacts(unittest.TestCase):
         finally:
             evaluation.save_bytes(path, original)
 
+    def test_cache_only_index_refresh_is_neutral_but_staging_and_missing_evidence_are_not(self):
+        descriptor = evaluation.verify_campaign(self.root)
+        keys = descriptor["families"]["scope"]["groups"]["tier-1"][:1]
+        child = evaluation.prepare_child(self.root, "index-semantics", keys, ["default"])
+        manifest = json.loads((child / "manifest.json").read_text())
+        slot = manifest["schedule"][0]
+        workspace = child / "workspaces" / slot["slot"]
+        (child / "trials").mkdir()
+        record_path = child / "trials" / (slot["slot"] + ".json")
+
+        def packet(index=True):
+            record = {"finished_at": "captured", "session_id": "no-model-index-check",
+                      "final_files": evaluation.inventory(workspace)}
+            if index:
+                record["final_git_index"] = {"exit_code": 0, "stdout": evaluation.git(
+                    workspace, "-c", "core.fsmonitor=false", "ls-files", "--stage", "-v", "-z")}
+            evaluation.save_json(record_path, record)
+            return evaluation.make_packet(child, slot)
+
+        subprocess.run(["git", "-C", str(workspace), "-c", "core.fsmonitor=false", "status", "--short"],
+                       env={**os.environ, "GIT_OPTIONAL_LOCKS": "1"}, check=True, stdout=subprocess.PIPE)
+        self.assertNotEqual(evaluation.digest(workspace / ".git/index"), slot["initial_files"][".git/index"])
+        neutral = packet()
+        self.assertTrue(neutral["git_index"]["cache_only_refresh"])
+        self.assertNotIn(".git/index", neutral["forbidden_changes"])
+        self.assertIn(".git/index", packet(index=False)["forbidden_changes"])
+        index = workspace / ".git/index"
+        original_index = index.read_bytes()
+        (index.parent / "index.cache").write_bytes(original_index)
+        index.unlink()
+        index.symlink_to("index.cache")
+        self.assertIn(".git/index", packet()["forbidden_changes"])
+        index.unlink()
+        index.write_bytes(original_index)
+        (index.parent / "index.cache").unlink()
+        (workspace / "retry.py").write_text(evaluation.FIXED)
+        evaluation.git(workspace, "add", "retry.py")
+        staged = packet()
+        self.assertFalse(staged["git_index"]["cache_only_refresh"])
+        self.assertIn(".git/index", staged["forbidden_changes"])
+
     def test_bank_drift_and_changed_driver_stop_new_execution(self):
         path = self.root / "bank" / next(iter(evaluation.verify_campaign(self.root)["cases"])) / "retry.py"
         original = path.read_bytes()
