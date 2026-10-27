@@ -2975,6 +2975,124 @@ fn system_prompt_override_restores_and_does_not_leak_across_sessions() {
     }
 }
 
+#[test]
+#[ignore = "requires a private run from scripts/prepare_personal_prompt_eval.py"]
+fn personal_prompt_evaluation_observes_layers_and_refresh_boundaries() {
+    let run = std::path::PathBuf::from(
+        std::env::var_os("JCODE_PERSONAL_PROMPT_EVAL_RUN").expect("prepared run directory"),
+    )
+    .canonicalize()
+    .unwrap();
+    let home = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+    std::fs::create_dir(home.root().join("skills")).unwrap();
+
+    for condition in ["default", "personal"] {
+        let project = home.root().join(condition);
+        let guidance = project.join(".jcode");
+        std::fs::create_dir_all(&guidance).unwrap();
+        let base =
+            std::fs::read_to_string(run.join(format!("snapshots/bases/{condition}.md"))).unwrap();
+        std::fs::write(guidance.join("system-prompt.md"), &base).unwrap();
+        std::fs::write(project.join("AGENTS.md"), "EVAL_AGENTS_BEFORE").unwrap();
+        std::fs::write(guidance.join("prompt-overlay.md"), "EVAL_OVERLAY_BEFORE").unwrap();
+        std::fs::write(guidance.join("preferred-tools.md"), "EVAL_TOOLS_BEFORE").unwrap();
+        for name in ["reverse-engineer-anything", "adversarial"] {
+            let target = guidance.join("skills").join(name);
+            std::fs::create_dir_all(&target).unwrap();
+            std::fs::copy(
+                run.join("snapshots/home/.agents/skills")
+                    .join(name)
+                    .join("SKILL.md"),
+                target.join("SKILL.md"),
+            )
+            .unwrap();
+        }
+        let new_agent = || {
+            Agent::new_with_initial_working_dir(
+                Arc::new(BoundSavedAccountProvider),
+                Registry::empty(),
+                project.to_str(),
+            )
+        };
+        let mut agent = new_agent();
+        let before = agent.build_system_prompt_split(None);
+        assert!(before.static_part.starts_with(base.trim()));
+        for marker in [
+            "EVAL_AGENTS_BEFORE",
+            "EVAL_OVERLAY_BEFORE",
+            "EVAL_TOOLS_BEFORE",
+        ] {
+            assert!(before.static_part.contains(marker), "{condition}: {marker}");
+        }
+        let section = before
+            .static_part
+            .split("# Available Skills\n")
+            .nth(1)
+            .unwrap();
+        assert!(section.contains("/reverse-engineer-anything"));
+        assert!(section.contains("/adversarial"));
+        for (name, branch) in [
+            (
+                "reverse-engineer-anything",
+                "Skip REA for ordinary source-repository architecture analysis.",
+            ),
+            ("adversarial", "negative/failure-path tests"),
+        ] {
+            assert!(
+                agent
+                    .current_prompt_skill_infos()
+                    .iter()
+                    .any(|skill| skill.name == name && skill.description.contains(branch))
+            );
+        }
+        assert!(
+            !section.contains("Skip REA for ordinary source-repository architecture analysis.")
+        );
+        assert!(!section.contains("negative/failure-path tests"));
+        assert!(section.contains('…'));
+
+        std::fs::write(guidance.join("system-prompt.md"), "EVAL_BASE_AFTER").unwrap();
+        std::fs::write(project.join("AGENTS.md"), "EVAL_AGENTS_AFTER").unwrap();
+        std::fs::write(guidance.join("prompt-overlay.md"), "EVAL_OVERLAY_AFTER").unwrap();
+        std::fs::write(guidance.join("preferred-tools.md"), "EVAL_TOOLS_AFTER").unwrap();
+        let late = guidance.join("skills/eval-late");
+        std::fs::create_dir(&late).unwrap();
+        std::fs::write(
+            late.join("SKILL.md"),
+            "---\nname: eval-late\ndescription: EVAL_LATE_TRIGGER\n---\nLocal skill.\n",
+        )
+        .unwrap();
+        let after = agent.build_system_prompt_split(None);
+        for marker in [
+            "EVAL_BASE_AFTER",
+            "EVAL_AGENTS_BEFORE",
+            "EVAL_OVERLAY_AFTER",
+            "EVAL_TOOLS_AFTER",
+        ] {
+            assert!(after.static_part.contains(marker));
+        }
+        assert!(!after.static_part.contains("EVAL_AGENTS_AFTER"));
+        assert!(!after.static_part.contains("EVAL_LATE_TRIGGER"));
+        assert!(
+            agent
+                .available_skill_names()
+                .iter()
+                .any(|name| name == "eval-late")
+        );
+        let fresh = new_agent().build_system_prompt_split(None);
+        assert!(fresh.static_part.contains("EVAL_AGENTS_AFTER"));
+        assert!(fresh.static_part.contains("EVAL_LATE_TRIGGER"));
+
+        agent.set_system_prompt("EVAL_COMPLETE_OVERRIDE");
+        let overridden = agent.build_system_prompt_split(Some("EVAL_PENDING_MEMORY"));
+        assert_eq!(overridden.static_part, "EVAL_COMPLETE_OVERRIDE");
+        assert!(overridden.dynamic_part.is_empty());
+        println!(
+            "{condition}: base/layers, pointer loss, same-session refresh, new-session snapshot, whole-context replacement observed"
+        );
+    }
+}
+
 /// Test provider advertising provider-native deferred tool loading.
 /// Provider whose deferred-loading capability can flip, like a mid-session
 /// switch between Claude and a non-native route.
