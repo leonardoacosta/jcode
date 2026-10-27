@@ -62,6 +62,24 @@ pub fn canonical_todo_status(status: &str) -> Option<&'static str> {
     }
 }
 
+/// Open-work identity ignores only known status spelling differences. Keep
+/// task order and every other field: details can contain required checks.
+pub fn incomplete_todo_fingerprint<'a>(
+    todos: impl IntoIterator<Item = &'a TodoItem>,
+) -> serde_json::Result<String> {
+    let todos: Vec<_> = todos
+        .into_iter()
+        .cloned()
+        .map(|mut todo| {
+            if let Some(status) = canonical_todo_status(&todo.status) {
+                todo.status = status.into();
+            }
+            todo
+        })
+        .collect();
+    serde_json::to_string(&todos)
+}
+
 pub fn todo_status_is_completed(status: &str) -> bool {
     canonical_todo_status(status) == Some("completed")
 }

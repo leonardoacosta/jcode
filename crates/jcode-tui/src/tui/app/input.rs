@@ -1823,8 +1823,8 @@ impl App {
         // retrigger the same evidence gate against unchanged completed todos.
         self.todo_confidence_spike_challenged = false;
         self.last_todo_ownership_fingerprint = None;
-        let fingerprint =
-            serde_json::to_string(&incomplete).unwrap_or_else(|_| poke_message.clone());
+        let fingerprint = crate::todo::incomplete_todo_fingerprint(&incomplete)
+            .unwrap_or_else(|_| poke_message.clone());
         if self.last_auto_poke_fingerprint.as_ref() == Some(&fingerprint) {
             crate::logging::info(&format!(
                 "AUTO_POKE_DECISION action=idle reason=unchanged_todos incomplete={}",
@@ -1868,7 +1868,7 @@ impl App {
         if incomplete.is_empty() {
             return None;
         }
-        serde_json::to_string(&incomplete).ok()
+        crate::todo::incomplete_todo_fingerprint(&incomplete).ok()
     }
 
     /// Another window attached to this session started a turn. Show what it

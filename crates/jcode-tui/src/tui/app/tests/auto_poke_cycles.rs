@@ -1,4 +1,48 @@
 #[test]
+fn auto_poke_status_alias_does_not_rearm_but_required_work_does() {
+    with_temp_jcode_home(|| {
+        let mut app = create_test_app();
+        app.auto_poke_incomplete_todos = true;
+        let mut todos = vec![crate::todo::TodoItem {
+            id: "compile".into(),
+            content: "Compile".into(),
+            status: "in_progress".into(),
+            priority: "high".into(),
+            ..Default::default()
+        }];
+        crate::todo::save_todos(&app.session.id, &todos).unwrap();
+        assert!(app.schedule_auto_poke_followup_if_needed());
+        app.queued_messages.clear();
+        app.pending_queued_dispatch = false;
+        assert!(!app.schedule_auto_poke_followup_if_needed());
+        todos[0].status = " IN-PROGRESS ".into();
+        crate::todo::save_todos(&app.session.id, &todos).unwrap();
+        // Equivalent spelling must not buy another queued continuation.
+        assert!(!app.schedule_auto_poke_followup_if_needed());
+        app.queued_messages.clear();
+        app.pending_queued_dispatch = false;
+        for details in [
+            "same work, more context",
+            "Also test crates/changed.rs before acceptance",
+        ] {
+            todos[0].details = Some(details.into());
+            crate::todo::save_todos(&app.session.id, &todos).unwrap();
+            assert!(app.schedule_auto_poke_followup_if_needed());
+            app.queued_messages.clear();
+            app.pending_queued_dispatch = false;
+        }
+        todos.push(crate::todo::TodoItem {
+            id: "test".into(),
+            content: "Test".into(),
+            status: "pending".into(),
+            ..Default::default()
+        });
+        crate::todo::save_todos(&app.session.id, &todos).unwrap();
+        assert!(app.schedule_auto_poke_followup_if_needed());
+    });
+}
+
+#[test]
 fn auto_poke_stays_armed_when_a_turn_has_no_todos() {
     with_temp_jcode_home(|| {
         let mut app = create_test_app();
@@ -270,6 +314,10 @@ fn peer_auto_poke_is_shown_and_suppresses_duplicate_local_poke() {
             !app.schedule_auto_poke_followup_if_needed(),
             "this window must not re-poke the same open work a peer already poked"
         );
+        let mut todos = crate::todo::load_todos(&app.session.id).unwrap();
+        todos[0].status = " PENDING ".into();
+        crate::todo::save_todos(&app.session.id, &todos).unwrap();
+        assert!(!app.schedule_auto_poke_followup_if_needed());
     });
 }
 

@@ -78,6 +78,97 @@ fn pokes_open_work_once_per_distinct_state() {
 }
 
 #[test]
+fn continuation_status_alias_does_not_rearm_but_required_work_does() {
+    let mut policy = FollowUpPolicy::new(true);
+    let mut state = snapshot(vec![todo("compile", "in_progress")]);
+    assert_eq!(
+        kind(&policy.decide(&state)),
+        Some(FollowUpKind::IncompleteTodos)
+    );
+    assert_eq!(policy.decide(&state), Decision::default());
+    state.todos[0].status = " IN-PROGRESS ".into();
+    // Equivalent spelling carries no new work, unlike a real status transition.
+    assert_eq!(policy.decide(&state), Decision::default());
+    for details in [
+        "same work, more context",
+        "Also test crates/changed.rs before acceptance",
+    ] {
+        state.todos[0].details = Some(details.into());
+        assert_eq!(
+            kind(&policy.decide(&state)),
+            Some(FollowUpKind::IncompleteTodos)
+        );
+    }
+    state.todos.push(todo("test", "pending"));
+    assert_eq!(
+        kind(&policy.decide(&state)),
+        Some(FollowUpKind::IncompleteTodos)
+    );
+    state.todos[0].status = "pending".into();
+    assert_eq!(
+        kind(&policy.decide(&state)),
+        Some(FollowUpKind::IncompleteTodos)
+    );
+    // Claimed verification becomes stale: the existing gate must run again.
+    let mut evidence = FollowUpPolicy::new(true);
+    let mut checked = snapshot(vec![done("test", ConfidenceState::Verified)]);
+    assert_eq!(
+        kind(&evidence.decide(&checked)),
+        Some(FollowUpKind::FinalResponse)
+    );
+    checked.todos[0].completion_confidence = Some(ConfidenceState::Speculative);
+    assert_eq!(
+        kind(&evidence.decide(&checked)),
+        Some(FollowUpKind::CompletionValidation)
+    );
+}
+
+#[test]
+fn continuation_fingerprint_preserves_unknown_status_order_and_requirements() {
+    let original = vec![todo("compile", "in_progress"), todo("test", "pending")];
+    let fingerprint = crate::incomplete_todo_fingerprint(&original).unwrap();
+    assert_eq!(fingerprint, serde_json::to_string(&original).unwrap());
+    for (field, value) in [
+        ("status", serde_json::json!("unknown-state")),
+        (
+            "details",
+            serde_json::json!("Must verify the acceptance path"),
+        ),
+        ("priority", serde_json::json!("low")),
+        ("assigned_to", serde_json::json!("worker-2")),
+        ("blocked_by", serde_json::json!(["dependency"])),
+        ("stage", serde_json::json!(2)),
+        (
+            "confidence_history",
+            serde_json::json!(["speculative", "verified"]),
+        ),
+    ] {
+        let mut changed = serde_json::to_value(&original).unwrap();
+        changed[0][field] = value;
+        let changed: Vec<TodoItem> = serde_json::from_value(changed).unwrap();
+        assert_ne!(
+            fingerprint,
+            crate::incomplete_todo_fingerprint(&changed).unwrap(),
+            "{field}"
+        );
+    }
+    let mut reversed = original.clone();
+    reversed.reverse();
+    assert_ne!(
+        fingerprint,
+        crate::incomplete_todo_fingerprint(&reversed).unwrap()
+    );
+    let mut unknown = original;
+    unknown[0].status = "unknown-state".into();
+    let before = crate::incomplete_todo_fingerprint(&unknown).unwrap();
+    unknown[0].status = " UNKNOWN-STATE ".into();
+    assert_ne!(
+        before,
+        crate::incomplete_todo_fingerprint(&unknown).unwrap()
+    );
+}
+
+#[test]
 fn no_todos_stays_armed_and_quiet() {
     let mut policy = FollowUpPolicy::new(true);
     assert_eq!(policy.decide(&TodoSnapshot::default()), Decision::default());

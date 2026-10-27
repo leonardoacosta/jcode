@@ -315,7 +315,8 @@ impl FollowUpPolicy {
         self.spike_challenged = false;
         self.last_ownership_fingerprint = None;
         let message = build_auto_poke_message(incomplete.len());
-        let fingerprint = serde_json::to_string(incomplete).unwrap_or_else(|_| message.clone());
+        let fingerprint = crate::incomplete_todo_fingerprint(incomplete.iter().copied())
+            .unwrap_or_else(|_| message.clone());
         if self.last_poke_fingerprint.as_ref() == Some(&fingerprint) {
             // Same open work as the last poke: the model is stalled, not
             // progressing. Do not loop.
