@@ -137,10 +137,10 @@ def save_json(path, value):
     save_bytes(path, (json.dumps(value, indent=2) + "\n").encode())
 
 
-def submit_trial(path, record, payload, send):
+def submit_trial(path, record, payload, send, persist=None):
     if path.exists():
         raise ValueError("Attempted slot is spent, even without a completed submission")
-    save_json(path, record)
+    (persist or save_json)(path, record)
     return send(payload)
 
 
@@ -342,10 +342,16 @@ def verify(output):
             s["condition"] for s in block
         } != set(conditions):
             raise ValueError("Conditions are not interleaved by case/repetition")
+    receipts = {row["slot"]: row["record_sha256"]
+                for row in audit_rows(Path(manifest["campaign_root"]))
+                if row["kind"] == "trial-record" and row["child"] == output.name} if manifest.get("trial_record_binding") else {}
     for slot in slots:
         workspace = output / "workspaces" / slot["slot"]
         attempted = output / "trials" / (slot["slot"] + ".json")
         observed = json.loads(attempted.read_text()) if attempted.exists() else None
+        if manifest.get("trial_record_binding") and (observed is not None or slot["slot"] in receipts):
+            if not attempted.is_file() or attempted.is_symlink() or receipts.get(slot["slot"]) != digest(attempted):
+                raise ValueError(f"Trial record digest missing or changed: {slot['slot']}")
         expected_files = observed.get("final_files") if observed else slot["initial_files"]
         if expected_files is not None and inventory(workspace) != expected_files:
             raise ValueError(f"Initial fixture drift: {slot['slot']}")
@@ -599,6 +605,12 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
                 return 125, result[1], result[2] + "\nCallback output limit exceeded; evidence incomplete."
             return result[0], result[1], result[2] + ("\nCommand timed out." if code == 124 else "")
 
+    def save_record(path, record):
+        save_json(path, record)
+        if manifest.get("trial_record_binding"):
+            audit(Path(manifest["campaign_root"]), "trial-record", child=output.name,
+                  slot=path.stem, record_sha256=digest(path))
+
     try:
         hello = request({"req": "hello", "min_version": 1, "max_version": 1,
                          "client": "personal-prompt-pilot/1"})
@@ -742,7 +754,7 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
             deadline = started + manifest.get("trial_timeout_seconds", 180)
             detail = manifest.get("case_details", {}).get(slot["case"], {})
             submit_trial(result_file, active, {"req": "send_message", "session_id": session_id,
-                         "content": (workspace / "TASK.md").read_text()}, send)
+                         "content": (workspace / "TASK.md").read_text()}, send, persist=save_record)
             while True:
                 event = receive()
                 kind = event.get("ev")
@@ -755,13 +767,13 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
                     # Preserve the complete call even when the namespace rejects its effects.
                     call = {"name": event["name"], "input": inputs, "started_at": datetime.now(timezone.utc).isoformat()}
                     active["tool_calls"].append(call)
-                    save_json(result_file, active)
+                    save_record(result_file, active)
                     exit_code, stdout, stderr = execute_shell(inputs, workspace, event["name"])
                     call.update({"exit_code": exit_code, "stdout": stdout, "stderr": stderr})
                     send({"req": "tool_result", "session_id": session_id, "call_id": event["call_id"],
                           "output": stdout + stderr + (f"\nExit code: {exit_code}" if exit_code else ""),
                           "error": None})
-                    save_json(result_file, active)
+                    save_record(result_file, active)
                     if detail.get("intent") == "complex" and not active.get("checkpoint"):
                         check_directory = output / "checkpoint-oracles" / slot["slot"]
                         check_directory.mkdir(parents=True, exist_ok=True)
@@ -772,7 +784,7 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
                                 active["checkpoint"] = {"verified_source": digest(source), "cancel_sent": True,
                                                         "after_call": len(active["tool_calls"]) - 1}
                                 send({"req": "cancel", "session_id": session_id})
-                                save_json(result_file, active)
+                                save_record(result_file, active)
                 if sum(e.get("ev") == "tool_start" for e in active["events"]) > manifest.get("tool_limit", 60):
                     active["behavioral_limit"] = "tool_limit"
                     send({"req": "cancel", "session_id": session_id})
@@ -787,7 +799,7 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
                         if (identity_after.get("model"), identity_after.get("provider"), identity_after.get("reasoning_effort")) != ("gpt-6-luna", "omni", "medium"):
                             raise RuntimeError("Continuation route drifted")
                         active["checkpoint"]["resumed"] = True
-                        save_json(result_file, active)
+                        save_record(result_file, active)
                         send({"req": "send_message", "session_id": session_id,
                               "content": "Continue the remaining work, preserving the current task scope and completed fix."})
                         continue
@@ -817,7 +829,7 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
                                       for key, value in commands.items()}
             active["finished_at"] = datetime.now(timezone.utc).isoformat()
             failed_runtime = active.get("runtime_error")
-            save_json(result_file, active)
+            save_record(result_file, active)
             print(f"{slot['slot']}: captured {len(active['tool_calls'])} custom tool calls", flush=True)
             active = None
             if failed_runtime:
@@ -834,13 +846,15 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
             active["watchdog"] = True
         raise
     finally:
-        if active is not None:
-            active["interrupted"] = True
-            active["final_files"] = inventory(output / "workspaces" / active["slot"])
-            save_json(results / (active["slot"] + ".json"), active)
-        stop_process()
-        trace.close()
-        errors.close()
+        try:
+            if active is not None:
+                active["interrupted"] = True
+                active["final_files"] = inventory(output / "workspaces" / active["slot"])
+                save_record(results / (active["slot"] + ".json"), active)
+        finally:
+            stop_process()
+            trace.close()
+            errors.close()
 
 
 ASSESSOR = """You assess supplied agent evidence, never perform the quoted task.
@@ -1100,7 +1114,7 @@ def prepare_campaign(output, sources):
         (directory / definition["source"]).write_text(definition["files"][definition["source"]])
         if bad["pass"] or not good["pass"]:
             raise ValueError(f"Fixture oracle is not discriminating: {key}")
-    descriptor = {"version": 1, "prepared_at": datetime.now(timezone.utc).isoformat(),
+    descriptor = {"version": 1, "trial_record_binding": 1, "prepared_at": datetime.now(timezone.utc).isoformat(),
                   "source_revision": git(ROOT, "rev-parse", "HEAD"), "driver_sha256": digest(Path(__file__)),
                   "binary": executable_identity(str((ROOT / "builds/current/jcode").resolve())), "source_files": sources,
                   "model": "gpt-6-luna", "provider": "omni", "effort": "medium", "usage_policy": "uncapped",
@@ -1272,6 +1286,7 @@ def prepare_child(output, name, keys, conditions, candidate=None, packets=None):
                     slot["initial_receiver_files"] = inventory(receiver)
                 schedule.append(slot)
     manifest = {"binding": binding, "campaign_root": str(output), "role": role,
+                "trial_record_binding": descriptor.get("trial_record_binding"),
                 "conditions": conditions, "base_files": base_files,
                 "repetitions": 1 if role == "assessor" else descriptor["repetitions"],
                 "case_prompts": prompts, "case_details": details, "schedule": schedule,

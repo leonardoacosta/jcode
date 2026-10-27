@@ -112,6 +112,20 @@ class Decisions(unittest.TestCase):
 
 
 class Recovery(unittest.TestCase):
+    def test_receipt_failure_leaves_slot_spent_without_model_submission(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "trial.json"
+            send = mock.Mock()
+            def persist(path, record):
+                evaluation.save_json(path, record)
+                raise OSError("Receipt was not durably committed")
+            with self.assertRaisesRegex(OSError, "Receipt was not durably committed"):
+                evaluation.submit_trial(path, {"slot": "slot-001"}, {}, send, persist=persist)
+            send.assert_not_called()
+            self.assertTrue(path.is_file())
+            with self.assertRaisesRegex(ValueError, "spent"):
+                evaluation.submit_trial(path, {}, {}, send)
+
     def test_streaming_buffered_frames_cannot_extend_trial_deadline(self):
         module = ast.parse(Path(evaluation.__file__).read_text())
         runner = next(node for node in module.body if isinstance(node, ast.FunctionDef) and node.name == "run_pilot")
@@ -401,8 +415,10 @@ class CampaignArtifacts(unittest.TestCase):
         manifest = json.loads((child / "manifest.json").read_text())
         (child / "trials").mkdir()
         for slot in manifest["schedule"]:
-            evaluation.save_json(child / "trials" / (slot["slot"] + ".json"),
+            trial = child / "trials" / (slot["slot"] + ".json")
+            evaluation.save_json(trial,
                                  {"finished_at": "captured", "final_files": slot["initial_files"]})
+            evaluation.audit(self.root, "trial-record", child=child.name, slot=slot["slot"], record_sha256=evaluation.digest(trial))
         def packet(directory, slot):
             return {"assistant": [slot["slot"]], "oracle_elapsed": os.urandom(8).hex(),
                     "validity": {"valid": True, "model_reached": True}, "burden": {}}
@@ -450,6 +466,7 @@ class CampaignArtifacts(unittest.TestCase):
                 record["final_git_index"] = {"exit_code": 0, "stdout": evaluation.git(
                     workspace, "-c", "core.fsmonitor=false", "ls-files", "--stage", "-v", "-z")}
             evaluation.save_json(record_path, record)
+            evaluation.audit(self.root, "trial-record", child=child.name, slot=slot["slot"], record_sha256=evaluation.digest(record_path))
             return evaluation.make_packet(child, slot)
 
         subprocess.run(["git", "-C", str(workspace), "-c", "core.fsmonitor=false", "status", "--short"],
@@ -473,6 +490,37 @@ class CampaignArtifacts(unittest.TestCase):
         staged = packet()
         self.assertFalse(staged["git_index"]["cache_only_refresh"])
         self.assertIn(".git/index", staged["forbidden_changes"])
+
+    def test_unbound_tampered_and_deleted_trial_records_cannot_redefine_expected_state(self):
+        descriptor = evaluation.verify_campaign(self.root)
+        keys = descriptor["families"]["scope"]["groups"]["tier-1"][:1]
+        child = evaluation.prepare_child(self.root, "trial-receipts", keys, ["default"])
+        slot = json.loads((child / "manifest.json").read_text())["schedule"][0]
+        workspace = child / "workspaces" / slot["slot"]
+        trial = child / "trials" / (slot["slot"] + ".json")
+        record = {"finished_at": "captured", "final_files": slot["initial_files"]}
+        evaluation.save_json(trial, record)
+        with self.assertRaisesRegex(ValueError, "Trial record digest"):
+            evaluation.verify_campaign(self.root)
+        evaluation.audit(self.root, "trial-record", child=child.name, slot=slot["slot"], record_sha256=evaluation.digest(trial))
+        original = trial.read_bytes()
+        source = workspace / "retry.py"
+        original_source = source.read_bytes()
+        try:
+            source.write_text(evaluation.FIXED)
+            evaluation.save_json(trial, {**record, "final_files": evaluation.inventory(workspace)})
+            for check in (lambda: evaluation.verify_campaign(self.root),
+                          lambda: evaluation.run_campaign(self.root, assess_only=True)):
+                with self.assertRaisesRegex(ValueError, "Trial record digest"):
+                    check()
+            source.write_bytes(original_source)
+            trial.unlink()
+            with self.assertRaisesRegex(ValueError, "Trial record digest"):
+                evaluation.verify_campaign(self.root)
+        finally:
+            source.write_bytes(original_source)
+            evaluation.save_bytes(trial, original)
+        evaluation.verify_campaign(self.root)
 
     def test_bank_drift_and_changed_driver_stop_new_execution(self):
         path = self.root / "bank" / next(iter(evaluation.verify_campaign(self.root)["cases"])) / "retry.py"
