@@ -479,23 +479,28 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
     def receive():
         # readline on TextIOWrapper can buffer several frames beyond select's view.
         # A real-time alarm bounds the entire read, including a partial frame.
-        remaining = max(0.001, deadline - time.monotonic())
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            expire()
         previous = signal.signal(signal.SIGALRM, expire)
         signal.setitimer(signal.ITIMER_REAL, remaining)
         try:
-            line = process.stdout.readline()
+            line = process.stdout.readline(manifest.get("api_frame_bytes", 262144) + 1)
+            if not line:
+                raise RuntimeError("Private Jcode API disconnected; preserve attempted slot without retry")
+            if len(line.encode()) > manifest.get("api_frame_bytes", 262144) or not line.endswith("\n"):
+                raise RuntimeError("Private Jcode API frame exceeds limit or is truncated")
+            event = json.loads(line)
+            trace.write(json.dumps({"direction": "event", "frame": event}) + "\n")
+            trace.flush()
+            if active is None or len(active["events"]) % 64 == 0:
+                os.fsync(trace.fileno())
+            if active is not None:
+                active["events"].append(event)
+            return event
         finally:
             signal.setitimer(signal.ITIMER_REAL, 0)
             signal.signal(signal.SIGALRM, previous)
-        if not line:
-            raise RuntimeError("Private Jcode API disconnected; preserve attempted slot without retry")
-        event = json.loads(line)
-        trace.write(json.dumps({"direction": "event", "frame": event}) + "\n")
-        trace.flush()
-        os.fsync(trace.fileno())
-        if active is not None:
-            active["events"].append(event)
-        return event
 
     def request(payload):
         identifier = send(payload)
@@ -1096,6 +1101,7 @@ def prepare_campaign(output, sources):
                   "diff_limit": 120, "bloat_limit": 40, "token_budget": None, "cost_budget": None,
                   "elapsed_time_budget": None, "iteration_budget": 3, "diff_budget": 120,
                   "trial_timeout_seconds": 180, "callback_timeout_ms": 30000, "callback_output_bytes": 262144,
+                  "api_frame_bytes": 262144,
                   "tool_limit": 60, "families": families, "cases": bank,
                   "snapshots": inventory(output / "snapshots"), "oracles": inventory(output / "oracles"),
                   "bank": inventory(output / "bank")}
@@ -1178,10 +1184,14 @@ def audit(output, kind, **fields):
 
 
 def restore_target(output, descriptor):
-    decisions = [row for row in audit_rows(output) if row["kind"] == "decision"]
+    rows = audit_rows(output)
+    decisions = {row["family"]: row for row in rows if row["kind"] == "decision"}
+    confirmed = [row for row in rows if row["kind"] == "family" and row.get("status") == "confirmed-benchmark-lead"
+                 and decisions.get(row["family"], {}).get("result", {}).get("decision") == "KEEP"
+                 and decisions[row["family"]]["candidate"] == row["candidate"]]
     base = "bases/personal.md"
-    if decisions and decisions[-1]["result"]["decision"] == "KEEP":
-        row = decisions[-1]
+    if confirmed:
+        row = confirmed[-1]
         base = descriptor["families"][row["family"]]["candidates"][row["candidate"]]["base_file"]
     source = output / "snapshots" / base
     save_bytes(output / "experiment-target.md", source.read_bytes())
@@ -1260,7 +1270,7 @@ def prepare_child(output, name, keys, conditions, candidate=None, packets=None):
                 "replacement": candidate["replacement"] if candidate else [OLD, NEW],
                 "binary": descriptor["binary"], "tools": [] if role == "assessor" else ["bash", "write", "todo"],
                 "local_receiver": any(item["intent"] == "delivery" for item in details.values()),
-                **{key: descriptor[key] for key in ("trial_timeout_seconds", "callback_timeout_ms", "callback_output_bytes", "tool_limit")}}
+                **{key: descriptor[key] for key in ("trial_timeout_seconds", "callback_timeout_ms", "callback_output_bytes", "api_frame_bytes", "tool_limit")}}
     manifest.update({"run_id": name, "target_identity": details[keys[0]].get("family", "assessor"),
                      "target_baseline_digest": digest(output / "snapshots/bases/personal.md"),
                      "suite_identity": name, "suite_digest": value_digest({"cases": details, "binding": binding}),
@@ -1654,6 +1664,7 @@ def run_campaign(output, preflight_only=False, assess_only=False):
                         old, new = candidate["replacement"]
                         personal = (output / "snapshots/bases/personal.md").read_text()
                         target = output / "experiment-target.md"
+                        target_before = digest(target)
                         save_bytes(target, replace_atom(personal, old, new).encode())
                         child = prepare_child(output, name, spec["groups"][tier], ["default", "personal", "candidate"], candidate)
                         if not (child / "runtime-preflight.json").exists():
@@ -1661,14 +1672,14 @@ def run_campaign(output, preflight_only=False, assess_only=False):
                         run_pilot(child, campaign_owner=True)
                         result = compare_results(assess_child(output, child, allow_inference=True), spec["metric"])
                         if result["decision"] != "KEEP":
-                            save_bytes(target, personal.encode())
+                            restore_target(output, descriptor)
                         previous_decision = [row for row in audit_rows(output) if row["kind"] == "decision" and row["child"] == name]
                         if previous_decision and previous_decision[0]["result"] != result:
                             raise ValueError("Retained candidate decision changed")
                         if not previous_decision:
                             audit(output, "decision", family=family, candidate=number, child=name,
                                   suite_digest=json.loads((child / "manifest.json").read_text())["suite_digest"],
-                                  target_before=hashlib.sha256(personal.encode()).hexdigest(),
+                                  target_before=target_before,
                                   target_after=digest(target), result=result)
                         if result["decision"] == "KEEP":
                             name = f"{family}-confirmation-{number}"
@@ -1684,7 +1695,7 @@ def run_campaign(output, preflight_only=False, assess_only=False):
                             run_pilot(child, campaign_owner=True)
                             result = compare_results(assess_child(output, child, allow_inference=True), spec["metric"], confirmation=True)
                             if result["decision"] != "KEEP":
-                                save_bytes(target, personal.encode())
+                                restore_target(output, descriptor)
                             audit(output, "decision", stage="confirmation", family=family, candidate=number, child=name,
                                   suite_digest=json.loads((child / "manifest.json").read_text())["suite_digest"],
                                   target_after=digest(target), result=result)
@@ -1697,6 +1708,14 @@ def run_campaign(output, preflight_only=False, assess_only=False):
             except (OSError, ValueError, RuntimeError, KeyError, StopIteration) as error:
                 if preflight_only:
                     raise
+                accepted = [r for r in audit_rows(output) if r["kind"] == "decision" and r["family"] == family]
+                if accepted and accepted[-1]["result"]["decision"] == "KEEP":
+                    restore_target(output, descriptor)
+                    audit(output, "decision", stage="confirmation", family=family, candidate=accepted[-1]["candidate"],
+                          child=f"{family}-confirmation-{accepted[-1]['candidate']}",
+                          target_after=digest(output / "experiment-target.md"),
+                          result={"decision": "REVERT", "reason": "Execution failed before a confirmed lead: " + str(error)})
+                restore_target(output, descriptor)
                 audit(output, "family", family=family, status="blocked", reason=f"{type(error).__name__}: {error}")
                 if isinstance(error, (RuntimeError, OSError)) and not isinstance(error, TimeoutError):
                     for remaining in descriptor["families"]:

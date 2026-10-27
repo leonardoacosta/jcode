@@ -1,3 +1,4 @@
+import ast
 import json
 import os
 import subprocess
@@ -111,6 +112,37 @@ class Decisions(unittest.TestCase):
 
 
 class Recovery(unittest.TestCase):
+    def test_streaming_buffered_frames_cannot_extend_trial_deadline(self):
+        module = ast.parse(Path(evaluation.__file__).read_text())
+        runner = next(node for node in module.body if isinstance(node, ast.FunctionDef) and node.name == "run_pilot")
+        reader = next(node for node in runner.body if isinstance(node, ast.FunctionDef) and node.name == "receive")
+        process = mock.Mock()
+        process.stdout.readline.return_value = '{"ev":"text_delta","text":"stream"}\n'
+        def expire(*_):
+            raise TimeoutError("Trial/API watchdog expired")
+        namespace = {"time": mock.Mock(monotonic=mock.Mock(side_effect=[0, 1, 2, 3])),
+                     "deadline": 3, "signal": mock.Mock(), "expire": expire, "process": process,
+                     "manifest": {"api_frame_bytes": 262144}, "trace": mock.Mock(), "os": mock.Mock(),
+                     "json": json, "active": {"events": []}}
+        exec(compile(ast.Module(body=[reader], type_ignores=[]), evaluation.__file__, "exec"), namespace)
+        for _ in range(3):
+            namespace["receive"]()
+        with self.assertRaises(TimeoutError):
+            namespace["receive"]()
+        self.assertEqual(process.stdout.readline.call_count, 3)
+        self.assertEqual(len(namespace["active"]["events"]), 3)
+        self.assertEqual(namespace["os"].fsync.call_count, 1)
+        namespace["time"].monotonic = mock.Mock(return_value=0)
+        process.stdout.readline.return_value = 'x' * 262145 + '\n'
+        with self.assertRaisesRegex(RuntimeError, "frame exceeds limit"):
+            namespace["receive"]()
+        process.stdout.readline.return_value = '{"ev":"text_delta","text":"stream"}\n'
+        namespace.update(time=evaluation.time, signal=evaluation.signal, deadline=evaluation.time.monotonic() + .02)
+        namespace["trace"].flush.side_effect = lambda: evaluation.time.sleep(.1)
+        with self.assertRaises(TimeoutError):
+            namespace["receive"]()
+        self.assertEqual(evaluation.signal.getitimer(evaluation.signal.ITIMER_REAL)[0], 0)
+
     def test_real_process_death_preserves_spent_slot_before_and_after_send(self):
         for after_send in (False, True):
             with self.subTest(after_send=after_send), tempfile.TemporaryDirectory() as directory:
@@ -164,12 +196,32 @@ class Recovery(unittest.TestCase):
             evaluation.restore_target(root, descriptor)
             self.assertEqual((root / "experiment-target.md").read_bytes(), b"original\n")
             evaluation.audit(root, "decision", family="scope", candidate=0, result={"decision": "KEEP"})
+            evaluation.restore_target(root, descriptor)
+            self.assertEqual((root / "experiment-target.md").read_bytes(), b"original\n")
+            evaluation.audit(root, "family", family="scope", candidate=0, status="confirmed-benchmark-lead")
             (root / "experiment-target.md").write_bytes(b"interrupted garbage")
             evaluation.restore_target(root, descriptor)
             self.assertEqual((root / "experiment-target.md").read_bytes(), b"kept\n")
             evaluation.audit(root, "decision", family="scope", candidate=0, result={"decision": "REVERT"})
             evaluation.restore_target(root, descriptor)
             self.assertEqual((root / "experiment-target.md").read_bytes(), b"original\n")
+
+    def test_later_provisional_keep_and_revert_preserve_prior_confirmed_family(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "snapshots/bases").mkdir(parents=True)
+            for name in ("personal", "first", "second"):
+                (root / "snapshots/bases" / (name + ".md")).write_text(name)
+            descriptor = {"families": {name: {"candidates": [{"base_file": "bases/" + name + ".md"}]} for name in ("first", "second")}}
+            evaluation.save_json(root / "campaign.json", descriptor)
+            evaluation.audit(root, "decision", family="first", candidate=0, result={"decision": "KEEP"})
+            evaluation.audit(root, "family", family="first", candidate=0, status="confirmed-benchmark-lead")
+            evaluation.audit(root, "decision", family="second", candidate=0, result={"decision": "KEEP"})
+            evaluation.restore_target(root, descriptor)
+            self.assertEqual((root / "experiment-target.md").read_text(), "first")
+            evaluation.audit(root, "decision", family="second", candidate=0, result={"decision": "REVERT"})
+            evaluation.restore_target(root, descriptor)
+            self.assertEqual((root / "experiment-target.md").read_text(), "first")
 
 
 class Evidence(unittest.TestCase):
@@ -413,8 +465,16 @@ class Controller(unittest.TestCase):
                 descriptor["families"]["unavailable"] = {**spec, "unsupported": "Missing native capability"}
             evaluation.save_json(root / "campaign.json", descriptor)
             calls = []
+            original_audit = evaluation.audit
+
+            def write_audit(output, kind, **fields):
+                if mode == "audit-failure" and kind == "decision" and fields["result"]["decision"] == "REVERT":
+                    raise OSError("audit unavailable")
+                return original_audit(output, kind, **fields)
 
             def child(output, name, keys, conditions, candidate=None, packets=None):
+                if mode == "local-failure" and name.startswith("second-tier-1-baseline"):
+                    self.assertEqual((root / "experiment-target.md").read_text(), "original")
                 path = root / "runs" / name
                 path.mkdir(parents=True, exist_ok=True)
                 evaluation.save_json(path / "manifest.json", {"suite_digest": "frozen", "role": "actor", "schedule": []})
@@ -429,6 +489,10 @@ class Controller(unittest.TestCase):
                     raise RuntimeError("transport failed")
                 elif mode == "interrupt" and "candidate" in path.name:
                     raise KeyboardInterrupt()
+                elif mode == "local-failure" and path.name.startswith("first") and "candidate" in path.name:
+                    raise ValueError("family-local invalidity")
+                elif mode in ("confirmation-failure", "audit-failure") and "confirmation" in path.name:
+                    raise RuntimeError("confirmation transport failed")
 
             def assess(output, path, allow_inference=False):
                 self.assertTrue(allow_inference)
@@ -444,8 +508,13 @@ class Controller(unittest.TestCase):
             with mock.patch.object(evaluation, "verify_campaign", return_value=descriptor), \
                  mock.patch.object(evaluation, "prepare_child", side_effect=child), \
                  mock.patch.object(evaluation, "run_pilot", side_effect=run), \
+                 mock.patch.object(evaluation, "audit", side_effect=write_audit), \
                  mock.patch.object(evaluation, "assess_child", side_effect=assess):
-                if mode == "interrupt":
+                if mode == "audit-failure":
+                    with self.assertRaisesRegex(OSError, "audit unavailable"):
+                        evaluation.run_campaign(root)
+                    self.assertEqual((root / "experiment-target.md").read_text(), "original")
+                elif mode == "interrupt":
                     with self.assertRaises(KeyboardInterrupt):
                         evaluation.run_campaign(root)
                     self.assertEqual((root / "experiment-target.md").read_text(), "original")
@@ -462,6 +531,14 @@ class Controller(unittest.TestCase):
                         self.assertTrue(all(row["status"] == "plateau" for row in report["families"].values()))
                         self.assertFalse(any("confirmation" in name for name, _ in calls))
                         self.assertEqual((root / "experiment-target.md").read_text(), "original")
+                    elif mode == "local-failure":
+                        self.assertEqual(report["families"]["first"]["status"], "blocked")
+                        self.assertEqual(report["families"]["second"]["status"], "confirmed-benchmark-lead")
+                    elif mode == "confirmation-failure":
+                        self.assertEqual(report["confirmed_leads"], 0)
+                        self.assertEqual((root / "experiment-target.md").read_text(), "original")
+                        decisions = [r for r in evaluation.audit_rows(root) if r["kind"] == "decision"]
+                        self.assertEqual(decisions[-1]["result"]["decision"], "REVERT")
                     else:
                         self.assertEqual(report["status"], "blocked")
                         self.assertEqual(report["families"]["first"]["status"], "blocked")
@@ -481,6 +558,15 @@ class Controller(unittest.TestCase):
 
     def test_interrupted_candidate_restores_last_accepted_bytes(self):
         self.exercise("interrupt")
+
+    def test_family_local_candidate_failure_restores_before_independent_work(self):
+        self.exercise("local-failure")
+
+    def test_confirmation_runtime_failure_reverts_provisional_keep(self):
+        self.exercise("confirmation-failure")
+
+    def test_confirmation_audit_failure_cannot_restore_unconfirmed_candidate(self):
+        self.exercise("audit-failure")
 
 
 if __name__ == "__main__":
