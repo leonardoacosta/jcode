@@ -79,6 +79,18 @@ class Decisions(unittest.TestCase):
                 row["historical"] = "S3"
         self.assertEqual(evaluation.compare_results(rows, "outcome", True)["decision"], "REVERT")
 
+    def test_mixed_repetitions_report_task_block_totals_and_denominators(self):
+        rows = result_rows(confirmation=True)
+        for row in rows:
+            if row["condition"] != "candidate":
+                row["grade"]["outcome"] = "fail" if row["role"] != "challenge" or row["repetition"] == 1 else "pass"
+        result = evaluation.compare_results(rows, "outcome", True)
+        self.assertEqual(result["decision"], "KEEP")
+        self.assertEqual(set(result["task_block_scores"].values()), {1})
+        self.assertEqual(result["challenge_trials_per_condition"], 30)
+        self.assertEqual(result["candidate_trials"], 48)
+        self.assertEqual(result["paired_sign_p"], 1 / 1024)
+
     def test_burden_requires_correct_controls_and_useful_recovery(self):
         rows = result_rows("planning", True)
         self.assertEqual(evaluation.compare_results(rows, "planning", True)["decision"], "KEEP")
@@ -254,6 +266,7 @@ class CampaignArtifacts(unittest.TestCase):
     def test_registered_executable_argument_is_the_immutable_path(self):
         descriptor = evaluation.verify_campaign(self.root)
         self.assertEqual(descriptor["binary"]["argument"], descriptor["binary"]["path"])
+        self.assertEqual(evaluation.digest(self.root / "driver.py"), descriptor["driver_sha256"])
         self.assertEqual(len(descriptor["families"]), 5)
         self.assertEqual(sum(bool(spec["unsupported"]) for spec in descriptor["families"].values()), 2)
 
@@ -289,6 +302,85 @@ class CampaignArtifacts(unittest.TestCase):
         finally:
             evaluation.save_bytes(path, original)
 
+    def test_death_before_child_registration_retains_unpublished_preparation(self):
+        descriptor = evaluation.verify_campaign(self.root)
+        keys = descriptor["families"]["scope"]["groups"]["tier-1"][:1]
+        child = self.root / "runs" / "incomplete-preparation"
+        pid = os.fork()
+        if pid == 0:
+            with mock.patch.object(evaluation, "audit", side_effect=lambda *a, **kw: os._exit(73)):
+                evaluation.prepare_child(self.root, child.name, keys, ["personal"])
+            os._exit(74)
+        self.assertEqual(os.waitpid(pid, 0)[1] >> 8, 73)
+        self.assertFalse(child.exists())
+        orphans = list((self.root / "preparations").glob(child.name + "-*"))
+        self.assertEqual(len(orphans), 1)
+        self.assertTrue((orphans[0] / "manifest.json").is_file())
+        self.assertFalse((orphans[0] / "trials").exists())
+        evaluation.verify_campaign(self.root)
+        evaluation.prepare_child(self.root, child.name, keys, ["personal"])
+        self.assertTrue(child.is_dir())
+        self.assertTrue(orphans[0].is_dir(), "Partial preparation must remain retained")
+
+    def test_death_after_registration_recovers_only_the_bound_preparation(self):
+        descriptor = evaluation.verify_campaign(self.root)
+        keys = descriptor["families"]["scope"]["groups"]["tier-1"][:1]
+        child = self.root / "runs" / "publication-recovery"
+        pid = os.fork()
+        if pid == 0:
+            with mock.patch.object(Path, "rename", side_effect=lambda *a, **kw: os._exit(73)):
+                evaluation.prepare_child(self.root, child.name, keys, ["personal"])
+            os._exit(74)
+        self.assertEqual(os.waitpid(pid, 0)[1] >> 8, 73)
+        self.assertFalse(child.exists())
+        with self.assertRaisesRegex(ValueError, "child registration is incomplete"):
+            evaluation.verify_campaign(self.root)
+        evaluation.verify_campaign(self.root, recover=True)
+        self.assertTrue((child / "manifest.json").is_file())
+        self.assertFalse((child / "trials").exists())
+        self.assertEqual(evaluation.prepare_child(self.root, child.name, keys, ["personal"]), child)
+        registrations = [r for r in evaluation.audit_rows(self.root) if r["kind"] == "prepared" and r["child"] == child.name]
+        self.assertEqual(len(registrations), 1)
+
+    def test_assessment_resume_reuses_frozen_oracle_packets(self):
+        descriptor = evaluation.verify_campaign(self.root)
+        keys = descriptor["families"]["scope"]["groups"]["tier-1"][:1]
+        child = evaluation.prepare_child(self.root, "packet-recovery", keys, ["default", "personal"])
+        manifest = json.loads((child / "manifest.json").read_text())
+        (child / "trials").mkdir()
+        for slot in manifest["schedule"]:
+            evaluation.save_json(child / "trials" / (slot["slot"] + ".json"),
+                                 {"finished_at": "captured", "final_files": slot["initial_files"]})
+        def packet(directory, slot):
+            return {"assistant": [slot["slot"]], "oracle_elapsed": os.urandom(8).hex(),
+                    "validity": {"valid": True, "model_reached": True}, "burden": {}}
+        with mock.patch.object(evaluation, "make_packet", side_effect=packet):
+            first = evaluation.assess_child(self.root, child)
+        with mock.patch.object(evaluation, "make_packet", side_effect=AssertionError("oracle reran on resume")):
+            self.assertEqual(evaluation.assess_child(self.root, child), first)
+        cached = child / "blind-packets.json"
+        original_cache = cached.read_bytes()
+        try:
+            data = json.loads(original_cache)
+            data["slots"].reverse()
+            evaluation.save_json(cached, data)
+            with self.assertRaisesRegex(ValueError, "packet cache drifted"):
+                evaluation.assess_child(self.root, child)
+            with self.assertRaisesRegex(ValueError, "packet cache drifted"):
+                evaluation.verify_campaign(self.root)
+        finally:
+            evaluation.save_bytes(cached, original_cache)
+        path = child / "trials" / "slot-001.json"
+        original = path.read_bytes()
+        try:
+            evaluation.save_json(path, {**json.loads(original), "tampered": True})
+            with self.assertRaisesRegex(ValueError, "packet inputs drifted"):
+                evaluation.assess_child(self.root, child)
+            with self.assertRaisesRegex(ValueError, "packet inputs drifted"):
+                evaluation.verify_campaign(self.root)
+        finally:
+            evaluation.save_bytes(path, original)
+
     def test_bank_drift_and_changed_driver_stop_new_execution(self):
         path = self.root / "bank" / next(iter(evaluation.verify_campaign(self.root)["cases"])) / "retry.py"
         original = path.read_bytes()
@@ -317,6 +409,8 @@ class Controller(unittest.TestCase):
                     "groups": {key: ["challenge-a", "challenge-b", "counter-a", "counter-b"] for key in ("tier-1", "tier-2", "confirmation")},
                     "candidates": [{"replacement": ["original", "candidate"], "base_file": "bases/candidate.md"}] * 3}
             descriptor = {"families": {"first": spec, "second": spec}, "lead_target": 2}
+            if mode == "common-failure":
+                descriptor["families"]["unavailable"] = {**spec, "unsupported": "Missing native capability"}
             evaluation.save_json(root / "campaign.json", descriptor)
             calls = []
 
@@ -369,7 +463,10 @@ class Controller(unittest.TestCase):
                         self.assertFalse(any("confirmation" in name for name, _ in calls))
                         self.assertEqual((root / "experiment-target.md").read_text(), "original")
                     else:
-                        self.assertTrue(all(row["status"] == "blocked" for row in report["families"].values()))
+                        self.assertEqual(report["status"], "blocked")
+                        self.assertEqual(report["families"]["first"]["status"], "blocked")
+                        self.assertEqual(report["families"]["second"]["status"], "blocked")
+                        self.assertEqual(report["families"]["unavailable"]["status"], "unsupported")
                         self.assertEqual(len(calls), 2)
             # All effects above are simulated; no actor or judge process is launched.
 

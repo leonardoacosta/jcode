@@ -996,6 +996,7 @@ def confined_oracle(directory, check):
 def prepare_campaign(output, sources):
     from benchmark_discovery_rate import executable_identity
 
+    save_bytes(output / "driver.py", Path(__file__).read_bytes())
     personal = (output / "snapshots/bases/personal.md").read_text()
     (output / "snapshots/bases/assessor.md").write_text(ASSESSOR)
     (output / "snapshots/bases/reviewer.md").write_text(REVIEWER)
@@ -1104,7 +1105,7 @@ def prepare_campaign(output, sources):
     print(f"PASS: registered {len(families)} families, sealed case/candidate banks; no inference")
 
 
-def verify_campaign(output):
+def verify_campaign(output, recover=False):
     descriptor = json.loads((output / "campaign.json").read_text())
     if digest(output / "campaign.json") != json.loads((output / "registration.json").read_text())["descriptor_sha256"]:
         raise ValueError("Registered descriptor drifted")
@@ -1116,6 +1117,25 @@ def verify_campaign(output):
         if inventory(output / name) != descriptor[name]:
             raise ValueError(f"Frozen {name} drifted")
     rows = audit_rows(output)  # A partial/corrupt audit never silently becomes a new run.
+    if recover:
+        for row in rows:
+            if row["kind"] == "prepared" and not (output / "runs" / row["child"]).exists() and row.get("preparation"):
+                staged = output / "preparations" / row["preparation"]
+                if (staged.parent.resolve() != (output / "preparations").resolve()
+                        or digest(staged / "manifest.json") != row["manifest_sha256"]
+                        or (staged / "trials").exists() or (staged / "api-trace.ndjson").exists()):
+                    raise ValueError("Incomplete child preparation cannot be safely published")
+                staged.rename(output / "runs" / row["child"])
+                audit(output, "recovered-preparation", child=row["child"])
+    for row in rows:
+        if row["kind"] == "packets":
+            child = output / "runs" / row["child"]
+            if digest(child / "blind-packets.json") != row["packets_sha256"]:
+                raise ValueError("Frozen assessment packet cache drifted")
+            if json.loads((child / "blind-packets.json").read_text())["inputs_sha256"] != value_digest({
+                    "manifest": digest(child / "manifest.json"), "trials": inventory(child / "trials"),
+                    "workspaces": inventory(child / "workspaces")}):
+                raise ValueError("Frozen assessment packet inputs drifted")
     registered = [row for row in rows if row["kind"] == "prepared"]
     children = {path.name: path for path in (output / "runs").glob("*")} if (output / "runs").exists() else {}
     if len(registered) != len(children) or {row["child"] for row in registered} != set(children):
@@ -1170,7 +1190,7 @@ def restore_target(output, descriptor):
 
 
 def prepare_child(output, name, keys, conditions, candidate=None, packets=None):
-    descriptor = verify_campaign(output)
+    descriptor = verify_campaign(output, recover=True)
     directory = output / "runs" / name
     role = "assessor" if packets is not None else "actor"
     base_files = {key: f"bases/{key}.md" for key in conditions}
@@ -1188,7 +1208,10 @@ def prepare_child(output, name, keys, conditions, candidate=None, packets=None):
             raise ValueError("Frozen child manifest drifted or has incomplete registration")
         verify(directory)
         return directory
-    directory.mkdir(parents=True)
+    final = directory
+    final.parent.mkdir(exist_ok=True)
+    (output / "preparations").mkdir(exist_ok=True)
+    directory = Path(tempfile.mkdtemp(prefix=name + "-", dir=output / "preparations"))
     for key in ("snapshots", "oracles"):
         (directory / key).symlink_to(output / key, target_is_directory=True)
     (directory / "templates").mkdir()
@@ -1248,8 +1271,10 @@ def prepare_child(output, name, keys, conditions, candidate=None, packets=None):
                      **{key: descriptor[key] for key in ("owner", "human_review_required", "diff_limit", "bloat_limit",
                                                        "token_budget", "cost_budget", "elapsed_time_budget", "iteration_budget", "diff_budget", "plateau_limit")}})
     save_json(directory / "manifest.json", manifest)
-    audit(output, "prepared", child=name, binding_sha256=value_digest(binding), manifest_sha256=digest(directory / "manifest.json"))
-    return directory
+    audit(output, "prepared", child=name, preparation=directory.name,
+          binding_sha256=value_digest(binding), manifest_sha256=digest(directory / "manifest.json"))
+    directory.rename(final)
+    return final
 
 
 def text_output(record):
@@ -1398,9 +1423,13 @@ def bind_grade(packet, response):
 def assess_child(output, child, allow_inference=False):
     manifest = json.loads((child / "manifest.json").read_text())
     packets, slots = {}, []
+    inputs_digest = value_digest({"manifest": digest(child / "manifest.json"),
+                                 "trials": inventory(child / "trials"),
+                                 "workspaces": inventory(child / "workspaces")})
+    retained = child / "blind-packets.json"
     # Sort on content hashes, not schedule positions, before assigning blind ids.
     inputs, missing = [], []
-    for slot in manifest["schedule"]:
+    for slot in manifest["schedule"] if not retained.exists() else []:
         path = child / "trials" / (slot["slot"] + ".json")
         record = json.loads(path.read_text()) if path.exists() else {}
         if not record.get("finished_at"):
@@ -1417,9 +1446,19 @@ def assess_child(output, child, allow_inference=False):
         identity = f"packet-{number:03d}"
         packets[identity] = packet
         slots.append((identity, slot))
+    if retained.exists():
+        bindings = [row for row in audit_rows(output) if row["kind"] == "packets" and row["child"] == child.name]
+        if len(bindings) != 1 or bindings[0]["packets_sha256"] != digest(retained):
+            raise ValueError("Frozen assessment packet cache drifted or incomplete")
+        cached = json.loads(retained.read_text())
+        if cached.get("inputs_sha256") != inputs_digest:
+            raise ValueError("Frozen assessment packet inputs drifted")
+        packets, slots, missing = cached["packets"], cached["slots"], cached["missing"]
     if not slots:
         return missing
-    save_json(child / "blind-packets.json", packets)
+    if not retained.exists():
+        save_json(retained, {"inputs_sha256": inputs_digest, "packets": packets, "slots": slots, "missing": missing})
+        audit(output, "packets", child=child.name, packets_sha256=digest(retained))
     assessor = prepare_child(output, child.name + "-assessor", list(packets), ["assessor"], packets=packets)
     if allow_inference:
         if not (assessor / "runtime-preflight.json").exists():
@@ -1491,9 +1530,9 @@ def compare_results(rows, metric, confirmation=False):
         effect = (before - after) / before if before else 0
     else:
         effect = sum(before - after for before, after in improvements) / len(improvements)
-    scores = [statistics.median(before for before, _ in block) - statistics.median(after for _, after in block)
-              if metric == "planning" else sum(before - after for before, after in block) for block in blocks.values()]
-    wins, losses = sum(score > 0 for score in scores), sum(score < 0 for score in scores)
+    scores = {case: statistics.median(before for before, _ in block) - statistics.median(after for _, after in block)
+              if metric == "planning" else sum(before - after for before, after in block) for case, block in blocks.items()}
+    wins, losses = sum(score > 0 for score in scores.values()), sum(score < 0 for score in scores.values())
     probability = sign_probability(wins, losses)
     informative = len(contexts) >= 2 and all(sum(values) > 0 for values in contexts.values())
     threshold = 0.30 if metric == "planning" else 0.20
@@ -1505,6 +1544,7 @@ def compare_results(rows, metric, confirmation=False):
                              == collections.Counter((key, repetition) for key in PROMPTS for repetition in (1, 2, 3)))
     keep = effect >= threshold and informative and (not confirmation or (complete_confirmation and probability <= 0.01))
     return {"decision": "KEEP" if keep else "REVERT", "effect": effect, "wins": wins, "losses": losses,
+            "task_block_scores": scores, "challenge_trials_per_condition": len(challenges), "candidate_trials": len(candidates),
             "paired_sign_p": probability, "confirmation": confirmation,
             "reason": "Declared effect and gates satisfied" if keep else "Effect, transfer, or confirmation threshold not met"}
 
@@ -1555,10 +1595,14 @@ def campaign_report(output):
             sessions.append(record["session_id"])
     if len(sessions) != len(set(sessions)):
         raise ValueError("Campaign reused a trial session")
+    for role in ("actor", "assessor"):
+        if role + "_scheduled" in counts:
+            counts[role + "_unattempted"] = counts[role + "_scheduled"] - counts[role + "_attempted"]
     report = {"families": families, "counts": dict(counts),
               "confirmed_leads": sum(row.get("status") == "confirmed-benchmark-lead" for row in families.values()),
               "model": "OmniRoute gpt-6-luna", "effort": "medium", "usage_policy": "uncapped", "cost": "unknown",
-              "status": "in_progress" if any(row["status"] == "pending" for row in families.values()) else "finished",
+              "status": "in_progress" if any(row["status"] == "pending" for row in families.values()) else (
+                  "blocked" if any(row["status"] == "blocked" for row in families.values()) else "finished"),
               "limitations": ["Model alias/upstream version and seed are not controlled.",
                               "Context inspection is not a complete provider-wire capture.",
                               "Applicable grading rules can partially reveal a condition; blinding is not double-blind.",
@@ -1569,7 +1613,7 @@ def campaign_report(output):
 
 def run_campaign(output, preflight_only=False, assess_only=False):
     with campaign_lock(output), contextlib.ExitStack() as cleanup:
-        descriptor = verify_campaign(output)
+        descriptor = verify_campaign(output, recover=True)
         if assess_only:
             for child in sorted((output / "runs").glob("*")) if (output / "runs").exists() else []:
                 if (child / "manifest.json").exists() and json.loads((child / "manifest.json").read_text())["role"] == "actor":
@@ -1657,7 +1701,9 @@ def run_campaign(output, preflight_only=False, assess_only=False):
                 if isinstance(error, (RuntimeError, OSError)) and not isinstance(error, TimeoutError):
                     for remaining in descriptor["families"]:
                         if not any(row["kind"] == "family" and row["family"] == remaining for row in audit_rows(output)):
-                            audit(output, "family", family=remaining, status="blocked", reason="Common private runtime prerequisite failed; no further submissions")
+                            reason = descriptor["families"][remaining]["unsupported"]
+                            audit(output, "family", family=remaining, status="unsupported" if reason else "blocked",
+                                  reason=reason or "Common private runtime prerequisite failed; no further submissions")
                     break
             if not preflight_only and campaign_report(output)["confirmed_leads"] >= descriptor["lead_target"]:
                 for remaining in descriptor["families"]:

@@ -19,8 +19,8 @@ Dependencies: group 1 for frozen inputs; 2.1 for decision evidence. Offline test
 
 ## 3. Capability-specific runtime preflights
 
-- [ ] 3.1 Bind the immutable serving executable and refresh actual process hash, empty sessions, context/tools, frozen pointers, separate sockets, networkless callbacks and protected grader checks for supported families. Confirm the run-owned `omni` profile selects `gpt-6-luna`/`medium`, with provider-only credential injection and no inference in preflight; save observed results and limitation reasons.
-- [ ] 3.2 Rehearse confined local delivery, native interruption/resume, recording tools/skill loading and actual compaction through supported APIs as each family requires. Verify authorized and forbidden paths using stand-ins without claiming model behavior; mark unsupported families explicitly and allow independent supported ones to proceed.
+- [x] 3.1 Bind the immutable serving executable and refresh actual process hash, empty sessions, context/tools, frozen pointers, separate sockets, networkless callbacks and protected grader checks for supported families. Confirm the run-owned `omni` profile selects `gpt-6-luna`/`medium`, with provider-only credential injection and no inference in preflight; save observed results and limitation reasons.
+- [x] 3.2 Rehearse confined local delivery, native interruption/resume, recording tools/skill loading and actual compaction through supported APIs as each family requires. Verify authorized and forbidden paths using stand-ins without claiming model behavior; mark unsupported families explicitly and allow independent supported ones to proceed.
 
 Dependencies: groups 1–2. Tools/environment: existing bwrap, pinned Jcode executable, Linux `/proc`, native `api --stdio`, existing OmniRoute profile and named env-file assignment. Never print or copy the credential. Missing route/access blocks inference; absent native capability blocks its family. Do not rebuild/reload the shared daemon or alter global provider settings.
 
