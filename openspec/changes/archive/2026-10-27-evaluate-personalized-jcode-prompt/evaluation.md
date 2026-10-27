@@ -421,3 +421,12 @@ Independent final review approved the scoped implementation and result claims wi
 no blocking finding (`final-review.md` in the private run). It independently
 recounted denominators and inspected raw evidence/incident handling. This approval
 covers the pilot report, not live adoption or unrun-family performance.
+
+Local lifecycle: native archive synchronized three added evaluation requirements,
+preserving the five existing requirements/twelve scenarios. The existing main spec
+is deliberately excluded by `.git/info/exclude`; its local synchronization is
+verified, not claimed as a tracked Git change. Its post-sync SHA-256 is
+`1f49826c943f293601af69f5748a77d581ce4a6bd86562d2e0b66d157687c893`. Owned proposal/delta/design/tasks/report artifacts are retained
+under `openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/` and
+committed locally. The pre-existing exclusion is unchanged; no unrelated baseline
+is forcibly tracked. Runtime evidence remains private; no remote push occurred.

@@ -27,7 +27,7 @@ Written-spec review and execution are approved. The latest user instruction auth
 ## 5. Review and Close the Selected Scope
 
 - [x] 5.1 Run fresh checks appropriate to the final fixture/procedure changes and `openspec validate evaluate-personalized-jcode-prompt --strict`; obtain independent review of the final scoped diff, requirement/case mapping, trial validity and claims. Repair actionable findings and rerun affected checks/review; verify unrelated MCP changes, user review, live prompts and shared runtime remain preserved. This is integration verification, not a substitute for each earlier task's checks.
-- [ ] 5.2 Update native task/change state from verified evidence, create only required scoped commits with the user's configured identity, and archive through the canonical workflow only after selected tasks, fresh gates and independent review actually complete. Verify commit/archive persistence and run-owned cleanup/evidence retention; leave blocked or unfinished tasks explicit. Do not include unrelated files, publish remotely, or adopt a prompt merely to close the change.
+- [x] 5.2 Update native task/change state from verified evidence, create only required scoped commits with the user's configured identity, and archive through the canonical workflow only after selected tasks, fresh gates and independent review actually complete. Verify commit/archive persistence and run-owned cleanup/evidence retention; leave blocked or unfinished tasks explicit. Do not include unrelated files, publish remotely, or adopt a prompt merely to close the change.
 
 ## Local preparation evidence
 
@@ -102,3 +102,17 @@ context/model bindings, semantic outcomes, preservation and no-benefit conclusio
 No blocking finding remains. Fresh focused assembly test, Python compilation,
 strict OpenSpec validation and whitespace checks pass. The last task is the
 authorized local lifecycle/persistence operation; no further inference is included.
+
+## Local lifecycle completion
+
+Native `openspec archive evaluate-personalized-jcode-prompt --yes` merged exactly
+three added requirements and moved this change to
+`archive/2026-10-27-evaluate-personalized-jcode-prompt`. The 11/12 warning referred
+to in-flight lifecycle task 5.2 itself; implementation and review were complete.
+Existing five main-spec requirements and twelve scenarios remain ahead of the new
+requirements. All four main specs pass strict validation. The existing main spec
+is local-only and excluded by `.git/info/exclude`; that boundary is preserved.
+Owned delta/archive/implementation artifacts receive scoped commits, while the
+synchronized main spec persists locally with its hash recorded in evaluation.md.
+No unrelated ignored baseline is forced into Git. Raw evidence stays private, all
+recorded run-owned processes exited, and no push/live adoption is included.
