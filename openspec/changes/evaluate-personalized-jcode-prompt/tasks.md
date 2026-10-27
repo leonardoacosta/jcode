@@ -21,12 +21,12 @@ Written-spec review and execution are approved. The latest user instruction auth
 
 ## 4. Run Only the Authorized Pilot and Assess Evidence
 
-- [ ] 4.1 After tasks 1.1-3.2 and the required written-spec review/execution request, run the 36 scheduled trials on the established authorized route; verify serving/context/model bindings and record scheduled, attempted, model-reached, valid, invalid and interrupted counts with raw local evidence. Stop at actual run/usage limits, retain failures, and do not silently replace invalid trials beyond the authorized schedule. If preflight is unavailable, report this task blocked with the exact dependency rather than claiming an evaluation result.
-- [ ] 4.2 Produce paired case/repetition results and blind qualitative adjudication with evidence references; verify boundary gates, useful outcomes, burden and validity remain separate. State no demonstrated benefit when controls already pass; report masking/confounds and missing evidence explicitly. Any observed boundary failure blocks advancement. Record which transfer, regression and combination checks would still be needed for adoption; perform no automatic live prompt edit, further campaign or publication.
+- [x] 4.1 After tasks 1.1-3.2 and the required written-spec review/execution request, run the 36 scheduled trials on the established authorized route; verify serving/context/model bindings and record scheduled, attempted, model-reached, valid, invalid and interrupted counts with raw local evidence. Stop at actual run/usage limits, retain failures, and do not silently replace invalid trials beyond the authorized schedule. If preflight is unavailable, report this task blocked with the exact dependency rather than claiming an evaluation result.
+- [x] 4.2 Produce paired case/repetition results and blind qualitative adjudication with evidence references; verify boundary gates, useful outcomes, burden and validity remain separate. State no demonstrated benefit when controls already pass; report masking/confounds and missing evidence explicitly. Any observed boundary failure blocks advancement. Record which transfer, regression and combination checks would still be needed for adoption; perform no automatic live prompt edit, further campaign or publication.
 
 ## 5. Review and Close the Selected Scope
 
-- [ ] 5.1 Run fresh checks appropriate to the final fixture/procedure changes and `openspec validate evaluate-personalized-jcode-prompt --strict`; obtain independent review of the final scoped diff, requirement/case mapping, trial validity and claims. Repair actionable findings and rerun affected checks/review; verify unrelated MCP changes, user review, live prompts and shared runtime remain preserved. This is integration verification, not a substitute for each earlier task's checks.
+- [x] 5.1 Run fresh checks appropriate to the final fixture/procedure changes and `openspec validate evaluate-personalized-jcode-prompt --strict`; obtain independent review of the final scoped diff, requirement/case mapping, trial validity and claims. Repair actionable findings and rerun affected checks/review; verify unrelated MCP changes, user review, live prompts and shared runtime remain preserved. This is integration verification, not a substitute for each earlier task's checks.
 - [ ] 5.2 Update native task/change state from verified evidence, create only required scoped commits with the user's configured identity, and archive through the canonical workflow only after selected tasks, fresh gates and independent review actually complete. Verify commit/archive persistence and run-owned cleanup/evidence retention; leave blocked or unfinished tasks explicit. Do not include unrelated files, publish remotely, or adopt a prompt merely to close the change.
 
 ## Local preparation evidence
@@ -71,8 +71,7 @@ inference, recorded in `preflight-index-refresh.json`, and optional locks disabl
 
 `family-rehearsal/checks.json` records synthetic fixture/stand-in verification for
 task 2.2. This does not run or claim behavioral results for later families. See
-`evaluation.md` for scope, limitations and commands. Tasks 4.1/4.2 remain uncompleted
-until actual trial execution and grading.
+`evaluation.md` for scope, limitations and commands. Tasks 4.1/4.2 are now verified by the completed pilot evidence below.
 
 Pre-inference independent review found the original bash-only implementation surface
 inadequate for the prompt's edit-tool rule. It was repaired before any inference:
@@ -82,3 +81,24 @@ review found overly broad run-file modes; the run-owned tree is now owner-only a
 new artifacts use umask `077`. No host-wide permissions were changed. Final
 pre-inference review and fresh no-model preflight are recorded under the selected
 run; no failed preflight consumed a behavioral slot.
+
+## Completed pilot evidence
+
+All 36 scheduled slots reached OmniRoute `gpt-6-luna` at matched `medium`. Counts:
+35 valid, 1 invalid retained (slot 001), 0 interrupted, 0 replacements. Every valid
+predeclared scope gate and useful-outcome check passed; personal and candidate both
+passed 12/12, so no behavioral improvement is demonstrated. Source-default has
+11/11 valid passes. All 18 implementation oracles/local checks passed; every S4
+response discloses unavailable staging. Frozen/live source hashes and final fixture
+inventories match recorded bindings. Raw incidents, blind grades before reveal,
+paired observations and burden remain private in the run; curated findings are in
+`evaluation.md`. Final review/closeout tasks remain pending until their gates pass.
+
+## Final independent review
+
+`final-review.md` in the private run independently approves the scoped commit range
+`18f55d40^..badb8bf8a`, pending result artifacts, 36-record counts, invalid retention,
+context/model bindings, semantic outcomes, preservation and no-benefit conclusion.
+No blocking finding remains. Fresh focused assembly test, Python compilation,
+strict OpenSpec validation and whitespace checks pass. The last task is the
+authorized local lifecycle/persistence operation; no further inference is included.

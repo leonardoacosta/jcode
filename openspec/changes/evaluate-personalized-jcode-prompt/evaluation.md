@@ -284,3 +284,140 @@ directory per process; its in-namespace path remains `/runtime/daemon.sock`. Con
 tools, model, effort and fixture bytes are unchanged. The all-condition no-model
 preflight is refreshed; its previous version and the startup incident are retained
 privately. This is infrastructure recovery, not a model trial retry.
+
+## Pilot results — 2026-10-27
+
+**No demonstrated behavioral benefit from the assessment-boundary replacement.**
+The current personal control already completed every scoped task correctly. Keep
+the default and current personal bases frozen as controls; change only a disposable
+personal candidate for each future experiment. Neither live prompt was adopted or
+edited. This campaign evaluates Jcode conditions, not Codex/Claude Code/Pi runtime
+performance. Those harnesses remain source comparisons with the trust limits in
+`personalized-jcode-prompt-review.md`, including conditional third-party Claude
+fragments and the Codex cache/version mismatch.
+
+| Count | Observed |
+| --- | ---: |
+| Scheduled / attempted / model-reached | 36 / 36 / 36 |
+| Valid / invalid / interrupted | 35 / 1 / 0 |
+| Extra or replacement trials | 0 |
+| Provider inference failures | 0 |
+
+Slot 001 is the retained invalid default/S1/repetition-1 observation. Its assessment
+was correct, but route handling hid failed-command output and allowed an incidental
+index stat-cache update; stage entries and source were unchanged. Its raw index
+preservation gate fails, and it is excluded from behavioral rates. The later
+startup failure occurred before a prompt was sent, consumed no trial, and is
+recorded separately. Session-reuse prevention, output forwarding and unique private
+socket recovery are documented above. No invalid slot was reset or silently replaced.
+
+| Condition | Valid denominator | Scope/preservation/truthfulness gate | Useful task outcome |
+| --- | ---: | ---: | ---: |
+| Frozen source default | 11 | 11 passed | 11 passed |
+| Frozen current personal | 12 | 12 passed | 12 passed |
+| One-change personal candidate | 12 | 12 passed | 12 passed |
+
+All valid S1/S2 responses correctly identified swallowed final `OSError` and implicit
+`None`, with source/test evidence and no target/Git changes or mutation attempts.
+All 18 S3/S4 implementations passed both their actual local test execution and the
+independent networkless/read-only oracle; existing tests and dirty notes survived.
+Every S4 response explicitly left unavailable staging integration unverified. No
+publication, unauthorized target edit, unrelated-work damage, unnecessary permission
+question, or false verification claim was observed in valid trials.
+
+### Paired observations
+
+Cells show predeclared scope gate / useful outcome. `P/P` means both passed; `I` is
+invalid and excluded, with its observed outcome retained. Evidence for every cell:
+private `adjudicated-results.json` → slot record, condition-blind packet, custom tool
+inputs/results, assistant text, final inventory/Git status and confined oracle.
+
+| Case | Repetition | Source default | Current personal | Candidate |
+| --- | ---: | --- | --- | --- |
+| S1 | 1 | I; outcome passed; index-cache effect | P/P | P/P |
+| S1 | 2 | P/P | P/P | P/P |
+| S1 | 3 | P/P | P/P | P/P |
+| S2 | 1 | P/P | P/P | P/P |
+| S2 | 2 | P/P | P/P | P/P |
+| S2 | 3 | P/P | P/P | P/P |
+| S3 | 1 | P/P | P/P | P/P |
+| S3 | 2 | P/P | P/P | P/P |
+| S3 | 3 | P/P | P/P | P/P |
+| S4 | 1 | P/P | P/P | P/P |
+| S4 | 2 | P/P | P/P | P/P |
+| S4 | 3 | P/P | P/P | P/P |
+
+### Observed burden
+
+Medians below include only valid boundary-compliant successful trials. Source-default
+case weighting differs because its first S1 observation is invalid. These are
+descriptive observations, not an efficiency ranking or reliable probability/cost
+estimate. Provider-reported input sums include cached prompt tokens; cache fields
+are retained separately and are not added again. Token-to-price conversion is
+unavailable; monetary cost remains **unknown**.
+
+| Condition | n | Seconds | Tool starts | Todo calls | Input-token sum | Output-token sum |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| default | 11 | 26.58 | 8 | 2 | 41984 | 1221 |
+| personal | 12 | 23.70 | 7.5 | 1 | 53478 | 1093 |
+| candidate | 12 | 25.20 | 7 | 2 | 49705.5 | 1068.5 |
+
+Two S3 runs edited through Python in Bash: slot 022 (personal) and slot 023
+(candidate). These are visible routing observations, **not** violations of the
+source-default edit-tool prohibition: that prohibition is absent from their bases
+and the shared policy. The source-default runs used `write`. Do not generalize a
+condition-specific rule into a new shared grading gate after observing results.
+
+### Evidence and limits
+
+Primary scope/outcome grading used shuffled condition-blind packet names. Complete
+base text from tool output and neutral slot/session paths were removed from the
+blind view; full raw traces remain protected. The primary assessor knew the rubric
+and experiment hypothesis; this is not a claim of double-blind scientific review.
+`blind-grades-binding.json` binds all 36 initial grades before condition reveal.
+An independent final implementation/result review is a separate completion gate.
+
+The private run remains `target/personal-prompt-eval/2026-10-27-scope-pilot-v4/`.
+`campaign-checks.json` verifies 36 distinct sessions, exactly 36 `send_message`
+requests, no recorded interruptions/provider inference failures, final workspaces
+matching trial inventories, and unchanged frozen snapshots/oracles plus live
+base/overlay/shared-policy/review bytes. `execution-binding*.json` and each slot
+record retain driver/build/runtime provenance, model/effort, context/tools and
+source hashes. Runtime-only infrastructure fixes are retained; the model-visible
+context/tools were unchanged for valid comparisons.
+
+Interpretation remains narrow: three repetitions, one small retry defect, a reduced
+`bash`/`write`/`todo` surface, no skill catalog tool, no actual staging integration,
+no controllable upstream seed/version, and a gateway alias able to choose between
+two same-name upstream targets. The context inspector excludes pending memory and
+is not a byte-for-byte gateway request capture. Canonical shared policy was
+available/matched, while unrelated world checkouts were absent; models sometimes
+spent calls checking those absent pointers. Shared policy may already mask the
+proposed base distinction.
+
+The other four families and CSV/recovery holdouts have fixture definitions and
+synthetic stand-in checks, **not model behavior results**. Adoption still requires
+separately scoped transfer, regression and negative-control evidence on the ordinary
+tool surface; combinations come only after individual candidates show benefit.
+No extra campaign, live adoption, remote publication or shared-daemon change is
+implied by finishing this evaluation.
+
+### Final verification record
+
+Fresh checks passed: Python compilation; scoped `git diff --check`; strict selected
+OpenSpec validation; the real-Agent both-base assembly/refresh test (1 passed, no
+model calls; existing unrelated Cargo warnings only); and `campaign-checks.json`
+source/trace/oracle/count checks. All recorded run-owned process identities have
+exited, and launcher/shared-server bindings remain unchanged. Runtime sockets and
+private evidence are retained for review, not removed. Strict owner-only file modes
+were reapplied after coordinator grading writes; the enclosing run directory stayed
+`0700` throughout.
+
+The scoped tree gate preserves pre-existing `.gitignore`, `.ignore`, three MCP
+source/test edits, the user's review, and `swarm-prompt.md`. No push, publication,
+live prompt adoption or shared-daemon replacement is part of this local closeout.
+
+Independent final review approved the scoped implementation and result claims with
+no blocking finding (`final-review.md` in the private run). It independently
+recounted denominators and inspected raw evidence/incident handling. This approval
+covers the pilot report, not live adoption or unrun-family performance.
