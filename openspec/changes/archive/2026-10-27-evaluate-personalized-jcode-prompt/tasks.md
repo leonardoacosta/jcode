@@ -52,8 +52,8 @@ evidence only; current callback probes verify the actual pilot executor.
 Independent preparation review found no blocking defect and confirmed the task 3.2
 synthetic manual grading decisions. All four template commit author/committer pairs
 match the user's configured identity here. Checkout-local-only identity remains a
-portability advisory for other environments. Final campaign review, spec synchronization
-and archival remain unfinished.
+portability advisory for other environments. At preparation time, final campaign review, spec synchronization and archival
+were unfinished; verified closeout is recorded below.
 
 ## Current execution preflight (2026-10-27)
 
@@ -92,7 +92,7 @@ passed 12/12, so no behavioral improvement is demonstrated. Source-default has
 response discloses unavailable staging. Frozen/live source hashes and final fixture
 inventories match recorded bindings. Raw incidents, blind grades before reveal,
 paired observations and burden remain private in the run; curated findings are in
-`evaluation.md`. Final review/closeout tasks remain pending until their gates pass.
+`evaluation.md`. Final review and local closeout subsequently passed, as recorded below.
 
 ## Final independent review
 
