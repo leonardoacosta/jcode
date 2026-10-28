@@ -351,6 +351,30 @@ class CampaignArtifacts(unittest.TestCase):
         self.assertTrue(all(not row["validity"]["valid"] for row in rows))
         self.assertEqual(evaluation.baseline_signal(rows, "outcome"), "blocked")
 
+    def test_child_freezes_initial_git_status_in_condition_blind_packet(self):
+        descriptor = evaluation.verify_campaign(self.root)
+        key = descriptor["families"]["scope"]["groups"]["tier-1"][0]
+        child = evaluation.prepare_child(self.root, "initial-git-status", [key], ["personal"])
+        manifest = json.loads((child / "manifest.json").read_text())
+        slot = manifest["schedule"][0]
+        workspace = child / "workspaces" / slot["slot"]
+        status = evaluation.git(workspace, "-c", "core.fsmonitor=false", "status", "--short", "--untracked-files=all")
+        self.assertEqual(slot["initial_git_status"], status)
+        self.assertIn("notes.txt", status)
+        self.assertIn(".jcode/system-prompt.md", status)
+
+        record = {"finished_at": "captured", "session_id": "initial-status-check",
+                  "final_files": slot["initial_files"],
+                  "final_git_status": {"exit_code": 0, "stdout": status, "stderr": ""}}
+        (child / "trials").mkdir()
+        path = child / "trials" / (slot["slot"] + ".json")
+        evaluation.save_json(path, record)
+        evaluation.audit(self.root, "trial-record", child=child.name, slot=slot["slot"],
+                          record_sha256=evaluation.digest(path))
+        packet = evaluation.make_packet(child, slot)
+        self.assertEqual(packet["initial_git_status"], status)
+        self.assertEqual(packet["final_git_status"]["stdout"], status)
+
     def test_tampered_child_cannot_be_reused(self):
         descriptor = evaluation.verify_campaign(self.root)
         spec = descriptor["families"]["scope"]

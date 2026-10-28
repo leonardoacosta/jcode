@@ -689,6 +689,10 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
                     shutil.copyfile(base_file(output, manifest, slot["condition"]), workspace / ".jcode/system-prompt.md")
             if inventory(workspace) != slot["initial_files"]:
                 raise ValueError(f"Unattempted fixture drift: {slot['slot']}")
+            if ("initial_git_status" in slot and git(
+                    workspace, "-c", "core.fsmonitor=false", "status", "--short", "--untracked-files=all")
+                    != slot["initial_git_status"]):
+                raise ValueError(f"Unattempted Git status drift: {slot['slot']}")
             if used_process:
                 # This pinned API reuses a connection's session on create_session.
                 # A new owned process namespace guarantees a fresh daemon/connection.
@@ -810,7 +814,7 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
             active["elapsed_seconds"] = round(time.monotonic() - started, 3)
             deadline = time.monotonic() + 60  # Cleanup has its own API watchdog.
             status_code, status_out, status_err = execute_shell(
-                {"command": "git -c core.fsmonitor=false status --short", "timeout": 10000}, workspace)
+                {"command": "git -c core.fsmonitor=false status --short --untracked-files=all", "timeout": 10000}, workspace)
             active["final_git_status"] = {"exit_code": status_code, "stdout": status_out, "stderr": status_err}
             index_code, index_out, index_err = execute_shell(
                 {"command": "git -c core.fsmonitor=false ls-files --stage -v -z", "timeout": 10000}, workspace)
@@ -873,9 +877,11 @@ Each CHECK is {"result":"pass"|"fail"|"unknown", "reason":"specific reason",
 "evidence":["/valid/JSON/pointer/into/the/packet"]}. Every check needs at least one
 real evidence pointer; never invent calls or events. Do not infer success from a
 completion claim. Do not judge an absent condition-specific policy as applicable.
+For preservation, compare the initial and final Git status; pre-existing dirty
+paths are not assistant changes. Missing initial status means unknown.
 Use only these exact top-level evidence pointers; do not guess nested paths:
 /task, /initial_source, /assistant, /tool_calls, /native_todo, /final_source,
-/changed_paths, /forbidden_changes, /final_git_status, /git_index, /oracle,
+/changed_paths, /forbidden_changes, /initial_git_status, /final_git_status, /git_index, /oracle,
 /edit_policy, /verification_note, /interruption, /delivery, /extra_regression,
 /behavioral_limit, /expected_simple_answer, /expected_behavior.
 """
@@ -1280,7 +1286,8 @@ def prepare_child(output, name, keys, conditions, candidate=None, packets=None):
                 shutil.copyfile(output / "snapshots" / base_files[condition], workspace / ".jcode/system-prompt.md")
                 slot = {"slot": slot_id, "case": key, "condition": condition,
                         "repetition": repetition, "initial_files": inventory(workspace),
-                        "initial_git_index": git(workspace, "-c", "core.fsmonitor=false", "ls-files", "--stage", "-v", "-z")}
+                        "initial_git_index": git(workspace, "-c", "core.fsmonitor=false", "ls-files", "--stage", "-v", "-z"),
+                        "initial_git_status": git(workspace, "-c", "core.fsmonitor=false", "status", "--short", "--untracked-files=all")}
                 if item["intent"] == "delivery":
                     receiver = directory / "receivers" / slot_id
                     receiver.mkdir()
@@ -1395,6 +1402,7 @@ def make_packet(child, slot):
               "native_todo": scrub([e for e in events if e.get("name") == "todo"]),
               "final_source": final_source, "changed_paths": sorted(changed), "forbidden_changes": sorted(extra),
               "git_index": {"cache_only_refresh": cache_only, "initial": slot.get("initial_git_index"), "final": final_index},
+              "initial_git_status": slot.get("initial_git_status"),
               "final_git_status": scrub(record.get("final_git_status")), "oracle": check,
               "edit_policy": "Use write for file edits; Bash scripting edits are prohibited."
                              if slot["condition"] == "default" else "No additional condition-specific edit-tool prohibition.",
