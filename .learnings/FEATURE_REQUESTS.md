@@ -4,7 +4,7 @@
 
 **Logged**: 2026-10-27T19:59:55.517218+00:00
 **Priority**: high
-**Status**: pending
+**Status**: resolved
 **Area**: tests
 
 ### Requested Capability
@@ -40,5 +40,7 @@ One further registration, V4, passed 72 fresh no-inference contexts, then stoppe
 The authorized successor V5 passed 72 fresh no-inference contexts, then stopped after nine planning actor attempts (eight runtime-valid, one HTTP 401 for an invalidated upstream OAuth token). Assessment-only recovery made no assessor calls; attempted grades remain unjudged. Across V1–V5 there are 79 actor attempts (74 valid, five invalid); no candidate or holdout has been opened. V5's audit binds all 28 predecessor roots. No credentials were changed. The feature remains pending under the common-runtime stop rule; see `openspec/changes/automate-personal-prompt-experiments/evaluation.md`.
 
 Authorized V6 bound all 29 predecessor roots and completed 144 actor plus 144 assessor slots, all runtime-valid. Independent review verified the audit chain, zero unattempted slots, and the final report. Isolation/scope baselines showed no replicated signal; planning is blocked by two unknown tier-2 preservation-boundary grades. No candidate or confirmation trial was eligible, so V6 produced no prompt lead or evidence plateau. V6 results and closeout evidence are in `openspec/changes/automate-personal-prompt-experiments/evaluation.md`; the feature remains pending and no prompt was adopted.
+
+Authorized V7 completed the supported campaign: all 144 actors and 144 assessors finished valid; planning, isolation and scope were baseline-sufficient at both tiers, while routing and continuity remain unsupported. No candidate or confirmation trial was eligible; no prompt improvement or global evidence plateau is claimed. Independent terminal review approved. The runner/capability request is resolved for this bounded delivery; no further campaign or prompt adoption is authorized. V7's post-run audit verified 30 prior result roots, including V3; predecessor hashes were not bound at registration. Full evidence and preserved V1–V7 links are in `openspec/changes/automate-personal-prompt-experiments/evaluation.md`.
 
 ---
