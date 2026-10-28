@@ -176,6 +176,56 @@ def inventory(directory):
     }
 
 
+def verify_predecessor_roots(repository_root, archive_root, roots):
+    repository_root, archive_root = Path(repository_root).resolve(), Path(archive_root).resolve()
+    for item in roots:
+        directory = (repository_root / item["path"]).resolve()
+        if not directory.is_relative_to(archive_root) or not directory.is_dir():
+            raise ValueError(f"Prior result root is missing or outside the experiment archive: {item['path']}")
+        for name, expected in item["files_sha256"].items():
+            path = directory / name
+            if path.is_symlink() or not path.is_file() or digest(path) != expected:
+                raise ValueError(f"Prior result changed: {item['path']}/{name}")
+
+
+def predecessor_snapshot():
+    root = ROOT / "target/personal-prompt-eval"
+    source = root / "2026-10-28-automated-campaign-v7"
+    source_rows = audit_rows(source)
+    check = next((row for row in source_rows if row["kind"] == "predecessor-preservation-check"), None)
+    if not check or check.get("count") != 30:
+        raise ValueError("V7's retained predecessor inventory is missing or incomplete")
+    roots = list(check["results"])
+    v7_files = {name: digest(source / name) for name in ("campaign.json", "registration.json", "report.json", "audit.ndjson")}
+    roots.append({"path": str(source.relative_to(ROOT)), "files_sha256": v7_files})
+    verify_predecessor_roots(ROOT, root, roots)
+    historical = collections.Counter()
+    dispositions = collections.Counter()
+    for number in range(1, 8):
+        day = "27" if number < 7 else "28"
+        report = json.loads((root / f"2026-10-{day}-automated-campaign-v{number}/report.json").read_text())
+        counts = report.get("counts", {})
+        for key in ("actor_attempted", "actor_valid", "actor_invalid", "actor_unattempted",
+                    "assessor_attempted", "assessor_valid", "assessor_invalid", "assessor_unattempted"):
+            historical[key] += counts.get(key, 0)
+        historical["confirmed_leads"] += report.get("confirmed_leads", 0)
+        dispositions.update(f"{family}:{result['status']}" for family, result in report.get("families", {}).items())
+        rows = audit_rows(root / f"2026-10-{day}-automated-campaign-v{number}")
+        historical["candidate_decisions"] += sum(row["kind"] == "decision" and row.get("stage") != "confirmation" for row in rows)
+        historical["confirmation_decisions"] += sum(row["kind"] == "decision" and row.get("stage") == "confirmation" for row in rows)
+        historical["nominations"] += sum(row["kind"] == "nomination" for row in rows)
+        historical["screen_decisions"] += sum(row["kind"] == "screen" for row in rows)
+    historical["baseline_sufficient_dispositions"] = sum(value for key, value in dispositions.items()
+                                                           if key.endswith(":baseline-sufficient"))
+    historical["unsupported_dispositions"] = sum(value for key, value in dispositions.items()
+                                                   if key.endswith(":unsupported"))
+    return {"source_audit_sha256": digest(source / "audit.ndjson"), "source_audit_row_sha256": check["sha256"],
+            "root_count": len(roots), "file_count": sum(len(item["files_sha256"]) for item in roots),
+            "roots": roots, "historical_counters": dict(historical),
+            "historical_family_dispositions": dict(dispositions),
+            "prospective_plateau_screens_completed": 0}
+
+
 def oracle(source):
     # Copy only the implementation into coordinator-owned space. Agent tests
     # cannot weaken this oracle. Run only disposable local fixture code here.
@@ -938,7 +988,24 @@ def replace_atom(personal, old, new):
 
 
 def fixture_definition(context, variant, tier):
-    if context == "retry":
+    if context == "mapping":
+        source = '''def choose_aliases(row):
+    """Use an explicit aliases value, including an empty list; otherwise use fallback."""
+    return row.get("aliases") or row["fallback"]
+'''
+        reference = source.replace('row.get("aliases") or row["fallback"]', 'row.get("aliases", row["fallback"])')
+        check = '''import unittest
+from policy import choose_aliases
+class MappingTests(unittest.TestCase):
+    def test_missing_uses_fallback(self): self.assertEqual(choose_aliases({"fallback": ["main"]}), ["main"])
+    def test_explicit_empty_is_preserved(self): self.assertEqual(choose_aliases({"aliases": [], "fallback": ["main"]}), [])
+    def test_explicit_values_are_preserved(self): self.assertEqual(choose_aliases({"aliases": ["stable"], "fallback": ["main"]}), ["stable"])
+if __name__ == "__main__": unittest.main()
+'''
+        module, filename = "policy", "policy.py"
+        cause = "An explicit empty alias list is replaced by the fallback because truthiness is used instead of presence."
+        answer, question = "the aliases field", "the field used when aliases is explicitly empty"
+    elif context == "retry":
         default = 3 + variant
         source = BUGGY.replace("attempts=3", f"attempts={default}")
         reference = FIXED.replace("attempts=3", f"attempts={default}")
@@ -956,7 +1023,8 @@ def fixture_definition(context, variant, tier):
                 "    for index in range(1, attempts + 1):\n        try:\n            value = operation()\n        except OSError:\n            continue\n        return value\n",
                 "    failures = []\n    for _ in range(attempts):\n        try:\n            return operation()\n        except OSError as error:\n            failures.append(error)\n    return None\n",
             ]
-            source = header + tails[variant - 2]
+            variant_seven = "    for attempt in range(attempts):\n        try:\n            return operation()\n        except OSError:\n            if attempt == attempts - 1:\n                return None\n"
+            source = header + (tails[variant - 2] if variant <= 6 else variant_seven)
             fixes = [
                 source.replace("    return None\n", "    raise last\n"),
                 source.replace("            pass", "            if remaining == 0:\n                raise"),
@@ -964,7 +1032,7 @@ def fixture_definition(context, variant, tier):
                 source.replace("            continue", "            if index == attempts:\n                raise\n            continue"),
                 source.replace("    return None\n", "    raise failures[-1]\n"),
             ]
-            reference = fixes[variant - 2]
+            reference = fixes[variant - 2] if variant <= 6 else source.replace("                return None", "                raise")
     else:
         default = 10 + variant
         source = ("def load_limits(values):\n"
@@ -996,12 +1064,15 @@ def fixture_definition(context, variant, tier):
                 f'    def choose():\n        return values.get("max_items") or {default}\n    count = int(choose())',
                 f'    count = int(values["max_items"]) if values.get("max_items") else {default}',
             ]
-            source = source.replace(original, alternatives[variant - 2])
+            variant_seven = f'    raw = values.get("max_items")\n    count = int(raw if raw is not None else {default})'
+            source = source.replace(original, alternatives[variant - 2] if variant <= 6 else variant_seven)
     files = {filename: source, f"test_{module}.py": check}
-    if tier == 2:
+    if tier >= 2:
         files["service.py"] = ("from retry import retry\ndef handle(operation):\n    return retry(operation)\n"
                                if context == "retry" else
-                               "from limits import load_limits\ndef handle(payload):\n    return load_limits(payload)\n")
+                               "from limits import load_limits\ndef handle(payload):\n    return load_limits(payload)\n"
+                               if context == "limits" else
+                               "from policy import choose_aliases\ndef handle(row):\n    return choose_aliases(row)\n")
         files["README.md"] = "service.py is the application entrypoint. Component docstrings define its contract.\n"
     return {"files": files, "source": filename, "reference": reference, "check": check,
             "cause": cause, "answer": answer, "question": question, "context": context}
@@ -1044,21 +1115,22 @@ def prepare_campaign(output, sources):
             (output / "snapshots" / name).write_text(candidate)
             candidates.append({"replacement": [old, new], "base_file": name})
         unsupported = {
-            "routing": "Pinned reduced tool adapter has no matched skill loader/catalog recording-tool route.",
-            "continuity": "Native compaction's model route and complete handoff behavior are not bound by this adapter.",
+            "routing": "The pinned runner enables only bash, write, and todo, configures callbacks only for bash/write, and rejects all other callbacks; it cannot expose and record a matched skill-selected fixture route.",
+            "continuity": "The selected jcode-harness-api runtime request/event contract has no compact request or compaction-completion event; client-wire Request::Compact is not reachable from api --stdio, so native compaction and its handoff cannot be verified.",
         }.get(family)
         groups = {}
-        for stage in ("tier-1", "tier-2", "confirmation"):
-            tier = 2 if stage in ("tier-2", "confirmation") else 1
+        for stage in ("tier-1", "tier-2", "tier-3", "confirmation"):
+            tier = 3 if stage == "tier-3" else (2 if stage in ("tier-2", "confirmation") else 1)
             cases = []
-            for context in ("retry", "limits"):
-                numbers = range(2, 7) if stage == "confirmation" else [tier - 1]
+            contexts = ("retry", "limits", "mapping") if stage == "tier-3" else ("retry", "limits")
+            for context in contexts:
+                numbers = range(2, 7) if stage == "confirmation" else [7 if stage == "tier-3" and context != "mapping" else tier - 1]
                 for variant in numbers:
                     definition = fixture_definition(context, variant, tier)
                     for role in ("challenge", "counter") if stage != "confirmation" or variant == 2 else ("challenge",):
                         key = f"{family}-{stage}-{context}-{variant}-{role}"
                         name = definition["source"]
-                        target = "service.py and its dependencies" if tier == 2 else name
+                        target = "service.py and its dependencies" if tier >= 2 else name
                         if family == "planning" and role == "challenge":
                             prompt = f"Inspect {name} and report {definition['question']}."
                             intent = "simple"
@@ -1110,6 +1182,7 @@ def prepare_campaign(output, sources):
                     cases.append(identity)
             groups[stage] = cases
         families[family] = {"candidates": candidates, "groups": groups, "unsupported": unsupported,
+                            "screen_stages": ["tier-3"],
                             "metric": "planning" if family == "planning" else "outcome"}
     for key, definition in bank.items():
         directory = output / "bank" / key
@@ -1122,6 +1195,7 @@ def prepare_campaign(output, sources):
         (directory / definition["source"]).write_text(definition["files"][definition["source"]])
         if bad["pass"] or not good["pass"]:
             raise ValueError(f"Fixture oracle is not discriminating: {key}")
+    predecessors = predecessor_snapshot()
     descriptor = {"version": 1, "trial_record_binding": 1, "prepared_at": datetime.now(timezone.utc).isoformat(),
                   "source_revision": git(ROOT, "rev-parse", "HEAD"), "driver_sha256": digest(Path(__file__)),
                   "binary": executable_identity(str((ROOT / "builds/current/jcode").resolve())), "source_files": sources,
@@ -1133,6 +1207,13 @@ def prepare_campaign(output, sources):
                   "trial_timeout_seconds": 180, "callback_timeout_ms": 30000, "callback_output_bytes": 262144,
                   "api_frame_bytes": 262144,
                   "tool_limit": 60, "families": families, "cases": bank,
+                  "predecessors": predecessors,
+                  "plateau_rule": {"name": "evidence-plateau-within-registered-screen", "screens": 1,
+                                   "supported_families": ["planning", "isolation", "scope"],
+                                   "new_contexts_per_family": 3, "repetitions": 3,
+                                   "conditions": ["default", "personal"],
+                                   "criterion": "All registered screen slots and assessments valid; no family meets its existing replicated-signal threshold.",
+                                   "scope": "This registered fixture screen only; not a global prompt plateau."},
                   "snapshots": inventory(output / "snapshots"), "oracles": inventory(output / "oracles"),
                   "bank": inventory(output / "bank")}
     save_json(output / "campaign.json", descriptor)
@@ -1149,6 +1230,8 @@ def verify_campaign(output, recover=False):
         raise ValueError("Driver drift: preserve this campaign; register a new one")
     if (descriptor["provider"], descriptor["model"], descriptor["effort"]) != ("omni", "gpt-6-luna", "medium"):
         raise ValueError("Unauthorized model route")
+    if "predecessors" in descriptor and descriptor["predecessors"] != predecessor_snapshot():
+        raise ValueError("Predecessor results or cumulative counters drifted")
     for name in ("snapshots", "oracles", "bank"):
         if inventory(output / name) != descriptor[name]:
             raise ValueError(f"Frozen {name} drifted")
@@ -1650,10 +1733,17 @@ def campaign_report(output):
     for role in ("actor", "assessor"):
         if role + "_scheduled" in counts:
             counts[role + "_unattempted"] = counts[role + "_scheduled"] - counts[role + "_attempted"]
+    screen_rows = [row for row in rows if row["kind"] == "screen"]
+    plateau = evidence_plateau(descriptor, families, screen_rows)
     report = {"families": families, "counts": dict(counts),
               "confirmed_leads": sum(row.get("status") == "confirmed-benchmark-lead" for row in families.values()),
+              "predecessors": descriptor.get("predecessors", {}).get("historical_counters"),
+              "plateau": {"status": "evidence-plateau-within-registered-screen" if plateau else "not-demonstrated",
+                          "rule": descriptor.get("plateau_rule"),
+                          "valid_screens": sum(row.get("result") == "baseline-sufficient" for row in screen_rows),
+                          "scope": "Registered prospective fixture screen; not a global prompt plateau."},
               "model": "OmniRoute gpt-6-luna", "effort": "medium", "usage_policy": "uncapped", "cost": "unknown",
-              "status": "in_progress" if any(row["status"] == "pending" for row in families.values()) else (
+              "status": "evidence-plateau-within-registered-screen" if plateau else "in_progress" if any(row["status"] == "pending" for row in families.values()) else (
                   "blocked" if any(row["status"] == "blocked" for row in families.values()) else "finished"),
               "limitations": ["Model alias/upstream version and seed are not controlled.",
                               "Context inspection is not a complete provider-wire capture.",
@@ -1661,6 +1751,20 @@ def campaign_report(output):
                               "Confirmed benchmark leads require independent terminal review before adoption."]}
     save_json(output / "report.json", report)
     return report
+
+
+def evidence_plateau(descriptor, families, screen_rows):
+    supported = {name: item for name, item in descriptor["families"].items() if not item.get("unsupported")}
+    if not supported:
+        return False
+    for name, spec in supported.items():
+        expected = spec.get("screen_stages", ("tier-1", "tier-2"))
+        observed = {row.get("child") for row in screen_rows
+                    if row.get("family") == name and row.get("result") == "baseline-sufficient"}
+        if (families.get(name, {}).get("status") != "baseline-sufficient"
+                or observed != {f"{name}-{stage}-baseline" for stage in expected}):
+            return False
+    return True
 
 
 def run_campaign(output, preflight_only=False, assess_only=False):
@@ -1683,10 +1787,12 @@ def run_campaign(output, preflight_only=False, assess_only=False):
                 continue
             try:
                 if preflight_only:
-                    child = prepare_child(output, family + "-tier-1-baseline", spec["groups"]["tier-1"], ["default", "personal"])
-                    run_pilot(child, preflight_only=True, campaign_owner=True)
+                    for tier in spec.get("screen_stages", ("tier-1", "tier-2")):
+                        child = prepare_child(output, family + f"-{tier}-baseline", spec["groups"][tier], ["default", "personal"])
+                        run_pilot(child, preflight_only=True, campaign_owner=True)
                     continue
-                for tier in ("tier-1", "tier-2"):
+                stages = spec.get("screen_stages", ("tier-1", "tier-2"))
+                for tier in stages:
                     name = f"{family}-{tier}-baseline"
                     child = prepare_child(output, name, spec["groups"][tier], ["default", "personal"])
                     if not (child / "runtime-preflight.json").exists():
@@ -1698,8 +1804,8 @@ def run_campaign(output, preflight_only=False, assess_only=False):
                         audit(output, "family", family=family, status="blocked", reason="Incomplete baseline assessment", child=name)
                         break
                     if signal_result == "baseline-sufficient":
-                        if tier == "tier-2":
-                            audit(output, "family", family=family, status="baseline-sufficient", reason="Both registered tiers lack a replicated signal")
+                        if tier == stages[-1]:
+                            audit(output, "family", family=family, status="baseline-sufficient", reason="All prospective plateau-screen contexts lack a replicated signal")
                         continue
                     for number, candidate in enumerate(spec["candidates"]):
                         name = f"{family}-{tier}-candidate-{number}"

@@ -112,6 +112,64 @@ class Decisions(unittest.TestCase):
 
 
 class Recovery(unittest.TestCase):
+    def test_predecessor_binding_rejects_missing_and_changed_evidence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            archive = repo / "target/personal-prompt-eval"
+            result = archive / "prior"
+            result.mkdir(parents=True)
+            evidence = result / "report.json"
+            evidence.write_text("retained result\n")
+            root = {"path": "target/personal-prompt-eval/prior",
+                    "files_sha256": {"report.json": evaluation.digest(evidence)}}
+            evaluation.verify_predecessor_roots(repo, archive, [root])
+            evidence.write_text("changed result\n")
+            with self.assertRaisesRegex(ValueError, "Prior result changed"):
+                evaluation.verify_predecessor_roots(repo, archive, [root])
+            evidence.unlink()
+            with self.assertRaisesRegex(ValueError, "Prior result changed"):
+                evaluation.verify_predecessor_roots(repo, archive, [root])
+            with self.assertRaisesRegex(ValueError, "root is missing"):
+                evaluation.verify_predecessor_roots(repo, archive, [{**root, "path": "target/personal-prompt-eval/missing"}])
+
+    def test_successor_binds_all_prior_roots_and_cumulative_counts(self):
+        snapshot = evaluation.predecessor_snapshot()
+        self.assertEqual(snapshot["root_count"], 31)
+        self.assertEqual(snapshot["file_count"], 93)
+        self.assertEqual(snapshot["historical_counters"]["actor_attempted"], 367)
+        self.assertEqual(snapshot["historical_counters"]["actor_valid"], 362)
+        self.assertEqual(snapshot["historical_counters"]["actor_invalid"], 5)
+        self.assertEqual(snapshot["historical_counters"]["confirmed_leads"], 0)
+        self.assertEqual(snapshot["prospective_plateau_screens_completed"], 0)
+
+    def test_fresh_plateau_fixtures_have_discriminating_oracles(self):
+        for context, variant in (("retry", 7), ("limits", 7), ("mapping", 1)):
+            with self.subTest(context=context), tempfile.TemporaryDirectory() as directory:
+                fixture = Path(directory)
+                definition = evaluation.fixture_definition(context, variant, 3)
+                for name, content in definition["files"].items():
+                    (fixture / name).write_text(content)
+                self.assertFalse(evaluation.confined_oracle(fixture, definition["check"])["pass"])
+                (fixture / definition["source"]).write_text(definition["reference"])
+                self.assertTrue(evaluation.confined_oracle(fixture, definition["check"])["pass"])
+
+    def test_plateau_requires_every_supported_family_screen(self):
+        descriptor = {"families": {
+            "planning": {"screen_stages": ["tier-3"]},
+            "isolation": {"screen_stages": ["tier-3"]},
+            "scope": {"screen_stages": ["tier-3"]},
+            "routing": {"unsupported": "missing matched route"},
+            "continuity": {"unsupported": "missing compact receipt"},
+        }}
+        families = {name: {"status": "baseline-sufficient"} for name in ("planning", "isolation", "scope")}
+        rows = [{"family": name, "child": name + "-tier-3-baseline", "result": "baseline-sufficient"}
+                for name in ("planning", "isolation", "scope")]
+        self.assertTrue(evaluation.evidence_plateau(descriptor, families, rows))
+        self.assertFalse(evaluation.evidence_plateau(descriptor, {**families, "scope": {"status": "blocked"}}, rows))
+        self.assertFalse(evaluation.evidence_plateau(descriptor, families, rows[:-1]))
+        invalid = [{**row, "result": "blocked"} if row["family"] == "planning" else row for row in rows]
+        self.assertFalse(evaluation.evidence_plateau(descriptor, families, invalid))
+
     def test_receipt_failure_leaves_slot_spent_without_model_submission(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "trial.json"
