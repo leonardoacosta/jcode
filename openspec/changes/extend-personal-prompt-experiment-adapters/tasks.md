@@ -34,7 +34,7 @@
 
 - [x] 4.1 `PYTHONPATH=scripts python3 -m unittest test_personal_prompt_eval` (47 passed); `py_compile`; strict OpenSpec validation; V15 `--verify`; `git diff --check`. Tier-8 retry 12, limits 12, mapping 6 oracles reject each defect and pass each reference.
 - [x] 4.2 Independent review of final V15 implementation/evidence approved with no findings using only OmniRoute `gpt-6-luna` / medium, no tools; result retained and logged in the V15 audit chain.
-- [ ] 4.3 Commit verified V15 runner/tests/OpenSpec closeout links with configured Git identity; keep ignored V1–V15 evidence roots in place. Prior V13 commits: `ea4e9558a`, `043310791`. Archive only after this scoped commit; preserve unrelated dirty work.
+- [x] 4.3 Committed verified V15 runner/tests/OpenSpec closeout links as `5c91c99bd` with configured Git identity; ignored V1–V15 evidence roots remain in place. Prior V13 commits: `ea4e9558a`, `043310791`. Preserve unrelated dirty work.
 
 ## Closeout status
 
