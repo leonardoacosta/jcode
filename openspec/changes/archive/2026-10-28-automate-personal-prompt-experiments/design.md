@@ -1,6 +1,6 @@
 ## Context
 
-See [proposal.md](proposal.md). This design extends the completed [pilot](../archive/2026-10-27-evaluate-personalized-jcode-prompt/evaluation.md#pilot-results--2026-10-27), which demonstrated no benefit from its scope-boundary replacement. The [personal review](../../../personalized-jcode-prompt-review.md) supplies hypotheses, not runtime rankings of other harnesses.
+See [proposal.md](proposal.md). This design extends the completed [pilot](../2026-10-27-evaluate-personalized-jcode-prompt/evaluation.md#pilot-results--2026-10-27), which demonstrated no benefit from its scope-boundary replacement. The [personal review](../../../../personalized-jcode-prompt-review.md) supplies hypotheses, not runtime rankings of other harnesses.
 
 Local discovery on 2026-10-27 binds this proposal to `main`, revision `ed3a134af33b29e8ee81b782c0a128495fcceeef`. Relevant SHA-256 identities:
 

@@ -144,7 +144,7 @@ Interim independent review (`automation-rehearsal-v17/runs/assessment-failure-re
 
 ## Fresh registration V4 — 2026-10-27
 
-The user authorized one fresh registration using the reviewed runner, after a fresh no-inference preflight, with the original route, controls, and stop rules. V4 is `target/personal-prompt-eval/2026-10-27-automated-campaign-v4/`. Its audit chain binds 26 prior result roots, including V3 and every earlier rehearsal and pilot; all prior directories remain intact. See the [V4 campaign report](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/report.json), [registration](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/campaign.json), and [audit](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/audit.ndjson).
+The user authorized one fresh registration using the reviewed runner, after a fresh no-inference preflight, with the original route, controls, and stop rules. V4 is `target/personal-prompt-eval/2026-10-27-automated-campaign-v4/`. Its audit chain binds 26 prior result roots, including V3 and every earlier rehearsal and pilot; all prior directories remain intact. See the [V4 campaign report](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/report.json), [registration](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/campaign.json), and [audit](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/audit.ndjson).
 
 Fresh preflight passed all **72** supported-family contexts with no inference, binding the reviewed runner, immutable executable, and OmniRoute `gpt-6-luna` / `medium`. The frozen source-default control SHA-256 is `ce7ed4e8e91720fb1db61d5942abf807aa0d49d1e4e4928cfd079bd409cf75b1`; the frozen current-personal control is `bad176b5c30c09c3ca8c7137f1f7fa443041bc82481667a5f2faa7478de016b7`. Both control snapshots stayed frozen. Candidate experiments use only the run-owned target and disposable actor workspaces; the target is restored to the personal digest.
 
@@ -152,32 +152,32 @@ V4 stopped after the first 12 planning tier-1 actor slots. All 12 reached the mo
 
 | Prior result root | Retained evidence |
 | --- | --- |
-| [Scope pilot V2](../../../target/personal-prompt-eval/2026-10-27-scope-pilot-v2/manifest.json) | Manifest and trial evidence |
-| [Scope pilot V3](../../../target/personal-prompt-eval/2026-10-27-scope-pilot-v3/manifest.json) | Manifest and trial evidence |
-| [Scope pilot V4](../../../target/personal-prompt-eval/2026-10-27-scope-pilot-v4/manifest.json) | Historical 36-slot pilot |
-| [Automated campaign V1](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v1/report.json) | Report, registration, audit, trials |
-| [Automated campaign V2](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v2/report.json) | Report, registration, audit, trials |
-| [Automated campaign V3](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v3/report.json) | Report, registration, audit, trials |
-| [Automation rehearsal V1](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v1/campaign.json) | Registered no-model rehearsal |
-| [Automation rehearsal V2](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v2/report.json) | Report and bound evidence |
-| [Automation rehearsal V3](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v3/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V4](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v4/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V5](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v5/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V6](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v6/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V7](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v7/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V8](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v8/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V9](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v9/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V10](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v10/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V11](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v11/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V12](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v12/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V13](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v13/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V14](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v14/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V15](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v15/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V16](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v16/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V17](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v17/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V18](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v18/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V19](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v19/campaign.json) | Registered rehearsal |
-| [Automation rehearsal V20](../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v20/campaign.json) | Independent final review evidence |
+| [Scope pilot V2](../../../../target/personal-prompt-eval/2026-10-27-scope-pilot-v2/manifest.json) | Manifest and trial evidence |
+| [Scope pilot V3](../../../../target/personal-prompt-eval/2026-10-27-scope-pilot-v3/manifest.json) | Manifest and trial evidence |
+| [Scope pilot V4](../../../../target/personal-prompt-eval/2026-10-27-scope-pilot-v4/manifest.json) | Historical 36-slot pilot |
+| [Automated campaign V1](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v1/report.json) | Report, registration, audit, trials |
+| [Automated campaign V2](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v2/report.json) | Report, registration, audit, trials |
+| [Automated campaign V3](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v3/report.json) | Report, registration, audit, trials |
+| [Automation rehearsal V1](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v1/campaign.json) | Registered no-model rehearsal |
+| [Automation rehearsal V2](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v2/report.json) | Report and bound evidence |
+| [Automation rehearsal V3](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v3/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V4](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v4/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V5](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v5/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V6](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v6/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V7](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v7/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V8](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v8/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V9](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v9/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V10](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v10/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V11](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v11/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V12](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v12/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V13](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v13/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V14](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v14/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V15](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v15/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V16](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v16/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V17](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v17/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V18](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v18/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V19](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v19/campaign.json) | Registered rehearsal |
+| [Automation rehearsal V20](../../../../target/personal-prompt-eval/2026-10-27-automation-rehearsal-v20/campaign.json) | Independent final review evidence |
 
 No candidate or holdout inference followed the common runtime failure. Tasks 4.1/4.2 and dependent closeout tasks remain incomplete. Do not resume V4 slots or archive this blocked execution. A later campaign requires a new registration and fresh authorization.
 
@@ -187,7 +187,7 @@ Fresh offline gates passed: `PYTHONPATH=scripts python3 -B -m unittest scripts/t
 
 ## Successor registration V5 — 2026-10-27
 
-After authorization, V5 registered the same five-family schedule and bound all **28** preceding result roots, including V4, in its audit. It retained the same route, thresholds, frozen controls and stop rules. The read-only V4 log diagnosis found an upstream HTTP 502 with active Codex accounts rate-limited and a five-second reset near slot-012's failure; timestamps align, but no request-ID correlation proves attribution. See the [V5 report](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v5/report.json), [registration](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v5/campaign.json), and [audit](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v5/audit.ndjson). Its predecessor roots added to the V4 list are the [V4 report](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/report.json) and [preflight evaluation](../../../target/personal-prompt-eval/2026-10-27-preflight-check-v2-evaluation/campaign.json).
+After authorization, V5 registered the same five-family schedule and bound all **28** preceding result roots, including V4, in its audit. It retained the same route, thresholds, frozen controls and stop rules. The read-only V4 log diagnosis found an upstream HTTP 502 with active Codex accounts rate-limited and a five-second reset near slot-012's failure; timestamps align, but no request-ID correlation proves attribution. See the [V5 report](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v5/report.json), [registration](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v5/campaign.json), and [audit](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v5/audit.ndjson). Its predecessor roots added to the V4 list are the [V4 report](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/report.json) and [preflight evaluation](../../../../target/personal-prompt-eval/2026-10-27-preflight-check-v2-evaluation/campaign.json).
 
 Fresh no-inference preflight passed all **72** supported-family contexts with OmniRoute `gpt-6-luna` / `medium`. V5 stopped after nine planning tier-1 actor slots: all nine reached the model, eight are runtime-valid, and slot-009 is invalid with HTTP 401. Its retained response reports an invalidated upstream `cx/gpt-6-luna` OAuth token; the gateway applied a cooldown/model lockout. No credential or provider setting was changed. The runner retained the slot and stopped: 63 actor slots remain unattempted. Across V1–V5, there are **79 actor attempts, 74 runtime-valid, 5 invalid**; no candidate or holdout ran.
 
@@ -197,7 +197,7 @@ Fresh V5 closeout checks passed: 40 focused tests, strict OpenSpec validation, V
 
 ## Successor registration V6 — 2026-10-28
 
-The authorized V6 registration at `target/personal-prompt-eval/2026-10-27-automated-campaign-v6/` binds **29** predecessor roots, including V5, without changing prior results. See the [V6 report](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v6/report.json), [registration](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v6/campaign.json), [audit](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v6/audit.ndjson), and the preserved [V3 report](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v3/report.json). The campaign used OmniRoute `gpt-6-luna` / `medium`. Fresh no-inference preflight passed the 72 supported tier-1 contexts; each subsequently executed baseline actor and assessor child passed its own matching all-slot preflight. Frozen default and current-personal controls remained unchanged.
+The authorized V6 registration at `target/personal-prompt-eval/2026-10-27-automated-campaign-v6/` binds **29** predecessor roots, including V5, without changing prior results. See the [V6 report](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v6/report.json), [registration](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v6/campaign.json), [audit](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v6/audit.ndjson), and the preserved [V3 report](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v3/report.json). The campaign used OmniRoute `gpt-6-luna` / `medium`. Fresh no-inference preflight passed the 72 supported tier-1 contexts; each subsequently executed baseline actor and assessor child passed its own matching all-slot preflight. Frozen default and current-personal controls remained unchanged.
 
 All **144 actor** and **144 assessor** slots finished, reached the model and were runtime-valid; there were no invalid or unattempted slots. Assessment used 8,181,189 actor input tokens / 177,594 output tokens and 1,630,796 assessor input tokens / 48,494 output tokens; monetary cost is unknown. Isolation and scope were baseline-sufficient at both tiers, with no replicated signal. Planning tier 1 was baseline-sufficient; planning tier 2 is blocked by two valid trials whose preservation boundary grades remain unknown (default slot-013 and personal slot-014). The runner correctly opened no candidate or confirmation trials: there were no eligible nominees. Routing and continuity remain unsupported by the pinned adapter. The report has zero confirmed leads and overall status `blocked`; no prompt was adopted. `experiment-target.md` matches the frozen personal baseline.
 
@@ -205,7 +205,7 @@ Independent V6 evidence/closeout review approved with no blocking or actionable 
 
 ## Successor registration V7 — 2026-10-28
 
-The authorized fresh campaign used the reviewed runner after fresh no-inference preflight, with OmniRoute `gpt-6-luna` / `medium`, frozen default/current-personal controls, and the existing stop rules. See the [V7 report](../../../target/personal-prompt-eval/2026-10-28-automated-campaign-v7/report.json), [registration](../../../target/personal-prompt-eval/2026-10-28-automated-campaign-v7/registration.json), [audit](../../../target/personal-prompt-eval/2026-10-28-automated-campaign-v7/audit.ndjson), and preserved [V3 report](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v3/report.json). V7 retains prior results; its closeout audit checks 30 predecessor roots, including V3 and V6, against their recorded hashes. **This predecessor-preservation check was added post-run; V7 did not bind these roots at registration.**
+The authorized fresh campaign used the reviewed runner after fresh no-inference preflight, with OmniRoute `gpt-6-luna` / `medium`, frozen default/current-personal controls, and the existing stop rules. See the [V7 report](../../../../target/personal-prompt-eval/2026-10-28-automated-campaign-v7/report.json), [registration](../../../../target/personal-prompt-eval/2026-10-28-automated-campaign-v7/registration.json), [audit](../../../../target/personal-prompt-eval/2026-10-28-automated-campaign-v7/audit.ndjson), and preserved [V3 report](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v3/report.json). V7 retains prior results; its closeout audit checks 30 predecessor roots, including V3 and V6, against their recorded hashes. **This predecessor-preservation check was added post-run; V7 did not bind these roots at registration.**
 
 Fresh preflights passed for all 12 actor/assessor children (24 slots each). All **144 actor** and **144 assessor** slots finished, reached the model, and were runtime-valid; zero slots were invalid or unattempted. Observed usage was 8,392,575 actor input / 182,318 output tokens and 1,713,322 assessor input / 44,112 output tokens; price is unknown. Planning, isolation, and scope were baseline-sufficient at both tiers. Routing and continuity remain unsupported by the pinned reduced adapter. No candidate or confirmation trials were eligible; there are **zero confirmed leads**. The report status is `finished`; no prompt was adopted, and the live personal target remains at its frozen baseline.
 
@@ -213,4 +213,4 @@ Independent V7 terminal review approved with no blocking findings. The report an
 
 Fresh closeout gates passed after the V7 records were complete: `PYTHONPATH=scripts python3 -B -m unittest scripts/test_personal_prompt_eval.py -q` (**41 tests**); V7 and pinned V6 campaign verification; `openspec validate automate-personal-prompt-experiments --strict --no-interactive`; local Markdown link resolution; registered source/snapshot digest checks; frozen default/current-personal control checks; and `git diff --check`. The V7 predecessor audit confirmed **30 roots / 89 files**, all hashes matching. The unrelated dirty files and shared-server/current-build links were preserved.
 
-V7 retains the earlier campaign lineage, including [V1](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v1/report.json), [V2](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v2/report.json), [V3](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v3/report.json), [V4](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/report.json), [V5](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v5/report.json), and [V6](../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v6/report.json). V3 and all previous result roots remain preserved.
+V7 retains the earlier campaign lineage, including [V1](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v1/report.json), [V2](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v2/report.json), [V3](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v3/report.json), [V4](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v4/report.json), [V5](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v5/report.json), and [V6](../../../../target/personal-prompt-eval/2026-10-27-automated-campaign-v6/report.json). V3 and all previous result roots remain preserved.

@@ -24,4 +24,4 @@ None.
 
 Implementation should extend `scripts/prepare_personal_prompt_eval.py`, reuse its private native-API confinement and the completed campaign's grading procedure, and add only focused automation checks. Private descriptors, fixtures, and evidence remain under `target/personal-prompt-eval/`; curated findings belong to this change. No new dependency, service, skill, global hook, provider default, live prompt edit, shared-daemon replacement, publication, or runtime ranking of Codex/Claude Code/Pi is included.
 
-Automation is implemented locally; registered execution is blocked without a demonstrated candidate benefit. See [evaluation.md](evaluation.md) for retained evidence, [design.md](design.md) for the evidence threshold, and [tasks.md](tasks.md) for incomplete execution and closeout tasks.
+The authorized registered campaign completed without demonstrating prompt improvement; routing and continuity remain unsupported by the pinned adapter. See [evaluation.md](evaluation.md) for retained evidence, [design.md](design.md) for the evidence threshold, and [tasks.md](tasks.md) for incomplete execution and closeout tasks.
