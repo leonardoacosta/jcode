@@ -37,4 +37,6 @@ The isolated controller is implemented in the existing runner, with local commit
 
 One further registration, V4, passed 72 fresh no-inference contexts, then stopped after 12 planning actor attempts (11 runtime-valid, one invalid `server_error ... terminated`). Assessment-only recovery made no assessor calls; the 12 attempted grades are unjudged, and 12 unattempted rows remain unknown. Across V1–V4 there are 70 actor attempts (66 valid, four invalid); no candidate or holdout has been opened. V4's audit binds all 26 predecessor result roots. The feature remains pending because the registered common-runtime stop prevented the required supported evaluation and confirmation. See `openspec/changes/automate-personal-prompt-experiments/evaluation.md`.
 
+The authorized successor V5 passed 72 fresh no-inference contexts, then stopped after nine planning actor attempts (eight runtime-valid, one HTTP 401 for an invalidated upstream OAuth token). Assessment-only recovery made no assessor calls; attempted grades remain unjudged. Across V1–V5 there are 79 actor attempts (74 valid, five invalid); no candidate or holdout has been opened. V5's audit binds all 28 predecessor roots. No credentials were changed. The feature remains pending under the common-runtime stop rule; see `openspec/changes/automate-personal-prompt-experiments/evaluation.md`.
+
 ---
