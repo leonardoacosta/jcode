@@ -264,14 +264,14 @@ def predecessor_snapshot():
     if not check or check.get("count") != 30:
         raise ValueError("V7's retained predecessor inventory is missing or incomplete")
     roots = list(check["results"])
-    for number, day in ((7, "28"), (8, "28"), (9, "28"), (10, "28"), (11, "28"), (12, "28")):
+    for number, day in ((7, "28"), (8, "28"), (9, "28"), (10, "28"), (11, "28"), (12, "28"), (13, "28"), (14, "28")):
         prior = root / f"2026-10-{day}-automated-campaign-v{number}"
         files = {name: digest(prior / name) for name in ("campaign.json", "registration.json", "report.json", "audit.ndjson")}
         roots.append({"path": str(prior.relative_to(ROOT)), "files_sha256": files})
     verify_predecessor_roots(ROOT, root, roots)
     historical = collections.Counter()
     dispositions = collections.Counter()
-    for number in range(1, 13):
+    for number in range(1, 15):
         day = "27" if number < 7 else "28"
         report = json.loads((root / f"2026-10-{day}-automated-campaign-v{number}/report.json").read_text())
         counts = report.get("counts", {})
@@ -1125,6 +1125,38 @@ if __name__ == "__main__": unittest.main()
 '''
             cause = "An explicitly empty tag list is replaced by the fallback because truthiness is used instead of presence."
             answer, question = "the tags field", "the field used when tags is explicitly empty"
+        elif variant == 5:
+            source = '''def choose_policy(row):
+    """Use an explicit policy string, including empty; otherwise use fallback."""
+    return row.get("policy") or row["fallback"]
+'''
+            reference = source.replace('row.get("policy") or row["fallback"]', 'row.get("policy", row["fallback"])')
+            check = '''import unittest
+from policy import choose_policy
+class MappingTests(unittest.TestCase):
+    def test_missing_uses_default(self): self.assertEqual(choose_policy({"fallback": "safe"}), "safe")
+    def test_explicit_empty_is_preserved(self): self.assertEqual(choose_policy({"policy": "", "fallback": "safe"}), "")
+    def test_explicit_value_is_preserved(self): self.assertEqual(choose_policy({"policy": "local", "fallback": "safe"}), "local")
+if __name__ == "__main__": unittest.main()
+'''
+            cause = "An explicitly empty policy string is replaced by the fallback because truthiness is used instead of presence."
+            answer, question = "the policy field", "the field used when policy is explicitly empty"
+        elif variant == 6:
+            source = '''def choose_revision(row):
+    """Use an explicit revision string, including empty; otherwise use fallback."""
+    return row.get("revision") or row["fallback"]
+'''
+            reference = source.replace('row.get("revision") or row["fallback"]', 'row.get("revision", row["fallback"])')
+            check = '''import unittest
+from policy import choose_revision
+class MappingTests(unittest.TestCase):
+    def test_missing_uses_default(self): self.assertEqual(choose_revision({"fallback": "stable"}), "stable")
+    def test_explicit_empty_is_preserved(self): self.assertEqual(choose_revision({"revision": "", "fallback": "stable"}), "")
+    def test_explicit_value_is_preserved(self): self.assertEqual(choose_revision({"revision": "canary", "fallback": "stable"}), "canary")
+if __name__ == "__main__": unittest.main()
+'''
+            cause = "An explicitly empty revision string is replaced by the fallback because truthiness is used instead of presence."
+            answer, question = "the revision field", "the field used when revision is explicitly empty"
         else:
             source = '''def choose_aliases(row):
     """Use an explicit aliases value, including an empty list; otherwise use fallback."""
@@ -1165,7 +1197,9 @@ if __name__ == "__main__": unittest.main()
             variant_eight = "    remaining = attempts\n    while remaining > 0:\n        remaining -= 1\n        try:\n            return operation()\n        except OSError as error:\n            if remaining == 0:\n                return None\n"
             variant_nine = "    last = None\n    for _ in range(attempts + 1):\n        try:\n            return operation()\n        except OSError as error:\n            last = error\n    return None\n"
             variant_ten = "    for attempt in range(attempts):\n        try:\n            return operation()\n        except OSError as error:\n            terminal = attempt + 1 == attempts\n            if terminal:\n                error.add_note('final retry exhausted')\n                return None\n    return None\n"
-            tail = tails[variant - 2] if variant <= 6 else variant_seven if variant == 7 else variant_eight if variant == 8 else variant_nine if variant == 9 else variant_ten
+            variant_eleven = "    for attempt in range(attempts):\n        try:\n            value = operation()\n        except OSError as error:\n            if attempt < attempts - 1:\n                continue\n            return None\n        else:\n            return value\n    return None\n"
+            variant_twelve = "    remaining = attempts\n    while remaining > 0:\n        try:\n            return operation()\n        except OSError as error:\n            remaining -= 1\n            if remaining:\n                continue\n            return None\n    return None\n"
+            tail = tails[variant - 2] if variant <= 6 else variant_seven if variant == 7 else variant_eight if variant == 8 else variant_nine if variant == 9 else variant_ten if variant == 10 else variant_eleven if variant == 11 else variant_twelve
             source = header + tail
             fixes = [
                 source.replace("    return None\n", "    raise last\n"),
@@ -1177,7 +1211,9 @@ if __name__ == "__main__": unittest.main()
             reference = fixes[variant - 2] if variant <= 6 else (
                 source.replace("                return None", "                raise") if variant <= 8 else
                 source.replace("range(attempts + 1)", "range(attempts)").replace("    return None\n", "    raise last\n") if variant == 9 else
-                source.replace("                return None", "                raise error").replace("    return None\n", "    raise RuntimeError('attempts must be positive')\n"))
+                source.replace("                return None", "                raise error").replace("    return None\n", "    raise RuntimeError('attempts must be positive')\n") if variant == 10 else
+                source.replace("            return None", "            raise error") if variant == 11 else
+                source.replace("            return None", "            raise error"))
     else:
         default = 10 + variant
         source = ("def load_limits(values):\n"
@@ -1213,7 +1249,9 @@ if __name__ == "__main__": unittest.main()
             variant_eight = f'    raw = values.get("max_items")\n    count = int(raw) if raw else {default}'
             variant_nine = f'    raw = values.get("max_items", {default})\n    count = int(raw)\n    if count == 0:\n        count = {default}'
             variant_ten = f'    raw = values.get("max_items", {default})\n    count = int(raw)\n    count = {default} if count == 0 else count'
-            replacement = alternatives[variant - 2] if variant <= 6 else variant_seven if variant == 7 else variant_eight if variant == 8 else variant_nine if variant == 9 else variant_ten
+            variant_eleven = f'    raw = values.get("max_items", {default})\n    if not raw:\n        raw = {default}\n    count = int(raw)'
+            variant_twelve = f'    raw = values.get("max_items", {default})\n    if raw == 0:\n        raw = {default}\n    count = int(raw)'
+            replacement = alternatives[variant - 2] if variant <= 6 else variant_seven if variant == 7 else variant_eight if variant == 8 else variant_nine if variant == 9 else variant_ten if variant == 10 else variant_eleven if variant == 11 else variant_twelve
             source = source.replace(original, replacement)
     files = {filename: source, f"test_{module}.py": check}
     if tier >= 2:
@@ -1225,6 +1263,10 @@ if __name__ == "__main__": unittest.main()
                                if variant == 3 else
                                "from policy import choose_tags\ndef handle(row):\n    return choose_tags(row)\n"
                                if variant == 4 else
+                               "from policy import choose_policy\ndef handle(row):\n    return choose_policy(row)\n"
+                               if variant == 5 else
+                               "from policy import choose_revision\ndef handle(row):\n    return choose_revision(row)\n"
+                               if variant == 6 else
                                "from policy import choose_aliases\ndef handle(row):\n    return choose_aliases(row)\n")
         files["README.md"] = "service.py is the application entrypoint. Component docstrings define its contract.\n"
     return {"files": files, "source": filename, "reference": reference, "check": check,
@@ -1272,12 +1314,16 @@ def prepare_campaign(output, sources):
             "continuity": "The selected jcode-harness-api runtime request/event contract has no compact request or compaction-completion event; client-wire Request::Compact is not reachable from api --stdio, so native compaction and its handoff cannot be verified.",
         }.get(family)
         groups = {}
-        for stage in ("tier-1", "tier-2", "tier-3", "tier-4", "tier-5", "tier-6", "confirmation"):
-            tier = 6 if stage == "tier-6" else (5 if stage == "tier-5" else (4 if stage == "tier-4" else (3 if stage == "tier-3" else (2 if stage in ("tier-2", "confirmation") else 1))))
+        for stage in ("tier-1", "tier-2", "tier-3", "tier-4", "tier-5", "tier-6", "tier-7", "tier-8", "confirmation"):
+            tier = 8 if stage == "tier-8" else (7 if stage == "tier-7" else (6 if stage == "tier-6" else (5 if stage == "tier-5" else (4 if stage == "tier-4" else (3 if stage == "tier-3" else (2 if stage in ("tier-2", "confirmation") else 1))))))
             cases = []
-            contexts = ("retry", "limits", "mapping") if stage in ("tier-3", "tier-4", "tier-5", "tier-6") else ("retry", "limits")
+            contexts = ("retry", "limits", "mapping") if stage in ("tier-3", "tier-4", "tier-5", "tier-6", "tier-7", "tier-8") else ("retry", "limits")
             for context in contexts:
                 numbers = range(2, 7) if stage == "confirmation" else [
+                    12 if stage == "tier-8" and context != "mapping" else
+                    6 if stage == "tier-8" and context == "mapping" else
+                    11 if stage == "tier-7" and context != "mapping" else
+                    5 if stage == "tier-7" and context == "mapping" else
                     10 if stage == "tier-6" and context != "mapping" else
                     4 if stage == "tier-6" and context == "mapping" else
                     9 if stage == "tier-5" and context != "mapping" else
@@ -1342,7 +1388,7 @@ def prepare_campaign(output, sources):
                     cases.append(identity)
             groups[stage] = cases
         families[family] = {"candidates": candidates, "groups": groups, "unsupported": unsupported,
-                            "screen_stages": ["tier-6"] if family == "planning" else [],
+                            "screen_stages": ["tier-8"] if family == "planning" else [],
                             "metric": "planning" if family == "planning" else "outcome"}
     for key, definition in bank.items():
         directory = output / "bank" / key

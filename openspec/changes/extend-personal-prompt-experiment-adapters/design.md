@@ -8,7 +8,7 @@ V7's `report.json` records all 144 actor and assessor slots valid, three support
 
 ## Goals / Non-Goals
 
-**Goals:** Complete the fresh planning screen over three independently authored contexts; retain original thresholds and candidate/confirmation rules; make a local, bounded plateau claim only when V8's independently authored isolation and scope screens plus V13's planning screen are all complete, valid, and below their existing signal thresholds; bind all predecessor evidence and cumulative counters before inference.
+**Goals:** Complete the fresh planning screen over three independently authored contexts; retain original thresholds and candidate/confirmation rules; make a local, bounded plateau claim only when V8's independently authored isolation and scope screens plus V15's planning screen are all complete, valid, and below their existing signal thresholds; bind all predecessor evidence and cumulative counters before inference.
 
 **Non-Goals:** Do not alter the Jcode product API to manufacture adapter support; do not claim a global prompt plateau, candidate benefit, adoption, publication, or production superiority; do not reopen or replace any spent prior slot.
 
@@ -22,7 +22,9 @@ V7's `report.json` records all 144 actor and assessor slots valid, three support
 
 ## V12 Recovery Disposition
 
-V12's actor planning screen completed 36/36 valid trials. Its assessor reached 17 valid results and one HTTP 401 invalidated-OAuth result before the stop rule; the remaining 18 slots stay unattempted and are not replacements. The V12 coordinator records the planning family as blocked and does not support campaign-child resume, so V13 uses fresh, independently authored planning fixtures. V12 remains a bound predecessor and contributes all 36 actor attempts, 18 assessor attempts, and its exact invalid/unattempted counts to cumulative history; none of its partial planning evidence qualifies toward the prospective plateau.
+V12's actor planning screen completed 36/36 valid trials. Its assessor reached 17 valid results and one HTTP 401 invalidated-OAuth result before the stop rule; the remaining 18 slots stay unattempted and are not replacements. V12's planning family is blocked and does not support campaign-child resume, so V13 used fresh, independently authored planning fixtures. V13 then stopped at actor slot 008 after the registered 180-second API watchdog expired during tool-input streaming: seven valid results, one interrupted/invalid result, and 28 unattempted actor slots; no assessor inference started. V14 uses another fresh planning fixture set and binds all V1–V13 counters. Neither V12 nor V13 partial planning evidence qualifies toward the prospective plateau.
+
+V14 registered fresh tier-7 fixtures and bound V1–V13 roots/counters. Its no-inference preflight passed, then actor slot 006 returned the provider error `stream content stall: no model output within 80000ms (lifecycle/heartbeat events only)` after five valid trials. One invalid slot is retained, 30 actor slots remain unattempted, and no assessor inference started. V15 uses new tier-8 fixtures and binds V1–V14; neither V13 nor V14 partial planning evidence qualifies toward the prospective plateau.
 
 ## Risks / Trade-offs
 
@@ -33,4 +35,4 @@ V12's actor planning screen completed 36/36 valid trials. Its assessor reached 1
 
 ## Migration Plan
 
-Keep V1–V12 unchanged. Extend the existing runner compatibly, add offline tests and fresh independent review, then register V13 with predecessor hashes/counters and V8 screen evidence frozen; bind V9 as an interrupted campaign, V10/V11 as no-inference preflight dispositions, and V12 as a partial stopped campaign. Run fresh no-inference preflights before inference. Complete only the supported planning schedule and any threshold-authorized candidate/confirmation stages; assess retained evidence, verify controls/lineage, update tasks, and commit scoped changes. V13's watchdog stop leaves the registered planning screen incomplete; archive remains blocked until a newly registered continuation reaches the original lead target or demonstrates the preregistered plateau and all required closeout gates pass. No prompt adoption or shared-daemon action is part of this plan.
+Keep V1–V14 unchanged. Extend the existing runner compatibly, add offline tests and fresh independent review, then register V15 with predecessor hashes/counters and V8 screen evidence frozen; bind V9 as an interrupted campaign, V10/V11 as no-inference preflight dispositions, V12 as a partial stopped campaign, V13 as a watchdog-stopped partial campaign, and V14 as a server stream-stall disposition. Run fresh no-inference preflights before inference. Complete only the supported planning schedule and any threshold-authorized candidate/confirmation stages; assess retained evidence, verify controls/lineage, update tasks, and commit scoped changes. Archive only after the lead target or preregistered plateau and all required closeout gates pass. No prompt adoption or shared-daemon action is part of this plan.
