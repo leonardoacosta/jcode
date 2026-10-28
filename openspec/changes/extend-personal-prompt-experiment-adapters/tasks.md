@@ -2,24 +2,29 @@
 
 ## 1. Registration lineage and historical counters
 
-- [ ] 1.1 Add a read-only predecessor audit for V1–V7 that validates each registration/report/audit root and computes cumulative counts; verify all seven current roots pass and reproduce 367 actor attempts, 362 valid, 5 invalid, and 0 leads.
-- [ ] 1.2 Bind predecessor root inventories and historical counters into new campaign registration before inference; add tamper/missing-root tests and verify registration refuses any altered or incomplete predecessor.
+- [x] 1.1 Validate 35 predecessor roots/109 files; cumulative V1–V11 totals: 497 actor attempts, 491 valid, 6 invalid; 405 valid assessor attempts; 0 leads.
+- [x] 1.2 Bind V1–V11 roots/counters into V12; bind only V8's receipt-verified isolation/scope screens as prospective evidence; retain V9's partial results and V10/V11 pre-inference blockers without counting them; tamper/missing-root tests pass.
 
 ## 2. Fresh supported-family screen
 
-- [ ] 2.1 Author three new independent fixtures per supported family, each with challenge/counterexample tasks and protected oracles; verify every oracle distinguishes reference from defect and fixtures do not reuse prior confirmation outputs.
-- [ ] 2.2 Extend the runner with one frozen prospective screen and the local plateau rule; add tests for signal thresholds, invalid/unknown evidence, unsupported families, cumulative counters, exhaustion and zero-signal plateau.
-- [ ] 2.3 Document the exact routing and continuity adapter gaps in the report, and verify both families stop before inference with zero family slots submitted.
+- [x] 2.1 Freeze V12's new retry, limits, and mapping contexts with challenge/counter cases; protected oracles distinguish reference from defect and avoid prior confirmation fixtures.
+- [x] 2.2 Freeze the cumulative three-family plateau rule and thresholds; focused regressions cover threshold, invalid/unknown evidence, unsupported families, counters, exhaustion, and zero-signal behavior.
+- [x] 2.3 Record exact routing and continuity blockers; both remained unsupported with zero family slots submitted.
+- [x] 2.4 Accept Git cache-only drift only when HEAD, status, index entries, and flags match; worktree and staged changes remain rejected.
 
 ## 3. Registered campaign execution
 
-- [ ] 3.1 Freeze the V8 descriptor, controls, disposable candidates, fixture/oracle hashes, model/effort, cumulative counters, plateau rule and predecessor roots; verify registration and `--verify` before any model inference.
-- [ ] 3.2 Run a fresh no-inference preflight for every registered screen child using only OmniRoute `gpt-6-luna` / medium; verify actual serving identity, matched controls/tools/context, networkless callbacks and zero model trials before proceeding.
-- [ ] 3.3 Execute the registered supported-family screens and any threshold-authorized candidate/confirmation stages; verify attempted slots never resubmit and every child passes its matching fresh preflight.
-- [ ] 3.4 Assess all retained results and produce the bounded outcome with denominators, cumulative counters, unsupported reasons and truthful plateau/lead status; verify default/current-personal controls and target restoration.
+- [x] 3.1 Freeze V12 descriptor, controls, disposable candidates, fixtures, V8 screens, V9 interrupted evidence, V10/V11 preflight dispositions, cumulative counters, plateau rule, and all predecessor roots; registration and `--verify` passed before inference.
+- [x] 3.2 Fresh no-inference preflights passed for V12 actor and assessor: 36 contexts each, only OmniRoute `gpt-6-luna` / medium, matched tools/context, networkless callbacks, zero trials during preflight.
+- [ ] 3.3 V12 actor screen completed 36/36 valid; assessor stopped after 18/36 (17 valid, 1 invalid, 18 unattempted) on OmniRoute HTTP 401. No candidates/confirmations were eligible; no spent slot was repeated.
+- [x] 3.4 Assessed all retained evidence with unavailable/invalid rows explicit. Cumulative V1–V12: 533 actor attempts (527 valid, 6 invalid), 423 assessor attempts (422 valid, 1 invalid), 0 leads; plateau not demonstrated (2/3 eligible screens). Default/current-personal controls remained frozen; disposable target restored.
 
 ## 4. Review and closeout
 
-- [ ] 4.1 Run focused regression tests, V1–V7 lineage verification, V8 verification, strict OpenSpec validation, link checks and whitespace checks; verify each command has fresh passing evidence.
-- [ ] 4.2 Obtain independent review of the final scoped diff and evidence using only OmniRoute `gpt-6-luna` / medium; repair actionable findings and repeat affected checks/review.
-- [ ] 4.3 Update these tasks only from verified outcomes, create scoped commits with configured identity, archive the completed change, and verify final archive and commit persistence without modifying unrelated work.
+- [x] 4.1 `PYTHONPATH=scripts python3 -m unittest test_personal_prompt_eval` (47 passed); `py_compile`; V12 `--verify`; strict OpenSpec validation; `git diff --check` passed.
+- [ ] 4.2 Independent model review is blocked: OmniRoute `gpt-6-luna` assessor slot 018 returned HTTP 401 for an invalidated OAuth token and set a model lockout. No other reviewer/model was used.
+- [ ] 4.3 Scoped implementation/evidence commit may proceed; native archive remains blocked until 3.3 and 4.2 are resolved. Unrelated dirty work remains out of scope.
+
+## Blocked closeout evidence
+
+See [evaluation.md](evaluation.md) and V12's retained [report](../../../target/personal-prompt-eval/2026-10-28-automated-campaign-v12/report.json), [audit](../../../target/personal-prompt-eval/2026-10-28-automated-campaign-v12/audit.ndjson), and assessor [slot 018](../../../target/personal-prompt-eval/2026-10-28-automated-campaign-v12/runs/planning-tier-5-baseline-assessor/trials/slot-018.json). The resolver is re-authorization of the existing OmniRoute OAuth provider connection by its owner; credential/provider changes are outside this request. V12's invalid slot remains spent; the 18 unattempted assessor slots are not submitted.

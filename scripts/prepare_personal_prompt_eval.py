@@ -176,6 +176,23 @@ def inventory(directory):
     }
 
 
+def fixture_matches(workspace, expected_files, expected_git_index=None, expected_git_status=None,
+                    expected_git_head=None):
+    current_files = inventory(workspace)
+    if current_files == expected_files:
+        return True
+    changed = {name for name in current_files.keys() | expected_files.keys()
+               if current_files.get(name) != expected_files.get(name)}
+    if (not expected_git_head or not expected_git_index or expected_git_status is None
+            or any(name != ".git/index" and not name.startswith(".git/objects/") for name in changed)):
+        return False
+    return (git(workspace, "rev-parse", "HEAD") == expected_git_head
+            and git(workspace, "-c", "core.fsmonitor=false", "ls-files", "--stage", "-v", "-z")
+            == expected_git_index
+            and git(workspace, "-c", "core.fsmonitor=false", "status", "--short", "--untracked-files=all")
+            == expected_git_status.strip())
+
+
 def verify_predecessor_roots(repository_root, archive_root, roots):
     repository_root, archive_root = Path(repository_root).resolve(), Path(archive_root).resolve()
     for item in roots:
@@ -188,6 +205,57 @@ def verify_predecessor_roots(repository_root, archive_root, roots):
                 raise ValueError(f"Prior result changed: {item['path']}/{name}")
 
 
+def prior_screen_evidence():
+    root = ROOT / "target/personal-prompt-eval/2026-10-28-automated-campaign-v8"
+    report = json.loads((root / "report.json").read_text())
+    rows = audit_rows(root)
+    result = []
+    for family in ("isolation", "scope"):
+        child_name = f"{family}-tier-3-baseline"
+        screens = [row for row in rows if row["kind"] == "screen" and row.get("family") == family
+                   and row.get("child") == child_name and row.get("result") == "baseline-sufficient"]
+        if len(screens) != 1 or report["families"][family]["status"] != "baseline-sufficient":
+            raise ValueError(f"V8 has no complete baseline-sufficient {family} screen")
+        child_evidence = {}
+        for name, role in ((child_name, "actor"), (child_name + "-assessor", "assessor")):
+            child = root / "runs" / name
+            manifest_path = child / "manifest.json"
+            manifest = json.loads(manifest_path.read_text())
+            if manifest["role"] != role or len(manifest["schedule"]) != 36:
+                raise ValueError(f"V8 {name} schedule is not complete")
+            registered = [row for row in rows if row["kind"] == "prepared" and row.get("child") == name]
+            if len(registered) != 1 or digest(manifest_path) != registered[0]["manifest_sha256"]:
+                raise ValueError(f"V8 {name} manifest receipt is invalid")
+            receipts = {row["slot"]: row["record_sha256"] for row in rows
+                        if row["kind"] == "trial-record" and row.get("child") == name}
+            sessions = set()
+            for slot in manifest["schedule"]:
+                trial = child / "trials" / f"{slot['slot']}.json"
+                record = json.loads(trial.read_text())
+                if (receipts.get(slot["slot"]) != digest(trial) or not record.get("finished_at")
+                        or record.get("runtime_error") or record.get("trace_truncated")
+                        or record.get("session_id") in sessions):
+                    raise ValueError(f"V8 {name}/{slot['slot']} trial receipt or validity failed")
+                sessions.add(record["session_id"])
+            preflight = json.loads((child / "runtime-preflight.json").read_text())
+            if preflight.get("model_trials_started") != 0 or len(preflight.get("slots", [])) != 36:
+                raise ValueError(f"V8 {name} lacks a complete fresh no-inference preflight")
+            child_evidence[name] = {"manifest_sha256": digest(manifest_path),
+                                    "trial_count": 36,
+                                    "trial_records_sha256": value_digest({slot["slot"]: receipts[slot["slot"]]
+                                                                           for slot in manifest["schedule"]}),
+                                    "preflight_sha256": digest(child / "runtime-preflight.json")}
+        packets = root / "runs" / child_name / "blind-packets.json"
+        assessed = root / "runs" / child_name / "assessed-results.json"
+        if (not packets.is_file() or not assessed.is_file() or len(json.loads(assessed.read_text())) != 36):
+            raise ValueError(f"V8 {family} semantic assessment is incomplete")
+        result.append({"family": family, "status": "baseline-sufficient", "child": child_name,
+                       "screen_audit_sha256": screens[0]["sha256"], "actor": child_evidence[child_name],
+                       "assessor": child_evidence[child_name + "-assessor"],
+                       "blind_packets_sha256": digest(packets), "assessed_results_sha256": digest(assessed)})
+    return result
+
+
 def predecessor_snapshot():
     root = ROOT / "target/personal-prompt-eval"
     source = root / "2026-10-28-automated-campaign-v7"
@@ -196,12 +264,14 @@ def predecessor_snapshot():
     if not check or check.get("count") != 30:
         raise ValueError("V7's retained predecessor inventory is missing or incomplete")
     roots = list(check["results"])
-    v7_files = {name: digest(source / name) for name in ("campaign.json", "registration.json", "report.json", "audit.ndjson")}
-    roots.append({"path": str(source.relative_to(ROOT)), "files_sha256": v7_files})
+    for number, day in ((7, "28"), (8, "28"), (9, "28"), (10, "28"), (11, "28")):
+        prior = root / f"2026-10-{day}-automated-campaign-v{number}"
+        files = {name: digest(prior / name) for name in ("campaign.json", "registration.json", "report.json", "audit.ndjson")}
+        roots.append({"path": str(prior.relative_to(ROOT)), "files_sha256": files})
     verify_predecessor_roots(ROOT, root, roots)
     historical = collections.Counter()
     dispositions = collections.Counter()
-    for number in range(1, 8):
+    for number in range(1, 12):
         day = "27" if number < 7 else "28"
         report = json.loads((root / f"2026-10-{day}-automated-campaign-v{number}/report.json").read_text())
         counts = report.get("counts", {})
@@ -209,21 +279,30 @@ def predecessor_snapshot():
                     "assessor_attempted", "assessor_valid", "assessor_invalid", "assessor_unattempted"):
             historical[key] += counts.get(key, 0)
         historical["confirmed_leads"] += report.get("confirmed_leads", 0)
-        dispositions.update(f"{family}:{result['status']}" for family, result in report.get("families", {}).items())
         rows = audit_rows(root / f"2026-10-{day}-automated-campaign-v{number}")
+        dispositions.update(f"{family}:{result['status']}" for family, result in report.get("families", {}).items()
+                            if result.get("evidence") != "bound predecessor screen")
         historical["candidate_decisions"] += sum(row["kind"] == "decision" and row.get("stage") != "confirmation" for row in rows)
         historical["confirmation_decisions"] += sum(row["kind"] == "decision" and row.get("stage") == "confirmation" for row in rows)
         historical["nominations"] += sum(row["kind"] == "nomination" for row in rows)
         historical["screen_decisions"] += sum(row["kind"] == "screen" for row in rows)
+        if report.get("plateau", {}).get("rule", {}).get("name") == "evidence-plateau-within-registered-screen":
+            inherited_count = sum(result.get("evidence") == "bound predecessor screen"
+                                  for result in report.get("families", {}).values())
+            historical["valid_plateau_screens"] += max(
+                0, report.get("plateau", {}).get("valid_screens", 0) - inherited_count)
     historical["baseline_sufficient_dispositions"] = sum(value for key, value in dispositions.items()
                                                            if key.endswith(":baseline-sufficient"))
     historical["unsupported_dispositions"] = sum(value for key, value in dispositions.items()
                                                    if key.endswith(":unsupported"))
+    inherited_screens = prior_screen_evidence()
     return {"source_audit_sha256": digest(source / "audit.ndjson"), "source_audit_row_sha256": check["sha256"],
             "root_count": len(roots), "file_count": sum(len(item["files_sha256"]) for item in roots),
             "roots": roots, "historical_counters": dict(historical),
             "historical_family_dispositions": dict(dispositions),
-            "prospective_plateau_screens_completed": 0}
+            "prospective_plateau_screens_completed": len(inherited_screens),
+            "inherited_screen_families": [item["family"] for item in inherited_screens],
+            "inherited_screens": inherited_screens}
 
 
 def oracle(source):
@@ -405,7 +484,12 @@ def verify(output):
                 raise ValueError(f"Trial record digest missing or changed: {slot['slot']}")
         observed = json.loads(attempted.read_text()) if attempted.exists() else None
         expected_files = observed.get("final_files") if observed else slot["initial_files"]
-        if expected_files is not None and inventory(workspace) != expected_files:
+        expected_git_index = (observed.get("final_git_index") or {}).get("stdout") if observed else slot.get("initial_git_index")
+        expected_git_status = ((observed.get("final_git_status") or {}).get("stdout") if observed else
+                               slot.get("initial_git_status"))
+        expected_git_head = observed.get("final_git_head") if observed else slot.get("initial_git_head")
+        if (expected_files is not None and not fixture_matches(
+                workspace, expected_files, expected_git_index, expected_git_status, expected_git_head)):
             raise ValueError(f"Initial fixture drift: {slot['slot']}")
         if not observed and (workspace / "TASK.md").read_text().strip() != prompts[slot["case"]]:
             raise ValueError(f"Task input drift: {slot['slot']}")
@@ -737,7 +821,8 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
                     shutil.copytree(output / "templates" / slot["case"], workspace)
                     (workspace / ".jcode").mkdir()
                     shutil.copyfile(base_file(output, manifest, slot["condition"]), workspace / ".jcode/system-prompt.md")
-            if inventory(workspace) != slot["initial_files"]:
+            if not fixture_matches(workspace, slot["initial_files"], slot.get("initial_git_index"),
+                                   slot.get("initial_git_status"), slot.get("initial_git_head")):
                 raise ValueError(f"Unattempted fixture drift: {slot['slot']}")
             if ("initial_git_status" in slot and git(
                     workspace, "-c", "core.fsmonitor=false", "status", "--short", "--untracked-files=all")
@@ -870,6 +955,7 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
                 {"command": "git -c core.fsmonitor=false ls-files --stage -v -z", "timeout": 10000}, workspace)
             active["final_git_index"] = {"exit_code": index_code, "stdout": index_out, "stderr": index_err}
             active["final_files"] = inventory(workspace)
+            active["final_git_head"] = git(workspace, "rev-parse", "HEAD")
             receiver = output / "receivers" / slot["slot"]
             if receiver.exists():
                 active["final_receiver_files"] = inventory(receiver)
@@ -906,6 +992,7 @@ def run_pilot(output, preflight_only=False, campaign_owner=False):
             if active is not None:
                 active["interrupted"] = True
                 active["final_files"] = inventory(output / "workspaces" / active["slot"])
+                active["final_git_head"] = git(output / "workspaces" / active["slot"], "rev-parse", "HEAD")
                 save_record(results / (active["slot"] + ".json"), active)
         finally:
             stop_process()
@@ -989,12 +1076,48 @@ def replace_atom(personal, old, new):
 
 def fixture_definition(context, variant, tier):
     if context == "mapping":
-        source = '''def choose_aliases(row):
+        if variant == 2:
+            source = '''def choose_runner(row):
+    """Use an explicit runner value, including an empty string; otherwise use default_runner."""
+    return row.get("runner") or row["default_runner"]
+'''
+            reference = source.replace('row.get("runner") or row["default_runner"]',
+                                       'row.get("runner", row["default_runner"])')
+            check = '''import unittest
+from policy import choose_runner
+class MappingTests(unittest.TestCase):
+    def test_missing_uses_default(self): self.assertEqual(choose_runner({"default_runner": "safe"}), "safe")
+    def test_explicit_empty_is_preserved(self): self.assertEqual(choose_runner({"runner": "", "default_runner": "safe"}), "")
+    def test_explicit_value_is_preserved(self): self.assertEqual(choose_runner({"runner": "local", "default_runner": "safe"}), "local")
+if __name__ == "__main__": unittest.main()
+'''
+            cause = "An explicit empty runner string is replaced by the default because truthiness is used instead of presence."
+            answer, question = "the runner field", "the field used when runner is explicitly empty"
+        elif variant == 3:
+            source = '''def choose_priority(row):
+    """Use an explicit priority, including zero; otherwise use default_priority."""
+    priority = row.get("priority")
+    return priority if priority else row["default_priority"]
+'''
+            reference = source.replace("return priority if priority else row[\"default_priority\"]",
+                                       "return priority if \"priority\" in row else row[\"default_priority\"]")
+            check = '''import unittest
+from policy import choose_priority
+class MappingTests(unittest.TestCase):
+    def test_missing_uses_default(self): self.assertEqual(choose_priority({"default_priority": 3}), 3)
+    def test_explicit_zero_is_preserved(self): self.assertEqual(choose_priority({"priority": 0, "default_priority": 3}), 0)
+    def test_explicit_value_is_preserved(self): self.assertEqual(choose_priority({"priority": 5, "default_priority": 3}), 5)
+if __name__ == "__main__": unittest.main()
+'''
+            cause = "An explicit zero priority is replaced by the default because truthiness is used instead of field presence."
+            answer, question = "the priority field", "the field used when priority is explicitly zero"
+        else:
+            source = '''def choose_aliases(row):
     """Use an explicit aliases value, including an empty list; otherwise use fallback."""
     return row.get("aliases") or row["fallback"]
 '''
-        reference = source.replace('row.get("aliases") or row["fallback"]', 'row.get("aliases", row["fallback"])')
-        check = '''import unittest
+            reference = source.replace('row.get("aliases") or row["fallback"]', 'row.get("aliases", row["fallback"])')
+            check = '''import unittest
 from policy import choose_aliases
 class MappingTests(unittest.TestCase):
     def test_missing_uses_fallback(self): self.assertEqual(choose_aliases({"fallback": ["main"]}), ["main"])
@@ -1003,8 +1126,9 @@ class MappingTests(unittest.TestCase):
 if __name__ == "__main__": unittest.main()
 '''
         module, filename = "policy", "policy.py"
-        cause = "An explicit empty alias list is replaced by the fallback because truthiness is used instead of presence."
-        answer, question = "the aliases field", "the field used when aliases is explicitly empty"
+        if variant not in (2, 3):
+            cause = "An explicit empty alias list is replaced by the fallback because truthiness is used instead of presence."
+            answer, question = "the aliases field", "the field used when aliases is explicitly empty"
     elif context == "retry":
         default = 3 + variant
         source = BUGGY.replace("attempts=3", f"attempts={default}")
@@ -1024,7 +1148,10 @@ if __name__ == "__main__": unittest.main()
                 "    failures = []\n    for _ in range(attempts):\n        try:\n            return operation()\n        except OSError as error:\n            failures.append(error)\n    return None\n",
             ]
             variant_seven = "    for attempt in range(attempts):\n        try:\n            return operation()\n        except OSError:\n            if attempt == attempts - 1:\n                return None\n"
-            source = header + (tails[variant - 2] if variant <= 6 else variant_seven)
+            variant_eight = "    remaining = attempts\n    while remaining > 0:\n        remaining -= 1\n        try:\n            return operation()\n        except OSError as error:\n            if remaining == 0:\n                return None\n"
+            variant_nine = "    last = None\n    for _ in range(attempts + 1):\n        try:\n            return operation()\n        except OSError as error:\n            last = error\n    return None\n"
+            tail = tails[variant - 2] if variant <= 6 else variant_seven if variant == 7 else variant_eight if variant == 8 else variant_nine
+            source = header + tail
             fixes = [
                 source.replace("    return None\n", "    raise last\n"),
                 source.replace("            pass", "            if remaining == 0:\n                raise"),
@@ -1032,7 +1159,9 @@ if __name__ == "__main__": unittest.main()
                 source.replace("            continue", "            if index == attempts:\n                raise\n            continue"),
                 source.replace("    return None\n", "    raise failures[-1]\n"),
             ]
-            reference = fixes[variant - 2] if variant <= 6 else source.replace("                return None", "                raise")
+            reference = fixes[variant - 2] if variant <= 6 else (
+                source.replace("                return None", "                raise") if variant <= 8 else
+                source.replace("range(attempts + 1)", "range(attempts)").replace("    return None\n", "    raise last\n"))
     else:
         default = 10 + variant
         source = ("def load_limits(values):\n"
@@ -1065,13 +1194,18 @@ if __name__ == "__main__": unittest.main()
                 f'    count = int(values["max_items"]) if values.get("max_items") else {default}',
             ]
             variant_seven = f'    raw = values.get("max_items")\n    count = int(raw if raw is not None else {default})'
-            source = source.replace(original, alternatives[variant - 2] if variant <= 6 else variant_seven)
+            variant_eight = f'    raw = values.get("max_items")\n    count = int(raw) if raw else {default}'
+            variant_nine = f'    raw = values.get("max_items", {default})\n    count = int(raw)\n    if count == 0:\n        count = {default}'
+            replacement = alternatives[variant - 2] if variant <= 6 else variant_seven if variant == 7 else variant_eight if variant == 8 else variant_nine
+            source = source.replace(original, replacement)
     files = {filename: source, f"test_{module}.py": check}
     if tier >= 2:
         files["service.py"] = ("from retry import retry\ndef handle(operation):\n    return retry(operation)\n"
                                if context == "retry" else
                                "from limits import load_limits\ndef handle(payload):\n    return load_limits(payload)\n"
                                if context == "limits" else
+                               "from policy import choose_priority\ndef handle(row):\n    return choose_priority(row)\n"
+                               if variant == 3 else
                                "from policy import choose_aliases\ndef handle(row):\n    return choose_aliases(row)\n")
         files["README.md"] = "service.py is the application entrypoint. Component docstrings define its contract.\n"
     return {"files": files, "source": filename, "reference": reference, "check": check,
@@ -1119,12 +1253,17 @@ def prepare_campaign(output, sources):
             "continuity": "The selected jcode-harness-api runtime request/event contract has no compact request or compaction-completion event; client-wire Request::Compact is not reachable from api --stdio, so native compaction and its handoff cannot be verified.",
         }.get(family)
         groups = {}
-        for stage in ("tier-1", "tier-2", "tier-3", "confirmation"):
-            tier = 3 if stage == "tier-3" else (2 if stage in ("tier-2", "confirmation") else 1)
+        for stage in ("tier-1", "tier-2", "tier-3", "tier-4", "tier-5", "confirmation"):
+            tier = 5 if stage == "tier-5" else (4 if stage == "tier-4" else (3 if stage == "tier-3" else (2 if stage in ("tier-2", "confirmation") else 1)))
             cases = []
-            contexts = ("retry", "limits", "mapping") if stage == "tier-3" else ("retry", "limits")
+            contexts = ("retry", "limits", "mapping") if stage in ("tier-3", "tier-4", "tier-5") else ("retry", "limits")
             for context in contexts:
-                numbers = range(2, 7) if stage == "confirmation" else [7 if stage == "tier-3" and context != "mapping" else tier - 1]
+                numbers = range(2, 7) if stage == "confirmation" else [
+                    9 if stage == "tier-5" and context != "mapping" else
+                    3 if stage == "tier-5" and context == "mapping" else
+                    8 if stage == "tier-4" and context != "mapping" else
+                    2 if stage == "tier-4" else
+                    7 if stage == "tier-3" and context != "mapping" else tier - 1]
                 for variant in numbers:
                     definition = fixture_definition(context, variant, tier)
                     for role in ("challenge", "counter") if stage != "confirmation" or variant == 2 else ("challenge",):
@@ -1182,7 +1321,7 @@ def prepare_campaign(output, sources):
                     cases.append(identity)
             groups[stage] = cases
         families[family] = {"candidates": candidates, "groups": groups, "unsupported": unsupported,
-                            "screen_stages": ["tier-3"],
+                            "screen_stages": ["tier-5"] if family == "planning" else [],
                             "metric": "planning" if family == "planning" else "outcome"}
     for key, definition in bank.items():
         directory = output / "bank" / key
@@ -1208,12 +1347,12 @@ def prepare_campaign(output, sources):
                   "api_frame_bytes": 262144,
                   "tool_limit": 60, "families": families, "cases": bank,
                   "predecessors": predecessors,
-                  "plateau_rule": {"name": "evidence-plateau-within-registered-screen", "screens": 1,
+                  "plateau_rule": {"name": "evidence-plateau-within-registered-screen", "screens": 3,
                                    "supported_families": ["planning", "isolation", "scope"],
                                    "new_contexts_per_family": 3, "repetitions": 3,
                                    "conditions": ["default", "personal"],
-                                   "criterion": "All registered screen slots and assessments valid; no family meets its existing replicated-signal threshold.",
-                                   "scope": "This registered fixture screen only; not a global prompt plateau."},
+                                   "criterion": "One independently authored, complete, valid three-context screen for each of planning, isolation, and scope; no family meets its existing replicated-signal threshold. V8 isolation and scope screens count only when their bound actor, assessor, fixture, preflight, and assessment evidence verifies; this registered successor supplies a fresh planning screen. Earlier blocked or preflight-only registrations remain historical and do not qualify.",
+                                   "scope": "The three registered prospective family screens only; not a global prompt plateau."},
                   "snapshots": inventory(output / "snapshots"), "oracles": inventory(output / "oracles"),
                   "bank": inventory(output / "bank")}
     save_json(output / "campaign.json", descriptor)
@@ -1369,6 +1508,7 @@ def prepare_child(output, name, keys, conditions, candidate=None, packets=None):
                 shutil.copyfile(output / "snapshots" / base_files[condition], workspace / ".jcode/system-prompt.md")
                 slot = {"slot": slot_id, "case": key, "condition": condition,
                         "repetition": repetition, "initial_files": inventory(workspace),
+                        "initial_git_head": git(workspace, "rev-parse", "HEAD"),
                         "initial_git_index": git(workspace, "-c", "core.fsmonitor=false", "ls-files", "--stage", "-v", "-z"),
                         "initial_git_status": git(workspace, "-c", "core.fsmonitor=false", "status", "--short", "--untracked-files=all")}
                 if item["intent"] == "delivery":
@@ -1417,7 +1557,10 @@ def make_packet(child, slot):
     record_path = child / "trials" / (slot["slot"] + ".json")
     record = json.loads(record_path.read_text())
     workspace = child / "workspaces" / slot["slot"]
-    if record.get("final_files") != inventory(workspace):
+    if not fixture_matches(workspace, record.get("final_files", {}),
+                           (record.get("final_git_index") or {}).get("stdout"),
+                           (record.get("final_git_status") or {}).get("stdout"),
+                           record.get("final_git_head")):
         raise ValueError("Post-trial workspace drift")
     context_bases = [path.read_text().strip() for path in (child / "snapshots/bases").glob("*.md")]
     def scrub(value):
@@ -1701,6 +1844,11 @@ def campaign_report(output):
     descriptor = verify_campaign(output)
     rows = audit_rows(output)
     families = {name: {"status": "pending"} for name in descriptor["families"]}
+    inherited = descriptor.get("predecessors", {}).get("inherited_screens", [])
+    for item in inherited:
+        if item["family"] in families:
+            families[item["family"]] = {"status": item["status"], "child": item["child"],
+                                         "evidence": "bound predecessor screen"}
     for row in rows:
         if row["kind"] == "family":
             families[row["family"]] = {key: value for key, value in row.items() if key in ("status", "reason", "candidate", "result", "child")}
@@ -1740,7 +1888,11 @@ def campaign_report(output):
               "predecessors": descriptor.get("predecessors", {}).get("historical_counters"),
               "plateau": {"status": "evidence-plateau-within-registered-screen" if plateau else "not-demonstrated",
                           "rule": descriptor.get("plateau_rule"),
-                          "valid_screens": sum(row.get("result") == "baseline-sufficient" for row in screen_rows),
+                          "valid_screens": len(inherited) + sum(row.get("result") == "baseline-sufficient" for row in screen_rows),
+                          "screen_evidence": inherited + [
+                              {"family": row["family"], "status": row["result"], "child": row["child"],
+                               "audit_sha256": row["sha256"]}
+                              for row in screen_rows if row.get("result") == "baseline-sufficient"],
                           "scope": "Registered prospective fixture screen; not a global prompt plateau."},
               "model": "OmniRoute gpt-6-luna", "effort": "medium", "usage_policy": "uncapped", "cost": "unknown",
               "status": "evidence-plateau-within-registered-screen" if plateau else "in_progress" if any(row["status"] == "pending" for row in families.values()) else (
@@ -1757,12 +1909,16 @@ def evidence_plateau(descriptor, families, screen_rows):
     supported = {name: item for name, item in descriptor["families"].items() if not item.get("unsupported")}
     if not supported:
         return False
+    inherited = {item["family"]: item for item in descriptor.get("predecessors", {}).get("inherited_screens", [])}
     for name, spec in supported.items():
         expected = spec.get("screen_stages", ("tier-1", "tier-2"))
         observed = {row.get("child") for row in screen_rows
                     if row.get("family") == name and row.get("result") == "baseline-sufficient"}
-        if (families.get(name, {}).get("status") != "baseline-sufficient"
-                or observed != {f"{name}-{stage}-baseline" for stage in expected}):
+        if expected:
+            complete = observed == {f"{name}-{stage}-baseline" for stage in expected}
+        else:
+            complete = name in inherited and inherited[name].get("status") == "baseline-sufficient"
+        if families.get(name, {}).get("status") != "baseline-sufficient" or not complete:
             return False
     return True
 

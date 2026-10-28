@@ -6,9 +6,9 @@ V7 completed registration without a lead or a demonstrated evidence plateau: all
 
 ## What Changes
 
-- Add matched, recorded routing and native compaction/handoff adapters, with capability-specific no-inference preflights; classify either family as unsupported with the exact failed observation when its native behavior cannot be established.
-- Register one successor campaign that binds V7 and every prior result root and cumulative stop counters before inference, preserves original thresholds and frozen controls, and uses newly authored fixtures and disposable candidates only.
-- Preregister a prospective plateau rule based on repeated, valid, independent baseline screens; baseline sufficiency alone will not satisfy it.
+- Preflight matched routing and native compaction/handoff adapters; when the pinned runtime cannot provide one, preserve the exact blocker and exclude that family before inference.
+- After preserving V9's timed-out slot and partial results, register one bounded fresh planning screen after the recorded V10/V11 pre-inference defects with new fixtures and no replacement slots. Bind V1–V11 result roots and cumulative counters before inference; preserve original thresholds and frozen controls. Stop on the registered lead, evidence-plateau, exhaustion, or blocker rules.
+- Preregister a prospective plateau rule requiring valid, independent screens for planning, isolation, and scope; V8's verified isolation/scope screens plus V12's fresh planning screen can satisfy it. V9's interrupted planning screen remains historical, not plateau evidence. Baseline sufficiency alone cannot.
 - Preserve all prior registrations, trials, reports, and the default/current-personal controls.
 
 ## Capabilities

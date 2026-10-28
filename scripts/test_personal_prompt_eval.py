@@ -132,21 +132,48 @@ class Recovery(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "root is missing"):
                 evaluation.verify_predecessor_roots(repo, archive, [{**root, "path": "target/personal-prompt-eval/missing"}])
 
+    def test_git_maintenance_cache_drift_is_neutral_but_index_or_file_changes_fail(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            tracked = repo / "tracked.txt"
+            tracked.write_text("base\n")
+            evaluation.git(repo, "init", "--template=", "-q")
+            evaluation.git(repo, "add", "tracked.txt")
+            evaluation.git(repo, "-c", "commit.gpgsign=false", "commit", "-qm", "fixture")
+            expected_files = evaluation.inventory(repo)
+            expected_index = evaluation.git(repo, "-c", "core.fsmonitor=false", "ls-files", "--stage", "-v", "-z")
+            expected_status = evaluation.git(repo, "-c", "core.fsmonitor=false", "status", "--short", "--untracked-files=all")
+            expected_head = evaluation.git(repo, "rev-parse", "HEAD")
+            stat = tracked.stat()
+            os.utime(tracked, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+            evaluation.git(repo, "update-index", "--refresh")
+            self.assertNotEqual(expected_files[".git/index"], evaluation.digest(repo / ".git/index"))
+            self.assertTrue(evaluation.fixture_matches(repo, expected_files, expected_index, expected_status, expected_head))
+            tracked.write_text("changed\n")
+            self.assertFalse(evaluation.fixture_matches(repo, expected_files, expected_index, expected_status, expected_head))
+            evaluation.git(repo, "add", "tracked.txt")
+            self.assertFalse(evaluation.fixture_matches(repo, expected_files, expected_index, expected_status, expected_head))
+
     def test_successor_binds_all_prior_roots_and_cumulative_counts(self):
         snapshot = evaluation.predecessor_snapshot()
-        self.assertEqual(snapshot["root_count"], 31)
-        self.assertEqual(snapshot["file_count"], 93)
-        self.assertEqual(snapshot["historical_counters"]["actor_attempted"], 367)
-        self.assertEqual(snapshot["historical_counters"]["actor_valid"], 362)
-        self.assertEqual(snapshot["historical_counters"]["actor_invalid"], 5)
+        self.assertEqual(snapshot["root_count"], 35)
+        self.assertEqual(snapshot["file_count"], 109)
+        self.assertEqual(snapshot["historical_counters"]["actor_attempted"], 497)
+        self.assertEqual(snapshot["historical_counters"]["actor_valid"], 491)
+        self.assertEqual(snapshot["historical_counters"]["actor_invalid"], 6)
+        self.assertEqual(snapshot["historical_counters"]["assessor_attempted"], 405)
+        self.assertEqual(snapshot["historical_counters"]["assessor_valid"], 405)
+        self.assertEqual(snapshot["historical_counters"]["actor_unattempted"], 293)
         self.assertEqual(snapshot["historical_counters"]["confirmed_leads"], 0)
-        self.assertEqual(snapshot["prospective_plateau_screens_completed"], 0)
+        self.assertEqual(snapshot["historical_counters"]["valid_plateau_screens"], 2)
+        self.assertEqual(snapshot["prospective_plateau_screens_completed"], 2)
+        self.assertEqual(snapshot["inherited_screen_families"], ["isolation", "scope"])
 
     def test_fresh_plateau_fixtures_have_discriminating_oracles(self):
-        for context, variant in (("retry", 7), ("limits", 7), ("mapping", 1)):
+        for context, variant in (("retry", 9), ("limits", 9), ("mapping", 3)):
             with self.subTest(context=context), tempfile.TemporaryDirectory() as directory:
                 fixture = Path(directory)
-                definition = evaluation.fixture_definition(context, variant, 3)
+                definition = evaluation.fixture_definition(context, variant, 4)
                 for name, content in definition["files"].items():
                     (fixture / name).write_text(content)
                 self.assertFalse(evaluation.confined_oracle(fixture, definition["check"])["pass"])
@@ -155,19 +182,21 @@ class Recovery(unittest.TestCase):
 
     def test_plateau_requires_every_supported_family_screen(self):
         descriptor = {"families": {
-            "planning": {"screen_stages": ["tier-3"]},
-            "isolation": {"screen_stages": ["tier-3"]},
-            "scope": {"screen_stages": ["tier-3"]},
+            "planning": {"screen_stages": ["tier-4"]},
+            "isolation": {"screen_stages": []},
+            "scope": {"screen_stages": []},
             "routing": {"unsupported": "missing matched route"},
             "continuity": {"unsupported": "missing compact receipt"},
-        }}
+        }, "predecessors": {"inherited_screens": [
+            {"family": "isolation", "status": "baseline-sufficient"},
+            {"family": "scope", "status": "baseline-sufficient"},
+        ]}}
         families = {name: {"status": "baseline-sufficient"} for name in ("planning", "isolation", "scope")}
-        rows = [{"family": name, "child": name + "-tier-3-baseline", "result": "baseline-sufficient"}
-                for name in ("planning", "isolation", "scope")]
+        rows = [{"family": "planning", "child": "planning-tier-4-baseline", "result": "baseline-sufficient"}]
         self.assertTrue(evaluation.evidence_plateau(descriptor, families, rows))
         self.assertFalse(evaluation.evidence_plateau(descriptor, {**families, "scope": {"status": "blocked"}}, rows))
-        self.assertFalse(evaluation.evidence_plateau(descriptor, families, rows[:-1]))
-        invalid = [{**row, "result": "blocked"} if row["family"] == "planning" else row for row in rows]
+        self.assertFalse(evaluation.evidence_plateau(descriptor, families, []))
+        invalid = [{**rows[0], "result": "signal"}]
         self.assertFalse(evaluation.evidence_plateau(descriptor, families, invalid))
 
     def test_receipt_failure_leaves_slot_spent_without_model_submission(self):
@@ -408,6 +437,16 @@ class CampaignArtifacts(unittest.TestCase):
         self.assertEqual(len(rows), 24)
         self.assertTrue(all(not row["validity"]["valid"] for row in rows))
         self.assertEqual(evaluation.baseline_signal(rows, "outcome"), "blocked")
+
+    def test_fresh_planning_screen_has_three_independent_contexts(self):
+        descriptor = evaluation.verify_campaign(self.root)
+        keys = descriptor["families"]["planning"]["groups"]["tier-5"]
+        self.assertEqual(len(keys), 6)
+        self.assertEqual({descriptor["cases"][key]["context"] for key in keys},
+                         {"retry", "limits", "mapping"})
+        rule = descriptor["plateau_rule"]["criterion"]
+        self.assertIn("this registered successor supplies a fresh planning screen", rule)
+        self.assertIn("Earlier blocked or preflight-only registrations remain historical", rule)
 
     def test_child_freezes_initial_git_status_in_condition_blind_packet(self):
         descriptor = evaluation.verify_campaign(self.root)
