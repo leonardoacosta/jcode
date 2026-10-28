@@ -39,4 +39,6 @@ One further registration, V4, passed 72 fresh no-inference contexts, then stoppe
 
 The authorized successor V5 passed 72 fresh no-inference contexts, then stopped after nine planning actor attempts (eight runtime-valid, one HTTP 401 for an invalidated upstream OAuth token). Assessment-only recovery made no assessor calls; attempted grades remain unjudged. Across V1–V5 there are 79 actor attempts (74 valid, five invalid); no candidate or holdout has been opened. V5's audit binds all 28 predecessor roots. No credentials were changed. The feature remains pending under the common-runtime stop rule; see `openspec/changes/automate-personal-prompt-experiments/evaluation.md`.
 
+Authorized V6 bound all 29 predecessor roots and completed 144 actor plus 144 assessor slots, all runtime-valid. Independent review verified the audit chain, zero unattempted slots, and the final report. Isolation/scope baselines showed no replicated signal; planning is blocked by two unknown tier-2 preservation-boundary grades. No candidate or confirmation trial was eligible, so V6 produced no prompt lead or evidence plateau. V6 results and closeout evidence are in `openspec/changes/automate-personal-prompt-experiments/evaluation.md`; the feature remains pending and no prompt was adopted.
+
 ---
