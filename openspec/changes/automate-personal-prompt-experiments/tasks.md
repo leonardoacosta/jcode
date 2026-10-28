@@ -31,7 +31,7 @@ Dependencies: groups 1–2. Tools/environment: existing bwrap, pinned Jcode exec
 
 Dependencies: group 3's relevant fresh preflights. Existing uncapped usage authorization applies to actor and assessment calls on the required route; record cost as unknown when unobservable. No publication or adoption is included. A common route/confinement failure stops submissions; family-local blockers remain local. No invalid slot is silently replaced.
 
-Current blocker: V3 terminated at the registered common-runtime stop after isolation slot-016 received OmniRoute HTTP 404. Planning's five invalid semantic references also remain unresolved. Across retained registrations, 58 actor attempts include 55 runtime-valid and three invalid trials; no candidate or holdout was opened. Tasks 4.1/4.2 remain incomplete. See evaluation.md; do not reopen spent slots or archive this blocked execution.
+Current blocker: V4 passed fresh preflight for all 72 supported-family contexts, then stopped at the registered common-runtime boundary after planning slot-012 returned `server_error (server_error): terminated`. The attempted slot remains spent; 60 actor slots are unattempted. Assessment-only recovery made no assessor submissions; the 12 attempted planning grades remain unjudged and 12 unattempted rows remain unknown. Across V1–V4, 70 actor attempts include 66 runtime-valid and four invalid trials; no candidate or holdout was opened. Tasks 4.1/4.2 remain incomplete. V3 and all prior results are retained and hash-bound in V4's audit. See evaluation.md; do not reopen spent slots or archive this blocked execution.
 
 ## 5. Final verification and local closeout
 
