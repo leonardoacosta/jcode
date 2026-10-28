@@ -7,9 +7,9 @@ V7 completed registration without a lead or a demonstrated evidence plateau: all
 ## What Changes
 
 - Preflight matched routing and native compaction/handoff adapters; when the pinned runtime cannot provide one, preserve the exact blocker and exclude that family before inference.
-- After preserving V9's timed-out slot and partial results, register one bounded fresh planning screen after the recorded V10/V11 pre-inference defects with new fixtures and no replacement slots. Bind V1–V11 result roots and cumulative counters before inference; preserve original thresholds and frozen controls. Stop on the registered lead, evidence-plateau, exhaustion, or blocker rules.
-- Preregister a prospective plateau rule requiring valid, independent screens for planning, isolation, and scope; V8's verified isolation/scope screens plus V12's fresh planning screen can satisfy it. V9's interrupted planning screen remains historical, not plateau evidence. Baseline sufficiency alone cannot.
-- Preserve all prior registrations, trials, reports, and the default/current-personal controls.
+- After preserving V9's timed-out slot and partial results, V10/V11 pre-inference defects, and V12's HTTP 401 assessor slot, register bounded fresh planning screen V13 with new fixtures and no replacement slots. Bind V1–V12 result roots and cumulative counters before inference; preserve original thresholds and frozen controls. Stop on the registered lead, evidence-plateau, exhaustion, or blocker rules.
+- Preregister a prospective plateau rule requiring valid, independent screens for planning, isolation, and scope; V8's verified isolation/scope screens plus V13's fresh planning screen can satisfy it. V9, V12, and V13's interrupted/blocked planning screens remain historical, not plateau evidence. Baseline sufficiency alone cannot.
+- Preserve all prior registrations, trials, reports, and the default/current-personal controls. V12's actor evidence and 17 valid assessor results remain historical; its invalid slot is spent and its 18 unattempted slots are not silently resumed or relabeled.
 
 ## Capabilities
 

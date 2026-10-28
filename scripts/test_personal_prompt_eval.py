@@ -156,13 +156,14 @@ class Recovery(unittest.TestCase):
 
     def test_successor_binds_all_prior_roots_and_cumulative_counts(self):
         snapshot = evaluation.predecessor_snapshot()
-        self.assertEqual(snapshot["root_count"], 35)
-        self.assertEqual(snapshot["file_count"], 109)
-        self.assertEqual(snapshot["historical_counters"]["actor_attempted"], 497)
-        self.assertEqual(snapshot["historical_counters"]["actor_valid"], 491)
+        self.assertEqual(snapshot["root_count"], 36)
+        self.assertEqual(snapshot["file_count"], 113)
+        self.assertEqual(snapshot["historical_counters"]["actor_attempted"], 533)
+        self.assertEqual(snapshot["historical_counters"]["actor_valid"], 527)
         self.assertEqual(snapshot["historical_counters"]["actor_invalid"], 6)
-        self.assertEqual(snapshot["historical_counters"]["assessor_attempted"], 405)
-        self.assertEqual(snapshot["historical_counters"]["assessor_valid"], 405)
+        self.assertEqual(snapshot["historical_counters"]["assessor_attempted"], 423)
+        self.assertEqual(snapshot["historical_counters"]["assessor_valid"], 422)
+        self.assertEqual(snapshot["historical_counters"]["assessor_invalid"], 1)
         self.assertEqual(snapshot["historical_counters"]["actor_unattempted"], 293)
         self.assertEqual(snapshot["historical_counters"]["confirmed_leads"], 0)
         self.assertEqual(snapshot["historical_counters"]["valid_plateau_screens"], 2)
@@ -170,7 +171,7 @@ class Recovery(unittest.TestCase):
         self.assertEqual(snapshot["inherited_screen_families"], ["isolation", "scope"])
 
     def test_fresh_plateau_fixtures_have_discriminating_oracles(self):
-        for context, variant in (("retry", 9), ("limits", 9), ("mapping", 3)):
+        for context, variant in (("retry", 10), ("limits", 10), ("mapping", 4)):
             with self.subTest(context=context), tempfile.TemporaryDirectory() as directory:
                 fixture = Path(directory)
                 definition = evaluation.fixture_definition(context, variant, 4)
@@ -376,7 +377,7 @@ class Evidence(unittest.TestCase):
 
     def test_all_fixture_variants_have_independent_discriminating_oracles(self):
         for context in ("retry", "limits"):
-            for variant in range(7):
+            for variant in range(2, 11):
                 with self.subTest(context=context, variant=variant), tempfile.TemporaryDirectory() as directory:
                     item = evaluation.fixture_definition(context, variant, 2)
                     root = Path(directory)
@@ -440,7 +441,7 @@ class CampaignArtifacts(unittest.TestCase):
 
     def test_fresh_planning_screen_has_three_independent_contexts(self):
         descriptor = evaluation.verify_campaign(self.root)
-        keys = descriptor["families"]["planning"]["groups"]["tier-5"]
+        keys = descriptor["families"]["planning"]["groups"]["tier-6"]
         self.assertEqual(len(keys), 6)
         self.assertEqual({descriptor["cases"][key]["context"] for key in keys},
                          {"retry", "limits", "mapping"})
