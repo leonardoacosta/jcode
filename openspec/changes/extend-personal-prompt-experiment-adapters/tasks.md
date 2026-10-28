@@ -26,7 +26,7 @@
 
 - [x] 4.1 Fresh `PYTHONPATH=scripts python3 -m unittest test_personal_prompt_eval` (47 passed); `py_compile`; V13 registration/verification; strict OpenSpec validation; `git diff --check`. Tier-6 retry 10, limits 10, mapping 4 protected oracles reject each defect and pass each reference.
 - [x] 4.2 Independent review using only OmniRoute `gpt-6-luna` / medium against the final implementation and evidence. Four review passes surfaced actionable documentation/status findings; repairs were checked; final and pre-commit reviews approved with no findings. All review responses retained under V13.
-- [ ] 4.3 Commit verified runner/tests/OpenSpec closeout links with configured Git identity; keep ignored V1–V13 evidence roots in place. Commit is authorized independently of the blocked experiment; do not archive or push the incomplete change. Preserve unrelated dirty work.
+- [x] 4.3 Committed verified runner/tests/OpenSpec closeout links as `ea4e9558a` with configured Git identity; ignored V1–V13 evidence roots remain in place. No archive or push of the incomplete change. Unrelated dirty work remains out of scope.
 
 ## Blocked closeout evidence
 
