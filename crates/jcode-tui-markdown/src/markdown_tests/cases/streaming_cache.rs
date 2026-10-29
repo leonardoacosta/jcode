@@ -337,12 +337,15 @@ fn test_incremental_renderer_streams_fenced_block_before_close() {
 #[cfg(feature = "mermaid-renderer")]
 #[test]
 fn test_incremental_renderer_defers_mermaid_render_until_background_ready() {
-    jcode_tui_mermaid::clear_cache().ok();
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
 
     let mut renderer = IncrementalMarkdownRenderer::new(Some(80));
-    let text = "Plan:\n\n```mermaid\nflowchart LR\n  A[Start] --> B[End]\n```\n";
+    let text = format!("Plan:\n\n```mermaid\nflowchart LR\n  A[Start {nonce}] --> B[End]\n```\n");
     let lines =
-        jcode_tui_mermaid::with_image_protocol_override(Some(true), || renderer.update(text));
+        jcode_tui_mermaid::with_image_protocol_override(Some(true), || renderer.update(&text));
     let rendered = lines_to_string(&lines);
 
     assert!(
