@@ -44,6 +44,17 @@ fn sends_cumulative_reasoning_snapshots(model: &str) -> bool {
     crate::is_kimi_model(model) || model.to_ascii_lowercase().contains("kimi")
 }
 
+// `message` is a full completion snapshot, unlike incremental `delta`.
+fn completion_snapshot_delta<'a>(emitted: &str, snapshot: &'a str) -> Result<&'a str> {
+    if let Some(suffix) = snapshot.strip_prefix(emitted) {
+        Ok(suffix)
+    } else if emitted.starts_with(snapshot) {
+        Ok("") // Ignore an older snapshot without retracting emitted text.
+    } else {
+        anyhow::bail!("OpenAI-compatible completion snapshot diverged from streamed output")
+    }
+}
+
 pub struct OpenRouterStream {
     inner: Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>,
     buffer: String,
@@ -60,6 +71,8 @@ pub struct OpenRouterStream {
     model: String,
     provider_pin: Arc<Mutex<Option<ProviderPin>>>,
     reasoning_buffer: String,
+    reasoning_text: String,
+    text_buffer: String,
     finish_reason: Option<String>,
     message_end_emitted: bool,
 }
@@ -92,6 +105,8 @@ impl OpenRouterStream {
             model,
             provider_pin,
             reasoning_buffer: String::new(),
+            reasoning_text: String::new(),
+            text_buffer: String::new(),
             finish_reason: None,
             message_end_emitted: false,
         }
@@ -390,7 +405,9 @@ impl OpenRouterStream {
             // Parse choices
             if let Some(choices) = parsed.get("choices").and_then(|c| c.as_array()) {
                 for choice in choices {
-                    if let Some(delta) = choice.get("delta").or_else(|| choice.get("message")) {
+                    let delta = choice.get("delta").filter(|value| value.is_object());
+                    let is_snapshot = delta.is_none();
+                    if let Some(delta) = delta.or_else(|| choice.get("message")) {
                         if let Some(reasoning_content) = delta
                             .get("reasoning_content")
                             .or_else(|| delta.get("reasoning"))
@@ -404,16 +421,29 @@ impl OpenRouterStream {
                             // stripping any chunk that starts with the previous
                             // one silently dropped adjacent repeated deltas
                             // ("9","4","4","0" arrived as "940", #1779).
-                            let reasoning_delta =
-                                if sends_cumulative_reasoning_snapshots(&self.model)
-                                    && reasoning_content.starts_with(&self.reasoning_buffer)
-                                {
-                                    &reasoning_content[self.reasoning_buffer.len()..]
-                                } else {
-                                    reasoning_content
-                                };
+                            let reasoning_delta = if is_snapshot {
+                                match completion_snapshot_delta(
+                                    &self.reasoning_text,
+                                    reasoning_content,
+                                ) {
+                                    Ok(suffix) => suffix,
+                                    Err(error) => {
+                                        return Some(StreamEvent::Error {
+                                            message: error.to_string(),
+                                            retry_after_secs: None,
+                                        });
+                                    }
+                                }
+                            } else if sends_cumulative_reasoning_snapshots(&self.model)
+                                && reasoning_content.starts_with(&self.reasoning_buffer)
+                            {
+                                &reasoning_content[self.reasoning_buffer.len()..]
+                            } else {
+                                reasoning_content
+                            };
                             self.reasoning_buffer = reasoning_content.to_string();
                             if !reasoning_delta.is_empty() {
+                                self.reasoning_text.push_str(reasoning_delta);
                                 self.pending.push_back(StreamEvent::ThinkingDelta(
                                     reasoning_delta.to_string(),
                                 ));
@@ -424,8 +454,24 @@ impl OpenRouterStream {
                         if let Some(content) = delta.get("content").and_then(|c| c.as_str())
                             && !content.is_empty()
                         {
-                            self.pending
-                                .push_back(StreamEvent::TextDelta(content.to_string()));
+                            let content = if is_snapshot {
+                                match completion_snapshot_delta(&self.text_buffer, content) {
+                                    Ok(suffix) => suffix,
+                                    Err(error) => {
+                                        return Some(StreamEvent::Error {
+                                            message: error.to_string(),
+                                            retry_after_secs: None,
+                                        });
+                                    }
+                                }
+                            } else {
+                                content
+                            };
+                            if !content.is_empty() {
+                                self.text_buffer.push_str(content);
+                                self.pending
+                                    .push_back(StreamEvent::TextDelta(content.to_string()));
+                            }
                         }
 
                         // Tool calls

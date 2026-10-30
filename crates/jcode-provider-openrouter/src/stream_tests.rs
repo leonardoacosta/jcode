@@ -321,6 +321,169 @@ fn reasoning_stream(model: &str, field: &str, chunks: &[&str]) -> OpenRouterStre
     stream
 }
 
+#[test]
+fn completion_snapshots_do_not_replay_streamed_text_or_reasoning() {
+    for reasoning_field in ["reasoning", "reasoning_content"] {
+        let mut stream = test_stream();
+        for value in [
+            serde_json::json!({"choices":[{"delta":{"content":"Done.",reasoning_field:"Plan."}}]}),
+            serde_json::json!({"choices":[{"message":{"content":"Done.",reasoning_field:"Plan."}}]}),
+            serde_json::json!({"choices":[{"message":{"content":"Done.",reasoning_field:"Plan."}}]}),
+            serde_json::json!({"choices":[{"message":{"content":"Done.",reasoning_field:"Plan."},"finish_reason":"stop"}]}),
+        ] {
+            stream.buffer.push_str(&format!("data: {value}\n\n"));
+        }
+        stream.buffer.push_str("data: [DONE]\n\n");
+        let mut text = String::new();
+        let mut reasoning = String::new();
+        let mut endings = 0;
+        while let Some(event) = stream.parse_next_event() {
+            match event {
+                StreamEvent::TextDelta(delta) => text.push_str(&delta),
+                StreamEvent::ThinkingDelta(delta) => reasoning.push_str(&delta),
+                StreamEvent::MessageEnd { .. } => endings += 1,
+                _ => {}
+            }
+        }
+        assert_eq!(text, "Done.", "{reasoning_field}");
+        assert_eq!(reasoning, "Plan.", "{reasoning_field}");
+        assert_eq!(endings, 1);
+    }
+}
+
+#[test]
+fn cumulative_completion_snapshots_emit_only_new_suffixes() {
+    let mut stream = test_stream();
+    for (text, reasoning) in [("Done", "Plan"), ("Done.", "Plan."), ("Done.", "Plan.")] {
+        let value =
+            serde_json::json!({"choices":[{"message":{"content":text,"reasoning":reasoning}}]});
+        stream.buffer.push_str(&format!("data: {value}\n\n"));
+    }
+    stream.buffer.push_str("data: [DONE]\n\n");
+    let mut text = String::new();
+    let mut reasoning = String::new();
+    while let Some(event) = stream.parse_next_event() {
+        match event {
+            StreamEvent::TextDelta(delta) => text.push_str(&delta),
+            StreamEvent::ThinkingDelta(delta) => reasoning.push_str(&delta),
+            _ => {}
+        }
+    }
+    assert_eq!(text, "Done.");
+    assert_eq!(reasoning, "Plan.");
+}
+
+#[test]
+fn completion_snapshots_ignore_older_prefixes_and_reject_divergence() {
+    for field in ["content", "reasoning", "reasoning_content"] {
+        let mut stream = test_stream();
+        for (envelope, value) in [
+            ("delta", "Plan."),
+            ("message", "Plan"),
+            ("message", "Other"),
+        ] {
+            let value = serde_json::json!({"choices":[{envelope:{field:value}}]});
+            stream.buffer.push_str(&format!("data: {value}\n\n"));
+        }
+        let mut emitted = String::new();
+        let mut errors = 0;
+        while let Some(event) = stream.parse_next_event() {
+            match event {
+                StreamEvent::TextDelta(delta) | StreamEvent::ThinkingDelta(delta) => {
+                    emitted.push_str(&delta)
+                }
+                StreamEvent::Error { message, .. } => {
+                    assert_eq!(
+                        message,
+                        "OpenAI-compatible completion snapshot diverged from streamed output"
+                    );
+                    errors += 1;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(emitted, "Plan.", "{field}");
+        assert_eq!(errors, 1, "{field}");
+    }
+}
+
+#[test]
+fn completion_snapshot_with_null_delta_keeps_message_fallback() {
+    let mut stream = test_stream();
+    let value = serde_json::json!({"choices":[{"delta":null,"message":{"content":"Done."}}]});
+    stream.buffer = format!("data: {value}\n\ndata: [DONE]\n\n");
+    assert_eq!(drain_text(&mut stream), "Done.");
+}
+
+#[test]
+fn completion_snapshots_preserve_kimi_cumulative_reasoning() {
+    let mut stream = reasoning_stream("kimi-k2.5", "reasoning", &["Plan", "Plan."]);
+    stream
+        .buffer
+        .truncate(stream.buffer.len() - "data: [DONE]\n\n".len());
+    let value = serde_json::json!({"choices":[{"message":{"reasoning":"Plan.!"}}]});
+    stream
+        .buffer
+        .push_str(&format!("data: {value}\n\ndata: [DONE]\n\n"));
+    assert_eq!(drain_reasoning(&mut stream), "Plan.!");
+}
+
+#[test]
+fn completion_snapshots_survive_fragmented_utf8_transport() {
+    let mut sse = String::new();
+    for (envelope, text, reasoning) in [
+        ("delta", "答", "考"),
+        ("message", "答え", "考え"),
+        ("message", "答え", "考え"),
+    ] {
+        let value =
+            serde_json::json!({"choices":[{envelope:{"content":text,"reasoning":reasoning}}]});
+        sse.push_str(&format!("data: {value}\n\n"));
+    }
+    sse.push_str("data: [DONE]\n\n");
+    let chunks: Vec<_> = sse
+        .as_bytes()
+        .chunks(1)
+        .map(|chunk| Ok(Bytes::copy_from_slice(chunk)))
+        .collect();
+    let stream = OpenRouterStream::new(
+        futures::stream::iter(chunks),
+        "test-model".to_string(),
+        Arc::new(std::sync::Mutex::new(None)),
+    );
+    let events = futures::executor::block_on(stream.collect::<Vec<_>>());
+    let mut text = String::new();
+    let mut reasoning = String::new();
+    let mut endings = 0;
+    for event in events {
+        match event.unwrap() {
+            StreamEvent::TextDelta(delta) => text.push_str(&delta),
+            StreamEvent::ThinkingDelta(delta) => reasoning.push_str(&delta),
+            StreamEvent::MessageEnd { .. } => endings += 1,
+            StreamEvent::Error { message, .. } => panic!("{message}"),
+            _ => {}
+        }
+    }
+    assert_eq!(text, "答え");
+    assert_eq!(reasoning, "考え");
+    assert_eq!(endings, 1);
+}
+
+#[test]
+fn repeated_text_deltas_are_preserved_before_completion_snapshot() {
+    let mut stream = test_stream();
+    for text in ["ha", "ha", "ha"] {
+        let value = serde_json::json!({"choices":[{"delta":{"content":text}}]});
+        stream.buffer.push_str(&format!("data: {value}\n\n"));
+    }
+    let snapshot =
+        serde_json::json!({"choices":[{"message":{"content":"hahaha"},"finish_reason":"stop"}]});
+    stream
+        .buffer
+        .push_str(&format!("data: {snapshot}\n\ndata: [DONE]\n\n"));
+    assert_eq!(drain_text(&mut stream), "hahaha");
+}
+
 /// Issue #1779: incremental reasoning backends (llama.cpp, Qwen tokenizers)
 /// emit each token as its own delta. A delta equal to the previous one must
 /// still be appended; the unguarded snapshot strip silently emptied it, so
