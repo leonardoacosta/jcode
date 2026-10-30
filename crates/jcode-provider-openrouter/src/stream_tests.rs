@@ -897,3 +897,16 @@ fn positional_fallback_tool_call_ids_are_unique_across_responses() {
 
     assert_ne!(first_turn_id, second_turn_id);
 }
+
+#[test]
+fn repeated_full_text_deltas_are_not_replayed() {
+    let mut stream = test_stream();
+    let mut sse = String::new();
+    for c in ["one", " two", "one two", "one two", "one two"] {
+        let value = serde_json::json!({"choices":[{"delta":{"content":c}}]});
+        sse.push_str(&format!("data: {value}\n\n"));
+    }
+    sse.push_str("data: [DONE]\n\n");
+    stream.buffer = sse;
+    assert_eq!(drain_text(&mut stream), "one two");
+}

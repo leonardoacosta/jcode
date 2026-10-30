@@ -73,6 +73,7 @@ pub struct OpenRouterStream {
     reasoning_buffer: String,
     reasoning_text: String,
     text_buffer: String,
+    text_delta_count: usize,
     finish_reason: Option<String>,
     message_end_emitted: bool,
 }
@@ -107,6 +108,7 @@ impl OpenRouterStream {
             reasoning_buffer: String::new(),
             reasoning_text: String::new(),
             text_buffer: String::new(),
+            text_delta_count: 0,
             finish_reason: None,
             message_end_emitted: false,
         }
@@ -464,10 +466,14 @@ impl OpenRouterStream {
                                         });
                                     }
                                 }
+                            } else if self.text_delta_count >= 2 && content == self.text_buffer {
+                                // Some proxies resend the whole completion as a final `delta`.
+                                ""
                             } else {
                                 content
                             };
                             if !content.is_empty() {
+                                self.text_delta_count += 1;
                                 self.text_buffer.push_str(content);
                                 self.pending
                                     .push_back(StreamEvent::TextDelta(content.to_string()));
