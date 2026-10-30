@@ -5,6 +5,32 @@ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 impl App {
     const COPY_VIEWPORT_CONTEXT_LINES: usize = 4;
 
+    pub(super) fn copy_failed_prompt_to_clipboard(&mut self) -> bool {
+        self.copy_failed_prompt_with(super::helpers::copy_to_clipboard)
+    }
+
+    pub(super) fn copy_failed_prompt_with<F>(&mut self, copy_text: F) -> bool
+    where
+        F: FnOnce(&str) -> bool,
+    {
+        let Some(message) = self
+            .display_messages
+            .iter()
+            .rev()
+            .find(|m| m.role == "failed_prompt")
+        else {
+            self.set_status_notice("No failed prompt to copy");
+            return false;
+        };
+        let copied = copy_text(&message.content);
+        self.set_status_notice(if copied {
+            "Copied full failed prompt"
+        } else {
+            "Failed to copy prompt; recovery remains available"
+        });
+        copied
+    }
+
     pub(super) fn enter_copy_selection_mode(&mut self) {
         self.copy_selection_mode = true;
         self.copy_selection_dragging = false;
@@ -427,6 +453,10 @@ impl App {
     ) -> bool {
         let extend = modifiers.contains(KeyModifiers::SHIFT);
         match code {
+            KeyCode::Char('p' | 'P') => {
+                self.copy_failed_prompt_to_clipboard();
+                true
+            }
             KeyCode::Esc => {
                 self.exit_copy_selection_mode();
                 true

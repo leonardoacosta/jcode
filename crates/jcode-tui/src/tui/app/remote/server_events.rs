@@ -1212,6 +1212,7 @@ pub(in crate::tui::app) fn handle_server_event(
             app.status = ProcessingStatus::Idle;
             app.stream_message_ended = false;
             app.processing_started = None;
+            app.pending_remote_turn_error = None;
             app.current_message_id = None;
             remote.clear_pending();
             remote.reset_call_output_tokens_seen();
@@ -1268,6 +1269,7 @@ pub(in crate::tui::app) fn handle_server_event(
             let completes_resumed_turn =
                 app.current_message_id.is_none() && app.is_processing && has_resumed_turn_evidence;
             if app.current_message_id == Some(id) || completes_resumed_turn {
+                app.pending_remote_turn_error = None;
                 if !app.stream_buffer.is_empty() {
                     crate::logging::info(&format!(
                         "Deferring Done id={} until paced stream backlog drains",
@@ -1365,6 +1367,10 @@ pub(in crate::tui::app) fn handle_server_event(
             }
             completed_current_message || auto_poked
         }
+        ServerEvent::TurnStopped { message, .. } => {
+            app.pending_remote_turn_error = Some((app.current_message_id, message));
+            false
+        }
         ServerEvent::Error {
             id,
             message,
@@ -1378,6 +1384,28 @@ pub(in crate::tui::app) fn handle_server_event(
                 )));
                 app.set_status_notice("Agent model update failed");
                 return false;
+            }
+            // Broadcast errors have no request ID. Consume the ordered stop/error
+            // pair once, rather than assigning a delayed duplicate to a new send.
+            if id == 0 {
+                let associated =
+                    app.pending_remote_turn_error
+                        .as_ref()
+                        .is_some_and(|(request_id, expected)| {
+                            *request_id == app.current_message_id && expected == &message
+                        });
+                if !associated {
+                    app.push_display_message(DisplayMessage::error(format!(
+                        "Server error (not associated with the current prompt): {}",
+                        App::compact_provider_failure(&message),
+                    )));
+                    return false;
+                }
+                app.pending_remote_turn_error = None;
+            } else if app.current_message_id.is_some_and(|current| current != id) {
+                return false;
+            } else if app.current_message_id == Some(id) {
+                app.pending_remote_turn_error = None;
             }
             app.refresh_openai_usage_after_quota_error(&message);
             // The server rejects a Message request with this error while its
@@ -1395,6 +1423,7 @@ pub(in crate::tui::app) fn handle_server_event(
                 remote.clear_pending();
                 app.is_processing = true;
                 app.status = ProcessingStatus::Thinking(Instant::now());
+                app.pending_remote_turn_error = None;
                 app.current_message_id = None;
                 app.processing_started.get_or_insert_with(Instant::now);
                 app.last_stream_activity = Some(Instant::now());
@@ -1452,6 +1481,7 @@ pub(in crate::tui::app) fn handle_server_event(
                 app.stream_message_ended = false;
                 app.processing_started = None;
                 app.clear_visible_turn_started();
+                app.pending_remote_turn_error = None;
                 app.current_message_id = None;
                 remote.clear_pending();
                 remote.reset_call_output_tokens_seen();
@@ -1513,9 +1543,7 @@ pub(in crate::tui::app) fn handle_server_event(
                 app.clear_pending_remote_retry();
                 crate::tui::app::commands::disable_auto_poke(app);
                 app.overnight_auto_poke = None;
-                if app.pending_provider_failover.is_none() {
-                    app.restore_failed_input_to_box();
-                }
+                app.restore_failed_input_to_box();
                 return false;
             }
             if crate::provider::parse_failover_prompt_message(&message).is_some() {
@@ -1588,6 +1616,7 @@ pub(in crate::tui::app) fn handle_server_event(
             // automatic resend path and tell the user to /login or /model.
             if !is_connectivity_error && app.note_error_for_credential_breaker(&message) {
                 app.trip_credential_failure_breaker(&message);
+                app.restore_failed_input_to_box();
                 app.offer_fallback_after_error_with_payload(
                     &message,
                     failed_fallback_payload.clone(),
@@ -1629,6 +1658,7 @@ pub(in crate::tui::app) fn handle_server_event(
                     return false;
                 }
                 crate::tui::app::commands::stop_auto_poke_for_non_retryable_error(app, &message);
+                app.restore_failed_input_to_box();
                 // Terminal: no retry will fire. Offer a one-keypress switch to
                 // the next best model/auth-method (e.g. an expired OAuth login
                 // -> a working provider) with the failed payload staged.
@@ -1639,6 +1669,7 @@ pub(in crate::tui::app) fn handle_server_event(
                 return false;
             }
             if app.stop_overnight_auto_poke_for_non_retryable_error(&message) {
+                app.restore_failed_input_to_box();
                 app.offer_fallback_after_error_with_payload(
                     &message,
                     failed_fallback_payload.clone(),
@@ -1948,7 +1979,19 @@ pub(in crate::tui::app) fn handle_server_event(
             crate::set_current_session(&session_id);
             app.note_client_focus(true);
             let session_changed = prev_session_id.as_deref() != Some(session_id.as_str());
+            let failed_prompts = if !session_changed || prev_session_id.is_none() {
+                app.display_messages()
+                    .iter()
+                    .filter(|message| message.role == "failed_prompt")
+                    .cloned()
+                    .collect::<Vec<_>>()
+            } else {
+                Vec::new()
+            };
             if session_changed {
+                if prev_session_id.is_some() {
+                    app.pending_remote_turn_error = None;
+                }
                 app.remote_available_service_tiers = None;
                 app.usage_reset.openai_quota_rejected = false;
             }
@@ -2294,6 +2337,7 @@ pub(in crate::tui::app) fn handle_server_event(
                         super::super::remote_notifications::normalize_swarm_delivery_messages(
                             &mut restored_messages,
                         );
+                        restored_messages.extend(failed_prompts);
                         app.replace_display_messages(restored_messages);
                         // A same-session forced re-apply (rewind / rewind-undo
                         // truncation, or a deferred bootstrap) rebuilds the

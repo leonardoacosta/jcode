@@ -1674,11 +1674,31 @@ fn render_message_into(
                 acc.push_auto(align_if_unset(line, align));
             }
         }
-        "error" => {
+        "error" | "failed_prompt" => {
+            let failed_prompt = msg.role == "failed_prompt";
             let error_start_line = acc.lines.len();
-            if let Some(target) = error_copy_target(&msg.content, 1) {
+            let target = if failed_prompt {
+                Some(RawCopyTarget {
+                    kind: CopyTargetKind::Error,
+                    content: msg.content.clone(),
+                    start_raw_line: 0,
+                    end_raw_line: 1,
+                    badge_raw_line: 0,
+                })
+            } else {
+                error_copy_target(&msg.content, 1)
+            };
+            if let Some(target) = target {
                 acc.copy_targets
                     .push(offset_copy_target(target, error_start_line));
+            }
+            if failed_prompt {
+                let mut header = Line::styled(
+                    "  Failed prompt (copy mode: P copies full text)",
+                    Style::default().fg(Color::Yellow),
+                );
+                super::viewport::truncate_line_in_place_to_width(&mut header, width as usize);
+                acc.push_auto(header.alignment(align));
             }
             // Multi-line diagnostics (cloud failures, error chains) keep one
             // logical line per row instead of collapsing into a single row.
@@ -1695,7 +1715,26 @@ fn render_message_into(
                             if index == 0 { prefix } else { continuation },
                             Style::default().fg(Color::Red),
                         ),
-                        Span::styled(text.to_string(), Style::default().fg(Color::Red)),
+                        Span::styled(
+                            if failed_prompt {
+                                let mut safe = String::with_capacity(text.len());
+                                for ch in text.chars() {
+                                    if ch.is_control() {
+                                        safe.extend(ch.escape_default());
+                                    } else {
+                                        safe.push(ch);
+                                    }
+                                }
+                                safe
+                            } else {
+                                text.to_string()
+                            },
+                            Style::default().fg(if failed_prompt {
+                                Color::Gray
+                            } else {
+                                Color::Red
+                            }),
+                        ),
                     ])
                     .alignment(align),
                 );

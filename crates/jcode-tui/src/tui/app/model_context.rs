@@ -1237,9 +1237,25 @@ impl App {
         let Some(prompt) = self.last_submitted_input.take() else {
             return;
         };
-        if prompt.trim().is_empty() {
+        self.restore_failed_prompt(prompt);
+    }
+
+    pub(super) fn restore_failed_prompt(&mut self, prompt: String) {
+        if prompt.trim().is_empty()
+            || self.pending_login.is_some()
+            || self.pending_account_input.is_some()
+            || self.pending_ssh_remote_name.is_some()
+        {
             return;
         }
+        self.push_display_message(DisplayMessage {
+            role: "failed_prompt".to_string(),
+            content: prompt.clone(),
+            tool_calls: vec![],
+            duration_secs: None,
+            title: None,
+            tool_data: None,
+        });
         if !self.input.is_empty() {
             // User already started a new prompt; do not overwrite it.
             return;

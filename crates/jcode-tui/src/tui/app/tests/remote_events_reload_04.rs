@@ -1,4 +1,526 @@
 #[test]
+fn failed_prompt_remote_send_retains_expanded_source() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut app = create_test_app();
+        app.is_remote = true;
+        rt.block_on(async {
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            let source = "α\nβ\nγ\nδ\nε";
+            app.handle_paste(source.to_string());
+            let prepared = input::take_prepared_input(&mut app);
+            assert_ne!(prepared.raw_input, source);
+            assert!(app.pasted_contents.is_empty());
+
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+
+            assert_eq!(app.last_submitted_input.as_deref(), Some(source));
+            assert!(
+                app.display_messages()
+                    .iter()
+                    .all(|m| m.role != "failed_prompt")
+            );
+        });
+    });
+}
+
+#[test]
+fn failed_prompt_remote_send_failure_restores_text_and_images() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut app = create_test_app();
+        app.is_remote = true;
+        rt.block_on(async {
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            drop(remote.take_dummy_peer());
+            let source = "first\nsecond\nthird\nfourth\nfifth";
+            app.handle_paste(source.to_string());
+            let images = vec![("image/png".to_string(), "aW1hZ2U=".to_string())];
+            app.pending_images = images.clone();
+            let prepared = input::take_prepared_input(&mut app);
+
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+
+            assert_eq!(app.input(), source);
+            assert_eq!(app.pending_images, images);
+            assert!(app.last_submitted_input.is_none());
+            assert!(app.display_messages().iter().any(|m| m.role == "error"
+                && m.content.contains("Failed to send message")
+                && m.content.contains("Delivery unconfirmed")));
+            assert_eq!(
+                app.display_messages()
+                    .iter()
+                    .filter(|m| m.role == "failed_prompt")
+                    .map(|m| m.content.as_str())
+                    .collect::<Vec<_>>(),
+                vec![source]
+            );
+        });
+    });
+}
+
+#[test]
+fn failed_prompt_remote_preparation_failure_preserves_new_draft_and_images() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _guard = rt.enter();
+        let mut app = create_test_app();
+        app.is_remote = true;
+        app.last_submitted_input = Some("earlier active turn".to_string());
+        let mut remote = crate::tui::backend::RemoteConnection::dummy();
+        let source = "one\ntwo\nthree\nfour\nfive";
+        app.handle_paste(source.to_string());
+        let original_image = ("image/png".to_string(), "b2xk".to_string());
+        let new_image = ("image/png".to_string(), "bmV3".to_string());
+        app.pending_images.push(original_image.clone());
+        app.pending_prompt_after_model_switch = Some(input::take_prepared_input(&mut app));
+        app.remote_model_switch_in_flight = true;
+        app.input = "newer draft".to_string();
+        app.cursor_pos = 3;
+        app.pending_images.push(new_image.clone());
+
+        let event = serde_json::from_value(serde_json::json!({
+            "type": "model_changed", "id": 12, "model": "unavailable-model",
+            "provider_name": "OpenAI", "error": "model setup failed"
+        }))
+        .unwrap();
+        app.handle_server_event(event, &mut remote);
+
+        assert_eq!(app.input(), "newer draft");
+        assert_eq!(app.cursor_pos, 3);
+        assert!(app.pending_images.contains(&original_image));
+        assert!(app.pending_images.contains(&new_image));
+        assert_eq!(
+            app.last_submitted_input.as_deref(),
+            Some("earlier active turn")
+        );
+        assert!(
+            app.display_messages()
+                .iter()
+                .any(|m| m.role == "failed_prompt" && m.content == source)
+        );
+    });
+}
+
+#[test]
+fn failed_prompt_remote_provider_failure_keeps_new_draft_and_ignores_stale_id() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut app = create_test_app();
+        app.is_remote = true;
+        rt.block_on(async {
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            let source = "one\ntwo\nthree\nfour\nfive";
+            app.handle_paste(source.to_string());
+            let prepared = input::take_prepared_input(&mut app);
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            let id = app.current_message_id.unwrap();
+            app.input = "new draft".to_string();
+            app.cursor_pos = 2;
+            let error = || crate::protocol::ServerEvent::Error {
+                id,
+                message: "provider failed hard".to_string(),
+                retry_after_secs: None,
+            };
+            app.handle_server_event(error(), &mut remote);
+            assert_eq!(app.input(), "new draft");
+            assert_eq!(app.cursor_pos, 2);
+            assert!(
+                app.display_messages()
+                    .iter()
+                    .any(|m| m.role == "failed_prompt" && m.content == source)
+            );
+            assert!(app.last_submitted_input.is_none());
+
+            app.handle_server_event(error(), &mut remote);
+            assert_eq!(
+                app.display_messages()
+                    .iter()
+                    .filter(|m| m.role == "failed_prompt")
+                    .count(),
+                1
+            );
+            app.last_submitted_input = Some("new submission".to_string());
+            app.current_message_id = Some(id + 1);
+            app.is_processing = true;
+            app.handle_server_event(error(), &mut remote);
+            assert_eq!(app.last_submitted_input.as_deref(), Some("new submission"));
+            assert_eq!(app.current_message_id, Some(id + 1));
+            assert!(app.is_processing);
+            assert_eq!(app.input(), "new draft");
+        });
+    });
+}
+
+#[test]
+fn failed_prompt_remote_deferred_submission_stays_unsubmitted_after_stale_error() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut app = create_test_app();
+        app.is_remote = true;
+        rt.block_on(async {
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            app.input = "previous sent prompt".to_string();
+            let prepared = input::take_prepared_input(&mut app);
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            let completed_id = app.current_message_id.unwrap();
+
+            app.remote_model_switch_in_flight = true;
+            app.input = "new deferred prompt".to_string();
+            let prepared = input::take_prepared_input(&mut app);
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            assert_eq!(
+                app.last_submitted_input.as_deref(),
+                Some("previous sent prompt")
+            );
+            assert_eq!(
+                app.pending_prompt_after_model_switch
+                    .as_ref()
+                    .map(|prepared| prepared.raw_input.as_str()),
+                Some("new deferred prompt")
+            );
+
+            app.handle_server_event(
+                crate::protocol::ServerEvent::Done { id: completed_id },
+                &mut remote,
+            );
+            assert!(app.last_submitted_input.is_none());
+            assert!(app.current_message_id.is_none());
+
+            app.handle_server_event(
+                crate::protocol::ServerEvent::Error {
+                    id: completed_id,
+                    message: "late provider failure".to_string(),
+                    retry_after_secs: None,
+                },
+                &mut remote,
+            );
+
+            assert_eq!(
+                app.pending_prompt_after_model_switch
+                    .as_ref()
+                    .map(|prepared| prepared.raw_input.as_str()),
+                Some("new deferred prompt")
+            );
+            assert!(
+                app.display_messages()
+                    .iter()
+                    .all(|message| message.role != "failed_prompt")
+            );
+        });
+    });
+}
+
+#[test]
+fn failed_prompt_remote_deferred_send_and_rate_limit_retry_are_not_failures() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut app = create_test_app();
+        app.is_remote = true;
+        rt.block_on(async {
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            app.remote_model_switch_in_flight = true;
+            app.input = "queued prompt".to_string();
+            let prepared = input::take_prepared_input(&mut app);
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            assert!(app.pending_prompt_after_model_switch.is_some());
+            assert!(
+                app.display_messages()
+                    .iter()
+                    .all(|m| m.role != "failed_prompt")
+            );
+            app.remote_model_switch_in_flight = false;
+            let prepared = app.pending_prompt_after_model_switch.take().unwrap();
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            let id = app.current_message_id.unwrap();
+            let error = || crate::protocol::ServerEvent::Error {
+                id,
+                message: "rate limited".to_string(),
+                retry_after_secs: Some(1),
+            };
+            app.handle_server_event(error(), &mut remote);
+            assert_eq!(
+                app.rate_limit_pending_message
+                    .as_ref()
+                    .unwrap()
+                    .retry_attempts,
+                1
+            );
+            assert!(app.input().is_empty());
+            assert!(
+                app.display_messages()
+                    .iter()
+                    .all(|m| m.role != "failed_prompt")
+            );
+            assert_eq!(app.last_submitted_input.as_deref(), Some("queued prompt"));
+        });
+    });
+}
+
+#[test]
+fn failed_prompt_remote_retry_exhaustion_restores_once() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut app = create_test_app();
+        app.is_remote = true;
+        rt.block_on(async {
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            app.input = "retry source".to_string();
+            let prepared = input::take_prepared_input(&mut app);
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            let id = app.current_message_id.unwrap();
+            app.rate_limit_pending_message
+                .as_mut()
+                .unwrap()
+                .retry_attempts = App::AUTO_RETRY_MAX_ATTEMPTS;
+            app.handle_server_event(
+                crate::protocol::ServerEvent::Error {
+                    id,
+                    message: "rate limited".to_string(),
+                    retry_after_secs: Some(1),
+                },
+                &mut remote,
+            );
+            assert_eq!(app.input(), "retry source");
+            assert!(app.rate_limit_pending_message.is_none());
+            assert!(app.rate_limit_reset.is_none());
+            assert_eq!(
+                app.display_messages()
+                    .iter()
+                    .filter(|m| m.role == "failed_prompt" && m.content == "retry source")
+                    .count(),
+                1
+            );
+        });
+    });
+}
+
+#[test]
+fn failed_prompt_remote_terminal_errors_preserve_source_and_draft() {
+    with_temp_jcode_home(|| {
+        for message in [
+            "UnsupportedModel: model is not supported",
+            "OpenAI API error 400 Bad Request: invalid_request_error: synthetic failed-prompt acceptance rejection",
+        ] {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let mut app = create_test_app();
+            app.is_remote = true;
+            app.auto_poke_incomplete_todos = true;
+            rt.block_on(async {
+                let mut remote = crate::tui::backend::RemoteConnection::dummy();
+                remote.mark_history_loaded();
+                let source = "terminal failure source";
+                app.input = source.to_string();
+                let prepared = input::take_prepared_input(&mut app);
+                remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                    .await
+                    .unwrap();
+                let id = app.current_message_id.unwrap();
+                app.input = "newer draft".to_string();
+                app.cursor_pos = 2;
+                app.handle_server_event(
+                    crate::protocol::ServerEvent::Error {
+                        id,
+                        message: message.to_string(),
+                        retry_after_secs: None,
+                    },
+                    &mut remote,
+                );
+                assert_eq!(app.input(), "newer draft");
+                assert_eq!(app.cursor_pos, 2);
+                assert!(app.last_submitted_input.is_none());
+                assert!(!app.auto_poke_incomplete_todos);
+                assert!(app.rate_limit_pending_message.is_none());
+                assert!(app.queued_messages().is_empty());
+                assert_eq!(
+                    app.display_messages()
+                        .iter()
+                        .filter(|m| m.role == "failed_prompt" && m.content == source)
+                        .count(),
+                    1
+                );
+            });
+        }
+    });
+}
+
+#[test]
+fn failed_prompt_remote_history_retains_bootstrap_and_same_session_recovery() {
+    with_temp_jcode_home(|| {
+        for bootstrapped in [false, true] {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let _runtime = rt.enter();
+            let mut app = create_test_app();
+            app.is_remote = true;
+            let session_id = "session_failed_prompt_history";
+            if bootstrapped {
+                app.remote_session_id = Some(session_id.to_string());
+            }
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.set_session_id(session_id.to_string());
+            if bootstrapped {
+                remote.mark_history_loaded();
+            }
+            let source = "/missing_failed_prompt_history one\ntwo 界  ";
+            app.handle_paste(source.to_string());
+            app.submit_input();
+            assert!(
+                app.display_messages()
+                    .iter()
+                    .any(|m| m.role == "failed_prompt" && m.content == source)
+            );
+            app.input = "newer draft".to_string();
+            app.cursor_pos = 2;
+            let history = || {
+                serde_json::from_value(serde_json::json!({
+                    "type": "history", "id": 17, "session_id": session_id,
+                    "messages": [{"role": "assistant", "content": "server history"}],
+                    "provider_name": "OpenAI", "provider_model": "gpt-future-model"
+                }))
+                .unwrap()
+            };
+            app.handle_server_event(history(), &mut remote);
+            app.handle_server_event(history(), &mut remote);
+            assert_eq!(
+                app.display_messages()
+                    .iter()
+                    .filter(|m| m.role == "failed_prompt" && m.content == source)
+                    .count(),
+                1,
+                "bootstrap={bootstrapped}"
+            );
+            assert!(app.copy_failed_prompt_with(|text| text == source));
+            assert_eq!(app.input(), "newer draft");
+            assert_eq!(app.cursor_pos, 2);
+            assert!(app.queued_messages().is_empty());
+            let next_history = serde_json::from_value(serde_json::json!({
+                "type": "history", "id": 18, "session_id": "different_session",
+                "messages": [{"role": "assistant", "content": "new session history"}],
+                "provider_name": "OpenAI", "provider_model": "gpt-future-model"
+            }))
+            .unwrap();
+            app.handle_server_event(next_history, &mut remote);
+            assert!(
+                app.display_messages()
+                    .iter()
+                    .all(|m| m.role != "failed_prompt")
+            );
+        }
+    });
+}
+
+#[test]
+fn failed_prompt_remote_unknown_skill_keeps_expanded_paste_and_images() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut app = create_test_app();
+        app.is_remote = true;
+        rt.block_on(async {
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            app.input = "/definitely-missing-remote-skill ".to_string();
+            app.cursor_pos = app.input.len();
+            app.handle_paste("α\nβ\nγ\nδ\nε".to_string());
+            let source = "/definitely-missing-remote-skill α\nβ\nγ\nδ\nε";
+            let images = vec![("image/png".to_string(), "aW1hZ2U=".to_string())];
+            app.pending_images = images.clone();
+            let prepared = input::take_prepared_input(&mut app);
+            remote::submit_remote_slash_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            assert_eq!(app.input(), source);
+            assert_eq!(app.pending_images, images);
+            assert!(
+                app.display_messages()
+                    .iter()
+                    .any(|m| m.role == "failed_prompt" && m.content == source)
+            );
+            assert!(app.current_message_id.is_none());
+        });
+    });
+}
+
+#[test]
+fn failed_prompt_remote_known_skill_retains_invocation_not_skill_body() {
+    with_skill_startup_home(|root| {
+        write_startup_skill(root, "remote-source");
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut app = create_test_app();
+        app.is_remote = true;
+        app.refresh_skills_snapshot();
+        rt.block_on(async {
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            app.input = "/remote-source ".to_string();
+            app.cursor_pos = app.input.len();
+            let body = "α\nβ\nγ\nδ\nε";
+            app.handle_paste(body.to_string());
+            let source = format!("/remote-source {body}");
+            app.remote_model_switch_in_flight = true;
+            let prepared = input::take_prepared_input(&mut app);
+            remote::submit_remote_slash_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            assert_eq!(app.active_skill.as_deref(), Some("remote-source"));
+            assert_eq!(
+                app.pending_prompt_after_model_switch
+                    .as_ref()
+                    .unwrap()
+                    .expanded,
+                source
+            );
+            app.remote_model_switch_in_flight = false;
+            let prepared = app.pending_prompt_after_model_switch.take().unwrap();
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            assert_eq!(
+                app.rate_limit_pending_message.as_ref().unwrap().content,
+                body
+            );
+            assert_eq!(app.last_submitted_input.as_deref(), Some(source.as_str()));
+            let id = app.current_message_id.unwrap();
+            app.handle_server_event(
+                crate::protocol::ServerEvent::Error {
+                    id,
+                    message: "provider failed hard".to_string(),
+                    retry_after_secs: None,
+                },
+                &mut remote,
+            );
+            assert_eq!(app.input(), source);
+            assert!(
+                app.display_messages()
+                    .iter()
+                    .any(|m| m.role == "failed_prompt" && m.content == source)
+            );
+        });
+    });
+}
+
+#[test]
 fn test_remote_fast_status_tracks_history_tier_including_explicit_off() {
     with_temp_jcode_home(|| {
         let rt = tokio::runtime::Runtime::new().unwrap();
@@ -486,36 +1008,6 @@ fn test_remote_connectivity_error_without_auto_retry_still_waits_for_network() {
 }
 
 include!("remote_failover_routes.rs");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[test]
 fn test_schedule_pending_remote_retry_respects_retry_limit() {

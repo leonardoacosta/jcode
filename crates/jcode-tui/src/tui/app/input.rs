@@ -3935,11 +3935,13 @@ impl App {
         // commands, secret-intercept inputs, and oversized pastes).
         self.record_prompt_history(&raw_input);
         let mut input = self.expand_paste_placeholders(&raw_input);
+        let recovery_input = input.clone();
         if let Some(notice) = input_exceeds_submit_limit(&input) {
             self.input = raw_input;
             self.cursor_pos = self.input.len();
+            self.restore_failed_prompt(recovery_input);
             self.set_status_notice(notice.clone());
-            self.push_display_message(DisplayMessage::system(notice));
+            self.push_display_message(DisplayMessage::system(format!("{notice}\nNot sent.")));
             return;
         }
         self.pasted_contents.clear();
@@ -4071,10 +4073,13 @@ impl App {
                             skill_name, endorsed.source, skill_name
                         ),
                     });
+                self.restore_failed_prompt(recovery_input);
                 self.push_display_message(DisplayMessage {
                     role: "error".to_string(),
-                    content: endorsed_hint
-                        .unwrap_or_else(|| format!("Unknown skill: /{}", skill_name)),
+                    content: format!(
+                        "{}\nNot sent.",
+                        endorsed_hint.unwrap_or_else(|| format!("Unknown skill: /{}", skill_name))
+                    ),
                     tool_calls: vec![],
                     duration_secs: None,
                     title: None,
@@ -4091,7 +4096,7 @@ impl App {
         // while editing, but sent turns should show the actual pasted content.
         // Remember the typed prompt so we can restore it to the input box if this
         // turn fails (e.g. "token refresh needed"), instead of dropping it.
-        self.last_submitted_input = Some(raw_input.clone());
+        self.last_submitted_input = Some(recovery_input);
 
         // See `stage_turn_for_remote_tick_loop`: a remote client must never
         // park on the local-only `pending_turn` flag.

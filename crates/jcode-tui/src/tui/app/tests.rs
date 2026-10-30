@@ -1223,7 +1223,10 @@ fn unknown_skill_invocation_surfaces_error_and_sends_nothing() {
     assert!(app.active_skill.is_none());
     let last = app.display_messages().last().expect("error message");
     assert_eq!(last.role, "error");
-    assert_eq!(last.content, "Unknown skill: /definitely-not-a-real-skill");
+    assert_eq!(
+        last.content,
+        "Unknown skill: /definitely-not-a-real-skill\nNot sent."
+    );
 }
 
 #[test]
@@ -1253,6 +1256,11 @@ fn endorsed_but_not_installed_skill_invocation_surfaces_install_hint() {
         "no message should be sent to the model"
     );
     assert!(app.active_skill.is_none());
+    assert!(
+        app.display_messages
+            .iter()
+            .any(|m| m.role == "failed_prompt" && m.content == format!("/{}", endorsed.name))
+    );
     let last = app.display_messages().last().expect("error message");
     assert_eq!(last.role, "error");
     assert!(
@@ -2028,3 +2036,325 @@ include!("tests/kv_cache_provider_identity.rs");
 include!("tests/cache_retention_routes.rs");
 
 include!("tests/cache_prompt_accounting.rs");
+
+#[test]
+fn failed_prompt_unknown_skill_preserves_expanded_paste() {
+    let mut app = create_test_app();
+    let initial_messages = app.session.messages.len();
+    let prefix = "/failed-prompt-regression-no-such-skill ";
+    let pasted = "alpha\nbeta\n```text\nδelta\nlast line  ";
+    app.input = prefix.to_string();
+    app.cursor_pos = app.input.len();
+    app.handle_paste(pasted.to_string());
+    assert!(!app.pasted_contents.is_empty());
+    let expected = format!("{prefix}{pasted}");
+
+    app.submit_input();
+
+    assert_eq!(app.input, expected);
+    let recovered = app
+        .display_messages
+        .iter()
+        .find(|m| m.role == "failed_prompt");
+    assert_eq!(
+        recovered.map(|m| m.content.as_str()),
+        Some(expected.as_str())
+    );
+    assert!(!app.is_processing);
+    assert_eq!(app.session.messages.len(), initial_messages);
+}
+
+#[test]
+fn failed_prompt_newer_draft_retains_independent_recovery_once() {
+    let mut app = create_test_app();
+    let original = "  original\n完整 prompt\n";
+    app.last_submitted_input = Some(original.to_string());
+    app.input = "newer unfinished draft".to_string();
+    app.cursor_pos = app.input.len();
+
+    app.restore_failed_input_to_box();
+    app.restore_failed_input_to_box();
+
+    assert_eq!(app.input, "newer unfinished draft");
+    let recovered: Vec<_> = app
+        .display_messages
+        .iter()
+        .filter(|m| m.role == "failed_prompt")
+        .collect();
+    assert_eq!(recovered.len(), 1);
+    assert_eq!(recovered[0].content, original);
+}
+
+#[test]
+fn failed_prompt_disconnect_preserves_source_and_newer_draft_without_resending() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _runtime = rt.enter();
+        let mut app = create_test_app();
+        let source = "  original\n```\n界\n  ";
+        app.last_submitted_input = Some(source.to_string());
+        app.current_message_id = Some(12);
+        app.is_processing = true;
+        app.input = "new draft".to_string();
+        app.cursor_pos = 3;
+        app.rate_limit_pending_message = Some(PendingRemoteMessage {
+            content: source.to_string(),
+            images: vec![],
+            is_system: false,
+            system_reminder: None,
+            auto_retry: false,
+            retry_attempts: 0,
+            retry_at: None,
+        });
+        let mut state = remote::RemoteRunState::default();
+        remote::handle_disconnect(&mut app, &mut state, None);
+        assert_eq!(app.input(), "new draft");
+        assert_eq!(app.cursor_pos, 3);
+        assert!(app.copy_failed_prompt_with(|text| text == source));
+        assert!(
+            app.display_messages()
+                .iter()
+                .any(|m| m.content.contains("Delivery unconfirmed"))
+        );
+        assert!(app.queued_messages().is_empty());
+        assert!(app.rate_limit_pending_message.is_none());
+        remote::handle_disconnect(&mut app, &mut state, None);
+        assert_eq!(
+            app.display_messages()
+                .iter()
+                .filter(|m| m.role == "failed_prompt")
+                .count(),
+            1
+        );
+    });
+}
+
+#[test]
+fn failed_prompt_copy_preserves_large_exact_source_and_copy_failure() {
+    let mut app = create_test_app();
+    let initial_messages = app.session.messages.len();
+    let original = format!(
+        "  {}\n```text\n\u{1b}]52;literal\u{7}\n  ",
+        "界x ".repeat(20_000)
+    );
+    app.last_submitted_input = Some(original.clone());
+    app.restore_failed_input_to_box();
+    let mut copied = String::new();
+    assert!(app.copy_failed_prompt_with(|text| {
+        copied = text.to_string();
+        true
+    }));
+    assert_eq!(copied, original);
+    assert_eq!(app.input, original);
+    app.input = "newer draft".to_string();
+    app.cursor_pos = 2;
+    assert!(!app.copy_failed_prompt_with(|text| {
+        assert_eq!(text, original);
+        false
+    }));
+    assert_eq!(app.input, "newer draft");
+    assert_eq!(app.cursor_pos, 2);
+    assert_eq!(
+        app.status_notice
+            .as_ref()
+            .map(|(notice, _)| notice.as_str()),
+        Some("Failed to copy prompt; recovery remains available")
+    );
+    assert_eq!(app.display_messages.last().unwrap().content, original);
+    assert_eq!(app.session.messages.len(), initial_messages);
+}
+
+#[test]
+fn failed_prompt_secret_intercepts_never_reach_recovery_or_copy() {
+    for flow in 0..3 {
+        let mut app = create_test_app();
+        let initial_messages = app.session.messages.len();
+        match flow {
+            0 => {
+                app.pending_login = Some(PendingLogin::ClaudeAccount {
+                    verifier: "fixture-verifier".to_string(),
+                    label: "fixture-account".to_string(),
+                    redirect_uri: None,
+                })
+            }
+            1 => {
+                app.pending_account_input = Some(auth::PendingAccountInput::CommandValue {
+                    prompt: "fixture secret".to_string(),
+                    command_prefix: "/fixture".to_string(),
+                    empty_value: None,
+                    status_notice: "fixture".to_string(),
+                })
+            }
+            _ => app.pending_ssh_remote_name = Some("fixture-remote".to_string()),
+        }
+        app.last_submitted_input = Some("SENTINEL-SECRET-DO-NOT-ECHO".to_string());
+        app.restore_failed_input_to_box();
+        assert!(app.display_messages.is_empty());
+        assert!(app.input.is_empty());
+        assert!(app.last_submitted_input.is_none());
+        assert!(!app.copy_failed_prompt_with(|_| panic!("secret reached clipboard")));
+        assert_eq!(app.session.messages.len(), initial_messages);
+    }
+}
+
+#[test]
+fn failed_prompt_input_limit_keeps_full_rejected_text() {
+    let mut app = create_test_app();
+    let initial_messages = app.session.messages.len();
+    let original = "x".repeat(input::MAX_SUBMITTED_TEXT_BYTES + 1);
+    app.input = original.clone();
+    app.cursor_pos = app.input.len();
+    app.submit_input();
+    assert_eq!(app.input, original);
+    assert!(app.copy_failed_prompt_with(|text| {
+        assert_eq!(text, original);
+        true
+    }));
+    assert!(!app.is_processing);
+    assert_eq!(app.session.messages.len(), initial_messages);
+}
+
+#[test]
+fn failed_prompt_real_render_is_inert_and_copy_badge_keeps_exact_source() {
+    let mut app = create_test_app();
+    let _guard = crate::tui::ui::render_state_test_lock();
+    let original = "  ```text\n```\n\u{1b}]52;literal\u{7}\n完整 text  \n";
+    app.last_submitted_input = Some(original.to_string());
+    app.restore_failed_input_to_box();
+    app.input.clear();
+    let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(80, 40)).unwrap();
+    terminal
+        .draw(|frame| crate::tui::ui::draw(frame, &app))
+        .unwrap();
+    let rendered = buffer_to_text(&terminal);
+    assert!(rendered.contains("Failed prompt"), "{rendered}");
+    assert!(!rendered.contains('\u{1b}') && !rendered.contains('\u{7}'));
+    let target = ('a'..='z')
+        .filter_map(crate::tui::ui::visible_copy_target_for_key)
+        .find(|target| target.content == original);
+    assert!(
+        target.is_some(),
+        "full-source copy badge missing: {rendered}"
+    );
+}
+
+#[test]
+fn failed_prompt_rejection_does_not_replace_inflight_snapshot() {
+    let mut app = create_test_app();
+    app.last_submitted_input = Some("earlier active turn".to_string());
+    app.is_processing = true;
+    let rejected = "/failed-prompt-regression-no-such-skill newer draft";
+    app.input = rejected.to_string();
+    app.cursor_pos = app.input.len();
+    app.submit_input();
+    assert_eq!(
+        app.last_submitted_input.as_deref(),
+        Some("earlier active turn")
+    );
+    assert_eq!(app.input, rejected);
+    app.restore_failed_input_to_box();
+    assert_eq!(app.input, rejected);
+    let recovered: Vec<_> = app
+        .display_messages
+        .iter()
+        .filter(|m| m.role == "failed_prompt")
+        .map(|m| m.content.as_str())
+        .collect();
+    assert_eq!(recovered, [rejected, "earlier active turn"]);
+}
+
+#[test]
+fn failed_prompt_copy_mode_p_copies_full_offscreen_source_without_sending() {
+    let mut app = create_test_app();
+    let original = format!("  {}\nend  \n", "long pasted line 界\n".repeat(100));
+    app.restore_failed_prompt(original.clone());
+    let initial_messages = app.session.messages.len();
+    app.handle_key(KeyCode::Char('y'), KeyModifiers::ALT)
+        .unwrap();
+    assert!(app.copy_selection_mode);
+    for (key, modifiers) in [('p', KeyModifiers::empty()), ('P', KeyModifiers::SHIFT)] {
+        let clipboard = CapturedClipboard::new();
+        app.handle_key(KeyCode::Char(key), modifiers).unwrap();
+        assert_eq!(clipboard.text().as_deref(), Some(original.as_str()));
+    }
+    assert_eq!(app.session.messages.len(), initial_messages);
+    assert!(!app.is_processing);
+}
+
+#[test]
+fn failed_prompt_remote_broadcast_error_recovers_active_source_once() {
+    with_temp_jcode_home(|| {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut app = create_test_app();
+        rt.block_on(async {
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            app.is_remote = true;
+            let message = "UnsupportedModel: synthetic terminal provider failure";
+            let stopped = || {
+                serde_json::from_value(serde_json::json!({
+                    "type": "turn_stopped", "reason": "failure", "message": message
+                }))
+                .unwrap()
+            };
+            let error = || crate::protocol::ServerEvent::Error {
+                id: 0,
+                message: message.to_string(),
+                retry_after_secs: None,
+            };
+            app.input = "original dispatched text  \n".to_string();
+            let prepared = input::take_prepared_input(&mut app);
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            app.handle_server_event(stopped(), &mut remote);
+            app.handle_server_event(error(), &mut remote);
+            assert_eq!(
+                app.display_messages
+                    .iter()
+                    .filter(|m| m.role == "failed_prompt")
+                    .count(),
+                1
+            );
+
+            let newer = "new submission B  \n";
+            app.input = newer.to_string();
+            let prepared = input::take_prepared_input(&mut app);
+            remote::submit_prepared_remote_input(&mut app, &mut remote, prepared)
+                .await
+                .unwrap();
+            let newer_id = app.current_message_id;
+            app.input = "newer draft after B".to_string();
+            app.cursor_pos = 2;
+            app.handle_server_event(error(), &mut remote);
+            assert_eq!(app.last_submitted_input.as_deref(), Some(newer));
+            assert_eq!(app.current_message_id, newer_id);
+            assert!(app.is_processing);
+            assert_eq!(app.input(), "newer draft after B");
+            assert_eq!(app.cursor_pos, 2);
+            assert_eq!(
+                app.display_messages
+                    .iter()
+                    .filter(|m| m.role == "failed_prompt")
+                    .count(),
+                1
+            );
+
+            // A genuine failure of B can have the same text as A. Its ordered
+            // stop signal, not diagnostic-text deduplication, associates it.
+            app.handle_server_event(stopped(), &mut remote);
+            app.handle_server_event(error(), &mut remote);
+            assert!(app.last_submitted_input.is_none());
+            assert_eq!(app.input(), "newer draft after B");
+            assert_eq!(
+                app.display_messages
+                    .iter()
+                    .filter(|m| m.role == "failed_prompt")
+                    .count(),
+                2
+            );
+            assert!(app.copy_failed_prompt_with(|text| text == newer));
+            assert!(app.queued_messages().is_empty());
+        });
+    });
+}

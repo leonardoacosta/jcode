@@ -57,8 +57,10 @@ fn test_skill_invocation_not_queued() {
     assert!(!app.pending_turn);
     assert!(!app.is_processing);
     // Should have an error message about unknown skill
-    assert_eq!(app.display_messages().len(), 1);
-    assert_eq!(app.display_messages()[0].role, "error");
+    assert_eq!(app.display_messages().len(), 2);
+    assert_eq!(app.display_messages()[0].role, "failed_prompt");
+    assert_eq!(app.display_messages()[0].content, "/nosuchskill");
+    assert_eq!(app.display_messages()[1].role, "error");
 }
 
 #[test]

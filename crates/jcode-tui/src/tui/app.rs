@@ -1391,6 +1391,8 @@ pub struct App {
     remote_server_icon: Option<String>,
     // Current message request ID (for remote mode - to match Done events)
     current_message_id: Option<u64>,
+    // One-use association fence for the ordered TurnStopped → broadcast Error pair.
+    pending_remote_turn_error: Option<(Option<u64>, String)>,
     // Whether running in remote mode
     is_remote: bool,
     runtime_mode: AppRuntimeMode,
@@ -1778,7 +1780,7 @@ pub struct App {
     consecutive_credential_failures: u32,
     // Last turn-level stream error (used by /fix to choose recovery actions)
     last_stream_error: Option<String>,
-    // Raw text of the most recent user prompt that started a turn. Restored to the
+    // Expanded user text of the most recent prompt that started a turn. Restored to the
     // input box if the turn fails (e.g. "token refresh needed") so the user does not
     // lose what they typed and can resend after recovering.
     last_submitted_input: Option<String>,

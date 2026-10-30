@@ -1100,10 +1100,17 @@ pub(super) fn handle_disconnect(
         // turn-end dispatch (issue #391); put it back on the queue instead so
         // it is re-sent once the turn is proven idle after reconnect.
         if !recover_undelivered_queued_continuation(app, "disconnect") {
+            if app.last_submitted_input.is_some() {
+                app.restore_failed_input_to_box();
+                app.push_display_message(DisplayMessage::error(
+                    "Delivery unconfirmed: the server may still be processing this prompt. Check the session before resending.",
+                ));
+            }
             app.clear_pending_remote_retry();
         }
     }
     let recovered_local = recover_local_interleave_to_queue(app, "disconnect");
+    app.pending_remote_turn_error = None;
     app.current_message_id = None;
     app.last_stream_activity = None;
     app.remote_resume_activity = None;
@@ -1399,7 +1406,7 @@ pub(super) async fn process_remote_followups(app: &mut App, remote: &mut RemoteC
         app.startup_submit_deferred_reason = None;
         let prepared = input::take_prepared_input(app);
         app.pending_startup_prompt_echo = Some(prepared.raw_input.clone());
-        app.last_submitted_input = Some(prepared.raw_input);
+        app.last_submitted_input = Some(prepared.expanded.clone());
         crate::logging::info(&format!(
             "Startup auto-submit sent behind ordered Subscribe: input_chars={} pending_images={}",
             prepared.expanded.chars().count(),
@@ -1895,6 +1902,7 @@ async fn detect_and_cancel_stall(app: &mut App, remote: &mut RemoteConnection) {
             app.is_processing = false;
             app.clear_visible_turn_started();
             app.status = ProcessingStatus::Idle;
+            app.pending_remote_turn_error = None;
             app.current_message_id = None;
             app.processing_started = None;
             app.last_stream_activity = None;

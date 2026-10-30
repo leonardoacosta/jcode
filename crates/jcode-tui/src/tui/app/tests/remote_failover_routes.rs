@@ -609,7 +609,9 @@ fn test_remote_usage_limit_shows_error_and_single_switch_line() {
     );
 
     let added: Vec<_> = app.display_messages()[before..].to_vec();
-    assert_eq!(added.len(), 2, "{added:?}");
+    assert_eq!(added.len(), 3, "{added:?}");
+    assert_eq!(added[2].role, "failed_prompt");
+    assert_eq!(added[2].content, "hi");
     assert_eq!(added[0].role, "error");
     assert!(added[0].content.contains("usage limit"));
     assert_eq!(added[1].role, "system");

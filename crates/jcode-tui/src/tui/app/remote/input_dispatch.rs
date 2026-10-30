@@ -16,6 +16,7 @@ pub(in crate::tui::app) async fn begin_remote_send(
     auto_retry: bool,
     retry_attempts: u8,
 ) -> Result<u64> {
+    app.pending_remote_turn_error = None;
     let msg_id = remote
         .send_message_with_images_reminder_and_skill(
             content.clone(),
@@ -66,9 +67,8 @@ pub(in crate::tui::app) fn restore_prepared_remote_input(
     app: &mut App,
     prepared: input::PreparedInput,
 ) {
-    app.input = prepared.raw_input;
-    app.cursor_pos = app.input.len();
-    app.pending_images = prepared.images;
+    app.pending_images.extend(prepared.images);
+    app.restore_failed_prompt(prepared.expanded);
 }
 
 pub(in crate::tui::app) fn history_matches_pending_startup_prompt(app: &App) -> bool {
@@ -133,7 +133,19 @@ pub(in crate::tui::app) async fn submit_prepared_remote_input(
         return Ok(());
     }
 
-    if let Some(command) = input::extract_input_shell_command(&prepared.expanded) {
+    let snapshot = app.current_skills_snapshot();
+    let skill_prompt = if !crate::tui::is_ssh_remote()
+        && let Some(invocation) = snapshot.resolve_invocation(&prepared.expanded)
+        && app.active_skill.as_deref() == Some(invocation.name)
+        && let Some(prompt) = invocation.prompt
+    {
+        Some(prompt.to_string())
+    } else {
+        None
+    };
+    if let Some(command) =
+        input::extract_input_shell_command(skill_prompt.as_deref().unwrap_or(&prepared.expanded))
+    {
         submit_remote_input_shell(app, remote, prepared.raw_input, command.to_string()).await?;
         return Ok(());
     }
@@ -144,7 +156,7 @@ pub(in crate::tui::app) async fn submit_prepared_remote_input(
     app.clear_pending_fallback_offer();
     // Remember the typed prompt so we can restore it to the input box if this turn
     // fails (e.g. "token refresh needed"), instead of dropping it.
-    app.last_submitted_input = Some(prepared.raw_input.clone());
+    app.last_submitted_input = Some(prepared.expanded.clone());
     app.push_display_message(DisplayMessage {
         role: "user".to_string(),
         content: prepared.raw_input,
@@ -153,9 +165,21 @@ pub(in crate::tui::app) async fn submit_prepared_remote_input(
         title: None,
         tool_data: None,
     });
-    let _ = app
-        .begin_remote_send(remote, prepared.expanded, prepared.images, false)
-        .await;
+    if let Err(error) = app
+        .begin_remote_send(
+            remote,
+            skill_prompt.unwrap_or(prepared.expanded),
+            prepared.images.clone(),
+            false,
+        )
+        .await
+    {
+        app.pending_images.extend(prepared.images);
+        app.restore_failed_input_to_box();
+        app.push_display_message(DisplayMessage::error(format!(
+            "Failed to send message: {error}\nDelivery unconfirmed. Check the session before resending."
+        )));
+    }
     Ok(())
 }
 
@@ -209,18 +233,20 @@ pub(in crate::tui::app) async fn submit_remote_slash_input(
     }
 
     let Some(invocation) = snapshot.resolve_invocation(&raw_input) else {
-        app.input = raw_input;
+        app.input = prepared.expanded;
+        app.pending_images.extend(prepared.images);
         app.cursor_pos = app.input.len();
         app.submit_input();
         return Ok(());
     };
 
-    let Some(trailing_prompt) = invocation.prompt else {
-        app.input = raw_input;
+    if invocation.prompt.is_none() {
+        app.input = prepared.expanded;
+        app.pending_images.extend(prepared.images);
         app.cursor_pos = app.input.len();
         app.submit_input();
         return Ok(());
-    };
+    }
 
     let skill_name = invocation.name.to_string();
     let mut skill = snapshot.get(&skill_name).cloned();
@@ -231,37 +257,22 @@ pub(in crate::tui::app) async fn submit_remote_slash_input(
     if skill.is_none() {
         // Preserve the existing unknown-skill and built-in slash-command
         // handling, including the helpful endorsed-skill installation hint.
-        app.input = raw_input;
+        app.input = prepared.expanded;
+        app.pending_images.extend(prepared.images);
         app.cursor_pos = app.input.len();
         app.submit_input();
         return Ok(());
     }
 
     // Reuse the normal bare invocation path to update active_skill and show
-    // the activation notice, then prepare only the trailing prompt for the
-    // remote request. This avoids duplicating slash-command presentation and
-    // keeps pasted images attached to the same user turn.
+    // the activation notice. The sender extracts the trailing prompt while
+    // retaining the full invocation for recovery, including deferred sends.
     app.input = format!("/{}", skill_name);
     app.cursor_pos = app.input.len();
     app.pending_images.clear();
     app.submit_input();
 
-    let expanded_prompt = app
-        .current_skills_snapshot()
-        .resolve_invocation(&prepared.expanded)
-        .and_then(|invocation| invocation.prompt)
-        .unwrap_or(trailing_prompt)
-        .to_string();
-    submit_prepared_remote_input(
-        app,
-        remote,
-        input::PreparedInput {
-            raw_input: prepared.raw_input,
-            expanded: expanded_prompt,
-            images: prepared.images,
-        },
-    )
-    .await
+    submit_prepared_remote_input(app, remote, prepared).await
 }
 
 pub(in crate::tui::app) async fn route_prepared_input_to_new_remote_session(
