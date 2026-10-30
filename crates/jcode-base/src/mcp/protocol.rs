@@ -143,6 +143,8 @@ pub struct McpToolDef {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ToolsListResult {
     pub tools: Vec<McpToolDef>,
+    #[serde(default, rename = "nextCursor")]
+    pub next_cursor: Option<String>,
 }
 
 /// tools/call params

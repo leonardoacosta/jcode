@@ -28,6 +28,7 @@ struct Plan {
     notification_status: u16,
     protocol_version: String,
     get_content_type: String,
+    paginated_tools: bool,
 }
 
 impl Default for Plan {
@@ -43,6 +44,7 @@ impl Default for Plan {
             notification_status: 202,
             protocol_version: "2025-06-18".to_string(),
             get_content_type: "text/event-stream".to_string(),
+            paginated_tools: false,
         }
     }
 }
@@ -54,6 +56,10 @@ struct FixtureState {
     ordering_violation: AtomicBool,
     active_streams: AtomicUsize,
     disconnected_streams: AtomicUsize,
+    repeat_tools_cursor: AtomicBool,
+    continue_tools_pages: AtomicBool,
+    fail_tools_page: AtomicBool,
+    omit_tools_page_result: AtomicBool,
     sse_tx: std::sync::Mutex<Option<mpsc::Sender<Value>>>,
 }
 
@@ -80,6 +86,10 @@ impl Fixture {
             ordering_violation: AtomicBool::new(false),
             active_streams: AtomicUsize::new(0),
             disconnected_streams: AtomicUsize::new(0),
+            repeat_tools_cursor: AtomicBool::new(false),
+            continue_tools_pages: AtomicBool::new(false),
+            fail_tools_page: AtomicBool::new(false),
+            omit_tools_page_result: AtomicBool::new(false),
             sse_tx: std::sync::Mutex::new(None),
         });
         let owned_state = Arc::clone(&state);
@@ -343,7 +353,22 @@ async fn serve(socket: TcpStream, state: Arc<FixtureState>) -> Result<()> {
             json!({"protocolVersion":plan.protocol_version,"capabilities":{"tools":{}},"serverInfo":{"name":"localhost","version":"1"}})
         }
         "tools/list" => {
-            json!({"tools":[{"name":"echo","description":"fixture","inputSchema":{"type":"object"}}]})
+            if plan.paginated_tools && request.body.pointer("/params/cursor").is_some() {
+                let mut page = json!({"tools":[{"name":"ado_second_page","description":"fixture","inputSchema":{"type":"object","properties":{"work_item_id":{"type":"integer"}},"required":["work_item_id"]}}]});
+                if state.repeat_tools_cursor.load(Ordering::SeqCst) {
+                    page["nextCursor"] = json!("page-2");
+                } else if state.continue_tools_pages.load(Ordering::SeqCst) {
+                    let cursor = request.body["params"]["cursor"]
+                        .as_str()
+                        .expect("cursor page request");
+                    page["nextCursor"] = json!(format!("{cursor}-next"));
+                }
+                page
+            } else if plan.paginated_tools {
+                json!({"tools":[{"name":"echo","description":"fixture","inputSchema":{"type":"object","properties":{"text":{"type":"string"}}}}],"nextCursor":"page-2"})
+            } else {
+                json!({"tools":[{"name":"echo","description":"fixture","inputSchema":{"type":"object"}}]})
+            }
         }
         "tools/call" => {
             json!({"content":[{"type":"text","text":request.body.pointer("/params/arguments").unwrap().to_string()}]})
@@ -351,6 +376,18 @@ async fn serve(socket: TcpStream, state: Arc<FixtureState>) -> Result<()> {
         _ => json!({}),
     };
     let mut reply = json!({"jsonrpc":"2.0","id":id,"result":result});
+    if method == "tools/list"
+        && request.body.pointer("/params/cursor").is_some()
+        && state.omit_tools_page_result.load(Ordering::SeqCst)
+    {
+        reply = json!({"jsonrpc":"2.0","id":id});
+    }
+    if method == "tools/list"
+        && request.body.pointer("/params/cursor").is_some()
+        && state.fail_tools_page.load(Ordering::SeqCst)
+    {
+        reply = json!({"jsonrpc":"2.0","id":id,"error":{"code":-32603,"message":"fixture page failed"}});
+    }
     if tool == "wrong-id" {
         reply["id"] = json!(id + 5000);
     }
@@ -414,6 +451,106 @@ fn text(result: crate::mcp::protocol::ToolCallResult) -> String {
         ContentBlock::Text { text } => text,
         other => panic!("expected text, got {other:?}"),
     }
+}
+
+#[tokio::test]
+async fn remote_tools_list_collects_all_pages_and_preserves_schema() {
+    let fixture = Fixture::start(Plan {
+        paginated_tools: true,
+        ..Plan::default()
+    })
+    .await;
+    let client = fixture.connect("http").await;
+    let tools = client.tools();
+    assert_eq!(tools.len(), 2);
+    assert_eq!(tools[0].name, "echo");
+    assert_eq!(tools[1].name, "ado_second_page");
+    assert_eq!(
+        tools[1].input_schema,
+        json!({"type":"object","properties":{"work_item_id":{"type":"integer"}},"required":["work_item_id"]})
+    );
+    let list_requests: Vec<_> = fixture
+        .requests()
+        .into_iter()
+        .filter(|request| request.body["method"] == "tools/list")
+        .collect();
+    assert_eq!(list_requests.len(), 2);
+    assert!(list_requests[0].body.pointer("/params").is_none());
+    assert_eq!(list_requests[1].body["params"]["cursor"], "page-2");
+}
+
+#[tokio::test]
+async fn remote_tools_list_rejects_cursor_cycles_and_keeps_previous_catalog_on_page_error() {
+    let fixture = Fixture::start(Plan {
+        paginated_tools: true,
+        ..Plan::default()
+    })
+    .await;
+    let client = fixture.connect("http").await;
+    let previous = client.tools();
+    assert_eq!(previous.len(), 2);
+
+    fixture
+        .state
+        .repeat_tools_cursor
+        .store(true, Ordering::SeqCst);
+    let error = client.refresh_tools().await.unwrap_err();
+    assert!(error.to_string().contains("cursor cycle"));
+    assert_eq!(client.tools().len(), previous.len());
+
+    fixture
+        .state
+        .repeat_tools_cursor
+        .store(false, Ordering::SeqCst);
+    fixture.state.fail_tools_page.store(true, Ordering::SeqCst);
+    assert!(client.refresh_tools().await.is_err());
+    assert_eq!(client.tools().len(), previous.len());
+    assert_eq!(client.tools()[1].input_schema, previous[1].input_schema);
+}
+
+#[tokio::test]
+async fn remote_tools_list_enforces_page_budget_and_preserves_previous_catalog() {
+    let fixture = Fixture::start(Plan {
+        paginated_tools: true,
+        ..Plan::default()
+    })
+    .await;
+    let client = fixture.connect("http").await;
+    let previous = client.tools();
+    fixture
+        .state
+        .continue_tools_pages
+        .store(true, Ordering::SeqCst);
+
+    let error = client.refresh_tools().await.unwrap_err();
+    assert!(error.to_string().contains("256-page limit"));
+    let list_requests = fixture
+        .requests()
+        .into_iter()
+        .filter(|request| request.body["method"] == "tools/list")
+        .count();
+    assert_eq!(list_requests, 258);
+    assert_eq!(client.tools().len(), previous.len());
+    assert_eq!(client.tools()[1].input_schema, previous[1].input_schema);
+}
+
+#[tokio::test]
+async fn remote_tools_list_missing_page_result_fails_and_preserves_previous_catalog() {
+    let fixture = Fixture::start(Plan {
+        paginated_tools: true,
+        ..Plan::default()
+    })
+    .await;
+    let client = fixture.connect("http").await;
+    let previous = client.tools();
+    fixture
+        .state
+        .omit_tools_page_result
+        .store(true, Ordering::SeqCst);
+
+    let _error = client.refresh_tools().await.unwrap_err();
+    assert_eq!(client.tools().len(), previous.len());
+    assert_eq!(client.tools()[1].input_schema, previous[1].input_schema);
 }
 
 #[tokio::test]

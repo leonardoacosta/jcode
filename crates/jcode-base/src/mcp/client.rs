@@ -3,7 +3,7 @@
 use super::protocol::*;
 use anyhow::{Context, Result};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::process::Stdio;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
@@ -152,17 +152,42 @@ impl McpHandle {
 
     /// Refresh the list of available tools
     pub async fn refresh_tools(&self) -> Result<()> {
-        let response = self.request("tools/list", None).await?;
+        const MAX_TOOL_LIST_PAGES: usize = 256;
 
-        if let Some(result) = response.result {
-            let tools_result: ToolsListResult = serde_json::from_value(result)?;
-            *self
-                .tools
-                .write()
-                .unwrap_or_else(|poisoned| poisoned.into_inner()) = tools_result.tools;
+        let mut params = None;
+        let mut seen_cursors = HashSet::new();
+        let mut tools = Vec::new();
+
+        for page_index in 0..MAX_TOOL_LIST_PAGES {
+            let response = self.request("tools/list", params).await?;
+            let result = response
+                .result
+                .context("MCP tools/list response missing result")?;
+            let page: ToolsListResult = serde_json::from_value(result)?;
+            tools.extend(page.tools);
+            match page.next_cursor {
+                Some(cursor) => {
+                    if !seen_cursors.insert(cursor.clone()) {
+                        anyhow::bail!("MCP tools/list cursor cycle detected");
+                    }
+                    if page_index + 1 == MAX_TOOL_LIST_PAGES {
+                        anyhow::bail!(
+                            "MCP tools/list exceeded the {MAX_TOOL_LIST_PAGES}-page limit"
+                        );
+                    }
+                    params = Some(serde_json::json!({"cursor": cursor}));
+                }
+                None => {
+                    *self
+                        .tools
+                        .write()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner()) = tools;
+                    return Ok(());
+                }
+            }
         }
 
-        Ok(())
+        unreachable!("the last page either completes or returns the page-limit error")
     }
 }
 
