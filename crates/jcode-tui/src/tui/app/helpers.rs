@@ -470,6 +470,17 @@ pub(super) fn copy_to_clipboard(text: &str) -> bool {
         // fail fast for lack of a display server.
         #[cfg(not(any(windows, target_os = "macos")))]
         {
+            // Herdr may be attached from another machine (e.g. a Mac client over
+            // SSH) while this host still has its own display, so a successful
+            // wl-copy lands on the wrong clipboard. Herdr forwards OSC 52 to the
+            // attached client; send it too, then keep the local copy.
+            if std::env::var_os("HERDR_ENV").is_some() {
+                let forwarded = copy_to_clipboard_osc52(text);
+                let local = clipboard_helper::copy_via_clipboard_helper("wl-copy", &[], text);
+                if forwarded || local {
+                    return true;
+                }
+            }
             if clipboard_helper::copy_via_clipboard_helper("wl-copy", &[], text) {
                 return true;
             }

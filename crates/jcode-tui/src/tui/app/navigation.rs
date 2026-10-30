@@ -334,6 +334,17 @@ impl App {
             return true;
         }
 
+        // Inside Herdr the viewer may be on another machine, so a local browser
+        // opens where nobody is looking. Put the URL on the client clipboard.
+        if std::env::var_os("HERDR_ENV").is_some()
+            && (target.starts_with("https://") || target.starts_with("http://"))
+        {
+            if super::helpers::copy_to_clipboard(&target) {
+                self.set_status_notice(format!("Copied link: {}", target));
+                return true;
+            }
+        }
+
         match super::helpers::open_path_or_url_detached(&target) {
             Ok(()) => self.set_status_notice(format!("Opened link: {}", target)),
             Err(e) => self.set_status_notice(format!("Failed to open link: {}", e)),
