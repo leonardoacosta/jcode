@@ -13,6 +13,7 @@ Reference documentation for the jcode codebase.
 ## Key entry points
 
 - Product roadmap: [phases, acceptance outcomes, and OpenSpec change IDs](plans/PRODUCT_ROADMAP.md)
+- Factory research: [harness, Skull and Nomi pattern placement](research/factory-harness-knowledge-placement-2026-10-29.md) — shipped evidence, ownership, opposing cases and future acceptance gates; not runtime acceptance.
 - Architecture: `SERVER_ARCHITECTURE.md`, `MODULAR_ARCHITECTURE_RFC.md`, `CRATE_OWNERSHIP_BOUNDARIES.md`
 - Swarm: `SWARM_ARCHITECTURE.md`
 - Memory: `MEMORY_ARCHITECTURE.md`, `MEMORY_BUDGET.md`, `MEMORY_INCIDENT_RUNBOOK.md`

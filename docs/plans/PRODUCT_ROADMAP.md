@@ -256,6 +256,38 @@ shared daemon. Reproduce startup/input latency, memory per session and concurren
 load with recorded hardware/workload; redact diagnostic exports. Define targets in
 the selected feature, not by borrowing historical README benchmark numbers.
 
+## Factory research: existing phase refinements
+
+The [2026-10-29 adversarial placement review](../research/factory-harness-knowledge-placement-2026-10-29.md)
+accounts for nineteen shipped Droid CLI references, native overlap and opposing
+cases. This adds research input within the existing documentation framework;
+phase IDs/status, feature bindings and execution authority remain unchanged.
+
+**Pre-cutover delivery policy:** Skull is an independent, divergent implementation
+in a custom fork of Jcode upstream. While Jcode remains the owner's working harness,
+pursue useful general harness improvements here as well as evaluating their fit
+for Skull; do not reserve their benefit for a future cutover. Each implementation
+owns its scope, integration and acceptance. No ongoing baseline inheritance,
+automatic synchronization, feature parity, shared runtime or cutover date is implied.
+Skull-specific capabilities remain owned by Skull.
+
+| Existing phase | Refinement / acceptance focus | Boundary |
+| --- | --- | --- |
+| P01 / P04 | Approved obligation → scoped assignment → attributable handoff → independent revision-bound acceptance. Reject stale-owner reports and worker-supplied PASS as acceptance. | Reuse native swarm/todo/review; no second ledger or universal extra reviewer. Product work identity is not a harness session ID. |
+| P05 / P06 | Keep occurrence identity, versioned instructions, checkpoints, notes, output and usage coverage distinct. Unreadable identity holds; ambiguous send/crash reconciles; missing usage stays unknown. | Existing Jcode automation only; no parallel scheduler, imported vendor limits or activation authority. Preserve existing P05 prerequisites. |
+| P07 | Compare anchored/bounded compaction and indexed pull-on-demand against native context/memory on obligation retention, stale swaps, cancellation, scope, correction and total task cost. | Preserve source/history under actual retention rules. Retired retrieval visibility is not evidence deletion; missing read accounting is not disuse. No new memory engine selected. |
+| P08, if a consumer is selected | Carry product work/attempt/configuration references, bounded evidence, cancellation and usage coverage through a versioned adapter. | Semantic research seam only; no new API or required integration. Consumers retain their own authority and durable state. |
+
+Skull owns its Linear mission/attempt/outcome/decision state and fenced acceptance;
+Nomi owns planned jobs, source lifecycle, knowledge review and recurring K01 catch-up.
+Sharing these patterns selects no common daemon, database, corpus or scheduler.
+Nomi K01 does not inherit Jcode P05's semantic-poke/overnight dependency chain;
+Skull's one-shot/manual-rearm intake policy remains distinct. Consumer integration,
+if later justified, requires its own compatibility, permission and recovery checks.
+Static Factory code and bundled instructions pass none of these gates. Exact
+workloads, versions, independent evaluation, useful gain/non-regression, limits,
+provider/egress authority, target and cleanup remain future feature-level bindings.
+
 ## Phase lifecycle
 
 ### Cut real feature IDs and maintain the map
