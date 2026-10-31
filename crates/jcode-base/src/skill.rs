@@ -325,31 +325,75 @@ impl SkillRegistry {
         Ok(registry)
     }
 
-    fn project_local_dir(working_dir: Option<&Path>, name: &str) -> PathBuf {
-        let path = Path::new(name).join("skills");
-        working_dir.map(|dir| dir.join(&path)).unwrap_or(path)
+    /// Project roots for a working dir: the dir and each ancestor, stopping
+    /// before `$HOME` (home-level `.agents` is global, not project-local).
+    /// Ordered farthest first so nearer roots override on name collision.
+    fn project_roots(working_dir: Option<&Path>) -> Vec<PathBuf> {
+        let start = match working_dir {
+            Some(dir) => dir.to_path_buf(),
+            None => std::env::current_dir().unwrap_or_default(),
+        };
+        let home = crate::storage::user_home_path(".agents")
+            .ok()
+            .and_then(|p| p.parent().map(Path::to_path_buf));
+        let mut roots = Vec::new();
+        for dir in start.ancestors() {
+            if dir.as_os_str().is_empty() || home.as_deref() == Some(dir) {
+                break;
+            }
+            roots.push(dir.to_path_buf());
+        }
+        roots.reverse();
+        roots
     }
 
     fn load_project_local_dirs(&mut self, working_dir: Option<&Path>) -> Result<()> {
-        // Load from ./.jcode/skills/ (project-local jcode skills)
-        let local_jcode = Self::project_local_dir(working_dir, ".jcode");
-        if local_jcode.exists() {
-            self.load_from_dir(&local_jcode)?;
+        for root in Self::project_roots(working_dir) {
+            for name in [".jcode", ".agents", ".claude"] {
+                let dir = root.join(name).join("skills");
+                if dir.is_dir() {
+                    let mut visited = std::collections::HashSet::new();
+                    self.load_nested(&dir, 0, &mut visited);
+                }
+            }
         }
-
-        // Load from ./.agents/skills/ (shared cross-tool `.agents` convention)
-        let local_agents = Self::project_local_dir(working_dir, ".agents");
-        if local_agents.exists() {
-            self.load_from_dir(&local_agents)?;
-        }
-
-        // Fallback: ./.claude/skills/ (project-local Claude skills for compatibility)
-        let local_claude = Self::project_local_dir(working_dir, ".claude");
-        if local_claude.exists() {
-            self.load_from_dir(&local_claude)?;
-        }
-
         Ok(())
+    }
+
+    /// Walk `dir` for skill folders: stop descending at a dir holding
+    /// SKILL.md, skip `.git`/`node_modules`, follow symlinks with a
+    /// canonical-path cycle guard, bounded depth.
+    fn load_nested(
+        &mut self,
+        dir: &Path,
+        depth: usize,
+        visited: &mut std::collections::HashSet<PathBuf>,
+    ) {
+        const MAX_DEPTH: usize = 6;
+        let Ok(canon) = dir.canonicalize() else {
+            return;
+        };
+        if depth > MAX_DEPTH || !visited.insert(canon) {
+            return;
+        }
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let name = entry.file_name();
+            if name == ".git" || name == "node_modules" || !path.is_dir() {
+                continue;
+            }
+            let skill_file = path.join("SKILL.md");
+            if skill_file.exists() {
+                if let Ok(skill) = Self::parse_skill(&skill_file) {
+                    self.skills.insert(skill.name.clone(), skill);
+                }
+            } else {
+                self.load_nested(&path, depth + 1, visited);
+            }
+        }
     }
 
     /// Root of the Claude Code plugin store (`~/.claude/plugins`), if present.
@@ -1207,6 +1251,53 @@ mod tests {
         assert!(entry.content.contains("/firefox-browser"));
         assert!(entry.content.contains("# Skill: firefox-browser"));
         assert_eq!(entry.source.as_deref(), Some("skill_registry"));
+    }
+
+    #[test]
+    fn project_skills_nested_ancestor_nearest_wins_and_no_leak() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let parent = temp.path().join("brown");
+        let repo = parent.join("wholesale");
+        let other = temp.path().join("personal");
+        std::fs::create_dir_all(&repo).unwrap();
+        std::fs::create_dir_all(&other).unwrap();
+        write_test_skill(&parent, ".agents", "anc-only");
+        write_skill_file(
+            &parent.join(".agents/skills/pack/deep"),
+            "leaf",
+            "---\nname: nested\ndescription: far\n---\n",
+        );
+        write_skill_file(
+            &parent.join(".agents/skills"),
+            "dup",
+            "---\nname: dup\ndescription: far\n---\n",
+        );
+        write_skill_file(
+            &repo.join(".agents/skills"),
+            "dup",
+            "---\nname: dup\ndescription: near\n---\n",
+        );
+        let reg = SkillRegistry::load_for_working_dir(Some(&repo)).expect("load");
+        assert!(reg.get("anc-only").is_some());
+        assert!(reg.get("nested").is_some());
+        assert_eq!(reg.get("dup").unwrap().description, "near");
+        let reg = SkillRegistry::load_for_working_dir(Some(&other)).expect("load");
+        assert!(reg.get("anc-only").is_none());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn project_skills_symlink_cycle_is_safe() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let skills = temp.path().join(".agents/skills");
+        write_skill_file(
+            &skills.join("pack"),
+            "s1",
+            "---\nname: s1\ndescription: d\n---\n",
+        );
+        std::os::unix::fs::symlink(&skills, skills.join("pack/loop")).unwrap();
+        let reg = SkillRegistry::load_for_working_dir(Some(temp.path())).expect("load");
+        assert!(reg.get("s1").is_some());
     }
 
     #[test]
