@@ -144,6 +144,41 @@ pub(crate) fn open_path_or_url_detached(
     open::that_detached(target)
 }
 
+/// Open `url` in Google Chrome on a macOS host over SSH. `open -a` reuses a
+/// running Chrome (new tab) or launches it. Returns false if the host is
+/// unreachable, Chrome is missing, or it takes longer than a few seconds.
+pub(crate) fn open_url_in_remote_chrome(host: &str, url: &str) -> bool {
+    if crate::auth::browser_suppressed(false) {
+        return false;
+    }
+    // ssh joins remote args into a shell command, so single-quote the URL.
+    let quoted = format!("'{}'", url.replace('\'', "'\\''"));
+    let Ok(mut child) = std::process::Command::new("ssh")
+        .args(["-o", "BatchMode=yes", "-o", "ConnectTimeout=2", host])
+        .args(["open", "-a", "'Google Chrome'", &quoted])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+    else {
+        return false;
+    };
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(4);
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => return status.success(),
+            Ok(None) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(std::time::Duration::from_millis(25));
+            }
+            _ => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return false;
+            }
+        }
+    }
+}
+
 /// Test-only: snapshot `(elapsed_secs, refreshing)` for a session's todos cache
 /// entry, or `None` when no entry exists yet. Lets tests assert that
 /// invalidation backdates the entry so the next gather treats it as expired.

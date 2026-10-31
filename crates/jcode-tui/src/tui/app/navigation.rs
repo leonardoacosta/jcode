@@ -335,10 +335,19 @@ impl App {
         }
 
         // Inside Herdr the viewer may be on another machine, so a local browser
-        // opens where nobody is looking. Put the URL on the client clipboard.
+        // opens where nobody is looking. Open it in Chrome on the viewer's Mac
+        // when reachable; otherwise put the URL on the client clipboard.
         if std::env::var_os("HERDR_ENV").is_some()
             && (target.starts_with("https://") || target.starts_with("http://"))
         {
+            if let Some(host) = std::env::var("JCODE_LINK_OPEN_SSH_HOST")
+                .ok()
+                .filter(|h| !h.trim().is_empty())
+                && super::helpers::open_url_in_remote_chrome(&host, &target)
+            {
+                self.set_status_notice(format!("Opened link in Chrome on {}: {}", host, target));
+                return true;
+            }
             if super::helpers::copy_to_clipboard(&target) {
                 self.set_status_notice(format!("Copied link: {}", target));
                 return true;
