@@ -340,9 +340,17 @@ impl App {
         if std::env::var_os("HERDR_ENV").is_some()
             && (target.starts_with("https://") || target.starts_with("http://"))
         {
+            // Env var wins; the file lets already-running sessions opt in.
             if let Some(host) = std::env::var("JCODE_LINK_OPEN_SSH_HOST")
                 .ok()
-                .filter(|h| !h.trim().is_empty())
+                .or_else(|| {
+                    std::fs::read_to_string(
+                        crate::storage::jcode_dir().ok()?.join("link_open_ssh_host"),
+                    )
+                    .ok()
+                })
+                .map(|h| h.trim().to_string())
+                .filter(|h| !h.is_empty())
                 && super::helpers::open_url_in_remote_chrome(&host, &target)
             {
                 self.set_status_notice(format!("Opened link in Chrome on {}: {}", host, target));
