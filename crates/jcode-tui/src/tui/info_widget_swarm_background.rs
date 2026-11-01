@@ -34,7 +34,7 @@ pub(super) fn render_swarm_widget(data: &InfoWidgetData, inner: Rect) -> Framed 
     let max_name_len = inner.width.saturating_sub(6) as usize;
     if !info.members.is_empty() {
         for member in info.members.iter().take(max_names.min(3)) {
-            lines.push(swarm_member_line(member, max_name_len));
+            lines.push(swarm_member_line(member, inner.width as usize));
         }
     } else {
         for name in info.session_names.iter().take(max_names.min(3)) {
@@ -99,25 +99,33 @@ fn swarm_role_prefix(member: &SwarmMemberStatus) -> &'static str {
     }
 }
 
-fn swarm_member_line(member: &SwarmMemberStatus, max_width: usize) -> Line<'static> {
+/// Render a member row whose total display width (role prefix, icon and text)
+/// fits within `row_width` cells.
+fn swarm_member_line(member: &SwarmMemberStatus, row_width: usize) -> Line<'static> {
     let name = swarm_member_label(member);
     let mut detail = member.detail.clone().unwrap_or_default();
     if !detail.is_empty() {
         detail = format!(" - {}", detail);
     }
     let role_prefix = swarm_role_prefix(member);
-    let line_text = truncate_smart(&format!("{} {}{}", name, member.status, detail), max_width);
     let (color, icon) = swarm_status_style(&member.status);
+    let icon_text = format!("{} ", icon);
+    let max_width = row_width
+        .saturating_sub(role_prefix.width())
+        .saturating_sub(icon_text.width());
+    let line_text = truncate_smart(&format!("{} {}{}", name, member.status, detail), max_width);
     Line::from(vec![
         Span::styled(
             role_prefix.to_string(),
             Style::default().fg(rgb(255, 200, 100)),
         ),
-        Span::styled(format!("{} ", icon), Style::default().fg(color)),
+        Span::styled(icon_text, Style::default().fg(color)),
         Span::styled(line_text, Style::default().fg(rgb(140, 140, 150))),
     ])
 }
 
+/// Counts use compact `Ns`/`Nc` (sessions/clients) because the side widget is
+/// narrow; the full swarm page spells out `N agents · M active` instead.
 fn render_swarm_stats_line(info: &SwarmInfo) -> Line<'static> {
     let mut stats_parts: Vec<Span> =
         vec![Span::styled("🐝 ", Style::default().fg(rgb(255, 200, 100)))];
@@ -546,4 +554,25 @@ fn render_swarm_dock(info: &SwarmInfo, inner: Rect) -> Framed {
     }
 
     framed
+}
+
+#[cfg(test)]
+mod cell_width_tests {
+    use super::swarm_member_line;
+    use crate::protocol::SwarmMemberStatus;
+
+    #[test]
+    fn member_row_fits_narrow_width() {
+        let member: SwarmMemberStatus = serde_json::from_value(serde_json::json!({
+            "session_id": "s",
+            "friendly_name": "日本語のエージェント",
+            "status": "running",
+            "detail": "doing a long task 🐝",
+            "role": "coordinator",
+        }))
+        .expect("member");
+        for width in [12usize, 16, 20, 24] {
+            assert!(swarm_member_line(&member, width).width() <= width, "width {width}");
+        }
+    }
 }

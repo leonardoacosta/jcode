@@ -424,12 +424,15 @@ fn render_swarm_tree_row(
 }
 
 fn clamp_line_to_width(line: &mut Line<'static>, width: usize) {
-    let mut remaining = width;
+    if line.width() <= width {
+        return;
+    }
+    // Reserve one cell for the ellipsis that marks dropped content.
+    let mut remaining = width.saturating_sub(1);
     let mut spans = Vec::with_capacity(line.spans.len());
+    let mut last_style = Style::default();
     for span in line.spans.drain(..) {
-        if remaining == 0 {
-            break;
-        }
+        last_style = span.style;
         let span_width = unicode_width::UnicodeWidthStr::width(span.content.as_ref());
         if span_width <= remaining {
             remaining -= span_width;
@@ -449,6 +452,9 @@ fn clamp_line_to_width(line: &mut Line<'static>, width: usize) {
             spans.push(Span::styled(text, span.style));
         }
         break;
+    }
+    if width > 0 {
+        spans.push(Span::styled("…", last_style));
     }
     line.spans = spans;
 }
@@ -589,6 +595,18 @@ pub(crate) fn members_display_order(members: &[SwarmMemberStatus]) -> Vec<String
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn clamp_line_to_width_appends_ellipsis_when_dropping() {
+        let mut line = Line::from("↑/↓ select · Enter open · Esc close · ? help · more hints");
+        super::clamp_line_to_width(&mut line, 30);
+        assert_eq!(line.width(), 30);
+        assert!(line.to_string().ends_with('…'));
+
+        let mut fits = Line::from("short");
+        super::clamp_line_to_width(&mut fits, 30);
+        assert_eq!(fits.to_string(), "short");
+    }
+
     use super::*;
     use jcode_tui_render::swarm_gallery::members_to_tiles;
 
