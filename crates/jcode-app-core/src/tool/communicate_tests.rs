@@ -19,7 +19,7 @@ use anyhow::Result;
 use async_trait::async_trait;
 use futures::StreamExt;
 use serde_json::json;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -1479,3 +1479,87 @@ mod credential_failures;
 include!("communicate_tests/input_format.rs");
 include!("communicate_tests/end_to_end.rs");
 include!("communicate_tests/assignment.rs");
+
+#[test]
+fn mutating_swarm_requests_get_extended_deadline() {
+    use super::transport::default_deadline;
+    for t in [
+        "comm_spawn",
+        "comm_task_control",
+        "comm_assign_task",
+        "comm_assign_next",
+    ] {
+        assert_eq!(default_deadline(t), Duration::from_secs(120), "{t}");
+    }
+    for t in [
+        "comm_list",
+        "comm_status",
+        "comm_plan_status",
+        "comm_await_members",
+    ] {
+        assert_eq!(default_deadline(t), Duration::from_secs(30), "{t}");
+    }
+}
+
+#[test]
+fn swarm_timeout_errors_are_classified() {
+    use super::transport::SwarmRequestError;
+    let mutating = anyhow::Error::from(SwarmRequestError::Timeout { mutating: true });
+    let text = format!("Failed to spawn agent: {}", mutating);
+    assert!(text.contains("client timed out") && text.contains("may have succeeded"));
+    assert!(text.contains("`status`"));
+    let read = SwarmRequestError::Timeout { mutating: false }.to_string();
+    assert!(read.contains("client timed out") && !read.contains("may have succeeded"));
+    let closed = SwarmRequestError::Closed { mutating: true }.to_string();
+    assert!(closed.contains("connection closed") && closed.contains("may have succeeded"));
+    // A server rejection is a plain error, not a transport error.
+    let server = anyhow::anyhow!("server said no");
+    assert!(server.downcast_ref::<SwarmRequestError>().is_none());
+    assert!(mutating.downcast_ref::<SwarmRequestError>().is_some());
+}
+
+#[test]
+fn unknown_action_message_lists_advertised_actions() {
+    let msg = super::unknown_action_message("bogus");
+    for action in super::ADVERTISED_SWARM_ACTIONS {
+        assert!(msg.contains(action), "missing {action}: {msg}");
+    }
+    assert!(msg.contains("launch") && msg.contains("list_models") && msg.contains("list_swarms"));
+}
+
+#[test]
+fn advertised_actions_match_schema_enum_and_dispatch() {
+    let schema = CommunicateTool::new().parameters_schema();
+    let enum_values: Vec<String> = schema["properties"]["action"]["enum"]
+        .as_array()
+        .expect("action enum")
+        .iter()
+        .map(|v| v.as_str().unwrap().to_string())
+        .collect();
+    let source = include_str!("communicate.rs");
+    for action in super::ADVERTISED_SWARM_ACTIONS {
+        assert!(
+            enum_values.iter().any(|v| v == action),
+            "{action} not in schema"
+        );
+        let canonical = super::canonical_swarm_action(action);
+        assert!(
+            source.contains(&format!("\"{canonical}\" =>"))
+                || source.contains(&format!("\"{canonical}\" |"))
+                || source.contains(&format!("| \"{canonical}\"")),
+            "{action} has no dispatch arm"
+        );
+    }
+}
+
+#[test]
+fn await_members_blocking_deadline_covers_wait() {
+    assert_eq!(
+        super::await_members_socket_timeout(true, 3600),
+        Duration::from_secs(30)
+    );
+    assert_eq!(
+        super::await_members_socket_timeout(false, 60),
+        Duration::from_secs(90)
+    );
+}

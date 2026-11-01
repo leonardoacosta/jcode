@@ -70,26 +70,24 @@ async fn communicate_list_and_await_members_work_end_to_end() {
         .expect("peer should be listed while running");
     assert_eq!(running_peer.status.as_deref(), Some("running"));
 
-    // Legacy background=false input is upgraded to a durable asynchronous wait.
+    // Default await_members starts a durable asynchronous wait.
     let await_output = tokio::time::timeout(
         Duration::from_secs(5),
         tool.execute(
             json!({
                 "action": "await_members",
                 "session_ids": [peer_session.clone()],
-                "timeout_minutes": 1,
-                "background": false
+                "timeout_minutes": 1
             }),
             ctx.clone(),
         ),
     )
     .await
-    .expect("legacy blocking request should return promptly")
+    .expect("background wait should return promptly")
     .expect("await_members should start");
     assert!(
-        await_output.output.contains("no longer supported")
-            && await_output.output.contains("asynchronously"),
-        "expected compatibility hand-off output, got: {}",
+        await_output.output.contains("runs in the background"),
+        "expected background hand-off output, got: {}",
         await_output.output
     );
 

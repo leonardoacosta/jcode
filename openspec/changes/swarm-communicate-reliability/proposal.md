@@ -9,7 +9,7 @@ The swarm `communicate` tool reports false failures and gives misleading errors.
 - Per-action socket deadlines: short for reads, longer for `spawn`, `launch`, `retry`, `resume` and plan mutations.
 - Typed request outcome distinguishing client timeout, connection closed and server error. Timeouts on mutating actions say the action may have succeeded and point to `status`/`list` before retrying.
 - Unknown-action error derived from `ADVERTISED_SWARM_ACTIONS`.
-- `await_members` honors `background=false` (blocking wait with `timeout_secs + 30` deadline), or the dead branch is removed (see Open decisions).
+- `await_members` honors `background=false` (blocking wait with `timeout_secs + 30` deadline).
 - Tests: schema enum vs dispatch parity, timeout classification, unknown-action message, `await_swarm_progress` loop.
 
 ## Capabilities
@@ -33,7 +33,7 @@ Checked against current `~/.jcode` source on 2026-11-01:
 - Partly confirmed: `schema_advertises_a_lean_lane_first_action_set` (`communicate_tests.rs:1050`) checks the enum list, but no test asserts every advertised action dispatches. `await_should_wake_for_new_ready` is tested (`communicate_tests.rs:285-293`), but `await_swarm_progress` (`communicate.rs:333-400`) has no loop test.
 - Dropped: none. Line numbers corrected from the fork audit (unknown-action at 3147, not 3146).
 
-## Open decisions
+## Resolved decisions
 
-1. `await_members background=false`. Recommended: honor it (blocking wait), since the schema advertises it. Alternative: remove the dead branch and document that waits always run in background (simpler, but breaks callers relying on inline results).
-2. Mutating-action deadline. Recommended: 120s for `spawn`/`launch`/`retry`/`resume`, 30s for reads. Alternative: idempotency key on spawn requests (eliminates duplicates but needs a protocol change, out of scope).
+1. `await_members background=false`: honor it (blocking wait with `timeout_secs + 30` deadline), since the schema advertises it.
+2. Mutating-action deadline: 120s for `spawn`/`launch`/`retry`/`resume`, 30s for reads. Idempotency keys stay out of scope.

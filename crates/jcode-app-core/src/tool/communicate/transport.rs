@@ -69,6 +69,52 @@ fn request_type_from_json(json: &str) -> String {
         .unwrap_or_else(|| "unknown".to_string())
 }
 
+const READ_DEADLINE: std::time::Duration = std::time::Duration::from_secs(30);
+const MUTATING_DEADLINE: std::time::Duration = std::time::Duration::from_secs(120);
+
+/// Requests that create or restart workers. They can outlive a busy server's
+/// short read deadline, and a blind retry may duplicate the work.
+pub(super) fn is_mutating_request_type(request_type: &str) -> bool {
+    matches!(
+        request_type,
+        "comm_spawn" | "comm_task_control" | "comm_assign_task" | "comm_assign_next"
+    )
+}
+
+pub(super) fn default_deadline(request_type: &str) -> std::time::Duration {
+    if is_mutating_request_type(request_type) {
+        MUTATING_DEADLINE
+    } else {
+        READ_DEADLINE
+    }
+}
+
+/// Client-side transport failures, kept distinct from server rejections.
+#[derive(Debug)]
+pub(super) enum SwarmRequestError {
+    Timeout { mutating: bool },
+    Closed { mutating: bool },
+}
+
+impl std::fmt::Display for SwarmRequestError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (what, mutating) = match self {
+            Self::Timeout { mutating } => ("client timed out waiting for response", *mutating),
+            Self::Closed { mutating } => ("connection closed before receiving response", *mutating),
+        };
+        write!(f, "{what}")?;
+        if mutating {
+            write!(
+                f,
+                "; the action may have succeeded on the server. Check `status` or `list` before retrying"
+            )?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for SwarmRequestError {}
+
 pub(super) async fn send_request(request: Request) -> Result<ServerEvent> {
     send_request_with_timeout(request, None).await
 }
@@ -82,11 +128,11 @@ pub(super) async fn send_request_with_timeout(
     let (reader, mut writer) = stream.into_split();
 
     let request_id = request.id();
-    let deadline =
-        tokio::time::Instant::now() + timeout.unwrap_or(std::time::Duration::from_secs(30));
-
     let json = serde_json::to_string(&request)? + "\n";
     let request_type = request_type_from_json(&json);
+    let mutating = is_mutating_request_type(&request_type);
+    let deadline =
+        tokio::time::Instant::now() + timeout.unwrap_or_else(|| default_deadline(&request_type));
     writer.write_all(json.as_bytes()).await?;
 
     let mut reader = BufReader::new(reader);
@@ -106,9 +152,11 @@ pub(super) async fn send_request_with_timeout(
                 request_id,
                 path.display()
             ));
-            anyhow::bail!("Timed out waiting for response")
+            return Err(SwarmRequestError::Timeout { mutating }.into());
         }
-        let n = tokio::time::timeout(remaining, reader.read_line(&mut line)).await??;
+        let n = tokio::time::timeout(remaining, reader.read_line(&mut line))
+            .await
+            .map_err(|_| SwarmRequestError::Timeout { mutating })??;
         if n == 0 {
             crate::logging::warn(&format!(
                 "[tool:communicate] connection closed before response type={} id={} socket={}",
@@ -116,9 +164,7 @@ pub(super) async fn send_request_with_timeout(
                 request_id,
                 path.display()
             ));
-            return Err(anyhow::anyhow!(
-                "Connection closed before receiving response"
-            ));
+            return Err(SwarmRequestError::Closed { mutating }.into());
         }
 
         let value: Value = serde_json::from_str(line.trim()).map_err(|err| {

@@ -1696,6 +1696,22 @@ const ADVERTISED_SWARM_ACTIONS: &[&str] = &[
     "list_swarms",
 ];
 
+fn await_members_socket_timeout(background: bool, timeout_secs: u64) -> std::time::Duration {
+    if background {
+        std::time::Duration::from_secs(30)
+    } else {
+        std::time::Duration::from_secs(timeout_secs + 30)
+    }
+}
+
+fn unknown_action_message(action: &str) -> String {
+    format!(
+        "Unknown action '{}'. Valid actions: {}. To read messages addressed to you, use action='read'.",
+        action,
+        ADVERTISED_SWARM_ACTIONS.join(", ")
+    )
+}
+
 #[derive(Clone, Deserialize)]
 struct CommunicateInput {
     action: String,
@@ -3082,12 +3098,9 @@ impl Tool for CommunicateTool {
                 }
                 let timeout_minutes = params.timeout_minutes.unwrap_or(60);
                 let timeout_secs = timeout_minutes * 60;
-                // Public member waits are always asynchronous. The blocking
-                // CommAwaitMembers protocol remains available internally for the
-                // run_plan coordination loop, but agents must not park an entire
-                // turn waiting on a worker or a long-lived socket.
-                let blocking_was_requested = params.background == Some(false);
-                let background = true;
+                // Waits are asynchronous by default; `background=false` blocks
+                // inline with a socket deadline covering the full wait.
+                let background = params.background.unwrap_or(true);
                 let notify = params.notify.unwrap_or(true);
                 let wake = params.wake.unwrap_or(true);
 
@@ -3105,11 +3118,7 @@ impl Tool for CommunicateTool {
 
                 // Background waits return promptly with a snapshot; only blocking
                 // waits need the long socket timeout that covers the full wait.
-                let socket_timeout = if background {
-                    std::time::Duration::from_secs(30)
-                } else {
-                    std::time::Duration::from_secs(timeout_secs + 30)
-                };
+                let socket_timeout = await_members_socket_timeout(background, timeout_secs);
 
                 match send_request_with_timeout(request, Some(socket_timeout)).await {
                     Ok(ServerEvent::CommAwaitMembersResponse {
@@ -3120,14 +3129,9 @@ impl Tool for CommunicateTool {
                         ..
                     }) => {
                         if background_started {
-                            let compatibility_note = if blocking_was_requested {
-                                "\n\n(Blocking member waits are no longer supported; this wait was started asynchronously.)"
-                            } else {
-                                "\n\n(You can keep working; this wait runs in the background.)"
-                            };
                             return Ok(ToolOutput::new(format!(
-                                "{}{}",
-                                summary, compatibility_note
+                                "{}\n\n(You can keep working; this wait runs in the background.)",
+                                summary
                             )));
                         }
                         let reports = fetch_awaited_member_reports(&ctx, &members).await;
@@ -3144,11 +3148,8 @@ impl Tool for CommunicateTool {
             }
 
             _ => Err(anyhow::anyhow!(
-                "Unknown action '{}'. Valid actions: share, share_append, read, message, broadcast, dm, channel, list, list_channels, channel_members, \
-                 propose_plan, approve_plan, reject_plan, spawn, stop, assign_role, status, report, plan_status, summary, read_context, \
-                 resync_plan, assign_task, assign_next, fill_slots, run_plan, cleanup, start, start_task, wake, resume, retry, reassign, replace, salvage, subscribe_channel, unsubscribe_channel, await_members. \
-                 To read messages addressed to you, use action='read'.",
-                params.action
+                "{}",
+                unknown_action_message(&params.action)
             )),
         }
     }
