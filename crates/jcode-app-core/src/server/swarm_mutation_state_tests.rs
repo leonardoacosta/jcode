@@ -204,3 +204,48 @@ async fn control_driven_begin_coalesces_in_flight_duplicates() {
         other => panic!("expected done, got {other:?}"),
     }
 }
+
+#[tokio::test]
+async fn swarm_mutation_redispatches_only_expired_pending_state() {
+    let (_env, _runtime_dir) = RuntimeEnvGuard::new();
+    let (client_tx, _client_rx) = tokio::sync::mpsc::unbounded_channel();
+
+    // A crashed executor left a pending (no final response) state behind.
+    let expired_key = request_key("coord", "spawn", &["expired".to_string()]);
+    super::save_state(&super::PersistedSwarmMutationState {
+        key: expired_key.clone(),
+        action: "spawn".to_string(),
+        session_id: "coord".to_string(),
+        created_at_unix_ms: super::now_unix_ms()
+            .saturating_sub(super::PENDING_STATE_TTL.as_millis() as u64 + 1_000),
+        final_response: None,
+    });
+    let fresh_key = request_key("coord", "spawn", &["fresh".to_string()]);
+    let fresh_created = super::now_unix_ms();
+    super::save_state(&super::PersistedSwarmMutationState {
+        key: fresh_key.clone(),
+        action: "spawn".to_string(),
+        session_id: "coord".to_string(),
+        created_at_unix_ms: fresh_created,
+        final_response: None,
+    });
+
+    // New process: empty in-memory runtime.
+    let runtime = SwarmMutationRuntime::default();
+    let expired = begin_or_replay(&runtime, &expired_key, "spawn", "coord", 1, &client_tx)
+        .await
+        .expect("expired pending mutation re-dispatches");
+    assert!(
+        super::now_unix_ms().saturating_sub(expired.created_at_unix_ms)
+            < super::PENDING_STATE_TTL.as_millis() as u64,
+        "re-dispatch starts a fresh pending state"
+    );
+
+    let fresh = begin_or_replay(&runtime, &fresh_key, "spawn", "coord", 2, &client_tx)
+        .await
+        .expect("fresh pending state resumes as the existing attempt");
+    assert_eq!(
+        fresh.created_at_unix_ms, fresh_created,
+        "a fresh pending state is reused, not re-created"
+    );
+}

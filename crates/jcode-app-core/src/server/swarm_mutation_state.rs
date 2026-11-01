@@ -141,6 +141,13 @@ pub(super) fn ensure_pending_state(
     state
 }
 
+/// Run mutation-state filesystem IO off the async executor threads.
+async fn blocking_io<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> T {
+    tokio::task::spawn_blocking(f)
+        .await
+        .unwrap_or_else(|err| std::panic::resume_unwind(err.into_panic()))
+}
+
 pub(super) fn persist_final_response(
     state: &PersistedSwarmMutationState,
     response: PersistedSwarmMutationResponse,
@@ -217,7 +224,12 @@ async fn begin_with_mode(
         // under this same lock only after persisting the final state.
         let mut sync = runtime.sync.write().await;
         if replay_final
-            && let Some(final_response) = load_state(key).and_then(|state| state.final_response)
+            && let Some(final_response) = {
+                let owned_key = key.to_string();
+                blocking_io(move || load_state(&owned_key))
+                    .await
+                    .and_then(|state| state.final_response)
+            }
         {
             let _ = client_event_tx.send(final_response.into_server_event(request_id, session_id));
             return None;
@@ -235,7 +247,9 @@ async fn begin_with_mode(
     }
 
     if replay_final {
-        Some(ensure_pending_state(key, action, session_id))
+        let (key, action, session_id) =
+            (key.to_string(), action.to_string(), session_id.to_string());
+        Some(blocking_io(move || ensure_pending_state(&key, &action, &session_id)).await)
     } else {
         // A control-driven mutation is a fresh attempt: never resurrect a
         // stale persisted final response as this attempt's state.
@@ -246,8 +260,13 @@ async fn begin_with_mode(
             created_at_unix_ms: now_unix_ms(),
             final_response: None,
         };
-        save_state(&state);
-        Some(state)
+        Some(
+            blocking_io(move || {
+                save_state(&state);
+                state
+            })
+            .await,
+        )
     }
 }
 
@@ -260,7 +279,10 @@ pub(super) async fn finish_request(
     // active claim: a duplicate request that misses the drain below must be
     // able to observe the persisted final state and replay it instead of
     // re-executing the mutation.
-    let persisted = persist_final_response(state, response.clone());
+    let persisted = {
+        let (state, response) = (state.clone(), response.clone());
+        blocking_io(move || persist_final_response(&state, response)).await
+    };
     let waiters = {
         let mut sync = runtime.sync.write().await;
         let waiters = sync.waiters.remove(&persisted.key).unwrap_or_default();

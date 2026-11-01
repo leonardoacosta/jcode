@@ -35,7 +35,7 @@ Checked against current `~/.jcode` source:
 | Missing test: crashed pending mutation retried after TTL | Confirmed. No test touches `PENDING_STATE_TTL` (`swarm_mutation_state.rs:13`). |
 | Missing test: watchdog tool_running suppression + coordinator exclusion | Dropped. `swarm_watchdog_tests.rs:72` and `:79` cover both. |
 
-## Open decisions
+## Resolved decisions
 
-1. Split `swarm.rs` (3518 lines) by action. Recommended: a separate follow-up change after these fixes land, to keep this diff reviewable. Alternative: an optional last task group here (larger, riskier review).
-2. File lock type. Recommended: keep `std::sync::Mutex` inside `spawn_blocking`, because sync callers in tests and recovery still need it. Alternative: switch to `tokio::sync::Mutex` and make all helpers async (wider churn).
+1. Split `swarm.rs` by action: out of scope; a separate follow-up change after these fixes land.
+2. File lock type: keep `std::sync::Mutex`, used inside `spawn_blocking`, because sync callers in tests and recovery still need it.

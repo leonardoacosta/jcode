@@ -1054,3 +1054,39 @@ fn member_listed_in_several_snapshots_loads_only_into_its_newest_swarm() {
     let reloaded = load_runtime_state();
     assert_eq!(reloaded.swarms_by_id.len(), 1);
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn concurrent_same_swarm_persists_keep_highest_plan_version() {
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    let _env = test_env(&dir);
+
+    let plan = VersionedPlan {
+        version: 1,
+        ..Default::default()
+    };
+    let swarm_state = crate::server::SwarmState::new(
+        HashMap::new(),
+        HashMap::new(),
+        HashMap::from([("swarm-concurrent".to_string(), plan)]),
+        HashMap::new(),
+    );
+
+    let mut tasks = Vec::new();
+    for _ in 0..16 {
+        let swarm_state = swarm_state.clone();
+        tasks.push(tokio::spawn(async move {
+            {
+                let mut plans = swarm_state.plans.write().await;
+                plans.get_mut("swarm-concurrent").expect("plan").version += 1;
+            }
+            crate::server::persist_swarm_state_for("swarm-concurrent", &swarm_state).await;
+        }));
+    }
+    for task in tasks {
+        task.await.expect("persist task");
+    }
+
+    let primary = storage::read_json::<PersistedSwarmState>(&state_path("swarm-concurrent"))
+        .expect("final snapshot parses");
+    assert_eq!(primary.plan.expect("plan").version, 17);
+}

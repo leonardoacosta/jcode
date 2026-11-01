@@ -31,30 +31,28 @@ static SWARM_FILE_LOCKS: LazyLock<StdMutex<HashMap<String, Weak<StdMutex<()>>>>>
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct SwarmStateFileVersion(Option<Vec<u8>>);
 
-pub(super) fn swarm_operation_lock(swarm_id: &str) -> Arc<tokio::sync::Mutex<()>> {
-    let mut locks = SWARM_OPERATION_LOCKS
+fn registry_lock<T: Default>(
+    registry: &StdMutex<HashMap<String, Weak<T>>>,
+    swarm_id: &str,
+) -> Arc<T> {
+    let mut locks = registry
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     locks.retain(|_, lock| lock.strong_count() > 0);
     if let Some(lock) = locks.get(swarm_id).and_then(Weak::upgrade) {
         return lock;
     }
-    let lock = Arc::new(tokio::sync::Mutex::new(()));
+    let lock = Arc::new(T::default());
     locks.insert(swarm_id.to_string(), Arc::downgrade(&lock));
     lock
 }
 
+pub(super) fn swarm_operation_lock(swarm_id: &str) -> Arc<tokio::sync::Mutex<()>> {
+    registry_lock(&SWARM_OPERATION_LOCKS, swarm_id)
+}
+
 fn swarm_file_lock(swarm_id: &str) -> Arc<StdMutex<()>> {
-    let mut locks = SWARM_FILE_LOCKS
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    locks.retain(|_, lock| lock.strong_count() > 0);
-    if let Some(lock) = locks.get(swarm_id).and_then(Weak::upgrade) {
-        return lock;
-    }
-    let lock = Arc::new(StdMutex::new(()));
-    locks.insert(swarm_id.to_string(), Arc::downgrade(&lock));
-    lock
+    registry_lock(&SWARM_FILE_LOCKS, swarm_id)
 }
 
 fn dormant_plan_retention() -> Duration {

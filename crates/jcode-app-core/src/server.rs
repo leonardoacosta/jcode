@@ -363,12 +363,21 @@ pub(super) async fn persist_swarm_state_for(swarm_id: &str, swarm_state: &SwarmS
     let operation_lock = swarm_operation_lock(swarm_id);
     let _operation_guard = operation_lock.lock().await;
     let runtime = swarm_state.load_runtime(swarm_id).await;
-    persist_swarm_state_snapshot(
-        swarm_id,
-        runtime.plan.as_ref(),
-        runtime.coordinator_session_id.as_deref(),
-        &runtime.members,
-    );
+    let owned_swarm_id = swarm_id.to_string();
+    let result = tokio::task::spawn_blocking(move || {
+        persist_swarm_state_snapshot(
+            &owned_swarm_id,
+            runtime.plan.as_ref(),
+            runtime.coordinator_session_id.as_deref(),
+            &runtime.members,
+        );
+    })
+    .await;
+    if let Err(err) = result {
+        crate::logging::warn(&format!(
+            "Failed to persist swarm state for {swarm_id}: {err}"
+        ));
+    }
 }
 
 pub(super) async fn remove_persisted_swarm_state_for(swarm_id: &str, swarm_state: &SwarmState) {
@@ -376,12 +385,33 @@ pub(super) async fn remove_persisted_swarm_state_for(swarm_id: &str, swarm_state
     // is an extra CAS guard against direct/recovery writers outside this path.
     let operation_lock = swarm_operation_lock(swarm_id);
     let _operation_guard = operation_lock.lock().await;
-    let file_version = capture_swarm_state_version(swarm_id);
+    let owned_swarm_id = swarm_id.to_string();
+    let file_version =
+        match tokio::task::spawn_blocking(move || capture_swarm_state_version(&owned_swarm_id))
+            .await
+        {
+            Ok(version) => version,
+            Err(err) => {
+                crate::logging::warn(&format!(
+                    "Failed to read swarm state version for {swarm_id}: {err}"
+                ));
+                return;
+            }
+        };
     let runtime = swarm_state.load_runtime(swarm_id).await;
     if runtime.has_any_state() {
         return;
     }
-    let _ = remove_swarm_state_if_version(swarm_id, &file_version);
+    let owned_swarm_id = swarm_id.to_string();
+    if let Err(err) = tokio::task::spawn_blocking(move || {
+        let _ = remove_swarm_state_if_version(&owned_swarm_id, &file_version);
+    })
+    .await
+    {
+        crate::logging::warn(&format!(
+            "Failed to remove swarm state for {swarm_id}: {err}"
+        ));
+    }
 }
 
 fn headless_member_should_restore(status: &str, is_headless: bool) -> bool {
