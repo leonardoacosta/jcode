@@ -232,11 +232,49 @@ pub struct McpServerConfig {
     /// extraction) can raise it here (issues #802, #1174).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub timeout_secs: Option<u64>,
+    /// `"direct"` registers every tool as `mcp__<server>__<tool>`; `"search"`
+    /// (default) keeps tools behind `mcp search`/`mcp call`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expose: Option<String>,
+    /// Glob patterns (`~` expanded, `*`/`**`) for session cwds where this
+    /// server may start. Empty means every workspace.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub workspaces: Vec<String>,
+    /// Connect on first search/call instead of at session start.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lazy: Option<bool>,
 }
 
 impl McpServerConfig {
     /// A config entry is stdio when it has a command and is not explicitly a
     /// remote (http/sse) transport.
+    pub fn is_direct(&self) -> bool {
+        self.expose
+            .as_deref()
+            .is_some_and(|e| e.trim().eq_ignore_ascii_case("direct"))
+    }
+
+    pub fn is_lazy(&self) -> bool {
+        self.lazy.unwrap_or(false)
+    }
+
+    /// Whether this server may start for a session rooted at `cwd`.
+    pub fn in_workspace(&self, cwd: Option<&std::path::Path>) -> bool {
+        if self.workspaces.is_empty() {
+            return true;
+        }
+        let Some(cwd) = cwd else { return false };
+        let cwd = cwd.to_string_lossy();
+        let home = dirs::home_dir().map(|h| h.to_string_lossy().into_owned());
+        self.workspaces.iter().any(|pattern| {
+            let pattern = match (pattern.strip_prefix('~'), &home) {
+                (Some(rest), Some(home)) => format!("{home}{rest}"),
+                _ => pattern.clone(),
+            };
+            workspace_glob_matches(&pattern, &cwd)
+        })
+    }
+
     pub fn is_stdio(&self) -> bool {
         let transport = self.transport.as_deref().map(str::trim);
         transport.is_none_or(|kind| kind.is_empty() || kind.eq_ignore_ascii_case("stdio"))
@@ -367,6 +405,41 @@ pub struct McpConfig {
     /// jcode's historical `servers` key.
     #[serde(default, alias = "mcpServers")]
     pub servers: std::collections::HashMap<String, McpServerConfig>,
+    /// `server/tool` entries registered directly as `mcp__<server>__<tool>`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pin_tools: Vec<String>,
+}
+
+impl McpConfig {
+    /// Whether `server`'s `tool` should be a direct model tool.
+    pub fn is_direct_tool(&self, server: &str, tool: &str) -> bool {
+        self.servers.get(server).is_some_and(McpServerConfig::is_direct)
+            || self
+                .pin_tools
+                .iter()
+                .any(|pin| pin.split_once('/') == Some((server, tool)))
+    }
+}
+
+/// Match `path` against a glob where `**` spans directories and `*` does not.
+/// A pattern also matches descendants of the directory it names.
+pub fn workspace_glob_matches(pattern: &str, path: &str) -> bool {
+    let pattern = pattern.trim_end_matches('/');
+    let mut re = String::from("^");
+    let mut chars = pattern.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '*' if chars.peek() == Some(&'*') => {
+                chars.next();
+                re.push_str(".*");
+            }
+            '*' => re.push_str("[^/]*"),
+            '?' => re.push_str("[^/]"),
+            c => re.push_str(&regex::escape(&c.to_string())),
+        }
+    }
+    re.push_str("(/.*)?$");
+    regex::Regex::new(&re).is_ok_and(|re| re.is_match(path.trim_end_matches('/')))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -629,6 +702,9 @@ impl McpConfig {
                             enabled,
                             disabled: None,
                             timeout_secs: None,
+                            expose: None,
+                            workspaces: Vec::new(),
+                            lazy: None,
                         },
                     );
                 }
@@ -728,6 +804,7 @@ impl McpConfig {
             if jcode_mcp.exists() {
                 if let Ok(config) = Self::load_from_file(&jcode_mcp) {
                     merged.servers.extend(config.servers);
+                    merged.pin_tools.extend(config.pin_tools);
                 }
             }
         }

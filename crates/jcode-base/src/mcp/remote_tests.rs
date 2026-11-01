@@ -965,6 +965,7 @@ async fn owned_manager_reconnects_only_on_next_call_after_session_404() {
     server.shared = false;
     let config = McpConfig {
         servers: HashMap::from([("reconnect".to_string(), server)]),
+        ..Default::default()
     };
     let manager = McpManager::with_config(config);
     let error = manager
@@ -1016,6 +1017,7 @@ async fn shared_manager_and_pool_replace_expired_handles_without_replaying_calls
     let fixture = Fixture::start(Plan::default()).await;
     let config = McpConfig {
         servers: HashMap::from([("reconnect".to_string(), fixture.config("http"))]),
+        ..Default::default()
     };
     let project = tempfile::tempdir().unwrap();
     std::fs::write(

@@ -753,6 +753,9 @@ done
             enabled: None,
             disabled: None,
             timeout_secs: None,
+            expose: None,
+            workspaces: Vec::new(),
+            lazy: None,
         }
     }
 

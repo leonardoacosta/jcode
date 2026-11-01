@@ -838,6 +838,9 @@ mod tests {
                 enabled: None,
                 disabled: None,
                 timeout_secs: None,
+                expose: None,
+                workspaces: Vec::new(),
+                lazy: None,
             },
         );
         let pool = SharedMcpPool::new(config);

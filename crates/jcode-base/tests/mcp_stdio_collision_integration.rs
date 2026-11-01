@@ -121,6 +121,7 @@ fn config() -> McpConfig {
                 (server.to_string(), config)
             })
             .collect(),
+        ..Default::default()
     }
 }
 

@@ -417,6 +417,9 @@ async fn test_list_shows_disabled_configured_server() {
             enabled: Some(false),
             disabled: None,
             timeout_secs: None,
+            expose: None,
+            workspaces: Vec::new(),
+            lazy: None,
         },
     );
     let manager = Arc::new(RwLock::new(McpManager::with_config(config)));

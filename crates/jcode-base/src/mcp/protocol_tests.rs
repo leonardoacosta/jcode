@@ -995,3 +995,36 @@ fn mcp_source_logs_explain_provenance_without_config_values() {
     assert!(!imported.contains("TOKEN"));
     assert!(!imported.contains("inline-secret"));
 }
+
+#[test]
+fn management_fields_parse() {
+    let config: McpConfig = serde_json::from_value(serde_json::json!({
+        "pin_tools": ["aperture/query"],
+        "servers": {
+            "aperture": {"command": "a"},
+            "direct": {"command": "d", "expose": "direct", "lazy": true,
+                       "workspaces": ["/home/u/dev/personal/**"]}
+        }
+    }))
+    .unwrap();
+    assert!(config.is_direct_tool("aperture", "query"));
+    assert!(!config.is_direct_tool("aperture", "other"));
+    assert!(config.is_direct_tool("direct", "anything"));
+    let direct = &config.servers["direct"];
+    assert!(direct.is_lazy() && !config.servers["aperture"].is_lazy());
+    assert!(config.servers["aperture"].in_workspace(None));
+    let p = std::path::Path::new;
+    assert!(direct.in_workspace(Some(p("/home/u/dev/personal/x/y"))));
+    assert!(!direct.in_workspace(Some(p("/home/u/dev/brown/x"))));
+    assert!(!direct.in_workspace(None));
+}
+
+#[test]
+fn workspace_glob_semantics() {
+    use super::workspace_glob_matches as m;
+    assert!(m("/a/*/c", "/a/b/c"));
+    assert!(!m("/a/*/c", "/a/b/x/c"));
+    assert!(m("/a/**", "/a/b/x"));
+    assert!(m("/repo", "/repo/sub"));
+    assert!(!m("/repo", "/repository"));
+}

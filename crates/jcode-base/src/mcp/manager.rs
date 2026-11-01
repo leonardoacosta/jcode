@@ -792,6 +792,9 @@ mod tests {
                 enabled: Some(false),
                 disabled: None,
                 timeout_secs: None,
+                expose: None,
+                workspaces: Vec::new(),
+                lazy: None,
             },
         );
         let manager = McpManager::with_config(config);
@@ -827,6 +830,9 @@ mod tests {
                 enabled: None,
                 disabled: None,
                 timeout_secs: None,
+                expose: None,
+                workspaces: Vec::new(),
+                lazy: None,
             },
         );
         let manager = McpManager::with_config(config);
@@ -939,6 +945,9 @@ done
                 enabled: None,
                 disabled: None,
                 timeout_secs: Some(10),
+                expose: None,
+                workspaces: Vec::new(),
+                lazy: None,
             },
         );
         let config = config
@@ -1061,6 +1070,9 @@ done
                 enabled: None,
                 disabled: None,
                 timeout_secs: None,
+                expose: None,
+                workspaces: Vec::new(),
+                lazy: None,
             },
         );
         let manager = McpManager::with_config(config.clone());
