@@ -10,3 +10,8 @@
 - [ ] 5.1 Bounded hint block injection; snapshot test
 ## 6. Verify
 - [ ] 6.1 Runtime check via isolated socket build
+## 7. Workspace hooks and swarm (depends on add-lifecycle-hooks, add-role-model-slots)
+- [ ] 7.1 Per-workspace `hooks` merged after global `[hooks]`; tests for override and append
+- [ ] 7.2 Per-workspace `swarm_model` and role-slot overrides; precedence explicit spawn `model` > workspace > `agents.swarm_model`
+- [ ] 7.3 Pass resolved workspace to spawned workers in `comm_session.rs`; test worker inherits coordinator workspace
+- [ ] 7.4 `openspec validate workspace-aware-context --strict`

@@ -10,10 +10,14 @@ Forensics (60d) show heavy switching between personal, Priceless, and Brown work
 - Inject a bounded per-workspace hint block (tracker, branch template, skills) into the system prompt.
 - Cached Git identity check: compare effective `user.email` with `expected_email`, cache per repo root + config mtimes, warn on mismatch. Never modifies Git config.
 
+- Per-workspace `hooks` (merged over global `[hooks]`), per-workspace `swarm_model` and role-slot model overrides, and propagation of the resolved workspace to spawned swarm workers. Depends on `add-lifecycle-hooks` and `add-role-model-slots`.
+
 ## Capabilities
 
 ### New Capabilities
 - `workspace-context`: workspace detection, badge, hints, identity check.
+
+- `workspace-hooks-and-swarm`: Workspace-scoped hooks and swarm model overrides, and workspace propagation to workers.
 
 ## Impact
 
@@ -24,3 +28,13 @@ Config types, session startup, TUI header, prompt assembly. No new deps.
 1. **Match syntax.** Recommended default: host + path glob (`dev.azure.com/brown/**`). Alternative: regex (more power, worse ergonomics).
 2. **Identity mismatch severity.** Recommended: warning badge + prompt note only. Alternative: block commits via tool gate (safer, intrusive).
 3. **Re-detection timing.** Recommended: session start and working-dir change. Alternative: every turn (catches `cd`, extra git call; mitigated by cache).
+
+
+## Dependencies
+
+- `add-lifecycle-hooks` (hook schema and runner) must land before per-workspace hooks.
+- `add-role-model-slots` (role-slot config; change not yet drafted in `openspec/changes/`) must land before role-slot overrides. Swarm spawn code: `crates/jcode-app-core/src/server/comm_session.rs`.
+
+## Approval
+
+Approved 2026-11-01 with recommended defaults for all open decisions.
