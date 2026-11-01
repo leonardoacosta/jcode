@@ -248,6 +248,14 @@ impl McpManager {
         Ok((total_successes, total_failures))
     }
 
+    /// Clear shared-pool backoff/degraded state so an explicit user connect
+    /// is attempted immediately.
+    pub async fn reset_failures(&self, name: &str) {
+        if let Some(pool) = &self.pool {
+            pool.reset_failures(name).await;
+        }
+    }
+
     /// Connect to a specific server
     #[expect(
         clippy::collapsible_if,

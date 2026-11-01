@@ -207,6 +207,24 @@ enum Backend {
     Remote(super::remote::RemoteConnection),
 }
 
+/// Number of trailing stderr lines kept for a failed stdio server.
+pub const STDERR_TAIL_LINES: usize = 20;
+
+/// Last stderr lines of a stdio server that failed to initialize. Attached to
+/// the connect error as anyhow context so callers can downcast it.
+#[derive(Debug, Clone, Default)]
+pub struct StderrTail(pub Vec<String>);
+
+impl std::fmt::Display for StderrTail {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.0.is_empty() {
+            write!(f, "no stderr output")
+        } else {
+            write!(f, "stderr tail:\n{}", self.0.join("\n"))
+        }
+    }
+}
+
 impl McpClient {
     /// Connect to an MCP server, inheriting the current process working directory
     pub async fn connect(name: String, config: &McpServerConfig) -> Result<Self> {
@@ -256,9 +274,11 @@ impl McpClient {
         let stdout = child.stdout.take().context("No stdout")?;
         let stderr = child.stderr.take().context("No stderr")?;
 
-        // Spawn stderr reader
+        // Spawn stderr reader; keep a tail for failure diagnostics.
         let server_name = name.clone();
-        tokio::spawn(async move {
+        let stderr_tail: Arc<std::sync::Mutex<std::collections::VecDeque<String>>> = Arc::default();
+        let tail_writer = Arc::clone(&stderr_tail);
+        let stderr_task = tokio::spawn(async move {
             let mut reader = BufReader::new(stderr);
             let mut line = String::new();
             loop {
@@ -272,6 +292,11 @@ impl McpClient {
                                 "MCP [{}] stderr: {}",
                                 server_name, trimmed
                             ));
+                            let mut tail = tail_writer.lock().unwrap_or_else(|e| e.into_inner());
+                            if tail.len() == STDERR_TAIL_LINES {
+                                tail.pop_front();
+                            }
+                            tail.push_back(trimmed.to_string());
                         }
                     }
                     Err(_) => break,
@@ -359,10 +384,19 @@ impl McpClient {
             backend: Backend::Stdio(child),
         };
 
-        client
-            .initialize()
-            .await
-            .with_context(|| format!("MCP server '{}' failed to initialize", name))?;
+        if let Err(err) = client.initialize().await {
+            // Let the stderr reader drain so the tail includes the exit cause.
+            let _ = tokio::time::timeout(std::time::Duration::from_millis(500), stderr_task).await;
+            let tail: Vec<String> = stderr_tail
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .iter()
+                .cloned()
+                .collect();
+            return Err(err
+                .context(format!("MCP server '{}' failed to initialize", name))
+                .context(StderrTail(tail)));
+        }
 
         client
             .handle
@@ -652,8 +686,8 @@ impl Drop for McpClient {
 }
 
 #[cfg(all(test, unix))]
-mod tests {
-    use super::{McpClient, is_sensitive_inherited_env_key, mcp_child_env};
+pub(crate) mod tests {
+    use super::{McpClient, StderrTail, is_sensitive_inherited_env_key, mcp_child_env};
     use crate::mcp::protocol::McpServerConfig;
     use std::collections::HashMap;
 
@@ -695,7 +729,7 @@ mod tests {
 
     /// A minimal fake stdio MCP server (shell script) that reports its own
     /// process cwd as the serverInfo name.
-    fn fake_server_config() -> McpServerConfig {
+    pub(crate) fn fake_server_config() -> McpServerConfig {
         let script = r#"
 while IFS= read -r line; do
   case "$line" in
@@ -741,6 +775,40 @@ done
         .expect("connect must not hang on a server that exited");
         let err = format!("{:#}", result.err().expect("connect must fail"));
         assert!(err.contains("exited"), "unexpected error: {err}");
+    }
+
+    async fn tail_for(script: &str) -> anyhow::Error {
+        let config = McpServerConfig {
+            command: "/bin/sh".to_string(),
+            args: vec!["-c".to_string(), script.to_string()],
+            ..fake_server_config()
+        };
+        // Pin cwd: parallel tests may chdir into dirs that later vanish.
+        McpClient::connect_in_dir("dead".to_string(), &config, Some(std::path::Path::new("/")))
+            .await
+            .err()
+            .expect("connect must fail")
+    }
+
+    #[tokio::test]
+    async fn missing_cwd_failure_keeps_stderr_tail() {
+        let err = tail_for("cd /nonexistent/jcode-mcp-dir; exit 1").await;
+        let tail = err.downcast_ref::<StderrTail>().expect("stderr tail");
+        assert!(
+            tail.0
+                .iter()
+                .any(|l| l.contains("No such file or directory") || l.contains("can't cd")),
+            "tail: {:?}",
+            tail.0
+        );
+        assert!(format!("{err:#}").contains("exited"));
+    }
+
+    #[tokio::test]
+    async fn silent_exit_has_empty_stderr_tail() {
+        let err = tail_for("exit 1").await;
+        let tail = err.downcast_ref::<StderrTail>().expect("stderr tail");
+        assert!(tail.0.is_empty(), "tail: {:?}", tail.0);
     }
 
     #[tokio::test]

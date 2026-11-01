@@ -1730,6 +1730,11 @@ impl Registry {
                     std::collections::BTreeMap::new();
                 while let Some((name, result)) = connections.next().await {
                     if let Err(error) = result {
+                        // Backed-off/degraded skips were already reported once
+                        // by the pool on the health transition.
+                        if format!("{error:#}").contains(crate::mcp::pool::SUPPRESSED_MARKER) {
+                            continue;
+                        }
                         crate::logging::event_rate_limited(
                             crate::logging::LogLevel::Error,
                             &format!("mcp_register_failed:{name}"),

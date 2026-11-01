@@ -9,7 +9,7 @@
 //! requests to shared server processes. Request/response correlation by
 //! ID ensures no interference between sessions.
 
-use super::client::{McpClient, McpHandle};
+use super::client::{McpClient, McpHandle, StderrTail};
 use super::protocol::{McpConfig, McpServerConfig, McpToolDef};
 use anyhow::{Context, Result};
 use std::collections::HashMap;
@@ -17,12 +17,89 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, Notify, RwLock};
 
-const FAILED_CONNECT_RETRY_COOLDOWN: Duration = Duration::from_secs(30);
+/// Marker in errors for attempts skipped by backoff/degraded state; callers
+/// use it to avoid re-notifying the user.
+pub const SUPPRESSED_MARKER: &str = "mcp reconnect suppressed";
+
+const BACKOFF_BASE: Duration = Duration::from_secs(30);
+const BACKOFF_CAP: Duration = Duration::from_secs(30 * 60);
+/// Consecutive failures after which a server stops auto-reconnecting.
+pub const DEGRADED_THRESHOLD: u32 = 5;
+
+/// Reconnect delay after `failures` consecutive failures (30s doubling, 30min cap).
+fn backoff_for(failures: u32) -> Duration {
+    let exp = failures.saturating_sub(1).min(16);
+    BACKOFF_BASE.saturating_mul(1u32 << exp).min(BACKOFF_CAP)
+}
+
+/// Why a connect attempt failed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FailureClass {
+    SpawnFailed,
+    ExitedBeforeInit,
+    InitTimeout,
+    AuthRequired,
+    RemoteHttpError,
+    Other,
+}
+
+impl FailureClass {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::SpawnFailed => "spawn_failed",
+            Self::ExitedBeforeInit => "exited_before_init",
+            Self::InitTimeout => "init_timeout",
+            Self::AuthRequired => "auth_required",
+            Self::RemoteHttpError => "remote_http_error",
+            Self::Other => "other",
+        }
+    }
+
+    fn classify(error: &anyhow::Error) -> Self {
+        let msg = format!("{error:#}").to_ascii_lowercase();
+        if msg.contains("failed to spawn") {
+            Self::SpawnFailed
+        } else if msg.contains("exited") || msg.contains("connection closed") {
+            Self::ExitedBeforeInit
+        } else if msg.contains("timed out") || msg.contains("timeout") {
+            Self::InitTimeout
+        } else if msg.contains("401")
+            || msg.contains("403")
+            || msg.contains("unauthorized")
+            || msg.contains("oauth")
+        {
+            Self::AuthRequired
+        } else if msg.contains("http") || msg.contains("status") {
+            Self::RemoteHttpError
+        } else {
+            Self::Other
+        }
+    }
+}
 
 #[derive(Clone)]
 struct FailedConnectRecord {
     message: String,
     failed_at: Instant,
+    failures: u32,
+    class: FailureClass,
+    stderr_tail: Vec<String>,
+    /// Config the failures were observed with; a change resets backoff.
+    config_fingerprint: String,
+}
+
+impl FailedConnectRecord {
+    fn degraded(&self) -> bool {
+        self.failures >= DEGRADED_THRESHOLD
+    }
+
+    fn retry_after(&self) -> Duration {
+        backoff_for(self.failures).saturating_sub(self.failed_at.elapsed())
+    }
+}
+
+fn config_fingerprint(config: &McpServerConfig) -> String {
+    serde_json::to_string(config).unwrap_or_default()
 }
 
 enum ConnectAttempt {
@@ -138,6 +215,13 @@ impl SharedMcpPool {
             .map(|_| ())
             .map_err(|error_msg| anyhow::anyhow!(error_msg))
             .with_context(|| format!("Failed to connect to MCP server '{}'", name))
+    }
+
+    /// Forget failure history for `name` so the next connect is attempted
+    /// immediately, clearing backoff and `degraded` state. Used by explicit
+    /// user connects.
+    pub async fn reset_failures(&self, name: &str) {
+        self.last_errors.write().await.remove(name);
     }
 
     /// Disconnect a specific server
@@ -323,7 +407,13 @@ impl SharedMcpPool {
         ConnectAttempt::Leader(notify)
     }
 
-    async fn finish_connect(&self, name: &str, notify: Arc<Notify>, result: Result<McpClient>) {
+    async fn finish_connect(
+        &self,
+        name: &str,
+        notify: Arc<Notify>,
+        result: Result<McpClient>,
+        config: &McpServerConfig,
+    ) {
         match result {
             Ok(client) => {
                 let handle = client.handle();
@@ -335,20 +425,51 @@ impl SharedMcpPool {
                     let mut clients = self.clients.lock().await;
                     clients.insert(name.to_string(), client);
                 }
-                {
-                    let mut errors = self.last_errors.write().await;
-                    errors.remove(name);
+                if self.last_errors.write().await.remove(name).is_some() {
+                    crate::logging::info(&format!("MCP: '{name}' recovered after failures"));
                 }
             }
             Err(error) => {
+                let fingerprint = config_fingerprint(config);
                 let mut errors = self.last_errors.write().await;
-                errors.insert(
-                    name.to_string(),
-                    FailedConnectRecord {
-                        message: format!("{:#}", error),
-                        failed_at: Instant::now(),
-                    },
-                );
+                let previous = errors
+                    .get(name)
+                    .filter(|r| r.config_fingerprint == fingerprint)
+                    .map_or(0, |r| r.failures);
+                let record = FailedConnectRecord {
+                    message: format!("{:#}", error),
+                    failed_at: Instant::now(),
+                    failures: previous + 1,
+                    class: FailureClass::classify(&error),
+                    stderr_tail: error
+                        .downcast_ref::<StderrTail>()
+                        .map(|t| t.0.clone())
+                        .unwrap_or_default(),
+                    config_fingerprint: fingerprint,
+                };
+                // One notice per health transition: first failure and degrade.
+                if record.failures == 1 || record.failures == DEGRADED_THRESHOLD {
+                    let state = if record.degraded() {
+                        "degraded"
+                    } else {
+                        "failing"
+                    };
+                    crate::logging::event_rate_limited(
+                        crate::logging::LogLevel::Error,
+                        &format!("mcp_health:{name}:{state}"),
+                        Duration::from_secs(1),
+                        "MCP_SERVER_HEALTH",
+                        vec![
+                            ("server", name.to_string()),
+                            ("state", state.to_string()),
+                            ("class", record.class.as_str().to_string()),
+                            ("failures", record.failures.to_string()),
+                            ("error", record.message.clone()),
+                            ("stderr_tail", record.stderr_tail.join("\n")),
+                        ],
+                    );
+                }
+                errors.insert(name.to_string(), record);
             }
         }
 
@@ -371,18 +492,29 @@ impl SharedMcpPool {
         name: String,
         config: McpServerConfig,
     ) -> std::result::Result<bool, String> {
-        if let Some(record) = self.recent_failure(&name).await {
-            let retry_after = FAILED_CONNECT_RETRY_COOLDOWN
-                .saturating_sub(record.failed_at.elapsed())
-                .as_secs()
-                .max(1);
-            crate::logging::info(&format!(
-                "MCP: Skipping reconnect to '{}' for {}s after recent failure",
-                name, retry_after
+        if let Some(record) = self.recent_failure(&name, &config).await {
+            if record.degraded() {
+                return Err(format!(
+                    "{} [{}] ({}: degraded after {} consecutive failures; run `mcp connect {}` or reload MCP to retry)",
+                    record.message,
+                    record.class.as_str(),
+                    SUPPRESSED_MARKER,
+                    record.failures,
+                    name
+                ));
+            }
+            let retry_after = record.retry_after().as_secs().max(1);
+            crate::logging::debug(&format!(
+                "MCP: Skipping reconnect to '{}' for {}s after {} failure(s)",
+                name, retry_after, record.failures
             ));
             return Err(format!(
-                "{} (retry suppressed for ~{}s after recent failure)",
-                record.message, retry_after
+                "{} [{}] ({}: retry suppressed for ~{}s after {} failure(s))",
+                record.message,
+                record.class.as_str(),
+                SUPPRESSED_MARKER,
+                retry_after,
+                record.failures
             ));
         }
 
@@ -417,7 +549,7 @@ impl SharedMcpPool {
                     Ok(_) => Ok(true),
                     Err(error) => Err(format!("{:#}", error)),
                 };
-                self.finish_connect(&name, notify, result).await;
+                self.finish_connect(&name, notify, result, &config).await;
                 outcome
             }
         }
@@ -440,7 +572,11 @@ impl SharedMcpPool {
         }
     }
 
-    async fn recent_failure(&self, name: &str) -> Option<FailedConnectRecord> {
+    async fn recent_failure(
+        &self,
+        name: &str,
+        config: &McpServerConfig,
+    ) -> Option<FailedConnectRecord> {
         if self
             .handles
             .read()
@@ -455,7 +591,10 @@ impl SharedMcpPool {
             .read()
             .await
             .get(name)
-            .filter(|record| record.failed_at.elapsed() < FAILED_CONNECT_RETRY_COOLDOWN)
+            .filter(|record| {
+                record.config_fingerprint == config_fingerprint(config)
+                    && (record.degraded() || !record.retry_after().is_zero())
+            })
             .cloned()
     }
 }
@@ -481,9 +620,8 @@ pub fn get_shared_pool() -> Option<Arc<SharedMcpPool>> {
 
 #[cfg(test)]
 mod tests {
-    use super::{ConnectAttempt, SharedMcpPool};
+    use super::*;
     use crate::mcp::protocol::McpConfig;
-    use std::sync::Arc;
 
     #[tokio::test]
     async fn issue_790_reload_reuses_default_config_directory() {
@@ -532,6 +670,112 @@ mod tests {
         assert!(!reloaded.servers.contains_key("second"));
     }
 
+    fn test_config(command: &str) -> McpServerConfig {
+        serde_json::from_value(serde_json::json!({ "command": command })).expect("config")
+    }
+
+    async fn fail(pool: &SharedMcpPool, name: &str, config: &McpServerConfig) {
+        let ConnectAttempt::Leader(n) = pool.begin_connect(name).await else {
+            panic!("expected leader");
+        };
+        pool.finish_connect(name, n, Err(anyhow::anyhow!("MCP server exited")), config)
+            .await;
+    }
+
+    #[test]
+    fn backoff_grows_and_caps() {
+        assert_eq!(backoff_for(1), Duration::from_secs(30));
+        assert_eq!(backoff_for(2), Duration::from_secs(60));
+        assert_eq!(backoff_for(3), Duration::from_secs(120));
+        assert_eq!(backoff_for(10), BACKOFF_CAP);
+        assert_eq!(backoff_for(u32::MAX), BACKOFF_CAP);
+    }
+
+    #[tokio::test]
+    async fn three_failures_suppress_for_at_least_120s() {
+        let pool = SharedMcpPool::new(McpConfig::default());
+        let config = test_config("/nonexistent/jcode-mcp-bin");
+        for _ in 0..3 {
+            fail(&pool, "s", &config).await;
+        }
+        let record = pool.recent_failure("s", &config).await.expect("suppressed");
+        assert_eq!(record.failures, 3);
+        assert!(record.retry_after() > Duration::from_secs(110));
+        let err = pool.connect_server("s", &config).await.unwrap_err();
+        assert!(format!("{err:#}").contains(SUPPRESSED_MARKER));
+    }
+
+    #[tokio::test]
+    async fn config_change_resets_backoff() {
+        let pool = SharedMcpPool::new(McpConfig::default());
+        let old = test_config("old");
+        for _ in 0..DEGRADED_THRESHOLD {
+            fail(&pool, "s", &old).await;
+        }
+        let new = test_config("new");
+        assert!(pool.recent_failure("s", &new).await.is_none());
+        fail(&pool, "s", &new).await;
+        assert_eq!(pool.last_errors.read().await["s"].failures, 1);
+    }
+
+    #[tokio::test]
+    async fn degraded_after_threshold_and_reset_clears() {
+        let pool = SharedMcpPool::new(McpConfig::default());
+        let config = test_config("/nonexistent/jcode-mcp-bin");
+        for _ in 0..DEGRADED_THRESHOLD {
+            fail(&pool, "s", &config).await;
+        }
+        let record = pool.recent_failure("s", &config).await.expect("degraded");
+        assert!(record.degraded());
+        assert_eq!(record.class, FailureClass::ExitedBeforeInit);
+        // Even once the backoff window elapses, a degraded server stays off.
+        pool.last_errors
+            .write()
+            .await
+            .get_mut("s")
+            .unwrap()
+            .failed_at = Instant::now() - BACKOFF_CAP - Duration::from_secs(1);
+        let err = format!("{:#}", pool.connect_server("s", &config).await.unwrap_err());
+        assert!(
+            err.contains("degraded") && err.contains("mcp connect s"),
+            "{err}"
+        );
+        pool.reset_failures("s").await;
+        assert!(pool.recent_failure("s", &config).await.is_none());
+    }
+
+    #[tokio::test]
+    async fn successful_connect_resets_failures() {
+        let pool = SharedMcpPool::new(McpConfig::default());
+        let config = crate::mcp::client::tests::fake_server_config();
+        fail(&pool, "s", &config).await;
+        pool.reset_failures("s").await; // simulate explicit connect
+        pool.connect_server("s", &config).await.expect("connects");
+        assert!(pool.last_errors.read().await.get("s").is_none());
+        assert!(pool.connected_servers().await.contains(&"s".to_string()));
+        pool.disconnect_all().await;
+    }
+
+    #[tokio::test]
+    async fn many_sessions_share_one_attempt_while_backed_off() {
+        // Ten sessions requesting a failing server: one spawn/notice, rest suppressed.
+        let pool = Arc::new(SharedMcpPool::new(McpConfig::default()));
+        let config = test_config("/nonexistent/jcode-mcp-bin");
+        let mut tasks = Vec::new();
+        for _ in 0..10 {
+            let (pool, config) = (Arc::clone(&pool), config.clone());
+            tasks.push(tokio::spawn(async move {
+                pool.connect_server("s", &config).await
+            }));
+        }
+        for t in tasks {
+            assert!(t.await.unwrap().is_err());
+        }
+        let record = pool.last_errors.read().await["s"].clone();
+        assert_eq!(record.failures, 1, "only one real attempt");
+        assert_eq!(record.class, FailureClass::SpawnFailed);
+    }
+
     #[tokio::test]
     async fn begin_connect_deduplicates_concurrent_attempts() {
         let pool = Arc::new(SharedMcpPool::new(McpConfig::default()));
@@ -560,8 +804,13 @@ mod tests {
         let ConnectAttempt::Wait(waiter) = pool.begin_connect("early").await else {
             panic!("waiter");
         };
-        pool.finish_connect("early", leader, Err(anyhow::anyhow!("fixture failure")))
-            .await;
+        pool.finish_connect(
+            "early",
+            leader,
+            Err(anyhow::anyhow!("fixture failure")),
+            &test_config("x"),
+        )
+        .await;
         tokio::time::timeout(
             std::time::Duration::from_millis(100),
             pool.wait_for_connect("early", &waiter),
