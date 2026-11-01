@@ -1693,15 +1693,16 @@ impl Registry {
             tokio::spawn(async move {
                 use futures::StreamExt;
 
-                let configs: Vec<_> = mcp_manager
-                    .read()
-                    .await
+                let manager = mcp_manager.read().await;
+                let cwd = manager.project_dir();
+                let configs: Vec<_> = manager
                     .config()
                     .servers
                     .iter()
-                    .filter(|(_, cfg)| cfg.is_enabled())
+                    .filter(|(_, cfg)| cfg.autostarts(cwd))
                     .map(|(name, cfg)| (name.clone(), cfg.clone()))
                     .collect();
+                drop(manager);
                 let mut connections = futures::stream::FuturesUnordered::new();
                 for (name, config) in configs {
                     let manager = Arc::clone(&mcp_manager);

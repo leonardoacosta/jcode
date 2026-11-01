@@ -275,6 +275,12 @@ impl McpServerConfig {
         })
     }
 
+    /// Whether this server connects at session start for `cwd`: enabled,
+    /// not lazy, and inside its `workspaces` scope.
+    pub fn autostarts(&self, cwd: Option<&std::path::Path>) -> bool {
+        self.is_enabled() && !self.is_lazy() && self.in_workspace(cwd)
+    }
+
     pub fn is_stdio(&self) -> bool {
         let transport = self.transport.as_deref().map(str::trim);
         transport.is_none_or(|kind| kind.is_empty() || kind.eq_ignore_ascii_case("stdio"))

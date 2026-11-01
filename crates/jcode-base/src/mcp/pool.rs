@@ -158,7 +158,7 @@ impl SharedMcpPool {
         for (name, server_config) in &config.servers {
             // Disabled servers stay configured but are never auto-spawned
             // (issue #436); they can still be connected on demand by name.
-            if !server_config.is_enabled() {
+            if !server_config.autostarts(self.config_dir.as_deref()) {
                 continue;
             }
             // Non-shared servers are owned per-session (with the session cwd)

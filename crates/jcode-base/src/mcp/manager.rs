@@ -191,7 +191,7 @@ impl McpManager {
             .config
             .servers
             .iter()
-            .filter(|(_, config)| config.is_enabled())
+            .filter(|(_, config)| config.autostarts(self.project_dir.as_deref()))
             .partition(|(_, config)| config.shared && self.pool.is_some());
 
         // Connect shared servers via pool
@@ -549,6 +549,9 @@ impl McpManager {
 
         // Not connected yet. If the server is configured, connect-on-first-call.
         if let Some(config) = self.config.servers.get(server).cloned() {
+            if !config.in_workspace(self.project_dir.as_deref()) {
+                anyhow::bail!("MCP server '{server}' is out of scope for this workspace");
+            }
             crate::logging::info(&format!(
                 "MCP: connecting to '{server}' on first tool call (connect-on-first-call)"
             ));
@@ -634,6 +637,10 @@ impl McpManager {
     }
 
     /// Get config
+    pub fn project_dir(&self) -> Option<&std::path::Path> {
+        self.project_dir.as_deref()
+    }
+
     pub fn config(&self) -> &McpConfig {
         &self.config
     }
@@ -1105,4 +1112,43 @@ done
         manager.disconnect_all().await;
         drop(env_guard);
     }
+
+    fn scoped_manager(server: McpServerConfig, project: &str) -> McpManager {
+        let mut config = McpConfig::default();
+        config.servers.insert("s".to_string(), server);
+        let mut manager = McpManager::with_config(config);
+        manager.project_dir = Some(std::path::PathBuf::from(project));
+        manager
+    }
+
+    #[tokio::test]
+    async fn out_of_scope_server_is_not_spawned_or_callable() {
+        let server = McpServerConfig {
+            workspaces: vec!["/dev/personal/**".to_string()],
+            ..crate::mcp::client::tests::fake_server_config()
+        };
+        let manager = scoped_manager(server, "/dev/brown/x");
+        let (ok, failed) = manager.connect_all().await.unwrap();
+        assert_eq!((ok, failed.len()), (0, 0));
+        assert!(manager.connected_servers().await.is_empty());
+        let err = manager.call_tool("s", "t", serde_json::json!({})).await.unwrap_err();
+        assert!(format!("{err:#}").contains("out of scope"));
+        assert!(manager.connected_servers().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn lazy_server_connects_on_first_call() {
+        let server = McpServerConfig {
+            lazy: Some(true),
+            timeout_secs: Some(1),
+            ..crate::mcp::client::tests::fake_server_config()
+        };
+        let manager = scoped_manager(server, "/");
+        manager.connect_all().await.unwrap();
+        assert!(manager.connected_servers().await.is_empty(), "lazy must not autostart");
+        // The fake server never answers tools/call; the call still connects.
+        let _ = manager.call_tool("s", "t", serde_json::json!({})).await;
+        assert_eq!(manager.connected_servers().await, vec!["s".to_string()]);
+    }
 }
+

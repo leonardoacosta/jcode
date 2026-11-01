@@ -5,7 +5,7 @@
 ## 2. Surfacing and scoping
 - [x] 2.1 Config fields `expose`, `mcp.pin_tools`, `workspaces`, `lazy`; parsing tests
 - [ ] 2.2 Register direct tools as `mcp__<server>__<tool>`; omit when degraded; tests
-- [ ] 2.3 Workspace glob gating and lazy connect in pool; tests for out-of-scope and first-call connect
+- [x] 2.3 Workspace glob gating and lazy connect in pool; tests for out-of-scope and first-call connect
 
 ## 3. Import and login
 - [ ] 3.1 `jcode mcp import --from claude|codex [--apply]` with dry-run default and conflict skip; tests
