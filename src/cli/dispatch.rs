@@ -156,6 +156,10 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
             temp_idle_timeout_secs,
             server_name,
         }) => {
+            #[cfg(unix)]
+            if !temporary_server {
+                enforce_supervised_shared_server()?;
+            }
             let serve_start = Instant::now();
             crate::env::set_var("JCODE_NON_INTERACTIVE", "1");
             if temporary_server {
@@ -1335,6 +1339,41 @@ fn register_on_demand_server_spawner_for_run(
 ///
 /// Split out so the contract with `Command::Serve` is testable without
 /// starting a process.
+///
+/// If `~/.jcode/require-supervised-server` names a systemd user unit, a shared
+/// `serve` started outside that unit's cgroup (e.g. spawned by an older
+/// older client) must not run unsupervised without the unit's injected
+/// secrets. Delegate to the unit and exit instead.
+#[cfg(unix)]
+fn enforce_supervised_shared_server() -> Result<()> {
+    let Some(home) = std::env::var_os("HOME") else {
+        return Ok(());
+    };
+    let marker = std::path::Path::new(&home).join(".jcode/require-supervised-server");
+    let Ok(unit) = std::fs::read_to_string(&marker) else {
+        return Ok(());
+    };
+    let unit = unit.trim();
+    if unit.is_empty() {
+        return Ok(());
+    }
+    // INVOCATION_ID is inherited by anything under *any* unit (e.g. clients
+    // in herdr.service), so check that we actually live in the unit's cgroup.
+    let in_unit = std::fs::read_to_string("/proc/self/cgroup")
+        .map(|cg| cg.lines().any(|l| l.ends_with(&format!("/{unit}"))))
+        .unwrap_or(false);
+    if in_unit {
+        return Ok(());
+    }
+    let _ = ProcessCommand::new("systemctl")
+        .args(["--user", "start", "--no-block", unit])
+        .status();
+    anyhow::bail!(
+        "refusing unsupervised shared server ({} requires {unit}); requested systemctl --user start {unit}",
+        marker.display()
+    )
+}
+
 fn serve_subcommand_args(lifetime: ServerLifetime, owner_pid: u32) -> Vec<String> {
     let mut args = vec!["serve".to_string()];
     if lifetime == ServerLifetime::OwnedByThisProcess {
@@ -1379,6 +1418,38 @@ async fn spawn_server_with_lifetime(
     if awaits_reload_handoff && wait_for_existing_reload_server("server spawn after lock").await {
         startup_profile::mark("server_ready");
         return Ok(());
+    }
+
+    // Opt-in: when a supervisor owns the shared daemon (e.g. a systemd unit
+    // that injects secrets via `op run`), never spawn an unsupervised server
+    // from a client. Ask the supervisor instead and fail loudly if it can't.
+    #[cfg(unix)]
+    if lifetime == ServerLifetime::Shared
+        && let Some(unit) = std::env::var("JCODE_SERVER_SYSTEMD_UNIT")
+            .ok()
+            .filter(|u| !u.trim().is_empty())
+    {
+        output::stderr_info(format!("Starting server via systemd unit {unit}..."));
+        let status = ProcessCommand::new("systemctl")
+            .args(["--user", "start", unit.trim()])
+            .status();
+        if !matches!(status, Ok(s) if s.success()) {
+            anyhow::bail!(
+                "systemctl --user start {unit} failed; check `journalctl --user -u {unit}` (client spawn disabled by JCODE_SERVER_SYSTEMD_UNIT)"
+            );
+        }
+        let start = std::time::Instant::now();
+        while start.elapsed() < std::time::Duration::from_secs(60) {
+            if server_is_running_at(&socket_path).await {
+                startup_profile::mark("server_ready");
+                return Ok(());
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        }
+        anyhow::bail!(
+            "systemd unit {unit} started but {} never came up; check `journalctl --user -u {unit}`",
+            socket_path.display()
+        );
     }
 
     startup_profile::mark("server_spawn_start");
