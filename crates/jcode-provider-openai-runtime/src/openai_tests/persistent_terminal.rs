@@ -47,7 +47,8 @@ async fn assert_delta_wire_excludes_saved_response_output(empty_completion: bool
             if turn == 0 {
                 for item in &output {
                     ws.send(WsMessage::Text(
-                        serde_json::json!({"type":"response.output_item.done", "item":item}).to_string(),
+                        serde_json::json!({"type":"response.output_item.done", "item":item})
+                            .to_string(),
                     ))
                     .await
                     .unwrap();
@@ -61,7 +62,11 @@ async fn assert_delta_wire_excludes_saved_response_output(empty_completion: bool
     let credentials = Arc::new(RwLock::new(prewarm_test_credentials()));
     let state = Arc::new(Mutex::new(Some(PersistentWsState {
         ws_stream,
-        identity: openai_websocket_prewarm::prewarm_identity(&prewarm_test_credentials(), None, None),
+        identity: openai_websocket_prewarm::prewarm_identity(
+            &prewarm_test_credentials(),
+            None,
+            None,
+        ),
         cache_key: None,
         last_response_id: "resp_previous".into(),
         connected_at: Instant::now(),
@@ -69,7 +74,7 @@ async fn assert_delta_wire_excludes_saved_response_output(empty_completion: bool
         last_response_completed_at: Instant::now(),
         message_count: 1,
         last_input_item_count: 1,
-        last_input_item_hashes: persistent_ws_input_item_hashes(&[user.clone()]),
+        last_input_item_hashes: persistent_ws_input_item_hashes(std::slice::from_ref(&user)),
         last_response_output: Vec::new(),
     })));
     let (tx, _rx) = mpsc::channel(100);
@@ -196,7 +201,11 @@ async fn persistent_terminal_public_case(
     provider.set_transport("websocket").unwrap();
     *provider.persistent_ws.lock().await = Some(PersistentWsState {
         ws_stream,
-        identity: openai_websocket_prewarm::prewarm_identity(&prewarm_test_credentials(), None, None),
+        identity: openai_websocket_prewarm::prewarm_identity(
+            &prewarm_test_credentials(),
+            None,
+            None,
+        ),
         cache_key: Some(provider.cache_routing_key()),
         last_response_id: "resp_stale".into(),
         connected_at: Instant::now(),
@@ -310,7 +319,11 @@ async fn persistent_terminal_failure_invalidates_before_mutex_handoff() {
     let credentials = Arc::new(RwLock::new(prewarm_test_credentials()));
     let persistent_ws = Arc::new(Mutex::new(Some(PersistentWsState {
         ws_stream,
-        identity: openai_websocket_prewarm::prewarm_identity(&prewarm_test_credentials(), None, None),
+        identity: openai_websocket_prewarm::prewarm_identity(
+            &prewarm_test_credentials(),
+            None,
+            None,
+        ),
         cache_key: None,
         last_response_id: "resp_stale".into(),
         connected_at: Instant::now(),

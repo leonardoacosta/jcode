@@ -576,7 +576,8 @@ fn configured_swarm_root_effort_reads_real_config() {
         );
         return;
     }
-    for (mode, expected) in [("swarm", "low")] {
+    {
+        let (mode, expected) = ("swarm", "low");
         let (api_base, request_rx) = spawn_single_response_chat_server();
         let provider = OpenRouterProvider {
             api_base,

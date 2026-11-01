@@ -2704,9 +2704,11 @@ async fn stranded_tool_use_stop_continues_instead_of_ending_the_turn() {
     );
 }
 
+type CapturedRequests = Arc<std::sync::Mutex<Vec<(String, Vec<Message>)>>>;
+
 #[derive(Clone, Default)]
 struct SystemPromptCaptureProvider {
-    requests: Arc<std::sync::Mutex<Vec<(String, Vec<Message>)>>>,
+    requests: CapturedRequests,
 }
 
 #[async_trait]

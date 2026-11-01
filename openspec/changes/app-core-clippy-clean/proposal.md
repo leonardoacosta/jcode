@@ -8,7 +8,7 @@ CI runs `cargo clippy --locked --all-targets --all-features -- -D warnings` (`.g
 
 - Fix all 13 `jcode-app-core` clippy errors (mostly test code; `turn_failover.rs` guards dropped before `.await`).
 - Fix the 2 `collapsible_if` errors in `crates/jcode-tui-mermaid/examples/image_lifecycle.rs`.
-- Keep the existing CI clippy step as the guard and make it a required check so the workspace stays clean.
+- Keep the existing CI clippy step as the guard (making it required is a manual user step) so the workspace stays clean.
 
 ## Capabilities
 
@@ -33,7 +33,7 @@ Checked 2026-11-01 at `8e3f1b459`.
 - `cargo clippy --workspace --all-targets -- -D warnings`: also fails in `jcode-tui-mermaid` example `image_lifecycle` (`collapsible_if` x2, lines 208/209). Other crates may be masked by early stop; re-run with `--keep-going` during the fix.
 - CI already enforces clippy (`ci.yml`) with `--all-features`; the local runs above omitted `--all-features`.
 
-## Open decisions
+## Resolved decisions
 
-1. `await_holding_lock` fix. Recommended: scope or drop guards before `.await`, using `tokio::sync::Mutex` only where the guard must span the await. Alternative: `#[allow]` (hides a real risk).
-2. Guard. Recommended: rely on the existing CI step and mark it required. Alternative: add a pre-commit clippy hook (slower local commits).
+1. `await_holding_lock` fix: scope or drop guards before `.await`; `tokio::sync::Mutex` only where a guard must span the await. No `#[allow]`.
+2. Guard: rely on the existing CI clippy step. Marking it a required check in branch protection is a manual step for the user (remote settings change, not done by the agent).

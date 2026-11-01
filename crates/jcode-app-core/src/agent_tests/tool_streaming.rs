@@ -116,10 +116,9 @@ async fn streaming_bash_preserves_requesting_client_terminal_context() {
                 content,
                 ..
             } = block
+                && tool_use_id == "terminal-check"
             {
-                if tool_use_id == "terminal-check" {
-                    return Some(content.as_str());
-                }
+                return Some(content.as_str());
             }
             None
         })
