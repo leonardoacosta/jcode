@@ -37,7 +37,7 @@ Checked against the current tree in `/home/nyaptor/.jcode`:
 - Production items are mostly `pub(super)`; moving them one level deeper requires `pub(in crate::server)` or re-exports to keep identical reach.
 - Corrected: the brief suggested `spawn`/`message` modules. This file has no spawn handler (only spawn-tree helpers at lines 67-183 and reap at 355), so no `spawn.rs` is proposed; messaging lives in `run_swarm_message` and goes to `run.rs`.
 
-## Open decisions
+## Resolved decisions
 
-1. Visibility mechanism. Recommended: submodules declare `pub(in crate::server)` and `mod.rs` re-exports them, keeping reach identical. Alternative: `pub(crate)` everywhere (simpler, widens API).
-2. Tests layout. Recommended: one `swarm/tests.rs` moved verbatim (minimal, reviewable diff). Alternative: per-module test files (better locality, larger diff).
+1. Visibility mechanism. Chosen: submodules declare `pub(in crate::server)` and `mod.rs` re-exports them, keeping reach identical. Alternative: `pub(crate)` everywhere (simpler, widens API).
+2. Tests layout. Chosen: one `swarm/tests.rs` moved verbatim (minimal, reviewable diff). Alternative: per-module test files (better locality, larger diff).
