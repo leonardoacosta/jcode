@@ -1,7 +1,7 @@
 # swarm-state-persistence Specification
 
 ## Purpose
-TBD - created by archiving change swarm-state-async-safety. Update Purpose after archive.
+Defines how swarm state persistence and mutation dedup perform file I/O without blocking async workers while preserving per-swarm ordering.
 
 ## Requirements
 

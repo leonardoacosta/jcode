@@ -1,7 +1,7 @@
 # swarm-widget-layout Specification
 
 ## Purpose
-TBD - created by archiving change swarm-widget-cell-width. Update Purpose after archive.
+Defines how swarm info widget rows measure and truncate text in terminal display cells so UI chrome never wraps.
 
 ## Requirements
 

@@ -1,7 +1,7 @@
 # swarm-communicate-reliability Specification
 
 ## Purpose
-TBD - created by archiving change swarm-communicate-reliability. Update Purpose after archive.
+Defines how the swarm `communicate` tool bounds request deadlines, reports timeouts versus server errors, and keeps advertised actions aligned with dispatch.
 
 ## Requirements
 
