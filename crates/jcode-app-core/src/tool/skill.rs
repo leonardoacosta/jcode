@@ -187,6 +187,9 @@ impl SkillTool {
                 output.push_str(&format!("## /{}\n", skill.name));
                 output.push_str(&format!("  {}\n", skill.description));
                 output.push_str(&format!("  Path: {}\n", skill.path.display()));
+                for warning in skill.warnings() {
+                    output.push_str(&format!("  Warning: {}\n", warning));
+                }
                 if let Some(ref tools) = skill.allowed_tools {
                     output.push_str(&format!("  Tools: {}\n", tools.join(", ")));
                 }

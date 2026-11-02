@@ -577,6 +577,9 @@ impl SkillRegistry {
                 .collect(),
             AllowedTools::Sequence(tools) => tools,
         });
+        if let Some(warning) = name_mismatch_warning(&name, path) {
+            crate::logging::warn(&warning);
+        }
         Ok(Skill {
             name,
             description,
@@ -962,7 +965,29 @@ pub fn endorsed_skills() -> &'static [EndorsedSkill] {
     ENDORSED_SKILLS
 }
 
+/// Warn when a skill's folder name differs from its frontmatter `name`
+/// (trimmed, case-sensitive; plugin namespaces compare the last `:` segment).
+fn name_mismatch_warning(name: &str, path: &Path) -> Option<String> {
+    let folder = path.parent()?.file_name()?.to_str()?;
+    let bare = name.trim().rsplit(':').next().unwrap_or("");
+    (bare != folder.trim()).then(|| {
+        format!(
+            "Skill '{}' at '{}': folder name '{}' does not match frontmatter name",
+            name,
+            path.display(),
+            folder
+        )
+    })
+}
+
 impl Skill {
+    /// Non-blocking lint warnings for this skill.
+    pub fn warnings(&self) -> Vec<String> {
+        name_mismatch_warning(&self.name, &self.path)
+            .into_iter()
+            .collect()
+    }
+
     /// Get the full prompt content for this skill
     pub fn get_prompt(&self) -> String {
         format!(
@@ -1680,5 +1705,26 @@ mod tests {
         let temp = tempfile::tempdir().expect("tempdir");
         let missing = temp.path().join("does-not-exist");
         assert!(SkillRegistry::plugin_skill_dirs_under(&missing).is_empty());
+    }
+
+    #[test]
+    fn folder_name_mismatch_warns_but_loads() {
+        let dir = tempfile::tempdir().unwrap();
+        for (folder, name) in [("good", "good"), ("folder", "other"), ("ns", "plugin:ns")] {
+            let d = dir.path().join(folder);
+            std::fs::create_dir_all(&d).unwrap();
+            std::fs::write(
+                d.join("SKILL.md"),
+                format!("---\nname: {name}\ndescription: d\n---\nbody\n"),
+            )
+            .unwrap();
+        }
+        let load =
+            |f: &str| SkillRegistry::parse_skill(&dir.path().join(f).join("SKILL.md")).unwrap();
+        assert!(load("good").warnings().is_empty());
+        assert!(load("ns").warnings().is_empty());
+        let bad = load("folder");
+        assert_eq!(bad.name, "other");
+        assert!(bad.warnings()[0].contains("folder name 'folder'"));
     }
 }
