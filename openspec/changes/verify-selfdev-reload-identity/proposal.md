@@ -30,6 +30,6 @@ Build profile changes, remote builds, bridge reload.
 
 `src/cli/selfdev.rs`, `jcode-build-support`, selfdev tool result text. Complements shared-server-crash-resilience without changing its scope.
 
-## Open decisions
+## Resolved defaults
 
 None

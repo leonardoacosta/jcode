@@ -35,7 +35,7 @@ Skills load from several roots with silent override order: Claude plugin install
 
 `crates/jcode-base/src/skill.rs` loader, skill tool info output, TUI selector, remote skill payload (additive).
 
-## Open decisions
+## Resolved defaults
 
-1. Discovery-root labels. Options: path-derived labels; fixed enum (`plugin`, `global`, `agents`, `project`). Recommended: fixed enum, short and width-safe; roadmap still requires design acceptance.
-2. Trust wording. Options: show "trusted/untrusted"; show source only. Recommended: source only, since no trust model exists and a label would imply verification.
+1. Discovery-root labels. Options: path-derived labels; fixed enum (`plugin`, `global`, `agents`, `project`). Selected default: fixed enum, short and width-safe; this is the selected design default.
+2. Trust wording. Options: show "trusted/untrusted"; show source only. Selected default: source only, since no trust model exists and a label would imply verification.

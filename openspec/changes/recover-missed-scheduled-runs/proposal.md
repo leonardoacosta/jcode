@@ -30,6 +30,8 @@ Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/p
 
 `ambient/persistence.rs` queue item state, ambient manager delivery, `schedule` tool list output.
 
-## Open decisions
+## Pending user decision
 
 1. Redelivery of unacknowledged items. Options: (a) redeliver once; (b) mark only. Recommended: (a) with a visible `recovered` marker, because one-shot tasks are otherwise lost; at-most-once retry avoids loops.
+
+The recommendation above is not a selected default. The dependent behavior remains blocked until this choice is settled; this proposal does not authorize it.

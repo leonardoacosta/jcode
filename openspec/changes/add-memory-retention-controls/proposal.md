@@ -33,6 +33,8 @@ Memory has single-id deletion (`MemoryManager::forget`, `crates/jcode-base/src/m
 
 `src/cli/args.rs` (new subcommand), `crates/jcode-base/src/memory.rs`, config types. Deletion is local and irreversible only with `--apply`.
 
-## Open decisions
+## Pending user decision
 
 - Secret match on store: reject or redact? Recommended: redact and report, because rejecting loses the non-secret part of an otherwise useful memory.
+
+The recommendation above is not a selected default. The dependent behavior remains blocked until this choice is settled; this proposal does not authorize it.

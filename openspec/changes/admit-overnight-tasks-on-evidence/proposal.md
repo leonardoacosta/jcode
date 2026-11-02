@@ -31,6 +31,6 @@ Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/p
 
 `crates/jcode-app-core/src/overnight.rs` supervisor loop and preflight; `crates/jcode-overnight-core` event names. No new daemon.
 
-## Open decisions
+## Resolved defaults
 
-1. Signal source for `waiting` wake-ups. Options: (a) poll manifest/events every N seconds; (b) subscribe to bg/swarm completion channels. Recommended: (b), because polling recreates the "recheck unchanged receipts" behavior the gate forbids.
+1. Signal source for `waiting` wake-ups. Options: (a) poll manifest/events every N seconds; (b) subscribe to bg/swarm completion channels. Selected default: (b), because polling recreates the "recheck unchanged receipts" behavior the gate forbids.

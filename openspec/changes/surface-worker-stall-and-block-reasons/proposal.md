@@ -23,14 +23,10 @@ Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODU
 
 `swarm_watchdog.rs`, swarm member status types, background task status, `info_widget_swarm_background.rs`. Persisted status strings keep backward-compatible parsing.
 
-## Open decisions
+## Resolved defaults
 
-1. Stall toast actions inline or via `/agents`? Recommended: inline toast with keys, fallback to `/agents`.
+1. Stall actions use an inline toast with keys, with `/agents` as the fallback.
 
 ## Evidence
 
 Survey: [plans/2026-11-01-background-agent-ux-gaps.md](../../../plans/2026-11-01-background-agent-ux-gaps.md) gaps 3, 7, 8, 9, 11.
-
-## Approval
-
-Approved 2026-11-01 with recommended defaults for all open decisions.

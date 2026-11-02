@@ -32,6 +32,6 @@ Compaction is measured only by size. `CompactionEvent` records tokens, dropped/c
 
 New test fixtures under `crates/jcode-compaction-core/tests/`, a small eval binary or test target; live mode sends fixture text (no user data) to the configured provider.
 
-## Open decisions
+## Resolved defaults
 
-- Fixture source: synthetic conversations or redacted real sessions? Recommended: synthetic plus one redacted export via `Session::redacted_for_export` (`crates/jcode-base/src/session.rs:1219`), because synthetic alone misses real failure modes and raw sessions leak private data.
+- Fixture source: synthetic conversations or redacted real sessions? Selected default: synthetic plus one redacted export via `Session::redacted_for_export` (`crates/jcode-base/src/session.rs:1219`), because synthetic alone misses real failure modes and raw sessions leak private data.

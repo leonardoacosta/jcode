@@ -30,6 +30,6 @@ Overnight preflight projects usage with fixed heuristics (`overnight.rs:446-527`
 
 `overnight.rs` report, usage recording hooks, `jcode-usage-types`, review HTML.
 
-## Open decisions
+## Resolved defaults
 
-1. Providers without usage reporting. Options: (a) omit; (b) show estimated with label. Recommended: (b), honesty requirement favors labelled estimates over silent gaps.
+1. Providers without usage reporting. Options: (a) omit; (b) show estimated with label. Selected default: (b), honesty requirement favors labelled estimates over silent gaps.

@@ -31,6 +31,6 @@ New channels, Windows installer rewrite, release pipeline changes.
 
 `update.rs`, `jcode-build-support` channel helpers, CLI args. Linux, macOS and Windows path variants must be covered.
 
-## Open decisions
+## Resolved defaults
 
-1. Rollback target: most recent other version, or explicit `--to <version>`? Recommended: default to previous and accept optional `--to`; covers the common case with one flag.
+1. Rollback target: most recent other version, or explicit `--to <version>`? Selected default: default to previous and accept optional `--to`; covers the common case with one flag.

@@ -32,6 +32,6 @@ Plan items carry `file_scope`, `blocked_by` and `assigned_to` (`crates/jcode-pla
 
 `crates/jcode-plan/src/lib.rs`, `crates/jcode-app-core/src/server/` swarm handlers, swarm tool schema; tests in `jcode-app-core`.
 
-## Open decisions
+## Resolved defaults
 
-1. Out-of-scope edits: (a) warn; (b) reject the report. Recommended: (a), avoids losing work; enforcement belongs to `add-swarm-file-claims`.
+1. Out-of-scope edits: (a) warn; (b) reject the report. Selected default: (a), avoids losing work; enforcement belongs to `add-swarm-file-claims`.

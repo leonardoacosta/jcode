@@ -31,6 +31,6 @@ Continuation decisions are recorded only as free-text log lines: `AUTO_POKE_DECI
 
 `crates/jcode-todo-policy/src/followup.rs`, `crates/jcode-tui/src/tui/app/input.rs`, tests in `jcode-todo-policy` and `jcode-tui`.
 
-## Open decisions
+## Resolved defaults
 
-1. Storage: (a) session log JSON line; (b) separate per-session evidence file. Recommended: (a), reuses the existing log and keeps correlation with `AUTO_POKE_DECISION`.
+1. Storage: (a) session log JSON line; (b) separate per-session evidence file. Selected default: (a), reuses the existing log and keeps correlation with `AUTO_POKE_DECISION`.

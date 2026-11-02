@@ -22,14 +22,10 @@ Visible workers launched in Herdr get a pane (`crates/jcode-terminal-launch/src/
 
 `jcode-terminal-launch`, swarm member state and persistence, `/agents` view, `herdr.rs`. Depends on `recover-swarm-workers-after-reload` for persisted member fields.
 
-## Open decisions
+## Resolved defaults
 
-1. Keybind for focus from the widget? Recommended: `/agents` action first, keybind later.
+1. Provide the `/agents` focus action first, with a widget keybind deferred until later.
 
 ## Evidence
 
 Survey: [plans/2026-11-01-background-agent-ux-gaps.md](../../../plans/2026-11-01-background-agent-ux-gaps.md) gaps 4, 10.
-
-## Approval
-
-Approved 2026-11-01 with recommended defaults for all open decisions.

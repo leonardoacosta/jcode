@@ -32,6 +32,8 @@ The overnight supervisor is an in-process `tokio::spawn` (`overnight.rs:217-219`
 
 `overnight.rs` manifest fields and a startup reconciliation hook in server boot; TUI overnight status shows `interrupted`/`resumed`.
 
-## Open decisions
+## Pending user decision
 
 1. Auto-resume vs mark-only. Options: (a) auto-resume runs before wake time; (b) mark `Interrupted` and require user resume. Recommended: (a), the run was already authorized for this window; (b) remains for runs past wake time.
+
+The recommendation above is not a selected default. The dependent behavior remains blocked until this choice is settled; this proposal does not authorize it.

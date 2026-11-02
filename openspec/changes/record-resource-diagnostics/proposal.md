@@ -30,6 +30,6 @@ New benchmarks, performance targets, telemetry upload.
 
 `session_memory_bench.rs`, a metadata helper using `jcode-build-meta`.
 
-## Open decisions
+## Resolved defaults
 
-1. Redact the home path or keep it? Options: keep (exact paths); replace with `~`. Recommended: replace with `~`; keeps reproducibility without leaking usernames.
+1. Redact the home path or keep it? Options: keep (exact paths); replace with `~`. Selected default: replace with `~`; keeps reproducibility without leaking usernames.

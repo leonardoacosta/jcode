@@ -36,6 +36,6 @@ Native tools and MCP tools are discoverable only by the model. MCP `search` retu
 
 TUI command registry, MCP manager read API, remote protocol (additive request).
 
-## Open decisions
+## Resolved defaults
 
-1. Entry point. Options: new `/tools` command; tab inside `/mcp`. Recommended: `/tools`, because native tools are not MCP and `/mcp` is owned by `mcp-management-experience`.
+1. Entry point. Options: new `/tools` command; tab inside `/mcp`. Selected default: `/tools`, because native tools are not MCP and `/mcp` is owned by `mcp-management-experience`.

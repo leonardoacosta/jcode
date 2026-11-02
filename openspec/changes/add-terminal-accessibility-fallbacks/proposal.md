@@ -31,6 +31,6 @@ Screen-reader protocol integration, theme redesign, new keybinding system.
 
 TUI style resolution, onboarding pills, info widget, input handling.
 
-## Open decisions
+## Resolved defaults
 
-1. Monochrome via env only or also a config key? Options: env only (standard, zero config); env plus a `[ui]` config key. Recommended: env only; `NO_COLOR` is the established convention and avoids new config.
+1. Monochrome via env only or also a config key? Options: env only (standard, zero config); env plus a `[ui]` config key. Selected default: env only; `NO_COLOR` is the established convention and avoids new config.

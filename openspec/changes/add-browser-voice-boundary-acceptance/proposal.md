@@ -32,6 +32,6 @@ Browser and voice boundaries exist but lack acceptance coverage at their edges. 
 
 Tests in `crates/jcode-app-core/src/tool/browser_tests.rs`, `crates/jcode-tui` voice tests, doc update. Fixes only if tests expose violations.
 
-## Open decisions
+## Resolved defaults
 
 None.

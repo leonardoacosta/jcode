@@ -31,6 +31,6 @@ New login flows, provider additions, credential storage changes.
 
 `ui_onboarding.rs`, provider doctor message helper (shared, not duplicated), TUI auth-error rendering. No data crosses a provider boundary beyond existing requests.
 
-## Open decisions
+## Resolved defaults
 
-1. Probe credentials live at onboarding end or only check presence? Options: live probe (accurate, adds network and latency); presence only (instant, can be stale). Recommended: presence only, with live failure handled by the first-prompt path, to avoid network calls during onboarding.
+1. Probe credentials live at onboarding end or only check presence? Options: live probe (accurate, adds network and latency); presence only (instant, can be stale). Selected default: presence only, with live failure handled by the first-prompt path, to avoid network calls during onboarding.

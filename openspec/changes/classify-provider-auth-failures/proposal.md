@@ -30,6 +30,6 @@ Failure handling is split across ad hoc string matching: Anthropic matches subst
 
 `jcode-provider-core/src/failover.rs`, Anthropic/OpenAI runtime error paths, transcript error rendering.
 
-## Open decisions
+## Resolved defaults
 
-1. Revoked vs expired detection when the provider returns a bare 401. Options: (a) attempt refresh, classify revoked if refresh fails; (b) treat all 401 as revoked. Recommended: (a), it matches current OpenAI behavior and avoids forcing needless re-login.
+1. Revoked vs expired detection when the provider returns a bare 401. Options: (a) attempt refresh, classify revoked if refresh fails; (b) treat all 401 as revoked. Selected default: (a), it matches current OpenAI behavior and avoids forcing needless re-login.

@@ -32,6 +32,6 @@ Automatic daemon restart; CI integration; storing evidence in sessions or OpenSp
 
 `crates/jcode-build-support`, `crates/jcode-tui/src/tui/app/state_ui.rs`, protocol handshake for server hash. Old servers without a hash report `unknown`.
 
-## Open decisions
+## Resolved defaults
 
-1. Where evidence lives. Options: printed only; JSON file under scratch; session metadata. Recommended: printed plus `--json`, because it composes with existing workflows without new storage.
+1. Where evidence lives. Options: printed only; JSON file under scratch; session metadata. Selected default: printed plus `--json`, because it composes with existing workflows without new storage.

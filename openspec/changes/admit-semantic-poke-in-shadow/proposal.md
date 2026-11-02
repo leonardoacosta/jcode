@@ -31,6 +31,6 @@ Continuation is driven by open todo counts and fingerprints in `FollowUpPolicy` 
 
 `crates/jcode-tui/src/tui/app/input.rs`, `crates/jcode-todo-policy`, a replay entry point; tests.
 
-## Open decisions
+## Resolved defaults
 
-1. Gate for later live enablement: (a) zero missed required checks plus fewer redundant turns on matched replay; (b) disagreement rate only. Recommended: (a), matches the roadmap gate.
+1. Gate for later live enablement: (a) zero missed required checks plus fewer redundant turns on matched replay; (b) disagreement rate only. Selected default: (a), matches the roadmap gate.

@@ -30,6 +30,6 @@ Roadmap owner: [P03: Jev semantic poke continuation](../../../docs/plans/PRODUCT
 
 `crates/jcode-base/src/jev.rs`, config types, status output; tests in `jcode-base`.
 
-## Open decisions
+## Resolved defaults
 
 None.

@@ -36,6 +36,6 @@ The slash-command selector stores candidates as untyped `(String, &'static str)`
 
 `crates/jcode-tui/src/tui/app/state_ui_input_helpers.rs`, selector rendering, remote skill event payload (protocol additive, backward compatible).
 
-## Open decisions
+## Resolved defaults
 
-1. Kind label width. Options: fixed ten-cell cap; abbreviate (`cmd`, `skill`); glyph only. Recommended: short words (`cmd`, `skill`) under the proposed ten-cell cap, since glyph-only is unreadable over some terminals and the roadmap still needs design acceptance of the cap.
+1. Kind label width. Options: fixed ten-cell cap; abbreviate (`cmd`, `skill`); glyph only. Selected default: short words (`cmd`, `skill`) under the proposed ten-cell cap, since glyph-only is unreadable over some terminals and the cap is the selected design default.

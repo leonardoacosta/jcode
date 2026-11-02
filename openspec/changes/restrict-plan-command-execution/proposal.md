@@ -32,7 +32,7 @@ Persistent plan mode toggle; MCP tool read-only classification; sandboxing bash;
 
 `crates/jcode-tui/src/tui/app/commands_plan.rs`, tool dispatch in `crates/jcode-app-core/src/tool/`. Local and remote sessions; the server enforces the guard, so the turn request carries a plan-only flag. Old servers ignore it, which is reported as unenforced rather than treated as safe.
 
-## Open decisions
+## Resolved defaults
 
-1. Bash handling. Options: deny all bash; allowlist read-only commands; allow all. Recommended: allowlist (`git status/diff/log`, `rg`, `ls`, `cat`) because planning needs repo inspection and deny-all breaks grounding.
-2. MCP tools during plan. Options: deny all; allow all. Recommended: deny all until MCP tools carry read-only metadata, since server tools may mutate remote state.
+1. Bash handling. Options: deny all bash; allowlist read-only commands; allow all. Selected default: allowlist (`git status/diff/log`, `rg`, `ls`, `cat`) because planning needs repo inspection and deny-all breaks grounding.
+2. MCP tools during plan. Options: deny all; allow all. Selected default: deny all until MCP tools carry read-only metadata, since server tools may mutate remote state.

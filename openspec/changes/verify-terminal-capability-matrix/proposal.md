@@ -30,6 +30,6 @@ New protocols, changes to default detection heuristics.
 
 New read-only CLI subcommand calling existing detectors.
 
-## Open decisions
+## Resolved defaults
 
 None

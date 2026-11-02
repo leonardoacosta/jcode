@@ -22,14 +22,10 @@ Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/p
 
 Background task manager and server reload path in `crates/jcode-app-core`. Exit status of reattached non-child processes may be unknown; report it as unknown rather than success.
 
-## Open decisions
+## Resolved defaults
 
-1. Exit status of reattached processes? Recommended: report `exited (status unknown)` unless written by a wrapper.
+1. Report reattached processes as `exited (status unknown)` unless the exit status is written by a wrapper.
 
 ## Evidence
 
 Survey: [plans/2026-11-01-background-agent-ux-gaps.md](../../../plans/2026-11-01-background-agent-ux-gaps.md) gap 6.
-
-## Approval
-
-Approved 2026-11-01 with recommended defaults for all open decisions.

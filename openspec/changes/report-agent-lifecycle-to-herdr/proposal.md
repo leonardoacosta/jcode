@@ -23,15 +23,11 @@ Herdr can show `idle`, `working`, `blocked` and `done`, but Jcode reports only t
 
 `crates/jcode-tui/src/tui/herdr.rs`, `crates/jcode-tui/src/tui/app/terminal_title.rs`, swarm member and background task status sources read by the info widget. No Herdr changes; uses its existing state set.
 
-## Open decisions
+## Resolved defaults
 
-1. Aggregate worker state into the coordinator's pane, or only report per-pane? Recommended: aggregate, since headless workers have no pane.
-2. Terminal notification default? Recommended: off.
+1. Aggregate worker state into the coordinator's pane, since headless workers have no pane.
+2. Terminal notifications default to off.
 
 ## Evidence
 
 Survey: [plans/2026-11-01-background-agent-ux-gaps.md](../../../plans/2026-11-01-background-agent-ux-gaps.md) gaps 1, 2, 5.
-
-## Approval
-
-Approved 2026-11-01 with recommended defaults for all open decisions.

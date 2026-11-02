@@ -31,6 +31,6 @@ Cancellation is only checked between coordinator turns: `run_supervisor` reads `
 
 `overnight.rs` turn monitor and supervisor; swarm spawn path for run-owned coordinators; overnight manifest fields.
 
-## Open decisions
+## Resolved defaults
 
-1. Token cap source. Options: (a) provider-reported usage per turn; (b) local estimate. Recommended: (a) with (b) only when the provider reports none, labelled `estimated`, because P06 requires distinguishing enforcement from estimates.
+1. Token cap source. Options: (a) provider-reported usage per turn; (b) local estimate. Selected default: (a) with (b) only when the provider reports none, labelled `estimated`, because P06 requires distinguishing enforcement from estimates.

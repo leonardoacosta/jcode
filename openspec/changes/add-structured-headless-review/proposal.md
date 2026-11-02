@@ -32,6 +32,6 @@ Autoreview returns a free-text DM: the reviewer is told to summarize findings "o
 
 `src/cli/args.rs`, `crates/jcode-tui/src/tui/app/commands_review.rs`, a new verdict type. Reviewer remains read-only per existing guardrails.
 
-## Open decisions
+## Resolved defaults
 
-- Exit codes: distinct per verdict or pass=0/else=1? Recommended: distinct (0 pass, 1 fail, 2 inconclusive, 3 cancelled/budget), because CI must distinguish a real failure from an unavailable reviewer.
+- Exit codes: distinct per verdict or pass=0/else=1? Selected default: distinct (0 pass, 1 fail, 2 inconclusive, 3 cancelled/budget), because CI must distinguish a real failure from an unavailable reviewer.

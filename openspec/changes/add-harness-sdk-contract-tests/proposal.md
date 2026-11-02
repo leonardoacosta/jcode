@@ -33,6 +33,6 @@ The Rust harness API and the TypeScript SDK duplicate the protocol by hand: both
 
 `crates/jcode-harness-api` tests, `crates/jcode-harness-api-server` tests, `sdk/typescript` test suite. No runtime behavior change unless tests expose a bug.
 
-## Open decisions
+## Resolved defaults
 
-- Fixture direction: Rust-generated goldens or hand-written shared JSON? Recommended: Rust-generated with a checked-in copy and a drift test, because Rust types are the server source of truth.
+- Fixture direction: Rust-generated goldens or hand-written shared JSON? Selected default: Rust-generated with a checked-in copy and a drift test, because Rust types are the server source of truth.

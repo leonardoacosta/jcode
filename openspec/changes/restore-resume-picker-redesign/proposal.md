@@ -30,7 +30,3 @@ Re-implement on current main, preserving the newer transcript preview (`22b3eda8
 ## Evidence
 
 Recovery bundle: [plans/recovery/resume-picker-2026-09-22/](../../../plans/recovery/resume-picker-2026-09-22/) (closeout, exploration, sort research, task cards, review notes, and `edits.json` with the 39 original edits extracted from session `session_dog_1790022984976_52b6d91f4bf4d2a8`).
-
-## Approval
-
-Approved 2026-11-01 with recommended defaults for all open decisions.

@@ -29,6 +29,6 @@ Roadmap owner: [P06: Provider/auth/usage-budget reliability](../../../docs/plans
 
 `jcode-provider-doctor` crate and `src/cli/provider_doctor.rs`.
 
-## Open decisions
+## Resolved defaults
 
 None

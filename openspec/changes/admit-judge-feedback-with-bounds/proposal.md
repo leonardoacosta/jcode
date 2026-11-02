@@ -32,7 +32,7 @@ Changing judge prompts or models; council tool (`add-council-tool`); scoring jud
 
 `crates/jcode-tui/src/tui/app/commands_review.rs`, judge DM handling in the TUI turn flow, config for the cap.
 
-## Open decisions
+## Resolved defaults
 
-1. Default continuation cap. Options: 1; 3; unbounded with user stop. Recommended: 3, because autojudge defaults to CONTINUE and a small bound keeps usefulness while preventing loops.
-2. Malformed DM. Options: drop; show as note. Recommended: show as a note without continuation so the user still sees it.
+1. Default continuation cap. Options: 1; 3; unbounded with user stop. Selected default: 3, because autojudge defaults to CONTINUE and a small bound keeps usefulness while preventing loops.
+2. Malformed DM. Options: drop; show as note. Selected default: show as a note without continuation so the user still sees it.
