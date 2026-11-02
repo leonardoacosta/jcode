@@ -1,0 +1,5 @@
+- [ ] Expose the daemon build hash on the socket if absent
+- [ ] Compare after reload and report
+- [ ] Test the mismatch path with an isolated socket
+- [ ] Run `cargo test -p jcode` for touched modules and record results
+- [ ] Run `openspec validate verify-selfdev-reload-identity --strict`

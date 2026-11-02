@@ -1,0 +1,6 @@
+- [ ] Wire `NO_COLOR`/`JCODE_NO_COLOR` into TUI style resolution
+- [ ] Add non-color markers for selection, error and status
+- [ ] Inventory mouse-only actions and add keyboard paths
+- [ ] Add monochrome frame tests and keyboard-parity tests
+- [ ] Run `cargo test -p jcode` for touched modules and record results
+- [ ] Run `openspec validate add-terminal-accessibility-fallbacks --strict`

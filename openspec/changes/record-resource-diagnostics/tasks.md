@@ -1,0 +1,6 @@
+- [ ] Add metadata block to bench output
+- [ ] Redact home paths and env secrets
+- [ ] Test redaction and the unknown-identity case
+- [ ] Run `cargo run --bin session_memory_bench` and inspect output
+- [ ] Run `cargo test -p jcode` for touched modules and record results
+- [ ] Run `openspec validate record-resource-diagnostics --strict`

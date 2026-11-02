@@ -1,0 +1,7 @@
+- [ ] Add channel resolution report
+- [ ] Implement rollback over `builds/versions`
+- [ ] Use atomic symlink swap so failed updates keep the prior target
+- [ ] Tests in a temp `JCODE_HOME` for rollback, no prior version and interrupted update
+- [ ] Run `cargo test -p jcode-app-core update`
+- [ ] Run `cargo test -p jcode` for touched modules and record results
+- [ ] Run `openspec validate report-install-channel-recovery --strict`

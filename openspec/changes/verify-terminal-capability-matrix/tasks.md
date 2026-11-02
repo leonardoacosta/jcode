@@ -1,0 +1,5 @@
+- [ ] Collect existing detectors behind one report function
+- [ ] Add `jcode debug terminal`
+- [ ] Matrix tests forcing each capability off
+- [ ] Run `cargo test -p jcode` for touched modules and record results
+- [ ] Run `openspec validate verify-terminal-capability-matrix --strict`
