@@ -411,11 +411,19 @@ pub(crate) fn reapply_terminal_modes_to(
     writer.flush()
 }
 
+pub(crate) static MOUSE_CAPTURE_USER_OFF: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Configured mouse capture, unless the user switched it off with `/mouse`.
+pub(crate) fn mouse_capture_effective(configured: bool) -> bool {
+    configured && !MOUSE_CAPTURE_USER_OFF.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 pub(crate) fn reapply_configured_terminal_modes_after_focus() {
     let policy = crate::perf::tui_policy();
     if let Err(error) = reapply_terminal_modes_after_focus_to(
         &mut std::io::stdout(),
-        policy.enable_mouse_capture,
+        mouse_capture_effective(policy.enable_mouse_capture),
         policy.enable_keyboard_enhancement,
     ) {
         crate::logging::warn(&format!("failed to reapply terminal modes: {error}"));

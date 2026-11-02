@@ -159,6 +159,11 @@ const REGISTERED_COMMANDS: &[RegisteredCommand] = &[
         "Show loaded skills and jcode-endorsed recommendations",
     ),
     RegisteredCommand::public("/version", "Show current version"),
+    RegisteredCommand::public("/links", "List transcript links; /links <n> copies one"),
+    RegisteredCommand::public(
+        "/mouse",
+        "Toggle mouse capture for native terminal selection",
+    ),
     RegisteredCommand::public("/changelog", "Show recent changes in this build"),
     RegisteredCommand::public("/info", "Show session info and tokens"),
     RegisteredCommand::public(

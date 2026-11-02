@@ -341,6 +341,8 @@ pub(super) fn draw_help_overlay(frame: &mut Frame, area: Rect, scroll: usize, ap
         "Email support with diagnostics prefilled",
     ));
     lines.push(help_entry("/version", "Show version and build details"));
+    lines.push(help_entry("/links", "List links; /links <n> copies one"));
+    lines.push(help_entry("/mouse", "Toggle mouse capture"));
     lines.push(help_entry(
         "/changelog",
         "Show recent changes in this build",

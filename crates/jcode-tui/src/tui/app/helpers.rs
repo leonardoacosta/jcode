@@ -416,8 +416,28 @@ pub(crate) fn stop_capturing_clipboard_for_tests() {
     }
 }
 
-/// Copy text to clipboard. On Windows and macOS, the native clipboard API
-/// (arboard) is authoritative, with OSC 52 as a remote-session fallback.
+/// True when the viewer is likely on another machine, so copies must go via
+/// OSC 52. `JCODE_CLIPBOARD=osc52|native` overrides detection.
+pub(super) fn is_remote_clipboard_session(env: impl Fn(&str) -> Option<String>) -> bool {
+    match env("JCODE_CLIPBOARD").as_deref().map(str::trim) {
+        Some("osc52") => return true,
+        Some("native") => return false,
+        _ => {}
+    }
+    [
+        "HERDR_ENV",
+        "SSH_CONNECTION",
+        "SSH_TTY",
+        "MOSH_SERVER_PID",
+        "MOSH_CONNECTION",
+    ]
+    .iter()
+    .any(|k| env(k).is_some_and(|v| !v.is_empty()))
+}
+
+/// Copy text to clipboard. Remote sessions (see `is_remote_clipboard_session`)
+/// use OSC 52 only. Locally, on Windows and macOS, the native clipboard API
+/// (arboard) is authoritative, with OSC 52 as a fallback.
 /// Elsewhere, try wl-copy (Wayland), then xclip/xsel (X11, which keep owning
 /// the selection unlike arboard), then arboard, then OSC 52 as the
 /// remote-session fallback (SSH / Docker / tmux).
@@ -447,6 +467,12 @@ pub(super) fn copy_to_clipboard(text: &str) -> bool {
 
     #[cfg(not(test))]
     {
+        // Remote viewer (Herdr / SSH / mosh): the host's own clipboard is the
+        // wrong one, even when it has a display. OSC 52 reaches the client.
+        if is_remote_clipboard_session(|k| std::env::var(k).ok()) {
+            return copy_to_clipboard_osc52(text);
+        }
+
         // On Windows, the native clipboard API must run before OSC 52. Writing an
         // OSC 52 sequence to stdout "succeeds" even when the console (conhost,
         // older Windows Terminal) silently ignores it, which reported "Copied"
@@ -505,17 +531,6 @@ pub(super) fn copy_to_clipboard(text: &str) -> bool {
         // fail fast for lack of a display server.
         #[cfg(not(any(windows, target_os = "macos")))]
         {
-            // Herdr may be attached from another machine (e.g. a Mac client over
-            // SSH) while this host still has its own display, so a successful
-            // wl-copy lands on the wrong clipboard. Herdr forwards OSC 52 to the
-            // attached client; send it too, then keep the local copy.
-            if std::env::var_os("HERDR_ENV").is_some() {
-                let forwarded = copy_to_clipboard_osc52(text);
-                let local = clipboard_helper::copy_via_clipboard_helper("wl-copy", &[], text);
-                if forwarded || local {
-                    return true;
-                }
-            }
             if clipboard_helper::copy_via_clipboard_helper("wl-copy", &[], text) {
                 return true;
             }

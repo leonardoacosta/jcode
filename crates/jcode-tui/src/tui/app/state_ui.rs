@@ -1875,6 +1875,34 @@ fn build_skills_report(app: &App) -> String {
     out.trim_end().to_string()
 }
 
+/// Exact link destinations in transcript text, newest first, deduplicated.
+/// Markdown `[label](dest)` destinations and bare http(s) URLs are included.
+pub(super) fn transcript_links<'a>(contents: impl Iterator<Item = &'a str>) -> Vec<String> {
+    static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let re = RE.get_or_init(|| {
+        regex::Regex::new(r#"\]\(([^)\s]+)\)|(https?://[^\s<>"'`)\]]+)"#).expect("valid regex")
+    });
+    let mut out: Vec<String> = Vec::new();
+    let all: Vec<&str> = contents.collect();
+    for text in all.into_iter().rev() {
+        let found: Vec<String> = re
+            .captures_iter(text)
+            .filter_map(|c| c.get(1).or_else(|| c.get(2)))
+            .map(|m| {
+                m.as_str()
+                    .trim_end_matches(['.', ',', ';', ':'])
+                    .to_string()
+            })
+            .collect();
+        for link in found.into_iter().rev() {
+            if !out.contains(&link) {
+                out.push(link);
+            }
+        }
+    }
+    out
+}
+
 pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
     if trimmed == "/skills" {
         // Sync from disk first so skills added by agent-side `skill_manage
@@ -1885,6 +1913,69 @@ pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
             DisplayMessage::system(build_skills_report(app)).with_title("Skills"),
         );
         app.set_status_notice("Skills");
+        return true;
+    }
+
+    if trimmed == "/mouse" {
+        use std::sync::atomic::Ordering;
+        let off = !crate::tui::MOUSE_CAPTURE_USER_OFF.load(Ordering::Relaxed);
+        crate::tui::MOUSE_CAPTURE_USER_OFF.store(off, Ordering::Relaxed);
+        #[cfg(not(test))]
+        {
+            let configured = crate::perf::tui_policy().enable_mouse_capture;
+            if crate::tui::mouse_capture_effective(configured) {
+                let _ =
+                    crossterm::execute!(std::io::stdout(), crossterm::event::EnableMouseCapture);
+            } else {
+                let _ =
+                    crossterm::execute!(std::io::stdout(), crossterm::event::DisableMouseCapture);
+            }
+        }
+        app.set_status_notice(if off {
+            "Mouse capture off: drag selects in your terminal. /mouse to restore"
+        } else {
+            "Mouse capture on"
+        });
+        return true;
+    }
+
+    if trimmed == "/links" || trimmed.starts_with("/links ") {
+        let links = transcript_links(app.display_messages.iter().map(|m| m.content.as_str()));
+        let arg = trimmed.strip_prefix("/links").unwrap_or("").trim();
+        if links.is_empty() {
+            app.set_status_notice("No links");
+            return true;
+        }
+        if arg.is_empty() {
+            let body = links
+                .iter()
+                .enumerate()
+                .map(|(i, l)| format!("{}. {}", i + 1, l))
+                .collect::<Vec<_>>()
+                .join("\n");
+            app.push_display_message(
+                DisplayMessage::system(format!(
+                    "{body}\n\n/links <n> copies one (/links 1 = newest)"
+                ))
+                .with_title("Links"),
+            );
+            app.set_status_notice("Links");
+            return true;
+        }
+        match arg
+            .parse::<usize>()
+            .ok()
+            .and_then(|n| links.get(n.checked_sub(1)?))
+        {
+            Some(link) => {
+                if super::helpers::copy_to_clipboard(link) {
+                    app.set_status_notice(format!("Copied link: {link}"));
+                } else {
+                    app.set_status_notice(format!("Link (copy failed): {link}"));
+                }
+            }
+            None => app.set_status_notice(format!("No link #{arg} ({} available)", links.len())),
+        }
         return true;
     }
 

@@ -334,12 +334,13 @@ impl App {
             return true;
         }
 
-        // Inside Herdr the viewer may be on another machine, so a local browser
-        // opens where nobody is looking. Open it in Chrome on the viewer's Mac
-        // when reachable; otherwise put the URL on the client clipboard.
-        if std::env::var_os("HERDR_ENV").is_some()
+        // A remote viewer (Herdr / SSH / mosh) is on another machine, so a local
+        // browser opens where nobody is looking. Always put the URL on the
+        // client clipboard via OSC 52; optionally also open Chrome on the Mac.
+        if super::helpers::is_remote_clipboard_session(|k| std::env::var(k).ok())
             && (target.starts_with("https://") || target.starts_with("http://"))
         {
+            let copied = super::helpers::copy_to_clipboard(&target);
             // Env var wins; the file lets already-running sessions opt in.
             if let Some(host) = std::env::var("JCODE_LINK_OPEN_SSH_HOST")
                 .ok()
@@ -356,10 +357,12 @@ impl App {
                 self.set_status_notice(format!("Opened link in Chrome on {}: {}", host, target));
                 return true;
             }
-            if super::helpers::copy_to_clipboard(&target) {
-                self.set_status_notice(format!("Copied link: {}", target));
-                return true;
-            }
+            self.set_status_notice(if copied {
+                format!("Copied link: {}", target)
+            } else {
+                format!("Link (copy failed): {}", target)
+            });
+            return true;
         }
 
         match super::helpers::open_path_or_url_detached(&target) {

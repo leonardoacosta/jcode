@@ -2358,3 +2358,73 @@ fn failed_prompt_remote_broadcast_error_recovers_active_source_once() {
         });
     });
 }
+
+#[test]
+fn remote_clipboard_session_detection() {
+    use super::helpers::is_remote_clipboard_session as remote;
+    let env = |pairs: &'static [(&'static str, &'static str)]| {
+        move |k: &str| {
+            pairs
+                .iter()
+                .find(|(n, _)| *n == k)
+                .map(|(_, v)| v.to_string())
+        }
+    };
+    assert!(remote(env(&[
+        ("HERDR_ENV", "1"),
+        ("WAYLAND_DISPLAY", "wayland-0")
+    ])));
+    assert!(remote(env(&[("SSH_CONNECTION", "1.2.3.4 1 5.6.7.8 22")])));
+    assert!(remote(env(&[("MOSH_SERVER_PID", "42")])));
+    assert!(!remote(env(&[("WAYLAND_DISPLAY", "wayland-0")])));
+    assert!(!remote(env(&[
+        ("JCODE_CLIPBOARD", "native"),
+        ("SSH_CONNECTION", "x")
+    ])));
+    assert!(remote(env(&[("JCODE_CLIPBOARD", "osc52")])));
+    assert!(!remote(env(&[("SSH_TTY", "")])));
+}
+
+#[test]
+fn links_command_copies_exact_wrapped_url_newest_first() {
+    let mut app = create_test_app();
+    let long = format!("https://example.com/{}", "a".repeat(400));
+    app.push_display_message(DisplayMessage::assistant(
+        "old [x](https://old.example/p)".to_string(),
+    ));
+    app.push_display_message(DisplayMessage::assistant(format!(
+        "see [doc]({long}) and https://b.example/q."
+    )));
+    let clipboard = CapturedClipboard::new();
+    assert!(super::state_ui::handle_info_command(&mut app, "/links 2"));
+    assert_eq!(clipboard.text().as_deref(), Some(long.as_str()));
+    let links = super::state_ui::transcript_links(
+        app.display_messages().iter().map(|m| m.content.as_str()),
+    );
+    assert_eq!(
+        links,
+        vec![
+            "https://b.example/q".to_string(),
+            long.clone(),
+            "https://old.example/p".to_string()
+        ]
+    );
+}
+
+#[test]
+fn links_command_without_links_does_not_copy() {
+    let mut app = create_test_app();
+    let clipboard = CapturedClipboard::new();
+    assert!(super::state_ui::handle_info_command(&mut app, "/links 1"));
+    assert!(clipboard.text().unwrap_or_default().is_empty());
+}
+
+#[test]
+fn mouse_command_toggles_capture_override() {
+    let mut app = create_test_app();
+    assert!(crate::tui::mouse_capture_effective(true));
+    assert!(super::state_ui::handle_info_command(&mut app, "/mouse"));
+    assert!(!crate::tui::mouse_capture_effective(true));
+    assert!(super::state_ui::handle_info_command(&mut app, "/mouse"));
+    assert!(crate::tui::mouse_capture_effective(true));
+}

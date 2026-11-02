@@ -3299,7 +3299,7 @@ fn resume_terminal_after_editor() {
     if policy.enable_focus_change {
         let _ = crossterm::execute!(std::io::stdout(), EnableFocusChange);
     }
-    if policy.enable_mouse_capture {
+    if crate::tui::mouse_capture_effective(policy.enable_mouse_capture) {
         let _ = crossterm::execute!(std::io::stdout(), EnableMouseCapture);
     }
     if policy.enable_keyboard_enhancement {
