@@ -13,4 +13,4 @@
 
 ## 3. Verify
 
-- [ ] 3.1 Selfdev build; runtime check on an isolated socket that the shared layer appears in `/context instructions`
+- [x] 3.1 Selfdev build; runtime check on an isolated socket that the shared layer appears in `/context instructions`

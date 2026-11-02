@@ -20,4 +20,4 @@
 - [x] 4.4 Test: 100 sessions on one PID yields one event, all recoverable
 
 ## 5. Verify
-- [ ] 5.1 Runtime check on an isolated socket: `kill -TERM` and `kill -KILL` the server, confirm classified reasons and grouped recovery
+- [x] 5.1 Runtime check on an isolated socket: `kill -TERM` and `kill -KILL` the server, confirm classified reasons and grouped recovery
