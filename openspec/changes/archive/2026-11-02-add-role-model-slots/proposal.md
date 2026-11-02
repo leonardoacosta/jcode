@@ -1,6 +1,6 @@
 # Proposal
 
-Roadmap owner: [P06: Provider/auth/usage-budget reliability](../../../docs/plans/PRODUCT_ROADMAP.md#p06-providerauthusage-budget-reliability). Supporting: P04.
+Roadmap owner: [P06: Provider/auth/usage-budget reliability](../../../../docs/plans/PRODUCT_ROADMAP.md#p06-providerauthusage-budget-reliability). Supporting: P04.
 
 ## Why
 
