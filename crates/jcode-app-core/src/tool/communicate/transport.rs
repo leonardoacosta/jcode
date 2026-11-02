@@ -115,7 +115,7 @@ impl std::fmt::Display for SwarmRequestError {
 
 impl std::error::Error for SwarmRequestError {}
 
-pub(super) async fn send_request(request: Request) -> Result<ServerEvent> {
+pub(in crate::tool) async fn send_request(request: Request) -> Result<ServerEvent> {
     send_request_with_timeout(request, None).await
 }
 

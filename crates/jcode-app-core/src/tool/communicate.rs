@@ -26,7 +26,7 @@ const REQUEST_ID: u64 = 1;
 /// does not pass `concurrency_limit`.
 const DEFAULT_RUN_PLAN_CONCURRENCY: usize = 4;
 
-mod transport;
+pub(super) mod transport;
 use transport::{send_request, send_request_with_timeout};
 
 fn fresh_spawn_request_nonce(ctx: &ToolContext) -> String {

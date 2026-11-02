@@ -11,6 +11,7 @@ mod calendar;
 mod codemode;
 mod communicate;
 mod compile_remote;
+mod council;
 #[cfg(target_os = "macos")]
 mod computer;
 mod config_edit_notice;
@@ -183,6 +184,16 @@ pub(crate) fn set_session_tool_policy(
             owner: None,
         },
     );
+}
+
+/// Drop an unowned policy (e.g. a stopped council seat's allowlist).
+pub(crate) fn clear_session_tool_policy_entry(session_id: &str) {
+    let mut policies = SESSION_TOOL_POLICIES
+        .write()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    if policies.get(session_id).is_some_and(|p| p.owner.is_none()) {
+        policies.remove(session_id);
+    }
 }
 
 #[cfg(test)]
@@ -534,6 +545,7 @@ impl Registry {
         // definition (and provider KV cache), while newly created agents see
         // prompt edits immediately.
         Self::insert_tool(&mut tools, "swarm", communicate::CommunicateTool::new());
+        Self::insert_tool(&mut tools, "council", council::CouncilTool::new());
         tools
     }
 
