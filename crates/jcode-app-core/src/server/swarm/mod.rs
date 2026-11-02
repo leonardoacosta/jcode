@@ -66,6 +66,9 @@ mod plan;
 #[allow(unused_imports)]
 pub(in crate::server) use plan::*;
 mod run;
+mod claims;
+#[allow(unused_imports)]
+pub(in crate::server) use claims::*;
 #[allow(unused_imports)]
 pub(in crate::server) use run::*;
 
