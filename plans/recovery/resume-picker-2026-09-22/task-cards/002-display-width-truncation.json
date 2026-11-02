@@ -1,0 +1,18 @@
+{
+  "task_id": "002-display-width-truncation",
+  "title": "Terminal-cell-width-aware truncation for titles, prompts, crash reasons, and paths",
+  "status": "completed",
+  "risk": "low",
+  "priority": "high",
+  "source": "exploration plan §3: titles truncated at 54 characters not cells; paths have another fixed limit",
+  "why_chosen": "Correctness fix: emoji, CJK, combining marks take different cell widths, so char-count truncation often clips too early or too late. Addressed before compact-row work so the new rows start with correct truncation.",
+  "before": "Titles truncated at 54 characters, prompts at 72 characters, paths at 28 characters (tail suffix, char-based). Emoji and CJK could overflow or be over-truncated.",
+  "after": "Added `truncate_to_display_width()` using `unicode_width::UnicodeWidthStr/Char`. Titles capped at 54 cells, prompts at 72 cells, crash reasons at 54 cells, paths at 30 cells (tail-preserving suffix truncation with display-width budget). All truncation now respects actual terminal column footprint.",
+  "files_changed": [
+    "crates/jcode-tui/src/tui/session_picker/render.rs"
+  ],
+  "evidence": "All 95 existing session_picker tests pass. Compilation succeeds cleanly (only pre-existing warnings in jcode-app-core).",
+  "validation": "cargo test session_picker: 95 passed, 0 failed",
+  "validation_path": "",
+  "open_questions": []
+}

@@ -1,0 +1,19 @@
+{
+  "task_id": "005-compact-rows",
+  "title": "Compact 3-line session rows: title+age, context excerpt, project+badges",
+  "status": "completed",
+  "risk": "medium",
+  "priority": "high",
+  "source": "exploration plan §1-3: three-line rows without blank spacer, title+right-aligned age, contextual excerpt, project identity and status badges",
+  "why_chosen": "Highest user-visible density improvement. Replaces 5-6 line cards with 3-line compact rows, approximately doubling visible session count.",
+  "before": "Sessions showed 5-6 lines: title (with all badges on line1), message counts + tokens, 'prompt: ...' excerpt, 'created: N ago' + path, optional crash reason, blank spacer. Titles clipped at 54 chars but crammed with all status badges on the same line.",
+  "after": "Three-line format: Line 1: selection marker + icon + title + activity age. Line 2: first-user-prompt excerpt (100-cell max, no 'prompt:' prefix). Line 3: project dirname · source badge · 📌 saved · ▸ here · ◀ current · status icon + label. Message counts, tokens, full path, created time moved off-row (available in details/preview). Changed DEFAULT_ITEM_HEIGHT_ESTIMATE from 5 to 3.",
+  "files_changed": [
+    "crates/jcode-tui/src/tui/session_picker/render.rs",
+    "crates/jcode-tui/src/tui/session_picker.rs"
+  ],
+  "evidence": "All 95 existing session_picker tests pass. Compilation succeeds. No new warnings.",
+  "validation": "cargo test session_picker: 95 passed, 0 failed",
+  "validation_path": "",
+  "open_questions": ["Should we add a 'latest user request' excerpt from the full transcript instead of only first_user_prompt? (requires loader/cache changes)", "Should canary/debug markers be shown in the compact rows? (currently absent)"]
+}

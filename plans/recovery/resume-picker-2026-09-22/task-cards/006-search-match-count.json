@@ -1,0 +1,18 @@
+{
+  "task_id": "006-search-match-count",
+  "title": "Show search match count in search bar",
+  "status": "completed",
+  "risk": "low",
+  "priority": "medium",
+  "source": "exploration plan §7: always-visible search affordance with match count and coverage status",
+  "why_chosen": "Low-risk, high-visibility: users can now see how many sessions match their search query without switching to the list view. Helps explain why some sessions aren't showing up.",
+  "before": "Search bar only showed the query text with no result count. Users couldn't tell if their query was filtering 0, 5, or 50 sessions without visually inspecting the list.",
+  "after": "When a search query is active, the search bar shows '🔍 <query>  N/M' where N is the number of matching visible sessions and M is the total session count (including hidden). No count shown when query is empty.",
+  "files_changed": [
+    "crates/jcode-tui/src/tui/session_picker.rs"
+  ],
+  "evidence": "All 95 existing session_picker tests pass. Compilation succeeds.",
+  "validation": "cargo test session_picker: 95 passed, 0 failed",
+  "validation_path": "",
+  "open_questions": ["Should add search corpus coverage indicator (e.g. 'searching N/M transcripts') to show when the corpus is a sample, not full history"]
+}

@@ -1,0 +1,20 @@
+{
+  "task_id": "001-page-navigation",
+  "title": "Dynamic page-step for session-list PgUp/PgDn navigation",
+  "status": "completed",
+  "risk": "low",
+  "priority": "high",
+  "source": "exploration plan §10 – use actual rendered page geometry instead of fixed step constants",
+  "why_chosen": "Highest-confidence bounded bug fix: replaced hardcoded SESSION_PAGE_STEP_COUNT=3 with viewport-derived step so PgUp/PgDn covers a full screen of sessions.",
+  "before": "SESSION_PAGE_STEP_COUNT was always 3, so PgUp/PgDn moved exactly 3 items regardless of how many were visible (10-30+ on a large terminal).",
+  "after": "Page step is computed from list_visible_rows (stored during render) divided by DEFAULT_ITEM_HEIGHT_ESTIMATE (5), clamped to [SESSION_PAGE_MIN_STEP(3), visible_rows]. PgUp/PgDn now covers roughly one screenful.",
+  "files_changed": [
+    "crates/jcode-tui/src/tui/session_picker.rs",
+    "crates/jcode-tui/src/tui/session_picker/navigation.rs",
+    "crates/jcode-tui/src/tui/session_picker/render.rs"
+  ],
+  "evidence": "All 95 existing session_picker tests pass. Compilation succeeds. No new warnings.",
+  "validation": "cargo test session_picker: 95 passed, 0 failed",
+  "validation_path": "",
+  "open_questions": []
+}

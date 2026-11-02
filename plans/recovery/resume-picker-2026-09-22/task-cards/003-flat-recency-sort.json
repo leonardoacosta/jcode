@@ -1,0 +1,19 @@
+{
+  "task_id": "003-flat-recency-sort",
+  "title": "Flat recency sort: show activity age in rows, remove All-mode section headers",
+  "status": "completed",
+  "risk": "medium",
+  "priority": "high",
+  "source": "exploration plan §4-5: default to flat global last-activity order, show activity time in row, Saved is a facet not implicit override",
+  "why_chosen": "Directly addresses the 'Ordering uses descending last_message_time but the visible timestamp says created' confusion and the section-header partitioning. High user-visible impact with minimal code change.",
+  "before": "The row line3 showed 'created: N ago' but the list was sorted by last_message_time. In All mode, sessions were partitioned into Saved/Server/Orphan sections with headers, breaking global recency. Saved sessions got their own header group instead of being mixed in with the 📌 badge.",
+  "after": "Row line3 now shows the activity age ('5m ago' etc.) derived from last_message_time, matching the sort order. All mode shows one flat recency-sorted list without section headers. Saved sessions are still indicated via the 📌 badge. Server group info remains accessible via details/onboarding.",
+  "files_changed": [
+    "crates/jcode-tui/src/tui/session_picker/render.rs",
+    "crates/jcode-tui/src/tui/session_picker/filter.rs"
+  ],
+  "evidence": "All 95 existing session_picker tests pass. Compilation succeeds. Removal of ~120 lines of section-header grouping logic.",
+  "validation": "cargo test session_picker: 95 passed, 0 failed",
+  "validation_path": "",
+  "open_questions": ["Should Saved/Orphan/Server header enum variants be removed from PickerItem now that they're unused? (minor cleanup, deferred)"]
+}

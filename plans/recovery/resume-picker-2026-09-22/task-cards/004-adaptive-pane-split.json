@@ -1,0 +1,18 @@
+{
+  "task_id": "004-adaptive-pane-split",
+  "title": "Adaptive list/preview pane split based on terminal width",
+  "status": "completed",
+  "risk": "low",
+  "priority": "high",
+  "source": "exploration plan §9: make list primary, use adaptive thresholds, narrow terminals show full-width list",
+  "why_chosen": "Directly addresses the hard-coded 40/60 split that wastes list space on wide terminals. Low-risk since it only changes the layout constraint numbers.",
+  "before": "Fixed 40/60 split at all terminal sizes. On a 160-col terminal the list got 64 cols and the preview got 96 cols, making session titles hard to read at 54-char truncation.",
+  "after": "Adaptive split: ≥120 cols → 55/45 (list-primary), ≥100 → 50/50, ≥80 → 45/55, <80 → 60/40. The list gets proportionally more space on wider terminals while the preview remains usable.",
+  "files_changed": [
+    "crates/jcode-tui/src/tui/session_picker.rs"
+  ],
+  "evidence": "All 95 existing session_picker tests pass. Compilation succeeds.",
+  "validation": "cargo test session_picker: 95 passed, 0 failed",
+  "validation_path": "",
+  "open_questions": ["Narrow-terminal toggle (full-width list, no preview) requires a new interaction mode - deferred to future iteration"]
+}
