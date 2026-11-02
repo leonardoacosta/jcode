@@ -4327,3 +4327,6 @@ impl App {
 
 #[cfg(test)]
 mod terminal_control_sequence_tests;
+
+#[cfg(test)]
+mod key_dispatch_tests;
