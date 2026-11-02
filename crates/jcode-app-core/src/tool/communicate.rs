@@ -1478,7 +1478,100 @@ fn format_context_entries(entries: &[ContextEntry]) -> ToolOutput {
 }
 
 fn format_members(ctx: &ToolContext, members: &[AgentInfo]) -> ToolOutput {
-    ToolOutput::new(format_comm_members(&ctx.session_id, members))
+    let mut out = format_comm_members(&ctx.session_id, members);
+    let models = format_member_models(members, &spawned_worker_models().lock().unwrap());
+    if !models.is_empty() {
+        out.push_str("\n\nWorker models:\n");
+        out.push_str(&models);
+    }
+    ToolOutput::new(out)
+}
+
+/// Resolved worker model and where it came from, recorded at spawn time.
+type WorkerModelRecord = (String, &'static str);
+
+fn spawned_worker_models() -> &'static std::sync::Mutex<HashMap<String, WorkerModelRecord>> {
+    static MODELS: std::sync::OnceLock<std::sync::Mutex<HashMap<String, WorkerModelRecord>>> =
+        std::sync::OnceLock::new();
+    MODELS.get_or_init(Default::default)
+}
+
+fn is_inherit_model(model: &str) -> bool {
+    let m = model.trim();
+    m.is_empty() || m.eq_ignore_ascii_case("inherit") || m.eq_ignore_ascii_case("coordinator")
+}
+
+/// Mirrors the server's spawn selection: explicit > effective swarm default
+/// (`slot` session override, `env` JCODE_SWARM_MODEL, or `config`) > inherit.
+fn resolve_worker_model_source(
+    requested: Option<&str>,
+    effective_default: Option<&str>,
+    global_default: Option<&str>,
+    env_default: Option<&str>,
+    coordinator_model: Option<&str>,
+) -> (Option<String>, &'static str) {
+    let inherit = || (coordinator_model.map(str::to_string), "inherit");
+    if let Some(model) = requested.map(str::trim).filter(|m| !m.is_empty()) {
+        return if is_inherit_model(model) {
+            inherit()
+        } else {
+            (Some(model.to_string()), "explicit")
+        };
+    }
+    let Some(model) = effective_default
+        .map(str::trim)
+        .filter(|m| !is_inherit_model(m))
+    else {
+        return inherit();
+    };
+    let source = if global_default.map(str::trim) != Some(model) {
+        "slot"
+    } else if env_default.map(str::trim) == Some(model) {
+        "env"
+    } else {
+        "config"
+    };
+    (Some(model.to_string()), source)
+}
+
+fn format_spawn_model_line(
+    model: Option<&str>,
+    source: &str,
+    coordinator_model: Option<&str>,
+) -> String {
+    let mut out = format!("Model: {} (source: {source})", model.unwrap_or("unknown"));
+    if source == "config"
+        && let (Some(model), Some(coord)) = (model, coordinator_model)
+        && model != coord
+    {
+        out.push_str(&format!(
+            "\nWarning: agents.swarm_model ({model}) overrides coordinator model ({coord}); pass model=\"inherit\" to use yours."
+        ));
+    }
+    out
+}
+
+fn format_member_models(
+    members: &[AgentInfo],
+    records: &HashMap<String, WorkerModelRecord>,
+) -> String {
+    members
+        .iter()
+        .filter_map(|m| {
+            let name = m.friendly_name.as_deref().unwrap_or(&m.session_id);
+            match (records.get(&m.session_id), m.provider_model.as_deref()) {
+                (Some((model, source)), live) => Some(format!(
+                    "- {name}: {} (source: {source})",
+                    live.unwrap_or(model)
+                )),
+                (None, Some(live)) if m.role.as_deref() != Some("coordinator") => {
+                    Some(format!("- {name}: {live} (source: unknown)"))
+                }
+                _ => None,
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn format_tool_summary(target: &str, calls: &[ToolCallSummary]) -> ToolOutput {
@@ -2547,11 +2640,41 @@ impl Tool for CommunicateTool {
                             "",
                             &new_session_id,
                         );
+                        let defaults = send_request(Request::CommListModels {
+                            id: REQUEST_ID,
+                            session_id: ctx.session_id.clone(),
+                        })
+                        .await;
+                        let (current, effective) = match defaults {
+                            Ok(ServerEvent::CommListModelsResponse {
+                                current_model,
+                                configured_swarm_model,
+                                ..
+                            }) => (current_model, configured_swarm_model),
+                            _ => (None, None),
+                        };
+                        let global = crate::config::config().agents.swarm_model.clone();
+                        let env = std::env::var("JCODE_SWARM_MODEL").ok();
+                        let (model, source) = resolve_worker_model_source(
+                            params.model.as_deref(),
+                            effective.as_deref(),
+                            global.as_deref(),
+                            env.as_deref(),
+                            current.as_deref(),
+                        );
+                        if let Some(model) = &model {
+                            spawned_worker_models()
+                                .lock()
+                                .unwrap()
+                                .insert(new_session_id.clone(), (model.clone(), source));
+                        }
+                        let model_line =
+                            format_spawn_model_line(model.as_deref(), source, current.as_deref());
                         Ok(ToolOutput::new(format!(
-                            "Spawned new agent: {new_session_id}"
+                            "Spawned new agent: {new_session_id}\n{model_line}"
                         ))
                         .with_metadata(
-                            serde_json::json!({"session_id": new_session_id, "lane": lane_id}),
+                            serde_json::json!({"session_id": new_session_id, "lane": lane_id, "model": model, "model_source": source}),
                         ))
                     }
                     Ok(response) => {

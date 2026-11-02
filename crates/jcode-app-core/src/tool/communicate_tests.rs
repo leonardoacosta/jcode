@@ -1,10 +1,10 @@
 use super::{
     CommunicateInput, CommunicateTool, canonical_swarm_action, cleanup_candidate_session_ids,
     coordination_in_flight_count, default_await_target_statuses, default_cleanup_target_statuses,
-    format_awaited_members, format_awaited_members_with_reports, format_members,
-    format_plan_status, format_swarm_model_list, latest_assistant_report,
-    resolve_optional_target_session, resolve_run_plan_concurrency, swarm_member_is_drivable_worker,
-    swarm_member_is_in_flight,
+    format_awaited_members, format_awaited_members_with_reports, format_member_models,
+    format_members, format_plan_status, format_spawn_model_line, format_swarm_model_list,
+    latest_assistant_report, resolve_optional_target_session, resolve_run_plan_concurrency,
+    resolve_worker_model_source, swarm_member_is_drivable_worker, swarm_member_is_in_flight,
 };
 use crate::message::{Message, StreamEvent, ToolDefinition};
 use crate::protocol::{
@@ -1561,5 +1561,59 @@ fn await_members_blocking_deadline_covers_wait() {
     assert_eq!(
         super::await_members_socket_timeout(false, 60),
         Duration::from_secs(90)
+    );
+}
+
+#[test]
+fn worker_model_source_labels() {
+    let r = |req, eff, glob, env| resolve_worker_model_source(req, eff, glob, env, Some("opus"));
+    assert_eq!(
+        r(Some("gpt"), Some("ds"), Some("ds"), None),
+        (Some("gpt".into()), "explicit")
+    );
+    assert_eq!(
+        r(None, Some("ds"), Some("ds"), None),
+        (Some("ds".into()), "config")
+    );
+    assert_eq!(
+        r(None, Some("ds"), Some("ds"), Some("ds")),
+        (Some("ds".into()), "env")
+    );
+    assert_eq!(
+        r(None, Some("slotm"), Some("ds"), None),
+        (Some("slotm".into()), "slot")
+    );
+    assert_eq!(r(None, None, None, None), (Some("opus".into()), "inherit"));
+    assert_eq!(
+        r(Some("inherit"), Some("ds"), Some("ds"), None),
+        (Some("opus".into()), "inherit")
+    );
+    for source in ["explicit", "config", "env", "inherit", "slot"] {
+        assert!(
+            format_spawn_model_line(Some("m"), source, Some("m"))
+                .contains(&format!("(source: {source})"))
+        );
+    }
+}
+
+#[test]
+fn config_override_warns_only_when_differs() {
+    let line = format_spawn_model_line(Some("ds"), "config", Some("opus"));
+    assert!(line.contains("Warning: agents.swarm_model (ds) overrides coordinator model (opus)"));
+    assert!(!format_spawn_model_line(Some("opus"), "config", Some("opus")).contains("Warning"));
+    assert!(!format_spawn_model_line(Some("ds"), "explicit", Some("opus")).contains("Warning"));
+}
+
+#[test]
+fn member_list_shows_recorded_model_source() {
+    let member: AgentInfo = serde_json::from_value(serde_json::json!({
+        "session_id": "w1", "friendly_name": "fox", "files_touched": []
+    }))
+    .unwrap();
+    let mut records = std::collections::HashMap::new();
+    records.insert("w1".to_string(), ("gpt".to_string(), "explicit"));
+    assert_eq!(
+        format_member_models(&[member], &records),
+        "- fox: gpt (source: explicit)"
     );
 }
