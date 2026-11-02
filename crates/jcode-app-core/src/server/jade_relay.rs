@@ -1510,4 +1510,66 @@ mod tests {
         assert_eq!(truncate_chars("hello", 10), "hello");
         assert_eq!(truncate_chars("abcdef", 4), "abc…");
     }
+
+    struct DrainTestProvider;
+
+    #[async_trait::async_trait]
+    impl crate::provider::Provider for DrainTestProvider {
+        async fn complete(
+            &self,
+            _messages: &[crate::message::Message],
+            _tools: &[crate::message::ToolDefinition],
+            _system: &str,
+            _resume_session_id: Option<&str>,
+        ) -> Result<crate::provider::EventStream> {
+            Ok(Box::pin(futures::stream::iter(vec![
+                Ok(crate::message::StreamEvent::TextDelta("ok".to_string())),
+                Ok(crate::message::StreamEvent::MessageEnd { stop_reason: None }),
+            ])))
+        }
+        fn name(&self) -> &str {
+            "test"
+        }
+        fn fork(&self) -> Arc<dyn crate::provider::Provider> {
+            Arc::new(Self)
+        }
+    }
+
+    #[tokio::test]
+    async fn pending_messages_drain_as_one_turn_after_busy_turn_ends() {
+        let provider: Arc<dyn crate::provider::Provider> = Arc::new(DrainTestProvider);
+        let registry = crate::tool::Registry::new(provider.clone()).await;
+        let agent = Arc::new(tokio::sync::Mutex::new(crate::agent::Agent::new(
+            provider, registry,
+        )));
+        let swarm_members = Arc::new(RwLock::new(HashMap::new()));
+        let id = "test-turn-end-drain";
+
+        // Simulate the in-flight turn holding the agent lock.
+        let busy = agent.lock().await;
+        let before = busy.message_count();
+        assert_eq!(enqueue_pending(id, "first queued".into()).0, 1);
+        spawn_pending_drain(id.to_string(), Arc::clone(&agent), Arc::clone(&swarm_members));
+        assert_eq!(enqueue_pending(id, "second queued".into()).0, 2);
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        assert_eq!(busy.message_count(), before, "must not run while busy");
+        drop(busy);
+
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        loop {
+            let done = {
+                let a = agent.lock().await;
+                a.message_count() >= before + 2 && take_pending(id).is_empty()
+            };
+            if done {
+                break;
+            }
+            assert!(std::time::Instant::now() < deadline, "drain never ran");
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        }
+        let history = format!("{:?}", agent.lock().await.get_history());
+        let first = history.find("first queued").expect("first delivered");
+        let second = history.find("second queued").expect("second delivered");
+        assert!(first < second, "FIFO order preserved in drained turn");
+    }
 }

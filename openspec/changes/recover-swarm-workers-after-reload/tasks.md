@@ -6,5 +6,5 @@
 
 ## 2. Verify
 
-- [ ] 2.1 Tests: reload resumes worker; missing session → orphaned; retry respawns; old state file loads (reload/orphan/legacy covered; retry respawn needs a live-server test, not yet written)
+- [x] 2.1 Tests: reload resumes worker; missing session → orphaned; retry respawns; old state file loads (retry: `communicate_retry_respawns_orphaned_worker_from_spawn_spec`)
 - [x] 2.2 `openspec validate recover-swarm-workers-after-reload --strict`

@@ -6,5 +6,5 @@
 
 ## 2. Verify
 
-- [ ] 2.1 Tests: DM to busy worker delivered after turn; bound overflow notice (unit: FIFO + bound overflow pass; turn-end drain not covered end-to-end)
+- [x] 2.1 Tests: DM to busy worker delivered after turn; bound overflow notice (unit FIFO+overflow; turn-end drain: `pending_messages_drain_as_one_turn_after_busy_turn_ends`)
 - [x] 2.2 `openspec validate queue-messages-to-busy-workers --strict`

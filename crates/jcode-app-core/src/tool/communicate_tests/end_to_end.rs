@@ -754,3 +754,78 @@ async fn communicate_message_routes_as_dm_while_broadcast_targets_swarm() {
 
     server_task.abort();
 }
+
+#[tokio::test]
+async fn communicate_retry_respawns_orphaned_worker_from_spawn_spec() {
+    let _env_lock = crate::storage::lock_test_env();
+    let runtime_dir = tempfile::TempDir::new().expect("runtime tempdir");
+    let repo_dir = std::env::current_dir().expect("repo cwd");
+    let socket_path = runtime_dir.path().join("jcode.sock");
+    let _runtime = EnvGuard::set("JCODE_RUNTIME_DIR", runtime_dir.path());
+    let _home = EnvGuard::set("JCODE_HOME", runtime_dir.path());
+    let _socket = EnvGuard::set("JCODE_SOCKET", &socket_path);
+    let _debug = EnvGuard::set("JCODE_DEBUG_CONTROL", "1");
+
+    let provider: Arc<dyn Provider> = Arc::new(DelayedTestProvider {
+        delay: Duration::from_millis(50),
+    });
+    let server = Arc::new(Server::new(provider));
+    let mut server_task = {
+        let server = Arc::clone(&server);
+        tokio::spawn(async move { server.run().await })
+    };
+    wait_for_server_socket(&socket_path, &mut server_task)
+        .await
+        .expect("server socket should be ready");
+
+    let mut watcher = RawClient::connect(&socket_path).await.expect("connect");
+    watcher.subscribe(&repo_dir).await.expect("subscribe");
+    let watcher_session = watcher.session_id().await.expect("watcher session id");
+    let ctx = test_ctx(&watcher_session, &repo_dir);
+
+    let orphan = "session_orphan_after_reload";
+    let spec = crate::server::swarm_persistence::WorkerSpawnSpec {
+        lane: "orphan lane".to_string(),
+        prompt: Some("Reply with a short acknowledgement.".to_string()),
+        model: None,
+        working_dir: Some(repo_dir.display().to_string()),
+        last_status: Some("orphaned".to_string()),
+    };
+    crate::server::swarm_persistence::record_worker_spawn_spec(orphan, &spec);
+
+    let tool = CommunicateTool::new();
+    let output = tool
+        .execute(
+            json!({"action": "retry", "target_session": orphan}),
+            ctx.clone(),
+        )
+        .await
+        .expect("retry of orphan should respawn");
+    assert!(output.output.starts_with("Respawned orphaned worker"), "{}", output.output);
+    let new_session = output
+        .output
+        .rsplit(' ')
+        .next()
+        .expect("new session id")
+        .to_string();
+    assert_ne!(new_session, orphan);
+
+    let respawned = crate::server::swarm_persistence::load_worker_spawn_spec(&new_session)
+        .expect("respawned worker records its spec");
+    assert_eq!(respawned.lane, "orphan lane");
+    assert_eq!(respawned.prompt, spec.prompt);
+    assert_eq!(respawned.last_status, None);
+    let consumed = crate::server::swarm_persistence::load_worker_spawn_spec(orphan)
+        .expect("orphan spec retained");
+    assert_eq!(consumed.last_status, None, "orphan marker consumed");
+
+    // Second retry must not double-spawn through the orphan path.
+    let again = tool
+        .execute(json!({"action": "retry", "target_session": orphan}), ctx)
+        .await;
+    if let Ok(out) = &again {
+        assert!(!out.output.contains("Respawned"), "double respawn: {}", out.output);
+    }
+
+    server_task.abort();
+}
