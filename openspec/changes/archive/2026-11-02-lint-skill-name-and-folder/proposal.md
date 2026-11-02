@@ -1,6 +1,6 @@
 # Proposal
 
-Roadmap owner: [P02: Discoverable native tools, MCP and skills provenance](../../../docs/plans/PRODUCT_ROADMAP.md#p02-discoverable-native-tools-mcp-and-skills-provenance).
+Roadmap owner: [P02: Discoverable native tools, MCP and skills provenance](../../../../docs/plans/PRODUCT_ROADMAP.md#p02-discoverable-native-tools-mcp-and-skills-provenance).
 
 ## Why
 
