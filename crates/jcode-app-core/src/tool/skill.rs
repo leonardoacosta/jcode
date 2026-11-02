@@ -448,6 +448,54 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_list_name_mismatch_warnings_and_load() {
+        for (folder, name, warns) in [
+            ("matching", "matching", false),
+            ("folder", "other", true),
+            ("Case", "case", true),
+            ("ns", "plugin:ns", false),
+            ("nested", "outer:plugin:nested", false),
+            ("prefixed-folder", "plugin:prefixed-other", true),
+            (" trimmed ", "trimmed", false),
+        ] {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let skill_dir = temp_dir.path().join(".jcode/skills").join(folder);
+            std::fs::create_dir_all(&skill_dir).unwrap();
+            std::fs::write(
+                skill_dir.join("SKILL.md"),
+                format!("---\nname: {name}\ndescription: Test skill\n---\nFixture body"),
+            )
+            .unwrap();
+            let tool = create_test_tool();
+            let mut ctx = create_test_context();
+            ctx.working_dir = Some(temp_dir.path().to_path_buf());
+
+            let list = tool
+                .execute(json!({"action": "list"}), ctx.clone())
+                .await
+                .unwrap();
+            let entry = list
+                .output
+                .split("\n\n")
+                .find(|entry| entry.starts_with(&format!("## /{name}\n")))
+                .expect("fixture skill should be listed under its frontmatter name");
+            assert_eq!(entry.contains("  Warning: "), warns, "{folder}: {entry}");
+            if warns {
+                assert!(entry.contains(&format!(
+                    "folder name '{folder}' does not match frontmatter name"
+                )));
+            }
+
+            let loaded = tool
+                .execute(json!({"action": "load", "name": name}), ctx)
+                .await
+                .unwrap();
+            assert!(loaded.output.starts_with(&format!("## Skill: {name}\n")));
+            assert!(loaded.output.contains("Fixture body"));
+        }
+    }
+
+    #[tokio::test]
     async fn test_list_includes_endorsed_skills() {
         let tool = create_test_tool();
         let ctx = create_test_context();
