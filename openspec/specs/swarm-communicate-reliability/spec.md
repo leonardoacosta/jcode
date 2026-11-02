@@ -60,3 +60,43 @@ The unknown-action error SHALL list exactly the actions in `ADVERTISED_SWARM_ACT
 
 - **WHEN** `background=false` and members do not finish within `timeout_minutes`
 - **THEN** the tool returns a timeout result naming the pending members
+
+### Requirement: Queue messages for busy workers
+The system SHALL queue non-interrupt messages addressed to a busy worker and deliver them at that worker's turn end.
+
+#### Scenario: DM to busy worker
+- **WHEN** a coordinator sends a DM to a worker mid-turn
+- **THEN** the sender SHALL receive a `queued` acknowledgement and the worker SHALL receive the message after its turn ends
+
+#### Scenario: Queue full
+- **WHEN** the queue exceeds its bound
+- **THEN** the oldest message SHALL be dropped and its sender notified
+
+### Requirement: Full worker reports returned to coordinator
+The system SHALL return a worker's complete final report from `summary` and `await_members`, without per-line truncation below the size cap.
+
+#### Scenario: Summary after report
+- **WHEN** a worker has submitted a report and the coordinator calls `summary` for it
+- **THEN** the output SHALL contain the full report body before any tool-call listing
+
+### Requirement: Report-based completion
+The system SHALL treat a member as done only when it submitted a report, and SHALL keep it done after it stops.
+
+#### Scenario: Ready without report
+- **WHEN** a member reaches `ready` without submitting a report
+- **THEN** `await_members` SHALL list it as `incomplete`
+
+#### Scenario: Reported then stopped
+- **WHEN** a member submitted a report and then stopped
+- **THEN** it SHALL count as done and SHALL NOT trigger a timeout wake-up
+
+### Requirement: Resolved worker model shown
+The system SHALL show each worker's resolved model and its source (`explicit`, `config`, `env`, `inherit`, `slot`) in spawn output and `swarm list`.
+
+#### Scenario: Config default applied
+- **WHEN** a worker is spawned without `model` and `agents.swarm_model` is set
+- **THEN** spawn output SHALL show that model with source `config`
+
+#### Scenario: Explicit model
+- **WHEN** a worker is spawned with `model`
+- **THEN** `swarm list` SHALL show that model with source `explicit`
