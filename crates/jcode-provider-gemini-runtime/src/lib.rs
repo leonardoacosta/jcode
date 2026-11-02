@@ -369,6 +369,9 @@ impl GeminiProvider {
             } else {
                 gemini_http_client()
             };
+            if url.contains(":generateContent") {
+                jcode_provider_core::provider_call_budget::record_call()?;
+            }
             match make(client).send().await {
                 Ok(response) => return Ok(response),
                 Err(err) if attempt == 0 && is_transient_gemini_transport_error(&err) => {
@@ -727,7 +730,7 @@ impl Provider for GeminiProvider {
         let provider = self.clone();
         let (tx, rx) = mpsc::channel::<Result<StreamEvent>>(100);
 
-        tokio::spawn(async move {
+        jcode_provider_core::provider_call_budget::spawn(async move {
             let _ = tx
                 .send(Ok(StreamEvent::ConnectionType {
                     connection: "https".to_string(),

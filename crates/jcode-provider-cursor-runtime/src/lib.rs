@@ -522,6 +522,7 @@ impl Provider for CursorCliProvider {
         system: &str,
         resume_session_id: Option<&str>,
     ) -> Result<EventStream> {
+        jcode_provider_core::provider_call_budget::reject_unmetered("Cursor CLI")?;
         let prompt = build_cli_prompt(system, messages);
         let model = self
             .model

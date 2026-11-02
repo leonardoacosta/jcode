@@ -1,5 +1,6 @@
 use super::response_recovery::{MalformedToolCallInfo, TextToolRecovery};
 use super::*;
+use jcode_provider_core::provider_call_budget;
 
 use super::streaming::{StreamUsageRecorder, find_wrap_marker_incremental};
 
@@ -56,6 +57,19 @@ fn incomplete_turn_stop(stop_reason: Option<&str>) -> Option<ServerEvent> {
 
 impl Agent {
     pub(super) async fn run_turn_streaming_mpsc(
+        &mut self,
+        event_tx: mpsc::UnboundedSender<ServerEvent>,
+    ) -> Result<()> {
+        let budget = self
+            .session
+            .council_id
+            .as_deref()
+            .map(crate::tool::council::provider_call_budget)
+            .transpose()?;
+        provider_call_budget::scope(budget, self.run_turn_streaming_budgeted(event_tx)).await
+    }
+
+    async fn run_turn_streaming_budgeted(
         &mut self,
         event_tx: mpsc::UnboundedSender<ServerEvent>,
     ) -> Result<()> {
@@ -273,13 +287,14 @@ impl Agent {
             let mut keepalive = stream_keepalive_ticker();
             let mut stream = {
                 provider.set_session_id(&self.session.id);
-                let mut complete_future = std::pin::pin!(provider.complete_split(
-                    send_messages,
-                    &tools,
-                    &split_prompt.static_part,
-                    &split_prompt.dynamic_part,
-                    resume_session_id.as_deref(),
-                ));
+                let mut complete_future =
+                    std::pin::pin!(provider_call_budget::completion(provider.complete_split(
+                        send_messages,
+                        &tools,
+                        &split_prompt.static_part,
+                        &split_prompt.dynamic_part,
+                        resume_session_id.as_deref(),
+                    )));
                 loop {
                     tokio::select! {
                         _ = keepalive.tick() => {
@@ -1654,7 +1669,7 @@ impl Agent {
                 let tool_input_for_spawn = tc.input.clone();
                 let client_terminal_env = crate::hooks::client_terminal_env()
                     .unwrap_or_else(crate::terminal_launch::snapshot_client_terminal_env);
-                let tool_handle = tokio::spawn(async move {
+                let tool_handle = jcode_provider_core::provider_call_budget::spawn(async move {
                     crate::hooks::with_client_terminal_env(client_terminal_env, async move {
                         registry_clone
                             .execute(&tool_name_for_spawn, tool_input_for_spawn, ctx)

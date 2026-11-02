@@ -3624,3 +3624,103 @@ async fn resume_heals_stale_credential_route_after_credential_type_change() {
         "workers inheriting the healed session must target the live credential"
     );
 }
+
+#[tokio::test]
+async fn council_provider_budget_covers_allowed_tool_followups_and_judge() {
+    let _lock = crate::storage::lock_test_env();
+    let home = tempfile::tempdir().unwrap();
+    struct RestoreHome(Option<std::ffi::OsString>);
+    impl Drop for RestoreHome {
+        fn drop(&mut self) {
+            match self.0.take() {
+                Some(home) => crate::env::set_var("JCODE_HOME", home),
+                None => crate::env::remove_var("JCODE_HOME"),
+            }
+        }
+    }
+    let _restore = RestoreHome(std::env::var_os("JCODE_HOME"));
+    crate::env::set_var("JCODE_HOME", home.path());
+    let budget_dir = home.path().join("councils/budget-followups/provider-calls");
+    std::fs::create_dir_all(&budget_dir).unwrap();
+    std::fs::write(budget_dir.join("limit"), "3").unwrap();
+    let evidence = home.path().join("evidence.txt");
+    std::fs::write(&evidence, "read-only evidence").unwrap();
+
+    struct ReadingProvider(Arc<std::sync::atomic::AtomicUsize>, String);
+    #[async_trait]
+    impl Provider for ReadingProvider {
+        async fn complete(
+            &self,
+            _messages: &[Message],
+            _tools: &[ToolDefinition],
+            _system: &str,
+            _resume: Option<&str>,
+        ) -> Result<EventStream> {
+            let call = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            let events = vec![
+                Ok(StreamEvent::ToolUseStart {
+                    id: format!("read-{call}"),
+                    name: "read".into(),
+                }),
+                Ok(StreamEvent::ToolInputDelta(
+                    serde_json::json!({"file_path": self.1}).to_string(),
+                )),
+                Ok(StreamEvent::ToolUseEnd),
+                Ok(StreamEvent::MessageEnd {
+                    stop_reason: Some("tool_use".into()),
+                }),
+            ];
+            Ok(Box::pin(futures::stream::iter(events)))
+        }
+        fn name(&self) -> &str {
+            "council-budget-fixture"
+        }
+        fn fork(&self) -> Arc<dyn Provider> {
+            Arc::new(Self(self.0.clone(), self.1.clone()))
+        }
+        fn model(&self) -> String {
+            "fixture".into()
+        }
+        fn available_models(&self) -> Vec<&'static str> {
+            vec![]
+        }
+        fn set_model(&self, _: &str) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let provider: Arc<dyn Provider> = Arc::new(ReadingProvider(
+        calls.clone(),
+        evidence.display().to_string(),
+    ));
+    // The next completion after each allowed read must draw from the same
+    // aggregate budget, including when another seat or the judge takes over.
+    for name in ["seat", "judge"] {
+        let registry = Registry::new(provider.clone()).await;
+        let mut session = Session::create(None, None);
+        session.council_id = Some("budget-followups".into());
+        let mut agent = Agent::new_with_session(provider.clone(), registry, session, None);
+        let result = tokio::time::timeout(
+            Duration::from_secs(5),
+            agent.run_once(&format!("{name}: read the evidence")),
+        )
+        .await;
+        assert!(
+            calls.load(std::sync::atomic::Ordering::SeqCst) <= 3,
+            "allowed-tool follow-ups exceeded the shared provider-call budget"
+        );
+        let error = result
+            .expect("budget exhaustion must terminate the turn")
+            .unwrap_err();
+        assert!(
+            format!("{error:#}").contains("provider-call budget exhausted"),
+            "{error:#}"
+        );
+    }
+    assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 3);
+    assert_eq!(
+        std::fs::read_to_string(evidence).unwrap(),
+        "read-only evidence"
+    );
+}

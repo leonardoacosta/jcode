@@ -19,7 +19,7 @@
 
 - [x] 4.1 Tests: seat-count rejection, call cap, timeout naming, early stop, split-vote verdict, edit rejected
 - [x] 4.2 Runtime check: isolated real-server socket with deterministic provider, 3 seats, unchanged fixture `git status`, exactly 7 provider calls, no live seats after, opening cancellation also removes seats
-- [ ] 4.3 Enforce an aggregate provider-call budget across allowed-tool follow-up completions and provider retries, not only council prompt dispatches
+- [x] 4.3 Enforce an aggregate provider-call budget across allowed-tool follow-up completions and provider retries, not only council prompt dispatches
 
 ### Verification evidence (2026-11-02)
 
@@ -37,6 +37,29 @@ Final-diff recheck `selfdev-build-aa40426c3df045eda1591c77739e5c89` also exited 
 
 The additional broad `cargo test -p jcode-app-core agent::tests:: --lib` check had 95 passed, 1 failed, 1 ignored. The failing existing `skill_installed_mid_session_keeps_system_prompt_stable_and_is_announced_once` assertion observed 2 announcements instead of 1. An exact-test rerun also failed. A separate tracked-source `git archive ec007f60f` fixture, tested with an explicit `--manifest-path` under the same compile lock (`selfdev-build-c15da21971d74ecea8dda564d8b8e693`), reproduced the same failure at its original line 3216. This failure predates the council diff and remains outside this scoped fix.
 
-The isolated workflow initially measured 11 provider calls despite a council counter of 7. Disabling council memory work reduced the measured count to 7. This verifies that workflow, not a universal API-call cap, hence 4.3 remains open. No live-provider smoke, shared-daemon reload or push ran.
+The isolated workflow initially measured 11 provider calls despite a council counter of 7. Disabling council memory work reduced the measured count to 7. That earlier fixture verified simple prompts only. Task 4.3 evidence below covers aggregate follow-ups and retries. No live-provider smoke, shared-daemon reload or push ran.
 
 Recovery uses persisted council identity, never a task-label guess. Pre-marker legacy seats cannot be safely identified automatically. Failed durable closure is logged. A failed spawn RPC before the seat ID reaches the caller may leave a seat until reload recovery.
+
+### Task 4.3 evidence (2026-11-02)
+
+Preflight: approved task 4.3 only, existing proposal/design/specs inspected alongside `1666d6386`. Exact shared regions were coordinated with the role-slots-internals worker. Existing read-only policy, concurrent MCP work and branch were preserved. No new protocol/session budget fields were needed: seats and judge reuse persisted `council_id`.
+
+Regression-first check `cargo test -p jcode-app-core council_provider_budget_covers_allowed_tool_followups_and_judge --lib -- --nocapture` failed before implementation with `allowed-tool follow-ups exceeded the shared provider-call budget` (`selfdev-build-1be41f80cab14a31a12cbd54fa595562`, exit 101). Earlier fixture/parallel-integration compile failures were fixed before this behavioral red result.
+
+Fresh final Rust gates ran through `selfdev test`, under the compile lock, using `set -e` without an output pipe. Request `selfdev-build-0246386567794681b55fd684dc1d968a` exited 0:
+
+| Command | Result |
+| --- | --- |
+| `cargo test -p jcode-provider-core --features tokio-tungstenite/handshake provider_call_budget --lib` | 5 passed, including six concurrent child processes sharing eight permits, retry/follow-up sharing, missing/corrupt state and failure/cancellation without refunds |
+| `cargo test -p jcode-app-core council --lib` | 14 passed, including actual allowed-read execution until exhaustion, a later judge denied by the same budget, unchanged evidence, and the isolated three-seat socket/cleanup test |
+| `cargo test -p jcode-provider-openrouter-runtime --lib` | 197 passed, 1 ignored live smoke requiring provider credentials. Real loopback HTTP 503 retries sent exactly two requests under a two-call cap, then blocked retry and later judge completion |
+| `cargo test -p jcode-provider-openai-runtime council_provider_budget --lib` | 1 passed: exhausted websocket inference retries cannot send another frame, Ping/Pong control frames remain uncharged |
+| `cargo test -p jcode-provider-core --features tokio-tungstenite/handshake transport:: --lib` | 6 passed |
+| `cargo check -p jcode` | Passed, including all changed provider integrations |
+
+`openspec validate add-council-tool --strict` and `git diff --check` passed. The explicit handshake feature is needed by existing standalone provider-core websocket tests; the first command without it failed on pre-existing handshake-gated test imports. No Cargo feature/dependency changes were made for that test setup.
+
+The cap now uses atomic, non-refundable filesystem permits across processes, seat/judge turns, allowed-tool completions, automatic compaction and provider retries. Consumed permits are conservatively reported as `calls`, including reservations lost to preparation failures/cancellation. They are not exact successful-request telemetry. Missing state fails closed. Cursor CLI, ChatGPT browser and Bedrock SDK council routes fail closed because hidden calls/retries cannot be metered at this boundary. Idle council prewarming is disabled. No live-provider request, daemon reload, stash/reset or push ran.
+
+This closes task 4.3 only. The proposal is not archived. Independent final-diff review and proposal-wide terminal closeout remain separate gates. The previously recorded skill-announcement baseline failure and recovery limitations above remain outside this task.

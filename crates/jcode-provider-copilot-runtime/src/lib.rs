@@ -536,6 +536,10 @@ impl CopilotApiProvider {
                 jcode_provider_core::fresh_transport_client()
             };
 
+            if let Err(error) = jcode_provider_core::provider_call_budget::record_call() {
+                let _ = tx.send(Err(error)).await;
+                return;
+            }
             let resp = attempt_client
                 .post(format!(
                     "{}/{}",
@@ -1040,7 +1044,7 @@ impl Provider for CopilotApiProvider {
             created_at: self.created_at,
         };
 
-        tokio::spawn(async move {
+        jcode_provider_core::provider_call_budget::spawn(async move {
             provider
                 .stream_request(canonical_payload, uses_responses_api, is_user_initiated, tx)
                 .await;

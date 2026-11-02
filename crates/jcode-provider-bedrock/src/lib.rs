@@ -1245,6 +1245,7 @@ impl Provider for BedrockProvider {
         system: &str,
         _resume_session_id: Option<&str>,
     ) -> Result<EventStream> {
+        jcode_provider_core::provider_call_budget::reject_unmetered("Bedrock SDK")?;
         Self::validate_credentials_if_requested().await?;
         let client = Self::runtime_client().await;
         let model = Self::opus_default_route(

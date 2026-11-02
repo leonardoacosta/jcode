@@ -675,3 +675,80 @@ fn grok_build_subscription_request_spoofs_grok_cli_and_uses_oidc_bearer() {
     assert_eq!(body["messages"][0]["role"], "system");
     assert!(body.get("reasoning_effort").is_none());
 }
+
+#[tokio::test]
+async fn council_provider_budget_stops_actual_http_retries_and_later_completion() {
+    use futures::StreamExt;
+    use jcode_provider_core::provider_call_budget::{ProviderCallBudget, completion, scope};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let calls = Arc::new(AtomicUsize::new(0));
+    let observed = calls.clone();
+    let server = tokio::spawn(async move {
+        loop {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = Vec::new();
+            let mut buffer = [0; 4096];
+            loop {
+                let read = socket.read(&mut buffer).await.unwrap();
+                assert_ne!(read, 0);
+                request.extend_from_slice(&buffer[..read]);
+                if let Some(end) = request.windows(4).position(|part| part == b"\r\n\r\n") {
+                    let headers = String::from_utf8_lossy(&request[..end]);
+                    let length: usize = headers
+                        .lines()
+                        .find_map(|line| {
+                            let (key, value) = line.split_once(':')?;
+                            key.eq_ignore_ascii_case("content-length")
+                                .then(|| value.trim().parse().unwrap())
+                        })
+                        .unwrap_or(0);
+                    if request.len() >= end + 4 + length {
+                        break;
+                    }
+                }
+            }
+            observed.fetch_add(1, Ordering::SeqCst);
+            let body = "{\"error\":{\"message\":\"overloaded\"}}";
+            socket.write_all(format!("HTTP/1.1 503 Service Unavailable\r\nRetry-After: 0\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", body.len(), body).as_bytes()).await.unwrap();
+        }
+    });
+    let directory = tempfile::tempdir().unwrap();
+    let budget = ProviderCallBudget::create(directory.path().to_path_buf(), 2).unwrap();
+    let mut provider = crate::tests::make_provider();
+    provider.api_base = format!("http://{address}/v1");
+    provider.supports_provider_features = false;
+    provider.supports_model_catalog = false;
+    let result = tokio::time::timeout(
+        Duration::from_secs(15),
+        scope(Some(budget.clone()), async {
+            let mut stream =
+                completion(provider.complete(&[Message::user("council seat")], &[], "", None))
+                    .await
+                    .unwrap();
+            let mut error = String::new();
+            while let Some(event) = stream.next().await {
+                if let Err(failure) = event {
+                    error = format!("{failure:#}");
+                }
+            }
+            assert!(error.contains("provider-call budget exhausted"), "{error}");
+            // Even a different seat/judge's next completion cannot escape the
+            // exhausted aggregate after the transport's internal retries.
+            assert!(
+                completion(provider.complete(&[Message::user("judge")], &[], "", None))
+                    .await
+                    .is_err()
+            );
+        }),
+    )
+    .await;
+    server.abort();
+    let _ = server.await;
+    result.expect("budget exhaustion must terminate retries");
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
+    assert_eq!(budget.used().unwrap(), 2);
+}

@@ -42,6 +42,7 @@ impl ChatGptWebState {
         system: &str,
         model: &str,
     ) -> Result<EventStream> {
+        jcode_provider_core::provider_call_budget::reject_unmetered("ChatGPT browser")?;
         let prompt = build_web_prompt(messages, tools, system)?;
         let model = model.to_string();
         let advertised_tools: Vec<String> = tools.iter().map(|tool| tool.name.clone()).collect();

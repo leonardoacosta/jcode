@@ -20,6 +20,13 @@ where
         > + Unpin,
 {
     use futures::SinkExt;
+    if matches!(&frame, tokio_tungstenite::tungstenite::Message::Text(_)) {
+        jcode_provider_core::provider_call_budget::record_call().map_err(|error| {
+            Box::new(tokio_tungstenite::tungstenite::Error::Io(
+                std::io::Error::other(error),
+            ))
+        })?;
+    }
     tokio::time::timeout(budget, socket.send(frame))
         .await
         .map_err(|_| {
@@ -145,6 +152,51 @@ mod tests {
                 "{effort} must request reasoning summaries"
             );
         }
+    }
+
+    #[tokio::test]
+    async fn council_provider_budget_stops_websocket_retry_frames() {
+        use jcode_provider_core::provider_call_budget::{ProviderCallBudget, scope};
+        use std::sync::{
+            Arc,
+            atomic::{AtomicUsize, Ordering},
+        };
+        use tokio_tungstenite::tungstenite::{Error, Message};
+
+        let directory = tempfile::tempdir().unwrap();
+        let budget = ProviderCallBudget::create(directory.path().to_path_buf(), 1).unwrap();
+        let sent = Arc::new(AtomicUsize::new(0));
+        let mut sink = Box::pin(futures::sink::unfold(sent.clone(), |sent, _| async move {
+            sent.fetch_add(1, Ordering::SeqCst);
+            Ok::<_, Error>(sent)
+        }));
+        scope(Some(budget.clone()), async {
+            let timeout = std::time::Duration::from_secs(1);
+            send_websocket_frame(&mut sink, Message::Ping(vec![]), timeout)
+                .await
+                .unwrap();
+            send_websocket_frame(
+                &mut sink,
+                Message::Text("{\"type\":\"response.create\"}".into()),
+                timeout,
+            )
+            .await
+            .unwrap();
+            let error = send_websocket_frame(
+                &mut sink,
+                Message::Text("{\"type\":\"response.create\"}".into()),
+                timeout,
+            )
+            .await
+            .unwrap_err();
+            assert!(error.to_string().contains("provider-call budget exhausted"));
+            send_websocket_frame(&mut sink, Message::Pong(vec![]), timeout)
+                .await
+                .unwrap();
+        })
+        .await;
+        assert_eq!(sent.load(Ordering::SeqCst), 3);
+        assert_eq!(budget.used().unwrap(), 1);
     }
 
     #[test]

@@ -2,6 +2,7 @@ use super::response_recovery::MalformedToolCallInfo;
 use super::streaming::StreamUsageRecorder;
 use super::*;
 use crate::{terminal_eprintln as eprintln, terminal_print as print, terminal_println as println};
+use jcode_provider_core::provider_call_budget;
 
 impl Agent {
     /// Speculatively prewarm the provider while a newly created session is idle.
@@ -11,6 +12,9 @@ impl Agent {
     /// customization can therefore still change the foreground tool snapshot;
     /// the provider is responsible for discarding an incompatible warmup.
     pub(crate) async fn prewarm_provider_idle(&self) {
+        if self.session.council_id.is_some() {
+            return;
+        }
         self.provider.set_session_id(&self.session.id);
         let tools = self.tool_definitions_for_debug().await;
         let split_prompt = self.build_system_prompt_split(None);
@@ -54,6 +58,16 @@ impl Agent {
     }
 
     pub(super) async fn run_turn(&mut self, print_output: bool) -> Result<String> {
+        let budget = self
+            .session
+            .council_id
+            .as_deref()
+            .map(crate::tool::council::provider_call_budget)
+            .transpose()?;
+        provider_call_budget::scope(budget, self.run_turn_budgeted(print_output)).await
+    }
+
+    async fn run_turn_budgeted(&mut self, print_output: bool) -> Result<String> {
         let _runtime_activity = crate::runtime_activity::global().try_enter()?;
         self.ensure_session_lease()?;
         self.set_log_context();
@@ -205,16 +219,14 @@ impl Agent {
             let prompt_has_recent_tool_result = Self::messages_end_with_tool_result(send_messages);
             self.last_status_detail = None;
             self.provider.set_session_id(&self.session.id);
-            let completion = self
-                .provider
-                .complete_split(
-                    send_messages,
-                    &tools,
-                    &split_prompt.static_part,
-                    &split_prompt.dynamic_part,
-                    self.provider_session_id.as_deref(),
-                )
-                .await;
+            let completion = provider_call_budget::completion(self.provider.complete_split(
+                send_messages,
+                &tools,
+                &split_prompt.static_part,
+                &split_prompt.dynamic_part,
+                self.provider_session_id.as_deref(),
+            ))
+            .await;
             self.sync_bound_account_route();
             let mut stream = match completion {
                 Ok(stream) => stream,

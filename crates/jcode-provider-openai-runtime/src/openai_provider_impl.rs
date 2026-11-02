@@ -381,7 +381,7 @@ impl Provider for OpenAIProvider {
         let client = self.client.clone();
         let panic_tx = tx.clone();
 
-        tokio::spawn(async move {
+        jcode_provider_core::provider_call_budget::spawn(async move {
             let stream_task = async move {
                 // Attempt persistent WebSocket continuation first
                 if use_websocket_transport {

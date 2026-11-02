@@ -19,6 +19,7 @@ pub async fn send_with_initial_response_timeout(
     request: reqwest::RequestBuilder,
     timeout: Duration,
 ) -> Result<reqwest::Response> {
+    crate::provider_call_budget::record_call()?;
     match tokio::time::timeout(timeout, request.send()).await {
         Ok(response) => Ok(response?),
         Err(_) => anyhow::bail!(

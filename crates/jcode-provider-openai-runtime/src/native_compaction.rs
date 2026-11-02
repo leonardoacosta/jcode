@@ -85,6 +85,7 @@ impl OpenAIProvider {
             }
         }
 
+        jcode_provider_core::provider_call_budget::record_call()?;
         let response = builder
             .json(&serde_json::json!({
                 "model": self.model_id().await,

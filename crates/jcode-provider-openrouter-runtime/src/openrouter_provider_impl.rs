@@ -332,7 +332,7 @@ impl Provider for OpenRouterProvider {
         let openai_responses_api = self.responses_api;
         let provider_pin = Arc::clone(&self.provider_pin);
 
-        tokio::spawn(async move {
+        jcode_provider_core::provider_call_budget::spawn(async move {
             if tx
                 .send(Ok(StreamEvent::ConnectionType {
                     connection: "https/sse".to_string(),
@@ -964,7 +964,7 @@ impl OpenRouterProvider {
         let api_base = self.api_base.clone();
         let conversation_id = self.conversation_id.clone();
         let provider_pin = Arc::clone(&self.provider_pin);
-        tokio::spawn(async move {
+        jcode_provider_core::provider_call_budget::spawn(async move {
             if tx
                 .send(Ok(StreamEvent::ConnectionType {
                     connection: "https/sse".to_string(),

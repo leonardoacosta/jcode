@@ -10,6 +10,7 @@ pub mod model_names;
 pub mod models;
 pub mod openai_schema;
 pub mod pricing;
+pub mod provider_call_budget;
 pub mod reasoning;
 pub mod request_compression;
 pub mod retry_after;

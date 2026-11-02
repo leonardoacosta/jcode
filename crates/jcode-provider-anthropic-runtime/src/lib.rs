@@ -1396,7 +1396,7 @@ impl Provider for AnthropicProvider {
 
         // Spawn task to handle streaming with retry logic.
         // This includes forced OAuth refresh on auth failures.
-        tokio::spawn(async move {
+        jcode_provider_core::provider_call_budget::spawn(async move {
             if tx
                 .send(Ok(StreamEvent::ConnectionType {
                     connection: "https/sse".to_string(),
@@ -1855,7 +1855,7 @@ impl Provider for AnthropicProvider {
         let retry_settings = reasoning_request::RetrySettings::from_provider(self);
 
         // Spawn task to handle streaming with retry logic
-        tokio::spawn(async move {
+        jcode_provider_core::provider_call_budget::spawn(async move {
             if tx
                 .send(Ok(StreamEvent::ConnectionType {
                     connection: "https/sse".to_string(),

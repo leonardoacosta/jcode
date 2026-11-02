@@ -10,6 +10,7 @@ use super::{Tool, ToolContext, ToolOutput};
 use crate::protocol::{CommDeliveryMode, HistoryMessage, Request, ServerEvent};
 use anyhow::{Result, anyhow, bail};
 use async_trait::async_trait;
+use jcode_provider_core::provider_call_budget::ProviderCallBudget;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, HashMap};
@@ -84,7 +85,10 @@ struct Council {
     rounds_done: u32,
     round_timeout_secs: u64,
     max_calls: u32,
+    #[serde(rename = "prompt_dispatches")]
     calls: u32,
+    #[serde(skip)]
+    provider_budget: ProviderCallBudget,
     transcript: Vec<Turn>,
     notes: Vec<String>,
     converged: bool,
@@ -96,6 +100,30 @@ static COUNCILS: LazyLock<Mutex<HashMap<String, Council>>> =
 
 fn councils() -> std::sync::MutexGuard<'static, HashMap<String, Council>> {
     COUNCILS.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+fn provider_budget_dir(id: &str) -> Result<std::path::PathBuf> {
+    if id.is_empty()
+        || !id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_'))
+    {
+        bail!("invalid council budget identity");
+    }
+    Ok(crate::storage::jcode_dir()?
+        .join("councils")
+        .join(id)
+        .join("provider-calls"))
+}
+
+pub(crate) fn provider_call_budget(id: &str) -> Result<ProviderCallBudget> {
+    ProviderCallBudget::open(provider_budget_dir(id)?)
+}
+
+fn snapshot(council: &Council) -> Value {
+    let mut value = json!(council);
+    value["calls"] = json!(council.provider_budget.used().ok());
+    value
 }
 
 /// Validate caps before any seat is spawned. Returns (rounds, max_calls).
@@ -365,7 +393,7 @@ fn persist(council: &Council) {
         "{}.council-{}.json",
         council.owner_session, council.id
     ));
-    if let Ok(body) = serde_json::to_vec_pretty(council) {
+    if let Ok(body) = serde_json::to_vec_pretty(&snapshot(council)) {
         let _ = std::fs::write(file, body);
     }
 }
@@ -429,7 +457,11 @@ fn summary(council: &Council) -> String {
         council.id,
         council.rounds_done,
         council.rounds,
-        council.calls,
+        council
+            .provider_budget
+            .used()
+            .map(|used| used.to_string())
+            .unwrap_or_else(|_| "unknown".into()),
         council.max_calls,
         council.converged,
         tally
@@ -456,6 +488,7 @@ async fn open(ctx: &ToolContext, input: &CouncilInput) -> Result<Council> {
         .collect();
     let (rounds, max_calls) = validate_caps(seats.len(), input.rounds, input.max_calls)?;
     let id = format!("c{}", &uuid_like(ctx));
+    let provider_budget = ProviderCallBudget::create(provider_budget_dir(&id)?, max_calls)?;
     let timeout = round_timeout_secs(
         input.timeout_secs.unwrap_or(DEFAULT_TOTAL_TIMEOUT_SECS),
         rounds,
@@ -499,6 +532,7 @@ async fn open(ctx: &ToolContext, input: &CouncilInput) -> Result<Council> {
         round_timeout_secs: timeout,
         max_calls,
         calls: 0,
+        provider_budget,
         transcript: Vec::new(),
         notes: Vec::new(),
         converged: false,
@@ -534,7 +568,14 @@ async fn round(ctx: &ToolContext, council: &mut Council) -> bool {
     }
     let need = council.seats.len() as u32;
     // Reserve one call for the verdict.
-    if council.calls + need + 1 > council.max_calls {
+    if council
+        .provider_budget
+        .used()
+        .unwrap_or(council.max_calls)
+        .saturating_add(need)
+        .saturating_add(1)
+        > council.max_calls
+    {
         council
             .notes
             .push("round refused: call cap reached; proceeding to verdict".to_string());
@@ -566,6 +607,12 @@ async fn round(ctx: &ToolContext, council: &mut Council) -> bool {
 }
 
 async fn verdict(ctx: &ToolContext, council: &mut Council) -> Result<Verdict> {
+    if council.provider_budget.used()? >= council.max_calls {
+        bail!(
+            "council provider-call budget exhausted (max_calls={})",
+            council.max_calls
+        );
+    }
     let tally = tally_votes(&council.transcript, council.rounds_done);
     let judge = spawn_seat(
         ctx,
@@ -633,7 +680,7 @@ async fn close(ctx: &ToolContext, mut council: Council) -> Result<ToolOutput> {
         },
         ids.len()
     ))
-    .with_metadata(json!({ "council": council })))
+    .with_metadata(json!({ "council": snapshot(&council) })))
 }
 
 /// Stops a council's seats unless disarmed. Covers errors and cancellation in `run`.
@@ -710,7 +757,7 @@ impl Tool for CouncilTool {
                 },
                 "rounds": {"type": "integer", "minimum": 0, "maximum": 3, "description": "Debate rounds after openings. Default 1."},
                 "timeout_secs": {"type": "integer", "description": "Total time budget. Default 600."},
-                "max_calls": {"type": "integer", "description": "Seat-reply cap. Default seats*(rounds+1)+1."},
+                "max_calls": {"type": "integer", "description": "Aggregate provider-call budget across all seats and judge, including tool follow-ups and retries. Default seats*(rounds+1)+1."},
                 "message": {"type": "string", "description": "Convener message for say."}
             }
         })
@@ -818,8 +865,9 @@ mod tests {
         assert_eq!(validate_caps(3, Some(2), Some(4)).unwrap(), (2, 4));
     }
 
-    fn council(max_calls: u32) -> Council {
-        Council {
+    fn council(max_calls: u32) -> (Council, tempfile::TempDir) {
+        let directory = tempfile::tempdir().unwrap();
+        let council = Council {
             id: "t".into(),
             owner_session: "o".into(),
             topic: "x".into(),
@@ -838,17 +886,21 @@ mod tests {
             round_timeout_secs: 60,
             max_calls,
             calls: 0,
+            provider_budget: ProviderCallBudget::create(directory.path().to_path_buf(), max_calls)
+                .unwrap(),
             transcript: vec![],
             notes: vec![],
             converged: false,
             verdict: None,
-        }
+        };
+        (council, directory)
     }
 
     #[tokio::test]
     async fn round_refused_when_cap_reached() {
-        let mut c = council(3);
-        c.calls = 2;
+        let (mut c, _directory) = council(3);
+        c.provider_budget.acquire().unwrap();
+        c.provider_budget.acquire().unwrap();
         let ctx = ToolContext {
             session_id: "o".into(),
             message_id: "m".into(),
@@ -864,7 +916,7 @@ mod tests {
 
     #[test]
     fn timeout_names_late_seats_and_blocks_early_stop() {
-        let mut c = council(9);
+        let (mut c, _directory) = council(9);
         let late = record_round(&mut c, 0, vec![Some("ok\nVOTE: A".into()), None]);
         assert_eq!(late, vec!["b".to_string()]);
         assert!(!c.converged);
@@ -873,7 +925,7 @@ mod tests {
 
     #[test]
     fn unanimous_votes_converge() {
-        let mut c = council(9);
+        let (mut c, _directory) = council(9);
         record_round(
             &mut c,
             0,
