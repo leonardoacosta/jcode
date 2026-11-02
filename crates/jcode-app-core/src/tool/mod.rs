@@ -167,7 +167,6 @@ pub(crate) fn register_session_tool_policy(
     }
 }
 
-#[cfg(test)]
 pub(crate) fn set_session_tool_policy(
     session_id: &str,
     allowed_tools: Option<HashSet<String>>,
