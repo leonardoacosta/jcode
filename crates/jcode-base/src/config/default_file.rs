@@ -498,6 +498,10 @@ cross_provider_failover = "countdown"
 # Env override: JCODE_WAKE_MODE
 wake_mode = "internal"
 
+[swarm]
+# Per-file edit claims among swarm workers: "off", "warn" (default), "block".
+# file_claims = "warn"
+
 [agents]
 # Swarm root settings and defaults for helper agents (workers, subagents, sidecars).
 # All keys are optional; the values below are the built-in defaults.

@@ -608,6 +608,7 @@ pub(super) fn load_runtime_state() -> LoadedSwarmRuntimeState {
                 loaded_at_unix_ms,
                 terminal_retention,
             ) else {
+                super::swarm::unregister_claim_worker(&member_session_id);
                 pruned_terminal_members += 1;
                 pruned_members_by_swarm
                     .entry(member_swarm_id)
@@ -615,6 +616,15 @@ pub(super) fn load_runtime_state() -> LoadedSwarmRuntimeState {
                     .insert(member_session_id);
                 continue;
             };
+            if member.report_back_to_session_id.is_some() {
+                super::swarm::register_claim_worker(&member_session_id);
+            }
+            if matches!(
+                member.status.as_str(),
+                "completed" | "done" | "stopped" | "failed" | "crashed"
+            ) {
+                super::swarm::release_file_claims_of(&member_session_id);
+            }
             swarms_by_id
                 .entry(member_swarm_id.clone())
                 .or_default()

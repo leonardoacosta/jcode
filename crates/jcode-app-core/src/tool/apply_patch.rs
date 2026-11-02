@@ -101,6 +101,17 @@ impl Tool for ApplyPatchTool {
                 .await;
         }
         let hunks = parse_apply_patch(&params.patch_text)?;
+        let mut claim_warnings = Vec::new();
+        for hunk in &hunks {
+            let (path, destination) = match hunk {
+                PatchHunk::AddFile { path, .. } | PatchHunk::DeleteFile { path } => (path, None),
+                PatchHunk::UpdateFile { path, move_to, .. } => (path, move_to.as_ref()),
+            };
+            for path in std::iter::once(path).chain(destination) {
+                let resolved = ctx.resolve_path(Path::new(path));
+                claim_warnings.extend(crate::server::check_file_claim(&ctx.session_id, &resolved)?);
+            }
+        }
 
         // A patch can reach config.toml through any hunk kind (add, update,
         // move), so watch the file across the whole invocation rather than
@@ -394,6 +405,9 @@ impl Tool for ApplyPatchTool {
                         &new,
                     ));
                 }
+            }
+            for warning in &claim_warnings {
+                body.push_str(&format!("\n\n{warning}"));
             }
             let output = super::file_diff::attach(ToolOutput::new(body), unified);
             if touched_paths.len() == 1 {

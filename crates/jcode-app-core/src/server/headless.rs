@@ -253,6 +253,9 @@ pub(super) async fn create_headless_session(
 
     {
         let now = Instant::now();
+        if swarm_id.is_some() && report_back_to_session_id.is_some() {
+            super::swarm::register_claim_worker(&client_session_id);
+        }
         let mut members = swarm_members.write().await;
         members.insert(
             client_session_id.clone(),

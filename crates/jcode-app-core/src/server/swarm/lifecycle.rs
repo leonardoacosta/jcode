@@ -261,7 +261,7 @@ pub(in crate::server) async fn remove_session_from_swarm(
     .await;
     remove_plan_participant(swarm_id, session_id, swarm_plans).await;
     // Removal covers stop, crash and orphan detection: free its file claims.
-    release_file_claims_of(session_id);
+    unregister_claim_worker(session_id);
 
     {
         let mut swarms = swarms_by_id.write().await;
@@ -722,7 +722,11 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
     swarm_event_tx: Option<&broadcast::Sender<SwarmEvent>>,
 ) {
     let completion_report = normalize_completion_report(completion_report);
-    if matches!(status, "completed" | "done" | "stopped" | "failed" | "crashed") {
+    if matches!(
+        status,
+        "completed" | "done" | "stopped" | "failed" | "crashed"
+    ) || (status == "ready" && completion_report.is_some())
+    {
         release_file_claims_of(session_id);
     }
     let detail_present = detail.is_some();

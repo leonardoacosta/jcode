@@ -558,6 +558,15 @@ pub struct AuthConfig {
     pub trusted_external_source_paths: Vec<String>,
 }
 
+/// Swarm coordination settings (`[swarm]`).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SwarmConfig {
+    /// Per-file edit claims among swarm workers: `off`, `warn` (default),
+    /// or `block`.
+    pub file_claims: Option<String>,
+}
+
 /// Agent-specific model defaults.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]

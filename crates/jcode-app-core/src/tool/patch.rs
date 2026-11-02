@@ -87,8 +87,10 @@ impl Tool for PatchTool {
         // Never apply a later failure after silently overwriting earlier files.
         let mut prepared = Vec::new();
         let mut seen = std::collections::HashSet::new();
+        let mut claim_warnings = Vec::new();
         for patch in &patches {
             let path = ctx.resolve_path(Path::new(&patch.path));
+            claim_warnings.extend(crate::server::check_file_claim(&ctx.session_id, &path)?);
             let key = std::fs::canonicalize(&path).unwrap_or_else(|_| path.clone());
             anyhow::ensure!(seen.insert(key), "duplicate patch path: {}", path.display());
             prepared.push(prepare_patch(patch, path).await?);
@@ -107,6 +109,7 @@ impl Tool for PatchTool {
             }
         }
 
+        results.extend(claim_warnings);
         let mut body = results.join("\n\n");
         config_watch.finish(&mut body);
         Ok(ToolOutput::new(body))

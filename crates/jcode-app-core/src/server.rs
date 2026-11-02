@@ -644,6 +644,7 @@ use self::state::{
     session_event_fanout_sender, unregister_session_event_sender,
 };
 pub use crate::plan::{SwarmTaskProgress, VersionedPlan};
+pub(crate) use self::swarm::check_file_claim;
 
 pub use self::await_members_state::pending_await_members_for_session;
 #[cfg(test)]

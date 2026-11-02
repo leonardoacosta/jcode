@@ -324,6 +324,7 @@ pub(super) async fn handle_comm_status(
             stalled_secs: super::swarm_watchdog::stalled_for_secs(&target_session),
             joined_age_secs: Some(member.joined_at.elapsed().as_secs()),
             files_touched,
+            file_claims: super::swarm::file_claims_held_by(&target_session),
             activity,
             provider_name,
             provider_model,

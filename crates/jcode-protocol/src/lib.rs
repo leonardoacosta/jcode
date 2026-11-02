@@ -506,6 +506,9 @@ pub struct AgentStatusSnapshot {
     pub joined_age_secs: Option<u64>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub files_touched: Vec<String>,
+    /// Paths this member holds swarm file claims on.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub file_claims: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub activity: Option<SessionActivitySnapshot>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

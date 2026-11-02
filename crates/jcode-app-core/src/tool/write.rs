@@ -58,6 +58,7 @@ impl Tool for WriteTool {
         let params: WriteInput = serde_json::from_value(input)?;
 
         let path = ctx.resolve_path(Path::new(&params.file_path));
+        let claim_warning = crate::server::check_file_claim(&ctx.session_id, &path)?;
 
         // Create parent directories if needed
         if let Some(parent) = path.parent()
@@ -137,6 +138,9 @@ impl Tool for WriteTool {
             old_content.as_deref().unwrap_or(""),
             &params.content,
         );
+        if let Some(warning) = claim_warning {
+            body.push_str(&format!("\n\n{warning}"));
+        }
 
         let output = ToolOutput::new(body).with_title(params.file_path.clone());
         // Do not claim an authoritative diff when the old file was unreadable.

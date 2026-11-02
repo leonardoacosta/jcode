@@ -222,6 +222,7 @@ fn test_comm_status_response_roundtrip() -> Result<()> {
             stalled_secs: None,
             joined_age_secs: Some(30),
             files_touched: vec!["src/main.rs".to_string()],
+            file_claims: Vec::new(),
             activity: Some(SessionActivitySnapshot {
                 is_processing: true,
                 current_tool_name: Some("bash".to_string()),

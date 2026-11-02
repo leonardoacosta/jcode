@@ -435,6 +435,7 @@ fn format_status_snapshot_includes_activity_and_metadata() {
         stalled_secs: None,
         joined_age_secs: Some(42),
         files_touched: vec!["src/server/comm_sync.rs".to_string()],
+        file_claims: Vec::new(),
         activity: Some(SessionActivitySnapshot {
             is_processing: true,
             current_tool_name: Some("bash".to_string()),

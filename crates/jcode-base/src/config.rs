@@ -12,7 +12,7 @@ pub use jcode_config_types::{
     NamedProviderConfig, NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig,
     NotificationsConfig, PowerConfig, ProviderConfig, ReasoningDisplayMode, SafetyConfig,
     SessionConfig, SessionPickerResumeAction, SessionRetentionConfig, SessionsConfig,
-    SponsorsConfig, SwarmSpawnMode, SwarmStripLayout, TerminalConfig, UpdateChannel,
+    SponsorsConfig, SwarmConfig, SwarmSpawnMode, SwarmStripLayout, TerminalConfig, UpdateChannel,
     WebSearchConfig, WebSearchEngine,
 };
 use serde::{Deserialize, Serialize};
@@ -643,6 +643,9 @@ pub struct Config {
 
     /// Agent-specific model defaults
     pub agents: AgentsConfig,
+
+    /// Swarm coordination settings
+    pub swarm: SwarmConfig,
 
     /// Terminal window/pane spawning configuration
     pub terminal: TerminalConfig,

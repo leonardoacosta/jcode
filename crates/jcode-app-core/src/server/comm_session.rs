@@ -519,6 +519,7 @@ async fn register_visible_spawned_member(
         ("spawned".to_string(), Some("launching client".to_string()))
     };
 
+    super::swarm::register_claim_worker(session_id);
     {
         let mut members = swarm_members.write().await;
         members.insert(

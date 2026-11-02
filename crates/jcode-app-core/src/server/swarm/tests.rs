@@ -73,7 +73,7 @@ fn append_swarm_completion_report_instructions_is_idempotent() {
     );
 }
 
-fn swarm_member(
+pub(super) fn swarm_member(
     session_id: &str,
     role: &str,
     is_headless: bool,

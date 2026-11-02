@@ -429,6 +429,9 @@ pub fn format_comm_status_snapshot(snapshot: &AgentStatusSnapshot) -> String {
     } else {
         output.push_str(&format!("  Files: {}\n", snapshot.files_touched.join(", ")));
     }
+    if !snapshot.file_claims.is_empty() {
+        output.push_str(&format!("  Claims: {}\n", snapshot.file_claims.join(", ")));
+    }
 
     output
 }
