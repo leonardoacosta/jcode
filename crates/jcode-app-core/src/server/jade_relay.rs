@@ -1211,7 +1211,16 @@ async fn deliver_to_session(
         if queued {
             return Ok("Message queued for the running session.".to_string());
         }
-        anyhow::bail!("session '{session_id}' is busy and could not accept a queued interrupt")
+        let (len, dropped) = enqueue_pending(session_id, text.to_string());
+        if len == 1 {
+            spawn_pending_drain(session_id.to_string(), agent, swarm_members);
+        }
+        let notice = if dropped.is_some() {
+            format!(" Queue full ({PENDING_QUEUE_LIMIT}); oldest pending message dropped.")
+        } else {
+            String::new()
+        };
+        return Ok(format!("queued: session busy; message {len} will run at turn end.{notice}"));
     }
 
     let start_message_index = {
@@ -1225,6 +1234,59 @@ async fn deliver_to_session(
         agent_guard.latest_assistant_text_after(start_message_index)
     };
     Ok(reply.unwrap_or_else(|| "Message processed; no assistant text was produced.".to_string()))
+}
+
+const PENDING_QUEUE_LIMIT: usize = 32;
+
+static PENDING_MESSAGES: std::sync::LazyLock<
+    std::sync::Mutex<HashMap<String, std::collections::VecDeque<String>>>,
+> = std::sync::LazyLock::new(Default::default);
+
+/// Append to a busy session's FIFO. Returns new length and any dropped oldest message.
+fn enqueue_pending(session_id: &str, text: String) -> (usize, Option<String>) {
+    let mut map = PENDING_MESSAGES.lock().unwrap_or_else(|e| e.into_inner());
+    let queue = map.entry(session_id.to_string()).or_default();
+    let dropped = if queue.len() >= PENDING_QUEUE_LIMIT {
+        queue.pop_front()
+    } else {
+        None
+    };
+    queue.push_back(text);
+    (queue.len(), dropped)
+}
+
+fn take_pending(session_id: &str) -> Vec<String> {
+    let mut map = PENDING_MESSAGES.lock().unwrap_or_else(|e| e.into_inner());
+    map.remove(session_id)
+        .map(|q| q.into_iter().collect())
+        .unwrap_or_default()
+}
+
+/// Wait for the session's current turn to end, then inject queued messages as next input.
+fn spawn_pending_drain(
+    session_id: String,
+    agent: Arc<tokio::sync::Mutex<crate::agent::Agent>>,
+    swarm_members: Arc<RwLock<HashMap<String, SwarmMember>>>,
+) {
+    tokio::spawn(async move {
+        loop {
+            drop(agent.lock().await);
+            let pending = take_pending(&session_id);
+            if pending.is_empty() {
+                return;
+            }
+            let text = pending.join("\n\n");
+            let event_tx = session_event_fanout_sender(session_id.clone(), Arc::clone(&swarm_members));
+            if let Err(err) =
+                process_message_streaming_mpsc(Arc::clone(&agent), &text, Vec::new(), None, event_tx)
+                    .await
+            {
+                crate::logging::warn(&format!(
+                    "jade relay: queued delivery to {session_id} failed: {err}"
+                ));
+            }
+        }
+    });
 }
 
 async fn deliver_to_launched_session(
@@ -1419,6 +1481,28 @@ mod tests {
         assert_eq!(urlencoding_encode("sess-relay-test"), "sess-relay-test");
         assert_eq!(urlencoding_encode("a/b c"), "a%2Fb%20c");
         assert_eq!(urlencoding_encode("user.name~1_2"), "user.name~1_2");
+    }
+
+    #[test]
+    fn pending_queue_is_fifo_and_drains_once() {
+        let id = "test-pending-fifo";
+        assert_eq!(enqueue_pending(id, "a".into()), (1, None));
+        assert_eq!(enqueue_pending(id, "b".into()), (2, None));
+        assert_eq!(take_pending(id), vec!["a".to_string(), "b".to_string()]);
+        assert!(take_pending(id).is_empty());
+    }
+
+    #[test]
+    fn pending_queue_drops_oldest_past_bound() {
+        let id = "test-pending-bound";
+        for i in 0..PENDING_QUEUE_LIMIT {
+            assert_eq!(enqueue_pending(id, i.to_string()).1, None);
+        }
+        let (len, dropped) = enqueue_pending(id, "new".into());
+        assert_eq!((len, dropped.as_deref()), (PENDING_QUEUE_LIMIT, Some("0")));
+        let drained = take_pending(id);
+        assert_eq!(drained.first().map(String::as_str), Some("1"));
+        assert_eq!(drained.last().map(String::as_str), Some("new"));
     }
 
     #[test]
