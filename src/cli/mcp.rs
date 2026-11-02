@@ -90,12 +90,7 @@ fn render_list(rows: &[Value]) -> String {
     output
 }
 
-fn import_plan(
-    target: &mut McpConfig,
-    source: &str,
-    imported: McpConfig,
-    apply: bool,
-) -> String {
+fn import_plan(target: &mut McpConfig, source: &str, imported: McpConfig, apply: bool) -> String {
     let (added, skipped) = target.merge_import(imported);
     let mut out = format!(
         "{} {} server(s) from {source}",
@@ -319,9 +314,15 @@ mod tests {
         }}))
         .unwrap();
         let out = import_plan(&mut target, "claude", imported, false);
-        assert!(out.contains("Would import 1 server(s) from claude: fresh"), "{out}");
+        assert!(
+            out.contains("Would import 1 server(s) from claude: fresh"),
+            "{out}"
+        );
         assert!(out.contains("Skipped 1 existing name(s): local"), "{out}");
         assert!(out.contains("--apply"));
-        assert_eq!(target.servers["local"].command, "test", "conflict must not overwrite");
+        assert_eq!(
+            target.servers["local"].command, "test",
+            "conflict must not overwrite"
+        );
     }
 }

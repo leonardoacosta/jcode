@@ -419,7 +419,9 @@ pub struct McpConfig {
 impl McpConfig {
     /// Whether `server`'s `tool` should be a direct model tool.
     pub fn is_direct_tool(&self, server: &str, tool: &str) -> bool {
-        self.servers.get(server).is_some_and(McpServerConfig::is_direct)
+        self.servers
+            .get(server)
+            .is_some_and(McpServerConfig::is_direct)
             || self
                 .pin_tools
                 .iter()

@@ -1320,7 +1320,10 @@ done
         let (ok, failed) = manager.connect_all().await.unwrap();
         assert_eq!((ok, failed.len()), (0, 0));
         assert!(manager.connected_servers().await.is_empty());
-        let err = manager.call_tool("s", "t", serde_json::json!({})).await.unwrap_err();
+        let err = manager
+            .call_tool("s", "t", serde_json::json!({}))
+            .await
+            .unwrap_err();
         assert!(format!("{err:#}").contains("out of scope"));
         assert!(manager.connected_servers().await.is_empty());
     }
@@ -1334,10 +1337,12 @@ done
         };
         let manager = scoped_manager(server, "/");
         manager.connect_all().await.unwrap();
-        assert!(manager.connected_servers().await.is_empty(), "lazy must not autostart");
+        assert!(
+            manager.connected_servers().await.is_empty(),
+            "lazy must not autostart"
+        );
         // The fake server never answers tools/call; the call still connects.
         let _ = manager.call_tool("s", "t", serde_json::json!({})).await;
         assert_eq!(manager.connected_servers().await, vec!["s".to_string()]);
     }
 }
-
