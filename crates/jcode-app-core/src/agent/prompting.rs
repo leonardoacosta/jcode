@@ -156,7 +156,7 @@ impl Agent {
             .as_ref()
             .map(std::path::PathBuf::from);
 
-        let (split, _context_info) = crate::prompt::build_system_prompt_split_with_agents_md(
+        let (mut split, _context_info) = crate::prompt::build_system_prompt_split_with_agents_md(
             skill_prompt.as_deref(),
             available_skills,
             self.session.is_canary,
@@ -164,6 +164,14 @@ impl Agent {
             working_dir.as_deref(),
             self.agents_md_snapshot.clone(),
         );
+        if self.session.input_compression_profile()
+            == jcode_provider_core::InputCompressionProfile::Exact
+        {
+            split.dynamic_part.push_str(
+                "\n\n## Final review output\nReport complete findings, risks, and verification evidence. \
+                 Inherited terse or ultra-terse output styles must not omit review details.\n",
+            );
+        }
 
         split
     }

@@ -40,6 +40,12 @@ async fn gateway_input_policy_tracks_durable_roles_and_reports_direct_routes() {
             .configure_input_compression()
             .contains("requested: jcode-conservative")
     );
+    assert!(
+        !agent
+            .build_system_prompt_split(None)
+            .dynamic_part
+            .contains("## Final review output")
+    );
     agent.session.parent_id = Some("synthetic-parent".into());
     agent.session.worker_role = Some("edit".into());
     assert!(
@@ -47,12 +53,48 @@ async fn gateway_input_policy_tracks_durable_roles_and_reports_direct_routes() {
             .configure_input_compression()
             .contains("requested: jcode-optimized")
     );
+    assert!(
+        !agent
+            .build_system_prompt_split(None)
+            .dynamic_part
+            .contains("## Final review output")
+    );
     agent.session.council_id = Some("synthetic-review".into());
     assert!(
         agent
             .configure_input_compression()
             .contains("requested: off")
     );
+    assert!(
+        agent
+            .build_system_prompt_split(None)
+            .dynamic_part
+            .contains("## Final review output")
+    );
+    assert!(
+        agent
+            .build_system_prompt_split(None)
+            .dynamic_part
+            .contains("complete findings, risks, and verification evidence")
+    );
+    agent.session.council_id = None;
+    agent.session.worker_role = Some("council".into());
+    assert!(
+        agent
+            .build_system_prompt_split(None)
+            .dynamic_part
+            .contains("## Final review output")
+    );
+    assert!(
+        agent
+            .build_system_prompt_split(None)
+            .dynamic_part
+            .contains("complete findings, risks, and verification evidence")
+    );
+    agent.session.system_prompt = Some("explicit review prompt".into());
+    let split = agent.build_system_prompt_split(None);
+    assert_eq!(split.static_part, "explicit review prompt");
+    assert!(split.dynamic_part.is_empty());
     assert_eq!(*seen.lock().unwrap(), vec![Conservative, Optimized, Exact]);
 
     let provider: Arc<dyn Provider> = Arc::new(EffortProvider { effort: None });
