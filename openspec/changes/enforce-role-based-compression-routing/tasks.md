@@ -22,7 +22,7 @@
 ## 4. TypeSafe Jev side quest
 
 - [x] 4.1 Verify production JevClient explicitly selects TypeSafe, uses the existing secret-safe credential resolver, and never substitutes another provider.
-- [ ] 4.2 Execute one bounded live synthetic TypeSafe evaluation and verify parsed schema and expected decision. Record exact command and sanitized endpoint/provider/model/result evidence, or a specific blocker.
+- [x] 4.2 Execute one bounded live synthetic TypeSafe evaluation and verify parsed schema and expected decision. Record exact command and sanitized endpoint/provider/model/result evidence, or a specific blocker.
 
 ## 5. Terminal gates
 
@@ -80,3 +80,17 @@ The final production code remains `e05ce8c4c`; later commits change evidence onl
 | Installed and served final code, artifact hygiene | Launcher `~/.local/bin/jcode`, shared-server symlink, and `/proc/6537/exe` resolve `e05ce8c4c-dirty-63c59c7d05a9`; executable reports `v0.99.171-dev`. No production crate diff exists between that commit and evidence HEAD. Strict OpenSpec and diffcheck passed again. | Actual installed executable identity plus project validation, not merely a successful build. Unrelated driver, deletion, and untracked paths remain excluded. |
 
 Failure clusters are separate: local request-scoped attribution is missing despite successful completions; TypeSafe lacks its own credential before any HTTP call. Neither can be remediated by relabeling fixtures, echoing requested selectors, substituting a provider, or bypassing the gateway fencing/drain guard. Full feature acceptance and archive remain blocked. No production change followed these fresh observations, so the prior independent final-code reviews remain applicable; this table records coordinator observations, not a new independent live review.
+
+## TypeSafe acceptance unblocked, 2026-11-02 21:43 UTC
+
+The user identified and authorized the existing TypeSafe key in `opsh`. A presence-only check confirmed that `opsh -c` injects `TYPESAFE_API_KEY`. No value was printed, copied to a credential file, passed in command arguments, or committed.
+
+Coordinated task `818558j5eu` ran the real production-client test:
+
+```bash
+opsh -c 'JCODE_MEMORY_JEV_PROVIDER=typesafe scripts/dev_cargo.sh test -p jcode-base --lib live_typesafe_jev_returns_expected_choice -- --ignored --nocapture --test-threads=1'
+```
+
+Observed result: exit 0, one test passed. Sanitized production response evidence: `provider=typesafe model=jev-latest endpoint=https://api.typesafe.ai/v1/systemone schema=valid choice=green`. This is the actual selected TypeSafe service and parsed expected decision, not a substitute provider or a mocked response. Task 4.2 is now complete. Earlier missing-credential observations describe attempts outside the `opsh` environment and are superseded as a current blocker by this successful scoped invocation. This does not provision the credential into the long-lived daemon or change its configuration.
+
+Overall acceptance and task 5.4 remain blocked only by unresolved gateway requirements 3.2/3.4, including local Responses applied-profile/exact attestation and its verified safe replacement prerequisites. Local opt-in remains off. No gateway change, push, or archive accompanies this evidence update.
