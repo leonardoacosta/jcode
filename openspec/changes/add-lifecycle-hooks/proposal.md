@@ -31,4 +31,4 @@ jcode has one hook: `spawn_hook` (`crates/jcode-config-types/src/lib.rs:806-821`
 
 ## Approval
 
-Approved 2026-11-01 with recommended defaults; hook mode design C recommended, pending user confirmation.
+Approved 2026-11-01 with recommended defaults; hook mode design C confirmed by user 2026-11-02.
