@@ -419,6 +419,7 @@ pub struct MultiProvider {
     active_openai_compatible_profile: RwLock<Option<String>>,
     /// Stable application session identity, retained across runtime replacement.
     session_id: RwLock<Option<String>>,
+    input_compression_profile: RwLock<Option<jcode_provider_core::InputCompressionProfile>>,
     active: RwLock<ActiveProvider>,
     /// Notifications generated during provider/account auto-selection.
     /// The TUI should drain and display these on session start.
@@ -455,6 +456,9 @@ impl MultiProvider {
     fn bind_provider_session(&self, provider: &dyn Provider) {
         if let Some(session_id) = self.bound_session_id() {
             provider.set_session_id(&session_id);
+        }
+        if let Some(profile) = *self.input_compression_profile.read().unwrap_or_else(|e| e.into_inner()) {
+            provider.set_input_compression_profile(profile);
         }
     }
 
@@ -1782,6 +1786,17 @@ impl Default for MultiProvider {
 
 #[async_trait]
 impl Provider for MultiProvider {
+    fn set_input_compression_profile(
+        &self,
+        profile: jcode_provider_core::InputCompressionProfile,
+    ) -> bool {
+        *self.input_compression_profile.write().unwrap_or_else(|e| e.into_inner()) = Some(profile);
+        self.active_provider() == ActiveProvider::OpenRouter
+            && self
+                .active_openrouter_execution_provider()
+                .is_some_and(|provider| provider.set_input_compression_profile(profile))
+    }
+
     fn set_session_id(&self, session_id: &str) {
         *self
             .session_id
@@ -3052,6 +3067,9 @@ impl Provider for MultiProvider {
             openai_compatible_profiles: RwLock::new(HashMap::new()),
             active_openai_compatible_profile: RwLock::new(None),
             session_id: RwLock::new(self.bound_session_id()),
+            input_compression_profile: RwLock::new(
+                *self.input_compression_profile.read().unwrap_or_else(|e| e.into_inner()),
+            ),
             active: RwLock::new(active),
             startup_notices: RwLock::new(Vec::new()),
             initial_provider: self.initial_provider,

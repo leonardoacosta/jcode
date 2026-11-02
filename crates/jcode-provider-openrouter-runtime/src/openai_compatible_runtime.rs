@@ -56,6 +56,7 @@ impl OpenRouterProvider {
             .unwrap_or_else(|| DEFAULT_MODEL.to_string());
 
         Ok(Self {
+            input_compression_profile: None,
             responses_api: false,
             client: jcode_provider_core::shared_http_client(),
             model: Arc::new(RwLock::new(model)),

@@ -369,6 +369,17 @@ pub fn derive_session_provider_key(provider_name: &str) -> Option<String> {
 }
 
 impl Session {
+    pub fn input_compression_profile(&self) -> jcode_provider_core::InputCompressionProfile {
+        use jcode_provider_core::InputCompressionProfile;
+        if self.council_id.is_some() || self.worker_role.as_deref() == Some("council") {
+            InputCompressionProfile::Exact
+        } else if self.parent_id.is_some() && self.worker_role.as_deref() == Some("edit") {
+            InputCompressionProfile::Optimized
+        } else {
+            InputCompressionProfile::Conservative
+        }
+    }
+
     pub fn is_read_only_worker(&self) -> bool {
         self.council_id.is_some()
             || self

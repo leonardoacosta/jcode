@@ -1375,6 +1375,7 @@ fn make_endpoint(name: &str, throughput: f64, uptime: f64, cache: bool, cost: f6
 
 pub(super) fn make_provider() -> OpenRouterProvider {
     OpenRouterProvider {
+        input_compression_profile: None,
         responses_api: false,
         client: jcode_provider_core::shared_http_client(),
         model: Arc::new(RwLock::new(DEFAULT_MODEL.to_string())),
@@ -1411,6 +1412,7 @@ pub(super) fn make_provider() -> OpenRouterProvider {
 
 fn make_custom_compatible_provider() -> OpenRouterProvider {
     OpenRouterProvider {
+        input_compression_profile: None,
         responses_api: false,
         client: jcode_provider_core::shared_http_client(),
         model: Arc::new(RwLock::new(DEFAULT_MODEL.to_string())),
@@ -1474,29 +1476,51 @@ fn spawn_single_response_models_server(body: &'static str) -> (String, mpsc::Rec
 }
 
 fn spawn_single_response_chat_server() -> (String, mpsc::Receiver<String>) {
+    spawn_response_chat_server(1, None)
+}
+
+fn spawn_response_chat_server(
+    request_count: usize,
+    receipt_override: Option<&'static str>,
+) -> (String, mpsc::Receiver<String>) {
     let listener = TcpListener::bind("127.0.0.1:0").expect("bind fake provider server");
     let addr = listener.local_addr().expect("fake provider addr");
     let (request_tx, request_rx) = mpsc::channel();
 
     std::thread::spawn(move || {
-        let (mut stream, _) = listener.accept().expect("accept fake provider request");
-        stream
-            .set_read_timeout(Some(Duration::from_secs(2)))
-            .expect("set read timeout");
-        let mut request = vec![0u8; 16384];
-        let n = stream.read(&mut request).unwrap_or(0);
-        let request = String::from_utf8_lossy(&request[..n]).into_owned();
-        let _ = request_tx.send(request);
+        for _ in 0..request_count {
+            let (mut stream, _) = listener.accept().expect("accept fake provider request");
+            stream
+                .set_read_timeout(Some(Duration::from_secs(2)))
+                .expect("set read timeout");
+            let mut request = vec![0u8; 16384];
+            let n = stream.read(&mut request).unwrap_or(0);
+            let request = String::from_utf8_lossy(&request[..n]).into_owned();
+            let normalized = request.to_ascii_lowercase();
+            let receipt = ["off", "jcode-conservative", "jcode-optimized"]
+                .into_iter()
+                .find(|profile| {
+                    normalized.contains(&format!("x-omniroute-compression: {profile}\r\n"))
+                })
+                .map(|profile| {
+                    format!("X-OmniRoute-Compression: {profile}; source=request-header\r\n")
+                })
+                .unwrap_or_default();
+            let receipt = receipt_override
+                .map(|value| format!("X-OmniRoute-Compression: {value}\r\n"))
+                .unwrap_or(receipt);
+            let _ = request_tx.send(request);
 
-        let body = "data: [DONE]\n\n";
-        let response = format!(
-            "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-            body.len(),
-            body
-        );
-        stream
-            .write_all(response.as_bytes())
-            .expect("write fake provider response");
+            let body = "data: [DONE]\n\n";
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n{receipt}Content-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream
+                .write_all(response.as_bytes())
+                .expect("write fake provider response");
+        }
     });
 
     (format!("http://{addr}/v1"), request_rx)
@@ -3141,6 +3165,7 @@ fn midstream_transport_fault_emits_retry_rollback_before_replay() {
             "test-model".to_string(),
             false,
             false,
+            None,
         )
         .await;
 

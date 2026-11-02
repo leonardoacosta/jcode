@@ -196,6 +196,7 @@ pub(super) async fn run_stream_with_retries(
     model: String,
     responses_api: bool,
     openai_responses_api: bool,
+    input_compression_profile: Option<&'static str>,
 ) {
     let mut last_error = None;
     let mut next_retry_delay = None;
@@ -286,6 +287,7 @@ pub(super) async fn run_stream_with_retries(
             gateway_retry.then(|| started + GATEWAY_RETRY_BUDGET),
             responses_api,
             openai_responses_api,
+            input_compression_profile,
         )
         .await
         {
@@ -390,6 +392,7 @@ async fn stream_response(
     gateway_deadline: Option<std::time::Instant>,
     responses_api: bool,
     openai_responses_api: bool,
+    input_compression_profile: Option<&'static str>,
 ) -> Result<()> {
     use jcode_message_types::ConnectionPhase;
     let _ = tx
@@ -426,6 +429,12 @@ async fn stream_response(
         &api_base,
         Some(&model),
     );
+
+    if let Some(profile) = input_compression_profile {
+        req = req
+            .header("x-omniroute-compression", profile)
+            .header("x-omniroute-no-cache", "true");
+    }
 
     if send_openrouter_headers {
         req = req
@@ -468,6 +477,37 @@ async fn stream_response(
         connect_ms,
         response.status()
     ));
+
+    if response.status().is_success()
+        && let Some(profile) = input_compression_profile
+    {
+        let receipt = response
+            .headers()
+            .get("x-omniroute-compression")
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| {
+                let mut fields = value.split(';');
+                let received = fields.next()?.trim();
+                ((received == profile || received == "stacked")
+                    && fields.any(|field| field.trim() == "source=request-header"))
+                .then_some(received)
+            });
+        let detail = match receipt {
+            Some(received) if received == profile => {
+                format!(
+                    "Gateway input policy requested: {profile}; receipt: {profile}/request-header"
+                )
+            }
+            Some(_) => format!(
+                "Gateway input policy requested: {profile}; receipt: stacked/request-header; named profile unverified"
+            ),
+            None => format!(
+                "Gateway input policy requested: {profile}; receipt unavailable or not request-scoped"
+            ),
+        };
+        jcode_base::logging::info(&detail);
+        let _ = tx.send(Ok(StreamEvent::StatusDetail { detail })).await;
+    }
 
     if !response.status().is_success() {
         let status = response.status();

@@ -5,6 +5,17 @@ use jcode_base::provider::{ModelCatalogRefreshSummary, summarize_model_catalog_r
 
 #[async_trait]
 impl Provider for OpenRouterProvider {
+    fn set_input_compression_profile(
+        &self,
+        profile: jcode_provider_core::InputCompressionProfile,
+    ) -> bool {
+        let Some(current) = &self.input_compression_profile else {
+            return false;
+        };
+        *current.write().unwrap_or_else(|e| e.into_inner()) = profile;
+        true
+    }
+
     fn runtime_display_name(&self) -> String {
         OpenRouterProvider::runtime_display_name(self)
     }
@@ -325,6 +336,12 @@ impl Provider for OpenRouterProvider {
         let client = self.client.clone();
         let api_base = self.api_base.clone();
         let auth = (self.auth)()?;
+        let input_compression_profile = self.input_compression_profile.as_ref().map(|profile| {
+            profile
+                .read()
+                .unwrap_or_else(|e| e.into_inner())
+                .header_value()
+        });
         let send_openrouter_headers = self.send_openrouter_headers;
         let conversation_id = self.conversation_id.clone();
         let request_for_retries = request;
@@ -355,6 +372,7 @@ impl Provider for OpenRouterProvider {
                 model_for_stream,
                 responses_api,
                 openai_responses_api,
+                input_compression_profile,
             )
             .await;
         });
@@ -870,6 +888,9 @@ impl Provider for OpenRouterProvider {
             supports_provider_features: self.supports_provider_features,
             supports_model_catalog: self.supports_model_catalog,
             profile_id: self.profile_id.clone(),
+            input_compression_profile: self.input_compression_profile.as_ref().map(|profile| {
+                std::sync::RwLock::new(*profile.read().unwrap_or_else(|e| e.into_inner()))
+            }),
             builtin_azure: self.builtin_azure,
             reasoning_effort_support: self.reasoning_effort_support,
             disable_reasoning_heuristics: self.disable_reasoning_heuristics,
@@ -959,6 +980,12 @@ impl OpenRouterProvider {
             &[],
         );
         let auth = (self.auth)()?;
+        let input_compression_profile = self.input_compression_profile.as_ref().map(|profile| {
+            profile
+                .read()
+                .unwrap_or_else(|e| e.into_inner())
+                .header_value()
+        });
         let (tx, rx) = mpsc::channel::<Result<StreamEvent>>(100);
         let client = self.client.clone();
         let api_base = self.api_base.clone();
@@ -987,6 +1014,7 @@ impl OpenRouterProvider {
                 model,
                 false,
                 false,
+                input_compression_profile,
             )
             .await;
         });

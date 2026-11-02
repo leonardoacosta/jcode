@@ -353,6 +353,9 @@ impl Sidecar {
         let provider = self.provider.as_ref().context(
             "No active provider registered for sidecar; memory features require a logged-in provider",
         )?;
+        provider.set_input_compression_profile(
+            jcode_provider_core::InputCompressionProfile::Conservative,
+        );
         let (text, usage) = provider
             .complete_simple_with_usage(user_message, system)
             .await
@@ -1512,6 +1515,63 @@ mod tests {
                 reply: self.reply.clone(),
             })
         }
+    }
+
+    #[tokio::test]
+    async fn memory_input_compression_is_conservative_without_mutating_caller() {
+        use jcode_provider_core::{InputCompressionProfile, Provider};
+        let _guard = crate::storage::lock_test_env();
+        let temp = tempfile::TempDir::new().unwrap();
+        let _home = EnvVarGuard::set_path("JCODE_HOME", temp.path());
+        struct PolicyProvider(std::sync::Mutex<InputCompressionProfile>);
+        #[async_trait::async_trait]
+        impl Provider for PolicyProvider {
+            fn set_input_compression_profile(&self, profile: InputCompressionProfile) -> bool {
+                *self.0.lock().unwrap() = profile;
+                true
+            }
+            async fn complete(
+                &self,
+                _: &[crate::message::Message],
+                _: &[crate::message::ToolDefinition],
+                _: &str,
+                _: Option<&str>,
+            ) -> Result<crate::provider::EventStream> {
+                let profile = self.0.lock().unwrap().header_value().to_string();
+                Ok(Box::pin(futures::stream::once(async move {
+                    Ok(jcode_message_types::StreamEvent::TextDelta(profile))
+                })))
+            }
+            fn name(&self) -> &str {
+                "synthetic-policy"
+            }
+            fn model(&self) -> String {
+                "synthetic-memory".into()
+            }
+            fn fork(&self) -> Arc<dyn Provider> {
+                Arc::new(Self(std::sync::Mutex::new(*self.0.lock().unwrap())))
+            }
+        }
+        let caller = PolicyProvider(std::sync::Mutex::new(InputCompressionProfile::Optimized));
+        let sidecar = Sidecar {
+            client: crate::provider::shared_http_client(),
+            model: "synthetic-memory".into(),
+            max_tokens: DEFAULT_MAX_TOKENS,
+            backend: SidecarBackend::Provider,
+            provider: Some(caller.fork()),
+            reasoning_override: None,
+        };
+        assert_eq!(
+            sidecar
+                .complete("extract memory", "synthetic input")
+                .await
+                .unwrap(),
+            "jcode-conservative"
+        );
+        assert_eq!(
+            *caller.0.lock().unwrap(),
+            InputCompressionProfile::Optimized
+        );
     }
 
     /// Stub that records the model it was switched to.

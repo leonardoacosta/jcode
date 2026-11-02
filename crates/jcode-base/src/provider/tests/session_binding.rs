@@ -6,10 +6,16 @@ type Observed = Arc<Mutex<Vec<(&'static str, Option<String>)>>>;
 struct SessionRecordingProvider {
     session: RwLock<Option<String>>,
     observed: Observed,
+    input_policy: RwLock<Option<jcode_provider_core::InputCompressionProfile>>,
+    observed_policy: Arc<Mutex<Vec<Option<jcode_provider_core::InputCompressionProfile>>>>,
 }
 
 impl SessionRecordingProvider {
     fn record(&self, operation: &'static str) {
+        self.observed_policy
+            .lock()
+            .unwrap()
+            .push(*self.input_policy.read().unwrap());
         self.observed
             .lock()
             .unwrap()
@@ -19,6 +25,14 @@ impl SessionRecordingProvider {
 
 #[async_trait::async_trait]
 impl Provider for SessionRecordingProvider {
+    fn set_input_compression_profile(
+        &self,
+        profile: jcode_provider_core::InputCompressionProfile,
+    ) -> bool {
+        *self.input_policy.write().unwrap() = Some(profile);
+        true
+    }
+
     fn set_session_id(&self, session_id: &str) {
         *self.session.write().unwrap() = Some(session_id.to_owned());
     }
@@ -50,8 +64,44 @@ impl Provider for SessionRecordingProvider {
         Arc::new(Self {
             session: RwLock::new(self.session.read().unwrap().clone()),
             observed: Arc::clone(&self.observed),
+            input_policy: RwLock::new(*self.input_policy.read().unwrap()),
+            observed_policy: Arc::clone(&self.observed_policy),
         })
     }
+}
+
+#[test]
+fn input_compression_binding_survives_runtime_replacement_and_isolates_forks() {
+    use jcode_provider_core::InputCompressionProfile::{Conservative, Exact};
+    static RECORDING: std::sync::LazyLock<Arc<SessionRecordingProvider>> =
+        std::sync::LazyLock::new(|| Arc::new(SessionRecordingProvider::default()));
+    with_clean_provider_test_env(|| {
+        external::register_external_provider(external::CURSOR_RUNTIME, || RECORDING.fork());
+        enter_test_runtime().block_on(async {
+            let router = test_multi_provider_with_cursor();
+            let recording = Arc::clone(&RECORDING);
+            recording.observed_policy.lock().unwrap().clear();
+            *router.cursor.write().unwrap() = Some(recording.clone());
+            router.set_input_compression_profile(Exact);
+            router.prewarm(&[], "static").await;
+            let child = router.fork();
+            child.set_input_compression_profile(Conservative);
+            child.prewarm(&[], "static").await;
+            router.prewarm(&[], "static").await;
+            assert_eq!(
+                *recording.observed_policy.lock().unwrap(),
+                vec![Some(Exact), Some(Conservative), Some(Exact)]
+            );
+
+            let replacement = Arc::new(SessionRecordingProvider::default());
+            *router.cursor.write().unwrap() = Some(replacement.clone());
+            let _stream = router
+                .complete_on_provider(ActiveProvider::Cursor, &[], &[], "system", None)
+                .await
+                .unwrap();
+            assert_eq!(*replacement.input_policy.read().unwrap(), Some(Exact));
+        });
+    });
 }
 
 #[test]
@@ -132,6 +182,7 @@ fn session_binding_new_session_fork_starts_unbound() {
                 Arc::new(SessionRecordingProvider {
                     session: RwLock::new(None),
                     observed: Arc::clone(&OBSERVED),
+                    ..Default::default()
                 })
             });
             OBSERVED.lock().unwrap().clear();

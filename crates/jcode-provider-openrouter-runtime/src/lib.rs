@@ -823,6 +823,8 @@ pub fn maybe_schedule_standard_openrouter_catalog_refresh(context: &'static str)
 type AuthResolver = Arc<dyn Fn() -> anyhow::Result<ProviderAuth> + Send + Sync>;
 
 pub struct OpenRouterProvider {
+    input_compression_profile:
+        Option<std::sync::RwLock<jcode_provider_core::InputCompressionProfile>>,
     responses_api: bool,
     client: Client,
     model: Arc<RwLock<String>>,
@@ -1459,6 +1461,21 @@ impl OpenRouterProvider {
                     jcode_base::config::NamedProviderType::OpenRouter
                 ),
             profile_id: Some(profile_name.to_string()),
+            input_compression_profile: profile
+                .headers
+                .iter()
+                .find(|(name, _)| name.eq_ignore_ascii_case("x-omniroute-compression"))
+                .and_then(|(_, value)| match value.as_str() {
+                    "jcode-conservative" => {
+                        Some(jcode_provider_core::InputCompressionProfile::Conservative)
+                    }
+                    "jcode-optimized" => {
+                        Some(jcode_provider_core::InputCompressionProfile::Optimized)
+                    }
+                    "off" => Some(jcode_provider_core::InputCompressionProfile::Exact),
+                    _ => None,
+                })
+                .map(std::sync::RwLock::new),
             builtin_azure: false,
             reasoning_effort_support: profile.supports_reasoning_effort,
             disable_reasoning_heuristics: profile.disable_reasoning_heuristics,
@@ -1694,6 +1711,7 @@ impl OpenRouterProvider {
         ));
 
         Ok(Self {
+            input_compression_profile: None,
             responses_api: false,
             client: jcode_provider_core::shared_http_client(),
             model: Arc::new(RwLock::new(model)),
@@ -1752,6 +1770,7 @@ impl OpenRouterProvider {
             })
             .collect();
         Self {
+            input_compression_profile: None,
             responses_api: false,
             client: jcode_provider_core::shared_http_client(),
             model: Arc::new(RwLock::new(model.to_string())),
@@ -1808,6 +1827,7 @@ impl OpenRouterProvider {
         auth()?;
 
         Ok(Self {
+            input_compression_profile: None,
             responses_api: false,
             client: jcode_provider_core::shared_http_client(),
             model: Arc::new(RwLock::new(DEFAULT_MODEL.to_string())),
@@ -2016,6 +2036,7 @@ impl OpenRouterProvider {
 
         handle.spawn(async move {
             let provider = OpenRouterProvider {
+                input_compression_profile: None,
                 responses_api: false,
                 client,
                 model: Arc::new(RwLock::new(model_name.clone())),

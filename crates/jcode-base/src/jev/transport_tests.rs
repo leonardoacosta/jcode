@@ -1,6 +1,46 @@
 use super::{tests::*, *};
 
 #[tokio::test]
+#[ignore = "requires an existing TypeSafe credential and explicit live-test authorization"]
+async fn live_typesafe_jev_returns_expected_choice() -> Result<()> {
+    ensure!(
+        std::env::var(PROVIDER_ENV).as_deref() == Ok("typesafe"),
+        "select TypeSafe explicitly with JCODE_MEMORY_JEV_PROVIDER=typesafe"
+    );
+    let client = JevClient::new()?;
+    ensure!(client.provider_name() == "typesafe", "unexpected Jev route");
+    ensure!(
+        client.endpoint == "https://api.typesafe.ai/v1/systemone",
+        "unexpected TypeSafe endpoint"
+    );
+    let questions = json!({"signal": {
+        "type": "choice",
+        "instructions": "Choose the color stated in the signal field. Do not infer another color.",
+        "criteria": {"green": "The signal is green", "red": "The signal is red"}
+    }})
+    .as_object()
+    .unwrap()
+    .clone();
+    let answer = tokio::time::timeout(
+        Duration::from_secs(30),
+        client.evaluate(json!({"signal": "green"}), questions),
+    )
+    .await
+    .context("TypeSafe live decision timed out")??;
+    ensure!(
+        answer["answers"]["signal"]["choice"] == "green",
+        "TypeSafe did not return the expected synthetic decision"
+    );
+    println!(
+        "TypeSafe live Jev passed: provider={} model={} endpoint={} schema=valid choice=green",
+        client.provider_name(),
+        client.model_id(),
+        client.endpoint
+    );
+    Ok(())
+}
+
+#[tokio::test]
 async fn browser_subscription_checks_browser_capability_and_posts_choice() {
     let answer =
         json!({"answers": {"action": {"type": "choice", "choice": "click", "confidence": 0.9}}});

@@ -66,6 +66,9 @@ impl Agent {
             .as_deref()
             .map(crate::tool::council::provider_call_budget)
             .transpose()?;
+        let _ = event_tx.send(ServerEvent::StatusDetail {
+            detail: self.configure_input_compression(),
+        });
         provider_call_budget::scope(budget, self.run_turn_streaming_budgeted(event_tx)).await
     }
 

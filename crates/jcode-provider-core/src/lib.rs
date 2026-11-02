@@ -78,9 +78,31 @@ use std::time::Duration;
 /// Stream of events from a provider.
 pub type EventStream = Pin<Box<dyn Stream<Item = Result<StreamEvent>> + Send>>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InputCompressionProfile {
+    Conservative,
+    Optimized,
+    Exact,
+}
+
+impl InputCompressionProfile {
+    pub fn header_value(self) -> &'static str {
+        match self {
+            Self::Conservative => "jcode-conservative",
+            Self::Optimized => "jcode-optimized",
+            Self::Exact => "off",
+        }
+    }
+}
+
 /// Provider trait for LLM backends.
 #[async_trait]
 pub trait Provider: Send + Sync {
+    /// Returns false when the selected route has not opted into gateway profiles.
+    fn set_input_compression_profile(&self, _profile: InputCompressionProfile) -> bool {
+        false
+    }
+
     /// Bind requests to a stable application session for provider-side affinity.
     /// This is distinct from a provider response id used to resume a stream.
     /// Backends without session-affinity support can retain the default no-op.

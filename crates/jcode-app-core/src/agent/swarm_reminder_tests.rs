@@ -1,6 +1,66 @@
 use super::*;
 use async_trait::async_trait;
 
+#[tokio::test]
+async fn gateway_input_policy_tracks_durable_roles_and_reports_direct_routes() {
+    use jcode_provider_core::InputCompressionProfile::{self, Conservative, Exact, Optimized};
+    let _home = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+    struct PolicyProvider(Arc<std::sync::Mutex<Vec<InputCompressionProfile>>>);
+    #[async_trait]
+    impl Provider for PolicyProvider {
+        fn set_input_compression_profile(&self, profile: InputCompressionProfile) -> bool {
+            self.0.lock().unwrap().push(profile);
+            true
+        }
+        async fn complete(
+            &self,
+            _: &[Message],
+            _: &[ToolDefinition],
+            _: &str,
+            _: Option<&str>,
+        ) -> Result<crate::provider::EventStream> {
+            anyhow::bail!("no inference in policy forwarding test")
+        }
+        fn name(&self) -> &str {
+            "synthetic-gateway"
+        }
+        fn model(&self) -> String {
+            "synthetic-model".into()
+        }
+        fn fork(&self) -> Arc<dyn Provider> {
+            Arc::new(Self(Arc::clone(&self.0)))
+        }
+    }
+    let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let provider: Arc<dyn Provider> = Arc::new(PolicyProvider(Arc::clone(&seen)));
+    let registry = Registry::new(Arc::clone(&provider)).await;
+    let mut agent = Agent::new(provider, registry);
+    assert!(
+        agent
+            .configure_input_compression()
+            .contains("requested: jcode-conservative")
+    );
+    agent.session.parent_id = Some("synthetic-parent".into());
+    agent.session.worker_role = Some("edit".into());
+    assert!(
+        agent
+            .configure_input_compression()
+            .contains("requested: jcode-optimized")
+    );
+    agent.session.council_id = Some("synthetic-review".into());
+    assert!(
+        agent
+            .configure_input_compression()
+            .contains("requested: off")
+    );
+    assert_eq!(*seen.lock().unwrap(), vec![Conservative, Optimized, Exact]);
+
+    let provider: Arc<dyn Provider> = Arc::new(EffortProvider { effort: None });
+    let registry = Registry::new(Arc::clone(&provider)).await;
+    let agent = Agent::new(provider, registry);
+    assert!(agent.configure_input_compression().contains("unavailable"));
+}
+
 #[derive(Clone)]
 struct EffortProvider {
     effort: Option<String>,
