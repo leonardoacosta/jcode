@@ -29,7 +29,10 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
     let _swarm_model = EnvGuard::remove("JCODE_SWARM_MODEL");
     crate::config::invalidate_config_cache();
 
-    struct CouncilProvider(Arc<std::sync::atomic::AtomicUsize>);
+    struct CouncilProvider(
+        Arc<std::sync::atomic::AtomicUsize>,
+        Arc<std::sync::atomic::AtomicBool>,
+    );
     #[async_trait]
     impl Provider for CouncilProvider {
         async fn complete(
@@ -39,7 +42,7 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
             system: &str,
             resume: Option<&str>,
         ) -> Result<EventStream> {
-            let call = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             assert!(
                 tools
                     .iter()
@@ -47,9 +50,13 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
                         .contains(&tool.name.as_str())),
                 "seat advertised a mutating tool"
             );
-            // After the bounded run, keep the cancellation probe mid-opening.
+            // Keep only the cancellation probe mid-opening.
             DelayedTestProvider {
-                delay: Duration::from_millis(if call < 7 { 1 } else { 30_000 }),
+                delay: Duration::from_millis(if self.1.load(std::sync::atomic::Ordering::SeqCst) {
+                    30_000
+                } else {
+                    1
+                }),
             }
             .complete(messages, tools, system, resume)
             .await
@@ -58,11 +65,15 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
             "test"
         }
         fn fork(&self) -> Arc<dyn Provider> {
-            Arc::new(Self(self.0.clone()))
+            Arc::new(Self(self.0.clone(), self.1.clone()))
         }
     }
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-    let server = Arc::new(Server::new(Arc::new(CouncilProvider(calls.clone()))));
+    let delay_opening = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let server = Arc::new(Server::new(Arc::new(CouncilProvider(
+        calls.clone(),
+        delay_opening.clone(),
+    ))));
     let mut server_task = tokio::spawn(async move { server.run().await });
     wait_for_server_socket(&socket, &mut server_task)
         .await
@@ -112,6 +123,72 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
         members.iter().all(|member| member.session_id == session_id),
         "council seats still live: {members:?}"
     );
+    for obstruction in ["directory", "unwritable"] {
+        let output = crate::tool::council::CouncilTool::new()
+            .execute(json!({
+                "action": "open", "topic": "Persistence failure cleanup", "rounds": 0,
+                "seats": [{"name": "one", "brief": "First view"}, {"name": "two", "brief": "Second view"}]
+            }), ctx.clone()).await.unwrap();
+        let id = output.output.split_whitespace().nth(1).unwrap();
+        let transcript = crate::session::session_path(&ctx.session_id)
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join(format!("{}.council-{id}.json", ctx.session_id));
+        let permissions = std::fs::metadata(&transcript).unwrap().permissions();
+        if obstruction == "directory" {
+            std::fs::remove_file(&transcript).unwrap();
+            std::fs::create_dir(&transcript).unwrap();
+        } else {
+            let mut readonly = permissions.clone();
+            readonly.set_readonly(true);
+            std::fs::set_permissions(&transcript, readonly).unwrap();
+        }
+        let seats: Vec<_> = owner
+            .comm_list(&session_id)
+            .await
+            .unwrap()
+            .into_iter()
+            .filter(|member| member.session_id != session_id)
+            .map(|member| member.session_id)
+            .collect();
+        assert_eq!(seats.len(), 2);
+        let result = crate::tool::council::CouncilTool::new()
+            .execute(json!({"action": "round", "council_id": id}), ctx.clone())
+            .await;
+        if obstruction == "unwritable" {
+            std::fs::set_permissions(&transcript, permissions).unwrap();
+        }
+        assert!(
+            result.is_err(),
+            "{obstruction} transcript persistence failure was suppressed"
+        );
+        assert!(format!("{:#}", result.unwrap_err()).contains("persist council transcript"));
+        tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                if owner
+                    .comm_list(&session_id)
+                    .await
+                    .unwrap()
+                    .iter()
+                    .all(|member| member.session_id == session_id)
+                {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .expect("persistence failure left live seats");
+        for seat in seats {
+            assert!(matches!(
+                crate::session::Session::load(&seat).unwrap().status,
+                crate::session::SessionStatus::Closed
+            ));
+        }
+    }
+    let calls_before_opening = calls.load(std::sync::atomic::Ordering::SeqCst);
+    delay_opening.store(true, std::sync::atomic::Ordering::SeqCst);
     let opening = tokio::spawn(async move {
         crate::tool::council::CouncilTool::new().execute(json!({
             "action": "open", "topic": "Abort during opening", "rounds": 0,
@@ -119,7 +196,7 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
         }), ctx).await
     });
     tokio::time::timeout(Duration::from_secs(5), async {
-        while calls.load(std::sync::atomic::Ordering::SeqCst) == 7 {
+        while calls.load(std::sync::atomic::Ordering::SeqCst) == calls_before_opening {
             tokio::time::sleep(Duration::from_millis(10)).await;
         }
     })

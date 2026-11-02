@@ -8,7 +8,7 @@
 use super::communicate::transport::send_request;
 use super::{Tool, ToolContext, ToolOutput};
 use crate::protocol::{CommDeliveryMode, HistoryMessage, Request, ServerEvent};
-use anyhow::{Result, anyhow, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use async_trait::async_trait;
 use jcode_provider_core::provider_call_budget::ProviderCallBudget;
 use serde::{Deserialize, Serialize};
@@ -141,6 +141,11 @@ pub(crate) fn validate_caps(
     }
     let default_calls = seat_count as u32 * (rounds + 1) + 1;
     let max_calls = max_calls.unwrap_or(default_calls);
+    if max_calls > default_calls {
+        bail!(
+            "max_calls {max_calls} exceeds the maximum {default_calls} for {seat_count} seats and {rounds} rounds"
+        );
+    }
     // Opening statements plus the verdict must always fit.
     let floor = seat_count as u32 + 1;
     if max_calls < floor {
@@ -384,18 +389,20 @@ async fn barrier(
     }
 }
 
-fn persist(council: &Council) {
-    let Ok(path) = crate::session::session_path(&council.owner_session) else {
-        return;
-    };
-    let Some(dir) = path.parent() else { return };
+fn persist(council: &Council) -> Result<()> {
+    let path = crate::session::session_path(&council.owner_session)
+        .context("resolve council transcript path")?;
+    let dir = path
+        .parent()
+        .ok_or_else(|| anyhow!("council transcript path has no parent"))?;
     let file = dir.join(format!(
         "{}.council-{}.json",
         council.owner_session, council.id
     ));
-    if let Ok(body) = serde_json::to_vec_pretty(&snapshot(council)) {
-        let _ = std::fs::write(file, body);
-    }
+    let body =
+        serde_json::to_vec_pretty(&snapshot(council)).context("serialize council transcript")?;
+    std::fs::write(&file, body)
+        .with_context(|| format!("persist council transcript {}", file.display()))
 }
 
 fn record_round(council: &mut Council, round: u32, replies: Vec<Option<String>>) -> Vec<String> {
@@ -444,9 +451,10 @@ fn take(id: &str) -> Result<Council> {
         .ok_or_else(|| anyhow!("unknown council_id '{id}'"))
 }
 
-fn put(council: Council) {
-    persist(&council);
+fn put(council: Council) -> Result<()> {
+    persist(&council)?;
     councils().insert(council.id.clone(), council);
+    Ok(())
 }
 
 fn summary(council: &Council) -> String {
@@ -666,7 +674,7 @@ async fn close(ctx: &ToolContext, mut council: Council) -> Result<ToolOutput> {
     let ids: Vec<_> = council.seats.iter().map(|s| s.session_id.clone()).collect();
     stop_seats(ctx, &ids).await;
     guard.ids.clear();
-    persist(&council);
+    persist(&council)?;
     let v = result?;
     Ok(ToolOutput::new(format!(
         "{}\nVERDICT: {}\ntally: {:?}\ndissent: {}\nseats stopped: {}",
@@ -757,7 +765,7 @@ impl Tool for CouncilTool {
                 },
                 "rounds": {"type": "integer", "minimum": 0, "maximum": 3, "description": "Debate rounds after openings. Default 1."},
                 "timeout_secs": {"type": "integer", "description": "Total time budget. Default 600."},
-                "max_calls": {"type": "integer", "description": "Aggregate provider-call budget across all seats and judge, including tool follow-ups and retries. Default seats*(rounds+1)+1."},
+                "max_calls": {"type": "integer", "description": "Aggregate provider-call budget across all seats and judge, including tool follow-ups and retries. May lower but not exceed seats*(rounds+1)+1."},
                 "message": {"type": "string", "description": "Convener message for say."}
             }
         })
@@ -776,9 +784,9 @@ impl Tool for CouncilTool {
                 let council = open(&ctx, &input).await?;
                 let mut guard = SeatGuard::for_council(&ctx, &council);
                 let mut council = council;
-                persist(&council);
+                persist(&council)?;
                 while !council.converged && round(&ctx, &mut council).await {
-                    persist(&council);
+                    persist(&council)?;
                 }
                 if council.converged && council.rounds_done < council.rounds {
                     council.notes.push(format!(
@@ -792,8 +800,10 @@ impl Tool for CouncilTool {
             }
             "open" => {
                 let council = open(&ctx, &input).await?;
+                let mut guard = SeatGuard::for_council(&ctx, &council);
                 let out = format!("{}\n\n{}", summary(&council), format_transcript(&council.transcript));
-                put(council);
+                put(council)?;
+                guard.ids.clear();
                 Ok(ToolOutput::new(out))
             }
             "round" => {
@@ -807,7 +817,7 @@ impl Tool for CouncilTool {
                 } else {
                     format!("round refused (rounds or call cap exhausted); call close.\n{}", summary(&council))
                 };
-                put(council);
+                put(council)?;
                 guard.ids.clear();
                 Ok(ToolOutput::new(out))
             }
@@ -821,7 +831,7 @@ impl Tool for CouncilTool {
                         failed.push(seat.name.clone());
                     }
                 }
-                put(council);
+                put(council)?;
                 guard.ids.clear();
                 Ok(ToolOutput::new(if failed.is_empty() {
                     "sent to all seats".to_string()
@@ -863,6 +873,18 @@ mod tests {
     fn call_cap_below_floor_is_rejected() {
         assert!(validate_caps(3, Some(2), Some(3)).is_err());
         assert_eq!(validate_caps(3, Some(2), Some(4)).unwrap(), (2, 4));
+    }
+
+    #[test]
+    fn call_cap_above_formula_is_rejected() {
+        for (seats, rounds) in [(2, 0), (2, 1), (3, 2), (4, 3)] {
+            let maximum = seats as u32 * (rounds + 1) + 1;
+            assert!(validate_caps(seats, Some(rounds), Some(maximum + 1)).is_err());
+            assert_eq!(
+                validate_caps(seats, Some(rounds), Some(maximum)).unwrap().1,
+                maximum
+            );
+        }
     }
 
     fn council(max_calls: u32) -> (Council, tempfile::TempDir) {

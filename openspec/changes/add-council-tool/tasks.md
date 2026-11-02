@@ -62,4 +62,26 @@ Fresh final Rust gates ran through `selfdev test`, under the compile lock, using
 
 The cap now uses atomic, non-refundable filesystem permits across processes, seat/judge turns, allowed-tool completions, automatic compaction and provider retries. Consumed permits are conservatively reported as `calls`, including reservations lost to preparation failures/cancellation. They are not exact successful-request telemetry. Missing state fails closed. Cursor CLI, ChatGPT browser and Bedrock SDK council routes fail closed because hidden calls/retries cannot be metered at this boundary. Idle council prewarming is disabled. No live-provider request, daemon reload, stash/reset or push ran.
 
-This closes task 4.3 only. The proposal is not archived. Independent final-diff review and proposal-wide terminal closeout remain separate gates. The previously recorded skill-announcement baseline failure and recovery limitations above remain outside this task.
+This records the initial task 4.3 implementation, not final closure. Independent review of `da30d346b` returned NOT READY and reopened 4.3. The proposal is not archived. The previously recorded skill-announcement baseline failure and recovery limitations above remain outside this task.
+
+### Independent-review follow-up (2026-11-02)
+
+The reviewer identified a background-compaction budget escape through `runtime_activity::ActivityGate::spawn`, acceptance of `max_calls` above the specified formula, and suppressed transcript persistence errors. The repairs preserve the budget in the shared admission/spawn helper, reject formula-exceeding caps before spawn, and propagate all persistence errors while cleanup guards remain active.
+
+Regression-first request `selfdev-build-f1099438222943078ecdcbe2efffff4e` recorded exit 101 for the upper-cap and transcript-directory regressions. Its compaction test first needed a fixture-only Debug-bound correction. Corrected request `selfdev-build-fd880027063349abb04d7278bbe2d204` then failed behaviorally with `native background compaction escaped budget (automatic=false)`, exit 101. First repaired request `selfdev-build-3d9ddc7b73814ae5ac464bb872ea2048` passed background compaction, runtime admission and all 15 council tests.
+
+The background regression exercises manual and automatic compaction with exhausted valid three-call shared budgets, native/text/opaque routes, and a retry denied after spending the last remaining permit. The isolated server regression obstructs the transcript with a directory and an unwritable file, expects an operation error, and verifies both seats close, no members remain and the worktree fixture stays unchanged.
+
+A broader parallel compaction run (`selfdev-build-64e63b157104438ba3c501c9f57f574e`) found existing shared-config test interference: the max-context test temporarily sets a 50,000-token cap while two older estimate tests do not take its environment lock. Result: 45 passed, 2 failed, 2 ignored. No unrelated estimator/config/test assertions were changed. The new regression takes the existing environment lock; the full compaction gate is rerun with `--test-threads=1` to avoid that global-config race. Fresh final repair request `selfdev-build-6ba758b5f0e443e58c3c38fc64546338` exited 0 under the `selfdev test` compile lock, with `set -e` and no output pipe. The cancellation fixture now delays only the cancellation probe, so persistence cases do not wait for artificial 30-second replies.
+
+| Final repair command | Result |
+| --- | --- |
+| `cargo test -p jcode-base compaction --lib -- --test-threads=1` | 47 passed, 2 existing compatibility-fixture helpers ignored |
+| `cargo test -p jcode-base runtime_activity --lib` | 3 passed, admission semantics preserved |
+| `cargo test -p jcode-app-core council --lib` | 15 passed, including formula upper-bound refusal and directory/unwritable transcript failure cleanup |
+| `cargo test -p jcode-provider-core --features tokio-tungstenite/handshake provider_call_budget --lib` | 5 passed |
+| `cargo test -p jcode-provider-openrouter-runtime --lib` | 197 passed, 1 credential-dependent live smoke ignored |
+| `cargo test -p jcode-provider-openai-runtime council_provider_budget --lib` | 1 passed |
+| `cargo check -p jcode` | Passed |
+
+Strict OpenSpec validation, scoped formatting checks and `git diff --check` passed. Independent reviewer bonehound returned final READY after confirming unchanged hashes for all six repair files and inspecting final gates `8225939xcm`, as confirmed by coordinator pig at 2026-11-02T17:50:44.896Z. Reviewed base: `798b12e5813a9a2cb6306ec5be776744d2823938`; pre-closeout six-file diff SHA-256: `ceeb7c717c9f01df42e51cbdfcfc6102480e1631282cd44fd814048595deffae`. Only this task completion/review evidence changed after approval. Task 4.3 is complete. Actual-commit review and proposal archival remain coordinator-owned and pending. No archive, push, shared-daemon reload, stash or reset was performed.

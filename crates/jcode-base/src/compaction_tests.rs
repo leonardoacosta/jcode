@@ -1375,3 +1375,125 @@ fn max_context_tokens_applies_at_construction_and_reloads_before_requests() {
     manager.ensure_context_fits(&[], Arc::new(MockSummaryProvider));
     assert_eq!(manager.token_budget(), 128_000);
 }
+
+#[derive(Clone)]
+struct CouncilBudgetCompactionProvider {
+    mode: &'static str,
+    calls: Arc<std::sync::atomic::AtomicUsize>,
+}
+
+#[async_trait::async_trait]
+impl Provider for CouncilBudgetCompactionProvider {
+    async fn complete(
+        &self,
+        _: &[Message],
+        _: &[crate::message::ToolDefinition],
+        _: &str,
+        _: Option<&str>,
+    ) -> Result<EventStream> {
+        unreachable!("compaction uses the native/simple interfaces")
+    }
+    fn name(&self) -> &str {
+        "council-compaction-fixture"
+    }
+    fn model(&self) -> String {
+        self.mode.into()
+    }
+    fn set_model(&self, _: &str) -> Result<()> {
+        Ok(())
+    }
+    fn fork(&self) -> Arc<dyn Provider> {
+        Arc::new(self.clone())
+    }
+    async fn native_compact(
+        &self,
+        _: &[Message],
+        _: Option<&str>,
+        _: Option<&str>,
+    ) -> Result<jcode_provider_core::NativeCompactionResult> {
+        anyhow::ensure!(self.mode == "native", "native compaction unavailable");
+        jcode_provider_core::provider_call_budget::record_call()?;
+        self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Ok(jcode_provider_core::NativeCompactionResult {
+            summary_text: Some("native summary".into()),
+            openai_encrypted_content: None,
+            usage: None,
+        })
+    }
+    async fn complete_simple_with_usage(
+        &self,
+        _: &str,
+        _: &str,
+    ) -> Result<(String, jcode_provider_core::SimpleCompletionUsage)> {
+        if self.mode == "opaque" {
+            jcode_provider_core::provider_call_budget::reject_unmetered("opaque compaction")?;
+        }
+        for _ in 0..if self.mode == "retry" { 2 } else { 1 } {
+            jcode_provider_core::provider_call_budget::record_call()?;
+            self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        }
+        Ok(("text summary".into(), Default::default()))
+    }
+}
+
+#[tokio::test]
+async fn council_background_compaction_budget_covers_native_text_opaque_and_retries() {
+    use jcode_provider_core::provider_call_budget::{ProviderCallBudget, scope};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let _env_lock = crate::storage::lock_test_env();
+    for automatic in [false, true] {
+        for mode in ["native", "text", "opaque", "retry"] {
+            let directory = tempfile::tempdir().unwrap();
+            let remaining = u32::from(mode == "retry");
+            let budget = ProviderCallBudget::create(directory.path().to_path_buf(), 3).unwrap();
+            for _ in 0..3 - remaining {
+                budget.acquire().unwrap();
+            }
+            let calls = Arc::new(AtomicUsize::new(0));
+            let provider: Arc<dyn Provider> = Arc::new(CouncilBudgetCompactionProvider {
+                mode,
+                calls: calls.clone(),
+            });
+            let mut manager = CompactionManager::new().with_budget(1_000);
+            manager.set_mode(crate::config::CompactionMode::Reactive);
+            let messages: Vec<_> = (0..30)
+                .map(|_| make_text_message(Role::User, &"x".repeat(120)))
+                .collect();
+            for _ in &messages {
+                manager.notify_message_added();
+            }
+            manager.update_observed_input_tokens(950);
+            let result = scope(Some(budget.clone()), async {
+                if automatic {
+                    manager.maybe_start_compaction_with(&messages, provider);
+                } else {
+                    manager.force_compact_with(&messages, provider).unwrap();
+                }
+                let task = manager
+                    .pending_task
+                    .take()
+                    .expect("compaction should start");
+                tokio::time::timeout(Duration::from_secs(5), task)
+                    .await
+                    .unwrap()
+                    .unwrap()
+            })
+            .await;
+            assert!(
+                result.is_err(),
+                "{mode} background compaction escaped budget (automatic={automatic})"
+            );
+            let error = format!("{:#}", result.err().expect("compaction budget should fail"));
+            assert!(
+                error.contains(if mode == "opaque" {
+                    "cannot enforce"
+                } else {
+                    "provider-call budget exhausted"
+                }),
+                "{mode}: {error}"
+            );
+            assert_eq!(calls.load(Ordering::SeqCst), remaining as usize, "{mode}");
+            assert_eq!(budget.used().unwrap(), 3, "{mode}");
+        }
+    }
+}

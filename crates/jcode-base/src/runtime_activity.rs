@@ -32,10 +32,12 @@ impl ActivityGate {
         F::Output: Send + 'static,
     {
         let reserved = self.try_enter().ok()?;
-        Some(tokio::spawn(async move {
-            let _activity = reserved;
-            future.await
-        }))
+        Some(jcode_provider_core::provider_call_budget::spawn(
+            async move {
+                let _activity = reserved;
+                future.await
+            },
+        ))
     }
 }
 

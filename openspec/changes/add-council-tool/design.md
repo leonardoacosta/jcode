@@ -30,7 +30,7 @@ Each seat reply must end with `VOTE: <option>`. If all live seats vote the same 
 A separate verdict call (coordinator model or `council` slot) receives the transcript and returns `PASS` (converged) or `PARTIAL` (open), tally `{option: count}`, and dissent `[seat: reason]`. Verdict is parsed; unparseable output yields `PARTIAL`.
 
 ### Caps
-Seats 2-4, rounds 0-3, max calls default `seats*(rounds+1)+1`, optional cost cap. Checked before spawn; a round that would exceed the cap is refused and the council proceeds to verdict.
+Seats 2-4, rounds 0-3, max calls default `seats*(rounds+1)+1`, optional cost cap. Explicit `max_calls` may lower but never exceed that formula. Checked before spawn; a round that would exceed the cap is refused and the council proceeds to verdict.
 
 A durable per-council provider-call budget is shared by seats and judge through the persisted `council_id`. Atomic create-new permit files under the Jcode storage root enforce the cap across concurrent processes and resumed turns. Every Agent completion reserves a permit, including allowed-tool follow-ups. Its first API send consumes that reservation, and subsequent transport/auth/schema retries consume additional permits. Turn scopes cover automatic compaction and explicitly propagate through spawned tool/provider workers. Reservations are not refunded after preparation errors or cancellation, so consumed permits can exceed completed requests but actual inference requests cannot exceed the cap. Transcript metadata reports consumed permits as `calls` and keeps prompt dispatches separately as `prompt_dispatches`.
 
@@ -43,7 +43,7 @@ Missing/corrupt budget state fails closed. Cursor CLI, ChatGPT browser and Bedro
 Seats are tracked in a process-local council registry keyed by id. Drop guards cover allocated seats during opening, rounds, messages, verdict and close. Reload loses the registry, so every persisted council seat is owner-less even if its coordinator reconnects. Recovery excludes those seats, preserves their full history, persists Closed status and clears pending visible startup input. Closed council sessions cannot resume or revive. Legacy unmarked seats are not inferred from labels. Spawn-RPC ambiguity and durable-closure write failures remain recovery risks documented in tasks.md.
 
 ### Persistence
-Transcript and verdict written as JSON under the session directory on every round.
+Transcript and verdict written as JSON under the session directory on every round. Path resolution, serialization and write failures return errors instead of reporting success. Seat guards remain armed until persistence and registry insertion succeed, and close stops seats before returning any persistence error.
 
 ## Risks / Trade-offs
 
