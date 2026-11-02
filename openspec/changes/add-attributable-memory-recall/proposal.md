@@ -33,8 +33,6 @@ Injected memory cannot be traced back to its stored entry. `InjectedMemoryItem` 
 
 `crates/jcode-memory-types`, `crates/jcode-base/src/memory*.rs`, memory event log JSONL schema (additive fields, serde defaults keep old logs readable). Content crossing the provider boundary is unchanged except the short id reference.
 
-## Pending user decision
+## Resolved defaults
 
-- Show ids in model-visible text or only in event logs? Options: model-visible; log-only. Recommended: model-visible short id, because the agent must be able to forget/correct a recalled item without a second lookup.
-
-The recommendation above is not a selected default. The dependent behavior remains blocked until this choice is settled; this proposal does not authorize it.
+Include an opaque short memory ID in model-visible recalled context so the agent can identify a memory for correction or forgetting. IDs contain no secret or private content.

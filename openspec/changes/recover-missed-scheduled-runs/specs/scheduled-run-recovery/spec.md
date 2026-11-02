@@ -4,10 +4,20 @@
 
 Scheduled items SHALL remain persisted until delivery is acknowledged.
 
-#### Scenario: Crash before delivery
+#### Scenario: Delivery acknowledgment missing
 
-- **WHEN** the server dies after an item becomes ready but before delivery
-- **THEN** on restart the item SHALL be redelivered once marked `recovered`
+- **WHEN** the server restarts with a dispatched item whose delivery was not acknowledged
+- **THEN** the item SHALL be marked `uncertain` and SHALL NOT be automatically redelivered
+
+#### Scenario: Delivery executed before crash
+
+- **WHEN** an item executed but the server crashed before recording its acknowledgment
+- **THEN** missing acknowledgment SHALL NOT trigger duplicate execution and explicit manual retry SHALL be required
+
+#### Scenario: Explicit manual retry
+
+- **WHEN** the user explicitly retries an uncertain delivery
+- **THEN** a new recorded attempt SHALL be created while preserving the uncertain attempt's history
 
 #### Scenario: Normal delivery
 
@@ -21,4 +31,4 @@ Scheduled items SHALL remain persisted until delivery is acknowledged.
 #### Scenario: Missed item
 
 - **WHEN** an item was overdue beyond the grace window at startup
-- **THEN** the list SHALL show it as `missed` with the delay
+- **THEN** the list SHALL show it as `missed` with the delay without automatically delivering it

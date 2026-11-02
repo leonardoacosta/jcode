@@ -12,8 +12,8 @@ Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/p
 ## What Changes
 
 - Mark items `dispatched` (not removed) on pop; remove only after delivery is acknowledged.
-- At startup, items `dispatched` without acknowledgement become `undelivered` and are redelivered once with a `recovered` note; items overdue by more than a grace window are delivered with a `missed by <duration>` note.
-- `schedule list` includes the last N terminal items with status `delivered|missed|recovered|cancelled`.
+- At startup, items `dispatched` without acknowledgement become `uncertain` and require explicit manual retry; overdue items are marked `missed` with their delay. Neither state automatically triggers delivery.
+- `schedule list` includes the last N terminal items with status `delivered|missed|uncertain|cancelled`.
 
 ## Non-scope
 
@@ -30,8 +30,6 @@ Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/p
 
 `ambient/persistence.rs` queue item state, ambient manager delivery, `schedule` tool list output.
 
-## Pending user decision
+## Resolved defaults
 
-1. Redelivery of unacknowledged items. Options: (a) redeliver once; (b) mark only. Recommended: (a) with a visible `recovered` marker, because one-shot tasks are otherwise lost; at-most-once retry avoids loops.
-
-The recommendation above is not a selected default. The dependent behavior remains blocked until this choice is settled; this proposal does not authorize it.
+Unacknowledged deliveries are marked uncertain and require explicit manual retry. Never automatically redeliver an item merely because its acknowledgment is missing; the first delivery may already have executed.

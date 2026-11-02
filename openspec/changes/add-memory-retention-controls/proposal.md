@@ -12,7 +12,7 @@ Memory has single-id deletion (`MemoryManager::forget`, `crates/jcode-base/src/m
 ## What Changes
 
 - Add `jcode memory list|purge` with filters (`--scope project|global`, `--inactive`, `--older-than <days>`); purge is dry-run by default and requires `--apply`.
-- Reject or redact memory content matching existing secret patterns before storing, reporting the redaction to the caller.
+- Reject the entire memory request matching an existing secret pattern before storing anything, reporting a safe rejection reason without echoing sensitive content. Permit a sanitized resubmission.
 - Optional `[memory.retention]` config (default off) to auto-purge inactive/superseded entries older than N days.
 
 ## Non-scope
@@ -33,8 +33,6 @@ Memory has single-id deletion (`MemoryManager::forget`, `crates/jcode-base/src/m
 
 `src/cli/args.rs` (new subcommand), `crates/jcode-base/src/memory.rs`, config types. Deletion is local and irreversible only with `--apply`.
 
-## Pending user decision
+## Resolved defaults
 
-- Secret match on store: reject or redact? Recommended: redact and report, because rejecting loses the non-secret part of an otherwise useful memory.
-
-The recommendation above is not a selected default. The dependent behavior remains blocked until this choice is settled; this proposal does not authorize it.
+Reject the entire remember request when a known secret pattern is detected. Persist nothing, report the reason without echoing sensitive content, and allow an explicitly sanitized resubmission.
