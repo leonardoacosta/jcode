@@ -1,7 +1,4 @@
-//! Per-file edit claims among swarm workers (`add-swarm-file-claims`).
-//!
-//! Canonical path -> holder session id. Persisted beside swarm state so
-//! claims survive a server reload.
+//! Persistent, transactional file claims shared by swarm server processes.
 
 use super::*;
 use std::collections::BTreeMap;
@@ -26,135 +23,401 @@ impl FileClaimMode {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::server) enum ClaimOutcome {
-    /// Path claimed (or already held) by the caller, or claims are off.
     Granted,
-    /// Edit may proceed; holder named for the warning.
     Warn { holder: String },
-    /// Edit refused; holder named for the error.
     Blocked { holder: String },
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(untagged)]
+enum FileClaim {
+    // Keep committed ownership compatible with the original on-disk map.
+    Committed(String),
+    Reserved {
+        holder: String,
+        reservations: HashSet<String>,
+    },
+}
+
+impl FileClaim {
+    fn holder(&self) -> &str {
+        match self {
+            Self::Committed(holder) | Self::Reserved { holder, .. } => holder,
+        }
+    }
 }
 
 #[derive(Debug, Default)]
 pub(in crate::server) struct FileClaimStore {
-    claims: BTreeMap<String, String>,
+    claims: BTreeMap<String, FileClaim>,
     persist_path: Option<PathBuf>,
 }
 
-fn canonical_key(path: &Path) -> String {
-    let absolute = std::path::absolute(path).unwrap_or_else(|_| path.to_path_buf());
-    let mut key = PathBuf::new();
-    // Resolve existing symlinks and normalize missing descendants too, so a
-    // claim made before mkdir/write keeps its identity after creation.
-    for component in absolute.components() {
-        if component == std::path::Component::ParentDir {
-            key.pop();
-        } else {
-            key.push(component);
-            if let Ok(canonical) = std::fs::canonicalize(&key) {
-                key = canonical;
+fn canonical_key(path: &Path) -> anyhow::Result<String> {
+    fn resolve(path: &Path, depth: usize) -> anyhow::Result<PathBuf> {
+        anyhow::ensure!(
+            depth < 40,
+            "Too many symbolic links in claim path {}",
+            path.display()
+        );
+        let absolute = std::path::absolute(path)?;
+        let mut key = PathBuf::new();
+        for component in absolute.components() {
+            if component == std::path::Component::ParentDir {
+                key.pop();
+            } else {
+                key.push(component);
+                if matches!(component, std::path::Component::Normal(_)) {
+                    match std::fs::symlink_metadata(&key) {
+                        Ok(metadata) if metadata.file_type().is_symlink() => {
+                            let target = std::fs::read_link(&key)?;
+                            let target = if target.is_absolute() {
+                                target
+                            } else {
+                                key.parent().unwrap().join(target)
+                            };
+                            key = resolve(&target, depth + 1)?;
+                        }
+                        Ok(_) => {
+                            if let Ok(canonical) = std::fs::canonicalize(&key) {
+                                key = canonical;
+                            }
+                        }
+                        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                        Err(error) => return Err(error.into()),
+                    }
+                }
             }
         }
+        Ok(key)
     }
-    key.to_string_lossy().into_owned()
+    Ok(resolve(path, 0)?.to_string_lossy().into_owned())
+}
+
+/// Successful mutations retain reservations. Dropping a failed/cancelled tool
+/// rolls back only its newly reserved paths.
+#[derive(Default)]
+pub(crate) struct FileClaims {
+    session_id: String,
+    reservation_id: String,
+    persist_path: Option<PathBuf>,
+    paths: BTreeMap<PathBuf, String>,
+    pending: HashSet<String>,
+    warnings: Vec<String>,
+}
+
+impl FileClaims {
+    async fn mutate(
+        &mut self,
+        path: &Path,
+        mutation: impl FnOnce(&Path) -> std::io::Result<()> + Send + 'static,
+    ) -> std::io::Result<()> {
+        let path = path.to_path_buf();
+        let mut operation = FileClaims::default();
+        operation.session_id = self.session_id.clone();
+        operation.reservation_id = self.reservation_id.clone();
+        operation.persist_path = self.persist_path.clone();
+        if let Some(key) = self.paths.get(&path) {
+            operation.paths.insert(path.clone(), key.clone());
+            if self.pending.remove(key) {
+                operation.pending.insert(key.clone());
+            }
+        }
+        // Tokio filesystem work continues after its awaiting future is dropped.
+        // Keep the reservation with that work until its real outcome is known.
+        let (result, mut operation) = tokio::task::spawn_blocking(move || {
+            let result = mutation(&path)
+                .and_then(|()| operation.commit(&path).map_err(std::io::Error::other));
+            (result, operation)
+        })
+        .await
+        .map_err(std::io::Error::other)?;
+        self.pending.extend(operation.pending.drain());
+        result
+    }
+
+    pub(crate) async fn write(&mut self, path: &Path, contents: &[u8]) -> std::io::Result<()> {
+        let contents = contents.to_vec();
+        self.mutate(path, move |path| std::fs::write(path, contents))
+            .await
+    }
+
+    pub(crate) async fn remove_file(&mut self, path: &Path) -> std::io::Result<()> {
+        self.mutate(path, |path| std::fs::remove_file(path)).await
+    }
+
+    pub(crate) fn commit(&mut self, path: &Path) -> anyhow::Result<()> {
+        if let Some(key) = self.paths.get(path) {
+            if self.pending.remove(key) {
+                // A completed filesystem write must never roll back, even if
+                // persisting its completion fails. Its token remains protective.
+                FileClaimStore::load(self.persist_path.clone()).finish(
+                    &self.session_id,
+                    &HashSet::from([key.clone()]),
+                    &self.reservation_id,
+                    true,
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn warnings(&self) -> &[String] {
+        &self.warnings
+    }
+}
+
+impl Drop for FileClaims {
+    fn drop(&mut self) {
+        if self.pending.is_empty() {
+            return;
+        }
+        let mut store = FileClaimStore::load(self.persist_path.clone());
+        if let Err(error) =
+            store.finish(&self.session_id, &self.pending, &self.reservation_id, false)
+        {
+            crate::logging::warn(&format!("Failed to roll back file claims: {error}"));
+        }
+    }
 }
 
 impl FileClaimStore {
     pub(in crate::server) fn load(persist_path: Option<PathBuf>) -> Self {
-        let claims = persist_path
-            .as_ref()
-            .and_then(|p| std::fs::read(p).ok())
-            .and_then(|bytes| serde_json::from_slice(&bytes).ok())
-            .unwrap_or_default();
+        // Every operation refreshes under the process lock. Never trust this
+        // initial snapshot for acquisition, rollback, release or status.
         Self {
-            claims,
+            claims: BTreeMap::new(),
             persist_path,
         }
     }
 
-    fn persist(&self) {
+    fn lock_and_reload(&mut self) -> anyhow::Result<Option<std::fs::File>> {
         let Some(path) = &self.persist_path else {
-            return;
+            return Ok(None);
         };
-        if let Ok(json) = serde_json::to_vec(&self.claims) {
-            let tmp = path.with_extension("json.tmp");
-            if std::fs::write(&tmp, json).is_ok() {
-                let _ = std::fs::rename(&tmp, path);
-            }
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)?;
         }
+        let lock = std::fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(path.with_extension("lock"))?;
+        lock.lock()?;
+        self.claims = match std::fs::read(path) {
+            Ok(bytes) => serde_json::from_slice(&bytes)?,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => BTreeMap::new(),
+            Err(error) => return Err(error.into()),
+        };
+        Ok(Some(lock))
     }
 
-    /// Record or check a claim. `exempt_from_block` is for the coordinator:
-    /// still warned, never refused.
-    pub(in crate::server) fn claim(
+    fn persist(&self) -> anyhow::Result<()> {
+        if let Some(path) = &self.persist_path {
+            let tmp = path.with_extension("json.tmp");
+            std::fs::write(&tmp, serde_json::to_vec(&self.claims)?)?;
+            std::fs::rename(tmp, path)?;
+        }
+        Ok(())
+    }
+
+    fn outcome(
+        &self,
+        session_id: &str,
+        key: &str,
+        mode: FileClaimMode,
+        exempt: bool,
+    ) -> ClaimOutcome {
+        if mode != FileClaimMode::Off {
+            if let Some(holder) = self
+                .claims
+                .get(key)
+                .map(FileClaim::holder)
+                .filter(|holder| *holder != session_id)
+            {
+                return if mode == FileClaimMode::Block && !exempt {
+                    ClaimOutcome::Blocked {
+                        holder: holder.into(),
+                    }
+                } else {
+                    ClaimOutcome::Warn {
+                        holder: holder.into(),
+                    }
+                };
+            }
+        }
+        ClaimOutcome::Granted
+    }
+
+    fn reserve(
+        &mut self,
+        session_id: &str,
+        paths: impl IntoIterator<Item = PathBuf>,
+        mode: FileClaimMode,
+        exempt: bool,
+    ) -> anyhow::Result<FileClaims> {
+        let mut reservation = FileClaims {
+            session_id: session_id.into(),
+            reservation_id: crate::id::new_id("file_claim"),
+            persist_path: self.persist_path.clone(),
+            paths: BTreeMap::new(),
+            pending: HashSet::new(),
+            warnings: Vec::new(),
+        };
+        if mode == FileClaimMode::Off {
+            return Ok(reservation);
+        }
+        let _lock = self.lock_and_reload()?;
+        // Preflight the complete batch before recording any reservation.
+        for path in paths {
+            let key = canonical_key(&path)?;
+            match self.outcome(session_id, &key, mode, exempt) {
+                ClaimOutcome::Blocked { holder } => anyhow::bail!("Refused: {} is claimed by swarm worker {holder} (swarm.file_claims = \"block\").", path.display()),
+                ClaimOutcome::Warn { holder } => reservation.warnings.push(format!("Warning: {} is claimed by swarm worker {holder}; coordinate before further edits.", path.display())),
+                ClaimOutcome::Granted => {},
+            }
+            reservation.paths.insert(path, key);
+        }
+        for key in reservation.paths.values() {
+            let claim = self
+                .claims
+                .entry(key.clone())
+                .or_insert_with(|| FileClaim::Reserved {
+                    holder: session_id.into(),
+                    reservations: HashSet::new(),
+                });
+            if let FileClaim::Reserved {
+                holder,
+                reservations,
+            } = claim
+            {
+                if holder == session_id {
+                    reservations.insert(reservation.reservation_id.clone());
+                    reservation.pending.insert(key.clone());
+                }
+            }
+        }
+        if !reservation.pending.is_empty() {
+            self.persist()?;
+        }
+        Ok(reservation)
+    }
+
+    fn finish(
+        &mut self,
+        session_id: &str,
+        keys: &HashSet<String>,
+        reservation_id: &str,
+        success: bool,
+    ) -> anyhow::Result<()> {
+        let _lock = self.lock_and_reload()?;
+        let mut changed = false;
+        for key in keys {
+            if let Some(FileClaim::Reserved {
+                holder,
+                reservations,
+            }) = self.claims.get_mut(key)
+            {
+                if holder == session_id && reservations.remove(reservation_id) {
+                    changed = true;
+                    if success {
+                        self.claims
+                            .insert(key.clone(), FileClaim::Committed(session_id.into()));
+                    } else if reservations.is_empty() {
+                        self.claims.remove(key);
+                    }
+                }
+            }
+        }
+        if changed {
+            self.persist()?;
+        }
+        Ok(())
+    }
+
+    fn release(
+        &mut self,
+        session_id: &str,
+        keys: Option<&HashSet<String>>,
+    ) -> anyhow::Result<Vec<String>> {
+        let _lock = self.lock_and_reload()?;
+        let released: Vec<_> = self
+            .claims
+            .iter()
+            .filter(|(path, holder)| {
+                holder.holder() == session_id && keys.is_none_or(|keys| keys.contains(*path))
+            })
+            .map(|(path, _)| path.clone())
+            .collect();
+        for path in &released {
+            self.claims.remove(path);
+        }
+        if !released.is_empty() {
+            self.persist()?;
+        }
+        Ok(released)
+    }
+
+    pub(in crate::server) fn release_session(
+        &mut self,
+        session_id: &str,
+    ) -> anyhow::Result<Vec<String>> {
+        self.release(session_id, None)
+    }
+
+    pub(in crate::server) fn active(&mut self) -> anyhow::Result<Vec<(String, String)>> {
+        let _lock = self.lock_and_reload()?;
+        Ok(self
+            .claims
+            .iter()
+            .map(|(path, holder)| (path.clone(), holder.holder().to_owned()))
+            .collect())
+    }
+
+    #[cfg(test)]
+    fn claim(
         &mut self,
         session_id: &str,
         path: &Path,
         mode: FileClaimMode,
-        exempt_from_block: bool,
+        exempt: bool,
     ) -> ClaimOutcome {
-        if mode == FileClaimMode::Off {
-            return ClaimOutcome::Granted;
-        }
-        let key = canonical_key(path);
-        match self.claims.get(&key) {
-            Some(holder) if holder != session_id => {
-                let holder = holder.clone();
-                if mode == FileClaimMode::Block && !exempt_from_block {
-                    ClaimOutcome::Blocked { holder }
-                } else {
-                    ClaimOutcome::Warn { holder }
-                }
+        let result = self.reserve(session_id, [path.to_path_buf()], mode, exempt);
+        let outcome = self.outcome(session_id, &canonical_key(path).unwrap(), mode, exempt);
+        match result {
+            Ok(mut reservation) => {
+                self.finish(
+                    session_id,
+                    &reservation.pending,
+                    &reservation.reservation_id,
+                    true,
+                )
+                .unwrap();
+                reservation.pending.clear();
             }
-            Some(_) => ClaimOutcome::Granted,
-            None => {
-                self.claims.insert(key, session_id.to_string());
-                self.persist();
-                ClaimOutcome::Granted
-            }
+            Err(error) => assert!(matches!(outcome, ClaimOutcome::Blocked { .. }), "{error}"),
         }
-    }
-
-    /// Drop every claim held by `session_id`. Returns the released paths.
-    pub(in crate::server) fn release_session(&mut self, session_id: &str) -> Vec<String> {
-        let released: Vec<String> = self
-            .claims
-            .iter()
-            .filter(|(_, holder)| holder.as_str() == session_id)
-            .map(|(path, _)| path.clone())
-            .collect();
-        if !released.is_empty() {
-            for path in &released {
-                self.claims.remove(path);
-            }
-            self.persist();
-        }
-        released
-    }
-
-    /// Active claims as (path, holder), sorted by path.
-    pub(in crate::server) fn active(&self) -> Vec<(String, String)> {
-        self.claims
-            .iter()
-            .map(|(p, h)| (p.clone(), h.clone()))
-            .collect()
+        outcome
     }
 }
 
-/// Process-wide store persisted at `<jcode_dir>/swarm-file-claims.json`.
 pub(in crate::server) fn file_claims() -> &'static StdMutex<FileClaimStore> {
     static STORE: OnceLock<StdMutex<FileClaimStore>> = OnceLock::new();
     STORE.get_or_init(|| {
-        let path = crate::storage::jcode_dir()
-            .ok()
-            .map(|dir| dir.join("swarm-file-claims.json"));
-        StdMutex::new(FileClaimStore::load(path))
+        StdMutex::new(FileClaimStore::load(
+            crate::storage::jcode_dir()
+                .ok()
+                .map(|dir| dir.join("swarm-file-claims.json")),
+        ))
     })
 }
 
-/// Release all claims held by a worker (finish, stop, removal/orphan).
 pub(in crate::server) fn release_file_claims_of(session_id: &str) {
     if let Ok(mut store) = file_claims().lock() {
-        store.release_session(session_id);
+        if let Err(error) = store.release_session(session_id) {
+            crate::logging::warn(&format!("Failed to release file claims: {error}"));
+        }
     }
 }
 
@@ -165,7 +428,6 @@ pub(in crate::server) fn unregister_claim_worker(session_id: &str) {
     release_file_claims_of(session_id);
 }
 
-/// Spawned swarm workers that participate in file claims.
 fn claim_workers() -> &'static StdMutex<HashSet<String>> {
     static WORKERS: OnceLock<StdMutex<HashSet<String>>> = OnceLock::new();
     WORKERS.get_or_init(|| StdMutex::new(HashSet::new()))
@@ -186,45 +448,44 @@ fn configured_claim_mode() -> FileClaimMode {
         .unwrap_or(FileClaimMode::Warn)
 }
 
-/// Claim `path` for a swarm worker before an edit tool writes it.
-/// Returns `Ok(Some(warning))` in warn mode on conflict, `Err` in block mode.
-/// Non-worker sessions are never claimed or checked.
-pub(crate) fn check_file_claim(session_id: &str, path: &Path) -> anyhow::Result<Option<String>> {
-    let Ok(workers) = claim_workers().lock() else {
-        return Ok(None);
-    };
+pub(crate) fn claim_files(
+    session_id: &str,
+    paths: impl IntoIterator<Item = PathBuf>,
+) -> anyhow::Result<FileClaims> {
+    let workers = claim_workers()
+        .lock()
+        .map_err(|_| anyhow::anyhow!("File claim worker lock poisoned"))?;
     if !workers.contains(session_id) {
-        return Ok(None);
+        return Ok(FileClaims::default());
     }
-    let outcome = match file_claims().lock() {
-        Ok(mut store) => store.claim(session_id, path, configured_claim_mode(), false),
-        Err(_) => return Ok(None),
-    };
-    match outcome {
-        ClaimOutcome::Granted => Ok(None),
-        ClaimOutcome::Warn { holder } => Ok(Some(format!(
-            "Warning: {} is claimed by swarm worker {holder}; coordinate before further edits.",
-            path.display()
-        ))),
-        ClaimOutcome::Blocked { holder } => Err(anyhow::anyhow!(
-            "Refused: {} is claimed by swarm worker {holder} (swarm.file_claims = \"block\").",
-            path.display()
-        )),
-    }
+    let mut store = file_claims()
+        .lock()
+        .map_err(|_| anyhow::anyhow!("File claim store lock poisoned"))?;
+    let mode = configured_claim_mode();
+    anyhow::ensure!(
+        mode == FileClaimMode::Off || store.persist_path.is_some(),
+        "Cannot locate persistent swarm file claim store"
+    );
+    store.reserve(session_id, paths, mode, false)
 }
 
-/// Paths currently claimed by `session_id`.
+#[cfg(test)]
+fn check_file_claim(session_id: &str, path: &Path) -> anyhow::Result<Option<String>> {
+    let mut reservation = claim_files(session_id, [path.to_path_buf()])?;
+    reservation.commit(path)?;
+    Ok(reservation.warnings.first().cloned())
+}
+
 pub(in crate::server) fn file_claims_held_by(session_id: &str) -> Vec<String> {
     file_claims()
         .lock()
-        .map(|s| {
-            s.active()
-                .into_iter()
-                .filter(|(_, h)| h == session_id)
-                .map(|(p, _)| p)
-                .collect()
-        })
+        .ok()
+        .and_then(|mut store| store.active().ok())
         .unwrap_or_default()
+        .into_iter()
+        .filter(|(_, holder)| holder == session_id)
+        .map(|(path, _)| path)
+        .collect()
 }
 
 #[cfg(test)]
@@ -247,6 +508,314 @@ mod claim_tests {
     }
 
     struct UnusedProvider;
+
+    #[tokio::test]
+    async fn cancelled_caller_keeps_claim_with_inflight_mutation() {
+        let dir = tempfile::tempdir().unwrap();
+        let persist = dir.path().join("claims.json");
+        let file = dir.path().join("file");
+        let mut store = FileClaimStore::load(Some(persist.clone()));
+        let mut reservation = store
+            .reserve("worker", [file.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+        let (finish_tx, finish_rx) = std::sync::mpsc::channel();
+        let (done_tx, done_rx) = tokio::sync::oneshot::channel();
+        let path = file.clone();
+        let task = tokio::spawn(async move {
+            reservation
+                .mutate(&path, move |path| {
+                    let _ = started_tx.send(());
+                    finish_rx
+                        .recv_timeout(std::time::Duration::from_secs(10))
+                        .unwrap();
+                    let result = std::fs::write(path, "finished");
+                    let _ = done_tx.send(());
+                    result
+                })
+                .await
+        });
+        started_rx.await.unwrap();
+        task.abort();
+        assert!(task.await.unwrap_err().is_cancelled());
+        let mut observer = FileClaimStore::load(Some(persist));
+        assert!(
+            observer
+                .reserve("contender", [file.clone()], FileClaimMode::Block, false)
+                .is_err()
+        );
+        finish_tx.send(()).unwrap();
+        done_rx.await.unwrap();
+        assert_eq!(std::fs::read_to_string(&file).unwrap(), "finished");
+        assert_eq!(
+            observer.active().unwrap(),
+            vec![(canonical_key(&file).unwrap(), "worker".into())]
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn dangling_relative_chains_resolve_and_cycles_fail() {
+        let dir = tempfile::tempdir().unwrap();
+        let alias = dir.path().join("alias");
+        std::os::unix::fs::symlink("target", &alias).unwrap();
+        let chain = dir.path().join("chain");
+        std::os::unix::fs::symlink("alias", &chain).unwrap();
+        assert_eq!(
+            canonical_key(&chain).unwrap(),
+            canonical_key(&dir.path().join("target")).unwrap()
+        );
+        let cycle = dir.path().join("cycle");
+        std::os::unix::fs::symlink("cycle", &cycle).unwrap();
+        assert!(
+            canonical_key(&cycle)
+                .unwrap_err()
+                .to_string()
+                .contains("Too many symbolic links")
+        );
+    }
+
+    #[tokio::test]
+    async fn overlapping_reservations_preserve_success_and_inflight_owners() {
+        let dir = tempfile::tempdir().unwrap();
+        let persist = dir.path().join("claims.json");
+        let path = dir.path().join("file");
+        let mut first = FileClaimStore::load(Some(persist.clone()));
+        let mut second = FileClaimStore::load(Some(persist));
+        let older = first
+            .reserve("a", [path.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        let mut newer = second
+            .reserve("a", [path.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        newer.write(&path, b"success").await.unwrap();
+        drop(older);
+        assert!(
+            first
+                .reserve("b", [path.clone()], FileClaimMode::Block, false)
+                .is_err(),
+            "older rollback erased newer success"
+        );
+        drop(newer);
+        drop(
+            first
+                .reserve("a", [path.clone()], FileClaimMode::Block, false)
+                .unwrap(),
+        );
+        assert!(
+            second
+                .reserve("b", [path.clone()], FileClaimMode::Block, false)
+                .is_err(),
+            "later rollback erased prior success"
+        );
+        first.release_session("a").unwrap();
+        let older = first
+            .reserve("a", [path.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        let newer = second
+            .reserve("a", [path.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        drop(newer);
+        assert!(
+            second
+                .reserve("b", [path.clone()], FileClaimMode::Block, false)
+                .is_err(),
+            "newer rollback erased in-flight reservation"
+        );
+        drop(older);
+        assert!(first.active().unwrap().is_empty());
+        let older = first
+            .reserve("a", [path.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        let newer = second
+            .reserve("a", [path.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        drop(older);
+        assert!(
+            first
+                .reserve("b", [path.clone()], FileClaimMode::Block, false)
+                .is_err(),
+            "older rollback erased newer in-flight reservation"
+        );
+        drop(newer);
+        assert!(second.active().unwrap().is_empty());
+        let stale = first
+            .reserve("a", [path.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        first.release_session("a").unwrap();
+        let current = second
+            .reserve("a", [path.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        drop(stale);
+        assert!(
+            first
+                .reserve("b", [path.clone()], FileClaimMode::Block, false)
+                .is_err(),
+            "stale reservation erased a new generation"
+        );
+        drop(current);
+        assert!(first.active().unwrap().is_empty());
+        assert!(
+            second
+                .reserve("b", [path], FileClaimMode::Block, false)
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn stale_stores_and_rollback_preserve_committed_owners() {
+        let dir = tempfile::tempdir().unwrap();
+        let persist = dir.path().join("claims.json");
+        let mut first = FileClaimStore::load(Some(persist.clone()));
+        let mut stale = FileClaimStore::load(Some(persist));
+        let a = dir.path().join("a");
+        let b = dir.path().join("b");
+        first.claim("first", &a, FileClaimMode::Block, false);
+        stale.claim("second", &b, FileClaimMode::Block, false);
+        assert_eq!(first.active().unwrap().len(), 2);
+        {
+            let _cancelled = first
+                .reserve(
+                    "first",
+                    [a.clone(), dir.path().join("cancelled")],
+                    FileClaimMode::Block,
+                    false,
+                )
+                .unwrap();
+        }
+        assert_eq!(stale.active().unwrap().len(), 2);
+        first.release_session("first").unwrap();
+        assert_eq!(
+            stale.active().unwrap(),
+            vec![(canonical_key(&b).unwrap(), "second".into())]
+        );
+    }
+
+    #[test]
+    fn corrupt_store_refuses_acquisition() {
+        let dir = tempfile::tempdir().unwrap();
+        let persist = dir.path().join("claims.json");
+        std::fs::write(&persist, "not json").unwrap();
+        let mut store = FileClaimStore::load(Some(persist.clone()));
+        assert!(
+            store
+                .reserve(
+                    "worker",
+                    [dir.path().join("file")],
+                    FileClaimMode::Block,
+                    false
+                )
+                .is_err()
+        );
+        assert_eq!(std::fs::read_to_string(persist).unwrap(), "not json");
+    }
+
+    #[tokio::test]
+    async fn file_claim_processes_share_one_owner() {
+        use crate::tool::{Registry, ToolContext, ToolExecutionMode};
+        use std::time::{Duration, Instant};
+        if let Ok(worker) = std::env::var("JCODE_CLAIM_PROCESS_TEST") {
+            let home = crate::storage::jcode_dir().unwrap();
+            register_claim_worker(&worker);
+            let registry = Registry::new(Arc::new(UnusedProvider)).await;
+            assert!(file_claims_held_by(&worker).is_empty());
+            std::fs::write(home.join(format!("ready-{worker}")), "").unwrap();
+            let started = Instant::now();
+            while !home.join("start").exists() {
+                assert!(
+                    started.elapsed() < Duration::from_secs(15),
+                    "process barrier timed out"
+                );
+                std::thread::sleep(Duration::from_millis(10));
+            }
+            let ctx = ToolContext {
+                session_id: worker.clone(),
+                message_id: "m".into(),
+                tool_call_id: "t".into(),
+                working_dir: Some(home.clone()),
+                stdin_request_tx: None,
+                graceful_shutdown_signal: None,
+                execution_mode: ToolExecutionMode::Direct,
+            };
+            let result = registry
+                .execute(
+                    "write",
+                    serde_json::json!({"file_path":"shared", "content":worker}),
+                    ctx,
+                )
+                .await;
+            std::fs::write(
+                home.join(format!("result-{worker}")),
+                if result.is_ok() { "won" } else { "blocked" },
+            )
+            .unwrap();
+            return;
+        }
+        let home = tempfile::tempdir().unwrap();
+        std::fs::write(
+            home.path().join("config.toml"),
+            "[swarm]\nfile_claims = 'block'\n",
+        )
+        .unwrap();
+        let mut children = Vec::new();
+        for worker in ["process-a", "process-b"] {
+            let log = std::fs::File::create(home.path().join(format!("log-{worker}"))).unwrap();
+            let child = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "server::swarm::claims::claim_tests::file_claim_processes_share_one_owner",
+                    "--nocapture",
+                ])
+                .env("JCODE_HOME", home.path())
+                .env("JCODE_CLAIM_PROCESS_TEST", worker)
+                .stdout(log.try_clone().unwrap())
+                .stderr(log)
+                .spawn()
+                .unwrap();
+            children.push((worker, child));
+        }
+        let started = Instant::now();
+        while !children
+            .iter()
+            .all(|(worker, _)| home.path().join(format!("ready-{worker}")).exists())
+            && started.elapsed() < Duration::from_secs(15)
+        {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        std::fs::write(home.path().join("start"), "").unwrap();
+        for (worker, child) in &mut children {
+            assert!(
+                child.wait().unwrap().success(),
+                "{}",
+                std::fs::read_to_string(home.path().join(format!("log-{worker}"))).unwrap()
+            );
+        }
+        let winners: Vec<_> = children
+            .iter()
+            .filter(|(worker, _)| {
+                std::fs::read_to_string(home.path().join(format!("result-{worker}"))).unwrap()
+                    == "won"
+            })
+            .collect();
+        assert_eq!(
+            winners.len(),
+            1,
+            "two processes acquired the same block-mode claim"
+        );
+        let owner = winners[0].0;
+        assert_eq!(
+            std::fs::read_to_string(home.path().join("shared")).unwrap(),
+            owner
+        );
+        let claims: BTreeMap<String, String> = serde_json::from_slice(
+            &std::fs::read(home.path().join("swarm-file-claims.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            claims[&canonical_key(&home.path().join("shared")).unwrap()],
+            owner
+        );
+    }
 
     #[async_trait::async_trait]
     impl crate::provider::Provider for UnusedProvider {
@@ -314,6 +883,103 @@ mod claim_tests {
         };
         register_claim_worker("holder");
         register_claim_worker("contender");
+        if mode == "block" {
+            let path = dir.path().join("overlap");
+            let older = claim_files("holder", [path.clone()]).unwrap();
+            registry
+                .execute(
+                    "write",
+                    json!({"file_path":"overlap", "content":"newer success"}),
+                    ctx("holder"),
+                )
+                .await
+                .unwrap();
+            drop(older);
+            assert!(
+                registry
+                    .execute(
+                        "write",
+                        json!({"file_path":"overlap", "content":"bypass"}),
+                        ctx("contender")
+                    )
+                    .await
+                    .is_err(),
+                "older rollback permitted a conflicting real tool write"
+            );
+            assert_eq!(std::fs::read_to_string(&path).unwrap(), "newer success");
+            let later = claim_files("holder", [path]).unwrap();
+            drop(later);
+            assert!(
+                registry
+                    .execute(
+                        "write",
+                        json!({"file_path":"overlap", "content":"bypass"}),
+                        ctx("contender")
+                    )
+                    .await
+                    .is_err(),
+                "failed later reservation erased prior successful write"
+            );
+            release_file_claims_of("holder");
+        }
+        std::fs::create_dir(dir.path().join("directory")).unwrap();
+        std::fs::write(dir.path().join("mismatch"), "actual\n").unwrap();
+        for (name, input) in [
+            ("write", json!({"file_path":"directory", "content":"new"})),
+            (
+                "edit",
+                json!({"file_path":"mismatch", "old_string":"absent", "new_string":"new"}),
+            ),
+        ] {
+            assert!(
+                registry
+                    .execute(name, input, ctx("contender"))
+                    .await
+                    .is_err()
+            );
+            assert!(
+                file_claims_held_by("contender").is_empty(),
+                "failed {name} reserved a file"
+            );
+        }
+        for (name, input) in [
+            (
+                "edit",
+                json!({"file_path":"missing", "old_string":"old", "new_string":"new"}),
+            ),
+            (
+                "apply_patch",
+                json!({"patch_text":"*** Begin Patch\n*** Update File: missing\n@@\n-old\n+new\n*** End Patch"}),
+            ),
+            (
+                "apply_patch",
+                json!({"patch_text":"--- a/missing\n+++ b/missing\n@@ -1 +1 @@\n-old\n+new\n"}),
+            ),
+        ] {
+            let _ = registry.execute(name, input, ctx("contender")).await;
+            assert!(!dir.path().join("missing").exists());
+            assert!(
+                file_claims_held_by("contender").is_empty(),
+                "failed {name} reserved a file"
+            );
+        }
+        register_claim_worker("partial");
+        registry.execute("apply_patch", json!({"patch_text":"*** Begin Patch\n*** Add File: partial-success\n+written\n*** Update File: partial-failure\n@@\n-old\n+new\n*** End Patch"}), ctx("partial")).await.unwrap();
+        assert_eq!(
+            std::fs::read_to_string(dir.path().join("partial-success")).unwrap(),
+            "written\n"
+        );
+        assert_eq!(
+            file_claims_held_by("partial").len(),
+            usize::from(mode != "off")
+        );
+        if mode != "off" {
+            assert_eq!(
+                file_claims_held_by("partial"),
+                vec![canonical_key(&dir.path().join("partial-success")).unwrap()]
+            );
+        }
+        unregister_claim_worker("partial");
         for (name, file, input) in [
             (
                 "write",
@@ -343,7 +1009,7 @@ mod claim_tests {
                 .await
                 .unwrap();
             if mode != "off" {
-                assert!(file_claims_held_by("holder").contains(&canonical_key(&path)));
+                assert!(file_claims_held_by("holder").contains(&canonical_key(&path).unwrap()));
             }
             std::fs::write(&path, "old\n").unwrap();
             let result = registry
@@ -383,6 +1049,10 @@ mod claim_tests {
                     .unwrap_err();
                 assert!(error.to_string().contains("holder"), "{error}");
                 assert!(!dir.path().join("unclaimed").exists());
+                assert!(
+                    file_claims_held_by("contender").is_empty(),
+                    "blocked batch reserved a file"
+                );
                 assert_eq!(
                     std::fs::read_to_string(dir.path().join("write")).unwrap(),
                     "new\n"
@@ -390,7 +1060,7 @@ mod claim_tests {
             }
         }
         if mode != "off" {
-            let persisted = FileClaimStore::load(Some(
+            let mut persisted = FileClaimStore::load(Some(
                 crate::storage::jcode_dir()
                     .unwrap()
                     .join("swarm-file-claims.json"),
@@ -398,6 +1068,7 @@ mod claim_tests {
             assert_eq!(
                 persisted
                     .active()
+                    .unwrap()
                     .iter()
                     .filter(|(_, h)| h == "holder")
                     .count(),
@@ -432,7 +1103,7 @@ mod claim_tests {
             assert_eq!(snapshot.file_claims.len(), 4);
             let formatted = crate::protocol::format_comm_status_snapshot(&snapshot);
             assert!(formatted.contains("Claims:"));
-            assert!(formatted.contains(&canonical_key(&dir.path().join("write"))));
+            assert!(formatted.contains(&canonical_key(&dir.path().join("write")).unwrap()));
             for status in ["completed", "stopped", "failed", "ready"] {
                 super::super::update_member_status_with_report(
                     "holder",
@@ -462,8 +1133,12 @@ mod claim_tests {
             );
             // Simulate process-local worker tracking being lost on reload.
             claim_workers().lock().unwrap().remove("holder");
+            crate::server::swarm_persistence::record_worker_spawn_spec(
+                "holder",
+                &crate::server::swarm_persistence::WorkerSpawnSpec::default(),
+            );
             let recovered = crate::server::swarm_persistence::load_runtime_state();
-            assert_eq!(recovered.members["holder"].status, "crashed");
+            assert_eq!(recovered.members["holder"].status, "orphaned");
             assert!(
                 file_claims_held_by("holder").is_empty(),
                 "orphan claims survive recovery"
@@ -490,6 +1165,31 @@ mod claim_tests {
                     .unwrap()
                     .is_none()
             );
+        }
+        #[cfg(unix)]
+        if mode == "block" {
+            register_claim_worker("holder");
+            let target = dir.path().join("dangling-target");
+            let alias = dir.path().join("dangling-alias");
+            std::os::unix::fs::symlink(&target, &alias).unwrap();
+            registry
+                .execute(
+                    "write",
+                    json!({"file_path":alias, "content":"holder"}),
+                    ctx("holder"),
+                )
+                .await
+                .unwrap();
+            let error = registry
+                .execute(
+                    "write",
+                    json!({"file_path":target, "content":"contender"}),
+                    ctx("contender"),
+                )
+                .await
+                .unwrap_err();
+            assert!(error.to_string().contains("holder"));
+            assert_eq!(std::fs::read_to_string(&target).unwrap(), "holder");
         }
     }
 
@@ -539,16 +1239,19 @@ mod claim_tests {
 
         // Survives reload.
         let mut reloaded = FileClaimStore::load(Some(persist.clone()));
-        assert_eq!(reloaded.active().len(), 1);
-        assert_eq!(reloaded.active()[0].1, "a");
+        assert_eq!(reloaded.active().unwrap().len(), 1);
+        assert_eq!(reloaded.active().unwrap()[0].1, "a");
 
         // Stop/orphan release frees the path for B.
-        assert_eq!(reloaded.release_session("a").len(), 1);
+        assert_eq!(reloaded.release_session("a").unwrap().len(), 1);
         assert_eq!(
             reloaded.claim("b", &file, FileClaimMode::Block, false),
             ClaimOutcome::Granted
         );
-        assert_eq!(FileClaimStore::load(Some(persist)).active()[0].1, "b");
+        assert_eq!(
+            FileClaimStore::load(Some(persist)).active().unwrap()[0].1,
+            "b"
+        );
     }
 
     #[test]

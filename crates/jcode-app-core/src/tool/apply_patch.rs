@@ -101,15 +101,14 @@ impl Tool for ApplyPatchTool {
                 .await;
         }
         let hunks = parse_apply_patch(&params.patch_text)?;
-        let mut claim_warnings = Vec::new();
+        let mut claim_paths = Vec::new();
         for hunk in &hunks {
             let (path, destination) = match hunk {
                 PatchHunk::AddFile { path, .. } | PatchHunk::DeleteFile { path } => (path, None),
                 PatchHunk::UpdateFile { path, move_to, .. } => (path, move_to.as_ref()),
             };
             for path in std::iter::once(path).chain(destination) {
-                let resolved = ctx.resolve_path(Path::new(path));
-                claim_warnings.extend(crate::server::check_file_claim(&ctx.session_id, &resolved)?);
+                claim_paths.push(ctx.resolve_path(Path::new(path)));
             }
         }
 
@@ -121,17 +120,8 @@ impl Tool for ApplyPatchTool {
         // Capture whole-file states, including move destinations and AddFile
         // overwrites. Diff the final state so repeated hunks share one coordinate
         // system and failed operations cannot produce a speculative preview.
-        let _locks = super::file_lock::lock_all(hunks.iter().flat_map(|hunk| {
-            let (path, destination) = match hunk {
-                PatchHunk::AddFile { path, .. } | PatchHunk::DeleteFile { path } => (path, None),
-                PatchHunk::UpdateFile { path, move_to, .. } => (path, move_to.as_ref()),
-            };
-            std::iter::once(path)
-                .chain(destination)
-                .map(|path| ctx.resolve_path(Path::new(path)))
-                .collect::<Vec<_>>()
-        }))
-        .await;
+        let _locks = super::file_lock::lock_all(claim_paths.clone()).await;
+        let mut claims = crate::server::claim_files(&ctx.session_id, claim_paths)?;
         let mut before = std::collections::BTreeMap::new();
         for hunk in &hunks {
             let (path, destination) = match hunk {
@@ -158,7 +148,7 @@ impl Tool for ApplyPatchTool {
                     }
                     let existed = resolved.exists();
                     let old = tokio::fs::read_to_string(&resolved).await.ok();
-                    tokio::fs::write(&resolved, contents).await?;
+                    claims.write(&resolved, contents.as_bytes()).await?;
                     super::edit_stats::record(
                         &ctx,
                         old.as_deref().unwrap_or(""),
@@ -201,7 +191,7 @@ impl Tool for ApplyPatchTool {
                     }
                     let old = tokio::fs::read_to_string(&resolved).await.ok();
                     let old_contents = old.as_deref().unwrap_or("");
-                    if tokio::fs::remove_file(&resolved).await.is_ok() {
+                    if claims.remove_file(&resolved).await.is_ok() {
                         super::edit_stats::record(&ctx, old_contents, "", old.is_none()).await;
                         let diff = generate_diff_summary(old_contents, "");
                         publish_file_touch(
@@ -238,8 +228,10 @@ impl Tool for ApplyPatchTool {
                                 }
                                 let dest_existed = dest_resolved.exists();
                                 let dest_old = tokio::fs::read_to_string(&dest_resolved).await.ok();
-                                tokio::fs::write(&dest_resolved, &new_contents).await?;
-                                if tokio::fs::remove_file(&resolved).await.is_ok() {
+                                claims
+                                    .write(&dest_resolved, new_contents.as_bytes())
+                                    .await?;
+                                if claims.remove_file(&resolved).await.is_ok() {
                                     super::edit_stats::record(
                                         &ctx,
                                         &old_contents,
@@ -300,7 +292,7 @@ impl Tool for ApplyPatchTool {
                                     ));
                                 }
                             } else {
-                                tokio::fs::write(&resolved, &new_contents).await?;
+                                claims.write(&resolved, new_contents.as_bytes()).await?;
                                 super::edit_stats::record(
                                     &ctx,
                                     &old_contents,
@@ -406,7 +398,7 @@ impl Tool for ApplyPatchTool {
                     ));
                 }
             }
-            for warning in &claim_warnings {
+            for warning in claims.warnings() {
                 body.push_str(&format!("\n\n{warning}"));
             }
             let output = super::file_diff::attach(ToolOutput::new(body), unified);

@@ -58,7 +58,6 @@ impl Tool for WriteTool {
         let params: WriteInput = serde_json::from_value(input)?;
 
         let path = ctx.resolve_path(Path::new(&params.file_path));
-        let claim_warning = crate::server::check_file_claim(&ctx.session_id, &path)?;
 
         // Create parent directories if needed
         if let Some(parent) = path.parent()
@@ -69,6 +68,7 @@ impl Tool for WriteTool {
 
         // Check if file existed before and read old content for diff
         let _lock = super::file_lock::lock(&path).await;
+        let mut claims = crate::server::claim_files(&ctx.session_id, [path.clone()])?;
         let existed = path.exists();
         let old_content = if existed {
             tokio::fs::read_to_string(&path).await.ok()
@@ -77,7 +77,7 @@ impl Tool for WriteTool {
         };
 
         // Write the file
-        tokio::fs::write(&path, &params.content).await?;
+        claims.write(&path, params.content.as_bytes()).await?;
         super::edit_stats::record(
             &ctx,
             old_content.as_deref().unwrap_or(""),
@@ -138,7 +138,7 @@ impl Tool for WriteTool {
             old_content.as_deref().unwrap_or(""),
             &params.content,
         );
-        if let Some(warning) = claim_warning {
+        for warning in claims.warnings() {
             body.push_str(&format!("\n\n{warning}"));
         }
 

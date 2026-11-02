@@ -209,12 +209,12 @@ impl Tool for EditTool {
             return Err(anyhow::anyhow!("File not found: {}", params.file_path));
         }
 
-        let claim_warning = crate::server::check_file_claim(&ctx.session_id, &path)?;
         let _lock = super::file_lock::lock(&path).await;
         let content = tokio::fs::read_to_string(&path).await?;
         let (new_content, applied) = apply_edits(&content, &edits, &params.file_path)?;
 
-        tokio::fs::write(&path, &new_content).await?;
+        let mut claims = crate::server::claim_files(&ctx.session_id, [path.clone()])?;
+        claims.write(&path, new_content.as_bytes()).await?;
         super::edit_stats::record(&ctx, &content, &new_content, false).await;
 
         let intent = params
@@ -286,7 +286,7 @@ impl Tool for EditTool {
             &content,
             &new_content,
         );
-        if let Some(warning) = claim_warning {
+        for warning in claims.warnings() {
             body.push_str(&format!("\n\n{warning}"));
         }
 

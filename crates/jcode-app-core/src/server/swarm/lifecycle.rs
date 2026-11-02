@@ -724,7 +724,7 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
     let completion_report = normalize_completion_report(completion_report);
     if matches!(
         status,
-        "completed" | "done" | "stopped" | "failed" | "crashed"
+        "completed" | "done" | "stopped" | "failed" | "crashed" | "orphaned"
     ) || (status == "ready" && completion_report.is_some())
     {
         release_file_claims_of(session_id);

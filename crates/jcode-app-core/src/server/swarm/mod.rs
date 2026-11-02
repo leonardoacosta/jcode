@@ -69,7 +69,7 @@ mod run;
 mod claims;
 #[allow(unused_imports)]
 pub(in crate::server) use claims::*;
-pub(crate) use claims::check_file_claim;
+pub(crate) use claims::{FileClaims, claim_files};
 #[allow(unused_imports)]
 pub(in crate::server) use run::*;
 

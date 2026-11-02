@@ -649,7 +649,7 @@ pub(super) fn load_runtime_state() -> LoadedSwarmRuntimeState {
             }
             if matches!(
                 member.status.as_str(),
-                "completed" | "done" | "stopped" | "failed" | "crashed"
+                "completed" | "done" | "stopped" | "failed" | "crashed" | "orphaned"
             ) {
                 super::swarm::release_file_claims_of(&member_session_id);
             }
