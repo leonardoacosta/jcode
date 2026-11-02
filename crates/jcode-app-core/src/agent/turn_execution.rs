@@ -1647,3 +1647,7 @@ const LATE_SKILL_ANNOUNCEMENT_MARKER: &str = "New skills were installed.";
 #[cfg(test)]
 #[path = "turn_token_usage_tests.rs"]
 mod turn_token_usage_tests;
+
+#[cfg(test)]
+#[path = "turn_execution_tests.rs"]
+mod turn_execution_tests;
