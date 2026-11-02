@@ -12,7 +12,7 @@ use anyhow::{Result, anyhow, bail};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
@@ -222,7 +222,12 @@ fn check_error(response: &ServerEvent) -> Result<()> {
     Ok(())
 }
 
-async fn spawn_seat(ctx: &ToolContext, label: String, model: Option<String>) -> Result<String> {
+async fn spawn_seat(
+    ctx: &ToolContext,
+    council_id: &str,
+    label: String,
+    model: Option<String>,
+) -> Result<String> {
     let nonce = format!(
         "council-{}-{}",
         ctx.tool_call_id,
@@ -234,10 +239,8 @@ async fn spawn_seat(ctx: &ToolContext, label: String, model: Option<String>) -> 
     let request = Request::CommSpawn {
         id: REQUEST_ID,
         session_id: ctx.session_id.clone(),
-        working_dir: ctx
-            .working_dir
-            .as_ref()
-            .map(|p| p.display().to_string()),
+        council_id: Some(council_id.to_string()),
+        working_dir: ctx.working_dir.as_ref().map(|p| p.display().to_string()),
         initial_message: None,
         request_nonce: Some(nonce),
         spawn_mode: Some("headless".to_string()),
@@ -247,12 +250,6 @@ async fn spawn_seat(ctx: &ToolContext, label: String, model: Option<String>) -> 
     };
     match send_request(request).await? {
         ServerEvent::CommSpawnResponse { new_session_id, .. } if !new_session_id.is_empty() => {
-            // Read-only enforcement lives in the executor (`Registry::execute`).
-            super::set_session_tool_policy(
-                &new_session_id,
-                Some(SEAT_ALLOWED_TOOLS.iter().map(|s| s.to_string()).collect()),
-                HashSet::new(),
-            );
             Ok(new_session_id)
         }
         other => {
@@ -463,15 +460,30 @@ async fn open(ctx: &ToolContext, input: &CouncilInput) -> Result<Council> {
         rounds,
     );
     let mut spawned: Vec<Seat> = Vec::new();
+    let mut guard = SeatGuard {
+        ctx: ctx.clone(),
+        ids: Vec::new(),
+    };
     for spec in &seats {
-        match spawn_seat(ctx, format!("council {id}: {}", spec.name), spec.model.clone()).await {
-            Ok(session_id) => spawned.push(Seat {
-                name: spec.name.clone(),
-                session_id,
-            }),
+        match spawn_seat(
+            ctx,
+            &id,
+            format!("council {id}: {}", spec.name),
+            spec.model.clone(),
+        )
+        .await
+        {
+            Ok(session_id) => {
+                guard.ids.push(session_id.clone());
+                spawned.push(Seat {
+                    name: spec.name.clone(),
+                    session_id,
+                });
+            }
             Err(e) => {
                 let ids: Vec<_> = spawned.iter().map(|s| s.session_id.clone()).collect();
                 stop_seats(ctx, &ids).await;
+                guard.ids.clear();
                 bail!("council seat '{}' failed to spawn: {e}", spec.name);
             }
         }
@@ -493,10 +505,16 @@ async fn open(ctx: &ToolContext, input: &CouncilInput) -> Result<Council> {
     };
     let prompts = seats
         .iter()
-        .map(|s| format!("{}\n\nGive your opening statement.", seat_task(s, &id, &topic)))
+        .map(|s| {
+            format!(
+                "{}\n\nGive your opening statement.",
+                seat_task(s, &id, &topic)
+            )
+        })
         .collect();
     let replies = barrier(ctx, &council.seats, prompts, Duration::from_secs(timeout)).await;
     record_round(&mut council, 0, replies);
+    guard.ids.clear();
     Ok(council)
 }
 
@@ -548,7 +566,17 @@ async fn round(ctx: &ToolContext, council: &mut Council) -> bool {
 
 async fn verdict(ctx: &ToolContext, council: &mut Council) -> Result<Verdict> {
     let tally = tally_votes(&council.transcript, council.rounds_done);
-    let judge = spawn_seat(ctx, format!("council {}: verdict", council.id), None).await?;
+    let judge = spawn_seat(
+        ctx,
+        &council.id,
+        format!("council {}: verdict", council.id),
+        None,
+    )
+    .await?;
+    let mut guard = SeatGuard {
+        ctx: ctx.clone(),
+        ids: vec![judge.clone()],
+    };
     council.calls += 1;
     let prompt = format!(
         "You are the neutral judge of council {}. Topic: {}\n\nTranscript:\n\n{}\n\n\
@@ -571,6 +599,7 @@ async fn verdict(ctx: &ToolContext, council: &mut Council) -> Result<Verdict> {
     )
     .await;
     stop_seats(ctx, &[judge]).await;
+    guard.ids.clear();
     let v = match reply.into_iter().next().flatten() {
         Some(text) => parse_verdict(&text, &tally),
         None => Verdict {
@@ -584,9 +613,11 @@ async fn verdict(ctx: &ToolContext, council: &mut Council) -> Result<Verdict> {
 }
 
 async fn close(ctx: &ToolContext, mut council: Council) -> Result<ToolOutput> {
+    let mut guard = SeatGuard::for_council(ctx, &council);
     let result = verdict(ctx, &mut council).await;
     let ids: Vec<_> = council.seats.iter().map(|s| s.session_id.clone()).collect();
     stop_seats(ctx, &ids).await;
+    guard.ids.clear();
     persist(&council);
     let v = result?;
     Ok(ToolOutput::new(format!(
@@ -608,6 +639,19 @@ async fn close(ctx: &ToolContext, mut council: Council) -> Result<ToolOutput> {
 struct SeatGuard {
     ctx: ToolContext,
     ids: Vec<String>,
+}
+
+impl SeatGuard {
+    fn for_council(ctx: &ToolContext, council: &Council) -> Self {
+        Self {
+            ctx: ctx.clone(),
+            ids: council
+                .seats
+                .iter()
+                .map(|seat| seat.session_id.clone())
+                .collect(),
+        }
+    }
 }
 
 impl Drop for SeatGuard {
@@ -682,10 +726,7 @@ impl Tool for CouncilTool {
         match input.action.as_str() {
             "run" => {
                 let council = open(&ctx, &input).await?;
-                let mut guard = SeatGuard {
-                    ctx: ctx.clone(),
-                    ids: council.seats.iter().map(|s| s.session_id.clone()).collect(),
-                };
+                let mut guard = SeatGuard::for_council(&ctx, &council);
                 let mut council = council;
                 persist(&council);
                 while !council.converged && round(&ctx, &mut council).await {
@@ -697,8 +738,9 @@ impl Tool for CouncilTool {
                         council.rounds_done
                     ));
                 }
+                let result = close(&ctx, council).await;
                 guard.ids.clear();
-                close(&ctx, council).await
+                result
             }
             "open" => {
                 let council = open(&ctx, &input).await?;
@@ -708,6 +750,7 @@ impl Tool for CouncilTool {
             }
             "round" => {
                 let mut council = take(&id()?)?;
+                let mut guard = SeatGuard::for_council(&ctx, &council);
                 let ran = round(&ctx, &mut council).await;
                 let out = if ran {
                     let k = council.rounds_done;
@@ -717,10 +760,12 @@ impl Tool for CouncilTool {
                     format!("round refused (rounds or call cap exhausted); call close.\n{}", summary(&council))
                 };
                 put(council);
+                guard.ids.clear();
                 Ok(ToolOutput::new(out))
             }
             "say" => {
                 let council = take(&id()?)?;
+                let mut guard = SeatGuard::for_council(&ctx, &council);
                 let msg = input.message.clone().unwrap_or_default();
                 let mut failed = Vec::new();
                 for seat in &council.seats {
@@ -729,6 +774,7 @@ impl Tool for CouncilTool {
                     }
                 }
                 put(council);
+                guard.ids.clear();
                 Ok(ToolOutput::new(if failed.is_empty() {
                     "sent to all seats".to_string()
                 } else {
@@ -754,6 +800,7 @@ impl Tool for CouncilTool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn rejects_bad_seat_counts_and_rounds() {
@@ -776,8 +823,14 @@ mod tests {
             owner_session: "o".into(),
             topic: "x".into(),
             seats: vec![
-                Seat { name: "a".into(), session_id: "sa".into() },
-                Seat { name: "b".into(), session_id: "sb".into() },
+                Seat {
+                    name: "a".into(),
+                    session_id: "sa".into(),
+                },
+                Seat {
+                    name: "b".into(),
+                    session_id: "sb".into(),
+                },
             ],
             rounds: 3,
             rounds_done: 0,
@@ -820,7 +873,14 @@ mod tests {
     #[test]
     fn unanimous_votes_converge() {
         let mut c = council(9);
-        record_round(&mut c, 0, vec![Some("x\nVOTE: Ship".into()), Some("y\n**VOTE: ship**".into())]);
+        record_round(
+            &mut c,
+            0,
+            vec![
+                Some("x\nVOTE: Ship".into()),
+                Some("y\n**VOTE: ship**".into()),
+            ],
+        );
         assert!(c.converged);
         assert_eq!(parse_vote("no vote here"), None);
         assert!(!unanimous(&[Some("a".into()), None]));

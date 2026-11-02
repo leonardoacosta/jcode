@@ -1409,6 +1409,7 @@ async fn run_swarm_plan_loop(
 
 async fn spawn_assignment_session(ctx: &ToolContext, params: &CommunicateInput) -> Result<String> {
     let spawn_request = Request::CommSpawn {
+        council_id: None,
         id: REQUEST_ID,
         session_id: ctx.session_id.clone(),
         working_dir: params.working_dir.clone(),
@@ -2715,6 +2716,7 @@ impl Tool for CommunicateTool {
                     lane_id
                 };
                 let request = Request::CommSpawn {
+                    council_id: None,
                     id: REQUEST_ID,
                     session_id: ctx.session_id.clone(),
                     working_dir: params.working_dir.clone(),
@@ -3233,6 +3235,7 @@ impl Tool for CommunicateTool {
                 // Orphaned after reload: respawn from the persisted lane+prompt.
                 let orphan = params.target_session.clone().unwrap_or_default();
                 let response = send_request(Request::CommSpawn {
+                    council_id: None,
                     id: REQUEST_ID,
                     session_id: ctx.session_id.clone(),
                     working_dir: spec.working_dir.clone(),

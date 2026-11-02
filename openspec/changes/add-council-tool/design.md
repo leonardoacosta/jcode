@@ -32,11 +32,13 @@ A separate verdict call (coordinator model or `council` slot) receives the trans
 ### Caps
 Seats 2-4, rounds 0-3, max calls default `seats*(rounds+1)+1`, optional cost cap. Checked before spawn; a round that would exceed the cap is refused and the council proceeds to verdict.
 
+Current accounting counts council prompt dispatches, not every provider completion within a tool-using turn or retry. Aggregate provider-call enforcement remains open in task 4.3. Council seats cannot enable memory work, which otherwise adds uncapped auxiliary calls and memory writes.
+
 ### Read-only enforcement
-Seats spawn with a Rust-side tool allowlist (read, agentgrep, webfetch/websearch). Disallowed tool calls are rejected by the executor, not by prompt.
+`CommSpawn.council_id` is persisted on the seat Session before visible launch or headless publication. Agent construction and resume intersect configured tools with the fixed read-only allowlist (read, agentgrep, webfetch/websearch). The executor rejects disallowed tools, including custom, batch and MCP paths. A parent-process policy installed after the spawn response is not an enforcement boundary.
 
 ### Lifecycle
-Seats tracked in a council registry keyed by id; a drop guard and session-close hook stop them. After reload, recovery (`recover-swarm-workers-after-reload`) stops seats of councils with no live owner.
+Seats are tracked in a process-local council registry keyed by id. Drop guards cover allocated seats during opening, rounds, messages, verdict and close. Reload loses the registry, so every persisted council seat is owner-less even if its coordinator reconnects. Recovery excludes those seats, preserves their full history, persists Closed status and clears pending visible startup input. Closed council sessions cannot resume or revive. Legacy unmarked seats are not inferred from labels. Spawn-RPC ambiguity and durable-closure write failures remain recovery risks documented in tasks.md.
 
 ### Persistence
 Transcript and verdict written as JSON under the session directory on every round.

@@ -272,7 +272,7 @@ async fn register_visible_spawned_member_marks_startup_as_running() {
 }
 
 #[test]
-fn prepare_visible_spawn_session_persists_startup_before_launch() {
+fn prepare_visible_council_spawn_persists_policy_and_startup_before_launch() {
     let _guard = crate::storage::lock_test_env();
     let temp_home = tempfile::TempDir::new().expect("temp home");
     crate::env::set_var("JCODE_HOME", temp_home.path());
@@ -288,8 +288,22 @@ fn prepare_visible_spawn_session_persists_startup_before_launch() {
         None,
         false,
         Some(startup),
+        Some("council-visible-test"),
         |session_id, _cwd: &std::path::Path, _selfdev, provider_key| {
             assert_eq!(provider_key, None);
+            // This is the disk boundary used by a separately launched client.
+            let session = crate::session::Session::load_startup_stub(session_id).unwrap();
+            assert_eq!(session.council_id.as_deref(), Some("council-visible-test"));
+            let provider: Arc<dyn Provider> = Arc::new(MockProvider);
+            let _agent = Agent::new_with_session(provider, Registry::empty(), session, None);
+            assert_eq!(
+                crate::tool::session_tool_policy_allows_tool_for_test(session_id, "edit"),
+                Some(false)
+            );
+            assert_eq!(
+                crate::tool::session_tool_policy_allows_tool_for_test(session_id, "read"),
+                Some(true)
+            );
             let path = crate::storage::jcode_dir()
                 .expect("jcode dir")
                 .join(format!("client-input-{}", session_id));
@@ -335,6 +349,7 @@ fn prepare_visible_spawn_session_cleans_startup_when_launch_not_started() {
         None,
         false,
         Some("Do the thing."),
+        None,
         |_session_id, _cwd: &std::path::Path, _selfdev, _provider_key| Ok(false),
     )
     .expect("visible spawn preparation should succeed even when launch is skipped");
@@ -371,6 +386,7 @@ fn prepare_visible_spawn_session_cleans_session_when_launch_errors() {
         None,
         false,
         Some("Do the thing."),
+        None,
         |_session_id, _cwd: &std::path::Path, _selfdev, _provider_key| {
             Err(anyhow::anyhow!("launch failed"))
         },
@@ -407,6 +423,7 @@ fn prepare_visible_spawn_session_persists_and_launches_provider_key_for_openrout
         None,
         false,
         None,
+        None,
         |_session_id, _cwd: &std::path::Path, _selfdev, provider_key| {
             assert_eq!(provider_key, Some("openrouter"));
             Ok(true)
@@ -436,6 +453,7 @@ fn prepare_visible_spawn_session_persists_requested_effort() {
         None,
         Some("low"),
         false,
+        None,
         None,
         |_session_id, _cwd: &std::path::Path, _selfdev, _provider_key| Ok(true),
     )
@@ -467,6 +485,7 @@ fn prepare_visible_spawn_session_prefers_parent_provider_key_over_model_guess() 
         None,
         None,
         false,
+        None,
         None,
         |_session_id, _cwd: &std::path::Path, _selfdev, provider_key| {
             assert_eq!(provider_key, Some("ollama"));
@@ -887,7 +906,7 @@ async fn global_agent_model_request_updates_server_config_not_session() {
 }
 
 #[tokio::test]
-async fn session_agent_models_update_and_spawn_while_coordinator_busy() {
+async fn council_spawn_preserves_routing_and_policy_while_coordinator_busy() {
     let _env = crate::storage::lock_test_env();
     let temp = tempfile::TempDir::new().unwrap();
     let previous = std::env::var_os("JCODE_HOME");
@@ -944,6 +963,7 @@ async fn session_agent_models_update_and_spawn_while_coordinator_busy() {
             None,
             None,
             Some("routing test".into()),
+            Some("council-headless-test".into()),
             &sessions,
             &Arc::new(RwLock::new(String::new())),
             &provider,
@@ -965,6 +985,21 @@ async fn session_agent_models_update_and_spawn_while_coordinator_busy() {
     let child = sessions.read().await.get(&child_id).cloned().unwrap();
     let child = child.lock().await;
     assert_eq!(child.provider_model(), "gpt-5.5");
+    assert_eq!(
+        crate::tool::session_tool_policy_allows_tool_for_test(&child_id, "write"),
+        Some(false)
+    );
+    assert_eq!(
+        crate::tool::session_tool_policy_allows_tool_for_test(&child_id, "read"),
+        Some(true)
+    );
+    assert_eq!(
+        crate::session::Session::load_startup_stub(&child_id)
+            .unwrap()
+            .council_id
+            .as_deref(),
+        Some("council-headless-test")
+    );
     assert_eq!(child.session_provider_key().as_deref(), Some("openai-api"));
     drop(child);
     crate::server::client_actions::set_session_agent_model(

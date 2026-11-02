@@ -663,6 +663,9 @@ pub enum Request {
     CommSpawn {
         id: u64,
         session_id: String,
+        /// Council seats use a fixed read-only policy, persisted before execution.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        council_id: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         working_dir: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]

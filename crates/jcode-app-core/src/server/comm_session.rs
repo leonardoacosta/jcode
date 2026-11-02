@@ -71,12 +71,14 @@ fn create_visible_spawn_session(
     route_api_method_override: Option<&str>,
     effort_override: Option<&str>,
     selfdev_requested: bool,
+    council_id: Option<&str>,
 ) -> anyhow::Result<(String, PathBuf)> {
     let cwd = working_dir
         .map(PathBuf::from)
         .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
 
     let mut session = Session::create(None, None);
+    session.council_id = council_id.map(str::to_string);
     session.working_dir = Some(cwd.display().to_string());
     if let Some(model) = model_override {
         session.model = Some(model.to_string());
@@ -454,6 +456,7 @@ fn prepare_visible_spawn_session<F>(
     effort_override: Option<&str>,
     selfdev_requested: bool,
     startup_message: Option<&str>,
+    council_id: Option<&str>,
     launch_visible: F,
 ) -> anyhow::Result<(String, bool)>
 where
@@ -467,6 +470,7 @@ where
         route_api_method_override,
         effort_override,
         selfdev_requested,
+        council_id,
     )?;
 
     if let Some(message) = startup_message {
@@ -625,6 +629,7 @@ pub(super) async fn spawn_swarm_agent(
     requested_model: Option<String>,
     requested_effort: Option<String>,
     label: Option<String>,
+    council_id: Option<String>,
     sessions: &SessionAgents,
     global_session_id: &Arc<RwLock<String>>,
     provider_template: &Arc<dyn Provider>,
@@ -696,6 +701,7 @@ pub(super) async fn spawn_swarm_agent(
             spawn_effort.as_deref(),
             coordinator_is_canary,
             startup_message.as_deref(),
+            council_id.as_deref(),
             |session_id, cwd, selfdev_requested, provider_key| {
                 // Tag the headed window as a swarm-agent spawn so spawn hooks
                 // and terminals can identify and reroute it (JCODE_SPAWN_*).
@@ -739,6 +745,7 @@ pub(super) async fn spawn_swarm_agent(
                 spawn_effort.clone(),
                 Some(Arc::clone(mcp_pool)),
                 Some(req_session_id.to_string()),
+                council_id.clone(),
                 super::headless::HeadlessMemoryScope::RealProject,
             )
             .await
@@ -900,6 +907,7 @@ pub(super) async fn handle_comm_spawn(
     model: Option<String>,
     effort: Option<String>,
     label: Option<String>,
+    council_id: Option<String>,
     client_event_tx: &mpsc::UnboundedSender<ServerEvent>,
     sessions: &SessionAgents,
     global_session_id: &Arc<RwLock<String>>,
@@ -983,6 +991,7 @@ pub(super) async fn handle_comm_spawn(
         model,
         effort,
         label,
+        council_id,
         sessions,
         global_session_id,
         provider_template,

@@ -4,10 +4,16 @@ use std::time::{Duration, Instant};
 struct EnvGuard {
     _lock: std::sync::MutexGuard<'static, ()>,
     runtime: Option<std::ffi::OsString>,
+    home: Option<std::ffi::OsString>,
 }
 
 impl Drop for EnvGuard {
     fn drop(&mut self) {
+        if let Some(value) = self.home.take() {
+            crate::env::set_var("JCODE_HOME", value);
+        } else {
+            crate::env::remove_var("JCODE_HOME");
+        }
         if let Some(value) = self.runtime.take() {
             crate::env::set_var("JCODE_RUNTIME_DIR", value);
         } else {
@@ -23,7 +29,50 @@ fn test_env(dir: &tempfile::TempDir) -> EnvGuard {
     EnvGuard {
         _lock: lock,
         runtime: previous,
+        home: std::env::var_os("JCODE_HOME"),
     }
+}
+
+#[test]
+fn council_recovery_removes_seats_even_with_a_recoverable_owner() {
+    let dir = tempfile::tempdir().unwrap();
+    let _env = test_env(&dir);
+    crate::env::set_var("JCODE_HOME", dir.path());
+    let mut session = crate::session::Session::create(None, None);
+    session.council_id = Some("council-reload".into());
+    session.add_message(
+        crate::message::Role::User,
+        vec![crate::message::ContentBlock::Text {
+            text: "preserve council evidence".into(),
+            cache_control: None,
+        }],
+    );
+    session.save_prepared().unwrap();
+    let session_id = session.id.clone();
+    let record: SwarmMemberRecord = serde_json::from_value(serde_json::json!({
+        "session_id": session_id, "working_dir": null, "swarm_id": "council-swarm",
+        "swarm_enabled": true, "status": "running", "detail": null,
+        "friendly_name": null, "report_back_to_session_id": "recoverable-owner",
+        "role": "agent", "is_headless": true
+    }))
+    .unwrap();
+    let member = SwarmMember::from_record(record, recovered_member_event_tx());
+    persist_swarm_state("council-swarm", None, Some("recoverable-owner"), &[member]);
+    let snapshot: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(state_path("council-swarm")).unwrap()).unwrap();
+    assert_eq!(snapshot["members"][0]["council_id"], "council-reload");
+    let loaded = load_runtime_state();
+    assert!(!loaded.members.contains_key(&session_id));
+    let closed = crate::session::Session::load(&session_id).unwrap();
+    assert!(matches!(
+        closed.status,
+        crate::session::SessionStatus::Closed
+    ));
+    assert_eq!(
+        closed.messages.len(),
+        session.messages.len(),
+        "recovery must not overwrite history with a startup stub"
+    );
 }
 
 #[test]
@@ -1157,7 +1206,12 @@ fn reload_orphans_lost_worker_and_resumes_restorable_one() {
     )
     .expect("kept");
     assert_ne!(kept.status, ORPHANED_STATUS);
-    assert!(load_worker_spawn_spec("worker-kept").unwrap().last_status.is_none());
+    assert!(
+        load_worker_spawn_spec("worker-kept")
+            .unwrap()
+            .last_status
+            .is_none()
+    );
 
     // Members without a spec (old state files) keep legacy recovery.
     let legacy = from_persisted_member(

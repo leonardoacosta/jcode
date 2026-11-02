@@ -411,6 +411,154 @@ fn agent_drop_removes_its_configured_session_tool_policy() {
 }
 
 #[test]
+fn council_policy_survives_session_transport_and_intersects_caller_tools() {
+    let provider: Arc<dyn Provider> = Arc::new(NativeAutoCompactionProvider);
+    let mut wire = serde_json::to_value(Session::create(None, None)).unwrap();
+    wire["council_id"] = serde_json::json!("council-policy-regression");
+    let session: Session = serde_json::from_value(wire).unwrap();
+    let session_id = session.id.clone();
+    let mut agent = Agent::new_with_session(
+        provider,
+        Registry::empty(),
+        session,
+        Some(HashSet::from(["read".to_string(), "bash".to_string()])),
+    );
+    agent.set_memory_enabled(true);
+    assert!(
+        !agent.memory_enabled(),
+        "council memory work would bypass the call budget"
+    );
+    for (tool, allowed) in [
+        ("read", true),
+        ("bash", false),
+        ("edit", false),
+        ("webfetch", false),
+        ("mcp_call", false),
+        ("batch", false),
+    ] {
+        assert_eq!(
+            crate::tool::session_tool_policy_allows_tool_for_test(&session_id, tool),
+            Some(allowed),
+            "{tool}"
+        );
+    }
+    drop(agent);
+}
+
+#[tokio::test]
+async fn council_executor_rejects_escape_tools_and_allows_read() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("evidence.txt"), "read-only evidence").unwrap();
+    let provider: Arc<dyn Provider> = Arc::new(NativeAutoCompactionProvider);
+    let registry = Registry::new(provider.clone()).await;
+    let mut session = Session::create(None, None);
+    session.council_id = Some("council-executor-regression".into());
+    let ctx = crate::tool::ToolContext {
+        session_id: session.id.clone(),
+        message_id: "message".into(),
+        tool_call_id: "council-executor".into(),
+        working_dir: Some(dir.path().to_path_buf()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: crate::tool::ToolExecutionMode::Direct,
+    };
+    let _agent = Agent::new_with_session(provider, registry.clone(), session, None);
+    for tool in [
+        "edit",
+        "write",
+        "apply_patch",
+        "bash",
+        "batch",
+        "mcp_call",
+        "custom:escape",
+        "swarm",
+        "council",
+    ] {
+        let error = registry
+            .execute(tool, serde_json::json!({}), ctx.clone())
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("not allowed"), "{tool}: {error}");
+    }
+    let read = registry
+        .execute(
+            "read",
+            serde_json::json!({"file_path": "evidence.txt"}),
+            ctx,
+        )
+        .await
+        .unwrap();
+    assert!(read.output.contains("read-only evidence"));
+    assert_eq!(
+        std::fs::read_to_string(dir.path().join("evidence.txt")).unwrap(),
+        "read-only evidence"
+    );
+}
+
+#[test]
+fn council_resume_installs_policy_and_rejects_recovered_closed_seat() {
+    let _env = crate::storage::lock_test_env();
+    let home = tempfile::tempdir().unwrap();
+    struct RestoreHome(Option<std::ffi::OsString>);
+    impl Drop for RestoreHome {
+        fn drop(&mut self) {
+            match &self.0 {
+                Some(home) => crate::env::set_var("JCODE_HOME", home),
+                None => crate::env::remove_var("JCODE_HOME"),
+            }
+        }
+    }
+    let _restore = RestoreHome(std::env::var_os("JCODE_HOME"));
+    crate::env::set_var("JCODE_HOME", home.path());
+    let mut session = Session::create(None, None);
+    session.council_id = Some("council-resume-test".into());
+    session.save_prepared().unwrap();
+    let provider: Arc<dyn Provider> = Arc::new(NativeAutoCompactionProvider);
+    let mut agent = Agent::new_with_session(
+        provider,
+        Registry::empty(),
+        Session::create(None, None),
+        None,
+    );
+    agent
+        .restore_session_deferring_save(&session.id, None)
+        .unwrap();
+    assert_eq!(
+        crate::tool::session_tool_policy_allows_tool_for_test(&session.id, "bash"),
+        Some(false)
+    );
+    assert_eq!(
+        crate::tool::session_tool_policy_allows_tool_for_test(&session.id, "read"),
+        Some(true)
+    );
+    session.mark_closed();
+    session.save_prepared().unwrap();
+    let current_id = agent.session_id().to_string();
+    assert!(
+        agent
+            .restore_session_deferring_save(&session.id, None)
+            .unwrap_err()
+            .to_string()
+            .contains("cannot be resumed")
+    );
+    assert_eq!(
+        agent.session_id(),
+        current_id,
+        "failed restore must preserve the current Agent"
+    );
+    // Keep the original read-only seat identity through an explicit /clear.
+    agent.clear();
+    assert_eq!(
+        agent.session.council_id.as_deref(),
+        Some("council-resume-test")
+    );
+    assert_eq!(
+        crate::tool::session_tool_policy_allows_tool_for_test(agent.session_id(), "bash"),
+        Some(false)
+    );
+}
+
+#[test]
 fn stale_agent_drop_preserves_successor_session_tool_policy() {
     let provider: Arc<dyn Provider> = Arc::new(NativeAutoCompactionProvider);
     let first_session = Session::create(None, None);

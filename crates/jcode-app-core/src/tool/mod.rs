@@ -11,7 +11,7 @@ mod calendar;
 mod codemode;
 mod communicate;
 mod compile_remote;
-mod council;
+pub(crate) mod council;
 #[cfg(target_os = "macos")]
 mod computer;
 mod config_edit_notice;
@@ -167,6 +167,7 @@ pub(crate) fn register_session_tool_policy(
     }
 }
 
+#[cfg(test)]
 pub(crate) fn set_session_tool_policy(
     session_id: &str,
     allowed_tools: Option<HashSet<String>>,
@@ -1047,7 +1048,7 @@ impl Registry {
                 anyhow::bail!("Tool 'desktop_selfdev' requires a Jcode Desktop source checkout.");
             }
         }
-        if !is_custom && let Some(policy) = session_tool_policy(&ctx.session_id) {
+        if let Some(policy) = session_tool_policy(&ctx.session_id) {
             if let Some(allowed) = policy.allowed_tools.as_ref()
                 && !self.tool_is_allowed(allowed, resolved_name)
             {

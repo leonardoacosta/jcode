@@ -78,6 +78,11 @@ pub(super) async fn live_or_revived_agent(
             return None;
         }
     };
+    if session.council_id.is_some()
+        && matches!(session.status, crate::session::SessionStatus::Closed)
+    {
+        return None;
+    }
     let provider = context.provider.fork();
     let registry = crate::tool::Registry::new(provider.clone()).await;
     if session.is_canary {

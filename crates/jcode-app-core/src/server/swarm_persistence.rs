@@ -125,6 +125,8 @@ struct PersistedVersionedPlan {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 struct PersistedSwarmMember {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    council_id: Option<String>,
     #[serde(flatten)]
     record: SwarmMemberRecord,
     /// Wall-clock time when the member entered its current terminal status.
@@ -316,6 +318,9 @@ fn to_persisted_member(member: &SwarmMember, snapshot_unix_ms: u64) -> Persisted
             snapshot_unix_ms.saturating_sub(member.last_status_change.elapsed().as_millis() as u64)
         });
     PersistedSwarmMember {
+        council_id: crate::session::Session::load_startup_stub(&member.session_id)
+            .ok()
+            .and_then(|session| session.council_id),
         record: member.durable_record(),
         terminal_since_unix_ms,
     }
@@ -433,6 +438,29 @@ fn from_persisted_member(
     terminal_retention: Duration,
 ) -> Option<SwarmMember> {
     let record = member.record;
+    let council_id = member.council_id.or_else(|| {
+        crate::session::Session::load_startup_stub(&record.session_id)
+            .ok()
+            .and_then(|session| session.council_id)
+    });
+    // The council registry is process-local. After a server restart none of
+    // these seats has a live council owner, even if its coordinator reconnects.
+    if let Some(council_id) = council_id {
+        if let Ok(mut session) = crate::session::Session::load(&record.session_id) {
+            session.council_id = Some(council_id);
+            session.mark_closed();
+            if let Err(error) = session.save_prepared() {
+                crate::logging::warn(&format!(
+                    "Failed to close recovered council seat {}: {error}",
+                    record.session_id
+                ));
+            }
+        }
+        if let Ok(dir) = crate::storage::jcode_dir() {
+            let _ = std::fs::remove_file(dir.join(format!("client-input-{}", record.session_id)));
+        }
+        return None;
+    }
     let original_status = record.status.as_str();
     let was_terminal_before_recovery =
         super::swarm::member_status_is_terminal(original_status.as_ref());

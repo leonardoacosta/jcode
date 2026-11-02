@@ -121,6 +121,9 @@ pub fn is_scheduled_task_message(message: &StoredMessage) -> bool {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Session {
     pub id: String,
+    /// Durable council seat identity. Never infer authority from prompt text.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub council_id: Option<String>,
     pub parent_id: Option<String>,
     pub title: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -232,6 +235,8 @@ pub struct Session {
 
 #[derive(Debug, Deserialize)]
 struct SessionStartupStub {
+    #[serde(default)]
+    council_id: Option<String>,
     id: String,
     #[serde(default)]
     parent_id: Option<String>,
@@ -362,6 +367,7 @@ pub fn derive_session_provider_key(provider_name: &str) -> Option<String> {
 impl Session {
     fn session_from_startup_stub(stub: SessionStartupStub) -> Self {
         let mut session = Self::create_with_id(stub.id, stub.parent_id, stub.title);
+        session.council_id = stub.council_id;
         session.custom_title = stub.custom_title;
         session.system_prompt = stub.system_prompt;
         session.created_at = stub.created_at;
@@ -400,6 +406,7 @@ impl Session {
 
     fn session_from_remote_startup_snapshot(snapshot: RemoteStartupSessionSnapshot) -> Self {
         let mut session = Self::create_with_id(snapshot.id, snapshot.parent_id, snapshot.title);
+        session.council_id = snapshot.council_id;
         session.custom_title = snapshot.custom_title;
         session.system_prompt = snapshot.system_prompt;
         session.created_at = snapshot.created_at;
@@ -540,6 +547,7 @@ impl Session {
 
     fn journal_meta(&self) -> SessionJournalMeta {
         SessionJournalMeta {
+            council_id: self.council_id.clone(),
             parent_id: self.parent_id.clone(),
             title: self.title.clone(),
             custom_title: self.custom_title.clone(),
@@ -742,6 +750,7 @@ impl Session {
     }
 
     fn apply_journal_meta(&mut self, meta: SessionJournalMeta) {
+        self.council_id = meta.council_id;
         self.parent_id = meta.parent_id;
         self.title = meta.title;
         self.custom_title = meta.custom_title;
@@ -784,6 +793,7 @@ impl Session {
         let short_name = extract_session_name(&session_id).map(|s| s.to_string());
         let mut session = Self {
             id: session_id,
+            council_id: None,
             parent_id,
             title,
             custom_title: None,
@@ -842,6 +852,7 @@ impl Session {
         let is_debug = default_is_test_session();
         let mut session = Self {
             id,
+            council_id: None,
             parent_id,
             title,
             custom_title: None,
@@ -1760,6 +1771,8 @@ fn is_sensitive_json_key(key: &str) -> bool {
 
 #[derive(Debug, Deserialize)]
 struct RemoteStartupSessionSnapshot {
+    #[serde(default)]
+    council_id: Option<String>,
     id: String,
     #[serde(default)]
     parent_id: Option<String>,

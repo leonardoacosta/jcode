@@ -472,13 +472,23 @@ impl Agent {
         }
     }
 
+    fn restrict_council_tools(session: &Session, allowed_tools: &mut Option<HashSet<String>>) {
+        if session.council_id.is_some() {
+            let council_tools = crate::tool::council::SEAT_ALLOWED_TOOLS;
+            let tools = allowed_tools
+                .get_or_insert_with(|| council_tools.iter().map(|name| name.to_string()).collect());
+            tools.retain(|name| council_tools.contains(&name.as_str()));
+        }
+    }
+
     fn build_base(
         provider: Arc<dyn Provider>,
         registry: Registry,
         session: Session,
-        allowed_tools: Option<HashSet<String>>,
+        mut allowed_tools: Option<HashSet<String>>,
         disabled_tools: HashSet<String>,
     ) -> Self {
+        Self::restrict_council_tools(&session, &mut allowed_tools);
         let t = Instant::now();
         provider.set_session_id(&session.id);
         let skills = SkillRegistry::shared_snapshot();
@@ -489,6 +499,7 @@ impl Agent {
         let agents_md_snapshot = crate::prompt::load_agents_md_files_from_dir(working_dir);
         let agents_md_ms = t.elapsed().as_millis();
         let initial_provider_model = provider.model();
+        let memory_enabled = session.council_id.is_none() && crate::config::config().features.memory;
         let tool_policy_registration = crate::tool::register_session_tool_policy(
             &session.id,
             allowed_tools.clone(),
@@ -528,7 +539,7 @@ impl Agent {
             prompt_skills_snapshot: Vec::new(),
             announced_skills: HashSet::new(),
             announced_skills_scan_index: 0,
-            memory_enabled: crate::config::config().features.memory,
+            memory_enabled,
             rewind_undo_snapshot: None,
             stdin_request_tx: None,
             provider_runtime_state: ProviderRuntimeState::observed(initial_provider_model),
@@ -586,7 +597,7 @@ impl Agent {
         registry: Registry,
         working_dir: Option<&str>,
     ) -> Self {
-        Self::new_with_initial_ownership(provider, registry, working_dir, None, true)
+        Self::new_with_initial_ownership(provider, registry, working_dir, None, None, true)
     }
 
     /// A connection may only be a viewer attaching to an existing Agent.
@@ -596,7 +607,7 @@ impl Agent {
         registry: Registry,
         working_dir: Option<&str>,
     ) -> Self {
-        Self::new_with_initial_ownership(provider, registry, working_dir, None, false)
+        Self::new_with_initial_ownership(provider, registry, working_dir, None, None, false)
     }
 
     pub(crate) fn new_with_parent_and_initial_working_dir(
@@ -604,8 +615,16 @@ impl Agent {
         registry: Registry,
         working_dir: Option<&str>,
         parent_id: Option<String>,
+        council_id: Option<String>,
     ) -> Self {
-        Self::new_with_initial_ownership(provider, registry, working_dir, parent_id, true)
+        Self::new_with_initial_ownership(
+            provider,
+            registry,
+            working_dir,
+            parent_id,
+            council_id,
+            true,
+        )
     }
 
     fn new_with_initial_ownership(
@@ -613,6 +632,7 @@ impl Agent {
         registry: Registry,
         working_dir: Option<&str>,
         parent_id: Option<String>,
+        council_id: Option<String>,
         track_concurrency: bool,
     ) -> Self {
         let start = Instant::now();
@@ -624,6 +644,7 @@ impl Agent {
         };
         let tool_selection = crate::config::config().tools.selection();
         let mut session = Session::create(parent_id, None);
+        session.council_id = council_id;
         if let Some(working_dir) = working_dir {
             session.working_dir = Some(working_dir.to_string());
         }

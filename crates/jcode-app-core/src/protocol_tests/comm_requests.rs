@@ -448,6 +448,7 @@ fn test_comm_stop_roundtrip_with_force() -> Result<()> {
 #[test]
 fn test_comm_spawn_roundtrip_with_optional_nonce() -> Result<()> {
     let req = Request::CommSpawn {
+        council_id: Some("council-wire-test".into()),
         id: 59,
         session_id: "sess_coord".to_string(),
         working_dir: Some("/tmp/project".to_string()),
@@ -469,6 +470,7 @@ fn test_comm_spawn_roundtrip_with_optional_nonce() -> Result<()> {
     assert_eq!(decoded.id(), 59);
     let Request::CommSpawn {
         session_id,
+        council_id,
         working_dir,
         initial_message,
         request_nonce,
@@ -482,6 +484,7 @@ fn test_comm_spawn_roundtrip_with_optional_nonce() -> Result<()> {
         return Err(anyhow!("expected CommSpawn"));
     };
     assert_eq!(session_id, "sess_coord");
+    assert_eq!(council_id.as_deref(), Some("council-wire-test"));
     assert_eq!(working_dir.as_deref(), Some("/tmp/project"));
     assert_eq!(initial_message.as_deref(), Some("Start here"));
     assert_eq!(request_nonce.as_deref(), Some("planner-fresh-123"));

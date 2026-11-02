@@ -1,4 +1,152 @@
 #[tokio::test]
+async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
+    let _env_lock = crate::storage::lock_test_env();
+    let runtime = tempfile::tempdir().unwrap();
+    let project = tempfile::tempdir().unwrap();
+    assert!(
+        std::process::Command::new("git")
+            .args(["init", "--quiet"])
+            .current_dir(project.path())
+            .status()
+            .unwrap()
+            .success()
+    );
+    std::fs::write(project.path().join("evidence.txt"), "unchanged").unwrap();
+    let git_status = || {
+        let output = std::process::Command::new("git")
+            .args(["status", "--porcelain=v1", "-z", "--untracked-files=all"])
+            .current_dir(project.path())
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        output.stdout
+    };
+    let before = git_status();
+    let socket = runtime.path().join("council.sock");
+    let _runtime = EnvGuard::set("JCODE_RUNTIME_DIR", runtime.path());
+    let _home = EnvGuard::set("JCODE_HOME", runtime.path());
+    let _socket = EnvGuard::set("JCODE_SOCKET", &socket);
+    let _swarm_model = EnvGuard::remove("JCODE_SWARM_MODEL");
+    crate::config::invalidate_config_cache();
+
+    struct CouncilProvider(Arc<std::sync::atomic::AtomicUsize>);
+    #[async_trait]
+    impl Provider for CouncilProvider {
+        async fn complete(
+            &self,
+            messages: &[Message],
+            tools: &[ToolDefinition],
+            system: &str,
+            resume: Option<&str>,
+        ) -> Result<EventStream> {
+            let call = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            assert!(
+                tools
+                    .iter()
+                    .all(|tool| crate::tool::council::SEAT_ALLOWED_TOOLS
+                        .contains(&tool.name.as_str())),
+                "seat advertised a mutating tool"
+            );
+            // After the bounded run, keep the cancellation probe mid-opening.
+            DelayedTestProvider {
+                delay: Duration::from_millis(if call < 7 { 1 } else { 30_000 }),
+            }
+            .complete(messages, tools, system, resume)
+            .await
+        }
+        fn name(&self) -> &str {
+            "test"
+        }
+        fn fork(&self) -> Arc<dyn Provider> {
+            Arc::new(Self(self.0.clone()))
+        }
+    }
+    let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let server = Arc::new(Server::new(Arc::new(CouncilProvider(calls.clone()))));
+    let mut server_task = tokio::spawn(async move { server.run().await });
+    wait_for_server_socket(&socket, &mut server_task)
+        .await
+        .unwrap();
+    let mut owner = RawClient::connect(&socket).await.unwrap();
+    owner.subscribe(project.path()).await.unwrap();
+    let session_id = owner.session_id().await.unwrap();
+    let ctx = ToolContext {
+        session_id: session_id.clone(),
+        message_id: "council-run".into(),
+        tool_call_id: "council-run".into(),
+        working_dir: Some(project.path().to_path_buf()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: ToolExecutionMode::Direct,
+    };
+    let result = tokio::time::timeout(
+        Duration::from_secs(30),
+        crate::tool::council::CouncilTool::new().execute(
+            json!({
+                "action": "run", "topic": "Review the evidence without changing it", "rounds": 1,
+                "max_calls": 7,
+                "seats": [
+                    {"name": "safety", "brief": "Review safety"},
+                    {"name": "cost", "brief": "Review cost"},
+                    {"name": "simplicity", "brief": "Review simplicity"}
+                ]
+            }),
+            ctx.clone(),
+        ),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 7);
+    let metadata = result.metadata.unwrap();
+    assert_eq!(metadata["council"]["calls"], 7);
+    for seat in metadata["council"]["seats"].as_array().unwrap() {
+        let id = seat["session_id"].as_str().unwrap();
+        assert!(matches!(
+            crate::session::Session::load(id).unwrap().status,
+            crate::session::SessionStatus::Closed
+        ));
+    }
+    let members = owner.comm_list(&session_id).await.unwrap();
+    assert!(
+        members.iter().all(|member| member.session_id == session_id),
+        "council seats still live: {members:?}"
+    );
+    let opening = tokio::spawn(async move {
+        crate::tool::council::CouncilTool::new().execute(json!({
+            "action": "open", "topic": "Abort during opening", "rounds": 0,
+            "seats": [{"name": "one", "brief": "First view"}, {"name": "two", "brief": "Second view"}]
+        }), ctx).await
+    });
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while calls.load(std::sync::atomic::Ordering::SeqCst) == 7 {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    opening.abort();
+    assert!(opening.await.unwrap_err().is_cancelled());
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let members = owner.comm_list(&session_id).await.unwrap();
+            if members.iter().all(|member| member.session_id == session_id) {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("cancelled opening left live seats");
+    assert_eq!(
+        std::fs::read_to_string(project.path().join("evidence.txt")).unwrap(),
+        "unchanged"
+    );
+    assert_eq!(git_status(), before, "council modified the worktree");
+    server_task.abort();
+}
+
+#[tokio::test]
 async fn communicate_list_and_await_members_work_end_to_end() {
     let _env_lock = crate::storage::lock_test_env();
     let runtime_dir = tempfile::TempDir::new().expect("runtime tempdir");
@@ -434,7 +582,10 @@ async fn communicate_spawn_reports_completion_back_to_spawner() {
         .output
         .strip_prefix("Spawned new agent: ")
         .expect("spawn output should include session id")
-        .lines().next().unwrap_or_default().trim()
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .trim()
         .to_string();
 
     watcher
@@ -514,7 +665,10 @@ async fn communicate_spawn_with_prompt_and_summary_work_end_to_end() {
         .output
         .strip_prefix("Spawned new agent: ")
         .expect("spawn output should include session id")
-        .lines().next().unwrap_or_default().trim()
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .trim()
         .to_string();
     assert!(
         !spawned_session.is_empty(),
@@ -670,7 +824,10 @@ async fn communicate_message_routes_as_dm_while_broadcast_targets_swarm() {
     // agent here; the sender was elected coordinator on join.
     let peer_ctx = test_ctx(&peer_session, &repo_dir);
     let untargeted = tool
-        .execute(json!({"action": "message", "message": "oops"}), peer_ctx.clone())
+        .execute(
+            json!({"action": "message", "message": "oops"}),
+            peer_ctx.clone(),
+        )
         .await;
     assert!(
         untargeted
@@ -711,10 +868,17 @@ async fn communicate_message_routes_as_dm_while_broadcast_targets_swarm() {
 
     // The coordinator may message everyone by omitting the target.
     let to_all = tool
-        .execute(json!({"action": "message", "message": "hello-all"}), ctx.clone())
+        .execute(
+            json!({"action": "message", "message": "hello-all"}),
+            ctx.clone(),
+        )
         .await
         .expect("coordinator message without target should broadcast");
-    assert!(to_all.output.contains("Broadcast sent"), "{}", to_all.output);
+    assert!(
+        to_all.output.contains("Broadcast sent"),
+        "{}",
+        to_all.output
+    );
     assert_eq!(
         peer.next_message_notification(Duration::from_secs(5))
             .await
@@ -801,7 +965,11 @@ async fn communicate_retry_respawns_orphaned_worker_from_spawn_spec() {
         )
         .await
         .expect("retry of orphan should respawn");
-    assert!(output.output.starts_with("Respawned orphaned worker"), "{}", output.output);
+    assert!(
+        output.output.starts_with("Respawned orphaned worker"),
+        "{}",
+        output.output
+    );
     let new_session = output
         .output
         .rsplit(' ')
@@ -824,7 +992,11 @@ async fn communicate_retry_respawns_orphaned_worker_from_spawn_spec() {
         .execute(json!({"action": "retry", "target_session": orphan}), ctx)
         .await;
     if let Ok(out) = &again {
-        assert!(!out.output.contains("Respawned"), "double respawn: {}", out.output);
+        assert!(
+            !out.output.contains("Respawned"),
+            "double respawn: {}",
+            out.output
+        );
     }
 
     server_task.abort();
