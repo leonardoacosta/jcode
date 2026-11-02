@@ -434,7 +434,7 @@ async fn communicate_spawn_reports_completion_back_to_spawner() {
         .output
         .strip_prefix("Spawned new agent: ")
         .expect("spawn output should include session id")
-        .trim()
+        .lines().next().unwrap_or_default().trim()
         .to_string();
 
     watcher
@@ -514,7 +514,7 @@ async fn communicate_spawn_with_prompt_and_summary_work_end_to_end() {
         .output
         .strip_prefix("Spawned new agent: ")
         .expect("spawn output should include session id")
-        .trim()
+        .lines().next().unwrap_or_default().trim()
         .to_string();
     assert!(
         !spawned_session.is_empty(),

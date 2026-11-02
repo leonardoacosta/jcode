@@ -192,7 +192,7 @@ async fn communicate_assign_next_assigns_next_runnable_task() {
         .output
         .strip_prefix("Spawned new agent: ")
         .expect("spawn output should include session id")
-        .trim()
+        .lines().next().unwrap_or_default().trim()
         .to_string();
 
     wait_for_member_presence(&mut watcher, &watcher_session, &worker_session)
@@ -316,7 +316,7 @@ async fn communicate_assign_next_can_prefer_fresh_spawn_server_side() {
         .output
         .strip_prefix("Spawned new agent: ")
         .expect("spawn output should include session id")
-        .trim()
+        .lines().next().unwrap_or_default().trim()
         .to_string();
     wait_for_member_presence(&mut watcher, &watcher_session, &existing_worker)
         .await
@@ -615,7 +615,7 @@ async fn communicate_assign_task_can_prefer_fresh_spawn_over_reuse() {
         .output
         .strip_prefix("Spawned new agent: ")
         .expect("spawn output should include session id")
-        .trim()
+        .lines().next().unwrap_or_default().trim()
         .to_string();
     wait_for_member_presence(&mut watcher, &watcher_session, &existing_worker)
         .await
