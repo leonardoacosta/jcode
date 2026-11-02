@@ -37,6 +37,7 @@ use std::path::Path;
 mod agent_models;
 mod crash;
 pub use agent_models::AgentModelOverrides;
+pub mod exit_record;
 mod journal;
 mod load_telemetry;
 mod maintenance;
@@ -1181,10 +1182,7 @@ request in this new forked session, using the inherited conversation only as con
 
         if let Some(pid) = self.last_pid {
             if !crash::is_pid_running(pid) {
-                self.mark_crashed(Some(format!(
-                    "Process {} exited unexpectedly (no shutdown signal captured)",
-                    pid
-                )));
+                self.mark_crashed(Some(exit_record::classify_exit(pid)));
                 return true;
             }
         } else {

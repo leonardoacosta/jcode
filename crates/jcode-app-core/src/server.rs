@@ -1412,8 +1412,24 @@ impl Server {
             let sigterm_server_name = self.identity.name.clone();
             tokio::spawn(async move {
                 use tokio::signal::unix::{SignalKind, signal};
-                if let Ok(mut sigterm) = signal(SignalKind::terminate()) {
-                    sigterm.recv().await;
+                let (Ok(mut sigterm), Ok(mut sigint), Ok(mut sighup)) = (
+                    signal(SignalKind::terminate()),
+                    signal(SignalKind::interrupt()),
+                    signal(SignalKind::hangup()),
+                ) else {
+                    return;
+                };
+                {
+                    let name = tokio::select! {
+                        _ = sigterm.recv() => "SIGTERM",
+                        _ = sigint.recv() => "SIGINT",
+                        _ = sighup.recv() => "SIGHUP",
+                    };
+                    crate::session::exit_record::write_exit_record(
+                        crate::session::exit_record::ExitCause::Signal {
+                            name: name.to_string(),
+                        },
+                    );
                     let _ = crate::registry::unregister_server(&sigterm_server_name).await;
                     lifecycle::drain_session_saves_before_exit().await;
                     std::process::exit(0);

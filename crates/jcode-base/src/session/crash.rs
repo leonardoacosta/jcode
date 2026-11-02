@@ -144,9 +144,13 @@ fn recover_loaded_crashed_sessions(mut crashed: Vec<Session>) -> Result<Vec<Stri
             Role::User,
             vec![ContentBlock::Text {
                 text: format!(
-                    "Recovered from crashed session `{}` ({})",
+                    "Recovered from crashed session `{}` ({}). {}Any in-flight turn was interrupted and is not resumed automatically.",
                     old.id,
-                    old.display_name()
+                    old.display_name(),
+                    match &old.status {
+                        SessionStatus::Crashed { message: Some(m) } => format!("Cause: {m}. "),
+                        _ => String::new(),
+                    }
                 ),
                 cache_control: None,
             }],
@@ -175,10 +179,18 @@ fn crash_timestamp(session: &Session) -> DateTime<Utc> {
     session.last_active_at.unwrap_or(session.updated_at)
 }
 
+/// Keep the most recent crash event: every session owned by the same dead
+/// server PID (one shared-server crash can take hundreds of sessions whose
+/// last activity spans hours), plus PID-less sessions in the time window.
 fn retain_relevant_crash_group(crashed: &mut Vec<Session>) -> Option<DateTime<Utc>> {
-    let most_recent = crashed.iter().map(crash_timestamp).max()?;
+    let newest = crashed.iter().max_by_key(|s| crash_timestamp(s))?;
+    let most_recent = crash_timestamp(newest);
+    let event_pid = newest.last_pid;
     let crash_window = Duration::seconds(RELEVANT_CRASH_GROUP_WINDOW_SECS);
     crashed.retain(|s| {
+        if event_pid.is_some() && s.last_pid == event_pid {
+            return true;
+        }
         let delta = most_recent.signed_duration_since(crash_timestamp(s));
         delta >= Duration::zero() && delta <= crash_window
     });
@@ -361,10 +373,7 @@ fn find_crashed_via_pid_files() -> Option<Vec<(String, String)>> {
                 // Fail toward crash when the marker dir is unreadable: crash
                 // recovery is fail-noisy, never fail-silent.
                 if had_streaming_marker(&session_id) {
-                    session.mark_crashed(Some(format!(
-                        "Process {} exited unexpectedly (no shutdown signal captured)",
-                        pid
-                    )));
+                    session.mark_crashed(Some(super::exit_record::classify_exit(pid)));
                 } else {
                     session.mark_closed();
                 }
@@ -687,6 +696,48 @@ pub fn find_session_by_name_or_id(name_or_id: &str) -> Result<String> {
 #[cfg(test)]
 mod batch_crash_tests {
     use super::*;
+
+    #[test]
+    fn hundred_sessions_on_one_pid_form_one_recoverable_event() {
+        let _guard = crate::storage::lock_test_env();
+        let temp = tempfile::tempdir().expect("tempdir");
+        let prev = std::env::var_os("JCODE_HOME");
+        crate::env::set_var("JCODE_HOME", temp.path());
+        let now = Utc::now();
+        let mut ids = Vec::new();
+        let mut crashed = Vec::new();
+        for i in 0..100 {
+            let id = format!("session_pidgroup_{i}");
+            let mut s = Session::create_with_id(id.clone(), None, Some(format!("t{i}")));
+            s.last_pid = Some(4_000_000);
+            // Spread last activity over ~3 hours: outside the 60s window.
+            s.last_active_at = Some(now - Duration::minutes(i * 2));
+            s.add_message(
+                Role::User,
+                vec![ContentBlock::Text {
+                    text: "hi".into(),
+                    cache_control: None,
+                }],
+            );
+            s.mark_crashed(Some("Process 4000000 terminated by SIGTERM".into()));
+            s.save().unwrap();
+            ids.push(id);
+            crashed.push(s);
+        }
+        let mut other = Session::create_with_id("session_pidgroup_other".into(), None, None);
+        other.last_pid = Some(4_000_001);
+        other.last_active_at = Some(now - Duration::hours(5));
+        other.mark_crashed(None);
+        crashed.push(other);
+        retain_relevant_crash_group(&mut crashed);
+        assert_eq!(crashed.len(), 100);
+        let recovered = recover_crashed_sessions_by_ids(&ids).unwrap();
+        assert_eq!(recovered.len(), 100);
+        match prev {
+            Some(p) => crate::env::set_var("JCODE_HOME", p),
+            None => crate::env::remove_var("JCODE_HOME"),
+        }
+    }
 
     #[test]
     fn test_crashed_sessions_info_struct() {

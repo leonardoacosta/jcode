@@ -402,3 +402,33 @@ auth = "none"
         ProviderChoice::OpenaiCompatible
     ));
 }
+
+#[cfg(unix)]
+#[test]
+fn supervised_gate_cgroup_and_delegation() {
+    let m = std::path::Path::new("/m");
+    let inside = "0::/user.slice/app.slice/jcode.service";
+    assert!(supervised_gate(inside, "jcode.service", m, || panic!("no start")).is_ok());
+    let outside = "0::/user.slice/herdr.service";
+    let err = supervised_gate(outside, "jcode.service", m, || true).unwrap_err();
+    assert!(err.to_string().contains("requested systemctl"));
+    let err = supervised_gate(outside, "jcode.service", m, || false).unwrap_err();
+    assert!(err.to_string().contains("failed"));
+}
+
+#[cfg(unix)]
+#[test]
+fn supervised_gate_marker_absent_or_empty_allows_serve() {
+    let _lock = crate::storage::lock_test_env();
+    let prev = std::env::var_os("HOME");
+    let tmp = tempfile::tempdir().unwrap();
+    crate::env::set_var("HOME", tmp.path());
+    assert!(enforce_supervised_shared_server().is_ok());
+    std::fs::create_dir_all(tmp.path().join(".jcode")).unwrap();
+    std::fs::write(tmp.path().join(".jcode/require-supervised-server"), "  \n").unwrap();
+    assert!(enforce_supervised_shared_server().is_ok());
+    match prev {
+        Some(p) => crate::env::set_var("HOME", p),
+        None => crate::env::remove_var("HOME"),
+    }
+}

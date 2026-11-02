@@ -179,7 +179,14 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
                 server_new_ms,
                 serve_start.elapsed().as_millis()
             ));
-            server.run().await?;
+            crate::session::exit_record::install_panic_exit_record_hook();
+            let result = server.run().await;
+            if result.is_ok() {
+                crate::session::exit_record::write_exit_record(
+                    crate::session::exit_record::ExitCause::Clean,
+                );
+            }
+            result?;
         }
         Some(Command::Acp) => {
             acp::run_acp_command(
@@ -1364,15 +1371,32 @@ fn enforce_supervised_shared_server() -> Result<()> {
     }
     // INVOCATION_ID is inherited by anything under *any* unit (e.g. clients
     // in herdr.service), so check that we actually live in the unit's cgroup.
-    let in_unit = std::fs::read_to_string("/proc/self/cgroup")
-        .map(|cg| cg.lines().any(|l| l.ends_with(&format!("/{unit}"))))
-        .unwrap_or(false);
-    if in_unit {
+    let cgroup = std::fs::read_to_string("/proc/self/cgroup").unwrap_or_default();
+    supervised_gate(&cgroup, unit, &marker, || {
+        ProcessCommand::new("systemctl")
+            .args(["--user", "start", "--no-block", unit])
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    })
+}
+
+#[cfg(unix)]
+fn supervised_gate(
+    cgroup: &str,
+    unit: &str,
+    marker: &std::path::Path,
+    start_unit: impl FnOnce() -> bool,
+) -> Result<()> {
+    if cgroup.lines().any(|l| l.ends_with(&format!("/{unit}"))) {
         return Ok(());
     }
-    let _ = ProcessCommand::new("systemctl")
-        .args(["--user", "start", "--no-block", unit])
-        .status();
+    if !start_unit() {
+        anyhow::bail!(
+            "refusing unsupervised shared server ({} requires {unit}) and `systemctl --user start {unit}` failed; start the unit manually or remove the marker",
+            marker.display()
+        );
+    }
     anyhow::bail!(
         "refusing unsupervised shared server ({} requires {unit}); requested systemctl --user start {unit}",
         marker.display()
