@@ -572,7 +572,10 @@ mod cell_width_tests {
         }))
         .expect("member");
         for width in [12usize, 16, 20, 24] {
-            assert!(swarm_member_line(&member, width).width() <= width, "width {width}");
+            assert!(
+                swarm_member_line(&member, width).width() <= width,
+                "width {width}"
+            );
         }
     }
 }
