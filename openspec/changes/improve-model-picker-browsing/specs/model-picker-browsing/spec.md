@@ -7,6 +7,10 @@ The `/model` picker SHALL expose All/Favorites scope, All providers/a selected p
 - **WHEN** the user selects Favorites, a provider and a search query
 - **THEN** only favorites matching that provider and query within the configured catalog SHALL appear
 
+#### Scenario: Distinct named providers share a model
+- **WHEN** two configured provider profiles expose the same model ID and the user filters to one profile
+- **THEN** matching SHALL use the normalized provider/profile identity rather than a model-name substring or shared API family, and displayed route identity SHALL distinguish the profiles without exposing credentials
+
 #### Scenario: No matching models
 - **WHEN** the selected filters match no model
 - **THEN** the picker SHALL show an empty state and reset controls without silently widening the filters

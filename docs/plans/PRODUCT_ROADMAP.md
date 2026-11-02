@@ -24,7 +24,7 @@ Priority and phase grouping below are proposed, not committed release promises.
 
 Sources: the tracked [product README](../../README.md), [documentation index](../README.md),
 [native-tooling audit](../research/native-tooling-harness-audit-2026-10-26.md) and the
-source contracts linked below. Documentation and source describe intent or current
+source contracts linked below. Additional advisory evidence: [Sandcastle domain mining](../research/sandcastle-mining-2026-11-02/README.md) and [task/worktree configuration research](../research/sandcastle-task-worktree-config-2026-11-02.md). These source observations do not establish implementation or acceptance. Documentation and source describe intent or current
 architecture; neither README figures nor a names-only inventory prove fresh runtime acceptance.
 
 Swarm/todo, review/judge, plan/poke, overnight/bg/schedule, skills/MCP, structured

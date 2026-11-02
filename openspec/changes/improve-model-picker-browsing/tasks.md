@@ -1,7 +1,7 @@
 ## 1. Reuse and identity contract
 
 - [ ] 1.1 Trace normal `/model`, onboarding, `/agents`, local/SSH catalog paths and document which picker contexts receive new controls; retain existing behavior elsewhere.
-- [ ] 1.2 Define explicit scope/provider/sort state, stable model/route/account keys and selection-count fallback semantics using existing favorites/usage stores. Test multiple routes, accounts and reasoning efforts.
+- [ ] 1.2 Define explicit scope/provider/sort state, stable model/route/account keys and selection-count fallback semantics using existing favorites/usage stores. Test multiple routes, accounts, reasoning efforts and distinct named provider profiles exposing the same model ID; never match a profile by ambiguous model substring/API-family labels.
 
 ## 2. Browsing controls
 
