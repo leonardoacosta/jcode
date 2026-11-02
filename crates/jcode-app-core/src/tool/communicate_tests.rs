@@ -4,7 +4,8 @@ use super::{
     format_awaited_members, format_awaited_members_with_reports, format_member_models,
     format_members, format_plan_status, format_spawn_model_line, format_swarm_model_list,
     latest_assistant_report, resolve_optional_target_session, resolve_run_plan_concurrency,
-    resolve_worker_model_source, swarm_member_is_drivable_worker, swarm_member_is_in_flight,
+    resolve_worker_model_source, spawn_role_slot, swarm_member_is_drivable_worker,
+    swarm_member_is_in_flight,
 };
 use crate::message::{Message, StreamEvent, ToolDefinition};
 use crate::protocol::{
@@ -1028,8 +1029,12 @@ fn format_swarm_model_list_renders_routes_and_default() {
             cheapness: None,
         },
     ];
-    let output =
-        format_swarm_model_list(Some("claude-fable-5"), Some("openai-api:gpt-5.5"), &routes);
+    let output = format_swarm_model_list(
+        Some("claude-fable-5"),
+        Some("openai-api:gpt-5.5"),
+        &routes,
+        &Default::default(),
+    );
     assert!(output.contains("Current coordinator model: claude-fable-5"));
     assert!(output.contains("Configured agents.swarm_model default: openai-api:gpt-5.5"));
     assert!(output.contains("gpt-5.5 via OpenAI [openai-api-key] (API key)"));
@@ -1039,7 +1044,7 @@ fn format_swarm_model_list_renders_routes_and_default() {
 
 #[test]
 fn format_swarm_model_list_handles_empty_catalog() {
-    let output = format_swarm_model_list(None, None, &[]);
+    let output = format_swarm_model_list(None, None, &[], &Default::default());
     assert!(output.contains("Current coordinator model: unknown"));
     assert!(output.contains("No agents.swarm_model default configured"));
     assert!(output.contains("unless model is passed"));
@@ -1121,14 +1126,7 @@ fn schema_advertises_a_lean_lane_first_action_set() {
     ] {
         assert!(props.contains_key(kept), "{kept} param should be offered");
     }
-    for dropped in [
-        "key",
-        "value",
-        "proposer_session",
-        "reason",
-        "role",
-        "plan_items",
-    ] {
+    for dropped in ["key", "value", "proposer_session", "reason", "plan_items"] {
         assert!(
             !props.contains_key(dropped),
             "{dropped} belongs to hidden actions"
@@ -1566,7 +1564,8 @@ fn await_members_blocking_deadline_covers_wait() {
 
 #[test]
 fn worker_model_source_labels() {
-    let r = |req, eff, glob, env| resolve_worker_model_source(req, eff, glob, env, Some("opus"));
+    let r =
+        |req, eff, glob, env| resolve_worker_model_source(req, None, eff, glob, env, Some("opus"));
     assert_eq!(
         r(Some("gpt"), Some("ds"), Some("ds"), None),
         (Some("gpt".into()), "explicit")
@@ -1670,4 +1669,34 @@ fn ready_without_report_is_incomplete_and_reported_stays_done() {
     .output;
     assert!(out.contains("(incomplete)"));
     assert!(out.contains("report c"));
+}
+
+#[test]
+fn role_slot_resolution_precedence_and_source() {
+    let mut agents = crate::config::AgentsConfig::default();
+    agents.roles.research = Some("cheap".into());
+    agents.roles.edit = Some(" ".into());
+    let slot = spawn_role_slot(Some("research"), &agents);
+    assert_eq!(slot, Some(("research", "cheap")));
+    let r = |req, slot| {
+        resolve_worker_model_source(req, slot, Some("ds"), Some("ds"), None, Some("opus"))
+    };
+    assert_eq!(r(None, slot), (Some("cheap".into()), "slot:research"));
+    assert_eq!(r(Some("gpt"), slot), (Some("gpt".into()), "explicit"));
+    // Blank or unknown slots fall back to swarm_model, then inheritance.
+    assert_eq!(spawn_role_slot(Some("edit"), &agents), None);
+    assert_eq!(spawn_role_slot(Some("bogus"), &agents), None);
+    assert_eq!(r(None, None), (Some("ds".into()), "config"));
+    assert_eq!(
+        resolve_worker_model_source(None, None, None, None, None, Some("opus")),
+        (Some("opus".into()), "inherit")
+    );
+    let mut agents = agents.clone();
+    agents.roles.edit = Some("e1".into());
+    assert_eq!(
+        r(None, spawn_role_slot(Some("EDIT"), &agents)),
+        (Some("e1".into()), "slot:edit")
+    );
+    let list = format_swarm_model_list(Some("opus"), None, &[], &agents);
+    assert!(list.contains("research=cheap, edit=e1"), "{list}");
 }

@@ -599,6 +599,9 @@ pub struct AgentsConfig {
     pub browser_jev_model: Option<String>,
     /// Optional model override for voice Jev Decisions.
     pub voice_jev_model: Option<String>,
+    /// Per-role default models (`[agents.roles]`) for spawned agents.
+    #[serde(default)]
+    pub roles: AgentRoleModels,
     /// Minimum Jev relevance probability. Invalid values fail closed.
     #[serde(default = "default_memory_jev_threshold")]
     pub memory_jev_threshold: f32,
@@ -690,6 +693,35 @@ fn default_memory_rerank_min_agree() -> usize {
     2
 }
 
+/// Role model slots: a spawn with `role` and no explicit `model` uses the
+/// matching slot, then `swarm_model`, then coordinator inheritance.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AgentRoleModels {
+    pub research: Option<String>,
+    pub edit: Option<String>,
+    pub compaction: Option<String>,
+    pub websearch: Option<String>,
+    pub council: Option<String>,
+}
+
+impl AgentRoleModels {
+    pub const ROLES: [&'static str; 5] = ["research", "edit", "compaction", "websearch", "council"];
+
+    /// Configured, non-blank model for `role` (case-insensitive).
+    pub fn get(&self, role: &str) -> Option<&str> {
+        let slot = match role.trim().to_ascii_lowercase().as_str() {
+            "research" => &self.research,
+            "edit" => &self.edit,
+            "compaction" => &self.compaction,
+            "websearch" => &self.websearch,
+            "council" => &self.council,
+            _ => return None,
+        };
+        slot.as_deref().map(str::trim).filter(|m| !m.is_empty())
+    }
+}
+
 impl Default for AgentsConfig {
     fn default() -> Self {
         Self {
@@ -703,6 +735,7 @@ impl Default for AgentsConfig {
             memory_jev_model: None,
             browser_jev_model: None,
             voice_jev_model: None,
+            roles: AgentRoleModels::default(),
             memory_jev_threshold: default_memory_jev_threshold(),
             memory_model: None,
             memory_sidecar_enabled: default_memory_sidecar_enabled(),

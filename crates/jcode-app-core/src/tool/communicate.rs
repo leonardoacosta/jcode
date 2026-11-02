@@ -1503,8 +1503,11 @@ fn is_inherit_model(model: &str) -> bool {
 
 /// Mirrors the server's spawn selection: explicit > effective swarm default
 /// (`slot` session override, `env` JCODE_SWARM_MODEL, or `config`) > inherit.
+/// A configured role slot (`[agents.roles]`) sits between explicit and the
+/// swarm default and reports `slot:<role>`.
 fn resolve_worker_model_source(
     requested: Option<&str>,
+    role_slot: Option<(&str, &str)>,
     effective_default: Option<&str>,
     global_default: Option<&str>,
     env_default: Option<&str>,
@@ -1517,6 +1520,12 @@ fn resolve_worker_model_source(
         } else {
             (Some(model.to_string()), "explicit")
         };
+    }
+    if let Some((role, model)) = role_slot
+        && let Some(source) = role_slot_source(role)
+        && !is_inherit_model(model)
+    {
+        return (Some(model.trim().to_string()), source);
     }
     let Some(model) = effective_default
         .map(str::trim)
@@ -1532,6 +1541,26 @@ fn resolve_worker_model_source(
         "config"
     };
     (Some(model.to_string()), source)
+}
+
+fn role_slot_source(role: &str) -> Option<&'static str> {
+    Some(match role.trim().to_ascii_lowercase().as_str() {
+        "research" => "slot:research",
+        "edit" => "slot:edit",
+        "compaction" => "slot:compaction",
+        "websearch" => "slot:websearch",
+        "council" => "slot:council",
+        _ => return None,
+    })
+}
+
+/// Configured role slot for a spawn, if `role` names one with a model set.
+fn spawn_role_slot<'a>(
+    role: Option<&'a str>,
+    agents: &'a crate::config::AgentsConfig,
+) -> Option<(&'a str, &'a str)> {
+    let role = role?;
+    agents.roles.get(role).map(|model| (role, model))
 }
 
 fn format_spawn_model_line(
@@ -1752,6 +1781,7 @@ fn format_swarm_model_list(
     current_model: Option<&str>,
     configured_swarm_model: Option<&str>,
     model_routes: &[jcode_provider_core::ModelRoute],
+    agents: &crate::config::AgentsConfig,
 ) -> String {
     let mut out = String::new();
     out.push_str(&format!(
@@ -1765,6 +1795,16 @@ fn format_swarm_model_list(
         _ => out.push_str(
             "No agents.swarm_model default configured (workers inherit the coordinator's model unless model is passed).\n",
         ),
+    }
+    let slots: Vec<String> = ["research", "edit", "compaction", "websearch", "council"]
+        .iter()
+        .filter_map(|role| agents.roles.get(role).map(|m| format!("{role}={m}")))
+        .collect();
+    if !slots.is_empty() {
+        out.push_str(&format!(
+            "Configured agents.roles slots (used when spawn passes role without model): {}\n",
+            slots.join(", ")
+        ));
     }
     if model_routes.is_empty() {
         out.push_str("\nNo model routes reported. Omit model to use the configured default, or pass inherit to use the coordinator.");
@@ -2092,6 +2132,10 @@ impl Tool for CommunicateTool {
                     "type": "string",
                     "enum": ["visible", "headless", "inline", "auto"],
                     "description": "Omit to use the user's configured mode. Set only when the user asks for one."
+                },
+                "role": {
+                    "type": "string",
+                    "description": "For spawn: role slot (research, edit, compaction, websearch, council); without model, uses agents.roles.<role>, then swarm_model."
                 },
                 "model": {
                     "type": "string",
@@ -2677,7 +2721,11 @@ impl Tool for CommunicateTool {
                     initial_message: params.spawn_initial_message(),
                     request_nonce: None,
                     spawn_mode: params.spawn_mode.clone(),
-                    model: params.model.clone(),
+                    // Explicit model wins; otherwise a configured role slot.
+                    model: params.model.clone().or_else(|| {
+                        spawn_role_slot(params.role.as_deref(), &crate::config::config().agents)
+                            .map(|(_, model)| model.to_string())
+                    }),
                     // Worker effort is not agent-controlled: the server applies
                     // `agents.swarm_effort` (default "low").
                     effort: None,
@@ -2719,8 +2767,10 @@ impl Tool for CommunicateTool {
                         };
                         let global = crate::config::config().agents.swarm_model.clone();
                         let env = std::env::var("JCODE_SWARM_MODEL").ok();
+                        let agents = crate::config::config().agents.clone();
                         let (model, source) = resolve_worker_model_source(
                             params.model.as_deref(),
+                            spawn_role_slot(params.role.as_deref(), &agents),
                             effective.as_deref(),
                             global.as_deref(),
                             env.as_deref(),
@@ -2766,6 +2816,7 @@ impl Tool for CommunicateTool {
                         current_model.as_deref(),
                         configured_swarm_model.as_deref(),
                         &model_routes,
+                        &crate::config::config().agents,
                     ))),
                     Ok(response) => {
                         ensure_success(&response)?;
@@ -2904,18 +2955,20 @@ impl Tool for CommunicateTool {
 
                 match send_request(request).await {
                     Ok(ServerEvent::CommSummaryResponse { tool_calls, .. }) => {
-                        let report = fetch_swarm_members(&ctx.session_id)
-                            .await
-                            .ok()
-                            .and_then(|members| {
-                                members
-                                    .into_iter()
-                                    .find(|m| {
-                                        m.session_id == target
-                                            || m.friendly_name.as_deref() == Some(target.as_str())
-                                    })
-                                    .and_then(|m| m.latest_completion_report)
-                            });
+                        let report =
+                            fetch_swarm_members(&ctx.session_id)
+                                .await
+                                .ok()
+                                .and_then(|members| {
+                                    members
+                                        .into_iter()
+                                        .find(|m| {
+                                            m.session_id == target
+                                                || m.friendly_name.as_deref()
+                                                    == Some(target.as_str())
+                                        })
+                                        .and_then(|m| m.latest_completion_report)
+                                });
                         Ok(format_summary_with_report(
                             &target,
                             report.as_deref(),
@@ -3217,7 +3270,9 @@ impl Tool for CommunicateTool {
                     }
                     other => {
                         ensure_success(&other)?;
-                        Err(anyhow::anyhow!("Failed to respawn orphaned worker {orphan}"))
+                        Err(anyhow::anyhow!(
+                            "Failed to respawn orphaned worker {orphan}"
+                        ))
                     }
                 }
             }
