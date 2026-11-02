@@ -1,3 +1,10 @@
+# Historical per-query rows, not a completed matched benchmark
+
+Preserved numeric measurements from `results.json`. Each cell is reported hit@1/hit@5,
+stdout-character token estimate, and command milliseconds. Only three paths per row
+were retained, so not every hit@5 can be audited. Ast-grep covers 12 queries, others 20.
+See [README.md](README.md) for provenance gaps, corrected runs, and pending task state.
+
 | query | kind | agentgrep | graft | ast-grep | repo-map |
 |---|---|---|---|---|---|
 | q01 | symbol | 1/1 56t 64ms | 1/1 1256t 1822ms | 1/1 75t 540ms | 1/1 10t 421ms |
