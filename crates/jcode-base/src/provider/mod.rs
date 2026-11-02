@@ -1,6 +1,7 @@
 mod accessors;
 mod account_failover;
 mod account_selection;
+mod model_fallback;
 pub mod activation;
 pub mod anthropic;
 pub mod antigravity;
@@ -460,6 +461,85 @@ impl MultiProvider {
     #[cfg(test)]
     fn same_provider_account_candidates(provider: ActiveProvider) -> Vec<String> {
         account_failover::same_provider_account_candidates(provider)
+    }
+
+    /// Wraps account/provider failover with the configured `model_fallback`
+    /// chain. Only transient errors switch; the original error is surfaced
+    /// when the chain is missing or exhausted.
+    async fn complete_with_model_fallback(
+        &self,
+        messages: &[Message],
+        tools: &[ToolDefinition],
+        mode: CompletionMode<'_>,
+        resume_session_id: Option<&str>,
+    ) -> Result<EventStream> {
+        let primary = self.model();
+        let err = match self
+            .complete_with_failover(messages, tools, mode, resume_session_id)
+            .await
+        {
+            Ok(stream) => {
+                model_fallback::health().record_success(&primary);
+                return Ok(stream);
+            }
+            Err(err) => err,
+        };
+        let class = model_fallback::classify(&format!("{err:#}"));
+        let chain = model_fallback::chain_for(&crate::config::config().provider.model_fallback, &primary);
+        model_fallback::health().record_failure(&primary, std::time::Instant::now());
+        if class != model_fallback::ErrorClass::Transient || chain.is_empty() {
+            return Err(err);
+        }
+        let plan = model_fallback::plan(&chain, &model_fallback::health(), std::time::Instant::now());
+        let mut notices: Vec<String> = Vec::new();
+        let mut from = primary.clone();
+        let mut reason = Self::summarize_error(&err);
+        for (candidate, cooling) in plan {
+            let cooling_note = if cooling { " (cooling)" } else { "" };
+            if let Err(set_err) = self.set_model(&candidate) {
+                notices.push(format!(
+                    "Model fallback skipped {candidate}{cooling_note}: {set_err}"
+                ));
+                continue;
+            }
+            notices.push(format!(
+                "Model fallback {from} -> {candidate}{cooling_note} ({} error: {reason})",
+                class.as_str()
+            ));
+            crate::logging::info(notices.last().map(String::as_str).unwrap_or_default());
+            match self
+                .complete_with_failover(messages, tools, mode, resume_session_id)
+                .await
+            {
+                Ok(stream) => {
+                    model_fallback::health().record_success(&candidate);
+                    let events: Vec<Result<crate::message::StreamEvent>> = notices
+                        .into_iter()
+                        .map(|detail| Ok(crate::message::StreamEvent::StatusDetail { detail }))
+                        .collect();
+                    return Ok(Box::pin(futures::StreamExt::chain(futures::stream::iter(events), stream)));
+                }
+                Err(next) => {
+                    model_fallback::health()
+                        .record_failure(&candidate, std::time::Instant::now());
+                    let next_class = model_fallback::classify(&format!("{next:#}"));
+                    reason = Self::summarize_error(&next);
+                    from = candidate.clone();
+                    if next_class != model_fallback::ErrorClass::Transient {
+                        notices.push(format!(
+                            "Model fallback stopped at {candidate}: permanent error"
+                        ));
+                        break;
+                    }
+                }
+            }
+        }
+        for n in &notices {
+            crate::logging::info(n);
+        }
+        // Chain exhausted: restore the user's model, surface original error.
+        let _ = self.set_model(&primary);
+        Err(err)
     }
 
     async fn complete_with_failover(
@@ -1747,7 +1827,7 @@ impl Provider for MultiProvider {
         system: &str,
         resume_session_id: Option<&str>,
     ) -> Result<EventStream> {
-        self.complete_with_failover(
+        self.complete_with_model_fallback(
             messages,
             tools,
             CompletionMode::Unified { system },
@@ -1765,7 +1845,7 @@ impl Provider for MultiProvider {
         system_dynamic: &str,
         resume_session_id: Option<&str>,
     ) -> Result<EventStream> {
-        self.complete_with_failover(
+        self.complete_with_model_fallback(
             messages,
             tools,
             CompletionMode::Split {
