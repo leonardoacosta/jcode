@@ -1,0 +1,80 @@
+[
+  {
+    "event": {
+      "text": "yo",
+      "type": "text_delta"
+    },
+    "frames": [
+      {
+        "ev": "text_delta",
+        "message_id": "text-1",
+        "session_id": "s1",
+        "text": "yo",
+        "v": 1
+      }
+    ]
+  },
+  {
+    "event": {
+      "id": 1,
+      "type": "done"
+    },
+    "frames": [
+      {
+        "ev": "text_done",
+        "message_id": "text-1",
+        "session_id": "s1",
+        "v": 1
+      },
+      {
+        "ev": "turn_done",
+        "session_id": "s1",
+        "v": 1
+      }
+    ]
+  },
+  {
+    "event": {
+      "id": 99,
+      "model": "new",
+      "type": "model_changed"
+    },
+    "frames": [
+      {
+        "ev": "model_info",
+        "model": "new",
+        "session_id": "s1",
+        "v": 1
+      }
+    ]
+  },
+  {
+    "event": {
+      "pending": 2,
+      "type": "soft_interrupt_queue"
+    },
+    "frames": []
+  },
+  {
+    "event": {
+      "data": {},
+      "type": "swarm_event"
+    },
+    "frames": []
+  },
+  {
+    "event": {
+      "id": 7,
+      "message": "save failed",
+      "type": "error"
+    },
+    "frames": [
+      {
+        "code": "internal",
+        "ev": "error",
+        "message": "save failed",
+        "v": 1
+      }
+    ]
+  }
+]

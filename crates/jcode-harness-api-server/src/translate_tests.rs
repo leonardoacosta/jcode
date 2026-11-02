@@ -4197,3 +4197,6 @@ fn todo_state_is_served_from_the_session_home_and_acked() {
     }
     let _ = std::fs::remove_dir_all(&home);
 }
+
+#[path = "translate_tests/snapshot_tests.rs"]
+mod snapshot_tests;

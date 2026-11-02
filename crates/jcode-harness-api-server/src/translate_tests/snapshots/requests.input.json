@@ -1,0 +1,7 @@
+[
+  {"id": 4, "req": "set_model", "model": ""},
+  {"id": 6, "req": "compact"},
+  {"id": 8, "req": "rename_session"},
+  {"id": 9, "req": "list_models"},
+  {"id": 501, "req": "runtime_command", "session_id": "s1", "command": "memory", "args": ["status"]}
+]

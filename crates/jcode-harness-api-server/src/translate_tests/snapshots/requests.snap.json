@@ -1,0 +1,86 @@
+[
+  {
+    "outbound": [
+      {
+        "reply": {
+          "code": "invalid_request",
+          "ev": "error",
+          "message": "set_model needs a non-empty `model`",
+          "reply_to": 4,
+          "v": 1
+        }
+      }
+    ],
+    "request": {
+      "id": 4,
+      "model": "",
+      "req": "set_model"
+    }
+  },
+  {
+    "outbound": [
+      {
+        "legacy": {
+          "id": 1,
+          "type": "compact"
+        }
+      }
+    ],
+    "request": {
+      "id": 6,
+      "req": "compact"
+    }
+  },
+  {
+    "outbound": [
+      {
+        "legacy": {
+          "id": 2,
+          "type": "rename_session"
+        }
+      }
+    ],
+    "request": {
+      "id": 8,
+      "req": "rename_session"
+    }
+  },
+  {
+    "outbound": [
+      {
+        "legacy": {
+          "id": 3,
+          "subscribe_usage_updates": true,
+          "type": "get_model_catalog"
+        }
+      }
+    ],
+    "request": {
+      "id": 9,
+      "req": "list_models"
+    }
+  },
+  {
+    "outbound": [
+      {
+        "legacy": {
+          "args": [
+            "status"
+          ],
+          "command": "memory",
+          "id": 4,
+          "type": "runtime_command"
+        }
+      }
+    ],
+    "request": {
+      "args": [
+        "status"
+      ],
+      "command": "memory",
+      "id": 501,
+      "req": "runtime_command",
+      "session_id": "s1"
+    }
+  }
+]
