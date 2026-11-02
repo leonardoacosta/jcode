@@ -852,7 +852,7 @@ fn build_header_lines_with_auth(
     if !mcps.is_empty() {
         lines.push(
             Line::from(Span::styled(
-                mcp_header_text(&mcps, w),
+                mcp_header_text(&mcps, w, app.mcp_health()),
                 Style::default().fg(dim_color()),
             ))
             .alignment(align),
@@ -986,29 +986,54 @@ pub(in crate::tui) fn build_header_sections(
 
 /// One-row MCP summary: `mcp n/m ready: a (3 tools), …`. Servers reporting
 /// zero tools are still connecting. Never exceeds `w` display cells.
-fn mcp_header_text(mcps: &[(String, usize)], w: usize) -> String {
+fn mcp_header_text(
+    mcps: &[(String, usize)],
+    w: usize,
+    health: &[crate::protocol::McpServerHealth],
+) -> String {
     use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
     const MAX_MCPS: usize = 4;
-    let ready = mcps.iter().filter(|(_, count)| *count > 0).count();
+    let ready = mcps
+        .iter()
+        .filter(|(name, count)| {
+            health
+                .iter()
+                .find(|h| h.name == *name)
+                .map_or(*count > 0, |h| h.state == "connected")
+        })
+        .count();
+    let degraded = health
+        .iter()
+        .filter(|h| h.state == "degraded" && mcps.iter().any(|(name, _)| *name == h.name))
+        .count();
+    let summary = if degraded == 0 {
+        format!("mcp {ready}/{}", mcps.len())
+    } else {
+        format!("mcp {ready}/{} !{degraded}", mcps.len())
+    };
     let shown: Vec<String> = mcps
         .iter()
         .take(MAX_MCPS)
         .map(|(name, count)| {
-            if *count > 0 {
+            let connected = health
+                .iter()
+                .find(|h| h.name == *name)
+                .is_some_and(|h| h.state == "connected");
+            if *count > 0 || connected {
                 format!("{name} ({count} tools)")
             } else {
                 format!("{name} (…)")
             }
         })
         .collect();
-    let mut text = format!("mcp {ready}/{}: {}", mcps.len(), shown.join(", "));
+    let mut text = format!("{summary}: {}", shown.join(", "));
     if mcps.len() > MAX_MCPS {
         text.push_str(&format!(" +{} more", mcps.len() - MAX_MCPS));
     }
     if text.width() <= w {
         return text;
     }
-    let short = format!("mcp {ready}/{}", mcps.len());
+    let short = summary;
     if short.width() <= w {
         return short;
     }
@@ -1045,16 +1070,41 @@ mod tests {
         use unicode_width::UnicodeWidthStr;
         let mcps = vec![("aperture".to_string(), 12), ("grafana".to_string(), 0)];
         assert_eq!(
-            mcp_header_text(&mcps, 80),
+            mcp_header_text(&mcps, 80, &[]),
             "mcp 1/2: aperture (12 tools), grafana (…)"
         );
-        assert_eq!(mcp_header_text(&mcps, 12), "mcp 1/2");
+        assert_eq!(mcp_header_text(&mcps, 12, &[]), "mcp 1/2");
         for w in 0..60 {
-            let text = mcp_header_text(&mcps, w);
+            let text = mcp_header_text(&mcps, w, &[]);
             assert!(text.width() <= w, "w={w}: {text}");
             assert!(!text.contains('\n'));
         }
-        assert_eq!(mcp_header_text(&mcps, 5), "mcp …");
+        assert_eq!(mcp_header_text(&mcps, 5, &[]), "mcp …");
+    }
+
+    #[test]
+    fn mcp_health_counts_zero_tool_connections_and_degraded_servers() {
+        use unicode_width::UnicodeWidthStr;
+        let mcps = vec![("empty".into(), 0), ("broken".into(), 0)];
+        let health = vec![
+            crate::protocol::McpServerHealth {
+                name: "empty".into(),
+                state: "connected".into(),
+                ..Default::default()
+            },
+            crate::protocol::McpServerHealth {
+                name: "broken".into(),
+                state: "degraded".into(),
+                ..Default::default()
+            },
+        ];
+        assert!(mcp_header_text(&mcps, 80, &health).contains("empty (0 tools)"));
+        assert_eq!(mcp_header_text(&mcps, 12, &health), "mcp 1/2 !1");
+        for width in 0..60 {
+            let text = mcp_header_text(&mcps, width, &health);
+            assert!(text.width() <= width, "{width}: {text}");
+            assert!(!text.contains('\n'));
+        }
     }
 
     #[test]

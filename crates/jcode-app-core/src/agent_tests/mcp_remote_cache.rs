@@ -309,7 +309,7 @@ async fn remote_startup_case(shared: bool) {
     // task writes its schema cache before sending the final status.
     tokio::time::timeout(Duration::from_secs(5), async {
         while let Some(event) = rx.recv().await {
-            if let ServerEvent::McpStatus { servers } = event
+            if let ServerEvent::McpStatus { servers, .. } = event
                 && servers.iter().any(|s| s == "slow:1")
                 && servers.iter().any(|s| s == "fast:1")
             {
@@ -362,7 +362,7 @@ async fn remote_startup_case(shared: bool) {
     fast.release.add_permits(1);
     tokio::time::timeout(Duration::from_secs(5), async {
         while let Some(event) = warm_rx.recv().await {
-            if let ServerEvent::McpStatus { servers } = event
+            if let ServerEvent::McpStatus { servers, .. } = event
                 && servers.iter().any(|s| s == "slow:1")
                 && servers.iter().any(|s| s == "fast:1")
             {
@@ -431,7 +431,7 @@ async fn remote_empty_catalog_replaces_obsolete_cached_schemas() {
     peer.release.add_permits(1);
     tokio::time::timeout(Duration::from_secs(5), async {
         while let Some(event) = rx.recv().await {
-            if let ServerEvent::McpStatus { servers } = event
+            if let ServerEvent::McpStatus { servers, .. } = event
                 && servers.is_empty()
             {
                 return;

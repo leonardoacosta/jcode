@@ -55,7 +55,7 @@ impl FailureClass {
         }
     }
 
-    fn classify(error: &anyhow::Error) -> Self {
+    pub(crate) fn classify(error: &anyhow::Error) -> Self {
         let msg = format!("{error:#}").to_ascii_lowercase();
         if msg.contains("failed to spawn") {
             Self::SpawnFailed
@@ -75,6 +75,24 @@ impl FailureClass {
             Self::Other
         }
     }
+}
+
+pub(crate) fn redacted_stderr(lines: &[String], config: &McpServerConfig) -> Vec<String> {
+    lines
+        .iter()
+        .map(|line| {
+            let mut line = line.clone();
+            for secret in config
+                .env
+                .values()
+                .chain(config.headers.values())
+                .filter(|value| !value.is_empty())
+            {
+                line = line.replace(secret, "[REDACTED]");
+            }
+            crate::message::redact_secrets(&line)
+        })
+        .collect()
 }
 
 #[derive(Clone)]
@@ -572,6 +590,55 @@ impl SharedMcpPool {
         }
     }
 
+    pub async fn health_snapshot(
+        &self,
+        config: &McpConfig,
+    ) -> Vec<jcode_protocol::McpServerHealth> {
+        let connecting: Vec<_> = self.connecting.lock().await.keys().cloned().collect();
+        let handles = self.handles.read().await;
+        let errors = self.last_errors.read().await;
+        let mut names: Vec<_> = config.servers.keys().cloned().collect();
+        names.sort();
+        names.dedup();
+        names
+            .into_iter()
+            .map(|name| {
+                let cfg = config.servers.get(&name);
+                let connected = handles.get(&name).is_some_and(|handle| !handle.is_closed());
+                let failure = errors.get(&name).filter(|record| {
+                    !connected
+                        && cfg
+                            .is_some_and(|cfg| record.config_fingerprint == config_fingerprint(cfg))
+                });
+                let state = if cfg.is_some_and(|cfg| !cfg.is_enabled()) {
+                    "disabled"
+                } else if connected {
+                    "connected"
+                } else if failure.is_some_and(FailedConnectRecord::degraded) {
+                    "degraded"
+                } else if failure.is_some() {
+                    "backoff"
+                } else if connecting.contains(&name) {
+                    "connecting"
+                } else if cfg.is_some_and(McpServerConfig::is_lazy) {
+                    "lazy"
+                } else {
+                    "not connected"
+                };
+                let stderr_tail = failure
+                    .zip(cfg)
+                    .map(|(failure, cfg)| redacted_stderr(&failure.stderr_tail, cfg))
+                    .unwrap_or_default();
+                jcode_protocol::McpServerHealth {
+                    name,
+                    state: state.into(),
+                    failure_class: failure.map(|failure| failure.class.as_str().into()),
+                    stderr_tail,
+                }
+            })
+            .collect()
+    }
+
     async fn recent_failure(
         &self,
         name: &str,
@@ -622,6 +689,37 @@ pub fn get_shared_pool() -> Option<Arc<SharedMcpPool>> {
 mod tests {
     use super::*;
     use crate::mcp::protocol::McpConfig;
+
+    #[tokio::test]
+    async fn health_snapshot_reports_degraded_failure_without_config_secrets() {
+        let config: McpConfig = serde_json::from_value(serde_json::json!({"mcpServers": {
+            "broken": {"command": "missing", "env": {"CUSTOM_SECRET": "fixture-secret-value"}}
+        }}))
+        .unwrap();
+        let fingerprint = config_fingerprint(&config.servers["broken"]);
+        let pool = SharedMcpPool::new(config.clone());
+        pool.last_errors.write().await.insert(
+            "broken".into(),
+            FailedConnectRecord {
+                message: "missing".into(),
+                failed_at: Instant::now(),
+                failures: DEGRADED_THRESHOLD,
+                class: FailureClass::SpawnFailed,
+                stderr_tail: vec!["failed fixture-secret-value".into()],
+                config_fingerprint: fingerprint,
+            },
+        );
+        let record = pool.last_errors.read().await["broken"].clone();
+        pool.last_errors
+            .write()
+            .await
+            .insert("other-workspace".into(), record);
+        let health = pool.health_snapshot(&config).await;
+        assert_eq!(health.len(), 1);
+        assert_eq!(health[0].state, "degraded");
+        assert_eq!(health[0].failure_class.as_deref(), Some("spawn_failed"));
+        assert_eq!(health[0].stderr_tail, ["failed [REDACTED]"]);
+    }
 
     #[tokio::test]
     async fn issue_790_reload_reuses_default_config_directory() {

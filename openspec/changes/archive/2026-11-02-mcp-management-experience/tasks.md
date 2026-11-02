@@ -1,8 +1,8 @@
 ## 1. Visibility
 - [x] 1.1 `/mcp` slash command listing servers with scope/state/tools/error; snapshot test incl. empty state
-  - Note: failure class + stderr tail live in the daemon pool and are not on the wire yet (`McpStatus` carries `name:count`); `/mcp` points to `mcp status`/logs. Follow-up: extend `McpStatus` with health.
+  - Optional `McpStatus.health` carries session-scoped failure class and redacted stderr for shared and session-owned servers. Lazy/manual connection outcomes publish updates. Legacy-wire, scope-isolation, redaction, owned-failure/reset, and TUI table tests pass; private-socket TUI `/mcp` confirmed degraded and connected-zero-tool rows.
 - [x] 1.2 Info-widget MCP row with ellipsis truncation; narrow-width test
-  - Note: header row shows `mcp ready/total`; degraded count pending the same wire follow-up.
+  - Header shows connected/total and `!N` degraded count using the existing display-cell truncation; tests cover widths 0–59 and connected servers with zero tools.
 
 ## 2. Surfacing and scoping
 - [x] 2.1 Config fields `expose`, `mcp.pin_tools`, `workspaces`, `lazy`; parsing tests

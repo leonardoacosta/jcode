@@ -927,6 +927,10 @@ impl crate::tui::TuiState for App {
         self.status_detail.clone()
     }
 
+    fn mcp_health(&self) -> &[crate::protocol::McpServerHealth] {
+        &self.mcp_health
+    }
+
     fn mcp_servers(&self) -> Vec<(String, usize)> {
         self.mcp_server_names.clone()
     }

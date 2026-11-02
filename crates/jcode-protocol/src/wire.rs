@@ -865,4 +865,4 @@ pub enum Request {
 }
 
 mod events;
-pub use events::{AccountUsageSnapshot, ServerEvent};
+pub use events::{AccountUsageSnapshot, McpServerHealth, ServerEvent};

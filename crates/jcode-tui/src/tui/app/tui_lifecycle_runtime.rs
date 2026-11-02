@@ -261,13 +261,14 @@ impl App {
                 let manager = self.mcp_manager.read().await;
                 let result = manager.connect_all().await.unwrap_or((0, Vec::new()));
                 // Cache server names with tool counts
-                let servers = manager.connected_servers().await;
                 let all_tools = manager.all_tools().await;
-                self.mcp_server_names = servers
-                    .into_iter()
-                    .map(|name| {
-                        let count = all_tools.iter().filter(|(s, _)| s == &name).count();
-                        (name, count)
+                self.mcp_health = manager.health_snapshot().await;
+                self.mcp_server_names = self
+                    .mcp_health
+                    .iter()
+                    .map(|health| {
+                        let count = all_tools.iter().filter(|(s, _)| s == &health.name).count();
+                        (health.name.clone(), count)
                     })
                     .collect();
                 result

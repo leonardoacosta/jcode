@@ -34,6 +34,7 @@ pub(super) fn render_mcp_status(
     config: &McpConfig,
     global_names: &HashSet<String>,
     connected: &[(String, usize)],
+    health: &[crate::protocol::McpServerHealth],
     cwd: Option<&Path>,
 ) -> String {
     if config.servers.is_empty() {
@@ -42,7 +43,7 @@ pub(super) fn render_mcp_status(
     let mut names: Vec<_> = config.servers.keys().collect();
     names.sort();
     let mut out = String::from(
-        "**MCP servers**\n\n| Server | Scope | State | Tools | Exposure |\n|---|---|---|---|---|\n",
+        "**MCP servers**\n\n| Server | Scope | State | Tools | Exposure | Failure | Stderr tail |\n|---|---|---|---|---|---|---|\n",
     );
     for name in names {
         let cfg = &config.servers[name];
@@ -53,13 +54,31 @@ pub(super) fn render_mcp_status(
             "project"
         };
         let exposure = if cfg.is_direct() { "direct" } else { "search" };
+        let health = health.iter().find(|health| health.name == *name);
+        let state = server_state(cfg, tools, cwd);
+        let state = if cfg.is_enabled() && cfg.in_workspace(cwd) {
+            health.map_or(state, |health| health.state.clone())
+        } else {
+            state
+        };
+        let failure = health
+            .and_then(|health| health.failure_class.as_deref())
+            .unwrap_or("-");
+        let stderr = health
+            .map(|health| health.stderr_tail.join("; "))
+            .unwrap_or_default()
+            .replace('|', "\\|")
+            .replace(['\n', '\r'], " ");
         out.push_str(&format!(
-            "| {name} | {scope} | {} | {} | {exposure} |\n",
-            server_state(cfg, tools, cwd),
-            tools.filter(|c| *c > 0).map_or("-".into(), |c| c.to_string()),
+            "| {name} | {scope} | {state} | {} | {exposure} | {failure} | {stderr} |\n",
+            tools
+                .filter(|c| *c > 0 || state == "connected")
+                .map_or("-".into(), |c| c.to_string()),
         ));
     }
-    out.push_str("\nFailure details: `mcp status` tool or `~/.jcode/logs`. Sign in: `/mcp login <server>`.");
+    out.push_str(
+        "\nFailure details: `mcp status` tool or `~/.jcode/logs`. Sign in: `/mcp login <server>`.",
+    );
     out
 }
 
@@ -71,7 +90,11 @@ pub(super) fn handle_mcp_command(app: &mut App, trimmed: &str) -> bool {
         return false;
     }
     let rest = rest.trim();
-    let cwd = app.session.working_dir.clone().map(std::path::PathBuf::from);
+    let cwd = app
+        .session
+        .working_dir
+        .clone()
+        .map(std::path::PathBuf::from);
     let config = McpConfig::load_for_dir(cwd.as_deref());
 
     if let Some(server) = rest.strip_prefix("login") {
@@ -84,14 +107,18 @@ pub(super) fn handle_mcp_command(app: &mut App, trimmed: &str) -> bool {
         return true;
     }
     if !rest.is_empty() {
-        app.push_display_message(DisplayMessage::error(
-            "Usage: /mcp | /mcp login <server>",
-        ));
+        app.push_display_message(DisplayMessage::error("Usage: /mcp | /mcp login <server>"));
         return true;
     }
 
     let global: HashSet<String> = McpConfig::load_for_dir(None).servers.into_keys().collect();
-    let message = render_mcp_status(&config, &global, &app.mcp_server_names, cwd.as_deref());
+    let message = render_mcp_status(
+        &config,
+        &global,
+        &app.mcp_server_names,
+        &app.mcp_health,
+        cwd.as_deref(),
+    );
     app.push_display_message(DisplayMessage::system(message));
     true
 }
@@ -125,11 +152,15 @@ fn start_login(app: &mut App, config: &McpConfig, name: &str) {
             ));
         };
         let result = crate::mcp::oauth::login(&url, crate::mcp::oauth::BrowserMode::Open, |auth| {
-            publish(format!("Open this URL to authorize MCP server '{name}':\n{auth}"));
+            publish(format!(
+                "Open this URL to authorize MCP server '{name}':\n{auth}"
+            ));
         })
         .await;
         publish(match result {
-            Ok(()) => format!("Logged in to MCP server '{name}'. Reconnect it to use the credentials."),
+            Ok(()) => {
+                format!("Logged in to MCP server '{name}'. Reconnect it to use the credentials.")
+            }
             Err(error) => format!("MCP login failed for '{name}': {error:#}"),
         });
     });
@@ -160,18 +191,58 @@ mod tests {
             &config(),
             &global,
             &[("live".into(), 3), ("proj".into(), 0)],
+            &[],
             Some(Path::new("/dev/personal/x")),
         );
-        assert!(out.contains("| live | global | connected | 3 | direct |"), "{out}");
-        assert!(out.contains("| off | global | disabled | - | search |"), "{out}");
+        assert!(
+            out.contains("| live | global | connected | 3 | direct |"),
+            "{out}"
+        );
+        assert!(
+            out.contains("| off | global | disabled | - | search |"),
+            "{out}"
+        );
         assert!(out.contains("| brown | global | out of scope |"), "{out}");
         assert!(out.contains("| later | global | lazy |"), "{out}");
         assert!(out.contains("| proj | project | connecting |"), "{out}");
     }
 
     #[test]
+    fn degraded_status_includes_failure_and_stderr() {
+        let health = crate::protocol::McpServerHealth {
+            name: "proj".into(),
+            state: "degraded".into(),
+            failure_class: Some("spawn_failed".into()),
+            stderr_tail: vec!["missing | executable\nretry".into()],
+        };
+        let out = render_mcp_status(&config(), &HashSet::new(), &[], &[health], None);
+        assert!(out.contains("| proj | project | degraded |"), "{out}");
+        assert!(
+            out.contains("spawn_failed") && out.contains("missing \\| executable retry"),
+            "{out}"
+        );
+    }
+
+    #[test]
+    fn connected_server_without_tools_shows_zero() {
+        let health = crate::protocol::McpServerHealth {
+            name: "proj".into(),
+            state: "connected".into(),
+            ..Default::default()
+        };
+        let out = render_mcp_status(
+            &config(),
+            &HashSet::new(),
+            &[("proj".into(), 0)],
+            &[health],
+            None,
+        );
+        assert!(out.contains("| proj | project | connected | 0 |"), "{out}");
+    }
+
+    #[test]
     fn empty_state_names_config_paths() {
-        let out = render_mcp_status(&McpConfig::default(), &HashSet::new(), &[], None);
+        let out = render_mcp_status(&McpConfig::default(), &HashSet::new(), &[], &[], None);
         assert!(out.contains("no servers configured"));
         assert!(out.contains("~/.jcode/mcp.json") && out.contains(".mcp.json"));
     }
@@ -180,7 +251,13 @@ mod tests {
     fn login_without_server_shows_usage() {
         let mut app = super::super::tests::create_test_app();
         assert!(handle_mcp_command(&mut app, "/mcp login"));
-        assert!(app.display_messages().last().unwrap().content.contains("Usage"));
+        assert!(
+            app.display_messages()
+                .last()
+                .unwrap()
+                .content
+                .contains("Usage")
+        );
         assert!(!handle_mcp_command(&mut app, "/mcpfoo"));
     }
 }

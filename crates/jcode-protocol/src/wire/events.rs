@@ -2,6 +2,36 @@
 
 use super::*;
 
+#[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct McpServerHealth {
+    pub name: String,
+    pub state: String,
+    #[serde(default)]
+    pub failure_class: Option<String>,
+    #[serde(default)]
+    pub stderr_tail: Vec<String>,
+}
+
+#[test]
+fn mcp_health_survives_wire_roundtrip() {
+    let value = serde_json::json!({
+        "type": "mcp_status", "servers": [],
+        "health": [{"name": "broken", "state": "degraded", "failure_class": "spawn_failed", "stderr_tail": ["executable missing"]}]
+    });
+    let event: ServerEvent = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(
+        serde_json::to_value(event).unwrap()["health"],
+        value["health"]
+    );
+}
+
+#[test]
+fn legacy_mcp_status_has_no_health() {
+    let value = serde_json::json!({"type": "mcp_status", "servers": ["old:3"]});
+    let event: ServerEvent = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(serde_json::to_value(event).unwrap(), value);
+}
+
 /// Credential-free usage attributed to an OAuth account on the daemon host.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AccountUsageSnapshot {
@@ -530,6 +560,8 @@ pub enum ServerEvent {
     McpStatus {
         /// Server names with tool counts in "name:count" format
         servers: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        health: Vec<McpServerHealth>,
     },
 
     /// Client debug command forwarded from debug socket to TUI

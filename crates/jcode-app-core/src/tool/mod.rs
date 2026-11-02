@@ -1598,6 +1598,12 @@ impl Registry {
             Arc::new(RwLock::new(McpManager::new()))
         };
 
+        mcp_manager
+            .read()
+            .await
+            .set_status_sender(event_tx.clone())
+            .await;
+
         // Register MCP management tool immediately (with registry for dynamic tool registration)
         let mcp_tool =
             mcp::McpManagementTool::new(Arc::clone(&mcp_manager)).with_registry(self.clone());
@@ -1655,6 +1661,7 @@ impl Registry {
                 };
                 let _ = tx.send(crate::protocol::ServerEvent::McpStatus {
                     servers: server_names,
+                    health: Vec::new(),
                 });
             }
 
@@ -1715,7 +1722,10 @@ impl Registry {
                             .into_iter()
                             .map(|(name, count)| format!("{}:{}", name, count))
                             .collect();
-                        let _ = tx.send(crate::protocol::ServerEvent::McpStatus { servers });
+                        let _ = tx.send(crate::protocol::ServerEvent::McpStatus {
+                            servers,
+                            health: mcp_manager.read().await.health_snapshot().await,
+                        });
                     }
                 }
             }
@@ -1737,7 +1747,10 @@ impl Registry {
                     .collect();
                 {
                     let config = manager.config();
-                    let mut index = registry.mcp_policy.write().unwrap_or_else(|e| e.into_inner());
+                    let mut index = registry
+                        .mcp_policy
+                        .write()
+                        .unwrap_or_else(|e| e.into_inner());
                     index.direct = crate::mcp::McpConfig {
                         servers: config
                             .servers
@@ -1778,6 +1791,15 @@ impl Registry {
                 while let Some((name, result)) = connections.next().await {
                     registry.set_mcp_server_failed(&name, result.is_err());
                     if let Err(error) = result {
+                        if let Some(ref tx) = event_tx {
+                            let health = mcp_manager.read().await.health_snapshot().await;
+                            let servers = server_counts
+                                .iter()
+                                .map(|(name, count)| format!("{name}:{count}"))
+                                .collect();
+                            let _ = tx
+                                .send(crate::protocol::ServerEvent::McpStatus { servers, health });
+                        }
                         // Backed-off/degraded skips were already reported once
                         // by the pool on the health transition.
                         if format!("{error:#}").contains(crate::mcp::pool::SUPPRESSED_MARKER) {
@@ -1857,7 +1879,10 @@ impl Registry {
                             .iter()
                             .map(|(name, count)| format!("{}:{}", name, count))
                             .collect();
-                        let _ = tx.send(crate::protocol::ServerEvent::McpStatus { servers });
+                        let _ = tx.send(crate::protocol::ServerEvent::McpStatus {
+                            servers,
+                            health: mcp_manager.read().await.health_snapshot().await,
+                        });
                     }
                 }
             });

@@ -818,6 +818,9 @@ pub trait TuiState {
     /// Provider-supplied human-readable status detail for the current stream.
     fn status_detail(&self) -> Option<String>;
     fn mcp_servers(&self) -> Vec<(String, usize)>;
+    fn mcp_health(&self) -> &[crate::protocol::McpServerHealth] {
+        &[]
+    }
     fn available_skills(&self) -> Vec<String>;
     /// Authoritative active credential (OAuth vs API key) for a dual-auth
     /// provider, as resolved from the live provider / remote server rather than

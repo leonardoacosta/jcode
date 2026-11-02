@@ -1159,6 +1159,7 @@ pub struct App {
     resize_redraw_pending: bool,
     // Cached MCP server names and tool counts (updated on connect/disconnect)
     mcp_server_names: Vec<(String, usize)>,
+    mcp_health: Vec<crate::protocol::McpServerHealth>,
     // When the current connection phase (authenticating/connecting/waiting) began.
     // Reset on every phase change so the "suspiciously long" yellow status is
     // measured per-attempt instead of inheriting the whole-turn elapsed time

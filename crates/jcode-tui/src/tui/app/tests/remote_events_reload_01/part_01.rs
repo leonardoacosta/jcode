@@ -1573,6 +1573,7 @@ fn test_handle_server_event_mcp_status_updates_tools_without_status_notice() {
     app.handle_server_event(
         crate::protocol::ServerEvent::McpStatus {
             servers: vec!["agentcard:8".to_string()],
+            health: Vec::new(),
         },
         &mut remote,
     );

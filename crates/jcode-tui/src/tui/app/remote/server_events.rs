@@ -2683,7 +2683,8 @@ pub(in crate::tui::app) fn handle_server_event(
             app.set_status_notice("Plan proposal received");
             false
         }
-        ServerEvent::McpStatus { servers } => {
+        ServerEvent::McpStatus { servers, health } => {
+            app.mcp_health = health;
             app.mcp_server_names = servers
                 .iter()
                 .filter_map(|s| {
@@ -2692,6 +2693,15 @@ pub(in crate::tui::app) fn handle_server_event(
                     Some((name.to_string(), count))
                 })
                 .collect();
+            for health in &app.mcp_health {
+                if !app
+                    .mcp_server_names
+                    .iter()
+                    .any(|(name, _)| name == &health.name)
+                {
+                    app.mcp_server_names.push((health.name.clone(), 0));
+                }
+            }
             // Keep MCP readiness non-intrusive. The footer/tool indicator reads
             // `mcp_server_names` directly, so avoid a transient status notice here:
             // status notices render near the prompt and can cover text while the

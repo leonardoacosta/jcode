@@ -1000,6 +1000,7 @@ fn header_prep_signature(app: &dyn TuiState, width: u16) -> u64 {
     app.is_canary().hash(&mut hasher);
     app.server_update_available().hash(&mut hasher);
     app.mcp_servers().hash(&mut hasher);
+    app.mcp_health().hash(&mut hasher);
     app.connected_clients().hash(&mut hasher);
     app.server_sessions().len().hash(&mut hasher);
     app.working_dir().hash(&mut hasher);

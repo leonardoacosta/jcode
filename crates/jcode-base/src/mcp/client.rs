@@ -142,6 +142,13 @@ impl McpHandle {
             .clone()
     }
 
+    pub fn tool_count(&self) -> usize {
+        self.tools
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .len()
+    }
+
     /// Get available tools
     pub fn tools(&self) -> Vec<McpToolDef> {
         self.tools

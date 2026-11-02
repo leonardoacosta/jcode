@@ -55,6 +55,8 @@ pub struct McpManager {
     pool_handles: RwLock<HashMap<String, McpHandle>>,
     /// Per-session owned clients (non-shared / stateful servers)
     owned_clients: RwLock<HashMap<String, McpClient>>,
+    owned_errors: RwLock<HashMap<String, jcode_protocol::McpServerHealth>>,
+    status_tx: RwLock<Option<tokio::sync::mpsc::UnboundedSender<jcode_protocol::ServerEvent>>>,
     /// In-flight owned-server handshakes, keyed by server name. This prevents
     /// background startup and a manual connect from spawning two processes for
     /// the same session server at the same time.
@@ -125,6 +127,8 @@ impl McpManager {
             pool: None,
             pool_handles: RwLock::new(HashMap::new()),
             owned_clients: RwLock::new(HashMap::new()),
+            owned_errors: RwLock::new(HashMap::new()),
+            status_tx: RwLock::new(None),
             connecting: Arc::new(Mutex::new(HashMap::new())),
             config: McpConfig::load_for_dir(project_dir.as_deref()),
             session_id: "owned".to_string(),
@@ -149,6 +153,8 @@ impl McpManager {
             pool: Some(pool),
             pool_handles: RwLock::new(HashMap::new()),
             owned_clients: RwLock::new(HashMap::new()),
+            owned_errors: RwLock::new(HashMap::new()),
+            status_tx: RwLock::new(None),
             connecting: Arc::new(Mutex::new(HashMap::new())),
             config: McpConfig::load_for_dir(project_dir.as_deref()),
             session_id,
@@ -162,6 +168,8 @@ impl McpManager {
             pool: None,
             pool_handles: RwLock::new(HashMap::new()),
             owned_clients: RwLock::new(HashMap::new()),
+            owned_errors: RwLock::new(HashMap::new()),
+            status_tx: RwLock::new(None),
             connecting: Arc::new(Mutex::new(HashMap::new())),
             config,
             session_id: "owned".to_string(),
@@ -245,15 +253,56 @@ impl McpManager {
             }
         }
 
+        self.publish_status().await;
         Ok((total_successes, total_failures))
     }
 
-    /// Clear shared-pool backoff/degraded state so an explicit user connect
-    /// is attempted immediately.
+    /// Clear shared and owned connection failures before an explicit retry.
     pub async fn reset_failures(&self, name: &str) {
+        self.owned_errors.write().await.remove(name);
         if let Some(pool) = &self.pool {
             pool.reset_failures(name).await;
         }
+    }
+
+    pub async fn set_status_sender(
+        &self,
+        sender: Option<tokio::sync::mpsc::UnboundedSender<jcode_protocol::ServerEvent>>,
+    ) {
+        *self.status_tx.write().await = sender;
+    }
+
+    async fn publish_status(&self) {
+        let Some(tx) = self.status_tx.read().await.clone() else {
+            return;
+        };
+        let mut servers: Vec<_> = self
+            .pool_handles
+            .read()
+            .await
+            .iter()
+            .filter(|(_, handle)| !handle.is_closed())
+            .map(|(name, handle)| format!("{name}:{}", handle.tool_count()))
+            .collect();
+        servers.extend(
+            self.owned_clients
+                .read()
+                .await
+                .iter()
+                .filter(|(_, client)| !client.handle().is_closed())
+                .map(|(name, client)| format!("{name}:{}", client.handle().tool_count())),
+        );
+        servers.sort();
+        let _ = tx.send(jcode_protocol::ServerEvent::McpStatus {
+            servers,
+            health: self.health_snapshot().await,
+        });
+    }
+
+    pub async fn connect(&self, name: &str, config: &McpServerConfig) -> Result<()> {
+        let result = self.connect_inner(name, config).await;
+        self.publish_status().await;
+        result
     }
 
     /// Connect to a specific server
@@ -261,7 +310,7 @@ impl McpManager {
         clippy::collapsible_if,
         reason = "MCP connect flow keeps shared-pool and owned-server paths explicit"
     )]
-    pub async fn connect(&self, name: &str, config: &McpServerConfig) -> Result<()> {
+    async fn connect_inner(&self, name: &str, config: &McpServerConfig) -> Result<()> {
         // Partner-discovery provenance: if this server's command matches a
         // setup the agent saw in a discover_tools listing, tag it so calls to
         // it are metered coarsely (counts only; see sponsors::provenance).
@@ -348,10 +397,28 @@ impl McpManager {
         let mut clients = self.owned_clients.write().await;
         let result = match connection {
             Ok(client) => {
+                self.owned_errors.write().await.remove(name);
                 clients.insert(name.to_string(), client);
                 Ok(())
             }
-            Err(error) => Err(format!("{:#}", error)),
+            Err(error) => {
+                let stderr = error
+                    .downcast_ref::<super::client::StderrTail>()
+                    .map(|tail| tail.0.as_slice())
+                    .unwrap_or_default();
+                self.owned_errors.write().await.insert(
+                    name.into(),
+                    jcode_protocol::McpServerHealth {
+                        name: name.into(),
+                        state: "degraded".into(),
+                        failure_class: Some(
+                            super::pool::FailureClass::classify(&error).as_str().into(),
+                        ),
+                        stderr_tail: super::pool::redacted_stderr(stderr, config),
+                    },
+                );
+                Err(format!("{:#}", error))
+            }
         };
 
         if connecting
@@ -368,6 +435,13 @@ impl McpManager {
 
     /// Disconnect from a server
     pub async fn disconnect(&self, name: &str) -> Result<()> {
+        let result = self.disconnect_inner(name).await;
+        self.publish_status().await;
+        result
+    }
+
+    async fn disconnect_inner(&self, name: &str) -> Result<()> {
+        self.owned_errors.write().await.remove(name);
         // Check if it's a pool handle
         {
             let mut handles = self.pool_handles.write().await;
@@ -390,6 +464,7 @@ impl McpManager {
 
     /// Disconnect from all servers
     pub async fn disconnect_all(&self) {
+        self.owned_errors.write().await.clear();
         // Session is ending: flush any pending partner-discovery usage
         // aggregates (best effort) so short sessions still report.
         crate::sponsors::provenance::flush_now();
@@ -410,6 +485,53 @@ impl McpManager {
                 client.shutdown().await;
             }
         }
+    }
+
+    pub async fn health_snapshot(&self) -> Vec<jcode_protocol::McpServerHealth> {
+        let mut health = if let Some(pool) = &self.pool {
+            pool.health_snapshot(&self.config).await
+        } else {
+            self.config
+                .servers
+                .keys()
+                .map(|name| jcode_protocol::McpServerHealth {
+                    name: name.clone(),
+                    state: "not connected".into(),
+                    ..Default::default()
+                })
+                .collect()
+        };
+        let connecting: Vec<_> = self.connecting.lock().await.keys().cloned().collect();
+        let clients = self.owned_clients.read().await;
+        let errors = self.owned_errors.read().await;
+        for row in &mut health {
+            let cfg = &self.config.servers[&row.name];
+            if !cfg.is_enabled() || !cfg.in_workspace(self.project_dir.as_deref()) {
+                row.state = if cfg.is_enabled() {
+                    "out of scope"
+                } else {
+                    "disabled"
+                }
+                .into();
+                row.failure_class = None;
+                row.stderr_tail.clear();
+            } else if self.pool.is_none() || !cfg.shared {
+                if clients
+                    .get(&row.name)
+                    .is_some_and(|client| !client.handle().is_closed())
+                {
+                    row.state = "connected".into();
+                } else if let Some(error) = errors.get(&row.name) {
+                    *row = error.clone();
+                } else if connecting.contains(&row.name) {
+                    row.state = "connecting".into();
+                } else if cfg.is_lazy() {
+                    row.state = "lazy".into();
+                }
+            }
+        }
+        health.sort_by(|left, right| left.name.cmp(&right.name));
+        health
     }
 
     /// Get list of connected server names
@@ -991,6 +1113,73 @@ done
         assert_eq!(starts.lines().count(), 1, "server starts: {starts:?}");
         manager.disconnect_all().await;
     }
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn owned_failure_health_is_visible_and_resettable() {
+    let config: McpConfig = serde_json::from_value(serde_json::json!({"mcpServers": {
+        "broken": {"command": "/jcode-test/missing-owned-server", "shared": false}
+    }}))
+    .unwrap();
+    let manager = McpManager::with_config(config.clone());
+    assert!(
+        manager
+            .connect("broken", &config.servers["broken"])
+            .await
+            .is_err()
+    );
+    let health = manager.health_snapshot().await;
+    assert_eq!(health[0].state, "degraded");
+    assert_eq!(health[0].failure_class.as_deref(), Some("spawn_failed"));
+    manager.reset_failures("broken").await;
+    assert!(manager.health_snapshot().await[0].failure_class.is_none());
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn owned_lazy_failure_publishes_health_update() {
+    let config: McpConfig = serde_json::from_value(serde_json::json!({"mcpServers": {
+        "broken": {"command": "/jcode-test/missing-owned-server", "shared": false, "lazy": true}
+    }}))
+    .unwrap();
+    let manager = McpManager::with_config(config.clone());
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    manager.set_status_sender(Some(tx)).await;
+    assert!(
+        manager
+            .connect("broken", &config.servers["broken"])
+            .await
+            .is_err()
+    );
+    let jcode_protocol::ServerEvent::McpStatus { health, .. } = rx.try_recv().unwrap() else {
+        panic!("expected MCP health update")
+    };
+    assert_eq!(health[0].state, "degraded");
+    assert_eq!(health[0].failure_class.as_deref(), Some("spawn_failed"));
+}
+
+#[cfg(all(test, unix))]
+#[tokio::test]
+async fn owned_failure_stderr_is_redacted() {
+    let config: McpConfig = serde_json::from_value(serde_json::json!({"mcpServers": {
+        "broken": {"command": "/bin/sh", "args": ["-c", "printf 'failure:%s\\n' \"$CUSTOM_SECRET\" >&2; exit 1"], "shared": false, "env": {"CUSTOM_SECRET": "fixture-secret-value"}}
+    }})).unwrap();
+    let manager = McpManager::with_config(config.clone());
+    assert!(
+        manager
+            .connect("broken", &config.servers["broken"])
+            .await
+            .is_err()
+    );
+    let health = manager.health_snapshot().await;
+    assert_eq!(
+        health[0].failure_class.as_deref(),
+        Some("exited_before_init")
+    );
+    let stderr = health[0].stderr_tail.join("\n");
+    assert!(stderr.contains("[REDACTED]"), "{stderr}");
+    assert!(!stderr.contains("fixture-secret-value"));
 }
 
 #[cfg(all(test, unix))]
