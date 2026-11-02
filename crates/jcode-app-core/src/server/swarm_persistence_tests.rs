@@ -1090,3 +1090,88 @@ async fn concurrent_same_swarm_persists_keep_highest_plan_version() {
         .expect("final snapshot parses");
     assert_eq!(primary.plan.expect("plan").version, 17);
 }
+
+fn running_worker(session_id: &str) -> SwarmMember {
+    let (event_tx, _event_rx) = tokio::sync::mpsc::unbounded_channel();
+    SwarmMember {
+        session_id: session_id.to_string(),
+        event_tx,
+        event_txs: HashMap::new(),
+        working_dir: None,
+        swarm_id: Some("swarm-orphan".to_string()),
+        swarm_enabled: true,
+        status: "running".to_string(),
+        detail: None,
+        friendly_name: None,
+        report_back_to_session_id: None,
+        latest_completion_report: None,
+        role: "agent".to_string(),
+        joined_at: Instant::now(),
+        last_status_change: Instant::now(),
+        is_headless: true,
+        output_tail: None,
+        todo_progress: None,
+        todo_items: Vec::new(),
+        runtime: crate::protocol::SwarmMemberRuntime::default(),
+        task_label: Some("lane-a".to_string()),
+    }
+}
+
+#[test]
+fn reload_orphans_lost_worker_and_resumes_restorable_one() {
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    let _env = test_env(&dir);
+    let prev_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    let spec = WorkerSpawnSpec {
+        lane: "lane-a".to_string(),
+        prompt: Some("do lane a".to_string()),
+        model: Some("m1".to_string()),
+        working_dir: None,
+        last_status: None,
+    };
+    record_worker_spawn_spec("worker-lost", &spec);
+    record_worker_spawn_spec("worker-kept", &spec);
+    std::fs::create_dir_all(dir.path().join("sessions")).unwrap();
+    std::fs::write(dir.path().join("sessions/worker-kept.json"), "{}").unwrap();
+
+    let now = now_unix_ms();
+    let lost = from_persisted_member(
+        to_persisted_member(&running_worker("worker-lost"), now),
+        now,
+        now,
+        Duration::from_secs(3600),
+    )
+    .expect("orphan kept");
+    assert_eq!(lost.status, ORPHANED_STATUS);
+    let stored = load_worker_spawn_spec("worker-lost").expect("spec");
+    assert_eq!(stored.last_status.as_deref(), Some("running"));
+    assert_eq!(stored.prompt.as_deref(), Some("do lane a"));
+    assert_eq!(stored.lane, "lane-a");
+
+    let kept = from_persisted_member(
+        to_persisted_member(&running_worker("worker-kept"), now),
+        now,
+        now,
+        Duration::from_secs(3600),
+    )
+    .expect("kept");
+    assert_ne!(kept.status, ORPHANED_STATUS);
+    assert!(load_worker_spawn_spec("worker-kept").unwrap().last_status.is_none());
+
+    // Members without a spec (old state files) keep legacy recovery.
+    let legacy = from_persisted_member(
+        to_persisted_member(&running_worker("worker-legacy"), now),
+        now,
+        now,
+        Duration::from_secs(3600),
+    )
+    .expect("legacy");
+    assert_eq!(legacy.status, "crashed");
+    assert!(serde_json::from_str::<WorkerSpawnSpec>("{}").is_ok());
+
+    match prev_home {
+        Some(v) => crate::env::set_var("JCODE_HOME", v),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+}

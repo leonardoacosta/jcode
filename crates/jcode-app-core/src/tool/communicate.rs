@@ -2688,6 +2688,16 @@ impl Tool for CommunicateTool {
                     Ok(ServerEvent::CommSpawnResponse { new_session_id, .. })
                         if !new_session_id.is_empty() =>
                     {
+                        crate::server::swarm_persistence::record_worker_spawn_spec(
+                            &new_session_id,
+                            &crate::server::swarm_persistence::WorkerSpawnSpec {
+                                lane: params.label.clone().unwrap_or_default(),
+                                prompt: prompt.clone(),
+                                model: params.model.clone(),
+                                working_dir: params.working_dir.clone(),
+                                last_status: None,
+                            },
+                        );
                         crate::server::swarm_todo_link::link_assignment(
                             &ctx.session_id,
                             &lane_id,
@@ -3156,6 +3166,59 @@ impl Tool for CommunicateTool {
                     run_swarm_plan_in_background(&ctx, params.clone()).await
                 } else {
                     run_swarm_plan_to_terminal(&ctx, &params, &RunPlanReporter::inline()).await
+                }
+            }
+
+            "retry"
+                if params.task_id.is_none()
+                    && let Some(spec) = params
+                        .target_session
+                        .as_deref()
+                        .and_then(crate::server::swarm_persistence::load_worker_spawn_spec)
+                        .filter(|spec| spec.last_status.is_some()) =>
+            {
+                // Orphaned after reload: respawn from the persisted lane+prompt.
+                let orphan = params.target_session.clone().unwrap_or_default();
+                let response = send_request(Request::CommSpawn {
+                    id: REQUEST_ID,
+                    session_id: ctx.session_id.clone(),
+                    working_dir: spec.working_dir.clone(),
+                    initial_message: spec.prompt.clone(),
+                    request_nonce: None,
+                    spawn_mode: params.spawn_mode.clone(),
+                    model: spec.model.clone(),
+                    effort: None,
+                    label: Some(spec.lane.clone()),
+                })
+                .await?;
+                match response {
+                    ServerEvent::CommSpawnResponse { new_session_id, .. }
+                        if !new_session_id.is_empty() =>
+                    {
+                        crate::server::swarm_persistence::record_worker_spawn_spec(
+                            &new_session_id,
+                            &crate::server::swarm_persistence::WorkerSpawnSpec {
+                                last_status: None,
+                                ..spec.clone()
+                            },
+                        );
+                        // Consume the orphan marker so a repeat retry cannot double-spawn.
+                        crate::server::swarm_persistence::record_worker_spawn_spec(
+                            &orphan,
+                            &crate::server::swarm_persistence::WorkerSpawnSpec {
+                                last_status: None,
+                                ..spec.clone()
+                            },
+                        );
+                        Ok(ToolOutput::new(format!(
+                            "Respawned orphaned worker {orphan} in lane '{}' as {new_session_id}",
+                            spec.lane
+                        )))
+                    }
+                    other => {
+                        ensure_success(&other)?;
+                        Err(anyhow::anyhow!("Failed to respawn orphaned worker {orphan}"))
+                    }
                 }
             }
 

@@ -57,7 +57,7 @@ mod swarm;
 mod swarm_channels;
 mod swarm_labels;
 mod swarm_mutation_state;
-mod swarm_persistence;
+pub(crate) mod swarm_persistence;
 pub(crate) mod swarm_todo_link;
 mod swarm_watchdog;
 mod turn_failover;

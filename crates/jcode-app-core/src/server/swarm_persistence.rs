@@ -321,6 +321,47 @@ fn to_persisted_member(member: &SwarmMember, snapshot_unix_ms: u64) -> Persisted
     }
 }
 
+/// Status given to a worker whose session could not be restored after reload.
+/// `swarm retry` respawns it from its persisted [`WorkerSpawnSpec`].
+pub(crate) const ORPHANED_STATUS: &str = "orphaned";
+
+/// What is needed to respawn a worker in one step: its lane (spawn label),
+/// initial prompt and model. Stored beside the swarm state, keyed by session,
+/// so older swarm snapshots load unchanged.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub(crate) struct WorkerSpawnSpec {
+    #[serde(default)]
+    pub lane: String,
+    #[serde(default)]
+    pub prompt: Option<String>,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub working_dir: Option<String>,
+    /// Last lifecycle status observed before reload recovery rewrote it.
+    #[serde(default)]
+    pub last_status: Option<String>,
+}
+
+fn worker_spec_path(session_id: &str) -> PathBuf {
+    let safe: String = session_id
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .collect();
+    state_dir().join("worker-specs").join(format!("{safe}.json"))
+}
+
+pub(crate) fn record_worker_spawn_spec(session_id: &str, spec: &WorkerSpawnSpec) {
+    if let Err(error) = storage::write_json(&worker_spec_path(session_id), spec) {
+        crate::logging::warn(&format!("failed to persist worker spawn spec: {error}"));
+    }
+}
+
+pub(crate) fn load_worker_spawn_spec(session_id: &str) -> Option<WorkerSpawnSpec> {
+    let path = worker_spec_path(session_id);
+    path.exists().then(|| storage::read_json(&path).ok()).flatten()
+}
+
 fn append_recovery_detail(detail: Option<String>, note: &str) -> Option<String> {
     match detail {
         Some(existing) if !existing.trim().is_empty() => Some(format!("{} ({})", existing, note)),
@@ -395,7 +436,25 @@ fn from_persisted_member(
     let original_status = record.status.as_str();
     let was_terminal_before_recovery =
         super::swarm::member_status_is_terminal(original_status.as_ref());
-    let (status, detail) = recover_member_status(record.status, record.detail, record.is_headless);
+    let spec = (!was_terminal_before_recovery)
+        .then(|| load_worker_spawn_spec(&record.session_id))
+        .flatten();
+    let (status, detail) = match spec {
+        // A spawned worker whose session did not survive cannot be resumed;
+        // mark it orphaned so `swarm retry` can respawn it from its spec.
+        Some(mut spec) if !crate::session::session_exists(&record.session_id) => {
+            spec.last_status = Some(original_status.to_string());
+            record_worker_spawn_spec(&record.session_id, &spec);
+            (
+                SwarmLifecycleStatus::Other(ORPHANED_STATUS.to_string()),
+                append_recovery_detail(
+                    record.detail,
+                    "session lost on reload; `swarm retry` respawns it",
+                ),
+            )
+        }
+        _ => recover_member_status(record.status, record.detail, record.is_headless),
+    };
     let status_text = status.as_str();
     let terminal_since_unix_ms = super::swarm::member_status_is_terminal(status_text.as_ref())
         .then(|| {
