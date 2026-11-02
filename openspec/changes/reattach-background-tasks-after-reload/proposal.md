@@ -29,3 +29,7 @@ Background task manager and server reload path in `crates/jcode-app-core`. Exit 
 ## Evidence
 
 Survey: [plans/2026-11-01-background-agent-ux-gaps.md](../../../plans/2026-11-01-background-agent-ux-gaps.md) gap 6.
+
+## Approval
+
+Approved 2026-11-01 with recommended defaults for all open decisions.

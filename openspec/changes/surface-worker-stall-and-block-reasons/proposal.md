@@ -30,3 +30,7 @@ Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODU
 ## Evidence
 
 Survey: [plans/2026-11-01-background-agent-ux-gaps.md](../../../plans/2026-11-01-background-agent-ux-gaps.md) gaps 3, 7, 8, 9, 11.
+
+## Approval
+
+Approved 2026-11-01 with recommended defaults for all open decisions.

@@ -31,3 +31,7 @@ Herdr can show `idle`, `working`, `blocked` and `done`, but Jcode reports only t
 ## Evidence
 
 Survey: [plans/2026-11-01-background-agent-ux-gaps.md](../../../plans/2026-11-01-background-agent-ux-gaps.md) gaps 1, 2, 5.
+
+## Approval
+
+Approved 2026-11-01 with recommended defaults for all open decisions.

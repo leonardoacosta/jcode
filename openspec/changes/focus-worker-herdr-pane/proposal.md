@@ -29,3 +29,7 @@ Visible workers launched in Herdr get a pane (`crates/jcode-terminal-launch/src/
 ## Evidence
 
 Survey: [plans/2026-11-01-background-agent-ux-gaps.md](../../../plans/2026-11-01-background-agent-ux-gaps.md) gaps 4, 10.
+
+## Approval
+
+Approved 2026-11-01 with recommended defaults for all open decisions.
