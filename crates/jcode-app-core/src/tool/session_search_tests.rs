@@ -428,6 +428,7 @@ fn filters_cover_role_provider_model_flags_and_dates() {
         let mut options = SearchOptions::for_test("current-session");
         options.limit = 10;
         options.max_per_session = 10;
+        options.debug_filter = Some(true);
         options.role_filter = Some(RoleFilter::User);
         let results = run_search(home, "filterable-needle", &options);
         assert_eq!(results.len(), 1);
@@ -669,4 +670,31 @@ fn limit_validation_reports_friendly_errors() {
     let err = validate_bounded_usize(Some(-1), DEFAULT_LIMIT, 1, MAX_LIMIT, "limit")
         .expect_err("negative limit should be rejected");
     assert!(err.contains("received -1"));
+}
+
+#[test]
+fn debug_sessions_are_excluded_unless_opted_in_and_deleted_ids_drop_out() {
+    with_temp_home(|home| {
+        let mut session = save_test_session(
+            "debug-session",
+            vec![(Role::User, vec![text("debugonly-needle here")])],
+        );
+        session.is_debug = true;
+        session.save().expect("save debug flag");
+        save_test_session(
+            "plain-session",
+            vec![(Role::User, vec![text("plainonly-needle here")])],
+        );
+
+        let mut options = SearchOptions::for_test("current-session");
+        assert!(run_search(home, "debugonly-needle", &options).is_empty());
+        options.debug_filter = Some(true);
+        assert_eq!(run_search(home, "debugonly-needle", &options).len(), 1);
+
+        options.debug_filter = None;
+        assert_eq!(run_search(home, "plainonly-needle", &options).len(), 1);
+        std::fs::remove_file(home.join("sessions").join("plain-session.json"))
+            .expect("delete session");
+        assert!(run_search(home, "plainonly-needle", &options).is_empty());
+    });
 }

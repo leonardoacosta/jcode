@@ -4,7 +4,7 @@ mod display;
 mod menubar;
 mod power;
 mod session;
-pub use session::{HibernationMode, SessionConfig};
+pub use session::{HibernationMode, SessionConfig, SessionRetentionConfig, SessionsConfig};
 pub use {display::DisplayConfig, menubar::MenubarConfig, power::PowerConfig};
 pub mod keybindings;
 mod serde_lenient;
@@ -1270,6 +1270,9 @@ pub struct ProviderConfig {
     /// Whether jcode should automatically try another account on the same provider
     /// before falling back to a different provider.
     pub same_provider_account_failover: bool,
+    /// Automatic model fallback on transient errors: model id -> ordered
+    /// fallback model ids. Unset means no automatic switching.
+    pub model_fallback: std::collections::HashMap<String, Vec<String>>,
     /// Copilot premium request mode: "normal", "one", or "zero"
     /// "zero" means all requests are free (no premium requests consumed)
     pub copilot_premium: Option<String>,
@@ -1323,6 +1326,7 @@ impl Default for ProviderConfig {
             preserve_reasoning_context: true,
             cross_provider_failover: CrossProviderFailoverMode::Countdown,
             same_provider_account_failover: true,
+            model_fallback: Default::default(),
             copilot_premium: None,
             gemini_force_oauth: false,
             gemini_project: None,

@@ -7,7 +7,7 @@ use std::time::Instant;
 
 use super::args::{
     AmbientCommand, Args, AuthCommand, CloudCommand, CloudSessionsCommand, Command, MemoryCommand,
-    ModelCommand, ProviderCommand, RestartCommand, ServerCommand, SessionCommand,
+    ModelCommand, ProviderCommand, RestartCommand, ServerCommand, SessionCommand, SessionsCommand,
     TranscriptModeArg,
 };
 use crate::{
@@ -478,6 +478,9 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
                 json,
             } => commands::run_session_rename_command(&session, name.as_deref(), clear, json)?,
         },
+        Some(Command::Sessions(SessionsCommand::Gc { apply, json })) => {
+            commands::run_sessions_gc_command(apply, json)?;
+        }
         Some(Command::Ambient(subcmd)) => {
             commands::run_ambient_command(map_ambient_subcommand(subcmd)).await?;
         }

@@ -1660,10 +1660,8 @@ fn jcode_session_matches_filters(session: &Session, options: &SearchOptions) -> 
     {
         return false;
     }
-    if options
-        .debug_filter
-        .is_some_and(|expected| session.is_debug != expected)
-    {
+    // Debug sessions are excluded by default; opt in with `debug: true`.
+    if session.is_debug != options.debug_filter.unwrap_or(false) {
         return false;
     }
     if options

@@ -47,6 +47,7 @@ mod parallel_messages;
 mod persistence;
 pub mod prewarm;
 mod render;
+pub mod retention;
 mod storage_paths;
 pub use crash::{
     CrashedSessionsInfo, detect_crashed_sessions, find_recent_crashed_sessions,

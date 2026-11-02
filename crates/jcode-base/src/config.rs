@@ -11,8 +11,9 @@ pub use jcode_config_types::{
     LaunchHotkeyEntry, LaunchHotkeysConfig, MarkdownSpacingMode, MenubarConfig, NamedProviderAuth,
     NamedProviderConfig, NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig,
     NotificationsConfig, PowerConfig, ProviderConfig, ReasoningDisplayMode, SafetyConfig,
-    SessionConfig, SessionPickerResumeAction, SponsorsConfig, SwarmSpawnMode, SwarmStripLayout,
-    TerminalConfig, UpdateChannel, WebSearchConfig, WebSearchEngine,
+    SessionConfig, SessionPickerResumeAction, SessionRetentionConfig, SessionsConfig,
+    SponsorsConfig, SwarmSpawnMode, SwarmStripLayout, TerminalConfig, UpdateChannel,
+    WebSearchConfig, WebSearchEngine,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -597,6 +598,9 @@ pub fn on_config_reloaded(listener: fn()) {
 pub struct Config {
     /// Idle session memory hibernation policy.
     pub session: SessionConfig,
+
+    /// On-disk session store policy (`[sessions.retention]`).
+    pub sessions: SessionsConfig,
 
     /// Daemon behavior for autonomous wake requests.
     pub server: ServerConfig,

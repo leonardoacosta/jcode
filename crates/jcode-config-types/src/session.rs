@@ -84,3 +84,35 @@ mod tests {
         assert_eq!(HibernationMode::parse("bogus"), None);
     }
 }
+
+/// `[sessions]` table: on-disk session store policy.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SessionsConfig {
+    pub retention: SessionRetentionConfig,
+}
+
+/// `[sessions.retention]`: opt-in garbage collection of debug/tiny sessions.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct SessionRetentionConfig {
+    /// Master switch. Nothing is ever deleted while false.
+    pub enabled: bool,
+    /// Run GC on a background thread at startup (also requires `enabled`).
+    pub auto_gc: bool,
+    pub debug_max_age_days: u64,
+    pub tiny_max_messages: usize,
+    pub tiny_max_age_days: u64,
+}
+
+impl Default for SessionRetentionConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            auto_gc: false,
+            debug_max_age_days: 7,
+            tiny_max_messages: 3,
+            tiny_max_age_days: 14,
+        }
+    }
+}

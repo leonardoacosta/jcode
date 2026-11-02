@@ -352,6 +352,10 @@ pub(crate) enum Command {
     #[command(subcommand)]
     Session(SessionCommand),
 
+    /// Session store maintenance (retention GC)
+    #[command(subcommand)]
+    Sessions(SessionsCommand),
+
     /// Ambient mode management
     #[command(subcommand)]
     Ambient(AmbientCommand),
@@ -926,6 +930,20 @@ pub(crate) enum SessionCommand {
         /// Clear the custom session name/title
         #[arg(long, conflicts_with = "name")]
         clear: bool,
+
+        /// Emit JSON instead of human-readable output
+        #[arg(long)]
+        json: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub(crate) enum SessionsCommand {
+    /// Report (default) or remove debug/tiny sessions per `[sessions.retention]`
+    Gc {
+        /// Actually move candidates to sessions/.trash (requires sessions.retention.enabled = true)
+        #[arg(long)]
+        apply: bool,
 
         /// Emit JSON instead of human-readable output
         #[arg(long)]

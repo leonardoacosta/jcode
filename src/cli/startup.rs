@@ -57,6 +57,11 @@ pub async fn run() -> Result<()> {
         .name("jcode-session-bak-prune".to_string())
         .spawn(crate::session::prune_old_session_backups)
         .ok();
+    // Opt-in session retention GC; no-op unless sessions.retention.enabled && auto_gc.
+    std::thread::Builder::new()
+        .name("jcode-session-retention-gc".to_string())
+        .spawn(crate::session::retention::auto_gc_on_startup)
+        .ok();
     // Record which binary actually launched. Stale copies earlier on PATH (or a
     // shortcut pinned to an old install) otherwise look identical to the
     // updated launcher in logs, and keep re-offering the same update (#1626).

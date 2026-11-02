@@ -1541,6 +1541,48 @@ pub fn run_session_rename_command(
     Ok(())
 }
 
+pub fn run_sessions_gc_command(apply: bool, json: bool) -> Result<()> {
+    let report = crate::session::retention::run_gc(apply)?;
+    if json {
+        println!("{}", serde_json::to_string_pretty(&report)?);
+        return Ok(());
+    }
+    let mb = |b: u64| b as f64 / (1024.0 * 1024.0);
+    println!(
+        "{} {} of {} sessions ({:.1} MB){}",
+        if apply { "Removed" } else { "Would remove" },
+        if apply {
+            report.removed
+        } else {
+            report.candidates
+        },
+        report.scanned,
+        mb(if apply {
+            report.bytes_freed
+        } else {
+            report.candidate_bytes
+        }),
+        if apply {
+            " to sessions/.trash"
+        } else {
+            " (dry run; pass --apply)"
+        },
+    );
+    for (reason, count) in &report.by_reason {
+        println!(
+            "  {:<12} {count}",
+            serde_json::to_value(reason)?.as_str().unwrap_or("?")
+        );
+    }
+    if report.skipped_on_recheck > 0 {
+        println!("  skipped on re-check: {}", report.skipped_on_recheck);
+    }
+    if !report.sample_ids.is_empty() {
+        println!("Sample: {}", report.sample_ids.join(", "));
+    }
+    Ok(())
+}
+
 async fn run_ambient_visible() -> Result<()> {
     use crate::ambient::VisibleCycleContext;
 
