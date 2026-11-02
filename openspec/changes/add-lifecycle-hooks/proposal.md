@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P08: SDK/API/tool integration contracts, including browser/voice](../../../docs/plans/PRODUCT_ROADMAP.md#p08-sdkapitool-integration-contracts-including-browservoice). Supporting: P02.
+
 ## Why
 
 jcode has one hook: `spawn_hook` (`crates/jcode-config-types/src/lib.rs:806-821`), which only wraps headed spawn launches. Users cannot run policy or notification commands at session, tool, compaction, or subagent boundaries. A concrete ask (pi workflow) is a notification when a subagent finishes; today that needs polling swarm status. Claude Code users already have hook scripts written against its stdin JSON contract; reusing them avoids a second ecosystem. Compaction lives in `crates/jcode-app-core/src/agent/compaction.rs`, tool dispatch in `crates/jcode-app-core/src/agent/turn_execution.rs`. Clean-room behavior notes: `~/.jcode/scratch/empryo-re/adjacent-behavior.md` (behavior only, no text reused).

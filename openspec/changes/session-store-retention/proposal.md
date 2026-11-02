@@ -1,5 +1,7 @@
 ## Why
 
+Roadmap owner: [P07: Memory/context quality and privacy](../../../docs/plans/PRODUCT_ROADMAP.md#p07-memorycontext-quality-and-privacy). Supporting: P10.
+
 Forensics (60d): session store is 6.2 GB / ~14k files; 5525 of 8427 recent sessions are `is_debug`, and 2581 have <=3 messages. Only `.bak` files are pruned today (`prune_old_session_backups` in `src/cli/startup.rs`). Debug/tiny sessions bloat disk, slow `session_search` index warmup (`crates/jcode-app-core/src/tool/session_search.rs`), and pollute recall results.
 
 ## What Changes

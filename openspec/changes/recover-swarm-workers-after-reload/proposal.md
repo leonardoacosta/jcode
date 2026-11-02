@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs). Supporting: P05.
+
 ## Why
 
 One server reload this session crashed/stopped 5 workers. `crates/jcode-app-core/src/server/swarm_persistence.rs` (`persist_swarm_state` :618, `load_runtime_state` :449) restores swarm membership, and `crates/jcode-app-core/src/server/reload_recovery.rs` tracks per-session recovery, but lane and initial prompt are not enough to resume a worker, so it is lost.

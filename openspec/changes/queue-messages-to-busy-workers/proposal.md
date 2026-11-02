@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs).
+
 ## Why
 
 DMs and summary requests to a worker mid-turn fail with "is busy" (`crates/jcode-app-core/src/server/jade_relay.rs:1214`); 456 such log lines this session. Coordinators retry or give up, losing instructions.

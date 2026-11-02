@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P06: Provider/auth/usage-budget reliability](../../../docs/plans/PRODUCT_ROADMAP.md#p06-providerauthusage-budget-reliability). Supporting: P04.
+
 ## Why
 
 Workers have a single default model: `agents.swarm_model` (`crates/jcode-config-types/src/lib.rs:571`), listed by `format_swarm_model_list` (`crates/jcode-app-core/src/tool/communicate.rs:1604`). Read-only research, editing, compaction, web search, and council work have very different cost/quality needs, so users either overpay or pass `model` on every spawn.

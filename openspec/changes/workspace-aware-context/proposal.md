@@ -1,5 +1,7 @@
 ## Why
 
+Roadmap owner: [P07: Memory/context quality and privacy](../../../docs/plans/PRODUCT_ROADMAP.md#p07-memorycontext-quality-and-privacy).
+
 Forensics (60d) show heavy switching between personal, Priceless, and Brown workspaces. Tracker (Linear vs ADO), branch naming, skill routing, and Git identity rules differ per workspace, yet jcode infers none of it. The agent re-derives it each session from prompt prose, and mistakes (wrong tracker link, wrong identity) are costly.
 
 ## What Changes

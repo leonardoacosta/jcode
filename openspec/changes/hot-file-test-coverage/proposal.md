@@ -1,5 +1,7 @@
 ## Why
 
+Roadmap owner: [P01: Trusted core and acceptance/evidence baseline](../../../docs/plans/PRODUCT_ROADMAP.md#p01-trusted-core-and-acceptanceevidence-baseline).
+
 Forensics (60d) show the highest-churn files lack direct tests: `crates/jcode-app-core/src/agent/turn_execution.rs` (78 changes, 1647 lines, no test module), `crates/jcode-tui/src/tui/app/input.rs` (96 changes, 4329 lines; only drop/inline/terminal-control-sequence submodule tests), and `crates/jcode-harness-api-server/src/translate.rs` (120 changes; 138 assertion tests in `translate_tests.rs` but no whole-frame snapshots). Regressions there break every session.
 
 ## What Changes

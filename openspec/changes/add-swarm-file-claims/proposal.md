@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs).
+
 ## Why
 
 Swarm workers share one working tree and nothing prevents two workers from editing the same file; the coordinator relies on prompt-level "file ownership". Conflicting edits silently overwrite each other. Swarm server state lives in `crates/jcode-app-core/src/server/swarm.rs`, which already tracks members and orphan state that claims can hang off.

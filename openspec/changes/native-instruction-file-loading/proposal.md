@@ -1,5 +1,7 @@
 ## Why
 
+Roadmap owner: [P07: Memory/context quality and privacy](../../../docs/plans/PRODUCT_ROADMAP.md#p07-memorycontext-quality-and-privacy).
+
 Instruction loading lives in `crates/jcode-base/src/prompt.rs` (`load_agents_md_files_from_dirs`, `load_prompt_overlay_files_from_dir`). Today it loads project `AGENTS.md`, global `~/AGENTS.md` (deduped only by canonical path), and `prompt-overlay.md` files. It does not load `~/.agents/AGENTS.md`, so the user overlay must tell the model to read it manually each session (an extra tool call that may be skipped). Repos pair `CLAUDE.md` with `AGENTS.md` (often identical or a pointer), causing sprawl. Nothing shows which files actually composed the prompt; `ContextInfo` only tracks char counts shown in `/context`.
 
 ## What Changes

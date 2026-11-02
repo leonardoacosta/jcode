@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P02: Discoverable native tools, MCP and skills provenance](../../../docs/plans/PRODUCT_ROADMAP.md#p02-discoverable-native-tools-mcp-and-skills-provenance).
+
 ## Why
 
 Broken MCP servers are retried forever on a fixed 30s cooldown (`FAILED_CONNECT_RETRY_COOLDOWN`, `crates/jcode-base/src/mcp/pool.rs:20`). Today `shadcn` failed 22x and `Grafana` 21x. Logs show causes are not transient: `shadcn` runs `cd /home/nyaptor/dev/personal/dash/nova/packages/ui` which does not exist (143 stderr lines), and `Grafana` (`npx mcp-remote`) gets HTTP 502. Each retry spawns `npx`/`op read`, costing startup time and log noise, and the user never sees why.

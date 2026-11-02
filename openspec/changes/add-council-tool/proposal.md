@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs). P04 permits optional high-risk arbitration only for a demonstrated gap, so apply must record that evidence before implementation.
+
 ## Why
 
 Hard decisions (architecture, risky refactors, review disputes) benefit from several independent viewpoints argued against each other. jcode has swarm workers but no structured debate: the coordinator must hand-spawn agents, relay messages, judge agreement, and remember to stop them. Empryo ships a `council` tool (clean-room notes: `scratch/empryo-re/council-behavior.md`), but it has no cost cap, no early stop, prompt-only seat limits, and no vote tally. A native tool lets jcode enforce read-only seats and budgets in Rust.

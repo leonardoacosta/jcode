@@ -1,5 +1,7 @@
 ## Why
 
+Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/plans/PRODUCT_ROADMAP.md#p05-durable-overnight-scheduling-and-recovery). Supporting: P10.
+
 Forensics (60d) show shared server PIDs dying with 50-377 attached sessions each, all recorded as "Process N exited unexpectedly (no shutdown signal captured)" (`crates/jcode-base/src/session.rs::detect_crash`, `session/crash.rs`). The cause (signal, OOM kill, panic) is never captured, so crashes cannot be diagnosed, and mass-crashed sessions need manual recovery. A WIP supervised-server gate (`enforce_supervised_shared_server` in `src/cli/dispatch.rs`, marker `~/.jcode/require-supervised-server` = `jcode.service`) is uncommitted and unspecified.
 
 ## What Changes

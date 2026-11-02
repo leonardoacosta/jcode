@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs).
+
 ## Why
 
 Coordinators lose worker results. `summary` (`crates/jcode-app-core/src/tool/communicate.rs:2706`) renders via `format_tool_summary` (`:1484`), which lists tool calls only, not the worker's final report. Report text shown to the coordinator is cut to 60 chars per line (`:2505`). `await_members` (`:3089`) treats `ready` as done even without a report, and a worker that reported then stopped is not counted done, producing late "timed out" wake-ups.

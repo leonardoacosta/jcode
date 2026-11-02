@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P06: Provider/auth/usage-budget reliability](../../../docs/plans/PRODUCT_ROADMAP.md#p06-providerauthusage-budget-reliability).
+
 ## Why
 
 Model fallback is manual today. After a turn error the TUI only offers a switch that the user must accept with the `fallback_switch` keybinding (`crates/jcode-config-types/src/lib.rs:1046-1048`, wired in `crates/jcode-tui/src/tui/keybind.rs` and `crates/jcode-tui/src/tui/app/tui_lifecycle.rs`). Unattended sessions and swarm workers stall on transient 429/503/network errors even though alternate models are available. Account failover exists (`crates/jcode-base/src/provider/account_failover.rs`) but swaps credentials, not models. Clean-room reference behavior (`scratch/empryo-re/adjacent-behavior.md` §1): ordered per-model fallback list, a model "cools" after 3 failures within 60s, chain iteration capped at 3 cycles, each switch shown in the transcript, auth/config errors never switch.

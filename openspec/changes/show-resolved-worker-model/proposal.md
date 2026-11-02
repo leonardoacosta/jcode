@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs). Supporting: P09.
+
 ## Why
 
 `agents.swarm_model=omnipi:DeepSeek-V4.1-Flash` silently overrode an Opus coordinator; spawn output did not say which model a worker got or why. Resolution context is only shown by `list_models` (`crates/jcode-app-core/src/tool/communicate.rs:1606-1620`).

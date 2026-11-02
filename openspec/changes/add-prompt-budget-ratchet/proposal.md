@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P07: Memory/context quality and privacy](../../../docs/plans/PRODUCT_ROADMAP.md#p07-memorycontext-quality-and-privacy). Supporting: P01.
+
 ## Why
 
 Prompt context (system prompt, instruction files, overlay, skill list) grows silently. The available-skills block alone is several hundred lines per session, and instruction loading keeps expanding (`openspec/changes/native-instruction-file-loading`). Assembly lives in `crates/jcode-app-core/src/agent/prompting.rs`. Nothing fails when it grows, so cost and attention dilution go unnoticed. The prompt-experiment harness (`scripts/prepare_personal_prompt_eval.py`, `openspec/specs/personal-prompt-experiment-adapters/`, archived `2026-10-27-evaluate-personalized-jcode-prompt`, `2026-10-28-automate-personal-prompt-experiments`) already evaluates prompt variants but records no keep/revert decision. Reference pattern: t3code agent-context-budget workflow; local notes `~/.jcode/scratch/selfimprove.md`.

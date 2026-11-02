@@ -1,5 +1,7 @@
 ## Why
 
+Roadmap owner: [P02: Discoverable native tools, MCP and skills provenance](../../../docs/plans/PRODUCT_ROADMAP.md#p02-discoverable-native-tools-mcp-and-skills-provenance). Supporting: P01.
+
 Forensics (60d) show 2269 codex tool timeouts and 348 apply_patch failures. Jcode's `bash` tool already promotes foreground timeouts to background tasks (`execute_foreground` and `execute_reload_persistable_foreground` in `crates/jcode-app-core/src/tool/bash.rs`, metadata `timeout_promoted`), but this behavior is untested on the reload path and not specified. Edit/apply_patch mismatch errors only report "not found" or a whitespace/indentation hint; they never show the nearest actual file text, so agents re-read whole files or retry blindly.
 
 ## What Changes

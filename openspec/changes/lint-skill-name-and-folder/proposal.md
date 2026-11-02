@@ -1,5 +1,7 @@
 # Proposal
 
+Roadmap owner: [P02: Discoverable native tools, MCP and skills provenance](../../../docs/plans/PRODUCT_ROADMAP.md#p02-discoverable-native-tools-mcp-and-skills-provenance).
+
 ## Why
 
 Skills are discovered as `<folder>/SKILL.md` (`crates/jcode-base/src/skill.rs:388`, `:537`) and identified by the frontmatter `name`. When the folder and frontmatter name differ (renames, copied skills), the skill loads under a name the user does not see on disk, `/skill` lookups by folder fail, and duplicates go unnoticed. Nothing reports the mismatch. Clean-room reference (`scratch/empryo-re/adjacent-behavior.md`, skills section) lints this as a warning without blocking load.
