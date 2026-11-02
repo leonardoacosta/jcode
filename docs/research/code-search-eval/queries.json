@@ -1,0 +1,221 @@
+[
+ {
+  "id": "q01",
+  "kind": "symbol",
+  "q": "AgentGrepTool struct",
+  "sym": "AgentGrepTool",
+  "sg": [
+   "pub struct AgentGrepTool;",
+   "pub struct AgentGrepTool { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-app-core/src/tool/agentgrep.rs"
+  ]
+ },
+ {
+  "id": "q02",
+  "kind": "symbol",
+  "q": "McpManager struct",
+  "sym": "McpManager",
+  "sg": [
+   "pub struct McpManager;",
+   "pub struct McpManager { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-base/src/mcp/manager.rs"
+  ]
+ },
+ {
+  "id": "q03",
+  "kind": "symbol",
+  "q": "TodoTool struct",
+  "sym": "TodoTool",
+  "sg": [
+   "pub struct TodoTool;",
+   "pub struct TodoTool { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-app-core/src/tool/todo.rs"
+  ]
+ },
+ {
+  "id": "q04",
+  "kind": "symbol",
+  "q": "WebFetchTool struct",
+  "sym": "WebFetchTool",
+  "sg": [
+   "pub struct WebFetchTool;",
+   "pub struct WebFetchTool { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-app-core/src/tool/webfetch.rs"
+  ]
+ },
+ {
+  "id": "q05",
+  "kind": "symbol",
+  "q": "SelfDevTool struct",
+  "sym": "SelfDevTool",
+  "sg": [
+   "pub struct SelfDevTool;",
+   "pub struct SelfDevTool { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-app-core/src/tool/selfdev/mod.rs"
+  ]
+ },
+ {
+  "id": "q06",
+  "kind": "symbol",
+  "q": "SessionSearchTool struct",
+  "sym": "SessionSearchTool",
+  "sg": [
+   "pub struct SessionSearchTool;",
+   "pub struct SessionSearchTool { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-app-core/src/tool/session_search.rs"
+  ]
+ },
+ {
+  "id": "q07",
+  "kind": "symbol",
+  "q": "McpTool struct",
+  "sym": "McpTool",
+  "sg": [
+   "pub struct McpTool;",
+   "pub struct McpTool { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-base/src/mcp/tool.rs"
+  ]
+ },
+ {
+  "id": "q08",
+  "kind": "concept",
+  "q": "destructive bash command refusal gate",
+  "answers": [
+   "crates/jcode-app-core/src/tool/bash_destructive_gate.rs"
+  ]
+ },
+ {
+  "id": "q09",
+  "kind": "concept",
+  "q": "apply patch tool implementation",
+  "answers": [
+   "crates/jcode-app-core/src/tool/apply_patch.rs"
+  ]
+ },
+ {
+  "id": "q10",
+  "kind": "concept",
+  "q": "edit tool exact string replacement",
+  "answers": [
+   "crates/jcode-app-core/src/tool/edit.rs"
+  ]
+ },
+ {
+  "id": "q11",
+  "kind": "concept",
+  "q": "skill tool load list reload skills",
+  "answers": [
+   "crates/jcode-app-core/src/tool/skill.rs"
+  ]
+ },
+ {
+  "id": "q12",
+  "kind": "concept",
+  "q": "memory tool remember recall forget",
+  "answers": [
+   "crates/jcode-app-core/src/tool/memory.rs"
+  ]
+ },
+ {
+  "id": "q13",
+  "kind": "concept",
+  "q": "debug socket tool command",
+  "answers": [
+   "crates/jcode-app-core/src/tool/debug_socket.rs"
+  ]
+ },
+ {
+  "id": "q14",
+  "kind": "concept",
+  "q": "login picker truncate with ellipsis",
+  "answers": [
+   "crates/jcode-tui/src/tui/login_picker.rs"
+  ]
+ },
+ {
+  "id": "q15",
+  "kind": "caller",
+  "q": "who calls run_compaction_retry_turn",
+  "sym": "run_compaction_retry_turn",
+  "sg": [
+   "run_compaction_retry_turn($$$)",
+   "self.run_compaction_retry_turn($$$)"
+  ],
+  "answers": [
+   "crates/jcode-tui/src/tui/app/model_context.rs"
+  ]
+ },
+ {
+  "id": "q16",
+  "kind": "caller",
+  "q": "callers of destructive_command_refusal",
+  "sym": "destructive_command_refusal",
+  "sg": [
+   "destructive_command_refusal($$$)",
+   "self.destructive_command_refusal($$$)"
+  ],
+  "answers": [
+   "crates/jcode-app-core/src/tool/bash.rs"
+  ]
+ },
+ {
+  "id": "q17",
+  "kind": "cross-crate",
+  "q": "SwarmToolIntent protocol type definition",
+  "sym": "SwarmToolIntent",
+  "sg": [
+   "pub struct SwarmToolIntent;",
+   "pub struct SwarmToolIntent { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-protocol/src/lib.rs"
+  ]
+ },
+ {
+  "id": "q18",
+  "kind": "cross-crate",
+  "q": "Session struct definition persisted sessions",
+  "sym": "Session",
+  "sg": [
+   "pub struct Session;",
+   "pub struct Session { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-base/src/session.rs"
+  ]
+ },
+ {
+  "id": "q19",
+  "kind": "cross-crate",
+  "q": "selfdev CLI subcommand",
+  "answers": [
+   "src/cli/selfdev.rs"
+  ]
+ },
+ {
+  "id": "q20",
+  "kind": "cross-crate",
+  "q": "build_system_prompt system prompt builder",
+  "sym": "build_system_prompt",
+  "sg": [
+   "pub fn build_system_prompt($$$) -> $R { $$$ }"
+  ],
+  "answers": [
+   "crates/jcode-base/src/prompt.rs"
+  ]
+ }
+]

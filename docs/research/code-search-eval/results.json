@@ -1,0 +1,1082 @@
+{
+ "commit": "ff20fae3870b0d5104bccbfaa867cdcbdbf80f8a",
+ "rows": [
+  {
+   "strategy": "agentgrep",
+   "query": "q01",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 56,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 64,
+   "top": [
+    "crates/jcode-app-core/src/tool/agentgrep.rs",
+    "crates/jcode-app-core/src/tool/agentgrep_tests.rs",
+    "crates/jcode-app-core/src/tool/mod.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q02",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 227,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 11,
+   "top": [
+    "crates/jcode-base/src/mcp/manager.rs",
+    "crates/jcode-app-core/src/agent_tests.rs",
+    "crates/jcode-app-core/src/agent_tests/mcp_remote_cache.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q03",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 63,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 10,
+   "top": [
+    "crates/jcode-app-core/src/tool/todo.rs",
+    "crates/jcode-app-core/src/tool/mod.rs",
+    "crates/jcode-tui/src/tui/ui_messages.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q04",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 43,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 10,
+   "top": [
+    "crates/jcode-app-core/src/tool/webfetch.rs",
+    "crates/jcode-app-core/src/tool/mod.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q05",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 172,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 10,
+   "top": [
+    "crates/jcode-app-core/src/tool/selfdev/mod.rs",
+    "crates/jcode-app-core/src/agent/turn_execution.rs",
+    "crates/jcode-app-core/src/tool/desktop_selfdev.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q06",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 46,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 9,
+   "top": [
+    "crates/jcode-app-core/src/tool/session_search.rs",
+    "crates/jcode-app-core/src/tool/mod.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q07",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 475,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 9,
+   "top": [
+    "crates/jcode-base/src/mcp/tool.rs",
+    "crates/jcode-app-core/src/agent.rs",
+    "crates/jcode-app-core/src/agent/turn_execution.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q08",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 106,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 28,
+   "top": [
+    "crates/jcode-app-core/src/tool/bash_destructive_gate.rs",
+    "crates/jcode-command-risk/src/gate.rs",
+    "crates/jcode-app-core/src/tool/bash.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q09",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 100,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 28,
+   "top": [
+    "crates/jcode-app-core/src/tool/apply_patch.rs",
+    "crates/jcode-app-core/src/tool/patch.rs",
+    "crates/jcode-app-core/src/tool/mod.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q10",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 105,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 43,
+   "top": [
+    "crates/jcode-app-core/src/tool/edit.rs",
+    "crates/jcode-app-core/src/tool/edit_stats.rs",
+    "crates/jcode-app-core/src/tool/bash.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q11",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 106,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 35,
+   "top": [
+    "crates/jcode-app-core/src/tool/selfdev/reload.rs",
+    "crates/jcode-app-core/src/tool/bridge_reload.rs",
+    "crates/jcode-app-core/src/tool/skill.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q12",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 95,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 262,
+   "top": [
+    "crates/jcode-app-core/src/tool/memory.rs",
+    "src/bin/memory_recall_bench.rs",
+    "crates/jcode-base/src/memory.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q13",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 113,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 33,
+   "top": [
+    "crates/jcode-app-core/src/tool/debug_socket.rs",
+    "crates/jcode-app-core/src/server/debug_command_exec.rs",
+    "crates/jcode-app-core/src/server/debug.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q14",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 103,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 23,
+   "top": [
+    "crates/jcode-tui/src/tui/login_picker.rs",
+    "crates/jcode-tui-account-picker/src/overlay.rs",
+    "crates/jcode-tui/src/tui/app/auth_account_picker_saved_accounts.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q15",
+   "kind": "caller",
+   "tool_calls": 1,
+   "tokens": 351,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 10,
+   "top": [
+    "crates/jcode-tui/src/tui/app/model_context.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q16",
+   "kind": "caller",
+   "tool_calls": 1,
+   "tokens": 389,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 9,
+   "top": [
+    "crates/jcode-app-core/src/tool/bash.rs",
+    "crates/jcode-app-core/src/tool/bash_destructive_gate.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q17",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 64,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 9,
+   "top": [
+    "crates/jcode-protocol/src/lib.rs",
+    "crates/jcode-app-core/src/server/background_tasks.rs",
+    "crates/jcode-tui/src/tui/app/debug_cmds.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q18",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 7641,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 9,
+   "top": [
+    "crates/jcode-base/src/session.rs",
+    "crates/jcode-app-core/src/agent.rs",
+    "crates/jcode-app-core/src/agent/conversation_reset.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q19",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 75,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 30,
+   "top": [
+    "src/cli/dispatch/subcommand_mapping.rs",
+    "crates/jcode-app-core/src/tool/selfdev/tests.rs",
+    "src/cli/dispatch.rs"
+   ]
+  },
+  {
+   "strategy": "agentgrep",
+   "query": "q20",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 276,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 10,
+   "top": [
+    "crates/jcode-base/src/prompt.rs",
+    "crates/jcode-app-core/src/agent/prompting.rs",
+    "crates/jcode-app-core/src/agent/swarm_reminder_tests.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q01",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 1256,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 1822,
+   "top": [
+    "crates/jcode-app-core/src/tool/agentgrep.rs",
+    "crates/jcode-tool-types/src/lib.rs",
+    "crates/jcode-provider-core/src/anthropic.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q02",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 2069,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 1128,
+   "top": [
+    "crates/jcode-base/src/mcp/manager.rs",
+    "crates/jcode-setup-hints/src/keymap/conflicts.rs",
+    "crates/jcode-tui/src/tui/app/commands_mcp.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q03",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 1136,
+   "r1": 0,
+   "r5": 0,
+   "wall_ms": 1159,
+   "top": [
+    "crates/jcode-protocol/src/lib.rs",
+    "crates/jcode-task-types/src/lib.rs",
+    "crates/jcode-base/src/todo.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q04",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 1271,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 1114,
+   "top": [
+    "crates/jcode-config-types/src/web_search.rs",
+    "crates/jcode-app-core/src/tool/webfetch.rs",
+    "crates/jcode-provider-antigravity-runtime/src/lib.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q05",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 1201,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 1158,
+   "top": [
+    "crates/jcode-selfdev-types/src/lib.rs",
+    "crates/jcode-config-types/src/keybindings.rs",
+    "crates/jcode-app-core/src/tool/selfdev/mod.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q06",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 954,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 1495,
+   "top": [
+    "crates/jcode-config-types/src/web_search.rs",
+    "crates/jcode-app-core/src/tool/session_search.rs",
+    "crates/jcode-provider-anthropic-runtime/src/native_web_search_sse_tests.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q07",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 1207,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 1134,
+   "top": [
+    "crates/jcode-base/src/mcp/tool.rs",
+    "crates/jcode-tool-types/src/lib.rs",
+    "crates/jcode-provider-cursor-runtime/src/wire.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q08",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 1101,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 1393,
+   "top": [
+    "crates/jcode-app-core/src/tool/bash_destructive_gate.rs",
+    "crates/jcode-build-support/src/paths.rs",
+    "crates/jcode-provider-anthropic/src/oauth_tool_schema_tests.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q09",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 729,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 1004,
+   "top": [
+    "crates/jcode-app-core/src/tool/apply_patch.rs",
+    "crates/jcode-applet-types/src/patch.rs",
+    "crates/jcode-app-core/src/tool/apply_patch_tests.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q10",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 999,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 1252,
+   "top": [
+    "crates/jcode-tui-messages/src/prepared.rs",
+    "src/bin/tui_bench.rs",
+    "crates/jcode-harness-api/src/edit_stats.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q11",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 740,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 1092,
+   "top": [
+    "crates/jcode-base/src/skill.rs",
+    "crates/jcode-app-core/src/tool/skill.rs",
+    "src/cli/acp.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q12",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 701,
+   "r1": 0,
+   "r5": 0,
+   "wall_ms": 1075,
+   "top": [
+    "src/bin/memory_recall_bench.rs",
+    "crates/jcode-base/src/memory.rs",
+    "crates/jcode-schema-dialect/src/quirks.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q13",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 631,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 1052,
+   "top": [
+    "crates/jcode-app-core/src/tool/debug_socket.rs",
+    "crates/jcode-voice/src/dictation.rs",
+    "crates/jcode-app-core/src/server/debug_command_exec.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q14",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 1011,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 1018,
+   "top": [
+    "crates/jcode-tui-render/src/lib.rs",
+    "crates/jcode-tui-usage-overlay/src/lib.rs",
+    "crates/jcode-tui/src/tui/login_picker.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q15",
+   "kind": "caller",
+   "tool_calls": 1,
+   "tokens": 109,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 550,
+   "top": [
+    "crates/jcode-tui/src/tui/app/model_context.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q16",
+   "kind": "caller",
+   "tool_calls": 1,
+   "tokens": 67,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 530,
+   "top": [
+    "crates/jcode-app-core/src/tool/bash.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q17",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 781,
+   "r1": 0,
+   "r5": 0,
+   "wall_ms": 1096,
+   "top": [
+    "crates/jcode-provider-copilot/src/lib.rs",
+    "crates/jcode-provider-cursor-runtime/src/wire.rs",
+    "crates/jcode-tui-mermaid/src/mermaid_runtime.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q18",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 1165,
+   "r1": 0,
+   "r5": 0,
+   "wall_ms": 1087,
+   "top": [
+    "crates/jcode-task-types/src/lib.rs",
+    "crates/jcode-message-types/src/lib.rs",
+    "crates/jcode-config-types/src/session.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q19",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 950,
+   "r1": 0,
+   "r5": 0,
+   "wall_ms": 948,
+   "top": [
+    "crates/jcode-tui/src/tui/app/commands_colors.rs",
+    "src/cli/dispatch/subcommand_mapping.rs",
+    "crates/jcode-tui/src/tui/app/commands_remote.rs"
+   ]
+  },
+  {
+   "strategy": "graft",
+   "query": "q20",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 937,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 1277,
+   "top": [
+    "crates/jcode-base/src/prompt.rs",
+    "crates/jcode-app-core/src/ambient/prompt.rs",
+    "crates/jcode-provider-gemini-runtime/src/gemini_tests.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q01",
+   "kind": "symbol",
+   "tool_calls": 2,
+   "tokens": 75,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 540,
+   "top": [
+    "crates/jcode-app-core/src/tool/agentgrep.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q02",
+   "kind": "symbol",
+   "tool_calls": 2,
+   "tokens": 459,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 474,
+   "top": [
+    "crates/jcode-base/src/mcp/manager.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q03",
+   "kind": "symbol",
+   "tool_calls": 2,
+   "tokens": 70,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 471,
+   "top": [
+    "crates/jcode-app-core/src/tool/todo.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q04",
+   "kind": "symbol",
+   "tool_calls": 2,
+   "tokens": 90,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 477,
+   "top": [
+    "crates/jcode-app-core/src/tool/webfetch.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q05",
+   "kind": "symbol",
+   "tool_calls": 2,
+   "tokens": 75,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 484,
+   "top": [
+    "crates/jcode-app-core/src/tool/selfdev/mod.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q06",
+   "kind": "symbol",
+   "tool_calls": 2,
+   "tokens": 78,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 522,
+   "top": [
+    "crates/jcode-app-core/src/tool/session_search.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q07",
+   "kind": "symbol",
+   "tool_calls": 2,
+   "tokens": 116,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 580,
+   "top": [
+    "crates/jcode-base/src/mcp/tool.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q08",
+   "status": "n/a: no structural pattern"
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q09",
+   "status": "n/a: no structural pattern"
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q10",
+   "status": "n/a: no structural pattern"
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q11",
+   "status": "n/a: no structural pattern"
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q12",
+   "status": "n/a: no structural pattern"
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q13",
+   "status": "n/a: no structural pattern"
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q14",
+   "status": "n/a: no structural pattern"
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q15",
+   "kind": "caller",
+   "tool_calls": 2,
+   "tokens": 406,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 476,
+   "top": [
+    "crates/jcode-tui/src/tui/app/model_context.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q16",
+   "kind": "caller",
+   "tool_calls": 2,
+   "tokens": 146,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 423,
+   "top": [
+    "crates/jcode-app-core/src/tool/bash.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q17",
+   "kind": "cross-crate",
+   "tool_calls": 2,
+   "tokens": 301,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 443,
+   "top": [
+    "crates/jcode-protocol/src/lib.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q18",
+   "kind": "cross-crate",
+   "tool_calls": 2,
+   "tokens": 2921,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 490,
+   "top": [
+    "crates/jcode-base/src/session.rs"
+   ]
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q19",
+   "status": "n/a: no structural pattern"
+  },
+  {
+   "strategy": "ast-grep",
+   "query": "q20",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 196,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 213,
+   "top": [
+    "crates/jcode-base/src/prompt.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q01",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 10,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 421,
+   "top": [
+    "crates/jcode-app-core/src/tool/agentgrep.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q02",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 9,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 42,
+   "top": [
+    "crates/jcode-base/src/mcp/manager.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q03",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 9,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 45,
+   "top": [
+    "crates/jcode-app-core/src/tool/todo.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q04",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 10,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 41,
+   "top": [
+    "crates/jcode-app-core/src/tool/webfetch.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q05",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 11,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 39,
+   "top": [
+    "crates/jcode-app-core/src/tool/selfdev/mod.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q06",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 12,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 42,
+   "top": [
+    "crates/jcode-app-core/src/tool/session_search.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q07",
+   "kind": "symbol",
+   "tool_calls": 1,
+   "tokens": 8,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 42,
+   "top": [
+    "crates/jcode-base/src/mcp/tool.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q08",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 126,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 42,
+   "top": [
+    "crates/jcode-app-core/src/tool/bash_destructive_gate.rs",
+    "crates/jcode-command-risk/src/gate.rs",
+    "crates/jcode-app-core/src/tool/bash.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q09",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 101,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 42,
+   "top": [
+    "crates/jcode-app-core/src/tool/apply_patch.rs",
+    "crates/jcode-app-core/src/tool/patch.rs",
+    "crates/jcode-applet-types/src/patch.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q10",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 111,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 44,
+   "top": [
+    "crates/jcode-app-core/src/tool/config_edit_notice.rs",
+    "crates/jcode-app-core/src/tool/edit.rs",
+    "crates/jcode-app-core/src/tool/edit_stats.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q11",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 127,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 43,
+   "top": [
+    "crates/jcode-app-core/src/tool/skill.rs",
+    "crates/jcode-base/src/skill.rs",
+    "crates/jcode-app-core/src/server/reload_state.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q12",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 94,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 43,
+   "top": [
+    "src/bin/memory_recall_bench.rs",
+    "crates/jcode-base/src/memory.rs",
+    "crates/jcode-app-core/src/tool/memory.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q13",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 118,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 43,
+   "top": [
+    "crates/jcode-app-core/src/tool/debug_socket.rs",
+    "crates/jcode-app-core/src/server/debug_command_exec.rs",
+    "crates/jcode-app-core/src/server/debug_help.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q14",
+   "kind": "concept",
+   "tool_calls": 1,
+   "tokens": 113,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 43,
+   "top": [
+    "crates/jcode-tui/src/tui/login_picker.rs",
+    "crates/jcode-tui-account-picker/src/overlay_render.rs",
+    "crates/jcode-tui/src/tui/app/auth_account_picker_saved_accounts.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q15",
+   "kind": "caller",
+   "tool_calls": 1,
+   "tokens": 113,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 44,
+   "top": [
+    "crates/jcode-tui/src/tui/app/model_context.rs",
+    "crates/jcode-sdk/src/sdk_tests/turn_retry.rs",
+    "crates/jcode-sdk/src/turn_retry.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q16",
+   "kind": "caller",
+   "tool_calls": 1,
+   "tokens": 122,
+   "r1": 0,
+   "r5": 0,
+   "wall_ms": 44,
+   "top": [
+    "crates/jcode-app-core/src/tool/bash_destructive_gate.rs",
+    "crates/jcode-app-core/src/server/debug_command_exec.rs",
+    "crates/jcode-tui/src/tui/app/auth_remote/command.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q17",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 127,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 44,
+   "top": [
+    "crates/jcode-protocol/src/lib.rs",
+    "crates/jcode-app-core/src/protocol_tests/misc_events.rs",
+    "crates/jcode-app-core/src/protocol_tests/randomized.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q18",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 116,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 43,
+   "top": [
+    "crates/jcode-base/src/session.rs",
+    "crates/jcode-base/src/session_tests/cases.rs",
+    "crates/jcode-app-core/src/server/client_session_tests/swarm_attribution.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q19",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 103,
+   "r1": 0,
+   "r5": 1,
+   "wall_ms": 43,
+   "top": [
+    "src/cli/dispatch/subcommand_mapping.rs",
+    "src/cli/selfdev.rs",
+    "src/cli/dispatch.rs"
+   ]
+  },
+  {
+   "strategy": "repo-map",
+   "query": "q20",
+   "kind": "cross-crate",
+   "tool_calls": 1,
+   "tokens": 115,
+   "r1": 1,
+   "r5": 1,
+   "wall_ms": 44,
+   "top": [
+    "crates/jcode-base/src/prompt.rs",
+    "crates/jcode-app-core/src/server/client_lifecycle_tests/system_prompt.rs",
+    "crates/jcode-app-core/src/ambient/prompt.rs"
+   ]
+  },
+  {
+   "strategy": "search-subagent",
+   "status": "not run: needs ~20 paid LLM agent sessions with one pinned model; no model budget authorized in this change"
+  }
+ ]
+}
