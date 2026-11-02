@@ -638,9 +638,7 @@ impl Tool for CouncilTool {
     }
 
     fn description(&self) -> &str {
-        "Convene 2-4 read-only swarm seats to debate a decision for 0-3 rounds, then return a \
-         PASS/PARTIAL verdict with vote tally and dissent. Seats are stopped afterward. Use `run` \
-         for one-shot; `open`/`round`/`say`/`log`/`close` to steer."
+        "Debate a decision with 2-4 read-only seats; returns a PASS/PARTIAL verdict."
     }
 
     fn parameters_schema(&self) -> Value {

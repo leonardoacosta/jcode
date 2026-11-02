@@ -2135,7 +2135,7 @@ impl Tool for CommunicateTool {
                 },
                 "role": {
                     "type": "string",
-                    "description": "For spawn: role slot (research, edit, compaction, websearch, council); without model, uses agents.roles.<role>, then swarm_model."
+                    "description": "For spawn: role slot from agents.roles, used when model is omitted."
                 },
                 "model": {
                     "type": "string",
