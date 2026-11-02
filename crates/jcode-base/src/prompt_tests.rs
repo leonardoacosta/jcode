@@ -875,3 +875,97 @@ fn prompt_guidance_missing_or_unreadable_project_keeps_global_content() {
         }
     });
 }
+
+fn status_of(info: &ContextInfo, layer_part: &str) -> Option<InstructionStatus> {
+    info.instruction_sources
+        .iter()
+        .find(|s| s.layer.contains(layer_part))
+        .map(|s| s.status)
+}
+
+#[test]
+fn shared_instructions_load_first_when_present() {
+    let home = tempfile::TempDir::new().unwrap();
+    let project = tempfile::TempDir::new().unwrap();
+    std::fs::create_dir_all(home.path().join(".agents")).unwrap();
+    let shared = home.path().join(".agents/AGENTS.md");
+    std::fs::write(&shared, "shared body").unwrap();
+    std::fs::write(project.path().join("AGENTS.md"), "project body").unwrap();
+    let (content, info) = load_instruction_layers(Some(&shared), project.path(), None);
+    let content = content.unwrap();
+    assert!(content.starts_with("# Shared Instructions (~/.agents/AGENTS.md)"));
+    assert!(content.find("shared body") < content.find("project body"));
+    assert_eq!(status_of(&info, "Shared"), Some(InstructionStatus::Loaded));
+}
+
+#[test]
+fn shared_instructions_missing_is_recorded() {
+    let project = tempfile::TempDir::new().unwrap();
+    let missing = project.path().join("nope/AGENTS.md");
+    let (content, info) = load_instruction_layers(Some(&missing), project.path(), None);
+    assert!(content.is_none());
+    assert_eq!(
+        status_of(&info, "Shared"),
+        Some(InstructionStatus::SkippedMissing)
+    );
+}
+
+#[test]
+fn claude_md_only_is_loaded() {
+    let project = tempfile::TempDir::new().unwrap();
+    std::fs::write(project.path().join("CLAUDE.md"), "claude body").unwrap();
+    let (content, info) = load_instruction_layers(None, project.path(), None);
+    assert!(content.unwrap().contains("claude body"));
+    assert_eq!(status_of(&info, "CLAUDE"), Some(InstructionStatus::Loaded));
+    assert!(info.has_project_agents_md);
+}
+
+#[test]
+fn claude_md_identical_or_pointer_is_skipped() {
+    for claude in [
+        "same body\n",
+        "@AGENTS.md\n",
+        "See AGENTS.md for instructions.",
+    ] {
+        let project = tempfile::TempDir::new().unwrap();
+        std::fs::write(project.path().join("AGENTS.md"), "same body").unwrap();
+        std::fs::write(project.path().join("CLAUDE.md"), claude).unwrap();
+        let (content, info) = load_instruction_layers(None, project.path(), None);
+        assert_eq!(content.unwrap().matches("# Project").count(), 1);
+        assert_eq!(
+            status_of(&info, "CLAUDE"),
+            Some(InstructionStatus::SkippedDuplicate)
+        );
+    }
+}
+
+#[test]
+fn claude_md_differing_is_loaded_with_distinct_header() {
+    let project = tempfile::TempDir::new().unwrap();
+    std::fs::write(project.path().join("AGENTS.md"), "agents body").unwrap();
+    std::fs::write(project.path().join("CLAUDE.md"), "claude extra body").unwrap();
+    let (content, _) = load_instruction_layers(None, project.path(), None);
+    let content = content.unwrap();
+    assert!(content.contains("# Project Instructions (CLAUDE.md)"));
+    assert!(content.contains("claude extra body"));
+}
+
+#[test]
+fn home_cwd_and_content_duplicates_load_once() {
+    let home = tempfile::TempDir::new().unwrap();
+    let global = home.path().join("AGENTS.md");
+    std::fs::write(&global, "home body").unwrap();
+    let (content, info) = load_instruction_layers(None, home.path(), Some(&global));
+    assert_eq!(content.unwrap().matches("home body").count(), 1);
+    assert_eq!(
+        status_of(&info, "Global"),
+        Some(InstructionStatus::SkippedDuplicate)
+    );
+
+    // Same content at different paths across layers is also deduped.
+    let shared = home.path().join("shared.md");
+    std::fs::write(&shared, "home body\n\n").unwrap();
+    let project = tempfile::TempDir::new().unwrap();
+    let (content, _) = load_instruction_layers(Some(&shared), project.path(), Some(&global));
+    assert_eq!(content.unwrap().matches("home body").count(), 1);
+}

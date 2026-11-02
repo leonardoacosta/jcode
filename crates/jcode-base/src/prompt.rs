@@ -228,6 +228,10 @@ pub struct ContextInfo {
     pub has_global_agents_md: bool,
     /// Global AGENTS.md size (chars)
     pub global_agents_md_chars: usize,
+    /// Shared ~/.agents/AGENTS.md size (chars)
+    pub shared_agents_md_chars: usize,
+    /// Every candidate instruction file, in prompt order
+    pub instruction_sources: Vec<InstructionSource>,
     /// Skills section size (chars)
     pub skills_chars: usize,
     /// Self-dev section size (chars)
@@ -275,6 +279,7 @@ impl ContextInfo {
             + self.session_context_chars
             + self.project_agents_md_chars
             + self.global_agents_md_chars
+            + self.shared_agents_md_chars
             + self.skills_chars
             + self.selfdev_chars
             + self.memory_chars
@@ -302,6 +307,9 @@ impl ContextInfo {
         }
         if self.has_global_agents_md {
             parts.push(("~agents", self.global_agents_md_chars, "📋"));
+        }
+        if self.shared_agents_md_chars > 0 {
+            parts.push(("shared", self.shared_agents_md_chars, "📋"));
         }
         if self.skills_chars > 0 {
             parts.push(("skills", self.skills_chars, "🔧"));
@@ -414,6 +422,8 @@ pub fn build_system_prompt_full_with_capabilities(
     info.project_agents_md_chars = md_info.project_agents_md_chars;
     info.has_global_agents_md = md_info.has_global_agents_md;
     info.global_agents_md_chars = md_info.global_agents_md_chars;
+    info.shared_agents_md_chars = md_info.shared_agents_md_chars;
+    info.instruction_sources = md_info.instruction_sources.clone();
 
     // Add optional prompt overlays from ~/.jcode/ and ./.jcode/
     let (overlay_content, overlay_chars) = load_prompt_overlay_files_from_dir(working_dir);
@@ -552,6 +562,8 @@ fn build_system_prompt_split_with_capabilities_and_agents_md(
     info.project_agents_md_chars = md_info.project_agents_md_chars;
     info.has_global_agents_md = md_info.has_global_agents_md;
     info.global_agents_md_chars = md_info.global_agents_md_chars;
+    info.shared_agents_md_chars = md_info.shared_agents_md_chars;
+    info.instruction_sources = md_info.instruction_sources.clone();
 
     // Add optional prompt overlays from ~/.jcode/ and ./.jcode/
     let (overlay_content, overlay_chars) = load_prompt_overlay_files_from_dir(working_dir);
@@ -915,48 +927,165 @@ fn same_canonical_path(first: &Path, second: &Path) -> bool {
     }
 }
 
+#[cfg(test)]
 fn load_agents_md_files_from_dirs(
+    project_dir: &Path,
+    global_agents_md: Option<&Path>,
+) -> (Option<String>, ContextInfo) {
+    load_instruction_layers(None, project_dir, global_agents_md)
+}
+
+/// Status of one candidate instruction file.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InstructionStatus {
+    Loaded,
+    SkippedDuplicate,
+    SkippedMissing,
+    Unreadable,
+}
+
+impl InstructionStatus {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Loaded => "loaded",
+            Self::SkippedDuplicate => "skipped-duplicate",
+            Self::SkippedMissing => "skipped-missing",
+            Self::Unreadable => "unreadable",
+        }
+    }
+}
+
+/// One candidate instruction file, in prompt order.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InstructionSource {
+    pub layer: &'static str,
+    pub path: PathBuf,
+    pub status: InstructionStatus,
+    pub chars: usize,
+}
+
+fn normalized_instruction_hash(content: &str) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let normalized: Vec<&str> = content
+        .lines()
+        .map(str::trim_end)
+        .filter(|line| !line.is_empty())
+        .collect();
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    normalized.hash(&mut hasher);
+    hasher.finish()
+}
+
+/// True when CLAUDE.md content only points at AGENTS.md (e.g. `@AGENTS.md`).
+fn is_agents_md_pointer(content: &str) -> bool {
+    let trimmed = content.trim();
+    !trimmed.is_empty()
+        && trimmed.contains("AGENTS.md")
+        && trimmed.lines().filter(|l| !l.trim().is_empty()).count() <= 3
+        && trimmed.len() <= 300
+}
+
+fn load_instruction_layers(
+    shared_agents_md: Option<&Path>,
     project_dir: &Path,
     global_agents_md: Option<&Path>,
 ) -> (Option<String>, ContextInfo) {
     let mut contents = vec![];
     let mut info = ContextInfo::default();
+    let mut seen_paths: Vec<PathBuf> = vec![];
+    let mut seen_hashes: Vec<u64> = vec![];
 
-    // Helper to load a file if it exists, returns (formatted_content, raw_size)
-    let load_file = |path: &Path, label: &str| -> Option<(String, usize)> {
-        if path.exists() {
-            std::fs::read_to_string(path).ok().map(|content| {
-                let raw_size = content.len();
-                let formatted = format!("# {}\n\n{}", label, content.trim());
-                (formatted, raw_size)
+    // Returns raw content when the file was newly loaded.
+    let mut consider = |path: &Path,
+                        layer: &'static str,
+                        info: &mut ContextInfo,
+                        contents: &mut Vec<String>|
+     -> Option<String> {
+        let mut record = |status, chars| {
+            info.instruction_sources.push(InstructionSource {
+                layer,
+                path: path.to_path_buf(),
+                status,
+                chars,
             })
-        } else {
-            None
+        };
+        if !path.exists() {
+            record(InstructionStatus::SkippedMissing, 0);
+            return None;
         }
+        let Ok(content) = std::fs::read_to_string(path) else {
+            record(InstructionStatus::Unreadable, 0);
+            return None;
+        };
+        let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+        let hash = normalized_instruction_hash(&content);
+        if seen_paths.contains(&canonical) || seen_hashes.contains(&hash) {
+            record(InstructionStatus::SkippedDuplicate, content.len());
+            return None;
+        }
+        seen_paths.push(canonical);
+        seen_hashes.push(hash);
+        record(InstructionStatus::Loaded, content.len());
+        contents.push(format!("# {}\n\n{}", layer, content.trim()));
+        Some(content)
     };
 
-    let project_agents_md = project_dir.join("AGENTS.md");
-    if let Some((content, size)) = load_file(&project_agents_md, "Project Instructions (AGENTS.md)")
+    if let Some(shared) = shared_agents_md
+        && let Some(content) = consider(
+            shared,
+            "Shared Instructions (~/.agents/AGENTS.md)",
+            &mut info,
+            &mut contents,
+        )
     {
-        info.has_project_agents_md = true;
-        info.project_agents_md_chars = size;
-        contents.push(content);
+        info.shared_agents_md_chars = content.len();
     }
 
-    // Canonical file identity handles cwd=$HOME as well as symlinked aliases.
-    // If either file is absent or cannot be resolved, loading below remains the
-    // source of truth and simply skips unreadable files.
-    let global_duplicates_project = global_agents_md
-        .is_some_and(|global_agents_md| same_canonical_path(&project_agents_md, global_agents_md));
+    let project_agents_md = project_dir.join("AGENTS.md");
+    let project_claude_md = project_dir.join("CLAUDE.md");
+    let agents_exists = project_agents_md.exists();
+    if let Some(content) = consider(
+        &project_agents_md,
+        "Project Instructions (AGENTS.md)",
+        &mut info,
+        &mut contents,
+    ) {
+        info.has_project_agents_md = true;
+        info.project_agents_md_chars = content.len();
+    }
+    if project_claude_md.exists() {
+        let pointer = agents_exists
+            && std::fs::read_to_string(&project_claude_md)
+                .is_ok_and(|content| is_agents_md_pointer(&content));
+        if pointer {
+            let chars = std::fs::metadata(&project_claude_md).map_or(0, |m| m.len() as usize);
+            info.instruction_sources.push(InstructionSource {
+                layer: "Project Instructions (CLAUDE.md)",
+                path: project_claude_md.clone(),
+                status: InstructionStatus::SkippedDuplicate,
+                chars,
+            });
+        } else if let Some(content) = consider(
+            &project_claude_md,
+            "Project Instructions (CLAUDE.md)",
+            &mut info,
+            &mut contents,
+        ) {
+            info.has_project_agents_md = true;
+            info.project_agents_md_chars += content.len();
+        }
+    }
 
-    if !global_duplicates_project
-        && let Some(global_agents_md) = global_agents_md
-        && let Some((content, size)) =
-            load_file(global_agents_md, "Global Instructions (~/AGENTS.md)")
+    if let Some(global) = global_agents_md
+        && let Some(content) = consider(
+            global,
+            "Global Instructions (~/AGENTS.md)",
+            &mut info,
+            &mut contents,
+        )
     {
         info.has_global_agents_md = true;
-        info.global_agents_md_chars = size;
-        contents.push(content);
+        info.global_agents_md_chars = content.len();
     }
 
     if contents.is_empty() {
@@ -966,11 +1095,32 @@ fn load_agents_md_files_from_dirs(
     }
 }
 
+/// One display row per candidate instruction file, in prompt order.
+pub fn instruction_source_rows(sources: &[InstructionSource]) -> Vec<String> {
+    sources
+        .iter()
+        .map(|s| {
+            format!(
+                "{:<17} {:>7}  {}  {}",
+                s.status.as_str(),
+                s.chars,
+                s.layer,
+                s.path.display()
+            )
+        })
+        .collect()
+}
+
 /// Load AGENTS.md files from a specific working directory.
 pub fn load_agents_md_files_from_dir(working_dir: Option<&Path>) -> (Option<String>, ContextInfo) {
     let project_dir = working_dir.unwrap_or(Path::new("."));
     let global_agents_md = crate::storage::user_home_path("AGENTS.md").ok();
-    load_agents_md_files_from_dirs(project_dir, global_agents_md.as_deref())
+    let shared_agents_md = crate::storage::user_home_path(".agents/AGENTS.md").ok();
+    load_instruction_layers(
+        shared_agents_md.as_deref(),
+        project_dir,
+        global_agents_md.as_deref(),
+    )
 }
 
 /// Load optional prompt overlay markdown from ~/.jcode/ and ./.jcode/

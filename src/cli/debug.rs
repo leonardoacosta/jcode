@@ -3,6 +3,51 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 use crate::server;
 
+/// Print every candidate instruction file for `dir` (default: cwd), in prompt order.
+pub fn run_instructions_command(dir: Option<&std::path::Path>) -> Result<()> {
+    let dir = match dir {
+        Some(dir) => dir.to_path_buf(),
+        None => std::env::current_dir()?,
+    };
+    if !dir.is_dir() {
+        anyhow::bail!("not a directory: {}", dir.display());
+    }
+    print!("{}", instructions_report(&dir));
+    Ok(())
+}
+
+fn instructions_report(dir: &std::path::Path) -> String {
+    let (_, info) = crate::prompt::load_agents_md_files_from_dir(Some(dir));
+    let mut out = String::new();
+    for row in crate::prompt::instruction_source_rows(&info.instruction_sources) {
+        out.push_str(&row);
+        out.push('\n');
+    }
+    out
+}
+
+#[cfg(test)]
+mod instructions_tests {
+    use super::*;
+
+    #[test]
+    fn instructions_lists_project_file() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("AGENTS.md"), "x").unwrap();
+        let report = instructions_report(dir.path());
+        assert!(report.contains("loaded"));
+        assert!(report.contains("Project Instructions (AGENTS.md)"));
+        assert!(run_instructions_command(Some(dir.path())).is_ok());
+    }
+
+    #[test]
+    fn instructions_rejects_invalid_dir() {
+        let err = run_instructions_command(Some(std::path::Path::new("/nonexistent/jcode-x")))
+            .unwrap_err();
+        assert!(err.to_string().contains("not a directory"));
+    }
+}
+
 pub async fn run_debug_command(
     command: &str,
     arg: &str,

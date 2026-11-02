@@ -306,7 +306,7 @@ fn display_suffix_by_width(s: &str, max_width: usize) -> &str {
     &s[start..]
 }
 
-fn truncate_end_display(s: &str, max_width: usize) -> String {
+pub(crate) fn truncate_end_display(s: &str, max_width: usize) -> String {
     if UnicodeWidthStr::width(s) <= max_width {
         return s.to_string();
     }

@@ -2158,6 +2158,27 @@ pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
         return true;
     }
 
+    if trimmed == "/context instructions" {
+        let dir = std::env::current_dir().ok();
+        let (_, info) = crate::prompt::load_agents_md_files_from_dir(dir.as_deref());
+        let width = crossterm::terminal::size()
+            .map(|(w, _)| w.saturating_sub(4) as usize)
+            .unwrap_or(100);
+        let rows: Vec<String> = crate::prompt::instruction_source_rows(&info.instruction_sources)
+            .iter()
+            .map(|row| crate::tui::ui::tools_ui::truncate_end_display(row, width))
+            .collect();
+        app.push_display_message(DisplayMessage {
+            role: "system".to_string(),
+            content: format!("Effective instructions (prompt order):\n{}", rows.join("\n")),
+            tool_calls: vec![],
+            duration_secs: None,
+            title: None,
+            tool_data: None,
+        });
+        return true;
+    }
+
     if trimmed == "/context" {
         let cwd = std::env::current_dir()
             .map(|p| p.display().to_string())

@@ -153,6 +153,10 @@ const REGISTERED_COMMANDS: &[RegisteredCommand] = &[
     RegisteredCommand::public("/swarm", "Toggle swarm feature"),
     RegisteredCommand::public("/overnight", "Run a supervised overnight coordinator"),
     RegisteredCommand::public("/context", "Show the full session context snapshot"),
+    RegisteredCommand::public(
+        "/context instructions",
+        "List instruction files loaded into the prompt",
+    ),
     RegisteredCommand::public("/mcp", "Show MCP servers; /mcp login <server> for OAuth"),
     RegisteredCommand::public(
         "/skills",

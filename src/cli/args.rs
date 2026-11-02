@@ -330,6 +330,10 @@ pub(crate) enum Command {
         /// Wait for response to complete (for message command)
         #[arg(short, long)]
         wait: bool,
+
+        /// Directory to inspect (for the instructions command)
+        #[arg(long)]
+        dir: Option<std::path::PathBuf>,
     },
 
     /// Authentication status and validation helpers

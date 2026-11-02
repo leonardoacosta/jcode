@@ -394,8 +394,13 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
             session,
             socket,
             wait,
+            dir,
         }) => {
-            debug::run_debug_command(&command, &arg, session, socket, wait).await?;
+            if command == "instructions" {
+                debug::run_instructions_command(dir.as_deref())?;
+            } else {
+                debug::run_debug_command(&command, &arg, session, socket, wait).await?;
+            }
         }
         Some(Command::Auth(subcmd)) => match subcmd {
             AuthCommand::Import { .. } => unreachable!("auth import handled before bootstrap"),
