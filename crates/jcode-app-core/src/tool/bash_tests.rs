@@ -476,6 +476,21 @@ async fn test_reload_persistable_bash_timeout_promotes_to_background() {
             .as_str()
             .expect("status_file should be present"),
     );
+    assert!(
+        result.output.contains(&task_id),
+        "output should name the task id: {}",
+        result.output
+    );
+    assert!(
+        result.output.contains(&output_file.display().to_string()),
+        "output should name the output file: {}",
+        result.output
+    );
+    assert!(
+        result.output.contains("bg"),
+        "output should mention bg: {}",
+        result.output
+    );
 
     let initial_status = crate::background::global()
         .status(&task_id)

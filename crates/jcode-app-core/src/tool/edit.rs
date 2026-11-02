@@ -424,9 +424,66 @@ fn flexible_match_hint(content: &str, old_string: &str, file_path: &str) -> Stri
         }
     }
 
+    if let Some(hint) = nearest_context(content, &old_lines) {
+        return format!("old_string not found in {file_path}.\n{hint}");
+    }
+
     format!(
         "old_string not found in {file_path}. Use the read tool to see the current file contents."
     )
+}
+
+const NEAREST_MAX_FILE_BYTES: usize = 2 * 1024 * 1024;
+const NEAREST_PAD_LINES: usize = 2;
+const NEAREST_MAX_LINES: usize = 20;
+const NEAREST_MAX_CHARS: usize = 2000;
+
+/// Find the window of `content` most similar to `needle_lines` (trimmed-line
+/// equality, ties to earliest) and render it with line numbers. Returns `None`
+/// when the file is too large or fewer than 40% of non-empty needle lines match.
+pub(crate) fn nearest_context<S: AsRef<str>>(content: &str, needle_lines: &[S]) -> Option<String> {
+    if content.len() > NEAREST_MAX_FILE_BYTES {
+        return None;
+    }
+    let needle: Vec<&str> = needle_lines.iter().map(|l| l.as_ref().trim()).collect();
+    let significant = needle.iter().filter(|l| !l.is_empty()).count();
+    if significant == 0 {
+        return None;
+    }
+    let lines: Vec<&str> = content.lines().collect();
+    if lines.is_empty() {
+        return None;
+    }
+    let width = needle.len().min(lines.len());
+    let mut best: Option<(usize, usize)> = None; // (score, start)
+    for start in 0..=lines.len() - width {
+        let score = needle
+            .iter()
+            .zip(&lines[start..start + width])
+            .filter(|(n, l)| !n.is_empty() && **n == l.trim())
+            .count();
+        if score > 0 && best.is_none_or(|(b, _)| score > b) {
+            best = Some((score, start));
+        }
+    }
+    let (score, start) = best?;
+    if score * 10 < significant * 4 {
+        return None;
+    }
+    let from = start.saturating_sub(NEAREST_PAD_LINES);
+    let to = (start + width + NEAREST_PAD_LINES)
+        .min(lines.len())
+        .min(from + NEAREST_MAX_LINES);
+    let mut out = format!("Closest match near line {}:", start + 1);
+    for (i, line) in lines[from..to].iter().enumerate() {
+        let row = format!("\n{} | {}", from + i + 1, line);
+        if out.len() + row.len() > NEAREST_MAX_CHARS {
+            out.push_str("\n...");
+            break;
+        }
+        out.push_str(&row);
+    }
+    Some(out)
 }
 
 /// Generate a compact whole-file diff: "42- old" / "42+ new" (max 30 lines)
@@ -472,6 +529,46 @@ fn generate_diff_summary(old: &str, new: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nearest_context_picks_best_window() {
+        let content = "a\nb\nfoo\nbar\nbaz\nc";
+        let hint = nearest_context(content, &["foo", "barX", "baz"]).unwrap();
+        assert!(hint.starts_with("Closest match near line 3:"), "{hint}");
+        assert!(hint.contains("4 | bar"), "{hint}");
+        assert!(hint.contains("1 | a"), "{hint}");
+    }
+
+    #[test]
+    fn nearest_context_tie_prefers_earliest() {
+        let content = "x\nfoo\ny\nfoo\nz";
+        let hint = nearest_context(content, &["foo", "nope"]).unwrap();
+        assert!(hint.starts_with("Closest match near line 2:"), "{hint}");
+    }
+
+    #[test]
+    fn nearest_context_below_threshold_is_none() {
+        let content = "one\ntwo\nthree\nfour\nfive";
+        assert!(nearest_context(content, &["one", "q", "r", "s", "t"]).is_none());
+    }
+
+    #[test]
+    fn nearest_context_skips_huge_file() {
+        let content = "foo\n".repeat(NEAREST_MAX_FILE_BYTES / 4 + 1);
+        assert!(nearest_context(&content, &["foo"]).is_none());
+    }
+
+    #[test]
+    fn flexible_match_hint_shows_closest_region() {
+        let content = "fn a() {}\nfn main() {\n    let x = 1;\n    println!(x);\n}\n";
+        let hint = flexible_match_hint(
+            content,
+            "fn main() {\n    let x = 2;\n    println!(x);\n}",
+            "f.rs",
+        );
+        assert!(hint.contains("Closest match near line 2:"), "{hint}");
+        assert!(hint.contains("3 |     let x = 1;"), "{hint}");
+    }
 
     #[test]
     fn test_generate_diff_single_line_change() {

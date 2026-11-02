@@ -540,9 +540,10 @@ fn compute_replacements(
                 line_index = idx + 1;
             } else {
                 anyhow::bail!(
-                    "Failed to find context '{}' in {}",
+                    "Failed to find context '{}' in {}{}",
                     ctx_line,
-                    path.display()
+                    path.display(),
+                    nearest_hint(original_lines, std::slice::from_ref(ctx_line))
                 );
             }
         }
@@ -575,15 +576,22 @@ fn compute_replacements(
             line_index = start_idx + pattern.len();
         } else {
             anyhow::bail!(
-                "Failed to find expected lines in {}:\n{}",
+                "Failed to find expected lines in {}:\n{}{}",
                 path.display(),
                 chunk.old_lines.join("\n"),
+                nearest_hint(original_lines, &chunk.old_lines),
             );
         }
     }
 
     replacements.sort_by(|(a, _, _), (b, _, _)| a.cmp(b));
     Ok(replacements)
+}
+
+fn nearest_hint(original_lines: &[String], needle: &[String]) -> String {
+    super::edit::nearest_context(&original_lines.join("\n"), needle)
+        .map(|h| format!("\n{h}"))
+        .unwrap_or_default()
 }
 
 fn apply_replacements(

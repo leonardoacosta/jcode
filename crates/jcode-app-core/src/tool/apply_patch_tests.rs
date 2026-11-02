@@ -328,3 +328,45 @@ async fn apply_patch_still_deletes_ordinary_files() {
 
     assert!(!target.exists(), "an ordinary file should still be deleted");
 }
+
+#[tokio::test]
+async fn test_apply_update_missing_lines_shows_nearest_context() {
+    let f = write_temp("a\nfn main() {\n    let x = 1;\n    go(x);\n}\n");
+    let chunks = vec![UpdateFileChunk {
+        change_context: None,
+        old_lines: vec![
+            "fn main() {".to_string(),
+            "    let x = 2;".to_string(),
+            "    go(x);".to_string(),
+        ],
+        new_lines: vec!["fn main() {}".to_string()],
+        is_end_of_file: false,
+    }];
+    let err = apply_update_chunks(f.path(), &chunks)
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("Failed to find expected lines"), "{err}");
+    assert!(err.contains("Closest match near line 2:"), "{err}");
+    assert!(err.contains("3 |     let x = 1;"), "{err}");
+}
+
+#[tokio::test]
+async fn test_apply_update_missing_context_shows_nearest_context() {
+    let f = write_temp("a\nfn main() {\n}\n");
+    let chunks = vec![UpdateFileChunk {
+        change_context: Some("fn main()  {".to_string()),
+        old_lines: vec!["}".to_string()],
+        new_lines: vec!["}".to_string()],
+        is_end_of_file: false,
+    }];
+    let err = apply_update_chunks(f.path(), &chunks)
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("Failed to find context"), "{err}");
+    assert!(
+        !err.contains("Closest match"),
+        "dissimilar context should not hint: {err}"
+    );
+}
