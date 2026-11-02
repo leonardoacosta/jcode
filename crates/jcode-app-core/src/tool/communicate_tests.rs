@@ -1617,3 +1617,57 @@ fn member_list_shows_recorded_model_source() {
         "- fox: gpt (source: explicit)"
     );
 }
+
+#[test]
+fn summary_returns_full_report_before_tool_calls() {
+    let long_line = "x".repeat(200);
+    let report = format!("Done.\n{long_line}\nTests passed.");
+    let calls = vec![crate::protocol::ToolCallSummary {
+        tool_name: "bash".to_string(),
+        brief_output: "ok".to_string(),
+        timestamp_secs: None,
+    }];
+    let out = super::format_summary_with_report("w1", Some(&report), &calls).output;
+    let report_at = out.find(&long_line).expect("full untruncated line");
+    let calls_at = out.find("Tool call summary").expect("tool calls listed");
+    assert!(report_at < calls_at);
+    assert!(out.contains("Tests passed."));
+}
+
+#[test]
+fn oversized_report_is_tail_truncated_with_marker() {
+    let report = format!("HEAD{}TAIL", "y".repeat(20 * 1024));
+    let capped = super::cap_full_report(&report);
+    assert!(capped.starts_with("[Report truncated by jcode"));
+    assert!(capped.ends_with("TAIL"));
+    assert!(!capped.contains("HEAD"));
+}
+
+#[test]
+fn ready_without_report_is_incomplete_and_reported_stays_done() {
+    let mk = |id: &str, status: &str, report: Option<&str>| crate::protocol::AwaitedMemberStatus {
+        session_id: id.to_string(),
+        friendly_name: None,
+        status: status.to_string(),
+        done: true,
+        completion_report: report.map(str::to_string),
+    };
+    let mut members = vec![
+        mk("a", "ready", None),
+        mk("b", "ready", Some("report b")),
+        mk("c", "stopped", Some("report c")),
+    ];
+    super::normalize_awaited_members(&mut members);
+    assert_eq!(members[0].status, "incomplete");
+    assert!(!members[0].done);
+    assert!(members[1].done && members[2].done);
+    let out = super::format_awaited_members_with_reports(
+        true,
+        "s",
+        &members,
+        &std::collections::HashMap::new(),
+    )
+    .output;
+    assert!(out.contains("(incomplete)"));
+    assert!(out.contains("report c"));
+}

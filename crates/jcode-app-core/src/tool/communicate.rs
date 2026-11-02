@@ -1578,6 +1578,60 @@ fn format_tool_summary(target: &str, calls: &[ToolCallSummary]) -> ToolOutput {
     ToolOutput::new(format_comm_tool_summary(target, calls))
 }
 
+/// Reports up to this size are returned verbatim; larger ones keep the tail.
+const MAX_FULL_REPORT_BYTES: usize = 16 * 1024;
+
+fn cap_full_report(report: &str) -> String {
+    let report = report.trim();
+    if report.len() <= MAX_FULL_REPORT_BYTES {
+        return report.to_string();
+    }
+    let mut start = report.len() - MAX_FULL_REPORT_BYTES;
+    while !report.is_char_boundary(start) {
+        start += 1;
+    }
+    format!(
+        "[Report truncated by jcode: showing last {} bytes]\n{}",
+        report.len() - start,
+        &report[start..]
+    )
+}
+
+fn format_summary_with_report(
+    target: &str,
+    report: Option<&str>,
+    calls: &[ToolCallSummary],
+) -> ToolOutput {
+    let calls_text = format_comm_tool_summary(target, calls);
+    match report.filter(|r| !r.trim().is_empty()) {
+        Some(report) => ToolOutput::new(format!(
+            "Final report from {}:\n{}\n\n{}",
+            target,
+            cap_full_report(report),
+            calls_text
+        )),
+        None => ToolOutput::new(calls_text),
+    }
+}
+
+/// Members sitting in `ready` without a submitted report are not done; label
+/// them `incomplete` and cap report bodies.
+fn normalize_awaited_members(members: &mut [AwaitedMemberStatus]) {
+    for member in members.iter_mut() {
+        let has_report = member
+            .completion_report
+            .as_deref()
+            .is_some_and(|r| !r.trim().is_empty());
+        if member.status == "ready" && !has_report {
+            member.done = false;
+            member.status = "incomplete".to_string();
+        }
+        if let Some(report) = member.completion_report.as_mut() {
+            *report = cap_full_report(report);
+        }
+    }
+}
+
 fn format_status_snapshot(snapshot: &AgentStatusSnapshot) -> ToolOutput {
     ToolOutput::new(format_comm_status_snapshot(snapshot))
 }
@@ -2840,7 +2894,23 @@ impl Tool for CommunicateTool {
 
                 match send_request(request).await {
                     Ok(ServerEvent::CommSummaryResponse { tool_calls, .. }) => {
-                        Ok(format_tool_summary(&target, &tool_calls))
+                        let report = fetch_swarm_members(&ctx.session_id)
+                            .await
+                            .ok()
+                            .and_then(|members| {
+                                members
+                                    .into_iter()
+                                    .find(|m| {
+                                        m.session_id == target
+                                            || m.friendly_name.as_deref() == Some(target.as_str())
+                                    })
+                                    .and_then(|m| m.latest_completion_report)
+                            });
+                        Ok(format_summary_with_report(
+                            &target,
+                            report.as_deref(),
+                            &tool_calls,
+                        ))
                     }
                     Ok(response) => {
                         ensure_success(&response)?;
@@ -3257,6 +3327,8 @@ impl Tool for CommunicateTool {
                                 summary
                             )));
                         }
+                        let mut members = members;
+                        normalize_awaited_members(&mut members);
                         let reports = fetch_awaited_member_reports(&ctx, &members).await;
                         Ok(format_awaited_members_with_reports(
                             completed, &summary, &members, &reports,

@@ -52,7 +52,13 @@ pub(super) async fn awaited_member_statuses(
                     )
                 })
                 .unwrap_or((None, "unknown".to_string(), None));
-            let done = target_status.contains(&status)
+            let has_report = completion_report
+                .as_deref()
+                .is_some_and(|report| !report.trim().is_empty());
+            // `ready` only counts once the member submitted a report; a member
+            // that reported and then stopped/completed stays done.
+            let done = (target_status.contains(&status) && (status != "ready" || has_report))
+                || (has_report && matches!(status.as_str(), "stopped" | "completed"))
                 || (status == "unknown"
                     && (target_status.contains(&"stopped".to_string())
                         || target_status.contains(&"completed".to_string())));

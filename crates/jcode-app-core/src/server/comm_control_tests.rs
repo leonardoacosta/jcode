@@ -4,7 +4,9 @@ use crate::message::{Message, StreamEvent, ToolDefinition};
 use crate::plan::PlanItem;
 use crate::protocol::ServerEvent;
 use crate::provider::{EventStream, Provider};
-use crate::server::comm_await::{CommAwaitMembersContext, handle_comm_await_members};
+use crate::server::comm_await::{
+    CommAwaitMembersContext, awaited_member_statuses, handle_comm_await_members, mode_satisfied, timeout_summary,
+};
 use crate::server::{
     AwaitMembersRuntime, SwarmEvent, SwarmEventType, SwarmMember, SwarmMutationRuntime,
     VersionedPlan,
@@ -155,6 +157,7 @@ include!("comm_control_tests/assign_next_metadata.rs");
 include!("comm_control_tests/await_late_joiners.rs");
 include!("comm_control_tests/await_disconnect.rs");
 include!("comm_control_tests/await_any.rs");
+include!("comm_control_tests/await_report_done.rs");
 include!("comm_control_tests/await_reload_deadline.rs");
 include!("comm_control_tests/await_reload_final.rs");
 include!("comm_control_tests/await_lagged.rs");
