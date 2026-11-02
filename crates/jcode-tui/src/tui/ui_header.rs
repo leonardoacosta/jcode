@@ -850,27 +850,12 @@ fn build_header_lines_with_auth(
 
     let mcps = app.mcp_servers();
     if !mcps.is_empty() {
-        const MAX_MCPS: usize = 4;
-        let shown: Vec<String> = mcps
-            .iter()
-            .take(MAX_MCPS)
-            .map(|(name, count)| {
-                if *count > 0 {
-                    format!("{} ({} tools)", name, count)
-                } else {
-                    format!("{} (…)", name)
-                }
-            })
-            .collect();
-        let mut mcp_text = format!("mcp: {}", shown.join(", "));
-        if mcps.len() > MAX_MCPS {
-            mcp_text.push_str(&format!(" +{} more", mcps.len() - MAX_MCPS));
-        }
-        if mcp_text.chars().count() > w {
-            mcp_text = format!("mcp: {} servers", mcps.len());
-        }
         lines.push(
-            Line::from(Span::styled(mcp_text, Style::default().fg(dim_color()))).alignment(align),
+            Line::from(Span::styled(
+                mcp_header_text(&mcps, w),
+                Style::default().fg(dim_color()),
+            ))
+            .alignment(align),
         );
     }
 
@@ -999,6 +984,50 @@ pub(in crate::tui) fn build_header_sections(
     (persistent, secondary)
 }
 
+/// One-row MCP summary: `mcp n/m ready: a (3 tools), …`. Servers reporting
+/// zero tools are still connecting. Never exceeds `w` display cells.
+fn mcp_header_text(mcps: &[(String, usize)], w: usize) -> String {
+    use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+    const MAX_MCPS: usize = 4;
+    let ready = mcps.iter().filter(|(_, count)| *count > 0).count();
+    let shown: Vec<String> = mcps
+        .iter()
+        .take(MAX_MCPS)
+        .map(|(name, count)| {
+            if *count > 0 {
+                format!("{name} ({count} tools)")
+            } else {
+                format!("{name} (…)")
+            }
+        })
+        .collect();
+    let mut text = format!("mcp {ready}/{}: {}", mcps.len(), shown.join(", "));
+    if mcps.len() > MAX_MCPS {
+        text.push_str(&format!(" +{} more", mcps.len() - MAX_MCPS));
+    }
+    if text.width() <= w {
+        return text;
+    }
+    let short = format!("mcp {ready}/{}", mcps.len());
+    if short.width() <= w {
+        return short;
+    }
+    let mut out = String::new();
+    let mut used = 0;
+    for ch in short.chars() {
+        let cw = ch.width().unwrap_or(0);
+        if used + cw + 1 > w {
+            break;
+        }
+        used += cw;
+        out.push(ch);
+    }
+    if w > 0 {
+        out.push('…');
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1010,6 +1039,23 @@ mod tests {
     use async_trait::async_trait;
     use std::sync::Arc;
     use std::sync::OnceLock;
+
+    #[test]
+    fn mcp_header_row_fits_width_without_wrapping() {
+        use unicode_width::UnicodeWidthStr;
+        let mcps = vec![("aperture".to_string(), 12), ("grafana".to_string(), 0)];
+        assert_eq!(
+            mcp_header_text(&mcps, 80),
+            "mcp 1/2: aperture (12 tools), grafana (…)"
+        );
+        assert_eq!(mcp_header_text(&mcps, 12), "mcp 1/2");
+        for w in 0..60 {
+            let text = mcp_header_text(&mcps, w);
+            assert!(text.width() <= w, "w={w}: {text}");
+            assert!(!text.contains('\n'));
+        }
+        assert_eq!(mcp_header_text(&mcps, 5), "mcp …");
+    }
 
     #[test]
     fn header_rows_clip_unicode_and_controls_without_losing_style() {

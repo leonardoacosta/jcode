@@ -3802,6 +3802,10 @@ pub(super) fn handle_config_command(app: &mut App, trimmed: &str) -> bool {
         return true;
     }
 
+    if super::commands_mcp::handle_mcp_command(app, trimmed) {
+        return true;
+    }
+
     if trimmed == "/subscription" || trimmed == "/subscription status" {
         app.show_jcode_subscription_status();
         return true;

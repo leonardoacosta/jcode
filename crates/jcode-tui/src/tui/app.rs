@@ -66,6 +66,7 @@ mod commands_cloud;
 mod commands_colors;
 mod commands_desktop;
 mod commands_dispatch;
+mod commands_mcp;
 mod commands_improve;
 mod commands_overnight;
 mod commands_plan;
