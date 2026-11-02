@@ -672,7 +672,7 @@ impl Agent {
             // Search results load matching server definitions via references.
             for tool in tools.iter_mut() {
                 if tool.name.starts_with("mcp__") {
-                    tool.defer_loading = true;
+                    tool.defer_loading = !self.registry.mcp_alias_is_direct(&tool.name);
                 }
             }
             return;
@@ -687,7 +687,9 @@ impl Agent {
         let deferred = !matches!(self.mcp_tools_mode, crate::config::McpToolsMode::Eager);
 
         if deferred {
-            tools.retain(|tool| !tool.name.starts_with("mcp__"));
+            tools.retain(|tool| {
+                !tool.name.starts_with("mcp__") || self.registry.mcp_alias_is_direct(&tool.name)
+            });
         }
     }
 

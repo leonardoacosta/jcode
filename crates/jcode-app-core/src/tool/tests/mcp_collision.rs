@@ -437,3 +437,38 @@ async fn connected_server_refresh_skips_identical_catalog_but_applies_changes() 
         def.input_schema
     );
 }
+
+#[tokio::test]
+async fn pinned_tool_is_direct_until_server_fails() {
+    let registry = Registry::new(Arc::new(MockProvider)).await;
+    let manager = Arc::new(RwLock::new(crate::mcp::McpManager::with_config(
+        crate::mcp::McpConfig::default(),
+    )));
+    let def = |name: &str| crate::mcp::McpToolDef {
+        name: name.to_string(),
+        description: None,
+        input_schema: serde_json::json!({"type": "object"}),
+    };
+    let catalog = vec![
+        ("aperture".to_string(), def("query")),
+        ("aperture".to_string(), def("other")),
+    ];
+    registry
+        .reconcile_mcp_tools(crate::mcp::create_mcp_tools_from_cached_many(
+            &catalog, manager,
+        ))
+        .await;
+    registry
+        .mcp_policy
+        .write()
+        .unwrap()
+        .direct
+        .pin_tools
+        .push("aperture/query".to_string());
+    assert!(registry.mcp_alias_is_direct("mcp__aperture__query"));
+    assert!(!registry.mcp_alias_is_direct("mcp__aperture__other"));
+    registry.set_mcp_server_failed("aperture", true);
+    assert!(!registry.mcp_alias_is_direct("mcp__aperture__query"));
+    registry.set_mcp_server_failed("aperture", false);
+    assert!(registry.mcp_alias_is_direct("mcp__aperture__query"));
+}

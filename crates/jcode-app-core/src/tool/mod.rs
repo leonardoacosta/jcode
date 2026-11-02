@@ -292,6 +292,10 @@ fn accepts_large_output(input: &Value) -> bool {
 struct McpPolicyIndex {
     current: HashMap<String, (String, String)>,
     history: HashMap<(String, String), HashSet<String>>,
+    /// `expose: direct` servers and `pin_tools` from the session config.
+    direct: crate::mcp::McpConfig,
+    /// Servers whose last connect failed; their direct tools are withheld.
+    failed: HashSet<String>,
 }
 
 /// Registry of available tools (Arc-wrapped for sharing)
@@ -1356,6 +1360,24 @@ impl Registry {
             .any(|name| tool_name_is_disabled(disabled, name))
     }
 
+    /// Whether a registered MCP alias is exposed as a direct model tool
+    /// (`expose: direct` or `mcp.pin_tools`) and its server is healthy.
+    pub fn mcp_alias_is_direct(&self, alias: &str) -> bool {
+        let index = self.mcp_policy.read().unwrap_or_else(|e| e.into_inner());
+        index.current.get(alias).is_some_and(|(server, tool)| {
+            !index.failed.contains(server) && index.direct.is_direct_tool(server, tool)
+        })
+    }
+
+    fn set_mcp_server_failed(&self, server: &str, failed: bool) {
+        let mut index = self.mcp_policy.write().unwrap_or_else(|e| e.into_inner());
+        if failed {
+            index.failed.insert(server.to_string());
+        } else {
+            index.failed.remove(server);
+        }
+    }
+
     /// Original `(server, tool)` for a registered MCP alias. Aliases are
     /// sanitized for providers, so they cannot be split back reliably.
     pub(crate) fn mcp_identity_for_alias(&self, alias: &str) -> Option<(String, String)> {
@@ -1702,6 +1724,19 @@ impl Registry {
                     .filter(|(_, cfg)| cfg.autostarts(cwd))
                     .map(|(name, cfg)| (name.clone(), cfg.clone()))
                     .collect();
+                {
+                    let config = manager.config();
+                    let mut index = registry.mcp_policy.write().unwrap_or_else(|e| e.into_inner());
+                    index.direct = crate::mcp::McpConfig {
+                        servers: config
+                            .servers
+                            .iter()
+                            .filter(|(_, cfg)| cfg.is_direct())
+                            .map(|(name, cfg)| (name.clone(), cfg.clone()))
+                            .collect(),
+                        pin_tools: config.pin_tools.clone(),
+                    };
+                }
                 drop(manager);
                 let mut connections = futures::stream::FuturesUnordered::new();
                 for (name, config) in configs {
@@ -1730,6 +1765,7 @@ impl Registry {
                 let mut server_counts: std::collections::BTreeMap<String, usize> =
                     std::collections::BTreeMap::new();
                 while let Some((name, result)) = connections.next().await {
+                    registry.set_mcp_server_failed(&name, result.is_err());
                     if let Err(error) = result {
                         // Backed-off/degraded skips were already reported once
                         // by the pool on the health transition.
