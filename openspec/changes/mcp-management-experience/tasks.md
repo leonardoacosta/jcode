@@ -15,4 +15,5 @@
   - Note: timeout is oauth.rs's existing 5-minute callback bound (covered by oauth_tests); TUI test covers usage/dispatch only.
 
 ## 4. Verify
-- [ ] 4.1 `cargo test -p jcode-base mcp`, TUI tests, `openspec validate mcp-management-experience --strict`
+- [x] 4.1 `cargo test -p jcode-base mcp`, TUI tests, `openspec validate mcp-management-experience --strict`
+  - Note: all pass except pre-existing `mcp_collision_manual_lifecycle_real_stdio` (fails on base too: untrusted mise config in test env).
