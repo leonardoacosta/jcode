@@ -39,6 +39,25 @@ pub(super) fn assert_snapshot(name: &str, actual: &Value) {
     }
 }
 
+/// Redact process-global counters (legacy ids, text message ids) so
+/// snapshots are stable regardless of test order.
+fn redact(value: &mut Value) {
+    match value {
+        Value::Object(map) => {
+            for (key, v) in map.iter_mut() {
+                match (key.as_str(), &*v) {
+                    ("message_id", Value::String(s)) if s.starts_with("text-") => {
+                        *v = json!("text-<n>")
+                    }
+                    _ => redact(v),
+                }
+            }
+        }
+        Value::Array(items) => items.iter_mut().for_each(redact),
+        _ => {}
+    }
+}
+
 fn attached_state() -> BridgeState {
     BridgeState {
         session_id: Some("s1".into()),
@@ -57,7 +76,12 @@ fn translate_request_frames_match_snapshot() {
                 .api_request_to_legacy(request)
                 .into_iter()
                 .map(|o| match o {
-                    Outbound::Legacy(v) => json!({"legacy": v}),
+                    Outbound::Legacy(mut v) => {
+                        if v.get("id").is_some_and(Value::is_u64) {
+                            v["id"] = json!("<legacy-id>");
+                        }
+                        json!({"legacy": v})
+                    }
                     Outbound::Reply(f) => json!({"reply": serde_json::to_value(f).unwrap()}),
                 })
                 .collect();
@@ -73,7 +97,8 @@ fn translate_event_frames_match_snapshot() {
     let frames: Vec<Value> = fixture("events.input.json")
         .iter()
         .map(|event| {
-            let out = serde_json::to_value(state.legacy_event_to_api(event)).unwrap();
+            let mut out = serde_json::to_value(state.legacy_event_to_api(event)).unwrap();
+            redact(&mut out);
             json!({"event": event, "frames": out})
         })
         .collect();

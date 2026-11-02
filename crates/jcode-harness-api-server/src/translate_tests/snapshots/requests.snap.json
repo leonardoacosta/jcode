@@ -21,7 +21,7 @@
     "outbound": [
       {
         "legacy": {
-          "id": 1,
+          "id": "<legacy-id>",
           "type": "compact"
         }
       }
@@ -35,7 +35,7 @@
     "outbound": [
       {
         "legacy": {
-          "id": 2,
+          "id": "<legacy-id>",
           "type": "rename_session"
         }
       }
@@ -49,7 +49,7 @@
     "outbound": [
       {
         "legacy": {
-          "id": 3,
+          "id": "<legacy-id>",
           "subscribe_usage_updates": true,
           "type": "get_model_catalog"
         }
@@ -68,7 +68,7 @@
             "status"
           ],
           "command": "memory",
-          "id": 4,
+          "id": "<legacy-id>",
           "type": "runtime_command"
         }
       }

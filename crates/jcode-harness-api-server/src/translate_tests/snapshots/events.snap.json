@@ -7,7 +7,7 @@
     "frames": [
       {
         "ev": "text_delta",
-        "message_id": "text-1",
+        "message_id": "text-<n>",
         "session_id": "s1",
         "text": "yo",
         "v": 1
@@ -22,7 +22,7 @@
     "frames": [
       {
         "ev": "text_done",
-        "message_id": "text-1",
+        "message_id": "text-<n>",
         "session_id": "s1",
         "v": 1
       },
