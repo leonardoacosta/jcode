@@ -719,6 +719,41 @@ impl McpConfig {
         Ok(config)
     }
 
+    /// Read servers from another client's config: `claude` (`~/.claude.json`,
+    /// top-level only) or `codex` (`~/.codex/config.toml`).
+    pub fn read_external(source: &str) -> anyhow::Result<Self> {
+        match source {
+            "claude" => {
+                let path = crate::storage::user_home_path(".claude.json")?;
+                anyhow::ensure!(path.exists(), "{} not found", path.display());
+                Ok(Self::load_claude_json(&path, None))
+            }
+            "codex" => {
+                let path = crate::storage::user_home_path(".codex/config.toml")?;
+                anyhow::ensure!(path.exists(), "{} not found", path.display());
+                Self::load_from_codex_toml(&path)
+            }
+            other => anyhow::bail!("unknown import source '{other}' (expected claude or codex)"),
+        }
+    }
+
+    /// Merge `imported` into `self`, never overwriting existing names.
+    /// Returns (added, skipped_conflicts), each sorted.
+    pub fn merge_import(&mut self, imported: Self) -> (Vec<String>, Vec<String>) {
+        let (mut added, mut skipped) = (Vec::new(), Vec::new());
+        for (name, server) in imported.servers {
+            if self.servers.contains_key(&name) {
+                skipped.push(name);
+            } else {
+                self.servers.insert(name.clone(), server);
+                added.push(name);
+            }
+        }
+        added.sort();
+        skipped.sort();
+        (added, skipped)
+    }
+
     /// Parse MCP servers from Claude Code's `~/.claude.json`.
     ///
     /// Claude Code stores a global set under the top-level `mcpServers` key, and

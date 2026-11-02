@@ -26,6 +26,16 @@ pub(crate) enum McpCommand {
         /// Server name from the merged MCP configuration
         server: String,
     },
+    /// Copy servers from Claude Code or Codex into ~/.jcode/mcp.json
+    /// (dry run unless --apply; existing names are skipped)
+    Import {
+        /// Source client
+        #[arg(long, value_parser = ["claude", "codex"])]
+        from: String,
+        /// Write the merged config instead of only printing the plan
+        #[arg(long)]
+        apply: bool,
+    },
 }
 
 #[cfg(test)]
@@ -57,6 +67,11 @@ mod tests {
         assert!(
             matches!(args.command, Some(Command::Mcp { action: McpCommand::Logout { server } }) if server == "remote")
         );
+        let args = Args::try_parse_from(["jcode", "mcp", "import", "--from", "claude"]).unwrap();
+        assert!(
+            matches!(args.command, Some(Command::Mcp { action: McpCommand::Import { from, apply: false } }) if from == "claude")
+        );
+        assert!(Args::try_parse_from(["jcode", "mcp", "import", "--from", "vim"]).is_err());
         let args = Args::try_parse_from(["jcode", "mcp", "test", "remote"]).unwrap();
         assert!(
             matches!(args.command, Some(Command::Mcp { action: McpCommand::Test { server } }) if server == "remote")

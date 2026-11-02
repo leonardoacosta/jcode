@@ -90,7 +90,53 @@ fn render_list(rows: &[Value]) -> String {
     output
 }
 
+fn import_plan(
+    target: &mut McpConfig,
+    source: &str,
+    imported: McpConfig,
+    apply: bool,
+) -> String {
+    let (added, skipped) = target.merge_import(imported);
+    let mut out = format!(
+        "{} {} server(s) from {source}",
+        if apply { "Imported" } else { "Would import" },
+        added.len()
+    );
+    if !added.is_empty() {
+        out.push_str(&format!(": {}", added.join(", ")));
+    }
+    out.push('\n');
+    if !skipped.is_empty() {
+        out.push_str(&format!(
+            "Skipped {} existing name(s): {}\n",
+            skipped.len(),
+            skipped.join(", ")
+        ));
+    }
+    if !apply && !added.is_empty() {
+        out.push_str("Dry run. Re-run with --apply to write ~/.jcode/mcp.json.\n");
+    }
+    out
+}
+
 pub(crate) async fn run(action: McpCommand) -> Result<()> {
+    if let McpCommand::Import { from, apply } = &action {
+        let path = crate::storage::jcode_dir()?.join("mcp.json");
+        let mut target = if path.exists() {
+            McpConfig::load_from_file(&path)
+                .with_context(|| format!("Failed to parse {}", path.display()))?
+        } else {
+            McpConfig::default()
+        };
+        let before = target.servers.len();
+        let imported = McpConfig::read_external(from)?;
+        print!("{}", import_plan(&mut target, from, imported, *apply));
+        if *apply && target.servers.len() > before {
+            target.save_to_file(&path)?;
+        }
+        return Ok(());
+    }
+
     let config = McpConfig::load();
     match action {
         McpCommand::Test { server: name } => {
@@ -148,6 +194,7 @@ pub(crate) async fn run(action: McpCommand) -> Result<()> {
                 "Logged in to MCP server '{name}'. Reconnect it or reload MCP servers to use the credentials."
             );
         }
+        McpCommand::Import { .. } => unreachable!("handled above"),
         McpCommand::Logout { server: name } => {
             let (_, url) = remote_server(&config, &name)?;
             let removed = oauth::logout(url)?;
@@ -261,5 +308,20 @@ mod tests {
         let error = server_rows(&config).unwrap_err().to_string();
         assert!(error.contains("OAuth credential store is invalid"));
         assert!(!error.contains("secret-access-token"));
+    }
+
+    #[test]
+    fn import_dry_run_reports_and_skips_conflicts() {
+        let mut target = config();
+        let imported: McpConfig = serde_json::from_value(json!({"servers": {
+            "local": {"command": "other"},
+            "fresh": {"command": "x"}
+        }}))
+        .unwrap();
+        let out = import_plan(&mut target, "claude", imported, false);
+        assert!(out.contains("Would import 1 server(s) from claude: fresh"), "{out}");
+        assert!(out.contains("Skipped 1 existing name(s): local"), "{out}");
+        assert!(out.contains("--apply"));
+        assert_eq!(target.servers["local"].command, "test", "conflict must not overwrite");
     }
 }
