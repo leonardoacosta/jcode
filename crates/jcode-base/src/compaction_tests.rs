@@ -5,6 +5,112 @@ use std::time::{Duration, Instant};
 
 struct MockSummaryProvider;
 
+struct RoleModelProvider(std::sync::Mutex<String>);
+
+#[async_trait::async_trait]
+impl Provider for RoleModelProvider {
+    async fn complete(
+        &self,
+        _messages: &[Message],
+        _tools: &[crate::message::ToolDefinition],
+        _system: &str,
+        _resume_session_id: Option<&str>,
+    ) -> Result<EventStream> {
+        unreachable!("compaction uses simple completion")
+    }
+
+    fn name(&self) -> &str {
+        "role-test"
+    }
+    fn model(&self) -> String {
+        self.0.lock().unwrap().clone()
+    }
+    fn set_model(&self, model: &str) -> Result<()> {
+        anyhow::ensure!(model != "unavailable", "unavailable model");
+        *self.0.lock().unwrap() = model.to_string();
+        Ok(())
+    }
+    fn fork(&self) -> Arc<dyn Provider> {
+        Arc::new(Self(std::sync::Mutex::new(self.model())))
+    }
+    async fn native_compact(
+        &self,
+        _messages: &[Message],
+        _summary: Option<&str>,
+        _encrypted: Option<&str>,
+    ) -> Result<jcode_provider_core::NativeCompactionResult> {
+        anyhow::ensure!(self.model() == "native-slot", "no native compaction");
+        Ok(jcode_provider_core::NativeCompactionResult {
+            summary_text: Some(self.model()),
+            openai_encrypted_content: None,
+            usage: None,
+        })
+    }
+    async fn complete_simple_with_usage(
+        &self,
+        _prompt: &str,
+        _system: &str,
+    ) -> Result<(String, jcode_provider_core::SimpleCompletionUsage)> {
+        Ok((self.model(), Default::default()))
+    }
+}
+
+#[tokio::test]
+async fn compaction_uses_role_slot_without_changing_main_model() {
+    let Ok(expected) = std::env::var("JCODE_COMPACTION_SLOT_TEST") else {
+        for (config, expected) in [
+            ("[agents.roles]\ncompaction = 'slot-model'\n", "slot-model"),
+            (
+                "[agents.roles]\ncompaction = 'native-slot'\n",
+                "native-slot",
+            ),
+            ("[agents.roles]\ncompaction = 'unavailable'\n", "error"),
+            ("[agents.roles]\ncompaction = '  '\n", "main-model"),
+            ("[agents]\nswarm_model = 'worker-model'\n", "main-model"),
+        ] {
+            let home = tempfile::tempdir().unwrap();
+            std::fs::write(home.path().join("config.toml"), config).unwrap();
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "compaction::tests::compaction_uses_role_slot_without_changing_main_model",
+                ])
+                .env("JCODE_HOME", home.path())
+                .env("JCODE_COMPACTION_SLOT_TEST", expected)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return;
+    };
+    let provider = Arc::new(RoleModelProvider(std::sync::Mutex::new(
+        "main-model".into(),
+    )));
+    let result = generate_compaction_artifact(
+        provider.clone(),
+        vec![make_text_message(Role::User, "hello")],
+        None,
+    )
+    .await;
+    if expected == "error" {
+        assert!(
+            result
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("unavailable model")
+        );
+    } else {
+        assert_eq!(result.unwrap().summary_text, expected);
+    }
+    assert_eq!(provider.model(), "main-model");
+}
+
 struct UsageOnlyNativeProvider {
     accounting_attributions: Arc<std::sync::atomic::AtomicUsize>,
 }

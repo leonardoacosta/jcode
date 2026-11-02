@@ -240,6 +240,7 @@ async fn spawn_seat(
         id: REQUEST_ID,
         session_id: ctx.session_id.clone(),
         council_id: Some(council_id.to_string()),
+        worker_role: None,
         working_dir: ctx.working_dir.as_ref().map(|p| p.display().to_string()),
         initial_message: None,
         request_nonce: Some(nonce),

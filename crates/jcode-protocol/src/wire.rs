@@ -666,6 +666,9 @@ pub enum Request {
         /// Council seats use a fixed read-only policy, persisted before execution.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         council_id: Option<String>,
+        /// Explicit worker role. Research workers share the read-only seat policy.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        worker_role: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         working_dir: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]

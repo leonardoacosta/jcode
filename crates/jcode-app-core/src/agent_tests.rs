@@ -495,6 +495,111 @@ async fn council_executor_rejects_escape_tools_and_allows_read() {
     );
 }
 
+#[tokio::test]
+async fn research_executor_rejects_escape_tools_and_allows_read() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("evidence.txt"), "read-only evidence").unwrap();
+    let provider: Arc<dyn Provider> = Arc::new(NativeAutoCompactionProvider);
+    let registry = Registry::new(provider.clone()).await;
+    let mut wire = serde_json::to_value(Session::create(None, None)).unwrap();
+    wire["worker_role"] = serde_json::json!("research");
+    let session: Session = match std::env::var("JCODE_RESEARCH_SESSION") {
+        Ok(id) => match std::env::var("JCODE_RESEARCH_LOAD_MODE").as_deref() {
+            Ok("startup") => Session::load_startup_stub(&id).unwrap(),
+            Ok("remote") => Session::load_for_remote_startup(&id).unwrap(),
+            _ => Session::load(&id).unwrap(),
+        },
+        Err(_) => serde_json::from_value(wire).unwrap(),
+    };
+    let ctx = crate::tool::ToolContext {
+        session_id: session.id.clone(),
+        message_id: "message".into(),
+        tool_call_id: "research-executor".into(),
+        working_dir: Some(dir.path().to_path_buf()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: crate::tool::ToolExecutionMode::Direct,
+    };
+    let mut agent = Agent::new_with_session(provider, registry.clone(), session, None);
+    for tool in [
+        "edit",
+        "write",
+        "apply_patch",
+        "bash",
+        "batch",
+        "mcp_call",
+        "custom:escape",
+        "swarm",
+        "council",
+    ] {
+        let error = registry
+            .execute(tool, serde_json::json!({}), ctx.clone())
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("not allowed"), "{tool}: {error}");
+    }
+    agent.set_memory_enabled(true);
+    assert!(!agent.memory_enabled(), "research must not write memory");
+    let edit = registry
+        .execute(
+            "edit",
+            serde_json::json!({
+                "file_path": "evidence.txt", "old_string": "read-only evidence", "new_string": "changed"
+            }),
+            ctx.clone(),
+        )
+        .await
+        .unwrap_err();
+    assert!(edit.to_string().contains("not allowed"));
+    assert_eq!(
+        std::fs::read_to_string(dir.path().join("evidence.txt")).unwrap(),
+        "read-only evidence"
+    );
+    let read = registry
+        .execute(
+            "read",
+            serde_json::json!({"file_path": "evidence.txt"}),
+            ctx.clone(),
+        )
+        .await
+        .unwrap();
+    assert!(read.output.contains("read-only evidence"));
+    if std::env::var("JCODE_RESEARCH_LOAD_MODE").as_deref() == Ok("full") {
+        let id = agent.session_id().to_string();
+        drop(agent);
+        let mut resumed = Agent::new_with_session(
+            Arc::new(NativeAutoCompactionProvider),
+            registry.clone(),
+            Session::create(None, None),
+            None,
+        );
+        resumed.restore_session_deferring_save(&id, None).unwrap();
+        assert!(!resumed.memory_enabled());
+        assert!(
+            registry
+                .execute("edit", serde_json::json!({}), ctx.clone())
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("not allowed")
+        );
+        resumed.clear();
+        assert_eq!(resumed.session.worker_role.as_deref(), Some("research"));
+        let reset_ctx = crate::tool::ToolContext {
+            session_id: resumed.session_id().to_string(),
+            ..ctx
+        };
+        assert!(
+            registry
+                .execute("edit", serde_json::json!({}), reset_ctx)
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("not allowed")
+        );
+    }
+}
+
 #[test]
 fn council_resume_installs_policy_and_rejects_recovered_closed_seat() {
     let _env = crate::storage::lock_test_env();

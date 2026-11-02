@@ -405,7 +405,7 @@ impl Agent {
 
     /// Enable or disable memory features for this session.
     pub fn set_memory_enabled(&mut self, enabled: bool) {
-        self.memory_enabled = enabled && self.session.council_id.is_none();
+        self.memory_enabled = enabled && !self.session.is_read_only_worker();
         if !self.memory_enabled {
             crate::memory::clear_pending_memory(&self.session.id);
         }
@@ -1212,7 +1212,7 @@ impl Agent {
         self.provider_session_id = session.provider_session_id.clone();
         let replaced_session = std::mem::replace(&mut self.session, session);
         drop(replaced_session);
-        Self::restrict_council_tools(&self.session, &mut self.allowed_tools);
+        Self::restrict_read_only_tools(&self.session, &mut self.allowed_tools);
         self.set_memory_enabled(self.memory_enabled);
         let swap_ms = assign_start.elapsed().as_millis() - close_ms;
         let lap = Instant::now();

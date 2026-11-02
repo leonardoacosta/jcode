@@ -10,6 +10,8 @@ use super::{
 pub(super) struct SessionJournalMeta {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(super) council_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(super) worker_role: Option<String>,
     pub(super) parent_id: Option<String>,
     pub(super) title: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

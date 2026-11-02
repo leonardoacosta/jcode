@@ -289,6 +289,7 @@ fn prepare_visible_council_spawn_persists_policy_and_startup_before_launch() {
         false,
         Some(startup),
         Some("council-visible-test"),
+        None,
         |session_id, _cwd: &std::path::Path, _selfdev, provider_key| {
             assert_eq!(provider_key, None);
             // This is the disk boundary used by a separately launched client.
@@ -334,6 +335,50 @@ fn prepare_visible_council_spawn_persists_policy_and_startup_before_launch() {
 }
 
 #[test]
+fn prepare_visible_research_spawn_enforces_policy_in_new_process() {
+    let _guard = crate::storage::lock_test_env();
+    let temp_home = tempfile::TempDir::new().unwrap();
+    let previous_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", temp_home.path());
+    let result = prepare_visible_spawn_session(
+        Some(temp_home.path().to_str().unwrap()),
+        None,
+        None,
+        None,
+        None,
+        false,
+        None,
+        None,
+        Some("research"),
+        |session_id, _, _, _| {
+            for mode in ["startup", "remote", "full"] {
+                let output = std::process::Command::new(std::env::current_exe().unwrap())
+                    .args([
+                        "--exact",
+                        "agent::tests::research_executor_rejects_escape_tools_and_allows_read",
+                    ])
+                    .env("JCODE_HOME", temp_home.path())
+                    .env("JCODE_RESEARCH_SESSION", session_id)
+                    .env("JCODE_RESEARCH_LOAD_MODE", mode)
+                    .output()?;
+                anyhow::ensure!(
+                    output.status.success(),
+                    "{mode}: {}{}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+            Ok(true)
+        },
+    );
+    match previous_home {
+        Some(home) => crate::env::set_var("JCODE_HOME", home),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    assert!(result.unwrap().1);
+}
+
+#[test]
 fn prepare_visible_spawn_session_cleans_startup_when_launch_not_started() {
     let _guard = crate::storage::lock_test_env();
     let temp_home = tempfile::TempDir::new().expect("temp home");
@@ -349,6 +394,7 @@ fn prepare_visible_spawn_session_cleans_startup_when_launch_not_started() {
         None,
         false,
         Some("Do the thing."),
+        None,
         None,
         |_session_id, _cwd: &std::path::Path, _selfdev, _provider_key| Ok(false),
     )
@@ -387,6 +433,7 @@ fn prepare_visible_spawn_session_cleans_session_when_launch_errors() {
         false,
         Some("Do the thing."),
         None,
+        None,
         |_session_id, _cwd: &std::path::Path, _selfdev, _provider_key| {
             Err(anyhow::anyhow!("launch failed"))
         },
@@ -424,6 +471,7 @@ fn prepare_visible_spawn_session_persists_and_launches_provider_key_for_openrout
         false,
         None,
         None,
+        None,
         |_session_id, _cwd: &std::path::Path, _selfdev, provider_key| {
             assert_eq!(provider_key, Some("openrouter"));
             Ok(true)
@@ -453,6 +501,7 @@ fn prepare_visible_spawn_session_persists_requested_effort() {
         None,
         Some("low"),
         false,
+        None,
         None,
         None,
         |_session_id, _cwd: &std::path::Path, _selfdev, _provider_key| Ok(true),
@@ -485,6 +534,7 @@ fn prepare_visible_spawn_session_prefers_parent_provider_key_over_model_guess() 
         None,
         None,
         false,
+        None,
         None,
         None,
         |_session_id, _cwd: &std::path::Path, _selfdev, provider_key| {
@@ -906,7 +956,7 @@ async fn global_agent_model_request_updates_server_config_not_session() {
 }
 
 #[tokio::test]
-async fn council_spawn_preserves_routing_and_policy_while_coordinator_busy() {
+async fn read_only_spawn_preserves_routing_and_policy_while_coordinator_busy() {
     let _env = crate::storage::lock_test_env();
     let temp = tempfile::TempDir::new().unwrap();
     let previous = std::env::var_os("JCODE_HOME");
@@ -952,56 +1002,58 @@ async fn council_spawn_preserves_routing_and_policy_while_coordinator_busy() {
     let mcp = Arc::new(crate::mcp::SharedMcpPool::new(
         crate::mcp::McpConfig::default(),
     ));
-    let child_id = tokio::time::timeout(
-        std::time::Duration::from_secs(10),
-        super::spawn_swarm_agent(
-            "routing_busy",
-            "routing-swarm",
-            Some(temp.path().to_string_lossy().into_owned()),
-            None,
-            Some(crate::config::SwarmSpawnMode::Headless),
-            None,
-            None,
-            Some("routing test".into()),
-            Some("council-headless-test".into()),
-            &sessions,
-            &Arc::new(RwLock::new(String::new())),
-            &provider,
-            &state.members,
-            &state.swarms_by_id,
-            &state.coordinators,
-            &state.plans,
-            &Arc::new(RwLock::new(VecDeque::new())),
-            &Arc::new(AtomicU64::new(0)),
-            &broadcast::channel(16).0,
-            &mcp,
-            &Arc::new(RwLock::new(HashMap::new())),
-            &Arc::new(RwLock::new(HashMap::new())),
-        ),
-    )
-    .await
-    .expect("actual spawn must not await coordinator lock")
-    .unwrap();
-    let child = sessions.read().await.get(&child_id).cloned().unwrap();
-    let child = child.lock().await;
-    assert_eq!(child.provider_model(), "gpt-5.5");
-    assert_eq!(
-        crate::tool::session_tool_policy_allows_tool_for_test(&child_id, "write"),
-        Some(false)
-    );
-    assert_eq!(
-        crate::tool::session_tool_policy_allows_tool_for_test(&child_id, "read"),
-        Some(true)
-    );
-    assert_eq!(
-        crate::session::Session::load_startup_stub(&child_id)
-            .unwrap()
-            .council_id
-            .as_deref(),
-        Some("council-headless-test")
-    );
-    assert_eq!(child.session_provider_key().as_deref(), Some("openai-api"));
-    drop(child);
+    for (council_id, worker_role) in [
+        (Some("council-headless-test"), None),
+        (None, Some("research")),
+    ] {
+        let child_id = tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            super::spawn_swarm_agent(
+                "routing_busy",
+                "routing-swarm",
+                Some(temp.path().to_string_lossy().into_owned()),
+                None,
+                Some(crate::config::SwarmSpawnMode::Headless),
+                None,
+                None,
+                Some("routing test".into()),
+                council_id.map(str::to_string),
+                worker_role.map(str::to_string),
+                &sessions,
+                &Arc::new(RwLock::new(String::new())),
+                &provider,
+                &state.members,
+                &state.swarms_by_id,
+                &state.coordinators,
+                &state.plans,
+                &Arc::new(RwLock::new(VecDeque::new())),
+                &Arc::new(AtomicU64::new(0)),
+                &broadcast::channel(16).0,
+                &mcp,
+                &Arc::new(RwLock::new(HashMap::new())),
+                &Arc::new(RwLock::new(HashMap::new())),
+            ),
+        )
+        .await
+        .expect("actual spawn must not await coordinator lock")
+        .unwrap();
+        let child = sessions.read().await.get(&child_id).cloned().unwrap();
+        let child = child.lock().await;
+        assert_eq!(child.provider_model(), "gpt-5.5");
+        assert_eq!(
+            crate::tool::session_tool_policy_allows_tool_for_test(&child_id, "write"),
+            Some(false)
+        );
+        assert_eq!(
+            crate::tool::session_tool_policy_allows_tool_for_test(&child_id, "read"),
+            Some(true)
+        );
+        let persisted = crate::session::Session::load_startup_stub(&child_id).unwrap();
+        assert_eq!(persisted.council_id.as_deref(), council_id);
+        assert_eq!(persisted.worker_role.as_deref(), worker_role);
+        assert_eq!(child.session_provider_key().as_deref(), Some("openai-api"));
+        drop(child);
+    }
     crate::server::client_actions::set_session_agent_model(
         &agent,
         "routing_busy",

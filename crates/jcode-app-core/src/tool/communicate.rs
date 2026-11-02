@@ -1410,6 +1410,7 @@ async fn run_swarm_plan_loop(
 async fn spawn_assignment_session(ctx: &ToolContext, params: &CommunicateInput) -> Result<String> {
     let spawn_request = Request::CommSpawn {
         council_id: None,
+        worker_role: params.role.clone(),
         id: REQUEST_ID,
         session_id: ctx.session_id.clone(),
         working_dir: params.working_dir.clone(),
@@ -2717,6 +2718,7 @@ impl Tool for CommunicateTool {
                 };
                 let request = Request::CommSpawn {
                     council_id: None,
+                    worker_role: params.role.clone(),
                     id: REQUEST_ID,
                     session_id: ctx.session_id.clone(),
                     working_dir: params.working_dir.clone(),
@@ -3236,6 +3238,7 @@ impl Tool for CommunicateTool {
                 let orphan = params.target_session.clone().unwrap_or_default();
                 let response = send_request(Request::CommSpawn {
                     council_id: None,
+                    worker_role: params.role.clone(),
                     id: REQUEST_ID,
                     session_id: ctx.session_id.clone(),
                     working_dir: spec.working_dir.clone(),

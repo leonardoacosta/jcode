@@ -14,6 +14,7 @@ impl Agent {
 
         let mut new_session = Session::create(None, None);
         new_session.council_id = self.session.council_id.clone();
+        new_session.worker_role = self.session.worker_role.clone();
         // begin_concurrency_tracking below writes the presence markers.
         new_session.mark_active_unregistered();
         new_session.model = Some(self.provider_model());

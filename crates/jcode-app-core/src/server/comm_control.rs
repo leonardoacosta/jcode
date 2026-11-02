@@ -1632,6 +1632,7 @@ pub(super) async fn handle_comm_assign_next(
                 effort.clone(),
                 None,
                 None,
+                None,
                 sessions,
                 global_session_id,
                 provider_template,

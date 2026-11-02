@@ -124,6 +124,8 @@ pub struct Session {
     /// Durable council seat identity. Never infer authority from prompt text.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub council_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub worker_role: Option<String>,
     pub parent_id: Option<String>,
     pub title: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -237,6 +239,8 @@ pub struct Session {
 struct SessionStartupStub {
     #[serde(default)]
     council_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    worker_role: Option<String>,
     id: String,
     #[serde(default)]
     parent_id: Option<String>,
@@ -365,9 +369,18 @@ pub fn derive_session_provider_key(provider_name: &str) -> Option<String> {
 }
 
 impl Session {
+    pub fn is_read_only_worker(&self) -> bool {
+        self.council_id.is_some()
+            || self
+                .worker_role
+                .as_deref()
+                .is_some_and(|role| role.trim().eq_ignore_ascii_case("research"))
+    }
+
     fn session_from_startup_stub(stub: SessionStartupStub) -> Self {
         let mut session = Self::create_with_id(stub.id, stub.parent_id, stub.title);
         session.council_id = stub.council_id;
+        session.worker_role = stub.worker_role;
         session.custom_title = stub.custom_title;
         session.system_prompt = stub.system_prompt;
         session.created_at = stub.created_at;
@@ -407,6 +420,7 @@ impl Session {
     fn session_from_remote_startup_snapshot(snapshot: RemoteStartupSessionSnapshot) -> Self {
         let mut session = Self::create_with_id(snapshot.id, snapshot.parent_id, snapshot.title);
         session.council_id = snapshot.council_id;
+        session.worker_role = snapshot.worker_role;
         session.custom_title = snapshot.custom_title;
         session.system_prompt = snapshot.system_prompt;
         session.created_at = snapshot.created_at;
@@ -548,6 +562,7 @@ impl Session {
     fn journal_meta(&self) -> SessionJournalMeta {
         SessionJournalMeta {
             council_id: self.council_id.clone(),
+            worker_role: self.worker_role.clone(),
             parent_id: self.parent_id.clone(),
             title: self.title.clone(),
             custom_title: self.custom_title.clone(),
@@ -751,6 +766,7 @@ impl Session {
 
     fn apply_journal_meta(&mut self, meta: SessionJournalMeta) {
         self.council_id = meta.council_id;
+        self.worker_role = meta.worker_role;
         self.parent_id = meta.parent_id;
         self.title = meta.title;
         self.custom_title = meta.custom_title;
@@ -794,6 +810,7 @@ impl Session {
         let mut session = Self {
             id: session_id,
             council_id: None,
+            worker_role: None,
             parent_id,
             title,
             custom_title: None,
@@ -853,6 +870,7 @@ impl Session {
         let mut session = Self {
             id,
             council_id: None,
+            worker_role: None,
             parent_id,
             title,
             custom_title: None,
@@ -1773,6 +1791,8 @@ fn is_sensitive_json_key(key: &str) -> bool {
 struct RemoteStartupSessionSnapshot {
     #[serde(default)]
     council_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    worker_role: Option<String>,
     id: String,
     #[serde(default)]
     parent_id: Option<String>,

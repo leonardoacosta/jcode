@@ -72,6 +72,7 @@ fn create_visible_spawn_session(
     effort_override: Option<&str>,
     selfdev_requested: bool,
     council_id: Option<&str>,
+    worker_role: Option<&str>,
 ) -> anyhow::Result<(String, PathBuf)> {
     let cwd = working_dir
         .map(PathBuf::from)
@@ -79,6 +80,7 @@ fn create_visible_spawn_session(
 
     let mut session = Session::create(None, None);
     session.council_id = council_id.map(str::to_string);
+    session.worker_role = worker_role.map(str::to_string);
     session.working_dir = Some(cwd.display().to_string());
     if let Some(model) = model_override {
         session.model = Some(model.to_string());
@@ -457,6 +459,7 @@ fn prepare_visible_spawn_session<F>(
     selfdev_requested: bool,
     startup_message: Option<&str>,
     council_id: Option<&str>,
+    worker_role: Option<&str>,
     launch_visible: F,
 ) -> anyhow::Result<(String, bool)>
 where
@@ -471,6 +474,7 @@ where
         effort_override,
         selfdev_requested,
         council_id,
+        worker_role,
     )?;
 
     if let Some(message) = startup_message {
@@ -630,6 +634,7 @@ pub(super) async fn spawn_swarm_agent(
     requested_effort: Option<String>,
     label: Option<String>,
     council_id: Option<String>,
+    worker_role: Option<String>,
     sessions: &SessionAgents,
     global_session_id: &Arc<RwLock<String>>,
     provider_template: &Arc<dyn Provider>,
@@ -702,6 +707,7 @@ pub(super) async fn spawn_swarm_agent(
             coordinator_is_canary,
             startup_message.as_deref(),
             council_id.as_deref(),
+            worker_role.as_deref(),
             |session_id, cwd, selfdev_requested, provider_key| {
                 // Tag the headed window as a swarm-agent spawn so spawn hooks
                 // and terminals can identify and reroute it (JCODE_SPAWN_*).
@@ -746,6 +752,7 @@ pub(super) async fn spawn_swarm_agent(
                 Some(Arc::clone(mcp_pool)),
                 Some(req_session_id.to_string()),
                 council_id.clone(),
+                worker_role.clone(),
                 super::headless::HeadlessMemoryScope::RealProject,
             )
             .await
@@ -908,6 +915,7 @@ pub(super) async fn handle_comm_spawn(
     effort: Option<String>,
     label: Option<String>,
     council_id: Option<String>,
+    worker_role: Option<String>,
     client_event_tx: &mpsc::UnboundedSender<ServerEvent>,
     sessions: &SessionAgents,
     global_session_id: &Arc<RwLock<String>>,
@@ -992,6 +1000,7 @@ pub(super) async fn handle_comm_spawn(
         effort,
         label,
         council_id,
+        worker_role,
         sessions,
         global_session_id,
         provider_template,

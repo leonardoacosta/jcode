@@ -71,6 +71,7 @@ async fn headless_parent_is_set_before_concurrency_tracking_begins() {
         None,
         Some("coordinator-session".to_owned()),
         None,
+        None,
     );
     assert_eq!(
         child.session.parent_id.as_deref(),
@@ -78,7 +79,8 @@ async fn headless_parent_is_set_before_concurrency_tracking_begins() {
     );
     assert!(format!("{:?}", child.concurrency_session).contains("child: true"));
     let registry = Registry::new(provider.clone()).await;
-    let root = Agent::new_with_parent_and_initial_working_dir(provider, registry, None, None, None);
+    let root =
+        Agent::new_with_parent_and_initial_working_dir(provider, registry, None, None, None, None);
     assert!(root.session.parent_id.is_none());
     assert!(format!("{:?}", root.concurrency_session).contains("child: false"));
 }

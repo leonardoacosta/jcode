@@ -1698,6 +1698,13 @@ async fn generate_compaction_artifact(
     mut existing_summary: Option<Summary>,
 ) -> Result<CompactionResult> {
     let start = Instant::now();
+    let provider = if let Some(model) = crate::config::config().agents.roles.get("compaction") {
+        let provider = provider.fork();
+        crate::provider::set_model_with_auth_refresh(provider.as_ref(), model)?;
+        provider
+    } else {
+        provider
+    };
     if let Some(summary) = existing_summary.as_mut()
         && let Some(encrypted_content) = summary.openai_encrypted_content.as_ref()
         && !openai_encrypted_content_is_sendable(encrypted_content)

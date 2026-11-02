@@ -52,6 +52,7 @@ pub(super) async fn create_headless_session(
     mcp_pool: Option<Arc<crate::mcp::SharedMcpPool>>,
     report_back_to_session_id: Option<String>,
     council_id: Option<String>,
+    worker_role: Option<String>,
     memory_scope: HeadlessMemoryScope,
 ) -> Result<String> {
     let _runtime_activity = crate::runtime_activity::global().try_enter()?;
@@ -98,6 +99,7 @@ pub(super) async fn create_headless_session(
         working_dir_string.as_deref(),
         report_back_to_session_id.clone(),
         council_id,
+        worker_role,
     );
     new_agent.set_memory_enabled(memory_enabled);
     // Inline swarm mode renders a live gallery of worker viewports in the
@@ -182,7 +184,7 @@ pub(super) async fn create_headless_session(
         new_agent.set_canary("self-dev");
     }
 
-    if new_agent.session_for_split().council_id.is_some() {
+    if new_agent.session_for_split().is_read_only_worker() {
         // Recovery must see the restriction even before the first seat turn.
         new_agent.session_for_split().clone().save_prepared()?;
     }
