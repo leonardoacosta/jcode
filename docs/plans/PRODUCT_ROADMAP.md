@@ -33,9 +33,8 @@ not newly completed roadmap features. Improve their contracts before adding APIs
 
 **Durable baseline:** no OpenSpec changes are tracked in this checkout's Git index
 at roadmap creation. Its existing advisory plans and OpenSpec specs/archives are
-local-only material. The observed local `open-user-clicked-links` change has checked
-tasks, but final acceptance/closeout is unverified here. It is not a durable P09
-binding or completion credit. Other local archives similarly do not complete a phase.
+local-only material. Archived changes, including `open-user-clicked-links` (P09),
+are now bound below as delivered slices; an archived slice does not complete a phase.
 Do not force-add private historical artifacts merely to populate this roadmap.
 
 Future feature IDs become bindings only after their real proposal/task artifacts
@@ -45,7 +44,8 @@ All ten phases started Planned; no implementation, cost saving or outcome improv
 was claimed by creating the roadmap. P01 now has one committed proposal,
 `record-continuation-evidence`; its implemented baseline and canonical capability
 are archived and committed locally. Broader P01 completion and remote publication
-are not claimed.
+are not claimed. Later archived slices also move P04, P07, P08, P09 and P10 to
+In progress; none of them establishes a phase outcome.
 
 ## Cross-cutting acceptance contract
 
@@ -79,16 +79,16 @@ other candidate ships. Independent slices may proceed concurrently.
 
 | Stable ID | Phase | Depends on | Status | Real OpenSpec changes | Phase evidence |
 | --- | --- | --- | --- | --- | --- |
-| P01 | Trusted core and evidence baseline | None | In progress | [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md), [hot-file-test-coverage](../../openspec/changes/hot-file-test-coverage/proposal.md) | Baseline archived; remote scope unresolved |
-| P02 | Discoverable native tools, MCP and skills | P01 | Planned | [mcp-failure-backoff](../../openspec/changes/mcp-failure-backoff/proposal.md), [mcp-management-experience](../../openspec/changes/mcp-management-experience/proposal.md), [lint-skill-name-and-folder](../../openspec/changes/lint-skill-name-and-folder/proposal.md), [tool-timeout-and-patch-recovery](../../openspec/changes/tool-timeout-and-patch-recovery/proposal.md), [evaluate-code-search-strategies](../../openspec/changes/evaluate-code-search-strategies/proposal.md); supporting, no completion credit: [add-lifecycle-hooks](../../openspec/changes/add-lifecycle-hooks/proposal.md) | Not established |
+| P01 | Trusted core and evidence baseline | None | In progress | [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md), [hot-file-test-coverage](../../openspec/changes/hot-file-test-coverage/proposal.md), [improve-workflow-suite](../../openspec/changes/archive/2026-10-20-improve-workflow-suite/proposal.md) (archived); supporting, no completion credit: [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived), [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived) | Baseline archived; remote scope unresolved |
+| P02 | Discoverable native tools, MCP and skills | P01 | Planned | [mcp-failure-backoff](../../openspec/changes/mcp-failure-backoff/proposal.md), [mcp-management-experience](../../openspec/changes/mcp-management-experience/proposal.md), [lint-skill-name-and-folder](../../openspec/changes/lint-skill-name-and-folder/proposal.md), [tool-timeout-and-patch-recovery](../../openspec/changes/tool-timeout-and-patch-recovery/proposal.md), [evaluate-code-search-strategies](../../openspec/changes/evaluate-code-search-strategies/proposal.md); supporting, no completion credit: [add-lifecycle-hooks](../../openspec/changes/add-lifecycle-hooks/proposal.md), [improve-workflow-suite](../../openspec/changes/archive/2026-10-20-improve-workflow-suite/proposal.md) (archived) | Not established |
 | P03 | Jev semantic poke continuation | P01 | Planned | Not cut | Not established |
-| P04 | Swarm collaboration and handoffs | P01 | Planned | [return-full-swarm-reports](../../openspec/changes/return-full-swarm-reports/proposal.md), [queue-messages-to-busy-workers](../../openspec/changes/queue-messages-to-busy-workers/proposal.md), [show-resolved-worker-model](../../openspec/changes/show-resolved-worker-model/proposal.md), [add-swarm-file-claims](../../openspec/changes/add-swarm-file-claims/proposal.md), [recover-swarm-workers-after-reload](../../openspec/changes/recover-swarm-workers-after-reload/proposal.md), [add-council-tool](../../openspec/changes/add-council-tool/proposal.md); supporting, no completion credit: [add-role-model-slots](../../openspec/changes/add-role-model-slots/proposal.md) | Not established |
-| P05 | Durable overnight, scheduling and recovery | P03, P04, P06 | Planned | [shared-server-crash-resilience](../../openspec/changes/shared-server-crash-resilience/proposal.md); supporting, no completion credit: [recover-swarm-workers-after-reload](../../openspec/changes/recover-swarm-workers-after-reload/proposal.md) | Not established |
+| P04 | Swarm collaboration and handoffs | P01 | In progress | [return-full-swarm-reports](../../openspec/changes/return-full-swarm-reports/proposal.md), [queue-messages-to-busy-workers](../../openspec/changes/queue-messages-to-busy-workers/proposal.md), [show-resolved-worker-model](../../openspec/changes/show-resolved-worker-model/proposal.md), [add-swarm-file-claims](../../openspec/changes/add-swarm-file-claims/proposal.md), [recover-swarm-workers-after-reload](../../openspec/changes/recover-swarm-workers-after-reload/proposal.md), [add-council-tool](../../openspec/changes/add-council-tool/proposal.md); [swarm-communicate-reliability](../../openspec/changes/archive/2026-11-01-swarm-communicate-reliability/proposal.md) (archived), [swarm-module-split](../../openspec/changes/archive/2026-11-01-swarm-module-split/proposal.md) (archived), [swarm-state-async-safety](../../openspec/changes/archive/2026-11-01-swarm-state-async-safety/proposal.md) (archived), [swarm-widget-cell-width](../../openspec/changes/archive/2026-11-01-swarm-widget-cell-width/proposal.md) (archived); supporting, no completion credit: [add-role-model-slots](../../openspec/changes/add-role-model-slots/proposal.md) | Archived slices delivered; phase outcome not established. |
+| P05 | Durable overnight, scheduling and recovery | P03, P04, P06 | Planned | [shared-server-crash-resilience](../../openspec/changes/shared-server-crash-resilience/proposal.md); supporting, no completion credit: [recover-swarm-workers-after-reload](../../openspec/changes/recover-swarm-workers-after-reload/proposal.md), [repair-jcode-herdr-session-binding](../../openspec/changes/archive/2026-10-21-repair-jcode-herdr-session-binding/proposal.md) (archived) | Not established |
 | P06 | Provider, auth and usage-budget reliability | P01 | Planned | [fallback-on-transient-model-errors](../../openspec/changes/fallback-on-transient-model-errors/proposal.md), [add-role-model-slots](../../openspec/changes/add-role-model-slots/proposal.md) | Not established |
-| P07 | Memory/context quality and privacy | P01, P06 | Planned | [native-instruction-file-loading](../../openspec/changes/native-instruction-file-loading/proposal.md), [workspace-aware-context](../../openspec/changes/workspace-aware-context/proposal.md), [add-prompt-budget-ratchet](../../openspec/changes/add-prompt-budget-ratchet/proposal.md), [session-store-retention](../../openspec/changes/session-store-retention/proposal.md) | Not established |
-| P08 | SDK/API and tool integration contracts | P01, P02, P06 | Planned | [add-lifecycle-hooks](../../openspec/changes/add-lifecycle-hooks/proposal.md) | Not established |
-| P09 | TUI/onboarding everyday UX | P01, P02, P06 | Planned | Not cut; supporting, no completion credit: [show-resolved-worker-model](../../openspec/changes/show-resolved-worker-model/proposal.md) | Not established |
-| P10 | Distribution, platforms, performance and diagnostics | P01, P06, P08 | Planned | Not cut; supporting, no completion credit: [shared-server-crash-resilience](../../openspec/changes/shared-server-crash-resilience/proposal.md) | Not established |
+| P07 | Memory/context quality and privacy | P01, P06 | In progress | [native-instruction-file-loading](../../openspec/changes/native-instruction-file-loading/proposal.md), [workspace-aware-context](../../openspec/changes/workspace-aware-context/proposal.md), [add-prompt-budget-ratchet](../../openspec/changes/add-prompt-budget-ratchet/proposal.md), [session-store-retention](../../openspec/changes/session-store-retention/proposal.md), [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived) | Archived slices delivered; phase outcome not established. |
+| P08 | SDK/API and tool integration contracts | P01, P02, P06 | In progress | [add-lifecycle-hooks](../../openspec/changes/add-lifecycle-hooks/proposal.md), [repair-jcode-herdr-session-binding](../../openspec/changes/archive/2026-10-21-repair-jcode-herdr-session-binding/proposal.md) (archived) | Archived slices delivered; phase outcome not established. |
+| P09 | TUI/onboarding everyday UX | P01, P02, P06 | In progress | [open-user-clicked-links](../../openspec/changes/archive/2026-11-01-open-user-clicked-links/proposal.md) (archived), [preserve-failed-prompts](../../openspec/changes/archive/2026-10-30-preserve-failed-prompts/proposal.md) (archived); supporting, no completion credit: [show-resolved-worker-model](../../openspec/changes/show-resolved-worker-model/proposal.md), [swarm-widget-cell-width](../../openspec/changes/archive/2026-11-01-swarm-widget-cell-width/proposal.md) (archived) | Archived slices delivered; phase outcome not established. |
+| P10 | Distribution, platforms, performance and diagnostics | P01, P06, P08 | In progress | [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived); supporting, no completion credit: [shared-server-crash-resilience](../../openspec/changes/shared-server-crash-resilience/proposal.md), [swarm-state-async-safety](../../openspec/changes/archive/2026-11-01-swarm-state-async-safety/proposal.md) (archived) | Archived slices delivered; phase outcome not established. |
 
 ### P01: Trusted core and acceptance/evidence baseline
 
@@ -98,7 +98,7 @@ completion across TUI/CLI/daemon sessions without new ceremony for simple tasks.
 Runtime-bound acceptance evidence; Bounded judge/review feedback admission.
 **Dependencies:** None. Reuse review/judge semantics; explicitly adopt any local-only
 workflow contract before treating it as a committed requirement.
-**Real changes:** [hot-file-test-coverage](../../openspec/changes/hot-file-test-coverage/proposal.md) (cut, not implemented); [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md)
+**Real changes:** [hot-file-test-coverage](../../openspec/changes/hot-file-test-coverage/proposal.md) (cut, not implemented); [improve-workflow-suite](../../openspec/changes/archive/2026-10-20-improve-workflow-suite/proposal.md) (archived); supporting, no completion credit: [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived), [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived); [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md)
 ([requirements](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/specs/continuation-evidence/spec.md),
 [design](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/design.md),
 [tasks](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/tasks.md)). This is the
@@ -122,7 +122,7 @@ it before invocation, including a remote session.
 **Candidate features, uncut titles only:** Typed skill-selector metadata and styling;
 Native-tool and MCP capability discovery; Skill/MCP provenance and trust details.
 **Dependencies:** P01.
-**Real changes:** [mcp-failure-backoff](../../openspec/changes/mcp-failure-backoff/proposal.md), [mcp-management-experience](../../openspec/changes/mcp-management-experience/proposal.md), [lint-skill-name-and-folder](../../openspec/changes/lint-skill-name-and-folder/proposal.md), [tool-timeout-and-patch-recovery](../../openspec/changes/tool-timeout-and-patch-recovery/proposal.md), [evaluate-code-search-strategies](../../openspec/changes/evaluate-code-search-strategies/proposal.md). Cut, not implemented; no outcome claimed; supporting, no completion credit: [add-lifecycle-hooks](../../openspec/changes/add-lifecycle-hooks/proposal.md). Other candidate titles remain uncut.
+**Real changes:** [mcp-failure-backoff](../../openspec/changes/mcp-failure-backoff/proposal.md), [mcp-management-experience](../../openspec/changes/mcp-management-experience/proposal.md), [lint-skill-name-and-folder](../../openspec/changes/lint-skill-name-and-folder/proposal.md), [tool-timeout-and-patch-recovery](../../openspec/changes/tool-timeout-and-patch-recovery/proposal.md), [evaluate-code-search-strategies](../../openspec/changes/evaluate-code-search-strategies/proposal.md). Cut, not implemented; no outcome claimed; supporting, no completion credit: [add-lifecycle-hooks](../../openspec/changes/add-lifecycle-hooks/proposal.md), [improve-workflow-suite](../../openspec/changes/archive/2026-10-20-improve-workflow-suite/proposal.md) (archived). Other candidate titles remain uncut.
 **Gates/evidence:** actual local/remote TUI rows distinguish native commands, native
 tools, MCP tools and skills where each is presented; preserve native same-name
 precedence, real descriptions, discovery-source details and legacy-peer unknowns.
@@ -160,12 +160,13 @@ attributable evidence without losing dependencies or clobbering shared work.
 **Candidate features, uncut titles only:** Bounded swarm assignment and recovery
 contracts; Scope/base/evidence handoffs; Ownership and blocked-dependency visibility.
 **Dependencies:** P01. Discovery and poke need not ship first.
-**Real changes:** [return-full-swarm-reports](../../openspec/changes/return-full-swarm-reports/proposal.md), [queue-messages-to-busy-workers](../../openspec/changes/queue-messages-to-busy-workers/proposal.md), [show-resolved-worker-model](../../openspec/changes/show-resolved-worker-model/proposal.md), [add-swarm-file-claims](../../openspec/changes/add-swarm-file-claims/proposal.md), [recover-swarm-workers-after-reload](../../openspec/changes/recover-swarm-workers-after-reload/proposal.md), [add-council-tool](../../openspec/changes/add-council-tool/proposal.md). Cut, not implemented; no outcome claimed; supporting, no completion credit: [add-role-model-slots](../../openspec/changes/add-role-model-slots/proposal.md). Other candidate titles remain uncut.
+**Real changes:** [return-full-swarm-reports](../../openspec/changes/return-full-swarm-reports/proposal.md), [queue-messages-to-busy-workers](../../openspec/changes/queue-messages-to-busy-workers/proposal.md), [show-resolved-worker-model](../../openspec/changes/show-resolved-worker-model/proposal.md), [add-swarm-file-claims](../../openspec/changes/add-swarm-file-claims/proposal.md), [recover-swarm-workers-after-reload](../../openspec/changes/recover-swarm-workers-after-reload/proposal.md), [add-council-tool](../../openspec/changes/add-council-tool/proposal.md) (cut, not implemented); [swarm-communicate-reliability](../../openspec/changes/archive/2026-11-01-swarm-communicate-reliability/proposal.md) (archived), [swarm-module-split](../../openspec/changes/archive/2026-11-01-swarm-module-split/proposal.md) (archived), [swarm-state-async-safety](../../openspec/changes/archive/2026-11-01-swarm-state-async-safety/proposal.md) (archived), [swarm-widget-cell-width](../../openspec/changes/archive/2026-11-01-swarm-widget-cell-width/proposal.md) (archived). Archived slices are delivered evidence only; no phase outcome claimed; no outcome claimed; supporting, no completion credit: [add-role-model-slots](../../openspec/changes/add-role-model-slots/proposal.md). Other candidate titles remain uncut.
 **Gates/evidence:** exercise native todo/swarm delegation with overlapping ownership,
 nonconflicting parallel lanes, changed-base revival, stale scope, worker failure,
 retry/stop and an attributable complete change range. The coordinator integrates
 and verifies worker reports. Preserve root-only spawning, bounded fanout and native
-review boundaries; optional high-risk arbitration requires a demonstrated gap.
+review boundaries; high-risk council arbitration is a required
+outcome, delivered by add-council-tool.
 
 ### P05: Durable overnight, scheduling and recovery
 
@@ -177,7 +178,7 @@ Restart-safe supervised work; Inspectable scheduled-run recovery.
 **Dependencies:** P03 decisions, P04 ownership/recovery, P06 budgets. Reuse overnight,
 bg and schedule; no parallel daemon. The audit confirms existing persisted records,
 not responsive mid-turn cancellation or enforced concurrency from guidance alone.
-**Real changes:** [shared-server-crash-resilience](../../openspec/changes/shared-server-crash-resilience/proposal.md). Cut, not implemented; no outcome claimed; supporting, no completion credit: [recover-swarm-workers-after-reload](../../openspec/changes/recover-swarm-workers-after-reload/proposal.md). Other candidate titles remain uncut.
+**Real changes:** [shared-server-crash-resilience](../../openspec/changes/shared-server-crash-resilience/proposal.md). Cut, not implemented; no outcome claimed; supporting, no completion credit: [recover-swarm-workers-after-reload](../../openspec/changes/recover-swarm-workers-after-reload/proposal.md), [repair-jcode-herdr-session-binding](../../openspec/changes/archive/2026-10-21-repair-jcode-herdr-session-binding/proposal.md) (archived). Other candidate titles remain uncut.
 **Gates/evidence:** cancel a deliberately active long turn and child/background work
 on an isolated real runtime; observe no later launches, consistent terminal state
 and restart-safe reconciliation. Test time/token/cost/concurrency caps, offline or
@@ -210,7 +211,7 @@ leaks or unbounded provider disclosure and prompt growth.
 Context/compaction quality evidence; Memory retention and privacy controls.
 **Dependencies:** P01, P06. Reuse [memory architecture](../MEMORY_ARCHITECTURE.md)
 and current Jev relevance decisions, not a replacement memory service.
-**Real changes:** [native-instruction-file-loading](../../openspec/changes/native-instruction-file-loading/proposal.md), [workspace-aware-context](../../openspec/changes/workspace-aware-context/proposal.md), [add-prompt-budget-ratchet](../../openspec/changes/add-prompt-budget-ratchet/proposal.md), [session-store-retention](../../openspec/changes/session-store-retention/proposal.md). Cut, not implemented; no outcome claimed. Other candidate titles remain uncut.
+**Real changes:** [native-instruction-file-loading](../../openspec/changes/native-instruction-file-loading/proposal.md), [workspace-aware-context](../../openspec/changes/workspace-aware-context/proposal.md), [add-prompt-budget-ratchet](../../openspec/changes/add-prompt-budget-ratchet/proposal.md), [session-store-retention](../../openspec/changes/session-store-retention/proposal.md) (cut, not implemented); [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived). Archived slices are delivered evidence only; no phase outcome claimed; no outcome claimed. Other candidate titles remain uncut.
 **Gates/evidence:** compare actual tasks with relevant/irrelevant memories, conflicting
 or stale facts, workspace boundaries, compaction and long resumed conversations.
 Verify retention/deletion behavior, provenance, bounded payloads, redaction and
@@ -225,7 +226,7 @@ without gaining authority through transport or an opaque helper model.
 Structured headless review; Browser/voice boundary acceptance.
 **Dependencies:** P01, P02, P06. Reuse [TypeScript SDK](../../sdk/typescript/README.md),
 shared Rust SDK/harness API, existing JSON/NDJSON and [browser handoff](../BROWSER_FAST_AGENT.md).
-**Real changes:** [add-lifecycle-hooks](../../openspec/changes/add-lifecycle-hooks/proposal.md). Cut, not implemented; no outcome claimed. Other candidate titles remain uncut.
+**Real changes:** [add-lifecycle-hooks](../../openspec/changes/add-lifecycle-hooks/proposal.md) (cut, not implemented); [repair-jcode-herdr-session-binding](../../openspec/changes/archive/2026-10-21-repair-jcode-herdr-session-binding/proposal.md) (archived). Archived slice is delivered evidence only; no phase outcome claimed; no outcome claimed. Other candidate titles remain uncut.
 **Gates/evidence:** actual CLI and Rust/TypeScript clients cover version drift,
 reconnect, streaming completion/error ordering, malformed messages and cancellation.
 Headless review binds verdicts to revision/check evidence and handles fail,
@@ -240,7 +241,7 @@ compatibility boundary here, not an owned application delivery.
 without misleading chrome, invisible failures or surprising external launches.
 **Candidate features, uncut titles only:** First-run and provider setup clarity;
 Session/resume and work-status clarity; Accessible terminal interaction parity.
-**Real changes:** Not cut. Supporting, no completion credit: [show-resolved-worker-model](../../openspec/changes/show-resolved-worker-model/proposal.md). The local-only link-opening observation above is not a committed phase binding.
+**Real changes:** [open-user-clicked-links](../../openspec/changes/archive/2026-11-01-open-user-clicked-links/proposal.md) (archived), [preserve-failed-prompts](../../openspec/changes/archive/2026-10-30-preserve-failed-prompts/proposal.md) (archived). Archived slices are delivered evidence only; no phase outcome claimed. Supporting, no completion credit: [show-resolved-worker-model](../../openspec/changes/show-resolved-worker-model/proposal.md), [swarm-widget-cell-width](../../openspec/changes/archive/2026-11-01-swarm-widget-cell-width/proposal.md) (archived). Other candidate titles remain uncut.
 **Dependencies:** P01, P02, P06 for phase-wide acceptance, not retroactive changes
 to the existing link feature's approved scope.
 **Gates/evidence:** exercise first run, auth failure, session selection/resume,
@@ -256,7 +257,7 @@ clear and performance/diagnostic claims reproduce on the actual serving build.
 Platform and terminal capability acceptance; Reproducible resource diagnostics;
 Self-dev build/reload verification.
 **Dependencies:** P01, P06, P08. Build on existing install/platform guidance.
-**Real changes:** Not cut; supporting, no completion credit: [shared-server-crash-resilience](../../openspec/changes/shared-server-crash-resilience/proposal.md).
+**Real changes:** [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived). Archived slice is delivered evidence only; no phase outcome claimed. Supporting, no completion credit: [shared-server-crash-resilience](../../openspec/changes/shared-server-crash-resilience/proposal.md), [swarm-state-async-safety](../../openspec/changes/archive/2026-11-01-swarm-state-async-safety/proposal.md) (archived). Other candidate titles remain uncut.
 **Gates/evidence:** verify declared Linux/macOS/Windows support paths, launcher/channel
 identity, failed upgrade/rollback and isolated daemon version checks. Test terminal
 capability fallbacks and self-dev reload/session continuity without disturbing the

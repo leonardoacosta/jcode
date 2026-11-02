@@ -1,6 +1,6 @@
 # Proposal
 
-Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs). P04 permits optional high-risk arbitration only for a demonstrated gap, so apply must record that evidence before implementation.
+Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs).
 
 ## Why
 
