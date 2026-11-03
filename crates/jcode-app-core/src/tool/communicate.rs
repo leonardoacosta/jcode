@@ -2061,11 +2061,11 @@ impl Tool for CommunicateTool {
                 "action": {
                     "type": "string",
                     "enum": ADVERTISED_SWARM_ACTIONS,
-                    "description": "Action. launch runs your todo list (one agent per lane). spawn starts one worker on a lane; spawn requires label and should include prompt. message sends to one agent (to_session) or a channel; only the coordinator may omit both to message everyone. list_models shows available models/routes."
+                    "description": "launch: todo lanes; spawn requires label; message: agent/channel; list_models: models/routes."
                 },
                 "message": {
                     "type": "string",
-                    "description": "Message body. Goes to to_session, or to channel; with neither, everyone (coordinator only). For report, the body."
+                    "description": "Body for report or message to agent/channel; omit both targets for everyone (coordinator only)."
                 },
                 "tldr": {
                     "type": "string",
@@ -2102,7 +2102,7 @@ impl Tool for CommunicateTool {
                 "label": {
                     "type": "string",
                     "minLength": 1,
-                    "description": "Required for spawn: the worker's lane name (e.g. 'auth refactor'). Each spawned worker owns that lane in your todo list (created from the prompt if missing); its todo list is the lane and syncs only it."
+                    "description": "Required for spawn: lane; worker owns/syncs only it. Missing lane created from prompt."
                 },
                 "phase": {
                     "type": "integer",

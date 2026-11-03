@@ -15,14 +15,13 @@ fn bash_definition_prefers_repository_search_tools() {
     assert!(
         definition
             .description
-            .contains("prefer agentgrep or rg over grep -r")
+            .contains("Prefer agentgrep or rg over grep -r")
     );
-    assert!(
-        definition
-            .description
-            .contains("hidden and ignored files by default, not all untracked files")
-    );
-    assert!(definition.description.contains("--hidden --no-ignore"));
+    let command_description = definition.input_schema["properties"]["command"]["description"]
+        .as_str()
+        .expect("command description should be a string");
+    assert!(command_description.contains("hidden/ignored by default, not all untracked"));
+    assert!(command_description.contains("--hidden --no-ignore"));
 }
 
 #[test]
@@ -916,17 +915,17 @@ async fn process_group_kill_guard_terminates_descendants() {
 
 #[test]
 fn test_bash_tool_schema_advertises_background_progress_guidance() {
-    let schema = BashTool::new().parameters_schema();
-    let command_description = schema["properties"]["command"]["description"]
-        .as_str()
-        .expect("command description should be a string");
-    let background_description = schema["properties"]["run_in_background"]["description"]
-        .as_str()
-        .expect("run_in_background description should be a string");
+    let definition = BashTool::new().to_definition();
+    let background_description =
+        definition.input_schema["properties"]["run_in_background"]["description"]
+            .as_str()
+            .expect("run_in_background description should be a string");
 
     assert!(
-        command_description.contains("JCODE_SCRATCH_DIR"),
-        "command description should keep the scratch-dir guidance"
+        definition
+            .description
+            .contains("$JCODE_SCRATCH_DIR, not /tmp"),
+        "tool description should keep the scratch-dir guidance"
     );
     assert!(
         background_description.contains("JCODE_PROGRESS"),

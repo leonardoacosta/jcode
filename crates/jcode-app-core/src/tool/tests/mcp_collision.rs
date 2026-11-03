@@ -170,17 +170,26 @@ for line in sys.stdin:
 #[test]
 fn mcp_collision_manual_lifecycle_real_stdio() {
     const MARKER: &str = "JCODE_MCP_MANAGEMENT_TEST_CHILD";
+    const PYTHON: &str = "JCODE_MCP_MANAGEMENT_TEST_PYTHON";
     if std::env::var_os(MARKER).is_none() {
-        if !std::process::Command::new("python3")
-            .arg("--version")
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .status()
-            .is_ok_and(|s| s.success())
-        {
-            eprintln!("SKIP: python3 unavailable for real MCP stdio test");
-            return;
-        }
+        // Resolve before isolation: PATH shims may depend on the original HOME.
+        let output = std::process::Command::new("python3")
+            .args(["-I", "-S", "-c", "import sys; print(sys.executable)"])
+            .output()
+            .expect("resolve Python interpreter for real MCP stdio test");
+        assert!(
+            output.status.success(),
+            "Python interpreter resolution failed: {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let python = String::from_utf8(output.stdout).expect("UTF-8 Python interpreter path");
+        let python = python.trim();
+        let path = std::path::Path::new(python);
+        assert!(
+            path.is_absolute() && path.is_file(),
+            "invalid Python interpreter: {python:?}"
+        );
         let home = tempfile::tempdir().unwrap();
         let mut child = std::process::Command::new(std::env::current_exe().unwrap());
         child.env_clear();
@@ -200,6 +209,7 @@ fn mcp_collision_manual_lifecycle_real_stdio() {
         }
         let status = child
             .env(MARKER, "1")
+            .env(PYTHON, python)
             .env("JCODE_HOME", home.path().join("jcode"))
             .env("JCODE_RUNTIME_DIR", home.path().join("runtime"))
             .current_dir(home.path())
@@ -229,7 +239,7 @@ fn mcp_collision_manual_lifecycle_real_stdio() {
             let legacy = crate::mcp::dispatch_name(&catalog[0].0, &catalog[0].1.name);
             for (index, (server, tool)) in catalog.iter().enumerate() {
                 let output = management.execute(serde_json::json!({
-                    "action":"connect", "server":server, "command":"python3",
+                    "action":"connect", "server":server, "command":std::env::var(PYTHON).expect("resolved Python interpreter"),
                     "args":["-I", "-S", "-u", "-c", SERVER, server, serde_json::to_string(&vec![&tool.name]).unwrap()]
                 }), ctx.clone()).await.unwrap();
                 assert!(output.output.contains("Connected to MCP server"), "{}", output.output);

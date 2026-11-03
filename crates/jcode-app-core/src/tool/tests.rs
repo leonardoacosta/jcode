@@ -148,6 +148,209 @@ async fn mcp_list_remains_available_while_background_connect_is_handshaking() {
 }
 
 #[tokio::test]
+async fn cached_mcp_registration_returns_while_shared_health_is_blocked() {
+    with_blocked_mcp_health(|pool, home| async move {
+        let registry = Registry::empty();
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        registry
+            .register_mcp_tools_for_dir(
+                Some(tx),
+                Some(pool),
+                Some("cached-health".into()),
+                Some(home),
+            )
+            .await;
+        let events = std::iter::from_fn(|| rx.try_recv().ok()).collect();
+        (registry, events, rx)
+    })
+    .await;
+}
+
+pub(crate) async fn with_blocked_mcp_health<F, Fut>(run: F)
+where
+    F: FnOnce(Arc<crate::mcp::SharedMcpPool>, std::path::PathBuf) -> Fut,
+    Fut: std::future::Future<
+            Output = (
+                Registry,
+                Vec<crate::protocol::ServerEvent>,
+                tokio::sync::mpsc::UnboundedReceiver<crate::protocol::ServerEvent>,
+            ),
+        >,
+{
+    use crate::protocol::ServerEvent;
+    use serde_json::json;
+    use std::time::Duration;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    let _env_lock = crate::storage::lock_test_env();
+    let home = tempfile::tempdir().expect("create isolated JCODE_HOME");
+    let _home_guard = TestHomeGuard::new(home.path());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let config: crate::mcp::McpConfig = serde_json::from_value(json!({"servers": {
+        "cached": {"url": format!("http://{}/mcp", listener.local_addr().unwrap()), "shared": true}
+    }}))
+    .unwrap();
+    std::fs::write(
+        home.path().join("mcp.json"),
+        serde_json::to_vec(&config).unwrap(),
+    )
+    .unwrap();
+    let tools = vec![crate::mcp::McpToolDef {
+        name: "echo".into(),
+        description: Some("Cached echo".into()),
+        input_schema: json!({"type": "object"}),
+    }];
+    let mut cache = crate::mcp::McpSchemaCache::default();
+    cache.update("cached", &config.servers["cached"], tools.clone());
+    cache.save();
+
+    let release = Arc::new(tokio::sync::Semaphore::new(0));
+    let gate = release.clone();
+    let peer = tokio::spawn(async move {
+        let mut sockets = tokio::task::JoinSet::new();
+        loop {
+            tokio::select! {
+                accepted = listener.accept() => {
+                    let (mut stream, _) = accepted.unwrap();
+                    let gate = gate.clone();
+                    let tools = tools.clone();
+                    sockets.spawn(async move {
+                        let mut bytes = Vec::new();
+                        let (start, length) = loop {
+                            let mut chunk = [0; 4096];
+                            let n = stream.read(&mut chunk).await.unwrap();
+                            if n == 0 { return; }
+                            bytes.extend_from_slice(&chunk[..n]);
+                            assert!(bytes.len() < 128 * 1024);
+                            if let Some(end) = bytes.windows(4).position(|w| w == b"\r\n\r\n") {
+                                let headers = String::from_utf8_lossy(&bytes[..end]);
+                                let length = headers.lines().find_map(|line| {
+                                    let (key, value) = line.split_once(':')?;
+                                    key.eq_ignore_ascii_case("content-length")
+                                        .then(|| value.trim().parse::<usize>().unwrap())
+                                }).unwrap_or(0);
+                                if bytes.len() >= end + 4 + length { break (end + 4, length); }
+                            }
+                        };
+                        let request: Value = serde_json::from_slice(&bytes[start..start + length])
+                            .unwrap_or(Value::Null);
+                        let (status, body) = if request.get("id").is_none() {
+                            ("204 No Content", String::new())
+                        } else {
+                            let result = match request["method"].as_str().unwrap() {
+                                "initialize" => json!({"protocolVersion": request["params"]["protocolVersion"],
+                                    "capabilities": {"tools": {}}, "serverInfo": {"name": "cached-peer", "version": "1"}}),
+                                "tools/list" => json!({"tools": tools}),
+                                "tools/call" => {
+                                    gate.acquire().await.unwrap().forget();
+                                    json!({"content": [{"type": "text", "text": "echo"}]})
+                                }
+                                method => panic!("unexpected method {method}"),
+                            };
+                            ("200 OK", json!({"jsonrpc": "2.0", "id": request["id"], "result": result}).to_string())
+                        };
+                        let response = format!("HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());
+                        let _ = stream.write_all(response.as_bytes()).await;
+                    });
+                }
+                done = sockets.join_next(), if !sockets.is_empty() => { done.unwrap().unwrap(); }
+            }
+        }
+    });
+    let pool = Arc::new(crate::mcp::SharedMcpPool::new(config.clone()));
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        pool.connect_server("cached", &config.servers["cached"]),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+
+    let mut call = Box::pin(pool.call_tool("cached", "echo", json!({})));
+    assert!(futures::poll!(&mut call).is_pending());
+    let mut disconnect = Box::pin(pool.disconnect_server("cached"));
+    assert!(futures::poll!(&mut disconnect).is_pending());
+    let mut health = Box::pin(pool.health_snapshot(&config));
+    assert!(
+        futures::poll!(&mut health).is_pending(),
+        "queued writer must block health sampling"
+    );
+
+    let registered = tokio::time::timeout(
+        Duration::from_secs(1),
+        run(pool.clone(), home.path().into()),
+    )
+    .await;
+    let still_blocked = futures::poll!(&mut health).is_pending();
+    let cached_proxy = registered
+        .as_ref()
+        .is_ok_and(|(registry, _, _)| registry.has_mcp_tools_for_server("cached"));
+    let cached_status = registered.as_ref().is_ok_and(|(_, events, _)| {
+        events.iter().any(|event| {
+            matches!(event, ServerEvent::McpStatus { servers, health }
+            if servers == &["cached:1"] && health.is_empty())
+        })
+    });
+    // Cancel the queued writer before allowing diagnostic reads and background work to finish.
+    drop(disconnect);
+    drop(health);
+    release.add_permits(1);
+    tokio::time::timeout(Duration::from_secs(5), call)
+        .await
+        .unwrap()
+        .unwrap();
+    let returned = registered.is_ok();
+    let live_status = if let Ok((_, _, mut rx)) = registered {
+        tokio::time::timeout(Duration::from_secs(5), async {
+            let mut connected_statuses = 0;
+            while let Some(event) = rx.recv().await {
+                if let ServerEvent::McpStatus { servers, health } = event
+                    && servers == ["cached:1"]
+                    && health
+                        .iter()
+                        .any(|entry| entry.name == "cached" && entry.state == "connected")
+                {
+                    connected_statuses += 1;
+                    // Manager publishes first; registry publishes after its final cache write.
+                    if connected_statuses == 2 {
+                        return true;
+                    }
+                }
+            }
+            false
+        })
+        .await
+        .unwrap_or(false)
+    } else {
+        false
+    };
+    pool.disconnect_all().await;
+    peer.abort();
+    let _ = peer.await;
+
+    assert!(
+        returned,
+        "cached registration must return before health is released"
+    );
+    assert!(
+        still_blocked,
+        "health must remain pending when registration returns"
+    );
+    assert!(
+        cached_proxy,
+        "cached proxy must exist before health is released"
+    );
+    assert!(
+        cached_status,
+        "cached counts must publish without sampling live health"
+    );
+    assert!(
+        live_status,
+        "background status must eventually publish live health"
+    );
+}
+
+#[tokio::test]
 async fn real_mcp_registration_does_not_retain_registry_tool_map() {
     let _env_lock = crate::storage::lock_test_env();
     let home = tempfile::tempdir().expect("create isolated JCODE_HOME");
@@ -1865,19 +2068,17 @@ fn the_dialect_sweep_catches_the_issue_754_schema() {
 /// own tools their strict mode, since that would drop the structured-output
 /// guarantees on every OpenAI-route tool call with nothing to notice.
 ///
-/// The tools listed below were already non-strict before that change, for
-/// reasons unrelated to it (`batch` declares `additionalProperties: true` so its
-/// sub-call payloads stay open-world; the others carry open maps or untyped
-/// action payloads). Pinning the exact set is what makes this a regression
+/// The tools listed below intentionally stay non-strict (`batch` keeps sub-call
+/// payloads open-world; the others carry open maps or sparse patch payloads).
+/// Pinning the exact set is what makes this a regression
 /// detector: a new name appearing means a stricter rule went too far, and a
 /// name disappearing means a tool became strict-eligible and the list is stale.
 #[tokio::test]
 async fn only_the_known_open_world_tools_are_ineligible_for_openai_strict_mode() {
-    /// Built-ins that legitimately cannot be strict. Verified against master
-    /// before the #711/#713 eligibility changes, so this is pre-existing.
+    // todo keeps sparse patch payloads open; strict mode would close them.
     // applet and swarm used to be ineligible only because of a root combiner;
     // root combiners are now flattened (OpenAI rejects them outright).
-    const KNOWN_OPEN_WORLD_TOOLS: &[&str] = &["batch", "browser"];
+    const KNOWN_OPEN_WORLD_TOOLS: &[&str] = &["batch", "browser", "todo"];
 
     let provider: Arc<dyn Provider> = Arc::new(MockProvider);
     let registry = Registry::new(provider).await;
@@ -1952,6 +2153,7 @@ async fn post_tool_feedback_hook_appends_stdout_to_tool_result() {
     std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("chmod");
     let previous = std::env::var_os("JCODE_HOOK_POST_TOOL_FEEDBACK");
     crate::env::set_var("JCODE_HOOK_POST_TOOL_FEEDBACK", &script);
+    crate::config::invalidate_config_cache();
 
     let registry = Registry::new(Arc::new(MockProvider) as Arc<dyn Provider>).await;
     let mut ctx = mcp_test_context(dir.path());
@@ -1964,6 +2166,7 @@ async fn post_tool_feedback_hook_appends_stdout_to_tool_result() {
         Some(value) => crate::env::set_var("JCODE_HOOK_POST_TOOL_FEEDBACK", value),
         None => crate::env::remove_var("JCODE_HOOK_POST_TOOL_FEEDBACK"),
     }
+    crate::config::invalidate_config_cache();
     let output = result.expect("read should succeed").output;
     assert!(output.contains("hello"), "{output}");
     assert!(output.contains("[post_tool_feedback]"), "{output}");

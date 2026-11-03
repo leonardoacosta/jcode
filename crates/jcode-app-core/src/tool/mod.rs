@@ -1725,7 +1725,7 @@ impl Registry {
                             .collect();
                         let _ = tx.send(crate::protocol::ServerEvent::McpStatus {
                             servers,
-                            health: mcp_manager.read().await.health_snapshot().await,
+                            health: Vec::new(),
                         });
                     }
                 }
@@ -2000,4 +2000,4 @@ mod mcp_allow_list_tests {
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

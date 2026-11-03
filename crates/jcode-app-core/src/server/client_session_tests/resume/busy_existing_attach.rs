@@ -1,4 +1,69 @@
 #[tokio::test]
+async fn handle_subscribe_returns_session_id_with_cached_mcp_and_blocked_health() {
+    crate::tool::tests::with_blocked_mcp_health(|pool, home| async move {
+        let (_runtime, prev_runtime) = setup_runtime_dir().unwrap();
+        let session_id = "session_cached_health";
+        let provider: Arc<dyn Provider> = Arc::new(MockProvider);
+        let registry = Registry::empty();
+        let agent = Arc::new(Mutex::new(build_test_agent_with_id(
+            provider,
+            registry.clone(),
+            session_id,
+            Vec::new(),
+        )));
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let (swarm_tx, _swarm_rx) = broadcast::channel(8);
+        let mut selfdev = false;
+        handle_subscribe(
+            78,
+            Some(home.display().to_string()),
+            Some(false),
+            true,
+            &mut selfdev,
+            session_id,
+            "conn_cached_health",
+            &None,
+            &agent,
+            &registry,
+            false,
+            &Arc::new(RwLock::new(HashMap::new())),
+            &Arc::new(RwLock::new(HashMap::new())),
+            &Arc::new(RwLock::new(HashMap::new())),
+            &Arc::new(RwLock::new(HashMap::new())),
+            &Arc::new(RwLock::new(HashMap::new())),
+            &Arc::new(RwLock::new(HashMap::new())),
+            &tx,
+            &pool,
+            &Arc::new(RwLock::new(VecDeque::new())),
+            &Arc::new(std::sync::atomic::AtomicU64::new(0)),
+            &swarm_tx,
+        )
+        .await;
+        let events = collect_events_until_done(&mut rx, 78).await;
+        assert!(
+            events.iter().any(|event| matches!(event,
+                ServerEvent::SessionId { session_id: actual } if actual == session_id
+            )),
+            "Subscribe must publish its session identity while health is pending: {events:?}"
+        );
+        assert!(
+            events
+                .iter()
+                .any(|event| matches!(event, ServerEvent::Done { id: 78 })),
+            "Subscribe must complete while health is pending: {events:?}"
+        );
+        assert!(
+            !events
+                .iter()
+                .any(|event| matches!(event, ServerEvent::Error { .. }))
+        );
+        restore_runtime_dir(prev_runtime);
+        (registry, events, rx)
+    })
+    .await;
+}
+
+#[tokio::test]
 async fn handle_resume_session_allows_live_attach_when_existing_agent_is_busy() -> Result<()> {
     let _guard = crate::storage::lock_test_env();
     let (_runtime, prev_runtime) = setup_runtime_dir()?;

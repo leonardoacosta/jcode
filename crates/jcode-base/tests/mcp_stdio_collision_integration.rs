@@ -9,11 +9,12 @@ use jcode_base::mcp::{
 use jcode_tool_core::{Tool, ToolContext, ToolExecutionMode};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, HashSet};
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
 const CHILD_MARKER: &str = "JCODE_MCP_STDIO_TEST_CHILD";
+const PYTHON: &str = "JCODE_MCP_STDIO_TEST_PYTHON";
 const TEST_NAME: &str = "real_stdio_collision_aliases_preserve_original_targets";
 const SERVERS: [(&str, [&str; 2]); 2] = [
     ("server-a", ["query-docs", "only-a"]),
@@ -56,16 +57,24 @@ for line in sys.stdin:
 #[test]
 fn real_stdio_collision_aliases_preserve_original_targets() {
     if std::env::var_os(CHILD_MARKER).is_none() {
-        if !Command::new("python3")
-            .arg("--version")
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .is_ok_and(|status| status.success())
-        {
-            eprintln!("SKIP {TEST_NAME}: python3 is unavailable for real stdio fixtures");
-            return;
-        }
+        // Resolve before isolation: PATH shims may depend on the original HOME.
+        let output = Command::new("python3")
+            .args(["-I", "-S", "-c", "import sys; print(sys.executable)"])
+            .output()
+            .expect("resolve Python interpreter for real MCP stdio test");
+        assert!(
+            output.status.success(),
+            "Python interpreter resolution failed: {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let python = String::from_utf8(output.stdout).expect("UTF-8 Python interpreter path");
+        let python = python.trim();
+        let path = std::path::Path::new(python);
+        assert!(
+            path.is_absolute() && path.is_file(),
+            "invalid Python interpreter: {python:?}"
+        );
         let sandbox = tempfile::tempdir().expect("isolated MCP test home");
         let mut child = Command::new(std::env::current_exe().expect("test executable"));
         child.env_clear();
@@ -87,6 +96,7 @@ fn real_stdio_collision_aliases_preserve_original_targets() {
         }
         let status = child
             .env(CHILD_MARKER, "1")
+            .env(PYTHON, python)
             .env("JCODE_HOME", sandbox.path().join("jcode"))
             .env("JCODE_RUNTIME_DIR", sandbox.path().join("runtime"))
             .current_dir(sandbox.path())
@@ -111,7 +121,7 @@ fn config() -> McpConfig {
             .iter()
             .map(|(server, names)| {
                 let config: McpServerConfig = serde_json::from_value(json!({
-                    "command": "python3",
+                    "command": std::env::var(PYTHON).expect("resolved Python interpreter"),
                     "args": ["-I", "-S", "-u", "-c", SERVER, server,
                              serde_json::to_string(names).unwrap()],
                     "shared": false,

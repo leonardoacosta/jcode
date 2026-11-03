@@ -404,21 +404,28 @@ impl SharedMcpPool {
     }
 
     async fn begin_connect(&self, name: &str) -> ConnectAttempt {
+        {
+            let connecting = self.connecting.lock().await;
+            if let Some(notify) = connecting.get(name) {
+                return ConnectAttempt::Wait(Arc::clone(notify));
+            }
+        }
+
+        // Acquire maps before reserving leadership so cancellation at a lock
+        // wait cannot strand a reservation or retain global coordination.
+        let mut clients = self.clients.lock().await;
+        let mut handles = self.handles.write().await;
         let mut connecting = self.connecting.lock().await;
         if let Some(notify) = connecting.get(name) {
             return ConnectAttempt::Wait(Arc::clone(notify));
         }
-
-        {
-            let mut handles = self.handles.write().await;
-            if handles.get(name).is_some_and(|handle| !handle.is_closed()) {
-                return ConnectAttempt::Connected;
-            }
-            handles.remove(name);
+        if handles.get(name).is_some_and(|handle| !handle.is_closed()) {
+            return ConnectAttempt::Connected;
         }
+        handles.remove(name);
         // Preserve reference counts held by existing sessions, but release the
         // dead transport before starting a fresh initialization handshake.
-        self.clients.lock().await.remove(name);
+        clients.remove(name);
 
         let notify = Arc::new(Notify::new());
         connecting.insert(name.to_string(), Arc::clone(&notify));
@@ -595,8 +602,15 @@ impl SharedMcpPool {
         config: &McpConfig,
     ) -> Vec<jcode_protocol::McpServerHealth> {
         let connecting: Vec<_> = self.connecting.lock().await.keys().cloned().collect();
-        let handles = self.handles.read().await;
-        let errors = self.last_errors.read().await;
+        let connected: Vec<_> = self
+            .handles
+            .read()
+            .await
+            .iter()
+            .filter(|(_, handle)| !handle.is_closed())
+            .map(|(name, _)| name.clone())
+            .collect();
+        let errors = self.last_errors.read().await.clone();
         let mut names: Vec<_> = config.servers.keys().cloned().collect();
         names.sort();
         names.dedup();
@@ -604,7 +618,7 @@ impl SharedMcpPool {
             .into_iter()
             .map(|name| {
                 let cfg = config.servers.get(&name);
-                let connected = handles.get(&name).is_some_and(|handle| !handle.is_closed());
+                let connected = connected.contains(&name);
                 let failure = errors.get(&name).filter(|record| {
                     !connected
                         && cfg
@@ -875,11 +889,154 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn begin_connect_map_waits_release_coordination_and_cancel_cleanly() {
+        for block_handles in [true, false] {
+            let pool = SharedMcpPool::new(McpConfig::default());
+            let handles = if block_handles {
+                Some(pool.handles.write().await)
+            } else {
+                None
+            };
+            let clients = if block_handles {
+                None
+            } else {
+                Some(pool.clients.lock().await)
+            };
+            {
+                let attempt = pool.begin_connect("blocked");
+                tokio::pin!(attempt);
+                assert!(futures::poll!(attempt.as_mut()).is_pending());
+                assert!(
+                    pool.connecting.try_lock().is_ok(),
+                    "map wait must not retain global connection coordination"
+                );
+            }
+            assert!(pool.connecting.lock().await.is_empty());
+            assert!(pool.handles.try_read().is_ok() || block_handles);
+            drop(handles);
+            drop(clients);
+            assert!(matches!(
+                pool.begin_connect("blocked").await,
+                ConnectAttempt::Leader(_)
+            ));
+        }
+    }
+
+    #[tokio::test]
+    async fn begin_connect_cancellation_waiting_for_coordination_leaves_no_reservation() {
+        let pool = SharedMcpPool::new(McpConfig::default());
+        let connecting = pool.connecting.lock().await;
+        {
+            let attempt = pool.begin_connect("cancelled");
+            tokio::pin!(attempt);
+            assert!(futures::poll!(attempt.as_mut()).is_pending());
+        }
+        assert!(connecting.is_empty());
+        drop(connecting);
+        assert!(pool.handles.try_write().is_ok());
+        assert!(pool.clients.try_lock().is_ok());
+        assert!(matches!(
+            pool.begin_connect("cancelled").await,
+            ConnectAttempt::Leader(_)
+        ));
+    }
+
+    #[tokio::test]
+    async fn begin_connect_cancellation_at_leadership_recheck_releases_maps() {
+        let pool = SharedMcpPool::new(McpConfig::default());
+        let clients = pool.clients.lock().await;
+        let mut attempt = Box::pin(pool.begin_connect("cancelled"));
+        assert!(futures::poll!(attempt.as_mut()).is_pending());
+        let connecting = pool.connecting.lock().await;
+        drop(clients);
+        assert!(futures::poll!(attempt.as_mut()).is_pending());
+        assert!(connecting.is_empty());
+        drop(attempt);
+        assert!(pool.clients.try_lock().is_ok());
+        assert!(pool.handles.try_write().is_ok());
+        drop(connecting);
+        assert!(matches!(
+            pool.begin_connect("cancelled").await,
+            ConnectAttempt::Leader(_)
+        ));
+    }
+
+    #[tokio::test]
+    async fn health_snapshot_releases_handles_before_waiting_for_errors() {
+        let pool = SharedMcpPool::new(McpConfig::default());
+        let config = McpConfig::default();
+        let errors = pool.last_errors.write().await;
+        {
+            let snapshot = pool.health_snapshot(&config);
+            tokio::pin!(snapshot);
+            assert!(futures::poll!(snapshot.as_mut()).is_pending());
+            assert!(
+                pool.handles.try_write().is_ok(),
+                "health must release handle snapshot before waiting for failures"
+            );
+            assert!(pool.connecting.try_lock().is_ok());
+        }
+        drop(errors);
+    }
+
+    #[tokio::test]
+    async fn concurrent_connected_attempts_do_not_reserve_or_replace_transport() {
+        let pool = SharedMcpPool::new(McpConfig::default());
+        let config = crate::mcp::client::tests::fake_server_config();
+        pool.connect_server("connected", &config).await.unwrap();
+        let (first, second) = tokio::join!(
+            pool.begin_connect("connected"),
+            pool.begin_connect("connected")
+        );
+        assert!(matches!(first, ConnectAttempt::Connected));
+        assert!(matches!(second, ConnectAttempt::Connected));
+        assert!(pool.connecting.lock().await.is_empty());
+        assert_eq!(pool.clients.lock().await.len(), 1);
+        pool.disconnect_all().await;
+    }
+
+    #[tokio::test]
+    async fn reconnect_waiter_observes_published_failure_after_registration() {
+        let pool = SharedMcpPool::new(McpConfig::default());
+        let config = test_config("fixture");
+        let ConnectAttempt::Leader(leader) = pool.begin_connect("late").await else {
+            panic!("leader");
+        };
+        let ConnectAttempt::Wait(waiter) = pool.begin_connect("late").await else {
+            panic!("waiter");
+        };
+        let waiting = pool.wait_for_connect("late", &waiter);
+        tokio::pin!(waiting);
+        assert!(futures::poll!(waiting.as_mut()).is_pending());
+        pool.finish_connect(
+            "late",
+            leader,
+            Err(anyhow::anyhow!("fixture failure")),
+            &config,
+        )
+        .await;
+        tokio::time::timeout(Duration::from_secs(1), waiting)
+            .await
+            .expect("registered follower must observe completion");
+        assert_eq!(
+            pool.last_errors.read().await["late"].message,
+            "fixture failure"
+        );
+        assert!(pool.connecting.lock().await.is_empty());
+    }
+
+    #[tokio::test]
     async fn begin_connect_deduplicates_concurrent_attempts() {
         let pool = Arc::new(SharedMcpPool::new(McpConfig::default()));
 
-        let first = pool.begin_connect("demo").await;
-        let second = pool.begin_connect("demo").await;
+        let handles = pool.handles.write().await;
+        let first = pool.begin_connect("demo");
+        let second = pool.begin_connect("demo");
+        tokio::pin!(first, second);
+        assert!(futures::poll!(first.as_mut()).is_pending());
+        assert!(futures::poll!(second.as_mut()).is_pending());
+        drop(handles);
+        let (first, second) = tokio::join!(first, second);
 
         let first_notify = match first {
             ConnectAttempt::Leader(notify) => notify,

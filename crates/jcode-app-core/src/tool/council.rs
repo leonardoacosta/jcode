@@ -765,7 +765,7 @@ impl Tool for CouncilTool {
                 },
                 "rounds": {"type": "integer", "minimum": 0, "maximum": 3, "description": "Debate rounds after openings. Default 1."},
                 "timeout_secs": {"type": "integer", "description": "Total time budget. Default 600."},
-                "max_calls": {"type": "integer", "description": "Aggregate provider-call budget across all seats and judge, including tool follow-ups and retries. May lower but not exceed seats*(rounds+1)+1."},
+                "max_calls": {"type": "integer", "description": "All seats/judge provider calls, including tool follow-ups/retries; cap seats*(rounds+1)+1 (may lower)."},
                 "message": {"type": "string", "description": "Convener message for say."}
             }
         })
