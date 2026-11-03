@@ -1,6 +1,51 @@
 use super::{tests::*, *};
 
 #[tokio::test]
+async fn mock_server_does_not_count_local_discovery_probes_as_requests() {
+    let (base, worker) = mock_server_with(3, |request| {
+        assert!(!request.contains("Go-http-client/1.1"));
+        (200, "{}".into(), vec![])
+    });
+    let client = client_builder().no_proxy().build().unwrap();
+    for host in ["127.0.0.1", "localhost"] {
+        let probe = client
+            .get(format!("{base}/"))
+            .header("Host", host)
+            .header("User-Agent", "Go-http-client/1.1")
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(probe.status(), 404);
+    }
+    for path in ["/", "/v1/me"] {
+        assert!(
+            client
+                .get(format!("{base}{path}"))
+                .send()
+                .await
+                .unwrap()
+                .status()
+                .is_success()
+        );
+    }
+    assert!(
+        client
+            .post(format!("{base}/v1/decisions"))
+            .body("{}")
+            .send()
+            .await
+            .unwrap()
+            .status()
+            .is_success()
+    );
+    let requests = worker.join().unwrap();
+    assert_eq!(requests.len(), 3);
+    assert!(requests[0].starts_with("GET / HTTP/1.1\r\n"));
+    assert!(requests[1].starts_with("GET /v1/me HTTP/1.1\r\n"));
+    assert!(requests[2].starts_with("POST /v1/decisions HTTP/1.1\r\n"));
+}
+
+#[tokio::test]
 #[ignore = "requires an existing TypeSafe credential and explicit live-test authorization"]
 async fn live_typesafe_jev_returns_expected_choice() -> Result<()> {
     ensure!(

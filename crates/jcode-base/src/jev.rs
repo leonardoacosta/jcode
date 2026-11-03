@@ -1652,8 +1652,12 @@ mod tests {
         let base = format!("http://{}", listener.local_addr().unwrap());
         let worker = std::thread::spawn(move || {
             let mut requests = Vec::new();
-            for _ in 0..count {
-                let deadline = std::time::Instant::now() + Duration::from_secs(30);
+            let mut deadline = std::time::Instant::now() + Duration::from_secs(30);
+            while requests.len() < count {
+                assert!(
+                    std::time::Instant::now() < deadline,
+                    "expected mock request"
+                );
                 let mut stream = loop {
                     match listener.accept() {
                         Ok((stream, _)) => break stream,
@@ -1696,8 +1700,29 @@ mod tests {
                     }
                 }
                 let request = String::from_utf8(bytes).unwrap();
+                // Local port discovery can probe new listeners. Do not let its
+                // root GET consume a synthetic API reply or close the fixture.
+                if request.starts_with("GET / HTTP/1.1\r\n")
+                    && request
+                        .split_once("\r\n\r\n")
+                        .unwrap()
+                        .0
+                        .lines()
+                        .any(|line| {
+                            line.split_once(':').is_some_and(|(key, value)| {
+                                key.eq_ignore_ascii_case("user-agent")
+                                    && value.trim() == "Go-http-client/1.1"
+                            })
+                        })
+                {
+                    let _ = stream.write_all(
+                        b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                    );
+                    continue;
+                }
                 let (status, body, headers) = respond(&request);
                 requests.push(request);
+                deadline = std::time::Instant::now() + Duration::from_secs(30);
                 let chunked = headers.iter().any(|(key, value)| {
                     key.eq_ignore_ascii_case("transfer-encoding") && value == "chunked"
                 });
