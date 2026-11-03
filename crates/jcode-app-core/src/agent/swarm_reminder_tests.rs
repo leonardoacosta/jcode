@@ -2,8 +2,8 @@ use super::*;
 use async_trait::async_trait;
 
 #[tokio::test]
-async fn gateway_input_policy_tracks_durable_roles_and_reports_direct_routes() {
-    use jcode_provider_core::InputCompressionProfile::{self, Conservative, Exact, Optimized};
+async fn gateway_defaults_are_not_overridden_by_agent_roles() {
+    use jcode_provider_core::InputCompressionProfile;
     let _home = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
     struct PolicyProvider(Arc<std::sync::Mutex<Vec<InputCompressionProfile>>>);
     #[async_trait]
@@ -35,11 +35,7 @@ async fn gateway_input_policy_tracks_durable_roles_and_reports_direct_routes() {
     let provider: Arc<dyn Provider> = Arc::new(PolicyProvider(Arc::clone(&seen)));
     let registry = Registry::new(Arc::clone(&provider)).await;
     let mut agent = Agent::new(provider, registry);
-    assert!(
-        agent
-            .configure_input_compression()
-            .contains("requested: jcode-conservative")
-    );
+    assert!(agent.run_turn(false).await.is_err());
     assert!(
         !agent
             .build_system_prompt_split(None)
@@ -48,11 +44,7 @@ async fn gateway_input_policy_tracks_durable_roles_and_reports_direct_routes() {
     );
     agent.session.parent_id = Some("synthetic-parent".into());
     agent.session.worker_role = Some("edit".into());
-    assert!(
-        agent
-            .configure_input_compression()
-            .contains("requested: jcode-optimized")
-    );
+    assert!(agent.run_turn(false).await.is_err());
     assert!(
         !agent
             .build_system_prompt_split(None)
@@ -60,11 +52,7 @@ async fn gateway_input_policy_tracks_durable_roles_and_reports_direct_routes() {
             .contains("## Final review output")
     );
     agent.session.council_id = Some("synthetic-review".into());
-    assert!(
-        agent
-            .configure_input_compression()
-            .contains("requested: off")
-    );
+    assert!(agent.run_turn(false).await.is_err());
     assert!(
         agent
             .build_system_prompt_split(None)
@@ -95,12 +83,22 @@ async fn gateway_input_policy_tracks_durable_roles_and_reports_direct_routes() {
     let split = agent.build_system_prompt_split(None);
     assert_eq!(split.static_part, "explicit review prompt");
     assert!(split.dynamic_part.is_empty());
-    assert_eq!(*seen.lock().unwrap(), vec![Conservative, Optimized, Exact]);
+    let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+    assert!(agent.run_turn_streaming_mpsc(tx).await.is_err());
+    while let Ok(event) = rx.try_recv() {
+        if let ServerEvent::StatusDetail { detail } = event {
+            assert!(!detail.contains("Gateway input compression"), "{detail}");
+        }
+    }
+    assert!(
+        seen.lock().unwrap().is_empty(),
+        "roles must not select gateway compression"
+    );
 
     let provider: Arc<dyn Provider> = Arc::new(EffortProvider { effort: None });
     let registry = Registry::new(Arc::clone(&provider)).await;
-    let agent = Agent::new(provider, registry);
-    assert!(agent.configure_input_compression().contains("unavailable"));
+    let mut agent = Agent::new(provider, registry);
+    assert!(agent.run_turn(false).await.is_err());
 }
 
 #[derive(Clone)]

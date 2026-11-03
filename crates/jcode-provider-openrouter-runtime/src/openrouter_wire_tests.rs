@@ -120,7 +120,6 @@ fn captured_request_for_host(host: &str, conversation_id: &str) -> String {
             "m".to_string(),
             false,
             false,
-            None,
         )
         .await;
         while events.recv().await.is_some() {}

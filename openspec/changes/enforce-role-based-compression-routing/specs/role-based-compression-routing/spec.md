@@ -1,30 +1,26 @@
 ## ADDED Requirements
 
-### Requirement: Durable role selects an explicit input policy
-The system SHALL select conservative input processing for root conversations, memory extraction, and unknown chat roles. It SHALL select optimized-trial processing only for identified bounded coding workers and exact processing for final independent review and Jev decisions. Model names and prompt text SHALL NOT grant optimized or review identity.
+### Requirement: Gateway endpoints own compression selection
+Jcode SHALL send the selected combo/model and allow the gateway's predefined compression policy to apply. Jcode SHALL NOT select OmniRoute compression from session roles, send compression override or forced cache-bypass headers, or emit requested-policy notices. Legacy named-provider compression header configuration SHALL NOT enable client selection. Final review SHALL retain full findings, risks, and evidence rather than force ultra-terse output styles.
 
-#### Scenario: Unknown worker role remains conservative
-- **WHEN** a session has a parent but no recognized bounded coding role
-- **THEN** its gateway input policy is conservative, not optimized
+#### Scenario: Root and worker use endpoint defaults
+- **WHEN** root, coding-worker, or reviewer sessions issue requests
+- **THEN** Jcode leaves compression selection to the selected endpoint and preserves its combo/model ID
 
-#### Scenario: Coding worker and final review differ
-- **WHEN** an identified bounded coding worker and an independent final reviewer use the same model
-- **THEN** the worker requests optimized-trial processing and the reviewer requests exact processing
+#### Scenario: Legacy client selector is present
+- **WHEN** named-provider configuration still contains an OmniRoute compression selector
+- **THEN** it does not override gateway defaults or produce a requested-policy notice
 
-#### Scenario: Memory extraction overrides its caller
-- **WHEN** an optimized worker starts memory extraction
-- **THEN** the memory request uses conservative processing without changing the worker's subsequent requests
+### Requirement: Gateway defaults apply across compatible transports
+The same endpoint-owned policy SHALL apply to Chat Completions and Responses requests, including concurrent forks and model changes. Jcode SHALL NOT inject gateway-specific compression controls into direct-provider requests. Conservative SHALL mean session-dedup followed by lite. Optimized-trial SHALL mean RTK aggressive followed by Caveman ultra with protected-content rules. Exact SHALL disable input compression. These pipeline choices belong in gateway configuration, not Jcode role headers.
 
-### Requirement: Gateway request policy is isolated and scoped
-The system SHALL request equivalent profiles on the explicitly configured Pi5 and local Omni gateways. Conservative SHALL mean session-dedup followed by lite. Optimized-trial SHALL mean RTK aggressive followed by Caveman ultra with protected-content rules. Exact SHALL disable input compression and final review SHALL retain full findings, risks, and evidence rather than force ultra-terse output styles. Request policy SHALL NOT leak between forks, concurrent tasks, or direct providers.
+#### Scenario: Concurrent forks select different endpoints
+- **WHEN** root, worker, and reviewer forks issue concurrent Chat or Responses requests with different selected models
+- **THEN** each request retains its model ID without compression or forced cache-bypass headers
 
-#### Scenario: Concurrent forks retain their own policy
-- **WHEN** conservative, optimized, and exact forks issue requests concurrently
-- **THEN** captured chat and Responses requests carry the correct per-fork policy without shared-state contamination
-
-#### Scenario: Direct provider is an explicit exception
+#### Scenario: Direct provider remains unaffected
 - **WHEN** an explicitly selected direct provider handles a request
-- **THEN** gateway-specific headers are not sent and gateway compression is reported unavailable rather than applied
+- **THEN** gateway-specific compression headers and requested-policy notices are absent
 
 ### Requirement: Gateway fallback is conservative and routing remains explicit
 Both gateways SHALL use a conservative fallback for unbound chat. Pi5 SHALL remain primary, local Omni SHALL remain a manually selected alternate, and gateway or provider failures SHALL NOT silently substitute another route. Effective pipeline selection SHALL be verified independently of combo-card labels.

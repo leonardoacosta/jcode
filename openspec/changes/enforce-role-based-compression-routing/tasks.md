@@ -1,5 +1,7 @@
 ## 1. Preflight and bindings
 
+Current scope correction, 2026-11-03: the user requires endpoint-owned defaults, not client-selected compression. Sections 1-5 below retain historical results and unresolved broader gateway acceptance. Section 6 is authoritative for this bounded correction. Historical checked role-header tasks do not describe the new client behavior.
+
 - [x] 1.1 Recover explicit approval, inspect current gateway settings and source boundaries, preserve unrelated work and current checkout.
 - [x] 1.2 Author native requirements, design, and acceptance tasks for the approved scope.
 - [x] 1.3 Validate artifacts and execution readiness, including cross-repository deployment and terminal gates.
@@ -30,6 +32,18 @@
 - [x] 5.2 Run independent final review against requirements and final diff; repair findings and repeat affected checks/review.
 - [x] 5.3 Update verified workflow state and create scoped commits with configured Git identity, preserving unrelated changes.
 - [ ] 5.4 Archive only after required tasks, live acceptance, checks, review, and commits pass; verify archive and authorized persistence without publishing unrelated history.
+
+## 6. Endpoint-owned compression correction
+
+- [x] 6.1 Trace the request header/role notice to its source and inspect actual local gateway resolver precedence without changing settings.
+- [x] 6.2 Reproduce the unwanted policy notice with failing wire and agent regressions, then remove compatible-provider overrides and agent turn selection/notices while preserving routes, model IDs, forks, and review prompts.
+- [x] 6.3 Run fresh provider, agent, binding, retry, format, and OpenSpec gates; build and verify the corrected runtime.
+- [x] 6.4 Coordinator reviewed the scoped final diff and verified correction paths for a local checkpoint commit with configured identity. This is not independent-review or full-feature clearance.
+- [ ] 6.5 Verify intended per-combo/model gateway profile bindings and applied-plan evidence. Native local assignments are empty; no new binding mapping or live mutation is inferred from existing profile names.
+
+Correction evidence: expected-red coordinated tasks `86741834ta` and `906443l1me` failed on the exact unwanted requested-policy and role notices. Final coordinated task `225091czze` passed 198 compatible-provider tests, five agent reminder tests, 181 provider-binding tests, three policy/memory tests, strict OpenSpec validation and diffcheck. Coordinated TUI build `231365dh09` succeeded. `python3 scratch/compression-default-runtime/verify.py` exercised that rebuilt CLI against isolated synthetic Chat and Responses HTTP servers: both completed `OK`, retained the explicitly selected model, omitted compression/cache overrides, and emitted no requested-policy notice. This verifies the real CLI with synthetic transport, not native gateway applied-plan acceptance. The first fixture run inherited the launch model; adding explicit `--model` fixed the fixture without changing production code.
+
+Coordinator reviewed the final source/test diff and preserved the pre-existing ignored temporary review driver unchanged. Independent council attempts exhausted their call budgets and supplied no completed review; independent final-review and full feature/archive gates remain open. The first activation attempt correctly refused stale build-source metadata after later artifact edits. A fresh coordinated build/reload is required. No live gateway setting change, push, or archive is included.
 
 ## Execution notes
 

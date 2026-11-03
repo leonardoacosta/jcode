@@ -5,20 +5,6 @@ use crate::{terminal_eprintln as eprintln, terminal_print as print, terminal_pri
 use jcode_provider_core::provider_call_budget;
 
 impl Agent {
-    pub(super) fn configure_input_compression(&self) -> String {
-        let profile = self.session.input_compression_profile();
-        let detail = if self.provider.set_input_compression_profile(profile) {
-            format!(
-                "Gateway input compression requested: {}",
-                profile.header_value()
-            )
-        } else {
-            "Gateway input compression unavailable on the selected route".to_string()
-        };
-        crate::logging::info(&detail);
-        detail
-    }
-
     /// Speculatively prewarm the provider while a newly created session is idle.
     ///
     /// This deliberately bypasses `tool_definitions`, whose cache lock is only
@@ -78,10 +64,6 @@ impl Agent {
             .as_deref()
             .map(crate::tool::council::provider_call_budget)
             .transpose()?;
-        let detail = self.configure_input_compression();
-        if print_output {
-            eprintln!("{detail}");
-        }
         provider_call_budget::scope(budget, self.run_turn_budgeted(print_output)).await
     }
 

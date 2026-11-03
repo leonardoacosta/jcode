@@ -1,5 +1,13 @@
 ## Context
 
+### Current correction, 2026-11-03
+
+Compression ownership is now the gateway combo/model route, not Jcode session roles. Remove the compatible provider's profile state, role setter implementation, retry-builder selector/cache-bypass headers, and receipt notice. Remove agent turn-entry selection/notices. Retain the shared provider trait for compatibility with other callers and retain review prompt semantics. Legacy named-provider compression headers no longer opt into automatic selection. The transport forwards the selected model unchanged on both protocols.
+
+Read-only local runtime inspection of `/app/.build/next/server/chunks/16904.js` confirms the resolver prioritizes request overrides before routing overrides, active profile, auto-trigger, and default. The Jcode correction removes its first-priority override. Native SQLite readback found the saved conservative/optimized profiles but no rows in `compression_combo_assignments`. This is not proof that each combo has its intended profile. No live settings were changed and no per-combo assignment or applied-plan success is claimed.
+
+Preflight `preflight-check-v2-shadow`, JIT at source `1d9b92579` on the existing `main` checkout: local source/test correction is eligible under the user's explicit correction. Related tracked targets started clean; preserve the five unrelated untracked runtime paths. Publication is not authorized and branch mismatch remains preserved. Existing broader gateway acceptance/archive prerequisites remain blocked. Tests use real provider and agent public paths with local synthetic transports. The prior notes below describe historical role-header selection, not the corrected implementation.
+
 User approval covers role-based profiles on the two existing gateways plus real TypeSafe Jev verification. Existing config uses Pi5 as the default, manual cross-provider failover, and inherited memory models. Request model aliases already exercise gateway routing combos. The missing contract is role-aware compression selection and observed resolver enforcement, not replacement upstream routing.
 
 ## Decisions

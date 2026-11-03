@@ -116,7 +116,6 @@ fn run_azure(base: String) -> Vec<Result<StreamEvent>> {
                 "deployment".into(),
                 false,
                 false,
-                None,
             ),
         )
         .await

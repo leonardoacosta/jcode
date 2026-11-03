@@ -6,6 +6,12 @@ execution:
 
 ## Why
 
+### Current correction, 2026-11-03
+
+The user clarified that combo/model endpoints must select their predefined compression in OmniRoute. Jcode must not tell the gateway which profile to use. This supersedes client role-based profile selection described below. Preserve the prior implementation and acceptance notes as history, not as the current request contract.
+
+The bounded Jcode correction removes compression override headers, forced cache bypass, and requested-policy notices from both Chat and Responses requests, including forks and legacy header configuration. Route/model selection and complete review-output instructions remain unchanged. No live gateway setting, provider account, or credential change is included. Gateway per-combo assignment and applied-plan acceptance remain separate unfinished work.
+
 The user approved consistent role-based input compression across the existing Pi5 (`omnipi`) and local Omni (`omni`) routes on 2026-11-02. Model aliases select routing combos but do not prove which compression pipeline ran. Both gateways have no explicit compression-profile assignments and empty effective `compression.comboOverrides`; their global fallback policies differ.
 
 ## What Changes

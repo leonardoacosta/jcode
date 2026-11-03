@@ -1375,7 +1375,6 @@ fn make_endpoint(name: &str, throughput: f64, uptime: f64, cache: bool, cost: f6
 
 pub(super) fn make_provider() -> OpenRouterProvider {
     OpenRouterProvider {
-        input_compression_profile: None,
         responses_api: false,
         client: jcode_provider_core::shared_http_client(),
         model: Arc::new(RwLock::new(DEFAULT_MODEL.to_string())),
@@ -1412,7 +1411,6 @@ pub(super) fn make_provider() -> OpenRouterProvider {
 
 fn make_custom_compatible_provider() -> OpenRouterProvider {
     OpenRouterProvider {
-        input_compression_profile: None,
         responses_api: false,
         client: jcode_provider_core::shared_http_client(),
         model: Arc::new(RwLock::new(DEFAULT_MODEL.to_string())),
@@ -3165,7 +3163,6 @@ fn midstream_transport_fault_emits_retry_rollback_before_replay() {
             "test-model".to_string(),
             false,
             false,
-            None,
         )
         .await;
 
