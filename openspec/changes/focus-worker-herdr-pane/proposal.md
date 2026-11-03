@@ -1,3 +1,8 @@
+---
+execution:
+  version: 1
+  depends_on: []
+---
 # Proposal
 
 Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs). Supporting: P09.

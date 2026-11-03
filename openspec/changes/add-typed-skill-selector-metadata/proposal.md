@@ -39,3 +39,5 @@ The slash-command selector stores candidates as untyped `(String, &'static str)`
 ## Resolved defaults
 
 1. Kind label width. Options: fixed ten-cell cap; abbreviate (`cmd`, `skill`); glyph only. Selected default: short words (`cmd`, `skill`) under the proposed ten-cell cap, since glyph-only is unreadable over some terminals and the cap is the selected design default.
+
+Selected roadmap outcome: `P02.O1`. Exact requirement/task binding and acceptance are recorded in [the selected first-wave table](../../../docs/plans/PRODUCT_ROADMAP.md#sequencing-clarification-and-selected-first-wave-bindings).

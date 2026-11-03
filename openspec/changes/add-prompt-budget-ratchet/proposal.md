@@ -1,3 +1,8 @@
+---
+execution:
+  version: 1
+  depends_on: []
+---
 # Proposal
 
 Roadmap owner: [P07: Memory/context quality and privacy](../../../docs/plans/PRODUCT_ROADMAP.md#p07-memorycontext-quality-and-privacy). Supporting: P01.

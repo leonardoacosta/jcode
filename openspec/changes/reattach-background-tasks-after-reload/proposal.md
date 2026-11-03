@@ -1,3 +1,8 @@
+---
+execution:
+  version: 1
+  depends_on: []
+---
 # Proposal
 
 Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/plans/PRODUCT_ROADMAP.md#p05-durable-overnight-scheduling-and-recovery). Supporting: P04.

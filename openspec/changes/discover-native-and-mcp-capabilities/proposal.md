@@ -6,7 +6,7 @@ execution:
 # Proposal
 
 Roadmap owner: [P02: Discoverable native tools, MCP and skills provenance](../../../docs/plans/PRODUCT_ROADMAP.md#p02-discoverable-native-tools-mcp-and-skills-provenance).
-Supporting: [mcp-management-experience](../mcp-management-experience/proposal.md) (server table; not duplicated here).
+Supporting: [mcp-management-experience](../archive/2026-11-02-mcp-management-experience/proposal.md) (server table; not duplicated here).
 
 ## Why
 

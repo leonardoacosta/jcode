@@ -1,3 +1,8 @@
+---
+execution:
+  version: 1
+  depends_on: [add-lifecycle-hooks, add-role-model-slots]
+---
 ## Why
 
 Roadmap owner: [P07: Memory/context quality and privacy](../../../docs/plans/PRODUCT_ROADMAP.md#p07-memorycontext-quality-and-privacy).
@@ -35,7 +40,7 @@ Config types, session startup, TUI header, prompt assembly. No new deps.
 ## Dependencies
 
 - `add-lifecycle-hooks` (hook schema and runner) must land before per-workspace hooks.
-- `add-role-model-slots` (role-slot config; change not yet drafted in `openspec/changes/`) must land before role-slot overrides. Swarm spawn code: `crates/jcode-app-core/src/server/comm_session.rs`.
+- `add-role-model-slots` (role-slot config; archived at `openspec/changes/archive/2026-11-02-add-role-model-slots/`) must land before role-slot overrides. Swarm spawn code: `crates/jcode-app-core/src/server/comm_session.rs`.
 
 ## Approval
 

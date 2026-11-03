@@ -34,3 +34,5 @@ Continuation decisions are recorded only as free-text log lines: `AUTO_POKE_DECI
 ## Resolved defaults
 
 1. Storage: (a) session log JSON line; (b) separate per-session evidence file. Selected default: (a), reuses the existing log and keeps correlation with `AUTO_POKE_DECISION`.
+
+Selected roadmap outcome: `P03.O1`. Exact requirement/task binding and acceptance are recorded in [the selected first-wave table](../../../docs/plans/PRODUCT_ROADMAP.md#sequencing-clarification-and-selected-first-wave-bindings).

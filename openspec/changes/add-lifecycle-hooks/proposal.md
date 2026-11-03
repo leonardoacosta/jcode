@@ -1,3 +1,8 @@
+---
+execution:
+  version: 1
+  depends_on: []
+---
 # Proposal
 
 Roadmap owner: [P08: SDK/API/tool integration contracts, including browser/voice](../../../docs/plans/PRODUCT_ROADMAP.md#p08-sdkapitool-integration-contracts-including-browservoice). Supporting: P02.

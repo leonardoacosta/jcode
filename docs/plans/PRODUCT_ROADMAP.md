@@ -97,7 +97,7 @@ completion across TUI/CLI/daemon sessions without new ceremony for simple tasks.
 **Candidate features, uncut titles only:** None; all candidates cut.
 **Dependencies:** None. Reuse review/judge semantics; explicitly adopt any local-only
 workflow contract before treating it as a committed requirement.
-**Real changes:** [admit-judge-feedback-with-bounds](../../openspec/changes/admit-judge-feedback-with-bounds/proposal.md), [bind-acceptance-evidence-to-runtime](../../openspec/changes/bind-acceptance-evidence-to-runtime/proposal.md), [restrict-plan-command-execution](../../openspec/changes/restrict-plan-command-execution/proposal.md) (cut, not implemented); [hot-file-test-coverage](../../openspec/changes/archive/2026-11-02-hot-file-test-coverage/proposal.md) (cut, not implemented); [improve-workflow-suite](../../openspec/changes/archive/2026-10-20-improve-workflow-suite/proposal.md) (archived); supporting, no completion credit: [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived), [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived); [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md)
+**Real changes:** [admit-judge-feedback-with-bounds](../../openspec/changes/admit-judge-feedback-with-bounds/proposal.md), [bind-acceptance-evidence-to-runtime](../../openspec/changes/bind-acceptance-evidence-to-runtime/proposal.md), [restrict-plan-command-execution](../../openspec/changes/restrict-plan-command-execution/proposal.md) (cut, not implemented); [hot-file-test-coverage](../../openspec/changes/archive/2026-11-02-hot-file-test-coverage/proposal.md) (archived); [improve-workflow-suite](../../openspec/changes/archive/2026-10-20-improve-workflow-suite/proposal.md) (archived); supporting, no completion credit: [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived), [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived); [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md)
 ([requirements](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/specs/continuation-evidence/spec.md),
 [design](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/design.md),
 [tasks](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/tasks.md)). This is the
@@ -139,8 +139,7 @@ work, not just open task counts or a persuasive final answer.
 with its existing caps/fingerprints. Native code owns authorization, budgets,
 stop/cancellation and eligibility; Jev interprets bounded structured actual
 check/progress evidence, not self-reported success or arbitrary tool authority.
-The current [Jev client](../../crates/jcode-base/src/jev.rs) has Memory/Browser/Voice
-purposes only. Supervision needs explicit purpose/capability/provider routing,
+The current [Jev client](../../crates/jcode-base/src/jev.rs) already has an explicit Supervision purpose and constructor. Supervision still needs usable configuration and caller/provider routing,
 not an assumed existing route or silent reuse of another purpose's credentials.
 Replay/shadow **this roadmap-authoring session** before enabling decisions, using
 redacted evidence and an authorized inference path. Include real waits, blocked
@@ -156,7 +155,7 @@ grant extra authority. No turn, token, latency or cost savings are claimed yet.
 attributable evidence without losing dependencies or clobbering shared work.
 **Candidate features, uncut titles only:** None; all candidates cut. Bounded swarm assignment and recovery contracts covered by recover-swarm-workers-after-reload; ownership and blocked-dependency visibility covered by add-swarm-file-claims and surface-worker-stall-and-block-reasons.
 **Dependencies:** P01. Discovery and poke need not ship first.
-**Real changes:** [add-swarm-handoff-contracts](../../openspec/changes/add-swarm-handoff-contracts/proposal.md) (cut, not implemented); [report-agent-lifecycle-to-herdr](../../openspec/changes/report-agent-lifecycle-to-herdr/proposal.md), [surface-worker-stall-and-block-reasons](../../openspec/changes/surface-worker-stall-and-block-reasons/proposal.md), [focus-worker-herdr-pane](../../openspec/changes/focus-worker-herdr-pane/proposal.md) (cut, not implemented); [return-full-swarm-reports](../../openspec/changes/archive/2026-11-02-return-full-swarm-reports/proposal.md), [queue-messages-to-busy-workers](../../openspec/changes/archive/2026-11-02-queue-messages-to-busy-workers/proposal.md), [show-resolved-worker-model](../../openspec/changes/archive/2026-11-02-show-resolved-worker-model/proposal.md), [add-swarm-file-claims](../../openspec/changes/archive/2026-11-02-add-swarm-file-claims/proposal.md), [recover-swarm-workers-after-reload](../../openspec/changes/archive/2026-11-02-recover-swarm-workers-after-reload/proposal.md), [add-council-tool](../../openspec/changes/archive/2026-11-02-add-council-tool/proposal.md) (cut, not implemented); [swarm-communicate-reliability](../../openspec/changes/archive/2026-11-01-swarm-communicate-reliability/proposal.md) (archived), [swarm-module-split](../../openspec/changes/archive/2026-11-01-swarm-module-split/proposal.md) (archived), [swarm-state-async-safety](../../openspec/changes/archive/2026-11-01-swarm-state-async-safety/proposal.md) (archived), [swarm-widget-cell-width](../../openspec/changes/archive/2026-11-01-swarm-widget-cell-width/proposal.md) (archived). Archived slices are delivered evidence only; no phase outcome claimed; no outcome claimed; supporting, no completion credit: [add-role-model-slots](../../openspec/changes/archive/2026-11-02-add-role-model-slots/proposal.md).
+**Real changes:** [add-swarm-handoff-contracts](../../openspec/changes/add-swarm-handoff-contracts/proposal.md) (cut, not implemented); [report-agent-lifecycle-to-herdr](../../openspec/changes/report-agent-lifecycle-to-herdr/proposal.md), [surface-worker-stall-and-block-reasons](../../openspec/changes/surface-worker-stall-and-block-reasons/proposal.md), [focus-worker-herdr-pane](../../openspec/changes/focus-worker-herdr-pane/proposal.md) (cut, not implemented); [return-full-swarm-reports](../../openspec/changes/archive/2026-11-02-return-full-swarm-reports/proposal.md), [queue-messages-to-busy-workers](../../openspec/changes/archive/2026-11-02-queue-messages-to-busy-workers/proposal.md), [show-resolved-worker-model](../../openspec/changes/archive/2026-11-02-show-resolved-worker-model/proposal.md), [add-swarm-file-claims](../../openspec/changes/archive/2026-11-02-add-swarm-file-claims/proposal.md), [recover-swarm-workers-after-reload](../../openspec/changes/archive/2026-11-02-recover-swarm-workers-after-reload/proposal.md), [add-council-tool](../../openspec/changes/archive/2026-11-02-add-council-tool/proposal.md) (archived); [swarm-communicate-reliability](../../openspec/changes/archive/2026-11-01-swarm-communicate-reliability/proposal.md) (archived), [swarm-module-split](../../openspec/changes/archive/2026-11-01-swarm-module-split/proposal.md) (archived), [swarm-state-async-safety](../../openspec/changes/archive/2026-11-01-swarm-state-async-safety/proposal.md) (archived), [swarm-widget-cell-width](../../openspec/changes/archive/2026-11-01-swarm-widget-cell-width/proposal.md) (archived). Archived slices are delivered evidence only; no phase outcome claimed; no outcome claimed; supporting, no completion credit: [add-role-model-slots](../../openspec/changes/archive/2026-11-02-add-role-model-slots/proposal.md).
 **Gates/evidence:** exercise native todo/swarm delegation with overlapping ownership,
 nonconflicting parallel lanes, changed-base revival, stale scope, worker failure,
 retry/stop and an attributable complete change range. The coordinator integrates
@@ -340,3 +339,48 @@ history by dropping failed gates or parking required work. Proposed near-term or
 is P01 plus P02, then P03 before P05 semantic automation; P04/P06 can progress in
 parallel. Final product priority, read-only enforcement strength and which optional
 candidates to cut remain feature-level decisions, not commitments made by this map.
+
+
+## Sequencing clarification and selected first-wave bindings
+
+Assessment base: `1d9b92579` (2026-11-03). Phase prerequisites govern phase-wide
+acceptance, not a global serial implementation barrier. Native `execution.depends_on`
+metadata governs feature prerequisites; `tasks.md` remains the only execution ledger.
+Shared paths require serialized edits, not invented semantic dependencies.
+
+The user selected the following required outcomes for the first wave. These are
+bounded slices, not acceptance of their entire phases. Other phase outcomes retain
+their existing unselected scope; this clarification assigns no stretch work.
+
+| Outcome | Observable acceptance and exact binding |
+| --- | --- |
+| P01.O1 | Runtime identity distinguishes matched, stale and unknown serving builds. `bind-acceptance-evidence-to-runtime`: requirement “Evidence names the serving binary”, tasks 1–6 in file order. |
+| P02.O1 | Local/remote selector shows typed descriptions, legacy unknowns, native precedence and cell-bounded rows. `add-typed-skill-selector-metadata`: both requirements, tasks 1.1–1.4 and 2.1–2.4. |
+| P03.O1 | Each continuation decision emits bounded redacted evidence without changing policy. `add-structured-continuation-evidence`: requirement “Structured continuation evidence record”, tasks 1–5 in file order. |
+| P05.O1 | Deterministic task/worktree policy preserves authority, limits, ownership and safe placement. `configure-task-and-worktree-policy`: all requirements in `task-admission-policy` and `worktree-policy`, tasks 1.1–4.4. |
+
+Each binding resolves to its proposal/specs/tasks directory under `openspec/changes/`.
+Acceptance evidence is not established yet. Fresh checks, independent review,
+commits, specification synchronization and archival remain required per change.
+
+Execution guidance:
+- The four selected first-wave slices may progress concurrently after file ownership
+  is assigned. Serialize shared protocol/config/TUI integration and Git mutations.
+- Typed selector metadata precedes discovery and provenance. Coordinate their
+  selector/remote-payload integration even after that prerequisite passes.
+- Structured continuation evidence and explicit supervision routing precede semantic
+  shadow admission. Deterministic overnight admission excludes semantic supervision
+  and does not need to wait for P03 phase-wide completion.
+- Task/worktree policy precedes overnight restart reconciliation. Coordinate
+  admission, cancellation and accounting edits in the shared overnight executor.
+- Coordinate runtime identity with selfdev reload checks, swarm lifecycle with Herdr
+  reporting, pane identity with open-pane actions, and hooks with workspace overrides.
+  These are integration boundaries, not additional declared feature dependencies.
+
+Recovery before new implementation: `remote-client-link-copy` already records
+12/13 tasks checked, with device acceptance pending; fallback records 9/11 checked,
+with persistent notices and integration acceptance pending. Do not restart either
+from scratch or treat checked tasks as fresh acceptance. Workspace role slots have
+an archived prerequisite; only hooks remain active. Unbound operational changes
+`enforce-role-based-compression-routing` and `fix-mcp-health-blocked-session-bootstrap`
+remain outside this selected first wave and receive no phase completion credit here.
