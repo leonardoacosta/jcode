@@ -53,3 +53,5 @@ Evidence and public pattern comparisons: [Sandcastle/task/worktree research](../
 ## Authoring and handoff boundary
 
 The exact Rust/TOML field names and effective-policy CLI syntax are implementation choices to finalize against the existing parser/commands. Acceptance below fixes their behavior without pretending they already exist. Offline config/path/admission fixtures require no provider credentials. Live unattended execution, setup hooks and user-owned worktree mutations are outside authoring and require their normal scoped authorization. No implementation has started.
+
+Selected roadmap outcome: `P05.O1`. Exact requirement/task binding and acceptance are recorded in [the selected first-wave table](../../../docs/plans/PRODUCT_ROADMAP.md#sequencing-clarification-and-selected-first-wave-bindings).

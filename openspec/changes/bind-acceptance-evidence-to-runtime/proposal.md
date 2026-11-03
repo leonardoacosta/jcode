@@ -35,3 +35,5 @@ Automatic daemon restart; CI integration; storing evidence in sessions or OpenSp
 ## Resolved defaults
 
 1. Where evidence lives. Options: printed only; JSON file under scratch; session metadata. Selected default: printed plus `--json`, because it composes with existing workflows without new storage.
+
+Selected roadmap outcome: `P01.O1`. Exact requirement/task binding and acceptance are recorded in [the selected first-wave table](../../../docs/plans/PRODUCT_ROADMAP.md#sequencing-clarification-and-selected-first-wave-bindings).
