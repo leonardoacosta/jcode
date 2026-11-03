@@ -228,6 +228,15 @@ async fn until_disconnect(socket: &mut TcpStream, state: &Arc<FixtureState>) -> 
 
 async fn serve(socket: TcpStream, state: Arc<FixtureState>) -> Result<()> {
     let (request, mut socket) = parse_request(socket).await?;
+    if request.method == "GET"
+        && request.path == "/"
+        && request
+            .headers
+            .get("user-agent")
+            .is_some_and(|value| value == "Go-http-client/1.1")
+    {
+        return response(&mut socket, 404, "text/plain", "", "").await;
+    }
     state.requests.lock().unwrap().push(request.clone());
     let plan = &state.plan;
     if request.method == "DELETE" {
@@ -620,6 +629,33 @@ async fn public_post_sse_fragmentation_notifications_and_multiline_json() {
         "{\"word\":\"héllo 🦀\"}"
     );
     client.shutdown().await;
+}
+
+#[tokio::test]
+async fn discovery_probe_cannot_replace_legacy_sse_fixture_stream() {
+    let fixture = Fixture::start(Plan {
+        legacy: true,
+        ..Plan::default()
+    })
+    .await;
+    let client = fixture.connect("sse").await;
+    let root = fixture.url.replace("/mcp", "/");
+    for host in ["127.0.0.1", "localhost"] {
+        let probe = reqwest::Client::builder()
+            .no_proxy()
+            .build()
+            .unwrap()
+            .get(&root)
+            .header("user-agent", "Go-http-client/1.1")
+            .header("host", host)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(probe.status(), reqwest::StatusCode::NOT_FOUND);
+    }
+    client.refresh_tools().await.unwrap();
+    assert_eq!(client.tools().len(), 1);
+    assert!(!fixture.requests().iter().any(|request| request.path == "/"));
 }
 
 #[tokio::test]
