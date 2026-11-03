@@ -3967,6 +3967,7 @@ dependencies = [
  "jcode-message-types",
  "jcode-schema-dialect",
  "jcode-usage-types",
+ "libc",
  "rand 0.9.3",
  "reqwest 0.12.28",
  "serde",

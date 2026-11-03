@@ -53,6 +53,7 @@ impl Provider for OpenRouterProvider {
         system: &str,
         _resume_session_id: Option<&str>,
     ) -> Result<EventStream> {
+        jcode_provider_core::provider_monetary_budget::reject_unsupported()?;
         if self.profile_id.as_deref() == Some("muse-subscription") {
             jcode_base::auth::muse::ensure_enabled()?;
             let client = jcode_base::auth::muse::http_client()?;

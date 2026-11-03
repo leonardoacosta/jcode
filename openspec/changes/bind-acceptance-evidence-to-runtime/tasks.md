@@ -17,4 +17,16 @@
 
 ## Remaining acceptance
 
+## Immutable build execution, 2026-11-03
+
+- [x] Implement authorized opt-in local immutable source compilation without Git/worktree/shared-daemon mutations.
+- [x] Verify offline clean/edit/revert, source fingerprint, caller/config forgery, compiler-time mutation and unsafe input rejection.
+- [x] Preserve mutable-wrapper identity, changelog and job-sizing regressions.
+- [ ] Verify final-source actual Jcode immutable binary with isolated clean/edit/stale-daemon CLI acceptance.
+- [ ] Complete independent review and required full gates before any feature completion or archive.
+
+Test evidence: `python3 scripts/test_dev_cargo_cwd.py` passed 7 tests; `scripts/test_dev_cargo_jobs.sh` and `scripts/test_dev_cargo_changelog.sh` passed; `scripts/dev_cargo.sh test --offline -p jcode-build-meta` passed 4 tests. Logs under primary scratch: `immutable-wrapper-final.log`, `immutable-jobs.log`, `immutable-changelog.log`, `immutable-meta-tests.log`. Actual Jcode immutable builds passed before final attestation/PID hardening (`immutable-root-build.log`, `immutable-root-final.log`), so they do not establish final-byte acceptance. Final-source build and runtime evidence remain separate gates.
+
+## Historical mutable-path gap
+
 Real clean-build matching is not established. The dev wrapper now refreshes raw source fingerprints/dirty observations across same-HEAD edits without executing filters/fsmonitor, including hidden index flags. Its deterministic compiler-wrapper regression nevertheless proves an edit→compile→revert can produce a dirty executable while prebuild snapshot is clean. Therefore mutable snapshot provenance remains unverified; no fabricated `matched` result. Genuine clean attestation requires an immutable compiler-input build workflow or enforceable writer exclusion through compilation, a material workflow decision beyond the bounded wrapper change. Runtime capture separately rejects hidden assume-unchanged/skip-worktree cleanliness evidence (6 helper tests pass). No archive, merge, deployment or full feature completion is claimed. Final persistence of the safe partial implementation does not satisfy the missing requirement.

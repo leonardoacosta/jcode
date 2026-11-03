@@ -32,7 +32,10 @@ const RESOURCE_SAMPLE_INTERVAL: Duration = Duration::from_secs(5 * 60);
 const LONG_TURN_NOTICE_INTERVAL: Duration = Duration::from_secs(30 * 60);
 
 mod admission;
-pub use admission::{TaskAttemptClaim, restart_task_attempt, start_task_attempt};
+pub use admission::{
+    TaskAttemptClaim, restart_task_attempt, restart_task_attempt_with_provider, start_task_attempt,
+    start_task_attempt_with_provider, task_monetary_account,
+};
 
 #[derive(Debug, Clone)]
 pub struct OvernightLaunch {

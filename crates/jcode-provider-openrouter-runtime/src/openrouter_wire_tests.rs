@@ -753,3 +753,46 @@ async fn council_provider_budget_stops_actual_http_retries_and_later_completion(
     assert_eq!(calls.load(Ordering::SeqCst), 2);
     assert_eq!(budget.used().unwrap(), 2);
 }
+
+#[tokio::test]
+async fn monetary_budget_rejects_unsupported_provider_before_http() {
+    use futures::StreamExt;
+    use jcode_provider_core::provider_monetary_budget::{MonetaryBudget, scope};
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    let budget = MonetaryBudget::create(
+        directory.path().join("monetary"),
+        "original-task".into(),
+        100,
+    )
+    .unwrap();
+    let mut provider = crate::tests::make_provider();
+    provider.api_base = format!("http://{address}/v1");
+    provider.supports_provider_features = false;
+    provider.supports_model_catalog = false;
+    assert!(provider.monetary_capability().is_none());
+    let result = tokio::time::timeout(
+        Duration::from_secs(10),
+        scope(budget.clone(), async {
+            let mut stream = provider
+                .complete(&[Message::user("must not send")], &[], "", None)
+                .await?;
+            while let Some(event) = stream.next().await {
+                event?;
+            }
+            Ok(())
+        }),
+    )
+    .await
+    .expect("unsupported route must terminate before network");
+    assert!(format!("{:#}", result.unwrap_err()).contains("budget-unverifiable"));
+    assert!(
+        tokio::time::timeout(Duration::from_millis(100), listener.accept())
+            .await
+            .is_err(),
+        "no TCP connection may reach the HTTP fixture"
+    );
+    assert_eq!(budget.totals().unwrap().reserved_microusd, 0);
+}

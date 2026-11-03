@@ -1,5 +1,16 @@
 ## ADDED Requirements
 
+### Requirement: Build cleanliness is bound to immutable compiler inputs
+An authoritative clean build assertion SHALL require an enforced immutable source snapshot used by the compiler. Caller environment flags, mutable pre-build observations and compilation alone SHALL NOT establish that assertion.
+
+#### Scenario: Source changes during compilation
+- **WHEN** the original checkout changes while an immutable build runs
+- **THEN** the compiler SHALL read only the captured source bytes and attempts to mutate those captured bytes SHALL fail
+
+#### Scenario: Unsupported immutable execution
+- **WHEN** immutable source enforcement is unavailable or the source inputs cannot be captured safely
+- **THEN** the build SHALL refuse the verified path or report cleanliness as unknown without silently falling back to a verified mutable build
+
 ### Requirement: Evidence names the serving binary
 The system SHALL report source revision, client hash and serving server hash with a verdict of matched, mismatched or unknown.
 

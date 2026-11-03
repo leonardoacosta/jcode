@@ -14,12 +14,198 @@ pub(super) fn read_manifest_at(path: &Path) -> Result<OvernightManifest> {
 pub struct TaskAttemptClaim {
     _owner_lock: File,
     decision: crate::config::AdmissionDecision,
+    manifest_path: PathBuf,
+    scope: String,
+    policy: crate::config::TasksConfig,
+    monetary: Option<jcode_provider_core::provider_monetary_budget::MonetaryBudget>,
 }
 
 impl TaskAttemptClaim {
     pub fn dispatch_decision(&self) -> &crate::config::AdmissionDecision {
         &self.decision
     }
+
+    /// One bounded provider operation while holding the attempt ownership lock.
+    /// No arbitrary callback can turn a budget capability into filesystem authority.
+    pub async fn complete_with_provider(
+        self,
+        provider: &dyn Provider,
+        prompt: &str,
+        system: &str,
+    ) -> Result<String> {
+        let account = self
+            .monetary
+            .as_ref()
+            .context("Task has no authoritative monetary account")?;
+        anyhow::ensure!(
+            provider
+                .monetary_capability()
+                .is_some_and(|capability| capability.matches_budget(account)
+                    && capability.route() == provider.name()
+                    && capability.model() == provider.model()),
+            "Provider monetary capability does not match this task account"
+        );
+        let manifest = read_manifest_at(&self.manifest_path)?;
+        let policy = current_policy_ceiling(&self.policy)?;
+        let mut snapshot = manifest
+            .task_admission
+            .clone()
+            .context("Task authority missing")?;
+        anyhow::ensure!(
+            snapshot.scope == self.scope
+                && manifest.cancel_requested_at.is_none()
+                && matches!(manifest.status, OvernightRunStatus::Running),
+            "Task scope/cancellation changed before dispatch"
+        );
+        snapshot.live_attempt = None;
+        snapshot.runtime_seconds = snapshot.runtime_seconds.max(
+            Utc::now()
+                .signed_duration_since(manifest.started_at)
+                .num_seconds()
+                .max(0) as u64,
+        );
+        snapshot.workspace_ready &= manifest
+            .working_dir
+            .as_deref()
+            .is_some_and(|path| Path::new(path).is_dir());
+        anyhow::ensure!(
+            manifest.process_id == std::process::id(),
+            "Task attempt ownership changed"
+        );
+        snapshot.attempts = snapshot.attempts.saturating_sub(1); // current attempt already reserved
+        snapshot.spent_microusd = snapshot
+            .spent_microusd
+            .max(account.totals()?.reserved_microusd);
+        let decision = policy.admit(&snapshot);
+        anyhow::ensure!(
+            decision.state == crate::config::AdmissionState::Ready,
+            "Task revalidation denied: {}",
+            decision.reasons.join("; ")
+        );
+        let ceiling = snapshot
+            .authorization
+            .as_ref()
+            .context("Task authority missing")?
+            .max_spend_microusd
+            .min(policy.max_spend_microusd);
+        let bounded = account.clone().with_ceiling(ceiling)?;
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(decision.remaining_runtime_seconds),
+            jcode_provider_core::provider_monetary_budget::scope(
+                bounded,
+                provider.complete_simple(prompt, system),
+            ),
+        )
+        .await;
+        let mut current = read_manifest_at(&self.manifest_path)?;
+        let state = current
+            .task_admission
+            .as_mut()
+            .context("Task authority missing")?;
+        state.spent_microusd = state
+            .spent_microusd
+            .max(account.totals()?.reserved_microusd);
+        state.runtime_seconds = state.runtime_seconds.max(
+            Utc::now()
+                .signed_duration_since(current.started_at)
+                .num_seconds()
+                .max(0) as u64,
+        );
+        save_manifest_at(&self.manifest_path, &current)?;
+        result.context("Task runtime ceiling exhausted")?
+    }
+}
+
+/// Resolve the account only from persisted original task authority and current policy.
+pub fn task_monetary_account(
+    path: &Path,
+    policy: &crate::config::TasksConfig,
+    scope: &str,
+) -> Result<jcode_provider_core::provider_monetary_budget::MonetaryBudget> {
+    use jcode_provider_core::provider_monetary_budget::MonetaryBudget;
+    validate_runtime_manifest(path)?;
+    let current = current_policy_ceiling(policy)?;
+    let _transaction = lock(&path.with_extension("lock"))?;
+    let manifest = read_manifest_at(path)?;
+    let snapshot = manifest
+        .task_admission
+        .as_ref()
+        .context("Task authority missing")?;
+    anyhow::ensure!(
+        snapshot.scope == scope
+            && snapshot
+                .authorization
+                .as_ref()
+                .is_some_and(|authorization| authorization.scope == scope),
+        "Task scope is not authorized"
+    );
+    anyhow::ensure!(
+        current.unattended
+            && manifest.cancel_requested_at.is_none()
+            && matches!(manifest.status, OvernightRunStatus::Running),
+        "Task is disabled or cancelled"
+    );
+    let original = snapshot.authorization.as_ref().unwrap().max_spend_microusd;
+    let directory = path
+        .parent()
+        .context("Task manifest has no parent")?
+        .join("monetary");
+    let account = if directory.exists() {
+        MonetaryBudget::open(directory, &manifest.run_id, original)?
+    } else {
+        anyhow::ensure!(
+            snapshot.spent_microusd == 0,
+            "Cannot initialize a new monetary account over prior task spend"
+        );
+        anyhow::ensure!(
+            manifest.task_attempt.is_none(),
+            "Missing monetary account on restart"
+        );
+        MonetaryBudget::create(directory, manifest.run_id.clone(), original)?
+    };
+    anyhow::ensure!(
+        snapshot.spent_microusd <= account.totals()?.reserved_microusd,
+        "Persisted task spend exceeds authoritative monetary reservations"
+    );
+    account.with_ceiling(original.min(current.max_spend_microusd))
+}
+
+pub fn start_task_attempt_with_provider(
+    path: &Path,
+    policy: &crate::config::TasksConfig,
+    scope: &str,
+    provider: &dyn Provider,
+) -> Result<TaskAttemptClaim> {
+    bounded_task_attempt(path, policy, scope, provider, false)
+}
+
+pub fn restart_task_attempt_with_provider(
+    path: &Path,
+    policy: &crate::config::TasksConfig,
+    scope: &str,
+    provider: &dyn Provider,
+) -> Result<TaskAttemptClaim> {
+    bounded_task_attempt(path, policy, scope, provider, true)
+}
+
+fn bounded_task_attempt(
+    path: &Path,
+    policy: &crate::config::TasksConfig,
+    scope: &str,
+    provider: &dyn Provider,
+    restart: bool,
+) -> Result<TaskAttemptClaim> {
+    let account = task_monetary_account(path, policy, scope)?;
+    anyhow::ensure!(
+        provider
+            .monetary_capability()
+            .is_some_and(|capability| capability.matches_budget(&account)
+                && capability.route() == provider.name()
+                && capability.model() == provider.model()),
+        "Provider has no authoritative monetary capability for this task"
+    );
+    let current = current_policy_ceiling(policy)?;
+    claim_task_attempt_bounded(path, &current, scope, restart, Some(account))
 }
 
 fn lock(path: &Path) -> Result<File> {
@@ -196,6 +382,16 @@ fn claim_task_attempt(
     scope: &str,
     restart: bool,
 ) -> Result<TaskAttemptClaim> {
+    claim_task_attempt_bounded(path, policy, scope, restart, None)
+}
+
+fn claim_task_attempt_bounded(
+    path: &Path,
+    policy: &crate::config::TasksConfig,
+    scope: &str,
+    restart: bool,
+    monetary: Option<jcode_provider_core::provider_monetary_budget::MonetaryBudget>,
+) -> Result<TaskAttemptClaim> {
     policy.validate().map_err(anyhow::Error::msg)?;
     let metadata = std::fs::symlink_metadata(path).context("Task manifest must already exist")?;
     anyhow::ensure!(
@@ -267,6 +463,20 @@ fn claim_task_attempt(
         }
     }
     let mut observed = snapshot.clone();
+    if let Some(account) = &monetary {
+        let authorization = observed
+            .authorization
+            .as_ref()
+            .context("Task authority missing")?;
+        anyhow::ensure!(
+            account.task_id() == manifest.run_id
+                && account.original_limit_microusd() == authorization.max_spend_microusd,
+            "Monetary account differs from original task authority"
+        );
+        observed.spent_microusd = observed
+            .spent_microusd
+            .max(account.totals()?.reserved_microusd);
+    }
     observed.active_attempts = observed.active_attempts.max(active);
     observed.live_attempt = None; // OS ownership lock, not a PID, establishes no live attempt.
     observed.cancelled |= manifest.cancel_requested_at.is_some()
@@ -295,8 +505,10 @@ fn claim_task_attempt(
     snapshot.live_attempt = None;
     // Token usage and public price estimates do not reserve provider billing.
     // Persist a precise denial before touching sessions, providers or tool setup.
-    decision.state = crate::config::AdmissionState::Blocked;
-    decision.reasons = vec!["budget-unverifiable: provider lacks authoritative pre-send monetary bound; no provider/session effects dispatched".into()];
+    if monetary.is_none() {
+        decision.state = crate::config::AdmissionState::Blocked;
+        decision.reasons = vec!["budget-unverifiable: provider lacks authoritative pre-send monetary bound; no provider/session effects dispatched".into()];
+    }
     manifest.process_id = std::process::id();
     manifest.task_attempt = Some(jcode_overnight_core::OvernightTaskAttempt {
         generation: snapshot.attempts,
@@ -310,12 +522,144 @@ fn claim_task_attempt(
     Ok(TaskAttemptClaim {
         _owner_lock: owner_lock,
         decision,
+        manifest_path: path,
+        scope: scope.to_owned(),
+        policy: policy.clone(),
+        monetary,
     })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn task_admission_bounded_provider_dispatch_persists_nonrefundable_spend() {
+        use jcode_provider_core::provider_monetary_budget::OfflineBoundedProvider;
+        let _env = storage::lock_test_env();
+        let (temp, path, policy) = fixture();
+        let previous = std::env::var_os("JCODE_HOME");
+        crate::env::set_var("JCODE_HOME", temp.path());
+        std::fs::write(
+            temp.path().join("config.toml"),
+            "[tasks]\nunattended = true\n",
+        )
+        .unwrap();
+        let directory = temp.path().join("overnight/runs/atomic");
+        std::fs::create_dir_all(&directory).unwrap();
+        let trusted = directory.join("manifest.json");
+        std::fs::copy(path, &trusted).unwrap();
+        let result = async {
+            let account = task_monetary_account(&trusted, &policy, "bounded")?;
+            let provider = OfflineBoundedProvider::new(account.clone());
+            let claim = start_task_attempt_with_provider(&trusted, &policy, "bounded", &provider)?;
+            claim
+                .complete_with_provider(&provider, "synthetic request", "fixture")
+                .await?;
+            anyhow::ensure!(
+                account.totals()?.reserved_microusd == 1,
+                "actual send must reserve first"
+            );
+            let restarted =
+                restart_task_attempt_with_provider(&trusted, &policy, "bounded", &provider)?;
+            restarted
+                .complete_with_provider(&provider, "synthetic request", "fixture")
+                .await?;
+            anyhow::ensure!(
+                account.totals()?.reserved_microusd == 2,
+                "restart must not refund"
+            );
+            let claim =
+                restart_task_attempt_with_provider(&trusted, &policy, "bounded", &provider)?;
+            let mut cancelled = read_manifest_at(&trusted)?;
+            cancelled.cancel_requested_at = Some(Utc::now());
+            cancelled.status = OvernightRunStatus::CancelRequested;
+            save_manifest_at(&trusted, &cancelled)?;
+            anyhow::ensure!(
+                claim
+                    .complete_with_provider(&provider, "must not send", "fixture")
+                    .await
+                    .is_err(),
+                "cancellation must deny before provider effects"
+            );
+            anyhow::ensure!(
+                account.totals()?.reserved_microusd == 2,
+                "denied dispatch must not send or refund"
+            );
+            Ok::<_, anyhow::Error>(())
+        }
+        .await;
+        match previous {
+            Some(value) => crate::env::set_var("JCODE_HOME", value),
+            None => crate::env::remove_var("JCODE_HOME"),
+        }
+        result.unwrap();
+    }
+
+    #[test]
+    fn task_admission_monetary_account_never_resets_prior_spend() {
+        let _env = storage::lock_test_env();
+        let (temp, path, policy) = fixture();
+        let previous = std::env::var_os("JCODE_HOME");
+        crate::env::set_var("JCODE_HOME", temp.path());
+        std::fs::write(
+            temp.path().join("config.toml"),
+            "[tasks]\nunattended = true\n",
+        )
+        .unwrap();
+        let directory = temp.path().join("overnight/runs/atomic");
+        std::fs::create_dir_all(&directory).unwrap();
+        let trusted = directory.join("manifest.json");
+        let mut manifest = read_manifest_at(&path).unwrap();
+        manifest.task_admission.as_mut().unwrap().spent_microusd = 1;
+        storage::write_json(&trusted, &manifest).unwrap();
+        assert!(task_monetary_account(&trusted, &policy, "bounded").is_err());
+        assert!(!directory.join("monetary").exists());
+        manifest.task_admission.as_mut().unwrap().spent_microusd = 0;
+        storage::write_json(&trusted, &manifest).unwrap();
+        let account = task_monetary_account(&trusted, &policy, "bounded").unwrap();
+        manifest.task_admission.as_mut().unwrap().spent_microusd = 1;
+        storage::write_json(&trusted, &manifest).unwrap();
+        assert!(task_monetary_account(&trusted, &policy, "bounded").is_err());
+        assert_eq!(account.totals().unwrap().reserved_microusd, 0);
+        match previous {
+            Some(value) => crate::env::set_var("JCODE_HOME", value),
+            None => crate::env::remove_var("JCODE_HOME"),
+        }
+    }
+
+    #[tokio::test]
+    async fn task_admission_claim_retains_requested_runtime_ceiling() {
+        use jcode_provider_core::provider_monetary_budget::OfflineBoundedProvider;
+        let _env = storage::lock_test_env();
+        let (temp, path, mut policy) = fixture();
+        let previous = std::env::var_os("JCODE_HOME");
+        crate::env::set_var("JCODE_HOME", temp.path());
+        std::fs::write(
+            temp.path().join("config.toml"),
+            "[tasks]\nunattended = true\n",
+        )
+        .unwrap();
+        let directory = temp.path().join("overnight/runs/atomic");
+        std::fs::create_dir_all(&directory).unwrap();
+        let trusted = directory.join("manifest.json");
+        std::fs::copy(path, &trusted).unwrap();
+        policy.max_runtime_seconds = 1;
+        let account = task_monetary_account(&trusted, &policy, "bounded").unwrap();
+        let provider = OfflineBoundedProvider::new(account.clone());
+        let claim =
+            start_task_attempt_with_provider(&trusted, &policy, "bounded", &provider).unwrap();
+        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        let result = claim
+            .complete_with_provider(&provider, "must not send", "fixture")
+            .await;
+        match previous {
+            Some(value) => crate::env::set_var("JCODE_HOME", value),
+            None => crate::env::remove_var("JCODE_HOME"),
+        }
+        assert!(result.is_err());
+        assert_eq!(account.totals().unwrap().reserved_microusd, 0);
+    }
     use std::sync::{Arc, Barrier};
 
     fn start_task_attempt(

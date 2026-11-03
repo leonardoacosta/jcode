@@ -1,5 +1,20 @@
 ## ADDED Requirements
 
+### Requirement: Monetary dispatch requires authoritative pre-send reservations
+Task dispatch SHALL reserve a provider-enforced upper monetary bound before each chargeable send. Reservations SHALL be nonrefundable across crashes, cancellation, retries and restart, and all child work SHALL share the original task ceiling. Estimated prices, model text and configuration alone SHALL NOT create an authoritative capability.
+
+#### Scenario: Unsupported provider cannot send
+- **WHEN** a task selects a provider without an authoritative bounded monetary capability
+- **THEN** dispatch SHALL stop before inference transport or child provider effects
+
+#### Scenario: Concurrent bounded requests exhaust the original ceiling
+- **WHEN** bounded requests, retries or child work compete for the remaining task budget
+- **THEN** atomic reservations SHALL prevent their aggregate upper bound from exceeding the original authorization or a stricter current limit
+
+#### Scenario: Reservation state cannot be refunded by restart
+- **WHEN** an attempt restarts after cancellation, failure or an incomplete send
+- **THEN** it SHALL retain consumed reservations and SHALL fail closed on missing or corrupt accounting state
+
 ### Requirement: Typed task policy and provenance
 Jcode SHALL load typed task-admission policy through its existing global TOML configuration and expose the effective settings with their source. New unattended admission SHALL default to disabled and configuration support SHALL NOT itself grant task authorization.
 

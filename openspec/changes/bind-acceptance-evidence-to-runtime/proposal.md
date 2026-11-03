@@ -13,6 +13,7 @@ AGENTS.md documents that a fresh build is inert until `~/.jcode/builds/shared-se
 
 ## What Changes
 
+- User-authorized expansion (2026-11-03): add an opt-in local immutable compiler-input build path. Only an enforced read-only source snapshot may establish authoritative build cleanliness; mutable/default builds remain unverified. No shared-daemon restart, remote upload or automatic activation is included.
 - Extend `jcode version --json` with the resolved serving daemon path, server git hash and dirty flag when connected.
 - Add an evidence helper that captures source `HEAD`, worktree dirty state, client hash, serving server hash and a verdict.
 - `/version` shows source, client and server hashes on one row each and flags mismatch.

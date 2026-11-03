@@ -17,6 +17,30 @@ mod build_inputs;
 
 fn main() {
     let repo_root = repo_root();
+    // Immutable metadata overrides even Cargo [env] force=true assertions.
+    if let Ok(data) = fs::read_to_string("/jcode-immutable") {
+        let fields: std::collections::HashMap<_, _> = data
+            .lines()
+            .filter_map(|line| line.split_once('='))
+            .collect();
+        if let Some(fingerprint) = fields.get("fingerprint")
+            && build_inputs::immutable_source_verified(&repo_root, fingerprint)
+        {
+            for (key, name) in [
+                ("git_hash", "JCODE_BUILD_GIT_HASH"),
+                ("git_dirty", "JCODE_BUILD_GIT_DIRTY"),
+                ("git_date", "JCODE_BUILD_GIT_DATE"),
+                ("fingerprint", "JCODE_BUILD_SOURCE_FINGERPRINT"),
+            ] {
+                if let Some(value) = fields.get(key) {
+                    // This build script is single-threaded and has no workers.
+                    unsafe {
+                        std::env::set_var(name, value);
+                    }
+                }
+            }
+        }
+    }
 
     let pkg_version = root_package_version(&repo_root).unwrap_or_else(|| "0.0.0".to_string());
     let base_version = parse_semver(&pkg_version).unwrap_or((0, 0, 0));
@@ -68,10 +92,8 @@ fn main() {
             // cache its result across edits anyway. Provenance stays false.
             .unwrap_or(false),
     };
-    // The wrapper snapshot invalidates cached metadata, but the source checkout
-    // remains mutable during rustc. Even equal pre/post snapshots cannot exclude
-    // a transient source edit compiled and reverted between observations.
-    let cleanliness_verified = false;
+    let fingerprint = std::env::var("JCODE_BUILD_SOURCE_FINGERPRINT").unwrap_or_default();
+    let cleanliness_verified = build_inputs::immutable_source_verified(&repo_root, &fingerprint);
 
     // Get git tag (e.g., "v0.1.2" if HEAD is tagged, or "v0.1.2-3-gabc1234" if ahead)
     let git_tag = env_or_metadata_or_git(
@@ -133,6 +155,7 @@ fn main() {
     println!("cargo:rustc-env=JCODE_GIT_HASH={}", git_hash);
     println!("cargo:rustc-env=JCODE_GIT_DIRTY={}", dirty);
     println!("cargo:rustc-env=JCODE_CLEANLINESS_VERIFIED={cleanliness_verified}");
+    println!("cargo:rustc-env=JCODE_SOURCE_FINGERPRINT={fingerprint}");
     println!("cargo:rustc-env=JCODE_GIT_DATE={}", git_date);
     println!("cargo:rustc-env=JCODE_VERSION={}", version);
     println!("cargo:rustc-env=JCODE_SEMVER={}", build_semver);

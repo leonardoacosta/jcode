@@ -79,12 +79,185 @@ class CargoWorkingDirectoryTests(unittest.TestCase):
         self.assertIn("missing.toml", result.stderr)
 
 
+class ImmutableBuildTests(unittest.TestCase):
+    def test_immutable_compiler_inputs_and_honest_identity(self):
+        with tempfile.TemporaryDirectory(dir=os.environ.get("JCODE_SCRATCH_DIR")) as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+            for name in ["dev_cargo.sh", "remote_config.sh", "rustc-parallel-frontend", "immutable_build.py"]:
+                if (REPO / "scripts" / name).exists():
+                    shutil.copy2(REPO / "scripts" / name, root / "scripts" / name)
+            shutil.copytree(REPO / "crates/jcode-build-meta", root / "crates/jcode-build-meta")
+            (root / "src").mkdir()
+            source = root / "src/main.rs"
+            original = '''fn main() {
+    println!("{} {} {} {}", jcode_build_meta::GIT_HASH,
+        jcode_build_meta::git_dirty(), jcode_build_meta::cleanliness_verified(),
+        jcode_build_meta::SOURCE_FINGERPRINT);
+}
+'''
+            source.write_text(original)
+            (root / "Cargo.toml").write_text('''[package]
+name = "immutable_probe"
+version = "0.1.0"
+edition = "2024"
+[workspace]
+[dependencies]
+jcode-build-meta = { path = "crates/jcode-build-meta" }
+''')
+            (root / ".gitignore").write_text("target/\n.env\n")
+            (root / ".env").write_text("PRIVATE_FIXTURE_MUST_NOT_REACH_COMPILER\n")
+            env = {k: v for k, v in os.environ.items()
+                   if not k.startswith(("JCODE_BUILD_", "CARGO_", "RUST", "GIT_"))}
+            env.update(JCODE_RUST_ACTION_LOG="0", JCODE_REMOTE_CONFIG="/dev/null",
+                       JCODE_REMOTE_CARGO="0", JCODE_FAST_LINKER="system",
+                       JCODE_CARGO_GATE="off", JCODE_DEV_FEATURE_PROFILE="default",
+                       JCODE_PARALLEL_FRONTEND="0", SCCACHE_DISABLE="1")
+
+            def run(*args, ok=True):
+                result = subprocess.run(args, cwd=root, env=env, capture_output=True,
+                                        text=True, timeout=90)
+                if ok:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                else:
+                    self.assertNotEqual(result.returncode, 0, result.stderr)
+                return result
+
+            run("cargo", "generate-lockfile", "--offline")
+            run("git", "init", "-q")
+            run("git", "add", ".")
+            run("git", "commit", "-qm", "Immutable compiler input fixture")
+            head = run("git", "rev-parse", "--short", "HEAD").stdout.strip()
+            env.update(JCODE_IMMUTABLE_BUILD="1", JCODE_BUILD_GIT_HASH="deadbeef",
+                       JCODE_BUILD_SOURCE_VERIFIED="immutable", JCODE_BUILD_GIT_DIRTY="false")
+            binary = root / "target/debug/immutable_probe"
+
+            def build():
+                nonlocal binary
+                result = run(str(root / "scripts/dev_cargo.sh"), "build", "--offline", "--quiet")
+                target = result.stderr.split(" target=", 1)[1].splitlines()[0]
+                binary = Path(target) / "debug/immutable_probe"
+                return run(str(binary)).stdout.split()
+
+            clean = build()
+            self.assertEqual(clean[:3], [head, "false", "true"])
+            self.assertRegex(clean[3], r"^[a-f0-9]{64}$")
+            source.write_text(original.replace("fn main() {", 'fn main() { eprintln!("edited bytes");'))
+            edited = build()
+            self.assertEqual(edited[:3], [head, "true", "true"])
+            self.assertNotEqual(edited[3], clean[3])
+            self.assertIn("edited bytes", run(str(binary)).stderr)
+            source.write_text(original)
+            self.assertEqual(build(), clean)
+            # Execute attacks inside rustc's actual build process. chmod and
+            # rename must fail too, not merely a direct write to a 0444 file.
+            attack = root / "scripts/attack.py"
+            attack.write_text('''#!/usr/bin/python3
+import os, pathlib, subprocess, sys
+if "--crate-name" in sys.argv and "immutable_probe" in sys.argv:
+    source = pathlib.Path("/src/src/main.rs")
+    assert not pathlib.Path("/src/.env").exists()
+    assert "PRIVATE_IMMUTABLE_TEST" not in os.environ
+    for operation in [lambda: source.chmod(0o644),
+                      lambda: source.write_text('compile_error!("mutated");'),
+                      lambda: source.rename(source.with_suffix(".old"))]:
+        try:
+            operation()
+        except OSError:
+            pass
+        else:
+            raise AssertionError("compiler input mutation succeeded")
+    for process in pathlib.Path("/proc").glob("[0-9]*"):
+        alias = process / "root/src/src/main.rs"
+        try:
+            alias.chmod(0o644)
+            alias.write_text('compile_error!("ancestor alias mutation");')
+        except OSError:
+            pass
+        else:
+            raise AssertionError("ancestor proc source alias writable")
+    assert subprocess.run(["unshare", "-Ur", "true"], stderr=subprocess.DEVNULL).returncode != 0
+    assert subprocess.run(["mount", "-o", "remount,rw", "/src"], stderr=subprocess.DEVNULL).returncode != 0
+    print("IMMUTABLE_ATTACKS_BLOCKED", file=sys.stderr)
+sys.exit(subprocess.run(sys.argv[1:]).returncode)
+''')
+            attack.chmod(0o755)
+            (root / ".cargo").mkdir()
+            (root / ".cargo/config.toml").write_text(
+                '[build]\nrustc-wrapper = "scripts/attack.py"\n[env]\n'
+                'JCODE_BUILD_GIT_DIRTY = { value = "false", force = true }\n'
+                'JCODE_BUILD_GIT_HASH = { value = "deadbeef", force = true }\n')
+            # Wrapper respects explicitly selected project config here.
+            env["RUSTC_WRAPPER"] = str(attack)
+            env["PRIVATE_IMMUTABLE_TEST"] = "not exported"
+            result = run(str(root / "scripts/dev_cargo.sh"), "build", "--offline", "--quiet")
+            target = result.stderr.split(" target=", 1)[1].splitlines()[0]
+            binary = Path(target) / "debug/immutable_probe"
+            self.assertIn("IMMUTABLE_ATTACKS_BLOCKED", result.stderr)
+            self.assertEqual(run(str(binary)).stdout.split()[:3], [head, "true", "true"])
+            self.assertEqual(source.read_text(), original)
+            # A host edit starts only once rustc's real wrapper is running.
+            # The compiler must still consume the sealed, pre-edit bytes.
+            attack.write_text(attack.read_text().replace(
+                '    print("IMMUTABLE_ATTACKS_BLOCKED", file=sys.stderr)',
+                '''    import time
+    print("COMPILER_READY_FOR_HOST_EDIT", file=sys.stderr, flush=True)
+    deadline = time.monotonic() + 10
+    while not pathlib.Path("/target/compiler-go").exists():
+        assert time.monotonic() < deadline
+        time.sleep(0.01)
+    print("IMMUTABLE_ATTACKS_BLOCKED", file=sys.stderr)'''))
+            process = subprocess.Popen([str(root / "scripts/dev_cargo.sh"), "build", "--offline", "--quiet"],
+                                       cwd=root, env=env, stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE, text=True)
+            output = []
+            try:
+                for line in process.stderr:
+                    output.append(line)
+                    if " target=" in line:
+                        compiling_target = Path(line.split(" target=", 1)[1].strip())
+                    if "COMPILER_READY_FOR_HOST_EDIT" in line:
+                        source.write_text('compile_error!("host edit during rustc");\n')
+                        (compiling_target / "compiler-go").write_text("continue")
+                self.assertEqual(process.wait(timeout=30), 0, "".join(output))
+                self.assertNotEqual(source.read_text(), original)
+                binary = compiling_target / "debug/immutable_probe"
+                self.assertEqual(run(str(binary)).stdout.split()[:3], [head, "true", "true"])
+            finally:
+                source.write_text(original)
+                if process.poll() is None:
+                    process.kill()
+                process.communicate(timeout=10)
+            # Raw Cargo + caller provenance cannot forge immutable acceptance.
+            env.pop("RUSTC_WRAPPER")
+            env.pop("PRIVATE_IMMUTABLE_TEST")
+            (root / ".cargo/config.toml").unlink()
+            env.pop("JCODE_IMMUTABLE_BUILD")
+            run("cargo", "build", "--offline", "--quiet")
+            binary = root / "target/debug/immutable_probe"
+            self.assertEqual(run(str(binary)).stdout.split()[2], "false")
+            env["JCODE_IMMUTABLE_BUILD"] = "1"
+            link = root / "src/link.rs"
+            link.symlink_to("/dev/random")
+            result = run(str(root / "scripts/dev_cargo.sh"), "build", "--offline", ok=False)
+            self.assertIn("immutable", result.stderr.lower())
+            link.unlink()
+            # External dependency cannot enter via the writable output mount.
+            external = root / "target/external"
+            (external / "src").mkdir(parents=True)
+            (external / "Cargo.toml").write_text('[package]\nname="external"\nversion="0.1.0"\nedition="2024"\n')
+            (external / "src/lib.rs").write_text("")
+            with (root / "Cargo.toml").open("a") as manifest:
+                manifest.write('external = { path = "/target/external" }\n')
+            result = run(str(root / "scripts/dev_cargo.sh"), "build", "--offline", ok=False)
+            self.assertIn("external", result.stderr.lower())
+
 class BuildSourceIdentityTests(unittest.TestCase):
     def test_same_head_edit_and_revert_never_reuse_clean_identity(self):
         with tempfile.TemporaryDirectory(dir=os.environ.get("JCODE_SCRATCH_DIR")) as tmp:
             root = Path(tmp)
             (root / "scripts").mkdir()
-            for name in ["dev_cargo.sh", "remote_config.sh", "rustc-parallel-frontend"]:
+            for name in ["dev_cargo.sh", "remote_config.sh", "rustc-parallel-frontend", "immutable_build.py"]:
                 shutil.copy2(REPO / "scripts" / name, root / "scripts" / name)
             shutil.copytree(REPO / "crates/jcode-build-meta", root / "crates/jcode-build-meta")
             (root / "src").mkdir()
