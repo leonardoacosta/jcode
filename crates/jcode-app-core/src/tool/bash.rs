@@ -814,6 +814,8 @@ impl BashTool {
 struct BashInput {
     command: String,
     #[serde(default)]
+    required_check_id: Option<String>,
+    #[serde(default)]
     intent: Option<String>,
     #[serde(default)]
     timeout: Option<u64>,
@@ -874,6 +876,12 @@ impl Tool for BashTool {
 
     async fn execute(&self, input: Value, ctx: ToolContext) -> Result<ToolOutput> {
         let mut params: BashInput = serde_json::from_value(input)?;
+        if let Some(id) = &params.required_check_id {
+            anyhow::ensure!(
+                jcode_task_types::RequiredCheckOutcome::valid_id(id),
+                "required_check_id must be 1-64 ASCII letters, digits, or _.:-"
+            );
+        }
         let run_in_background = params.run_in_background.unwrap_or(false);
 
         // Destructive-command gate (#604), before background dispatch.
@@ -1155,7 +1163,9 @@ impl BashTool {
                     output.push_str(&stderr);
                 }
                 let output = format_command_output(output, status.code());
-                Ok(ToolOutput::new(output).with_title(title_for_work))
+                Ok(ToolOutput::new(output).with_title(title_for_work).with_metadata(json!({
+                    "process": {"foreground": true, "completed": true, "exit_code": status.code()}
+                })))
             });
 
         match tokio::time::timeout(timeout_duration, &mut work_handle).await {
@@ -1272,7 +1282,7 @@ impl BashTool {
                             .intent
                             .clone()
                             .unwrap_or_else(|| params.command.clone()),
-                    ),
+                    ).with_metadata(json!({"process": {"foreground": true, "completed": true, "exit_code": status.code()}})),
                 );
             }
 

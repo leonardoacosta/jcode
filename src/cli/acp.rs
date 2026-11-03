@@ -1517,6 +1517,7 @@ impl EventMapper {
                 name,
                 output,
                 error,
+                ..
             } => vec![json!({
                 "sessionUpdate": "tool_call_update",
                 "toolCallId": id,
@@ -2044,6 +2045,8 @@ mod tests {
         assert_eq!(input[0]["rawInput"]["command"], "true");
 
         let done = mapper.map_event(ServerEvent::ToolDone {
+            required_checks: None,
+            required_check: None,
             id: "tool1".to_string(),
             name: "bash".to_string(),
             output: "ok".to_string(),
@@ -2051,6 +2054,28 @@ mod tests {
         });
         assert_eq!(done[0]["status"], "completed");
         assert_eq!(done[0]["content"][0]["content"]["text"], "ok");
+    }
+
+    #[test]
+    fn event_mapper_tool_done_ignores_required_check_identity() {
+        let mut mapper = EventMapper::new("session".into(), AcpProfile::Standard);
+        let event: ServerEvent = serde_json::from_value(json!({
+            "type":"tool_done", "id":"call", "name":"bash", "output":"done",
+            "required_check":{"required_check_id":"SECRET_TOKEN", "foreground":true,
+                "completed":true, "exit_code":7, "tool_error":false}
+        }))
+        .unwrap();
+        let updates = mapper.map_event(event);
+        assert_eq!(
+            updates[0]["rawOutput"],
+            json!({"output":"done", "error":null})
+        );
+        assert!(
+            !serde_json::to_string(&updates)
+                .unwrap()
+                .contains("SECRET_TOKEN")
+        );
+        assert!(updates[0].get("required_check").is_none());
     }
 
     #[test]

@@ -519,28 +519,12 @@ select_build_jobs() {
   fi
 }
 
-# Keep `jcode-build-meta`'s embedded git metadata in lockstep with HEAD without
-# making it watch `.git` mtimes.
-#
-# `jcode-build-meta/build.rs` deliberately does NOT declare `.git/HEAD`/`.git/index`
-# as `rerun-if-changed` inputs, because their mtimes change on every `git add`,
-# `git status`, commit, and concurrent-agent git op -- which would force a
-# full-tree recompile (base -> app-core -> tui -> cli) on every incremental
-# build. The trade-off was that after a commit the binary kept embedding the
-# previous short hash, so the self-dev publish guard rejected it with
-# "binary was built from git hash X, but source state is Y" until someone
-# manually touched Cargo.toml.
-#
-# Instead, export the *value* of the current git hash/date. build.rs declares
-# `cargo:rerun-if-env-changed=JCODE_BUILD_GIT_HASH` (and _DATE), so cargo reruns
-# the build script ONLY when these values change -- i.e. exactly when HEAD moves
-# -- and never on a bare `git add`/`status` or repeated builds on the same
-# commit. This keeps the embedded hash correct after every commit while keeping
-# same-commit incremental builds fully incremental. We intentionally do NOT
-# export JCODE_BUILD_GIT_DIRTY here: the dirty flag flips on every edit and would
-# reintroduce per-build churn; the publish guard validates dirty builds via the
-# source fingerprint / mtime path instead of the embedded flag.
+# A content snapshot, not Git/index mtimes, invalidates build metadata even at
+# the same HEAD. Read raw source bytes: Git filters, external diff, fsmonitor,
+# assume-unchanged and skip-worktree must not hide edits from this identity.
 export_git_build_metadata() {
+  # Never accept an inherited caller assertion as cleanliness provenance.
+  unset JCODE_BUILD_SOURCE_FINGERPRINT JCODE_BUILD_SOURCE_VERIFIED
   # Hosted source snapshots do not include .git. Forward the history alongside
   # the identity metadata so /changelog is populated in hosted self-dev builds.
   # Preserve explicit caller overrides, including an intentionally empty one.
@@ -559,12 +543,107 @@ export_git_build_metadata() {
     git_meta_status="git-not-found"
     return
   fi
-  local hash date
-  hash="$(git -C "$repo_root" rev-parse --short HEAD 2>/dev/null || true)"
-  if [[ -z "$hash" ]]; then
-    git_meta_status="no-head"
+  local hash date snapshot dirty fingerprint
+  # Match source-snapshot credential exclusions. No ignored-file traversal and
+  # no symlink following, including intermediate path components. Fail closed.
+  snapshot="$(python3 - "$repo_root" 2>/dev/null <<'PY_SOURCE'
+import hashlib
+import os
+import stat
+import subprocess
+import sys
+
+root = sys.argv[1]
+env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+env["GIT_OPTIONAL_LOCKS"] = "0"
+
+def git(*args):
+    return subprocess.check_output(
+        ["git", "-c", "core.fsmonitor=false", "-c", "core.untrackedCache=false", *args],
+        cwd=root, env=env, stderr=subprocess.DEVNULL, timeout=30)
+
+def credential(path):
+    parts = os.fsdecode(path).lower().split("/")
+    if any(a == ".cargo" and b in ("credentials", "credentials.toml") or
+           a == ".docker" and b == "config.json" for a, b in zip(parts, parts[1:])):
+        return True
+    return any(p in (".aws", ".ssh", ".gnupg", ".env", ".npmrc", ".pypirc", ".netrc",
+                     "credentials.json", ".git-credentials", "id_rsa", "id_ed25519")
+               or p.startswith(".env.") or p.endswith((".pem", ".key", ".p12", ".pfx"))
+               for p in parts)
+
+head = git("rev-parse", "HEAD").strip()
+hash_name = "sha1" if len(head) == 40 else "sha256"
+committed = {}
+for entry in git("ls-tree", "-rz", head.decode()).split(b"\0"):
+    if entry:
+        meta, path = entry.split(b"\t", 1)
+        mode, kind, oid = meta.split()
+        committed[path] = (mode, oid)
+paths = set(git("ls-files", "-z", "--cached", "--others", "--exclude-standard").split(b"\0"))
+paths.discard(b"")
+tracked = set(git("ls-files", "-z", "--cached").split(b"\0")) | committed.keys()
+digest = hashlib.sha256(head + b"\0")
+dirty = False
+root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+for path in sorted(paths | committed.keys()):
+    digest.update(path + b"\0")
+    if credential(path):
+        # Never read credentials. A tracked credential could be an arbitrary
+        # build input, so this source state cannot prove cleanliness.
+        if path in tracked:
+            raise ValueError("tracked private input")
+        dirty = True
+        digest.update(b"excluded\0")
+        continue
+    if path not in tracked and any(p.lower() in (b"target", b"node_modules", b"dist", b".git", b".jcode")
+                                     for p in path.split(b"/")):
+        dirty = True
+        digest.update(b"excluded\0")
+        continue
+    parts = path.split(b"/")
+    if any(p in (b"", b".", b"..") for p in parts):
+        raise ValueError("invalid source path")
+    parent = os.dup(root_fd)
+    try:
+        for part in parts[:-1]:
+            next_fd = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+            os.close(parent)
+            parent = next_fd
+        fd = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+        with os.fdopen(fd, "rb") as source:
+            info = os.fstat(source.fileno())
+            if not stat.S_ISREG(info.st_mode):
+                raise ValueError("unsupported source file")
+            blob = hashlib.new(hash_name, b"blob " + str(info.st_size).encode() + b"\0")
+            for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                blob.update(chunk)
+            after = os.fstat(source.fileno())
+            if (info.st_size, info.st_mtime_ns, info.st_ctime_ns) != (
+                    after.st_size, after.st_mtime_ns, after.st_ctime_ns):
+                raise ValueError("source changed during snapshot")
+            mode = b"100755" if info.st_mode & 0o111 else b"100644"
+            current = (mode, blob.hexdigest().encode())
+    except FileNotFoundError:
+        current = (b"missing", b"")
+    finally:
+        os.close(parent)
+    dirty |= committed.get(path) != current
+    digest.update(current[0] + b"\0" + current[1] + b"\0")
+os.close(root_fd)
+if git("rev-parse", "HEAD").strip() != head:
+    raise ValueError("HEAD changed during snapshot")
+print(git("rev-parse", "--short", head.decode()).decode().strip(), str(dirty).lower(), digest.hexdigest())
+PY_SOURCE
+  )" || snapshot=""
+  if [[ -z "$snapshot" ]]; then
+    git_meta_status="source-unverified"
     return
   fi
+  read -r hash dirty fingerprint <<< "$snapshot"
+  export JCODE_BUILD_GIT_DIRTY="$dirty"
+  export JCODE_BUILD_SOURCE_FINGERPRINT="$fingerprint"
+  export JCODE_BUILD_SOURCE_VERIFIED="raw-git-v1"
   export JCODE_BUILD_GIT_HASH="$hash"
   date="$(git -C "$repo_root" log -1 --format=%ci 2>/dev/null || true)"
   if [[ -n "$date" ]]; then
@@ -1057,7 +1136,6 @@ acquire_cargo_gate() {
 
 validate_feature_profile
 configure_build_tmpdir
-export_git_build_metadata
 maybe_configure_low_memory_selfdev "$@"
 maybe_enable_sccache "$@"
 configure_parallel_frontend "$@"
@@ -1067,6 +1145,7 @@ if [[ "$(uname -s)" == "Linux" ]] && [[ "$(uname -m)" == "x86_64" ]]; then
 fi
 
 if [[ "${1:-}" == "--print-setup" ]]; then
+  export_git_build_metadata
   select_build_jobs
   print_setup
   exit 0
@@ -1080,6 +1159,7 @@ done < <(build_cargo_argv "$@")
 start_rust_action_log
 
 if [[ "${JCODE_REMOTE_CARGO:-0}" == "1" ]]; then
+  export_git_build_metadata
   if remote_cargo_preflight; then
     log "using remote cargo via scripts/remote_build.sh"
     rust_action_log_execution="remote"
@@ -1095,6 +1175,7 @@ if [[ "${JCODE_REMOTE_CARGO:-0}" == "1" ]]; then
 fi
 
 acquire_cargo_gate
+export_git_build_metadata
 # Size the in-process parallelism only after competing jcode Cargo processes
 # have drained. Measuring before the wait would preserve an unnecessarily low
 # one-job decision even after memory becomes available.

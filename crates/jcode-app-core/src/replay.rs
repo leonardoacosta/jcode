@@ -485,6 +485,8 @@ pub fn timeline_to_replay_events(timeline: &[TimelineEvent]) -> Vec<(u64, Replay
                 out.push((
                     delay,
                     ReplayEvent::Server(ServerEvent::ToolDone {
+                        required_checks: None,
+                        required_check: None,
                         id,
                         name: name.clone(),
                         output: output.clone(),

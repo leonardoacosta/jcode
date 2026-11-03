@@ -7,7 +7,7 @@
 ## 2. Verification
 - [x] 2.1 Unit tests: descriptions, legacy-peer unknown, collision precedence, control text, widths 0/1/20/40/80
 - [x] 2.2 `CARGO_TARGET_DIR=/home/nyaptor/.jcode/target scripts/dev_cargo.sh test -p jcode-tui skill_startup --lib` and separate `CARGO_TARGET_DIR=/home/nyaptor/.jcode/target scripts/dev_cargo.sh test -p jcode-tui ssh_remote --lib`
-- [ ] 2.3 Visual check with `debug_socket` tester frames, local and remote
+- [x] 2.3 Visual check with isolated debug tester frames and real PTY output, local and remote
 - [x] 2.4 `openspec validate add-typed-skill-selector-metadata --strict`
 
 ## Evidence and handoff
@@ -26,9 +26,9 @@ Fresh checks on 2026-11-03, from the shared authorized worktree:
 
 `git diff --check` passed. Strict OpenSpec validation passed after adding design.
 No shared daemon/debug, provider, Git, worktree, or archive mutations performed.
-Task 2.3 remains open for coordinator's isolated rebuilt-binary frames. Independent
-review and workflow finalization are also coordinator-owned, not established by
-these worker test results.
+Task 2.3 was open at this checkpoint and is satisfied by the real isolated PTY
+acceptance below. Independent review and workflow finalization remain
+coordinator-owned, not established by these worker test results.
 
 ### Final review and full-suite regression repairs
 
@@ -52,4 +52,40 @@ Final focused checks after these source repairs, 2026-11-03 03:48 UTC:
 - `git diff --check` and strict OpenSpec validation: passed.
 
 These commands used the same `CARGO_TARGET_DIR` and `scripts/dev_cargo.sh` prefix
-above. Visual acceptance remains open. Final independent re-review is coordinator-owned.
+above. Visual acceptance was still open at this checkpoint and is recorded below.
+Final independent re-review is coordinator-owned.
+
+### Actual local and remote PTY visual acceptance
+
+On 2026-11-03 at 04:05 UTC, scratch-only harness
+`/home/nyaptor/.jcode/scratch/selector-visual-harness.py` launched a rebuilt binary
+against its own daemon, socket, data/config/runtime directories, and two real
+80×30 PTY debug testers. Local mode used ordinary same-host skill discovery.
+Remote mode set `JCODE_SSH_REMOTE=selector-fixture` and an explicit isolated
+`--remote-working-dir`, exercising server-authoritative skill descriptions.
+This checks remote-mode protocol/rendering, not a real SSH network transport.
+
+Binary: `/home/nyaptor/.jcode/target/selfdev/jcode`.
+SHA-256: `48bc410e0d1dd87cd8a313ce99022980c4b02f5df584f5010d3ca45bfe364db4`.
+
+Artifact root: `/home/nyaptor/.jcode/scratch/selector-visual-lgcsfkgl/`.
+For each `local` and `remote` mode:
+- `*-frame.json`: current `input_preview: "/audit"`, `input_len: 6`,
+  `has_suggestions: true`, terminal size `[80,30]`.
+- `*-pty.bin`: actual tester terminal stdout captured before process stop.
+- `*-screen.txt`: cursor-position-aware reconstruction of that terminal output.
+- `*-state.json`: `messages: 0`, `processing: false`, `input: "/audit"`.
+- `acceptance.json`: both reconstructed screens contain exactly one row 20:
+  `skill /audit-fixture  Audit fixture checks selectors`.
+
+The harness used `client:frame` through the isolated daemon debug socket to force
+a current draw after setting input. The tester-file `frame` route alone only
+reads a prior capture and does not force an idle redraw. Local frame ID 0 is valid
+because its input witness is `/audit`, not the prior empty input. Remote frame ID
+is 1. No prompt was submitted and no provider inference was requested. Testers were
+stopped (`testers.json` is `[]`) and only the owned daemon process group was stopped.
+
+Reconstruction command:
+`python3 /home/nyaptor/.jcode/scratch/selector-visual-reconstruct.py`.
+Fresh final-binary replay remains part of coordinator integration if the binary
+changes after this evidence. Source files were unchanged for this acceptance.

@@ -311,8 +311,17 @@ impl Tool for BatchTool {
         let mut success_count = 0;
         let mut error_count = 0;
         let mut failed_tools = Vec::new();
+        let mut required_checks = jcode_task_types::RequiredCheckBatch::default();
 
         for (i, tool_name, result) in results {
+            if let Some(outcome) = super::required_check_outcome(
+                &tool_name,
+                &subcalls[i].2,
+                result.as_ref().ok(),
+                result.is_err(),
+            ) {
+                required_checks.push(outcome);
+            }
             output.push_str(&format!("--- [{}] {} ---\n", i + 1, tool_name));
             match result {
                 Ok(out) => {
@@ -356,6 +365,9 @@ impl Tool for BatchTool {
 
         let mut result = ToolOutput::new(output);
         result.images = images;
+        if !required_checks.outcomes.is_empty() || required_checks.truncated {
+            result.metadata = Some(json!({"required_checks": required_checks}));
+        }
         Ok(result)
     }
 }

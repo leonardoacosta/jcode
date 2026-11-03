@@ -267,6 +267,8 @@ fn test_handle_server_event_remote_observe_tracks_tool_exec_and_done() {
 
     app.handle_server_event(
         crate::protocol::ServerEvent::ToolDone {
+            required_checks: None,
+            required_check: None,
             id: "tool_read".to_string(),
             name: "read".to_string(),
             output: "1 fn main() {}".to_string(),
@@ -485,6 +487,8 @@ fn test_handle_remote_event_redraws_observe_tool_done_immediately() {
             &mut remote,
             &mut state,
             crate::tui::backend::RemoteRead::Event(crate::protocol::ServerEvent::ToolDone {
+                required_checks: None,
+                required_check: None,
                 id: "tool_read".to_string(),
                 name: "read".to_string(),
                 output: "1 fn main() {}".to_string(),
@@ -774,10 +778,11 @@ fn test_handle_server_event_notification_background_task_scope_uses_failed_row()
     let text = render_and_snap(&app, &mut terminal);
 
     assert_eq!(app.display_messages().len(), 1);
-    assert!(!app
-        .display_messages()
-        .iter()
-        .any(|message| message.role == "background_task"));
+    assert!(
+        !app.display_messages()
+            .iter()
+            .any(|message| message.role == "background_task")
+    );
     assert_eq!(
         app.background_task_rows_ref()[0].status,
         crate::tui::BackgroundTaskRowStatus::Failed

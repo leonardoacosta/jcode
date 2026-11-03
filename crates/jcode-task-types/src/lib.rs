@@ -903,3 +903,178 @@ mod semantic_state_tests {
         assert_eq!(field, TodoGoalField::DeliveryState);
     }
 }
+
+/// Explicit check binding and observed process state, never inferred from output text.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct RequiredCheckOutcome {
+    pub required_check_id: String,
+    pub foreground: bool,
+    pub completed: bool,
+    pub exit_code: Option<i32>,
+    pub tool_error: bool,
+}
+
+impl RequiredCheckOutcome {
+    pub fn valid_id(id: &str) -> bool {
+        !id.is_empty()
+            && id.len() <= 64
+            && id
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b"_.:-".contains(&b))
+    }
+
+    pub fn from_process(
+        id: &str,
+        metadata: Option<&serde_json::Value>,
+        tool_error: bool,
+    ) -> Option<Self> {
+        if !Self::valid_id(id) {
+            return None;
+        }
+        let process = metadata.and_then(|m| m.get("process"));
+        let foreground = process
+            .and_then(|p| p.get("foreground"))
+            .and_then(|v| v.as_bool())
+            == Some(true);
+        let completed = process
+            .and_then(|p| p.get("completed"))
+            .and_then(|v| v.as_bool())
+            == Some(true);
+        if !tool_error && !(foreground && completed) {
+            return None;
+        }
+        let exit_code = process
+            .and_then(|p| p.get("exit_code"))
+            .and_then(|v| v.as_i64())
+            .and_then(|v| i32::try_from(v).ok());
+        Some(Self {
+            required_check_id: id.into(),
+            foreground,
+            completed,
+            exit_code,
+            tool_error,
+        })
+    }
+
+    pub fn passed(&self) -> bool {
+        !self.tool_error && self.foreground && self.completed && self.exit_code == Some(0)
+    }
+}
+
+#[cfg(test)]
+mod required_check_tests {
+    use super::*;
+
+    #[test]
+    fn required_check_outcome_requires_real_foreground_exit() {
+        let id = "check";
+        for (metadata, error, expected) in [
+            (
+                serde_json::json!({"process": {"foreground": true, "completed": true, "exit_code": 0}}),
+                false,
+                Some(true),
+            ),
+            (
+                serde_json::json!({"process": {"foreground": true, "completed": true, "exit_code": 9}}),
+                false,
+                Some(false),
+            ),
+            (
+                serde_json::json!({"process": {"foreground": true, "completed": true, "exit_code": null}}),
+                false,
+                Some(false),
+            ),
+            (serde_json::json!({"background": true}), false, None),
+            (
+                serde_json::json!({"process": {"foreground": false, "completed": false, "exit_code": 0}}),
+                false,
+                None,
+            ),
+            (
+                serde_json::json!({"process": {"foreground": true, "completed": true, "exit_code": 0}}),
+                true,
+                Some(false),
+            ),
+            (serde_json::Value::Null, false, None),
+            (serde_json::Value::Null, true, Some(false)),
+        ] {
+            let outcome = RequiredCheckOutcome::from_process(id, Some(&metadata), error);
+            assert_eq!(outcome.map(|o| o.passed()), expected);
+        }
+        assert!(RequiredCheckOutcome::from_process("", None, true).is_none());
+        assert!(RequiredCheckOutcome::from_process("private\nname", None, true).is_none());
+        assert!(RequiredCheckOutcome::from_process(&"x".repeat(65), None, true).is_none());
+    }
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct RequiredCheckBatch {
+    pub outcomes: Vec<RequiredCheckOutcome>,
+    #[serde(default)]
+    pub truncated: bool,
+}
+
+impl RequiredCheckBatch {
+    pub fn push(&mut self, outcome: RequiredCheckOutcome) {
+        if !RequiredCheckOutcome::valid_id(&outcome.required_check_id) {
+            self.truncated = true;
+            return;
+        }
+        if let Some(prior) = self
+            .outcomes
+            .iter_mut()
+            .find(|prior| prior.required_check_id == outcome.required_check_id)
+        {
+            if prior.passed() || !prior.completed && !prior.tool_error {
+                *prior = outcome;
+            }
+        } else if self.outcomes.len() < 8 {
+            self.outcomes.push(outcome);
+        } else {
+            self.truncated = true;
+        }
+    }
+
+    pub fn bounded(self) -> Self {
+        let mut result = Self {
+            truncated: self.truncated,
+            ..Default::default()
+        };
+        for outcome in self.outcomes {
+            result.push(outcome);
+        }
+        result
+    }
+}
+
+#[cfg(test)]
+mod required_check_batch_tests {
+    use super::*;
+    #[test]
+    fn required_check_batch_caps_deduplicates_and_preserves_failure() {
+        let mut batch = RequiredCheckBatch::default();
+        for code in [7, 0] {
+            batch.push(RequiredCheckOutcome {
+                required_check_id: "same".into(),
+                foreground: true,
+                completed: true,
+                exit_code: Some(code),
+                tool_error: false,
+            });
+        }
+        assert_eq!(batch.outcomes.len(), 1);
+        assert!(!batch.outcomes[0].passed());
+        for n in 0..20 {
+            batch.outcomes.push(RequiredCheckOutcome {
+                required_check_id: format!("id{n}"),
+                foreground: true,
+                completed: true,
+                exit_code: Some(0),
+                tool_error: false,
+            });
+        }
+        let received = batch.bounded();
+        assert_eq!(received.outcomes.len(), 8);
+        assert!(received.truncated);
+    }
+}

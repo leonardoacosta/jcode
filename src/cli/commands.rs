@@ -3426,6 +3426,7 @@ fn emit_ndjson_event(
             name,
             output,
             error,
+            ..
         } => write_json_line(
             stdout,
             &serde_json::json!({

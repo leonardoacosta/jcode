@@ -64,6 +64,12 @@ pub(super) fn bash_parameters_schema() -> serde_json::Value {
                 "type": "string",
                 "description": cmd_desc
             },
+            "required_check_id": {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Za-z0-9_.:-]+$",
+                "description": "Optional explicit required-check identifier for process evidence. Does not grant execution permission. Foreground exit status only, never output text."
+            },
             "timeout": {
                 "type": "integer",
                 "description": "Timeout in MILLISECONDS (not seconds), e.g. 600000 = 10min; kills with exit 124. Omit for no timeout."

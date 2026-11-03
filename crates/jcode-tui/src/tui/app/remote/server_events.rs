@@ -606,6 +606,7 @@ pub(in crate::tui::app) fn handle_server_event(
                 | ServerEvent::StatusDetail { .. }
         );
     if externally_started_turn_event {
+        app.clear_required_checks_for_turn();
         crate::logging::info(
             "Adopting externally started turn: stream event received while idle with no current_message_id",
         );
@@ -787,11 +788,22 @@ pub(in crate::tui::app) fn handle_server_event(
                     == Some(app_mod::observe::OBSERVE_PAGE_ID)
         }
         ServerEvent::ToolDone {
+            required_checks,
+            required_check,
             id,
             name,
             output,
             error,
-        } => super::server_event_handlers::handle_tool_done(app, remote, id, name, output, error),
+        } => super::server_event_handlers::handle_tool_done(
+            app,
+            remote,
+            id,
+            name,
+            output,
+            error,
+            required_check,
+            required_checks,
+        ),
         ServerEvent::GeneratedImage {
             id,
             path,
@@ -2012,6 +2024,7 @@ pub(in crate::tui::app) fn handle_server_event(
 
             if session_changed {
                 if !preserve_startup_send {
+                    app.clear_required_checks_for_turn();
                     app.rate_limit_pending_message = None;
                 }
                 app.rate_limit_reset = None;

@@ -63,11 +63,15 @@ fn main() {
                     "1" | "true" | "yes" | "dirty"
                 )
             })
-            .or_else(|| {
-                git_output(&repo_root, ["status", "--porcelain"]).map(|output| !output.is_empty())
-            })
+            // Raw Cargo has no authoritative snapshot. Do not run status here:
+            // it may execute configured fsmonitor/clean filters, and Cargo can
+            // cache its result across edits anyway. Provenance stays false.
             .unwrap_or(false),
     };
+    // The wrapper snapshot invalidates cached metadata, but the source checkout
+    // remains mutable during rustc. Even equal pre/post snapshots cannot exclude
+    // a transient source edit compiled and reverted between observations.
+    let cleanliness_verified = false;
 
     // Get git tag (e.g., "v0.1.2" if HEAD is tagged, or "v0.1.2-3-gabc1234" if ahead)
     let git_tag = env_or_metadata_or_git(
@@ -128,6 +132,7 @@ fn main() {
     // Set environment variables for compilation
     println!("cargo:rustc-env=JCODE_GIT_HASH={}", git_hash);
     println!("cargo:rustc-env=JCODE_GIT_DIRTY={}", dirty);
+    println!("cargo:rustc-env=JCODE_CLEANLINESS_VERIFIED={cleanliness_verified}");
     println!("cargo:rustc-env=JCODE_GIT_DATE={}", git_date);
     println!("cargo:rustc-env=JCODE_VERSION={}", version);
     println!("cargo:rustc-env=JCODE_SEMVER={}", build_semver);
@@ -156,16 +161,9 @@ fn main() {
     // incremental build. See the deterministic-semver note in
     // `resolve_build_semver` for the companion fix.
     //
-    // Correctness is preserved where it matters:
-    //   * Release/dist builds set JCODE_RELEASE_BUILD=1 and JCODE_BUILD_SEMVER,
-    //     both of which DO force a rerun (declared below), so released binaries
-    //     always embed the exact version/hash.
-    //   * A `[package].version` bump touches Cargo.toml (declared below), which
-    //     refreshes the embedded metadata for the next build.
-    //   * `cargo clean` / editing this build script naturally re-runs it.
-    // For ordinary dev builds the embedded git hash/dirty flag may lag the very
-    // latest commit within a session; that is a cosmetic `--version` detail and
-    // an acceptable trade for keeping incremental builds incremental.
+    // The dev wrapper exports a raw source content fingerprint and dirty state.
+    // Their values refresh metadata for same-HEAD edits and reversions without
+    // watching Git mtimes. Raw Cargo lacks that provenance and stays unverified.
     println!(
         "cargo:rerun-if-changed={}",
         repo_root.join("Cargo.toml").display()

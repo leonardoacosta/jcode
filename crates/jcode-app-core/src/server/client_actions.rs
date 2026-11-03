@@ -421,6 +421,7 @@ pub(super) fn handle_run_subagent(
 
         let started = Instant::now();
         let tool_name_for_exec = tool_name.clone();
+        let check_input = tool_input.clone();
         let result = match crate::runtime_activity::spawn(async move {
             registry.execute(&tool_name_for_exec, tool_input, ctx).await
         }) {
@@ -438,6 +439,13 @@ pub(super) fn handle_run_subagent(
             Ok(output) => {
                 let output_text = output.output.clone();
                 let _ = tx.send(ServerEvent::ToolDone {
+                    required_checks: crate::tool::required_check_batch(&tool_name, Some(&output)),
+                    required_check: crate::tool::required_check_outcome(
+                        &tool_name,
+                        &check_input,
+                        Some(&output),
+                        false,
+                    ),
                     id: tool_call_id.clone(),
                     name: tool_name,
                     output: output_text,
@@ -460,6 +468,13 @@ pub(super) fn handle_run_subagent(
             Err(error) => {
                 let error_msg = format!("Error: {}", error);
                 let _ = tx.send(ServerEvent::ToolDone {
+                    required_checks: None,
+                    required_check: crate::tool::required_check_outcome(
+                        &tool_name,
+                        &check_input,
+                        None,
+                        true,
+                    ),
                     id: tool_call_id.clone(),
                     name: tool_name,
                     output: error_msg.clone(),

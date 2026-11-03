@@ -71,7 +71,9 @@ fn test_replace_latest_tool_display_message_updates_latest_match_and_bumps_versi
         id: "tool-1".to_string(),
         name: "read".to_string(),
         input: serde_json::json!({"file_path": "src/main.rs"}),
-        intent: None, thought_signature: None, };
+        intent: None,
+        thought_signature: None,
+    };
 
     app.push_display_message(DisplayMessage {
         role: "tool".to_string(),
@@ -420,6 +422,8 @@ fn test_tool_done_preserves_sibling_streaming_tool_inputs_and_intents() {
     // First result arrives. This must not erase tool_b's streamed input.
     app.handle_server_event(
         crate::protocol::ServerEvent::ToolDone {
+            required_checks: None,
+            required_check: None,
             id: "tool_a".to_string(),
             name: "webfetch".to_string(),
             output: "page A body".to_string(),
@@ -440,6 +444,8 @@ fn test_tool_done_preserves_sibling_streaming_tool_inputs_and_intents() {
     // Second result arrives and its display message keeps the intent/url.
     app.handle_server_event(
         crate::protocol::ServerEvent::ToolDone {
+            required_checks: None,
+            required_check: None,
             id: "tool_b".to_string(),
             name: "webfetch".to_string(),
             output: "page B body".to_string(),
@@ -453,11 +459,7 @@ fn test_tool_done_preserves_sibling_streaming_tool_inputs_and_intents() {
         .display_messages()
         .iter()
         .rev()
-        .find(|dm| {
-            dm.tool_data
-                .as_ref()
-                .is_some_and(|td| td.id == "tool_b")
-        })
+        .find(|dm| dm.tool_data.as_ref().is_some_and(|td| td.id == "tool_b"))
         .expect("missing tool_b display message");
     let tool_b = tool_b_msg.tool_data.as_ref().unwrap();
     assert_eq!(tool_b.intent.as_deref(), Some("Fetch page B"));
@@ -548,6 +550,8 @@ fn send_native_search_row(
     );
     app.handle_server_event(
         ServerEvent::ToolDone {
+            required_checks: None,
+            required_check: None,
             id: id.to_string(),
             name: "web_search".to_string(),
             output: "1. Rust\n   https://www.rust-lang.org/".to_string(),
@@ -591,6 +595,8 @@ fn test_retry_rollback_discards_native_search_rows_from_aborted_attempt() {
     );
     app.handle_server_event(
         ServerEvent::ToolDone {
+            required_checks: None,
+            required_check: None,
             id: "toolu_earlier".to_string(),
             name: "bash".to_string(),
             output: "ok".to_string(),
@@ -615,7 +621,10 @@ fn test_retry_rollback_discards_native_search_rows_from_aborted_attempt() {
         &mut remote,
     );
     assert_eq!(native_search_rows(&app), 1);
-    app.handle_server_event(ServerEvent::RetryRollback { attempt: 1, max: 3 }, &mut remote);
+    app.handle_server_event(
+        ServerEvent::RetryRollback { attempt: 1, max: 3 },
+        &mut remote,
+    );
 
     assert_eq!(
         native_search_rows(&app),
@@ -662,6 +671,8 @@ fn test_native_search_rows_from_completed_attempt_survive_later_rollback() {
     );
     app.handle_server_event(
         ServerEvent::ToolDone {
+            required_checks: None,
+            required_check: None,
             id: "toolu_bash".to_string(),
             name: "bash".to_string(),
             output: "ok".to_string(),
@@ -675,6 +686,9 @@ fn test_native_search_rows_from_completed_attempt_survive_later_rollback() {
         },
         &mut remote,
     );
-    app.handle_server_event(ServerEvent::RetryRollback { attempt: 1, max: 3 }, &mut remote);
+    app.handle_server_event(
+        ServerEvent::RetryRollback { attempt: 1, max: 3 },
+        &mut remote,
+    );
     assert_eq!(native_search_rows(&app), 1);
 }
