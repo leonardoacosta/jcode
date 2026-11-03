@@ -528,6 +528,8 @@ pub enum ServerEvent {
     #[serde(rename = "pong")]
     Pong {
         id: u64,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        server_runtime: Option<jcode_selfdev_types::RuntimeIdentity>,
         /// Native SSH protocol v1 supports opt-in disconnected turn continuation.
         /// Omitted by older daemons, which a new SSH bridge must reject.
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -623,6 +625,9 @@ pub enum ServerEvent {
         /// Available skill names
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         skills: Vec<String>,
+        /// Optional skill descriptions, keyed by the names in `skills`.
+        #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+        skill_descriptions: std::collections::HashMap<String, String>,
         /// Total session token usage (input, output)
         #[serde(skip_serializing_if = "Option::is_none")]
         total_tokens: Option<(u64, u64)>,

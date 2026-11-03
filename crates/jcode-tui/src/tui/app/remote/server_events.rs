@@ -1018,7 +1018,12 @@ pub(in crate::tui::app) fn handle_server_event(
             app.update_terminal_title();
             false
         }
-        ServerEvent::Pong { .. } => false,
+        ServerEvent::Pong { server_runtime, .. } => {
+            if server_runtime.is_some() {
+                app.remote_server_runtime = server_runtime;
+            }
+            false
+        }
         ServerEvent::ConnectionPhase { phase } => {
             let cp = match phase.as_str() {
                 "authenticating" => crate::message::ConnectionPhase::Authenticating,
@@ -1806,6 +1811,7 @@ pub(in crate::tui::app) fn handle_server_event(
             available_model_routes,
             mcp_servers,
             skills,
+            skill_descriptions,
             total_tokens,
             all_sessions,
             client_count,
@@ -2163,6 +2169,7 @@ pub(in crate::tui::app) fn handle_server_event(
             let authoritative = session_changed || carries_server_identity;
             if authoritative || !skills.is_empty() {
                 app.remote_skills = skills;
+                app.remote_skill_descriptions = skill_descriptions;
                 app.invalidate_command_candidates_cache();
             }
             if authoritative {

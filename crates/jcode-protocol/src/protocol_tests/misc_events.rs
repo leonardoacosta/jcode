@@ -667,6 +667,7 @@ fn test_native_ssh_pong_capability_is_backward_compatible() -> Result<()> {
         }
     ));
     let modern = ServerEvent::Pong {
+        server_runtime: None,
         id: 7,
         native_ssh_protocol: Some(1),
         capabilities: vec!["session_tools".into()],
@@ -707,4 +708,24 @@ fn tool_input_optional_id_preserves_legacy_wire_format() -> Result<()> {
         serde_json::json!({"type":"tool_input","id":"a","delta":"{}"})
     );
     Ok(())
+}
+
+#[test]
+fn runtime_identity_handshake_preserves_hash_dirty_and_resolved_path() {
+    let value = serde_json::json!({"type": "pong", "id": 7,
+        "server_runtime": {"git_hash": "abcdef012", "dirty": true, "cleanliness_verified": true, "binary_path": "/resolved/jcode"}});
+    let event: ServerEvent = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(
+        serde_json::to_value(event).unwrap()["server_runtime"],
+        value["server_runtime"]
+    );
+    let legacy: ServerEvent =
+        serde_json::from_value(serde_json::json!({"type": "pong", "id": 7})).unwrap();
+    assert!(matches!(
+        legacy,
+        ServerEvent::Pong {
+            server_runtime: None,
+            ..
+        }
+    ));
 }

@@ -1619,6 +1619,28 @@ impl App {
     }
 
     pub(super) fn schedule_auto_poke_followup_if_needed(&mut self) -> bool {
+        self.schedule_auto_poke_followup_with_evidence(|evidence| {
+            if let Ok(json) = serde_json::to_string(evidence) {
+                crate::logging::info(&format!("CONTINUATION_EVIDENCE {json}"));
+            }
+        })
+    }
+
+    fn schedule_auto_poke_followup_with_evidence(
+        &mut self,
+        record: impl FnOnce(&crate::todo::ContinuationEvidence),
+    ) -> bool {
+        let mut evidence = crate::todo::ContinuationEvidence::default();
+        let queued = self.decide_auto_poke_followup(&mut evidence);
+        record(&evidence);
+        queued
+    }
+
+    fn decide_auto_poke_followup(
+        &mut self,
+        evidence: &mut crate::todo::ContinuationEvidence,
+    ) -> bool {
+        use crate::todo::{ContinuationReason as Reason, FollowUpKind as Kind};
         // The completion-gate circuit breaker clears auto_poke_incomplete_todos,
         // and it can only trip while every todo is complete, so the restore in
         // the all-complete branch never runs for an agent that adds open work
@@ -1637,10 +1659,19 @@ impl App {
             || self.pending_turn
             || self.has_queued_followups()
         {
+            *evidence = crate::todo::ContinuationEvidence::new(&super::commands::poke_todos(self));
+            evidence.waiting =
+                self.pending_queued_dispatch || self.pending_turn || self.has_queued_followups();
+            evidence.reason = if evidence.waiting {
+                Reason::PendingFollowup
+            } else {
+                Reason::Disabled
+            };
             return false;
         }
 
         let todos = super::commands::poke_todos(self);
+        *evidence = crate::todo::ContinuationEvidence::new(&todos);
         let todo_session_id = self
             .remote_session_id
             .as_deref()
@@ -1651,7 +1682,10 @@ impl App {
         let todo_fingerprint =
             serde_json::to_string(&(&todo_session_id, &todos, &plan, &goals)).ok();
         if self.final_response_todo_fingerprint.is_some() {
+            evidence.fingerprint_changed =
+                Some(self.final_response_todo_fingerprint != todo_fingerprint);
             if self.final_response_todo_fingerprint == todo_fingerprint {
+                evidence.reason = Reason::UnchangedFinalResponse;
                 // Check before timed reviews and deferred digests too: neither
                 // elapsed time nor a stale observation starts a new todo cycle.
                 return false;
@@ -1666,6 +1700,8 @@ impl App {
         if !todos.is_empty()
             && crate::todo::take_long_session_review_if_due(&todo_session_id).unwrap_or(false)
         {
+            evidence.kind = Some(Kind::LongSessionReview);
+            evidence.reason = Reason::LongSessionReview;
             self.push_display_message(DisplayMessage::system(
                 "🔍 Rechecking the plan and assessments after extended work...",
             ));
@@ -1691,6 +1727,7 @@ impl App {
                 // very first todo-free turn: every later turn that *does*
                 // leave incomplete todos would never be poked. Stay armed and
                 // simply do nothing this turn.
+                evidence.reason = Reason::NoTodos;
                 crate::logging::info("AUTO_POKE_DECISION action=idle reason=no_todos incomplete=0");
                 self.todo_final_response_requested = false;
                 self.last_todo_ownership_fingerprint = None;
@@ -1702,12 +1739,16 @@ impl App {
             // done while the score was low never benefited from the assessment
             // that arrived after it.
             if self.deliver_deferred_gate_digest_if_needed() {
+                evidence.kind = Some(Kind::GateDigest);
+                evidence.reason = Reason::GateDigest;
                 return true;
             }
             let ownership_needs_followup =
                 !crate::todo::completed_groups_have_sufficient_delivery(&todos, &goals);
             let gate_budget_left =
                 self.todo_completion_gate_attempts < Self::TODO_COMPLETION_GATE_MAX_ATTEMPTS;
+            evidence.scheduler_checks.ownership_delivery = (!ownership_needs_followup).into();
+            evidence.scheduler_checks.gate_budget = gate_budget_left.into();
             let ownership_message =
                 crate::todo::build_todo_ownership_continuation_message(&todos, &goals);
             // Only a different actionable gap merits another ownership turn.
@@ -1715,6 +1756,10 @@ impl App {
             // changes must not re-arm a nudge the agent already received.
             let ownership_fingerprint =
                 serde_json::to_string(&(&todo_session_id, &ownership_message)).ok();
+            if ownership_needs_followup {
+                evidence.fingerprint_changed =
+                    Some(self.last_todo_ownership_fingerprint != ownership_fingerprint);
+            }
             if ownership_needs_followup
                 && ownership_fingerprint.is_some()
                 && self.last_todo_ownership_fingerprint == ownership_fingerprint
@@ -1723,12 +1768,15 @@ impl App {
                 // assessment. Leave the honest scores intact and stop, rather
                 // than buying another turn that only repeats the final answer.
                 // Do not fall through to the successful-completion handoff.
+                evidence.reason = Reason::UnchangedOwnershipAssessment;
                 crate::logging::info(
                     "AUTO_POKE_DECISION action=idle reason=unchanged_ownership_assessment",
                 );
                 return false;
             }
             if ownership_needs_followup && gate_budget_left {
+                evidence.kind = Some(Kind::Ownership);
+                evidence.reason = Reason::Ownership;
                 self.last_todo_ownership_fingerprint = ownership_fingerprint;
                 self.todo_completion_gate_attempts =
                     self.todo_completion_gate_attempts.saturating_add(1);
@@ -1743,6 +1791,10 @@ impl App {
             let confidence_summary = super::commands::todo_confidence_summary(&todos);
             let confidence_label =
                 super::commands::format_todo_completion_confidence(confidence_summary);
+            evidence.scheduler_checks.completion_confidence =
+                (!confidence_summary.completion_confidence_needs_validation).into();
+            evidence.scheduler_checks.confidence_spike =
+                (!confidence_summary.confidence_spike_detected).into();
             let needs_spike_challenge = confidence_summary.confidence_spike_detected
                 && !self.todo_confidence_spike_challenged;
             if (confidence_summary.completion_confidence_needs_validation || needs_spike_challenge)
@@ -1751,9 +1803,13 @@ impl App {
                 self.todo_completion_gate_attempts =
                     self.todo_completion_gate_attempts.saturating_add(1);
                 let notice = if confidence_summary.completion_confidence_needs_validation {
+                    evidence.kind = Some(Kind::CompletionValidation);
+                    evidence.reason = Reason::CompletionValidation;
                     crate::telemetry::record_todo_gate(crate::telemetry::TodoGateKind::Completion);
                     "🔍 Double-checking confidence for you..."
                 } else {
+                    evidence.kind = Some(Kind::ConfidenceSpike);
+                    evidence.reason = Reason::ConfidenceSpike;
                     self.todo_confidence_spike_challenged = true;
                     crate::telemetry::record_todo_gate(
                         crate::telemetry::TodoGateKind::ConfidenceSpike,
@@ -1785,6 +1841,7 @@ impl App {
                 self.push_display_message(DisplayMessage::system(
                     "⚠️ We nudged the agent several times but its validation still isn't holding up. We stopped poking; review the remaining todos yourself.",
                 ));
+                evidence.reason = Reason::GateExhausted;
                 self.auto_poke_incomplete_todos = false;
                 self.todo_confidence_spike_challenged = false;
                 self.todo_completion_gate_attempts = 0;
@@ -1801,6 +1858,8 @@ impl App {
             self.todo_gate_digest_delivered = false;
             self.todo_completion_gate_attempts = 0;
             if !self.todo_final_response_requested {
+                evidence.kind = Some(Kind::FinalResponse);
+                evidence.reason = Reason::FinalResponse;
                 self.todo_final_response_requested = true;
                 self.final_response_todo_fingerprint = todo_fingerprint;
                 self.push_display_message(DisplayMessage::system(format!(
@@ -1812,6 +1871,7 @@ impl App {
                 self.pending_queued_dispatch = true;
                 return true;
             }
+            evidence.reason = Reason::FinalResponseAlreadyRequested;
             self.pending_queued_dispatch = false;
             return false;
         }
@@ -1825,7 +1885,10 @@ impl App {
         self.last_todo_ownership_fingerprint = None;
         let fingerprint = crate::todo::incomplete_todo_fingerprint(&incomplete)
             .unwrap_or_else(|_| poke_message.clone());
+        evidence.fingerprint_changed =
+            Some(self.last_auto_poke_fingerprint.as_ref() != Some(&fingerprint));
         if self.last_auto_poke_fingerprint.as_ref() == Some(&fingerprint) {
+            evidence.reason = Reason::UnchangedTodos;
             crate::logging::info(&format!(
                 "AUTO_POKE_DECISION action=idle reason=unchanged_todos incomplete={}",
                 incomplete.len()
@@ -1833,6 +1896,8 @@ impl App {
             return false;
         }
 
+        evidence.kind = Some(Kind::IncompleteTodos);
+        evidence.reason = Reason::IncompleteTodos;
         self.push_display_message(DisplayMessage::system(format!(
             "👉 {} incomplete todo{}. We poked it for you. /poke off to stop.",
             incomplete.len(),
@@ -4330,3 +4395,175 @@ mod terminal_control_sequence_tests;
 
 #[cfg(test)]
 mod key_dispatch_tests;
+
+#[cfg(test)]
+mod continuation_evidence_tests {
+    use crate::todo::{ContinuationReason, TodoItem};
+    use crate::tui::app::tests::create_test_app;
+
+    fn with_evidence_test_home(run: impl FnOnce()) {
+        let _lock = crate::storage::lock_test_env();
+        struct RestoreHome(Option<std::ffi::OsString>);
+        impl Drop for RestoreHome {
+            fn drop(&mut self) {
+                match self.0.take() {
+                    Some(value) => crate::env::set_var("JCODE_HOME", value),
+                    None => crate::env::remove_var("JCODE_HOME"),
+                }
+            }
+        }
+        let home = tempfile::tempdir().unwrap();
+        let _restore = RestoreHome(std::env::var_os("JCODE_HOME"));
+        crate::env::set_var("JCODE_HOME", home.path());
+        run();
+    }
+
+    #[test]
+    fn continuation_evidence_one_record_per_idle_and_queued_decision() {
+        with_evidence_test_home(|| {
+            let mut app = create_test_app();
+            app.auto_poke_incomplete_todos = true;
+            let mut records = Vec::new();
+            assert!(!app.schedule_auto_poke_followup_with_evidence(|e| records.push(e.clone())));
+            assert_eq!(records.len(), 1);
+            assert_eq!(records[0].reason, ContinuationReason::NoTodos);
+            crate::todo::save_todos(
+                &app.session.id,
+                &[TodoItem {
+                    status: "pending".into(),
+                    content: "SECRET_OUTPUT".repeat(10_000),
+                    ..Default::default()
+                }],
+            )
+            .unwrap();
+            assert!(app.schedule_auto_poke_followup_with_evidence(|e| records.push(e.clone())));
+            assert_eq!(records.len(), 2);
+            assert_eq!(
+                records[1].kind,
+                Some(crate::todo::FollowUpKind::IncompleteTodos)
+            );
+            assert_eq!(records[1].fingerprint_changed, Some(true));
+            app.queued_messages.clear();
+            app.pending_queued_dispatch = false;
+            assert!(!app.schedule_auto_poke_followup_with_evidence(|e| records.push(e.clone())));
+            assert_eq!(records.len(), 3);
+            assert_eq!(records[2].reason, ContinuationReason::UnchangedTodos);
+            assert_eq!(records[2].fingerprint_changed, Some(false));
+            assert!(
+                !serde_json::to_string(&records)
+                    .unwrap()
+                    .contains("SECRET_OUTPUT")
+            );
+        });
+    }
+
+    #[test]
+    fn continuation_evidence_wait_is_one_record_without_claiming_checks_ran() {
+        with_evidence_test_home(|| {
+            let mut app = create_test_app();
+            app.auto_poke_incomplete_todos = true;
+            app.pending_turn = true;
+            let mut records = Vec::new();
+            assert!(!app.schedule_auto_poke_followup_with_evidence(|e| records.push(e.clone())));
+            assert_eq!(records.len(), 1);
+            assert!(records[0].waiting);
+            assert_eq!(records[0].reason, ContinuationReason::PendingFollowup);
+            assert_eq!(records[0].fingerprint_changed, None);
+            assert_eq!(
+                serde_json::to_value(&records[0]).unwrap()["scheduler_checks"]["ownership_delivery"],
+                "not_run"
+            );
+        });
+    }
+
+    #[test]
+    fn continuation_evidence_recording_preserves_queue_caps_and_fingerprints() {
+        with_evidence_test_home(|| {
+            let mut recorded = create_test_app();
+            let mut plain = create_test_app();
+            plain.session.id = recorded.session.id.clone();
+            recorded.auto_poke_incomplete_todos = true;
+            plain.auto_poke_incomplete_todos = true;
+            for status in [
+                "pending",
+                "pending",
+                "completed",
+                "completed",
+                "in_progress",
+            ] {
+                crate::todo::save_todos(
+                    &recorded.session.id,
+                    &[TodoItem {
+                        content: "work".into(),
+                        status: status.into(),
+                        ..Default::default()
+                    }],
+                )
+                .unwrap();
+                let mut records = Vec::new();
+                let observed =
+                    recorded.schedule_auto_poke_followup_with_evidence(|e| records.push(e.clone()));
+                let baseline = plain
+                    .decide_auto_poke_followup(&mut crate::todo::ContinuationEvidence::default());
+                assert_eq!(records.len(), 1);
+                assert_eq!(observed, baseline);
+                assert_eq!(recorded.queued_messages, plain.queued_messages);
+                assert_eq!(
+                    recorded.last_auto_poke_fingerprint,
+                    plain.last_auto_poke_fingerprint
+                );
+                assert_eq!(
+                    recorded.final_response_todo_fingerprint,
+                    plain.final_response_todo_fingerprint
+                );
+                assert_eq!(
+                    recorded.todo_completion_gate_attempts,
+                    plain.todo_completion_gate_attempts
+                );
+                assert_eq!(
+                    recorded.auto_poke_incomplete_todos,
+                    plain.auto_poke_incomplete_todos
+                );
+                recorded.queued_messages.clear();
+                plain.queued_messages.clear();
+                recorded.pending_queued_dispatch = false;
+                plain.pending_queued_dispatch = false;
+            }
+        });
+    }
+
+    #[test]
+    fn continuation_evidence_observes_failed_scheduler_check_not_claimed_success() {
+        with_evidence_test_home(|| {
+            let mut app = create_test_app();
+            app.auto_poke_incomplete_todos = true;
+            crate::todo::save_todos(
+                &app.session.id,
+                &[TodoItem {
+                    status: "completed".into(),
+                    content: "All required checks passed".into(),
+                    ..Default::default()
+                }],
+            )
+            .unwrap();
+            crate::todo::save_goals(
+                &app.session.id,
+                &[crate::todo::TodoGoal {
+                    delivery_state: Some(crate::todo::DeliveryState::ChangeMade),
+                    ..Default::default()
+                }],
+            )
+            .unwrap();
+            let mut records = Vec::new();
+            assert!(app.schedule_auto_poke_followup_with_evidence(|e| records.push(e.clone())));
+            assert_eq!(records.len(), 1);
+            let value = serde_json::to_value(&records[0]).unwrap();
+            assert_eq!(value["scheduler_checks"]["ownership_delivery"], "fail");
+            assert_eq!(
+                value["scheduler_checks"]["completion_confidence"],
+                "not_run"
+            );
+            assert!(!records[0].required_checks_available);
+        });
+    }
+}

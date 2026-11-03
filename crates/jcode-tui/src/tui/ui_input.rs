@@ -122,7 +122,10 @@ fn command_suggestions_overlay_rect(
 }
 
 /// Whether the command palette is active for the current composer state.
-fn command_suggestions_active(app: &dyn TuiState, suggestions: &[(String, &'static str)]) -> bool {
+fn command_suggestions_active(
+    app: &dyn TuiState,
+    suggestions: &[crate::tui::CommandCandidate],
+) -> bool {
     let mode = composer_mode(app.input(), app.is_remote_mode());
     !suggestions.is_empty()
         && matches!(mode, ComposerMode::SlashCommand | ComposerMode::Chat)
@@ -241,7 +244,7 @@ pub(super) fn draw_command_suggestions_overlay(frame: &mut Frame, app: &dyn TuiS
     if !command_suggestions_active(app, &suggestions) {
         return;
     }
-    let mut lines = command_suggestion_lines(app, &suggestions);
+    let mut lines = command_suggestion_lines(app, &suggestions, area.width as usize);
     let Some(rect) = command_suggestions_overlay_rect(area, lines.len() as u16, frame.area())
     else {
         return;

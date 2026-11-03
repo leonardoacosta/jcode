@@ -367,6 +367,7 @@ impl RemoteConnection {
                 super::is_ssh_remote() || crate::session::session_exists(session_id)
             })
             .map(|session_id| session_id.to_string());
+        conn.send_request(Request::Ping { id: 0 }).await?;
         conn.send_request(Request::Subscribe {
             system_prompt: None,
             supports_pdf_panels: false,

@@ -78,6 +78,19 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
         // Do not run local resume lookup, provider bootstrap, or self-dev setup.
         return super::ssh::run(args).await;
     }
+    if let Some(Command::Policy { admission }) = &args.command {
+        let mut report = crate::config::Config::effective_task_policy()?;
+        if let Some(path) = admission {
+            let snapshot: crate::config::TaskAdmissionSnapshot =
+                serde_json::from_slice(&std::fs::read(path)?)?;
+            let policy: crate::config::TasksConfig =
+                serde_json::from_value(report["tasks"].clone())?;
+            report["diagnostic_admission"] = serde_json::to_value(policy.admit(&snapshot))?;
+            report["diagnostic_only"] = serde_json::json!(true);
+        }
+        println!("{}", serde_json::to_string_pretty(&report)?);
+        return Ok(());
+    }
     // Import is a narrow stdin-only credential operation. Do not trigger config
     // migrations, provider discovery, or unrelated credential imports first.
     if let Some(Command::Auth(AuthCommand::Import { json, .. })) = &args.command {
@@ -149,6 +162,7 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
     }
 
     match args.command {
+        Some(Command::Policy { .. }) => unreachable!("policy handled before bootstrap"),
         Some(Command::Mcp { action }) => super::mcp::run(action).await?,
         Some(Command::Serve {
             temporary_server,
@@ -386,7 +400,7 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
             hot_exec::run_update()?;
         }
         Some(Command::Version { json }) => {
-            commands::run_version_command(json)?;
+            commands::run_version_command(json).await?;
         }
         Some(Command::Usage { json }) => {
             commands::run_usage_command(json).await?;

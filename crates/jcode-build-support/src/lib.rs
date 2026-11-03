@@ -1,6 +1,8 @@
 mod paths;
 mod platform_support;
+mod runtime_evidence;
 mod source_state;
+pub use runtime_evidence::{EvidenceVerdict, RuntimeEvidence};
 mod storage_helpers;
 mod version_gc;
 
@@ -44,8 +46,8 @@ use std::time::{Duration, Instant};
 
 pub use jcode_selfdev_types::{
     BinaryChoice, BinaryVersionReport, BuildInfo, CanaryStatus, CrashInfo, DevBinarySourceMetadata,
-    MigrationContext, PendingActivation, PublishedBuild, SelfDevBuildCommand, SelfDevBuildTarget,
-    SourceState,
+    MigrationContext, PendingActivation, PublishedBuild, RuntimeIdentity, SelfDevBuildCommand,
+    SelfDevBuildTarget, SourceState,
 };
 
 /// Manifest tracking build versions and their status

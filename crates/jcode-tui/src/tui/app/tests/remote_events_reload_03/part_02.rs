@@ -49,6 +49,7 @@ fn test_metadata_only_history_preserves_fast_restored_startup_state() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![session_id.to_string()],
@@ -134,6 +135,7 @@ fn test_duplicate_history_for_same_session_is_ignored_after_fast_path_restore() 
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -511,11 +513,18 @@ fn test_service_tier_reported_fast_alias_matches_and_badge_tracks_reports() {
     app.is_remote = true;
     app.remote_service_tier = Some("fast".into());
     let mut remote = crate::tui::backend::RemoteConnection::dummy();
-    assert!(app.info_widget_data().service_tier.unwrap().contains("unconfirmed"));
+    assert!(
+        app.info_widget_data()
+            .service_tier
+            .unwrap()
+            .contains("unconfirmed")
+    );
     app.handle_server_event(
         crate::protocol::ServerEvent::ServiceTierReported {
-            requested: Some("priority".into()), tier: "default".into(),
-        }, &mut remote,
+            requested: Some("priority".into()),
+            tier: "default".into(),
+        },
+        &mut remote,
     );
     let badge = app.info_widget_data().service_tier.unwrap();
     assert_eq!(
@@ -526,18 +535,25 @@ fn test_service_tier_reported_fast_alias_matches_and_badge_tracks_reports() {
     assert!(!badge.split_whitespace().any(|word| word == "confirmed"));
     app.handle_server_event(
         crate::protocol::ServerEvent::ServiceTierReported {
-            requested: Some("priority".into()), tier: "priority".into(),
-        }, &mut remote,
+            requested: Some("priority".into()),
+            tier: "priority".into(),
+        },
+        &mut remote,
     );
     assert_eq!(app.info_widget_data().service_tier.as_deref(), Some("fast"));
     app.remote_service_tier = None;
     app.remote_reported_service_tier = None;
     app.remote_service_tier_confirmation_pending = true;
-    assert_eq!(app.info_widget_data().service_tier.as_deref(), Some("Standard requested (unconfirmed)"));
+    assert_eq!(
+        app.info_widget_data().service_tier.as_deref(),
+        Some("Standard requested (unconfirmed)")
+    );
     app.handle_server_event(
         crate::protocol::ServerEvent::ServiceTierReported {
-            requested: None, tier: "default".into(),
-        }, &mut remote,
+            requested: None,
+            tier: "default".into(),
+        },
+        &mut remote,
     );
     assert_eq!(app.info_widget_data().service_tier, None);
 }
@@ -564,6 +580,7 @@ fn delta_history_event(
         available_model_routes: vec![],
         mcp_servers: vec![],
         skills: vec![],
+        skill_descriptions: Default::default(),
         total_tokens: None,
         token_usage_totals: None,
         all_sessions: vec![],
@@ -652,7 +669,10 @@ fn test_delta_history_without_prefix_requests_full_history() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let _guard = rt.enter();
     let mut remote = crate::tui::backend::RemoteConnection::dummy();
-    app.handle_server_event(delta_history_event("ses_delta", vec![], Some(5)), &mut remote);
+    app.handle_server_event(
+        delta_history_event("ses_delta", vec![], Some(5)),
+        &mut remote,
+    );
     assert!(app.idle_hibernation.history_reload_needed);
     assert!(!remote.has_loaded_history());
 }

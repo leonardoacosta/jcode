@@ -3772,6 +3772,7 @@ name = "jcode-overnight-core"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "jcode-config-types",
  "serde",
  "serde_json",
 ]
@@ -4200,6 +4201,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "jcode-applet-types",
+ "jcode-config-types",
  "jcode-harness-api",
  "jcode-provider-metadata",
  "jcode-todo-policy",

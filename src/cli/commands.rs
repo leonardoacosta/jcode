@@ -2221,8 +2221,8 @@ pub async fn run_provider_current_command(
     report_info::run_provider_current_command(choice, model, emit_json).await
 }
 
-pub fn run_version_command(emit_json: bool) -> Result<()> {
-    report_info::run_version_command(emit_json)
+pub async fn run_version_command(emit_json: bool) -> Result<()> {
+    report_info::run_version_command(emit_json).await
 }
 
 pub async fn run_usage_command(emit_json: bool) -> Result<()> {

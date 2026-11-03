@@ -44,7 +44,7 @@ fn merge_command_is_discoverable_with_help() {
     assert!(
         app.command_suggestions()
             .iter()
-            .any(|(name, _)| name == "/merge")
+            .any(|candidate| candidate.name == "/merge")
     );
 
     app.input = "/help merge".to_string();
@@ -188,7 +188,7 @@ fn merge_remote_release_command_is_discoverable_with_help() {
         assert!(
             app.command_suggestions()
                 .iter()
-                .any(|(name, _)| name == "/merge-remote-release"),
+                .any(|candidate| candidate.name == "/merge-remote-release"),
             "missing combined command completion for {prefix}"
         );
     }

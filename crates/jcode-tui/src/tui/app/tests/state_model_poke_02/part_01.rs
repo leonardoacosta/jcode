@@ -650,7 +650,13 @@ fn test_alt_g_opens_and_closes_commit_log_overlay() {
     };
     git(&["init", "-q"]);
     for n in 0..3 {
-        git(&["commit", "-q", "--allow-empty", "-m", &format!("commit {n}")]);
+        git(&[
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            &format!("commit {n}"),
+        ]);
     }
     app.session.working_dir = Some(repo.path().to_string_lossy().to_string());
     let diff_mode_before = app.diff_mode;
@@ -660,7 +666,10 @@ fn test_alt_g_opens_and_closes_commit_log_overlay() {
         KeyCode::Char('g'),
         KeyModifiers::ALT
     ));
-    assert_eq!(app.diff_mode, diff_mode_before, "Alt+G no longer cycles diffs");
+    assert_eq!(
+        app.diff_mode, diff_mode_before,
+        "Alt+G no longer cycles diffs"
+    );
     let overlay = app.commit_log_overlay.as_ref().expect("overlay opens");
     assert!(overlay.error.is_none(), "{:?}", overlay.error);
     assert!(!overlay.entries.is_empty());
@@ -675,20 +684,28 @@ fn test_alt_g_opens_and_closes_commit_log_overlay() {
 fn test_fuzzy_command_suggestions() {
     let app = create_test_app();
     let suggestions = app.get_suggestions_for("/mdl");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/model"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/model")
+    );
 }
 
 #[test]
 fn test_swarm_effort_autocomplete_and_help() {
     let app = create_test_app();
     let suggestions = app.get_suggestions_for("/effort swarm");
-    let (_, label) = suggestions
+    let candidate = suggestions
         .iter()
-        .find(|(cmd, _)| cmd == "/effort swarm")
+        .find(|candidate| candidate.name == "/effort swarm")
         .expect("swarm mode should be suggested");
-    assert_eq!(*label, super::effort_display_label("swarm"));
-    assert!(label.contains("[Beta]"));
-    assert!(!suggestions.iter().any(|(cmd, _)| cmd == "/effort swarm-deep"));
+    assert_eq!(candidate.description, super::effort_display_label("swarm"));
+    assert!(candidate.description.contains("[Beta]"));
+    assert!(
+        !suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/effort swarm-deep")
+    );
     let help = app.command_help("effort").expect("effort help");
     assert!(help.contains("swarm_root_effort"));
     assert!(!help.contains("swarm_deep_root_effort"));
@@ -703,9 +720,13 @@ fn test_refresh_model_list_command_suggestions() {
     assert!(
         suggestions
             .iter()
-            .any(|(cmd, _)| cmd == "/refresh-model-list")
+            .any(|candidate| candidate.name == "/refresh-model-list")
     );
-    assert!(!suggestions.iter().any(|(cmd, _)| cmd == "/refresh-models"));
+    assert!(
+        !suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/refresh-models")
+    );
 
     let spaced = app.get_suggestions_for("/refresh ");
     assert!(spaced.is_empty());
@@ -729,7 +750,7 @@ fn test_command_suggestion_arrow_and_ctrl_navigation_accepts_highlighted_row() {
         .unwrap();
     assert_eq!(app.command_suggestion_selected, 1);
 
-    let expected = suggestions[1].0.clone();
+    let expected = suggestions[1].name.clone();
     app.handle_key(KeyCode::Enter, KeyModifiers::empty())
         .unwrap();
     assert_eq!(app.input, expected);
@@ -858,8 +879,8 @@ fn test_command_suggestion_render_highlights_selected_row_by_color() {
     app.cursor_pos = app.input.len();
     let suggestions = app.command_suggestions();
     assert!(suggestions.len() >= 2);
-    let first = suggestions[0].0.clone();
-    let second = suggestions[1].0.clone();
+    let first = suggestions[0].name.clone();
+    let second = suggestions[1].name.clone();
 
     let selected_base = crate::tui::color_support::rgb(255, 213, 128);
     let unselected_base = crate::tui::color_support::rgb(128, 203, 196);
@@ -885,7 +906,7 @@ fn test_single_command_suggestion_uses_selected_color_only() {
     app.cursor_pos = app.input.len();
     let suggestions = app.command_suggestions();
     assert_eq!(suggestions.len(), 1);
-    let command = suggestions[0].0.clone();
+    let command = suggestions[0].name.clone();
 
     let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(100, 20))
         .expect("failed to create test terminal");
@@ -908,8 +929,8 @@ fn test_command_suggestion_render_window_scrolls_with_selection() {
     let suggestions = app.command_suggestions();
     let limit = crate::tui::app::COMMAND_SUGGESTION_VISIBLE_LIMIT;
     assert!(suggestions.len() > limit);
-    let first = suggestions[0].0.clone();
-    let selected_after_scroll = suggestions[limit].0.clone();
+    let first = suggestions[0].name.clone();
+    let selected_after_scroll = suggestions[limit].name.clone();
 
     for _ in 0..limit {
         app.handle_key(KeyCode::Down, KeyModifiers::empty())
@@ -959,7 +980,7 @@ fn test_remote_command_suggestion_arrow_and_ctrl_navigation_accepts_highlighted_
         .unwrap();
     assert_eq!(app.command_suggestion_selected, 1);
 
-    let expected = suggestions[1].0.clone();
+    let expected = suggestions[1].name.clone();
     rt.block_on(app.handle_remote_key(KeyCode::Enter, KeyModifiers::empty(), &mut remote))
         .unwrap();
     assert_eq!(app.input, expected);
@@ -970,7 +991,10 @@ fn test_remote_command_suggestion_arrow_and_ctrl_navigation_accepts_highlighted_
 fn test_registered_command_suggestions_include_aliases_and_hide_secret_commands() {
     let app = create_test_app();
     let suggestions = app.get_suggestions_for("/");
-    let commands: Vec<&str> = suggestions.iter().map(|(cmd, _)| cmd.as_str()).collect();
+    let commands: Vec<&str> = suggestions
+        .iter()
+        .map(|candidate| candidate.name.as_str())
+        .collect();
 
     assert_eq!(commands.iter().filter(|cmd| **cmd == "/cancel").count(), 1);
     assert!(commands.contains(&"/models"));
@@ -988,8 +1012,9 @@ fn test_cancel_command_is_available_for_prefix_autocomplete() {
     let app = create_test_app();
     let suggestions = app.get_suggestions_for("/can");
 
-    assert!(suggestions.iter().any(|(cmd, help)| {
-        cmd == "/cancel" && *help == "Cancel the current prompt or operation"
+    assert!(suggestions.iter().any(|candidate| {
+        candidate.name == "/cancel"
+            && candidate.description == "Cancel the current prompt or operation"
     }));
 }
 
@@ -997,21 +1022,41 @@ fn test_cancel_command_is_available_for_prefix_autocomplete() {
 fn test_auth_doctor_command_suggestion_is_not_shadowed_by_provider_suggestions() {
     let app = create_test_app();
     let suggestions = app.get_suggestions_for("/auth d");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/auth doctor"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/auth doctor")
+    );
 }
 
 #[test]
 fn test_top_level_command_suggestions_include_config_and_subscription() {
     let app = create_test_app();
     let suggestions = app.get_suggestions_for("/con");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/config"));
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/context"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/config")
+    );
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/context")
+    );
 
     let suggestions = app.get_suggestions_for("/ali");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/alignment"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/alignment")
+    );
 
     let suggestions = app.get_suggestions_for("/sub");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/subscription"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/subscription")
+    );
 }
 
 #[test]
@@ -1038,7 +1083,11 @@ fn test_top_level_command_suggestions_include_project_local_skills() {
 
     let suggestions = app.get_suggestions_for("/optim");
 
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/optimization"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/optimization")
+    );
 }
 
 #[test]
@@ -1046,19 +1095,35 @@ fn test_top_level_command_suggestions_include_catchup_and_back() {
     let app = create_test_app();
 
     let suggestions = app.get_suggestions_for("/cat");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/catchup"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/catchup")
+    );
 
     let suggestions = app.get_suggestions_for("/bac");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/back"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/back")
+    );
 
     let suggestions = app.get_suggestions_for("/gi");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/git"));
+    assert!(suggestions.iter().any(|candidate| candidate.name == "/git"));
 
     let suggestions = app.get_suggestions_for("/comm");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/commit"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/commit")
+    );
 
     let suggestions = app.get_suggestions_for("/tran");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/transcript"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/transcript")
+    );
 }
 
 #[test]
@@ -1066,14 +1131,22 @@ fn test_top_level_command_suggestions_include_all_non_hidden_commands() {
     let app = create_test_app();
 
     let suggestions = app.get_suggestions_for("/logo");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/logout"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/logout")
+    );
 
     let suggestions = app.get_suggestions_for("/client");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/client-reload"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/client-reload")
+    );
 
     let suggestions = app.get_suggestions_for("/z");
-    assert!(!suggestions.iter().any(|(cmd, _)| cmd == "/z"));
-    assert!(!suggestions.iter().any(|(cmd, _)| cmd == "/zz"));
+    assert!(!suggestions.iter().any(|candidate| candidate.name == "/z"));
+    assert!(!suggestions.iter().any(|candidate| candidate.name == "/zz"));
 }
 
 #[test]
@@ -1123,7 +1196,11 @@ fn test_transcript_command_suggestions_include_path_variant() {
 
     let suggestions = app.get_suggestions_for("/transcript p");
 
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/transcript path"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/transcript path")
+    );
 }
 
 #[test]
@@ -1131,7 +1208,7 @@ fn test_help_topic_suggestions_are_contextual() {
     let app = create_test_app();
     let suggestions = app.get_suggestions_for("/help fi");
     assert_eq!(
-        suggestions.first().map(|(cmd, _)| cmd.as_str()),
+        suggestions.first().map(|candidate| candidate.name.as_str()),
         Some("/help fix")
     );
 }
@@ -1141,10 +1218,18 @@ fn test_help_topic_suggestions_include_catchup_topics() {
     let app = create_test_app();
 
     let suggestions = app.get_suggestions_for("/help cat");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/help catchup"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/help catchup")
+    );
 
     let suggestions = app.get_suggestions_for("/help bac");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/help back"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/help back")
+    );
 }
 
 #[test]
@@ -1218,37 +1303,41 @@ fn test_nested_command_suggestions_filter_partial_suffixes() {
 
     let suggestions = app.get_suggestions_for("/config ed");
     assert_eq!(
-        suggestions.first().map(|(cmd, _)| cmd.as_str()),
+        suggestions.first().map(|candidate| candidate.name.as_str()),
         Some("/config edit")
     );
 
     let suggestions = app.get_suggestions_for("/alignment ce");
     assert_eq!(
-        suggestions.first().map(|(cmd, _)| cmd.as_str()),
+        suggestions.first().map(|candidate| candidate.name.as_str()),
         Some("/alignment centered")
     );
 
     let suggestions = app.get_suggestions_for("/compact mo se");
     assert_eq!(
-        suggestions.first().map(|(cmd, _)| cmd.as_str()),
+        suggestions.first().map(|candidate| candidate.name.as_str()),
         Some("/compact mode semantic")
     );
 
     let suggestions = app.get_suggestions_for("/memory st");
     assert_eq!(
-        suggestions.first().map(|(cmd, _)| cmd.as_str()),
+        suggestions.first().map(|candidate| candidate.name.as_str()),
         Some("/memory status")
     );
 
     let suggestions = app.get_suggestions_for("/improve st");
     assert!(
-        suggestions.iter().any(|(cmd, _)| cmd == "/improve status"),
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/improve status"),
         "expected /improve status suggestion"
     );
 
     let suggestions = app.get_suggestions_for("/refactor st");
     assert!(
-        suggestions.iter().any(|(cmd, _)| cmd == "/refactor status"),
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/refactor status"),
         "expected /refactor status suggestion"
     );
 }
@@ -1289,7 +1378,7 @@ fn test_goals_show_suggestions_include_goal_ids() {
     assert!(
         suggestions
             .iter()
-            .any(|(cmd, _)| cmd == &format!("/goals show {}", goal.id))
+            .any(|candidate| candidate.name == format!("/goals show {}", goal.id))
     );
 
     if let Some(prev_home) = prev_home {
@@ -1474,7 +1563,11 @@ fn test_agents_command_opens_agent_picker() {
 fn test_agents_command_suggestions_include_targets() {
     let app = create_test_app();
     let suggestions = app.get_suggestions_for("/agents re");
-    assert!(suggestions.iter().any(|(cmd, _)| cmd == "/agents review"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/agents review")
+    );
 }
 
 #[test]
@@ -1484,7 +1577,7 @@ fn test_swarm_prompt_command_is_discoverable_in_suggestions_and_help() {
     assert!(
         suggestions
             .iter()
-            .any(|(command, _)| command == "/swarm-prompt")
+            .any(|candidate| candidate.name == "/swarm-prompt")
     );
 
     let help = app

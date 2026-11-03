@@ -526,6 +526,15 @@ async fn assert_history_service_tier_and_pdf_capability(
         Some("busy fallback".to_string()),
     );
     session.model = Some("mock-model".to_string());
+    let project = temp_home.path().join("selector-project");
+    let skill_dir = project.join(".agents/skills/selector-wire");
+    std::fs::create_dir_all(&skill_dir).unwrap();
+    std::fs::write(
+        skill_dir.join("SKILL.md"),
+        "---\nname: selector-wire\ndescription: Actual wire description\n---\nBody\n",
+    )
+    .unwrap();
+    session.working_dir = Some(project.to_string_lossy().into_owned());
     session.append_stored_message(crate::session::StoredMessage {
         id: "msg-busy-fallback".to_string(),
         role: crate::message::Role::User,
@@ -693,8 +702,20 @@ async fn assert_history_service_tier_and_pdf_capability(
             available_service_tiers,
             side_panel,
             provider_oauth_account_label,
+            skills,
+            skill_descriptions,
             ..
         } => {
+            if busy {
+                assert!(skills.is_empty());
+                assert!(skill_descriptions.is_empty());
+            } else {
+                assert!(skills.iter().any(|name| name == "selector-wire"));
+                assert_eq!(
+                    skill_descriptions.get("selector-wire").map(String::as_str),
+                    Some("Actual wire description")
+                );
+            }
             assert_eq!(id, 42);
             assert_eq!(
                 provider_oauth_account_label.as_deref(),

@@ -574,6 +574,7 @@ mod tests {
         post_wake_grace_until: chrono::DateTime<Utc>,
     ) -> crate::overnight::OvernightManifest {
         crate::overnight::OvernightManifest {
+            task_admission: None,
             version: 1,
             run_id: "overnight_test".to_string(),
             parent_session_id: "parent".to_string(),

@@ -52,6 +52,47 @@ pub struct OvernightStartOptions {
     pub use_current_session: bool,
 }
 
+/// Revalidate the original persisted task bounds against current user policy.
+/// Legacy manual runs return None, never synthesized authorization from a clock.
+pub fn revalidate_task_admission(
+    manifest: &OvernightManifest,
+    policy: &crate::config::TasksConfig,
+) -> Option<crate::config::AdmissionDecision> {
+    let mut snapshot = manifest.task_admission.clone()?;
+    snapshot.cancelled |= manifest.cancel_requested_at.is_some()
+        || !matches!(manifest.status, OvernightRunStatus::Running);
+    snapshot.ownership_verified &= manifest.process_id == std::process::id();
+    snapshot.workspace_ready &= manifest
+        .working_dir
+        .as_deref()
+        .is_some_and(|path| Path::new(path).is_dir());
+    let elapsed = Utc::now()
+        .signed_duration_since(manifest.started_at)
+        .num_seconds()
+        .max(0) as u64;
+    snapshot.runtime_seconds = snapshot.runtime_seconds.max(elapsed);
+    Some(policy.admit(&snapshot))
+}
+
+/// Fail closed until the evidence-aware executor supplies atomic attempt/spend
+/// reservations. A diagnostic ready decision never starts provider work.
+pub fn ensure_task_dispatch(
+    manifest: &OvernightManifest,
+    policy: &crate::config::TasksConfig,
+) -> Result<()> {
+    if let Some(decision) = revalidate_task_admission(manifest, policy) {
+        anyhow::ensure!(
+            decision.state == crate::config::AdmissionState::Ready,
+            "Task admission denied: {}",
+            decision.reasons.join("; ")
+        );
+        anyhow::bail!(
+            "Unattended task dispatch requires an authoritative attempt reservation and spend enforcer; snapshot alone is not execution authority"
+        );
+    }
+    Ok(())
+}
+
 pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLaunch> {
     let run_id = crate::id::new_id("overnight");
     let started_at = Utc::now();
@@ -96,6 +137,7 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
     }
 
     let manifest = OvernightManifest {
+        task_admission: None,
         version: OVERNIGHT_VERSION,
         run_id: run_id.clone(),
         parent_session_id: options.parent_session.id.clone(),
@@ -235,6 +277,9 @@ async fn run_supervisor(
     registry: Registry,
     child_is_canary: bool,
 ) -> Result<()> {
+    if manifest.task_admission.is_some() {
+        ensure_task_dispatch(&manifest, &crate::config::Config::load_strict()?.tasks)?;
+    }
     record_event(
         &manifest,
         "preflight_started",
@@ -265,6 +310,20 @@ async fn run_supervisor(
 
     loop {
         let current = load_manifest(&manifest.run_id)?;
+        if current.task_admission.is_some() {
+            // A file/snapshot is not an attempt reservation or a spend enforcer.
+            // Keep this path closed until the evidence-aware executor owns both.
+            let policy = crate::config::Config::load_strict()?.tasks;
+            let decision = revalidate_task_admission(&current, &policy).expect("snapshot checked");
+            record_event(
+                &current,
+                "task_admission",
+                decision.reasons.join("; "),
+                serde_json::to_value(&decision)?,
+                true,
+            )?;
+            ensure_task_dispatch(&current, &policy)?;
+        }
         if matches!(current.status, OvernightRunStatus::CancelRequested) {
             record_event(
                 &current,
@@ -1053,6 +1112,7 @@ mod tests {
         let run_dir = root.join("run");
         let now = Utc::now();
         OvernightManifest {
+            task_admission: None,
             version: OVERNIGHT_VERSION,
             run_id: run_id.to_string(),
             parent_session_id: "parent".to_string(),
@@ -1083,6 +1143,78 @@ mod tests {
             validation_dir: run_dir.join("validation"),
             last_activity_at: now,
         }
+    }
+
+    #[test]
+    fn task_admission_native_manifest_revalidates_cancel_owner_and_policy() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut manifest = test_manifest(temp.path(), "admission");
+        manifest.process_id = std::process::id();
+        manifest.working_dir = Some(temp.path().to_string_lossy().into());
+        let mut policy = crate::config::TasksConfig {
+            unattended: true,
+            ..Default::default()
+        };
+        let snapshot = crate::config::TaskAdmissionSnapshot {
+            scope: "bounded task".into(),
+            authorization: Some(crate::config::TaskAuthorization {
+                scope: "bounded task".into(),
+                max_attempts: 2,
+                max_runtime_seconds: 100,
+                max_spend_microusd: 100,
+            }),
+            ownership_verified: true,
+            dependencies_ready: true,
+            workspace_ready: true,
+            ..Default::default()
+        };
+        manifest.task_admission = Some(snapshot);
+        assert!(
+            ensure_task_dispatch(&manifest, &policy)
+                .unwrap_err()
+                .to_string()
+                .contains("spend enforcer")
+        );
+        assert_eq!(
+            revalidate_task_admission(&manifest, &policy).unwrap().state,
+            crate::config::AdmissionState::Ready
+        );
+        policy.max_attempts = 100;
+        assert_eq!(
+            revalidate_task_admission(&manifest, &policy)
+                .unwrap()
+                .remaining_attempts,
+            2
+        );
+        manifest.cancel_requested_at = Some(Utc::now());
+        assert_eq!(
+            revalidate_task_admission(&manifest, &policy).unwrap().state,
+            crate::config::AdmissionState::Blocked
+        );
+        manifest.cancel_requested_at = None;
+        manifest.process_id = u32::MAX;
+        assert_eq!(
+            revalidate_task_admission(&manifest, &policy).unwrap().state,
+            crate::config::AdmissionState::NeedsHuman
+        );
+        manifest.process_id = std::process::id();
+        manifest.task_admission.as_mut().unwrap().live_attempt = Some("other-owner".into());
+        assert_eq!(
+            revalidate_task_admission(&manifest, &policy).unwrap().state,
+            crate::config::AdmissionState::Waiting
+        );
+        manifest.task_admission = None;
+        assert!(revalidate_task_admission(&manifest, &policy).is_none());
+    }
+
+    #[test]
+    fn task_admission_legacy_manifest_has_no_implicit_authority() {
+        let temp = tempfile::tempdir().unwrap();
+        let manifest = test_manifest(temp.path(), "legacy");
+        let mut json = serde_json::to_value(&manifest).unwrap();
+        json.as_object_mut().unwrap().remove("task_admission");
+        let loaded: OvernightManifest = serde_json::from_value(json).unwrap();
+        assert!(loaded.task_admission.is_none());
     }
 
     #[test]

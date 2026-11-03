@@ -29,7 +29,11 @@ pub async fn run() -> Result<()> {
     if args.ssh.is_none()
         && matches!(
             args.command,
-            Some(Command::Auth(super::args::AuthCommand::Import { .. }) | Command::Mcp { .. })
+            Some(
+                Command::Auth(super::args::AuthCommand::Import { .. })
+                    | Command::Mcp { .. }
+                    | Command::Policy { .. }
+            )
         )
     {
         if let Some(cwd) = &args.cwd {

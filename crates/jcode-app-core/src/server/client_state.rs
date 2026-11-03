@@ -350,6 +350,7 @@ pub(super) async fn handle_get_model_catalog(
         available_service_tiers,
         mcp_servers: Vec::new(),
         skills: Vec::new(),
+        skill_descriptions: Default::default(),
         total_tokens: None,
         token_usage_totals: None,
         all_sessions: Vec::new(),
@@ -769,6 +770,7 @@ async fn send_history_from_persisted_session(
         ),
         mcp_servers: Vec::new(),
         skills: Vec::new(),
+        skill_descriptions: Default::default(),
         total_tokens: optional_total_tokens(token_usage_totals),
         token_usage_totals: optional_token_usage_totals(token_usage_totals),
         all_sessions,
@@ -864,6 +866,7 @@ async fn send_history_with_guard(
         autojudge_enabled,
         available_model_routes,
         skills,
+        skill_descriptions,
         tool_names,
         upstream_provider,
         resolved_credential,
@@ -902,7 +905,17 @@ async fn send_history_with_guard(
         let model_routes_ms = 0;
 
         let skills_start = Instant::now();
-        let skills = agent_guard.available_skill_names();
+        let skill_snapshot = agent_guard.current_skills_snapshot();
+        let skills = skill_snapshot
+            .list()
+            .iter()
+            .map(|skill| skill.name.clone())
+            .collect();
+        let skill_descriptions = skill_snapshot
+            .list()
+            .iter()
+            .map(|skill| (skill.name.clone(), skill.description.clone()))
+            .collect::<std::collections::HashMap<_, _>>();
         let skills_ms = skills_start.elapsed().as_millis();
 
         let provider_meta_start = Instant::now();
@@ -925,6 +938,7 @@ async fn send_history_with_guard(
             agent_guard.autojudge_enabled(),
             available_model_routes,
             skills,
+            skill_descriptions,
             tool_names,
             agent_guard.last_upstream_provider(),
             agent_guard.active_resolved_credential(),
@@ -1074,6 +1088,7 @@ async fn send_history_with_guard(
         available_service_tiers,
         mcp_servers,
         skills,
+        skill_descriptions,
         total_tokens: optional_total_tokens(token_usage_totals),
         token_usage_totals: optional_token_usage_totals(token_usage_totals),
         all_sessions,

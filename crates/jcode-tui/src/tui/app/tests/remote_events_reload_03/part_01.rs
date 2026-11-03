@@ -17,7 +17,10 @@ fn test_handle_server_event_service_tier_changed_mentions_next_request_when_stre
         &mut remote,
     );
 
-    assert!(redraw, "tier configuration acknowledgement must redraw immediately");
+    assert!(
+        redraw,
+        "tier configuration acknowledgement must redraw immediately"
+    );
     assert_eq!(app.remote_service_tier, Some("priority".to_string()));
     assert_eq!(
         app.status_notice(),
@@ -221,6 +224,7 @@ fn test_handle_server_event_history_with_interruption_queues_continuation() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -302,6 +306,7 @@ fn test_handle_server_event_history_uses_server_owned_reload_recovery_directive(
         available_model_routes: vec![],
         mcp_servers: vec![],
         skills: vec![],
+        skill_descriptions: Default::default(),
         total_tokens: None,
         token_usage_totals: None,
         all_sessions: vec![],
@@ -391,6 +396,7 @@ fn test_handle_server_event_history_without_interruption_does_not_queue() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -462,6 +468,7 @@ fn test_handle_server_event_history_after_reload_reports_no_continuation_needed(
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -772,6 +779,7 @@ fn test_handle_server_event_history_restores_side_panel_snapshot() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -836,6 +844,7 @@ fn test_handle_server_event_history_restores_active_resume_processing_state() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],

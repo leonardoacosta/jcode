@@ -662,12 +662,12 @@ mod tests {
         assert!(
             suggestions
                 .iter()
-                .any(|(command, _)| command.ends_with(" confirm"))
+                .any(|candidate| candidate.name.ends_with(" confirm"))
         );
         assert!(
             suggestions
                 .iter()
-                .any(|(command, _)| command.ends_with(" cancel"))
+                .any(|candidate| candidate.name.ends_with(" cancel"))
         );
     }
 

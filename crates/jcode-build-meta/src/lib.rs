@@ -17,6 +17,15 @@ mod build_inputs;
 pub const VERSION: &str = env!("JCODE_VERSION");
 /// Short git hash of the build commit, e.g. `abc1234` (or `unknown`).
 pub const GIT_HASH: &str = env!("JCODE_GIT_HASH");
+/// Whether the source tree used to compile this process was dirty.
+pub fn git_dirty() -> bool {
+    env!("JCODE_GIT_DIRTY") == "true"
+}
+
+/// Cached build metadata alone does not prove final binary cleanliness.
+pub fn cleanliness_verified() -> bool {
+    false
+}
 /// Commit date/time of the build commit (or `unknown`).
 pub const GIT_DATE: &str = env!("JCODE_GIT_DATE");
 /// `git describe --tags --always` output (may be empty).

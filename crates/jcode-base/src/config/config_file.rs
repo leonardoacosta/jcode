@@ -71,6 +71,7 @@ impl Config {
         let mut config = toml::from_str::<Self>(&content).map_err(|e| {
             anyhow::anyhow!("Failed to parse config file {}: {}", path.display(), e)
         })?;
+        config.validate_task_policy()?;
         config.display.apply_legacy_compat();
         // An explicit discovery opt-out is authoritative. Older saves wrote the
         // default endpoint too, so table shape cannot establish user intent.

@@ -559,7 +559,7 @@ impl Agent {
         agent
     }
 
-    fn current_skills_snapshot(&self) -> Arc<SkillRegistry> {
+    pub(crate) fn current_skills_snapshot(&self) -> Arc<SkillRegistry> {
         // Global skills come from the process-wide shared registry; the
         // project-local overlay is composed fresh from this session's
         // workspace root so per-repo skills are session-scoped, immediately

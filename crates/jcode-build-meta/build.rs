@@ -127,6 +127,7 @@ fn main() {
 
     // Set environment variables for compilation
     println!("cargo:rustc-env=JCODE_GIT_HASH={}", git_hash);
+    println!("cargo:rustc-env=JCODE_GIT_DIRTY={}", dirty);
     println!("cargo:rustc-env=JCODE_GIT_DATE={}", git_date);
     println!("cargo:rustc-env=JCODE_VERSION={}", version);
     println!("cargo:rustc-env=JCODE_SEMVER={}", build_semver);

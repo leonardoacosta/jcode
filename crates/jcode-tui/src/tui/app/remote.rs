@@ -1089,6 +1089,7 @@ pub(super) fn handle_disconnect(
     // queued prompt for reconnect, but release the transient model-setup gate so
     // it cannot remain blocked forever waiting for an event that was lost.
     app.finish_auth_catalog_refresh();
+    app.remote_server_runtime = None;
     state.last_disconnect_reason = Some(detail.clone());
 
     let scheduled_retry =
