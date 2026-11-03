@@ -17,6 +17,9 @@ mod build_inputs;
 pub const VERSION: &str = env!("JCODE_VERSION");
 /// Short git hash of the build commit, e.g. `abc1234` (or `unknown`).
 pub const GIT_HASH: &str = env!("JCODE_GIT_HASH");
+/// SHA-256 identity of selected raw source paths, modes and contents at build.
+/// Authoritative compiler-input provenance requires `cleanliness_verified()`.
+pub const SOURCE_FINGERPRINT: &str = env!("JCODE_SOURCE_FINGERPRINT");
 /// Whether the source tree used to compile this process was dirty.
 pub fn git_dirty() -> bool {
     env!("JCODE_GIT_DIRTY") == "true"

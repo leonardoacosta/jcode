@@ -11,6 +11,7 @@ pub mod models;
 pub mod openai_schema;
 pub mod pricing;
 pub mod provider_call_budget;
+pub mod provider_monetary_budget;
 pub mod reasoning;
 pub mod request_compression;
 pub mod retry_after;
@@ -98,6 +99,12 @@ impl InputCompressionProfile {
 /// Provider trait for LLM backends.
 #[async_trait]
 pub trait Provider: Send + Sync {
+    /// An enforceable pre-send contract, never a price estimate or user setting.
+    /// Live adapters remain unsupported until they can guarantee every send.
+    fn monetary_capability(&self) -> Option<provider_monetary_budget::MonetaryCapability> {
+        None
+    }
+
     /// Returns false when the selected route has not opted into gateway profiles.
     fn set_input_compression_profile(&self, _profile: InputCompressionProfile) -> bool {
         false

@@ -58,3 +58,25 @@ Exact new coverage:
 Red evidence observed before implementation: missing policy types/APIs, missing native revalidation/guard, ownership metadata symlink accepted, repository checkout hook executed without authority, and process-level policy CLI created application state before the startup early-return fix. Shared WIP compilation failures were reported to their file owners and repaired before CLI acceptance ran.
 
 4.4 remains open: parent independent review/commit/archive not performed by worker, explicitly outside worker authority. The canonical dependency validator was supplied by the coordinator and passed with explicit root (command above). This proposal declares `execution.depends_on: []`. `openspec doctor --json` separately reports missing `openspec/config.yaml`/`.yml` in this checkout, but is not the canonical dependency validator and did not justify initialization. Live executor/monetary accounting/restart acceptance remains blocked on its implementation consumers, not provider credentials.
+
+## Authorized monetary-contract continuation (2026-11-03 UTC)
+
+This section supersedes the earlier statement that provider-core has no reservation interface. It does not claim paid-provider support or terminal completion. Existing tasks 2.1/2.2/4.3 include this approved dependency expansion. The native coordinator retains their final task status and integration evidence ownership.
+
+Provider worker implemented the agreed monetary capability/reservation interfaces and explicit offline bounded fixture. Default live capabilities stay unsupported. The account uses the existing run namespace, original task/cap binding, durable narrowing, locked synced pre-send reservations, strict corrupt-state rejection, bounded actual settlement, and no refunds. No price estimate or user-supplied quote is authoritative. Synthetic adapter route is not registered or enabled in user config. Native integration is coordinator-owned.
+
+Fresh local gates through `selfdev test` (host-coordinated Cargo):
+
+| Command | Observed result |
+| --- | --- |
+| `cargo test -p jcode-provider-core --lib --features tokio-tungstenite/handshake` | 207 passed, 1 ignored after final provider changes |
+| `cargo test -p jcode-provider-openrouter-runtime --lib monetary_budget_rejects_unsupported_provider_before_http` | 1 passed, zero loopback TCP connections |
+| `cargo test -p jcode-provider-openrouter-runtime --lib council_provider_budget_stops_actual_http_retries_and_later_completion` | 1 passed, original two-request retry ceiling retained |
+| `cargo clippy -p jcode-provider-core --all-targets --features tokio-tungstenite/handshake -- -D warnings` | Passed after consuming all returned fixture streams, no lint allowances |
+| `openspec validate configure-task-and-worktree-policy --strict` | Passed after expanded design/task mapping |
+| `python3 scripts/check_dependency_boundaries.py` | Passed |
+| `git diff --check` | Passed |
+
+Exact added tests in `provider_monetary_budget::tests`: `offline_completion_reserves_before_send_and_cannot_refund_or_widen`, `retries_children_side_calls_and_bare_spawn_share_one_account`, `request_bounds_and_nested_account_substitution_fail_closed`, `crash_reservations_and_invalid_settlement_never_refund`, `monetary_budget_child_process`, `concurrent_processes_never_overspend_original_account`, `incomplete_corrupt_symlinked_or_overflow_journal_fails_closed`, `unsupported_shared_transport_fails_before_tcp_connect`, `offline_adapter_preserves_existing_council_call_limit`, `aborted_operation_retains_synced_reservation`. Real API negative: `tests::wire_tests::monetary_budget_rejects_unsupported_provider_before_http`.
+
+RED evidence: missing monetary types/API before implementation; explicit council compatibility test failed before adding the existing call-count consumption to offline sends. Real OpenRouter negative initially timed out because existing generic retry heuristics retried the permanent monetary refusal. Adding the early monetary guard before provider auth effects made the same actual-provider negative pass with no TCP connection. Full passing gates: background tasks `3599965qjt` (existing HTTP retry regression), `582000kasf` (final core/negative/lint). A reopened-account effective-ceiling assertion also failed before reporting the persisted narrowed value on `open`; send enforcement already used the durable journal ceiling. Real task abort leaves one unsettled unit and denies the resumed call. Running provider-core alone without its existing websocket handshake feature fails pre-existing websocket-test imports; the explicit feature above enables those existing tests without changing dependency features. Existing unmatched Cargo profile package warnings remain unrelated. No live provider requests, live config, user worktrees, Git/archive/publication, accounts, access or deployments occurred.

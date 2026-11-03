@@ -83,7 +83,7 @@ fn current() -> Option<Scope> {
 /// Retain the scope explicitly when spawning tool/provider worker tasks.
 /// Tokio task locals are otherwise not inherited by a new task.
 pub fn inherit<F: Future>(future: F) -> impl Future<Output = F::Output> {
-    CURRENT.scope(current(), future)
+    crate::provider_monetary_budget::inherit(CURRENT.scope(current(), future))
 }
 
 pub fn spawn<F>(future: F) -> tokio::task::JoinHandle<F::Output>
@@ -126,6 +126,11 @@ where
 /// Call immediately before every inference send, inside retry loops. Requests
 /// outside an Agent completion (for example compaction) acquire their own permit.
 pub fn record_call() -> Result<()> {
+    crate::provider_monetary_budget::reject_unsupported()?;
+    record_bounded_call()
+}
+
+pub(crate) fn record_bounded_call() -> Result<()> {
     if let Some(context) = current()
         && !context.prepaid.swap(false, Ordering::SeqCst)
     {
@@ -136,6 +141,7 @@ pub fn record_call() -> Result<()> {
 
 /// Opaque CLI/browser/SDK transports cannot promise a bound on hidden retries.
 pub fn reject_unmetered(provider: &str) -> Result<()> {
+    crate::provider_monetary_budget::reject_unsupported()?;
     if current().is_some() {
         bail!(
             "{provider} cannot enforce the council provider-call budget; select a metered API provider"

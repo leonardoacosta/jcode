@@ -15,6 +15,7 @@ Evidence and public pattern comparisons: [Sandcastle/task/worktree research](../
 
 ## What Changes
 
+- User-authorized expansion (2026-11-03): extend provider-core with explicit authoritative monetary capabilities and nonrefundable pre-send reservations shared by task attempts, retries and child work. Unsupported providers remain denied; estimates and user-configured price claims are not authority. Offline fixtures validate the contract without paid inference or enabling unattended work.
 - Extend existing Jcode configuration with typed `[tasks]` and `[worktrees]` settings, defaults, validation and effective-value provenance. Keep machine-local policy in existing global TOML; do not introduce executable TypeScript config or a competing root configuration file.
 - Task settings select admission/restart behavior and existing finite concurrency/retry/resource limits. A disabled-by-default unattended admission mode evaluates authorization, task scope, dependencies, cancellation, remaining limits and required workspace readiness, producing `ready`, `waiting`, `blocked`, or `needs-human` with reasons. An optional deadline is a constraint, not task authorization.
 - Worktree settings define allowed root/layout, explicit creation authority, reuse ownership/freshness checks and manual cleanup. Default creation requires explicit task-level permission; cleanup never automatically removes worktrees or branches. A deliberate user-scoped policy may authorize narrowly bounded future creation, but repository content cannot grant that authority.
@@ -28,7 +29,7 @@ Evidence and public pattern comparisons: [Sandcastle/task/worktree research](../
 - Enabling unattended execution in the user's current config or granting this session worktree permission.
 - Automatic reset/clean/stash, branch switching, force pushes, worktree deletion, migrations or publication.
 - Running repository setup scripts or adding new hook execution semantics. Existing `add-lifecycle-hooks` owns execution; future setup integration must retain its trust boundary.
-- Replacing existing budget enforcement or using a semantic model as the authorization authority.
+- Replacing existing call-count enforcement, asserting unsupported vendor billing guarantees, or using a semantic model as the authorization authority.
 
 ## Capabilities
 

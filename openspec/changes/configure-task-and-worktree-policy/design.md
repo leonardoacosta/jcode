@@ -66,3 +66,32 @@ Filesystem prechecks cannot provide a fully race-proof hostile-host sandbox arou
 ## Verification evidence
 
 Test-first missing-type/API errors observed for config-types, base config, SDK resolver and native manifest/revalidation. Adversarial ownership metadata symlink fixture failed before the no-symlink ownership check. Native dispatch guard missing-symbol test failed before guard extraction. Full command results and final counts are recorded in `tasks.md` after the final gates. No live providers or user-owned worktrees used.
+
+## Authorized provider monetary expansion (2026-11-03 UTC)
+
+The user approved expanding the provider contract, without live config changes, paid inference, Git/archive/publication, new access, or deployment. This replaces the earlier missing-interface dependency, not the unsupported-vendor finding. Exact file ownership was agreed with the coordinator before code: provider-core `lib.rs`, `provider_call_budget.rs`, new `provider_monetary_budget.rs`, `Cargo.toml` and its one-line lock dependency; OpenRouter `openrouter_provider_impl.rs` and `openrouter_wire_tests.rs`. The coordinator owns native `overnight.rs`/`overnight/admission.rs`, proposal/spec changes, and final native evidence. This design/tasks update belongs to the provider worker. No separate proposal or execution ledger is introduced.
+
+### Monetary authority and persistence
+
+`Provider::monetary_capability()` defaults to `None`. Pricing tables, user config, credential labels, model prose, and post-response usage cannot construct an authoritative capability. No existing live provider opts in. A capability has private fields, no deserializer, and binds the exact account/task/original bound and immutable route/model plus request/response byte and per-send charge ceilings. Only the explicit `OfflineBoundedProvider` can mint the current capability. It is not registered as a selectable provider, has no endpoint or credential, and provides synthetic accounting, not a real invoice or upstream guarantee. A future paid adapter requires its own audited transport guarantee and code change.
+
+`MonetaryBudget::create/open` require the exact task ID and original integer micro-USD cap. The account lives under the existing trusted run namespace. The strict append-only journal records the original binding, monotonically narrowing total ceilings, nonrefundable reservations, and settlements. A stable locked journal inode serializes threads/processes; no-follow opens and ancestor checks reject symlink aliases, journal hard links reject, malformed/partial/overflow/duplicate settlement state fails closed, and reservation writes sync before provider execution. No backup recovery or refunds exist. Dropped/cancelled/crashed/failed operations retain the full reservation. A settlement cannot exceed its individual reservation. Admission counts all reservations, including unsettled ones, not only known actual spend. Narrowing is durable and reopening cannot restore a larger allowance.
+
+Every synthetic send checks a 65,536-byte serialized request ceiling, reserves one synthetic micro-USD, produces a fixed response below 128 bytes, and settles exactly one synthetic unit. The adapter permanently owns the account, including `fork`, so raw task spawns cannot erase it. Explicit child processes reopen the same exact path/task/original binding. Nested monetary scope cannot substitute another account. The existing `provider_call_budget::inherit/spawn` also carries monetary context to tool/provider workers. The existing council count permit is still consumed for synthetic requests, with no additional public count bypass. Existing raw transport hooks (`record_call`, `reject_unmetered`) deny monetary-scoped unsupported routes before sends. OpenRouter also denies at provider entry, before auth refresh/request preparation, because its generic retry heuristics otherwise delay a permanent refusal. No generic retry policy is changed.
+
+### Acceptance mapping
+
+| Requirement | Concrete check | Result |
+| --- | --- | --- |
+| Enforceable pre-send bound, not estimated price | Explicit offline Provider completes, reserves and settles before exposing stream | Passed, synthetic only |
+| Original task/cap binding and durable narrowing | Reopen, wrong task/original cap, attempted recreate, narrowed restart tests | Passed |
+| Retry/compaction/child aggregate | Foreground, forked compaction, raw spawned retry, later follow-up exhaustion; nested account substitution rejected | Passed |
+| Concurrent processes cannot overspend | Six real child processes reopen one account, exactly eight reserved/actual units | Passed |
+| Crash/unknown settlement cannot refund | Aborted real task, dropped reservation, invalid over-settlement, reopened exhausted account | Passed |
+| Corrupt accounting cannot recover/refund | Partial/invalid/overflow journals and symlink aliases reject with bytes unchanged | Passed |
+| Unknown actual API route rejects before HTTP | Real OpenRouter `complete` against loopback listener, zero accepted TCP connections | Passed |
+| Actual shared transport hook rejects | Real reqwest request through shared timeout helper, zero accepted TCP connections | Passed |
+| Existing call-budget behavior preserved | Full provider-core suite and actual HTTP retry exhaustion regression | Passed |
+| Native original-authority integration | Coordinator-owned `task_monetary_account`, bounded start/restart, consuming `complete_with_provider` | Coordinator validates final native diff |
+
+The positive offline fixture proves the concrete contract and bounded native operation, not paid-vendor execution or an unattended arbitrary-tools executor. Unsupported live routes remain denied. No launch/default/config changes follow from these tests. Required review and terminal closeout remain outside this worker's authority.
