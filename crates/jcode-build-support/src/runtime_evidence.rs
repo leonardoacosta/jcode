@@ -18,6 +18,8 @@ pub struct RuntimeEvidence {
     pub source_dirty: Option<bool>,
     pub client_git_hash: String,
     pub client_dirty: bool,
+    #[serde(default)]
+    pub client_cleanliness_verified: bool,
     pub server_git_hash: Option<String>,
     pub server_dirty: Option<bool>,
     pub server_binary_path: Option<PathBuf>,
@@ -39,6 +41,7 @@ impl RuntimeEvidence {
         source_dirty: Option<bool>,
         client_git_hash: String,
         client_dirty: bool,
+        client_cleanliness_verified: bool,
         server: Option<RuntimeIdentity>,
     ) -> Self {
         let mut evidence = Self {
@@ -46,6 +49,7 @@ impl RuntimeEvidence {
             source_dirty,
             client_git_hash,
             client_dirty,
+            client_cleanliness_verified,
             server_git_hash: server.as_ref().map(|identity| identity.git_hash.clone()),
             server_dirty: server
                 .as_ref()
@@ -80,7 +84,8 @@ impl RuntimeEvidence {
             evidence.source_dirty,
             evidence.server_git_hash.as_deref(),
             evidence.server_dirty,
-        ) && valid_hash(source)
+        ) && client_cleanliness_verified
+            && valid_hash(source)
             && valid_hash(&evidence.client_git_hash)
             && valid_hash(server)
         {
@@ -102,6 +107,7 @@ impl RuntimeEvidence {
         repo_dir: &Path,
         client_hash: &str,
         client_dirty: bool,
+        client_cleanliness_verified: bool,
         server: Option<RuntimeIdentity>,
     ) -> Self {
         let source = super::current_git_hash_full(repo_dir).ok();
@@ -146,7 +152,14 @@ impl RuntimeEvidence {
             .and_then(Result::ok)
             .filter(|output| output.status.success())
             .map(|output| !output.stdout.is_empty());
-        Self::new(source, dirty, client_hash.to_owned(), client_dirty, server)
+        Self::new(
+            source,
+            dirty,
+            client_hash.to_owned(),
+            client_dirty,
+            client_cleanliness_verified,
+            server,
+        )
     }
 }
 
@@ -177,6 +190,7 @@ mod tests {
                 repo.path(),
                 "abcdef012",
                 false,
+                true,
                 Some(server("abcdef012", false)),
             );
             assert_eq!(report.source_dirty, None);
@@ -203,12 +217,12 @@ mod tests {
         };
         git(&["init", "-q"]);
         git(&["config", "core.fsmonitor", "touch fsmonitor-sentinel"]);
-        let report = RuntimeEvidence::capture(repo.path(), "abcdef012", false, None);
+        let report = RuntimeEvidence::capture(repo.path(), "abcdef012", false, true, None);
         assert!(report.source_dirty.is_some());
         assert!(!repo.path().join("fsmonitor-sentinel").exists());
         git(&["config", "filter.fixture.clean", "touch filter-sentinel"]);
         std::fs::write(repo.path().join(".gitattributes"), "* filter=fixture\n").unwrap();
-        let report = RuntimeEvidence::capture(repo.path(), "abcdef012", false, None);
+        let report = RuntimeEvidence::capture(repo.path(), "abcdef012", false, true, None);
         assert_eq!(report.source_dirty, None);
         assert!(!repo.path().join("filter-sentinel").exists());
     }
@@ -223,6 +237,7 @@ mod tests {
             Some(source_dirty),
             "abcdef012".into(),
             client_dirty,
+            true,
             server,
         )
     }
@@ -244,6 +259,66 @@ mod tests {
             report.server_binary_path.as_deref(),
             Some(std::path::Path::new("/resolved/jcode"))
         );
+    }
+
+    #[test]
+    fn runtime_evidence_unverified_client_cannot_match_clean_same_revision() {
+        let report = RuntimeEvidence::new(
+            Some("abcdef012".into()),
+            Some(false),
+            "abcdef012".into(),
+            false,
+            false,
+            Some(server("abcdef012", false)),
+        );
+        assert_eq!(report.verdict, EvidenceVerdict::Unknown);
+    }
+
+    #[test]
+    fn runtime_evidence_unverified_client_preserves_known_mismatches() {
+        for (source, source_dirty, client, client_dirty, daemon) in [
+            (None, None, "abcdef012", true, None),
+            (None, Some(true), "abcdef012", false, None),
+            (
+                None,
+                None,
+                "abcdef012",
+                false,
+                Some(server("abcdef012", true)),
+            ),
+            (Some("abcdef012"), None, "123456789", false, None),
+            (
+                Some("abcdef012"),
+                None,
+                "unknown",
+                false,
+                Some(server("123456789", false)),
+            ),
+        ] {
+            let report = RuntimeEvidence::new(
+                source.map(str::to_owned),
+                source_dirty,
+                client.into(),
+                client_dirty,
+                false,
+                daemon,
+            );
+            assert_eq!(report.verdict, EvidenceVerdict::Mismatched, "{report:?}");
+        }
+    }
+
+    #[test]
+    fn runtime_evidence_client_provenance_json_is_additive_and_defaults_unverified() {
+        let verified = evidence(false, false, Some(server("abcdef012", false)));
+        let mut json = serde_json::to_value(&verified).unwrap();
+        assert_eq!(json["client_cleanliness_verified"], true);
+        json.as_object_mut()
+            .unwrap()
+            .remove("client_cleanliness_verified");
+        json["verdict"] = serde_json::json!("unknown");
+        let legacy: RuntimeEvidence = serde_json::from_value(json).unwrap();
+        assert!(!legacy.client_cleanliness_verified);
+        assert_eq!(legacy.verdict, EvidenceVerdict::Unknown);
     }
 
     #[test]
@@ -295,6 +370,7 @@ mod tests {
             std::path::Path::new("/nonexistent/jcode-runtime-evidence"),
             "abcdef012",
             false,
+            true,
             Some(server("abcdef012", false)),
         );
         assert_eq!(report.source_dirty, None);

@@ -372,6 +372,16 @@ pub fn create_with_policy(
                 && owner.base == request.base,
             "Worktree ownership mismatch"
         );
+        // Status trusts assume-unchanged and skip-worktree entries. Refuse those
+        // states without clearing flags or refreshing the user's index.
+        let tracked = git(destination_str, &["ls-files", "-v", "-z"])?;
+        ensure!(
+            tracked
+                .split(|byte| *byte == 0)
+                .filter(|entry| !entry.is_empty())
+                .all(|entry| { !entry[0].is_ascii_lowercase() && entry[0] != b'S' }),
+            "Worktree index hides tracked changes; resolve conflict manually"
+        );
         ensure!(
             git(
                 destination_str,
@@ -539,6 +549,48 @@ mod tests {
         )
         .unwrap();
         assert!(create_with_policy(&path, &policy, &req).is_err());
+    }
+
+    #[test]
+    fn worktrees_policy_rejects_assume_unchanged_without_mutation() {
+        hidden_index_reuse_is_rejected("--assume-unchanged", b'h');
+    }
+
+    #[test]
+    fn worktrees_policy_rejects_skip_worktree_without_mutation() {
+        hidden_index_reuse_is_rejected("--skip-worktree", b'S');
+    }
+
+    fn hidden_index_reuse_is_rejected(flag: &str, tag: u8) {
+        let (temp, path) = repo();
+        let policy = policy(&temp);
+        let req = request(&path, "hidden-index");
+        let created = create_with_policy(&path, &policy, &req).unwrap();
+        git(&created.path, &["update-index", flag, "tracked"]).unwrap();
+        let tracked = Path::new(&created.path).join("tracked");
+        std::fs::write(&tracked, b"unrelated private edits").unwrap();
+        assert!(
+            git(&created.path, &["status", "--porcelain"])
+                .unwrap()
+                .is_empty()
+        );
+        let flags = git(&created.path, &["ls-files", "-v", "-z"]).unwrap();
+        assert_eq!(flags[0], tag);
+        let index_path = git(&created.path, &["rev-parse", "--git-path", "index"]).unwrap();
+        let index_path =
+            Path::new(&created.path).join(std::str::from_utf8(&index_path).unwrap().trim());
+        let index = std::fs::read(&index_path).unwrap();
+        let result = create_with_policy(&path, &policy, &req);
+        assert_eq!(std::fs::read(tracked).unwrap(), b"unrelated private edits");
+        assert_eq!(std::fs::read(index_path).unwrap(), index);
+        assert_eq!(
+            git(&created.path, &["ls-files", "-v", "-z"]).unwrap(),
+            flags
+        );
+        assert!(
+            result.is_err(),
+            "hidden tracked edits must deny reuse: {flag}"
+        );
     }
 
     #[cfg(unix)]

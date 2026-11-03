@@ -1594,7 +1594,14 @@ fn list_cli_providers_includes_conifer() {
 #[test]
 fn version_command_plain_output_includes_core_fields() {
     let report = super::report_info::VersionReport {
-        runtime: crate::build::RuntimeEvidence::new(None, None, "unknown".into(), false, None),
+        runtime: crate::build::RuntimeEvidence::new(
+            None,
+            None,
+            "unknown".into(),
+            false,
+            false,
+            None,
+        ),
         version: "v1.2.3 (abc1234)".to_string(),
         semver: "1.2.3".to_string(),
         base_semver: "1.2.0".to_string(),

@@ -459,6 +459,7 @@ pub(super) async fn run_version_command(emit_json: bool) -> Result<()> {
             &std::env::current_dir()?,
             jcode_build_meta::git_hash(),
             jcode_build_meta::git_dirty(),
+            jcode_build_meta::cleanliness_verified(),
             server,
         ),
         version: jcode_build_meta::version().to_string(),
