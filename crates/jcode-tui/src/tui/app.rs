@@ -1112,6 +1112,7 @@ pub struct App {
     /// list must not trigger another automatic turn: the agent may be parked on
     /// a worker, wake, or human decision, and repeated pokes cannot help.
     last_auto_poke_fingerprint: Option<String>,
+    required_checks: crate::todo::evidence::RequiredChecks,
     /// Set when the current turn ended with a provider guardrail/refusal stop
     /// (ServerEvent::ProviderGuardrail). Consumed by the Done handler to
     /// update `consecutive_guardrail_stops`.

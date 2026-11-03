@@ -59,6 +59,58 @@ pub struct TodoCounts {
     pub unknown: usize,
 }
 
+/// Retain only bounded explicit bindings for the current turn. Failures are sticky.
+#[derive(Clone, Debug, Default)]
+pub struct RequiredChecks {
+    entries: Vec<(String, CheckResult)>,
+    truncated: bool,
+}
+
+impl RequiredChecks {
+    pub fn observe_batch(&mut self, batch: jcode_task_types::RequiredCheckBatch, error: bool) {
+        let batch = batch.bounded();
+        self.truncated |= batch.truncated;
+        for outcome in batch.outcomes {
+            self.observe(&outcome, error);
+        }
+    }
+
+    pub fn observe(&mut self, outcome: &jcode_task_types::RequiredCheckOutcome, tool_error: bool) {
+        if !jcode_task_types::RequiredCheckOutcome::valid_id(&outcome.required_check_id) {
+            self.truncated = true;
+            return;
+        }
+        let result = if tool_error || outcome.tool_error {
+            CheckResult::Fail
+        } else if !outcome.foreground || !outcome.completed {
+            CheckResult::NotRun
+        } else {
+            outcome.passed().into()
+        };
+        if let Some((_, prior)) = self
+            .entries
+            .iter_mut()
+            .find(|(id, _)| id == &outcome.required_check_id)
+        {
+            if *prior != CheckResult::Fail {
+                *prior = result;
+            }
+        } else if self.entries.len() < 8 {
+            self.entries
+                .push((outcome.required_check_id.clone(), result));
+        } else {
+            self.truncated = true;
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct RequiredCheckEvidence {
+    /// Turn-local pseudonym. Supplied names never enter diagnostic logs.
+    pub check_id: String,
+    pub result: CheckResult,
+}
+
 #[derive(Clone, Debug, Default, Serialize)]
 pub struct ContinuationEvidence {
     pub kind: Option<FollowUpKind>,
@@ -67,8 +119,8 @@ pub struct ContinuationEvidence {
     /// None when no comparable fingerprint was checked on this path.
     pub fingerprint_changed: Option<bool>,
     pub scheduler_checks: SchedulerChecks,
-    /// Required command outcomes are unavailable at the scheduler boundary.
     pub required_checks_available: bool,
+    pub required_checks: Vec<RequiredCheckEvidence>,
     pub waiting: bool,
     /// A declared dependency exists. Its identity and prose are omitted.
     pub blocked: bool,
@@ -76,6 +128,20 @@ pub struct ContinuationEvidence {
 }
 
 impl ContinuationEvidence {
+    pub fn record_required_checks(&mut self, checks: &RequiredChecks) {
+        self.required_checks_available = !checks.entries.is_empty();
+        self.truncated |= checks.truncated || !checks.entries.is_empty();
+        self.required_checks = checks
+            .entries
+            .iter()
+            .enumerate()
+            .map(|(index, (_, result))| RequiredCheckEvidence {
+                check_id: format!("check_{}", index + 1),
+                result: *result,
+            })
+            .collect();
+    }
+
     pub fn new(todos: &[TodoItem]) -> Self {
         let mut record = Self::default();
         for todo in todos {
@@ -107,6 +173,56 @@ mod tests {
     use crate::{FollowUpPolicy, TodoSnapshot};
 
     #[test]
+    fn continuation_evidence_required_checks_redact_bound_deduplicate_and_preserve_failure() {
+        let mut checks = RequiredChecks::default();
+        for (id, code) in [("SECRET", 7), ("SECRET", 0), ("unrelated", 0)] {
+            checks.observe(
+                &jcode_task_types::RequiredCheckOutcome {
+                    required_check_id: id.into(),
+                    foreground: true,
+                    completed: true,
+                    exit_code: Some(code),
+                    tool_error: false,
+                },
+                false,
+            );
+        }
+        let mut record = ContinuationEvidence::default();
+        record.record_required_checks(&checks);
+        let value = serde_json::to_value(&record).unwrap();
+        assert_eq!(value["required_checks"][0]["result"], "fail");
+        assert_eq!(value["required_checks"][1]["result"], "pass");
+        assert_eq!(record.required_checks.len(), 2);
+        assert_ne!(
+            record.required_checks[0].check_id,
+            record.required_checks[1].check_id
+        );
+        let first = record.required_checks[0].check_id.clone();
+        record.record_required_checks(&checks);
+        assert_eq!(record.required_checks[0].check_id, first);
+        assert!(record.required_checks_available);
+        for n in 0..100 {
+            checks.observe(
+                &jcode_task_types::RequiredCheckOutcome {
+                    required_check_id: format!("PRIVATE_{n}"),
+                    foreground: true,
+                    completed: true,
+                    exit_code: Some(0),
+                    tool_error: false,
+                },
+                false,
+            );
+        }
+        record.record_required_checks(&checks);
+        let json = serde_json::to_string(&record).unwrap();
+        assert!(json.len() <= MAX_CONTINUATION_EVIDENCE_BYTES);
+        assert!(!json.contains("SECRET"));
+        assert!(!json.contains("PRIVATE"));
+        assert!(record.truncated);
+        assert_eq!(record.required_checks.len(), 8);
+    }
+
+    #[test]
     fn continuation_evidence_is_bounded_and_redacts_todo_text() {
         let secret = "PRIVATE_TOOL_OUTPUT".repeat(10_000);
         let todos = vec![TodoItem {
@@ -127,7 +243,7 @@ mod tests {
 
     #[test]
     fn continuation_evidence_fixed_schema_bounds_worst_case_counts_and_reasons() {
-        let record = ContinuationEvidence {
+        let mut record = ContinuationEvidence {
             todos: TodoCounts {
                 pending: usize::MAX,
                 in_progress: usize::MAX,
@@ -139,6 +255,20 @@ mod tests {
             reason: ContinuationReason::UnchangedOwnershipAssessment,
             ..Default::default()
         };
+        let mut checks = RequiredChecks::default();
+        for n in 0..8 {
+            checks.observe(
+                &jcode_task_types::RequiredCheckOutcome {
+                    required_check_id: format!("check{n}"),
+                    foreground: true,
+                    completed: false,
+                    exit_code: None,
+                    tool_error: false,
+                },
+                false,
+            );
+        }
+        record.record_required_checks(&checks);
         assert!(serde_json::to_string(&record).unwrap().len() <= MAX_CONTINUATION_EVIDENCE_BYTES);
     }
 
@@ -176,6 +306,37 @@ mod tests {
             serde_json::to_string(&record).unwrap();
             assert_eq!(decision, plain.decide(&snapshot));
             assert_eq!(recorded, plain);
+        }
+    }
+}
+
+#[cfg(test)]
+mod required_check_failure_tests {
+    use super::*;
+
+    #[test]
+    fn continuation_evidence_required_checks_never_promote_missing_or_error_status() {
+        for (foreground, completed, exit_code, tool_error, event_error, expected) in [
+            (false, false, Some(0), false, false, CheckResult::NotRun),
+            (true, false, Some(0), false, false, CheckResult::NotRun),
+            (true, true, None, false, false, CheckResult::Fail),
+            (true, true, Some(0), true, false, CheckResult::Fail),
+            (true, true, Some(0), false, true, CheckResult::Fail),
+        ] {
+            let mut checks = RequiredChecks::default();
+            checks.observe(
+                &jcode_task_types::RequiredCheckOutcome {
+                    required_check_id: "check".into(),
+                    foreground,
+                    completed,
+                    exit_code,
+                    tool_error,
+                },
+                event_error,
+            );
+            let mut evidence = ContinuationEvidence::default();
+            evidence.record_required_checks(&checks);
+            assert_eq!(evidence.required_checks[0].result, expected);
         }
     }
 }

@@ -31,6 +31,9 @@ pub use jcode_overnight_core::{
 const RESOURCE_SAMPLE_INTERVAL: Duration = Duration::from_secs(5 * 60);
 const LONG_TURN_NOTICE_INTERVAL: Duration = Duration::from_secs(30 * 60);
 
+mod admission;
+pub use admission::{TaskAttemptClaim, restart_task_attempt, start_task_attempt};
+
 #[derive(Debug, Clone)]
 pub struct OvernightLaunch {
     pub manifest: OvernightManifest,
@@ -137,6 +140,7 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
     }
 
     let manifest = OvernightManifest {
+        task_attempt: None,
         task_admission: None,
         version: OVERNIGHT_VERSION,
         run_id: run_id.clone(),
@@ -791,11 +795,11 @@ pub fn manifest_path(run_id: &str) -> Result<PathBuf> {
 }
 
 pub fn save_manifest(manifest: &OvernightManifest) -> Result<()> {
-    storage::write_json(&manifest_path(&manifest.run_id)?, manifest)
+    admission::save_manifest_at(&manifest_path(&manifest.run_id)?, manifest)
 }
 
 pub fn load_manifest(run_id: &str) -> Result<OvernightManifest> {
-    storage::read_json(&manifest_path(run_id)?)
+    admission::read_manifest_at(&manifest_path(run_id)?)
 }
 
 pub fn latest_manifest() -> Result<Option<OvernightManifest>> {
@@ -810,10 +814,8 @@ pub fn latest_manifest() -> Result<Option<OvernightManifest>> {
             continue;
         }
         let path = entry.path().join("manifest.json");
-        if path.exists()
-            && let Ok(manifest) = storage::read_json::<OvernightManifest>(&path)
-        {
-            manifests.push(manifest);
+        if path.exists() {
+            manifests.push(admission::read_manifest_at(&path)?);
         }
     }
     manifests.sort_by_key(|manifest| manifest.started_at);
@@ -1108,10 +1110,11 @@ fn write_text_file(path: &Path, content: &str) -> Result<()> {
 mod tests {
     use super::*;
 
-    fn test_manifest(root: &Path, run_id: &str) -> OvernightManifest {
+    pub(super) fn test_manifest(root: &Path, run_id: &str) -> OvernightManifest {
         let run_dir = root.join("run");
         let now = Utc::now();
         OvernightManifest {
+            task_attempt: None,
             task_admission: None,
             version: OVERNIGHT_VERSION,
             run_id: run_id.to_string(),

@@ -106,7 +106,39 @@ use tokio::sync::RwLock;
 
 pub(crate) use jcode_tool_core::intent_schema_property;
 pub use jcode_tool_core::{StdinInputRequest, Tool, ToolContext, ToolExecutionMode};
-pub use jcode_tool_types::{ToolImage, ToolOutput};
+pub use jcode_tool_types::{ToolImage, ToolOutput, resolve_tool_name};
+
+/// Only native bash calls with an explicit binding can supply required-check evidence.
+pub fn required_check_outcome(
+    name: &str,
+    input: &Value,
+    output: Option<&ToolOutput>,
+    error: bool,
+) -> Option<jcode_task_types::RequiredCheckOutcome> {
+    if jcode_tool_types::resolve_tool_name(name) != "bash" {
+        return None;
+    }
+    let id = input.get("required_check_id")?.as_str()?;
+    jcode_task_types::RequiredCheckOutcome::from_process(
+        id,
+        output.and_then(|o| o.metadata.as_ref()),
+        error,
+    )
+}
+
+/// Batch metadata is populated only from completed native child results, not output prose.
+pub fn required_check_batch(
+    name: &str,
+    output: Option<&ToolOutput>,
+) -> Option<jcode_task_types::RequiredCheckBatch> {
+    if resolve_tool_name(name) != "batch" {
+        return None;
+    }
+    let value = output?.metadata.as_ref()?.get("required_checks")?.clone();
+    let batch: jcode_task_types::RequiredCheckBatch = serde_json::from_value(value).ok()?;
+    Some(batch.bounded())
+}
+
 pub(crate) use session_search::spawn_recent_index_warmup;
 
 #[derive(Clone, Debug, Default)]

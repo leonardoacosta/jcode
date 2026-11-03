@@ -1266,3 +1266,122 @@ async fn test_detached_promoted_command_reports_intermediate_progress() {
     let _ = tokio::fs::remove_file(output_file).await;
     let _ = tokio::fs::remove_file(status_file).await;
 }
+
+#[tokio::test]
+async fn required_check_real_failed_process_metadata_ignores_success_text() {
+    for ctx in [
+        make_ctx(None),
+        make_agent_ctx(jcode_agent_runtime::InterruptSignal::new()),
+    ] {
+        let output = BashTool::new()
+            .execute(
+                json!({
+                    "command": "printf 'ALL CHECKS PASS'; exit 7", "required_check_id": "acceptance"
+                }),
+                ctx,
+            )
+            .await
+            .unwrap();
+        assert_eq!(output.metadata.as_ref().unwrap()["process"]["exit_code"], 7);
+        let outcome = crate::tool::required_check_outcome(
+            "bash",
+            &json!({"required_check_id":"acceptance"}),
+            Some(&output),
+            false,
+        )
+        .unwrap();
+        assert!(!outcome.passed());
+        assert_eq!(outcome.required_check_id, "acceptance");
+    }
+}
+
+#[tokio::test]
+async fn required_check_real_exit_success_signal_and_invalid_id_boundary() {
+    let tool = BashTool::new();
+    let binding = json!({"required_check_id":"verify"});
+    let success = tool
+        .execute(
+            json!({"command":"exit 0", "required_check_id":"verify"}),
+            make_ctx(None),
+        )
+        .await
+        .unwrap();
+    assert!(
+        crate::tool::required_check_outcome("bash", &binding, Some(&success), false)
+            .unwrap()
+            .passed()
+    );
+    assert!(crate::tool::required_check_outcome("read", &binding, Some(&success), false).is_none());
+    assert!(
+        crate::tool::required_check_outcome("bash", &json!({}), Some(&success), false).is_none()
+    );
+    #[cfg(unix)]
+    {
+        let signal = tool
+            .execute(
+                json!({"command":"kill -TERM $$", "required_check_id":"verify"}),
+                make_ctx(None),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            signal.metadata.as_ref().unwrap()["process"]["exit_code"],
+            serde_json::Value::Null
+        );
+        assert!(
+            !crate::tool::required_check_outcome("bash", &binding, Some(&signal), false)
+                .unwrap()
+                .passed()
+        );
+    }
+    let dir = tempfile::tempdir().unwrap();
+    let marker = dir.path().join("must-not-run");
+    for id in ["", "bad\nname", "SECRET command", &"x".repeat(65)] {
+        let result = tool
+            .execute(
+                json!({"command":format!("touch '{}'", marker.display()), "required_check_id":id}),
+                make_ctx(None),
+            )
+            .await;
+        assert!(result.is_err());
+        assert!(
+            !marker.exists(),
+            "invalid binding must fail before execution"
+        );
+    }
+}
+
+#[tokio::test]
+async fn required_check_background_and_promoted_process_never_pass() {
+    let tool = BashTool::new();
+    let binding = json!({"required_check_id":"verify"});
+    for background in [false, true] {
+        let output = tool.execute(json!({"command":"sleep 0.2; exit 0", "timeout":1,
+            "run_in_background":background, "notify":false, "wake":false, "required_check_id":"verify"}), make_ctx(None)).await.unwrap();
+        assert_eq!(output.metadata.as_ref().unwrap()["background"], true);
+        assert!(
+            crate::tool::required_check_outcome("bash", &binding, Some(&output), false).is_none()
+        );
+        let task_id = output.metadata.as_ref().unwrap()["task_id"]
+            .as_str()
+            .unwrap();
+        let _ = crate::background::global()
+            .wait(task_id, std::time::Duration::from_secs(3), false)
+            .await;
+    }
+}
+
+#[tokio::test]
+async fn required_check_real_startup_error_never_passes() {
+    let mut ctx = make_ctx(None);
+    let dir = tempfile::tempdir().unwrap();
+    ctx.working_dir = Some(dir.path().join("missing-working-directory"));
+    let input = json!({"command":"exit 0", "required_check_id":"startup"});
+    let result = BashTool::new().execute(input.clone(), ctx).await;
+    assert!(result.is_err());
+    let outcome =
+        crate::tool::required_check_outcome("bash", &input, result.as_ref().ok(), result.is_err())
+            .unwrap();
+    assert!(outcome.tool_error);
+    assert!(!outcome.passed());
+}

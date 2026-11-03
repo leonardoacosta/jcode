@@ -44,7 +44,19 @@ impl OvernightRunStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OvernightTaskAttempt {
+    pub generation: u32,
+    pub owner: String,
+    pub process_id: u32,
+    pub claimed_at: DateTime<Utc>,
+    pub workspace: PathBuf,
+    pub decision: jcode_config_types::AdmissionDecision,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OvernightManifest {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_attempt: Option<OvernightTaskAttempt>,
     /// Optional unattended task authority. Legacy manual runs carry no snapshot.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub task_admission: Option<jcode_config_types::TaskAdmissionSnapshot>,

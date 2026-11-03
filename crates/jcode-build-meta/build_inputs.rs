@@ -6,6 +6,8 @@ pub fn metadata_rerun_inputs(path: Option<&OsStr>) -> Vec<String> {
     let mut inputs = vec![
         "cargo:rerun-if-env-changed=JCODE_BUILD_METADATA_FILE".to_owned(),
         "cargo:rerun-if-env-changed=JCODE_BUILD_CHANGELOG_RAW".to_owned(),
+        "cargo:rerun-if-env-changed=JCODE_BUILD_SOURCE_FINGERPRINT".to_owned(),
+        "cargo:rerun-if-env-changed=JCODE_BUILD_SOURCE_VERIFIED".to_owned(),
         "cargo:rerun-if-changed=build_inputs.rs".to_owned(),
     ];
     if let Some(path) = path {
@@ -26,7 +28,11 @@ mod tests {
         let inputs = metadata_rerun_inputs(None);
         assert!(inputs.contains(&"cargo:rerun-if-env-changed=JCODE_BUILD_METADATA_FILE".into()));
         assert!(inputs.contains(&"cargo:rerun-if-env-changed=JCODE_BUILD_CHANGELOG_RAW".into()));
-        assert_eq!(inputs.len(), 3);
+        assert!(
+            inputs.contains(&"cargo:rerun-if-env-changed=JCODE_BUILD_SOURCE_FINGERPRINT".into())
+        );
+        assert!(inputs.contains(&"cargo:rerun-if-env-changed=JCODE_BUILD_SOURCE_VERIFIED".into()));
+        assert_eq!(inputs.len(), 5);
     }
 
     #[test]
@@ -35,6 +41,6 @@ mod tests {
         assert!(
             inputs.contains(&"cargo:rerun-if-changed=.jcode-release-metadata/build.txt".into())
         );
-        assert_eq!(inputs.len(), 4);
+        assert_eq!(inputs.len(), 6);
     }
 }

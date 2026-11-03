@@ -22,9 +22,10 @@ pub fn git_dirty() -> bool {
     env!("JCODE_GIT_DIRTY") == "true"
 }
 
-/// Cached build metadata alone does not prove final binary cleanliness.
+/// Whether immutable compiler inputs attest final binary cleanliness.
+/// A mutable wrapper snapshot refreshes metadata but cannot prove this.
 pub fn cleanliness_verified() -> bool {
-    false
+    env!("JCODE_CLEANLINESS_VERIFIED") == "true"
 }
 /// Commit date/time of the build commit (or `unknown`).
 pub const GIT_DATE: &str = env!("JCODE_GIT_DATE");

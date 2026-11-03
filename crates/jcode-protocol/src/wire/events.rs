@@ -205,6 +205,10 @@ pub enum ServerEvent {
     /// Tool execution completed
     #[serde(rename = "tool_done")]
     ToolDone {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        required_check: Option<jcode_task_types::RequiredCheckOutcome>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        required_checks: Option<jcode_task_types::RequiredCheckBatch>,
         id: String,
         name: String,
         output: String,
@@ -1052,4 +1056,31 @@ pub enum ServerEvent {
         /// Tool call ID this is associated with
         tool_call_id: String,
     },
+}
+
+#[test]
+fn required_check_tool_done_wire_is_additive_and_typed() {
+    let legacy = serde_json::json!({"type":"tool_done", "id":"c", "name":"bash", "output":"pass"});
+    let event: ServerEvent = serde_json::from_value(legacy.clone()).unwrap();
+    assert_eq!(serde_json::to_value(event).unwrap(), legacy);
+    let mut typed = legacy;
+    typed["required_check"] = serde_json::json!({"required_check_id":"check", "foreground":true, "completed":true, "exit_code":7, "tool_error":false});
+    let event: ServerEvent = serde_json::from_value(typed.clone()).unwrap();
+    match &event {
+        ServerEvent::ToolDone {
+            required_check: Some(outcome),
+            ..
+        } => assert!(!outcome.passed()),
+        _ => panic!("typed required check lost"),
+    }
+    assert_eq!(serde_json::to_value(event).unwrap(), typed);
+}
+
+#[test]
+fn required_check_batch_tool_done_wire_preserves_typed_child_results() {
+    let value = serde_json::json!({"type":"tool_done", "id":"batch", "name":"batch", "output":"PASS",
+        "required_checks":{"outcomes":[{"required_check_id":"check", "foreground":true, "completed":true,
+            "exit_code":7, "tool_error":false}], "truncated":true}});
+    let event: ServerEvent = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(serde_json::to_value(event).unwrap(), value);
 }

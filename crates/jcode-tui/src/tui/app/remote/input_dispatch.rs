@@ -25,6 +25,7 @@ pub(in crate::tui::app) async fn begin_remote_send(
             app.active_skill.clone(),
         )
         .await?;
+    app.clear_required_checks_for_turn();
     app.current_message_id = Some(msg_id);
     app.deferred_stream_done_id = None;
     app.is_processing = true;
@@ -482,6 +483,7 @@ async fn submit_remote_input_shell(
     }
 
     let request_id = remote.send_input_shell(command.clone()).await?;
+    app.clear_required_checks_for_turn();
     app.current_message_id = Some(request_id);
     app.is_processing = true;
     app.status = ProcessingStatus::Sending;

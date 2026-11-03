@@ -44,6 +44,8 @@ fn test_remote_done_shows_footer_after_final_tool_result_without_trailing_text()
     );
     app.handle_server_event(
         crate::protocol::ServerEvent::ToolDone {
+            required_checks: None,
+            required_check: None,
             id: "tool_read".to_string(),
             name: "read".to_string(),
             output: "1 fn main() {}".to_string(),

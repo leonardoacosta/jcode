@@ -1618,6 +1618,25 @@ impl App {
         true
     }
 
+    pub(super) fn clear_required_checks_for_turn(&mut self) {
+        self.required_checks = Default::default();
+    }
+
+    pub(super) fn note_required_check_result(
+        &mut self,
+        name: &str,
+        input: &serde_json::Value,
+        output: Option<&crate::tool::ToolOutput>,
+        error: bool,
+    ) {
+        if let Some(outcome) = crate::tool::required_check_outcome(name, input, output, error) {
+            self.required_checks.observe(&outcome, error);
+        }
+        if let Some(batch) = crate::tool::required_check_batch(name, output) {
+            self.required_checks.observe_batch(batch, error);
+        }
+    }
+
     pub(super) fn schedule_auto_poke_followup_if_needed(&mut self) -> bool {
         self.schedule_auto_poke_followup_with_evidence(|evidence| {
             if let Ok(json) = serde_json::to_string(evidence) {
@@ -1632,6 +1651,7 @@ impl App {
     ) -> bool {
         let mut evidence = crate::todo::ContinuationEvidence::default();
         let queued = self.decide_auto_poke_followup(&mut evidence);
+        evidence.record_required_checks(&self.required_checks);
         record(&evidence);
         queued
     }
@@ -4419,6 +4439,205 @@ mod continuation_evidence_tests {
     }
 
     #[test]
+    fn continuation_evidence_local_remote_failed_required_command_and_turn_reset() {
+        with_evidence_test_home(|| {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let _guard = rt.enter();
+            let mut local = create_test_app();
+            let mut remote_app = create_test_app();
+            let input = serde_json::json!({"command":"printf 'Everything passed'; exit 7", "required_check_id":"SECRET_check"});
+            let ctx = crate::tool::ToolContext {
+                session_id: local.session.id.clone(),
+                message_id: "check".into(),
+                tool_call_id: "check".into(),
+                working_dir: None,
+                stdin_request_tx: None,
+                graceful_shutdown_signal: None,
+                execution_mode: crate::tool::ToolExecutionMode::Direct,
+            };
+            let output = rt
+                .block_on(local.registry.execute("bash", input.clone(), ctx))
+                .unwrap();
+            local.note_required_check_result("bash", &input, Some(&output), false);
+            let outcome = crate::tool::required_check_outcome("bash", &input, Some(&output), false);
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            let wire = serde_json::to_string(&crate::protocol::ServerEvent::ToolDone {
+                id: "check".into(),
+                name: "bash".into(),
+                output: output.output.clone(),
+                error: None,
+                required_check: outcome,
+                required_checks: None,
+            })
+            .unwrap();
+            remote_app.handle_server_event(serde_json::from_str(&wire).unwrap(), &mut remote);
+            for app in [&mut local, &mut remote_app] {
+                let baseline = app.decide_auto_poke_followup(&mut Default::default());
+                let mut records = Vec::new();
+                assert_eq!(
+                    app.schedule_auto_poke_followup_with_evidence(|e| records.push(e.clone())),
+                    baseline
+                );
+                let value = serde_json::to_value(&records[0]).unwrap();
+                assert_eq!(value["required_checks"][0]["result"], "fail");
+                assert!(records[0].required_checks_available);
+                assert!(!value.to_string().contains("SECRET"));
+                app.clear_required_checks_for_turn();
+                app.schedule_auto_poke_followup_with_evidence(|e| {
+                    assert!(!e.required_checks_available)
+                });
+            }
+        });
+    }
+
+    #[test]
+    fn continuation_evidence_batch_real_failure_local_and_wire_remote() {
+        with_evidence_test_home(|| {
+            let mut local = create_test_app();
+            let mut remote_app = create_test_app();
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let input = serde_json::json!({"tool_calls":[
+                {"tool":"bash", "command":"printf 'PASS'; exit 7", "required_check_id":"SECRET_check"},
+                {"tool":"bash", "command":"exit 0", "required_check_id":"SECRET_check"}
+            ]});
+            let ctx = crate::tool::ToolContext {
+                session_id: local.session.id.clone(),
+                message_id: "batch".into(),
+                tool_call_id: "batch".into(),
+                working_dir: None,
+                stdin_request_tx: None,
+                graceful_shutdown_signal: None,
+                execution_mode: crate::tool::ToolExecutionMode::Direct,
+            };
+            let output = rt
+                .block_on(local.registry.execute("batch", input.clone(), ctx))
+                .unwrap();
+            local.note_required_check_result("batch", &input, Some(&output), false);
+            let wire = serde_json::to_string(&crate::protocol::ServerEvent::ToolDone {
+                id: "batch".into(),
+                name: "batch".into(),
+                output: output.output.clone(),
+                error: None,
+                required_check: None,
+                required_checks: crate::tool::required_check_batch("batch", Some(&output)),
+            })
+            .unwrap();
+            let _guard = rt.enter();
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            remote_app.handle_server_event(serde_json::from_str(&wire).unwrap(), &mut remote);
+            for app in [&mut local, &mut remote_app] {
+                app.schedule_auto_poke_followup_with_evidence(|e| {
+                    assert_eq!(e.required_checks.len(), 1);
+                    assert_eq!(
+                        e.required_checks[0].result,
+                        crate::todo::evidence::CheckResult::Fail
+                    );
+                    assert!(!serde_json::to_string(e).unwrap().contains("SECRET"));
+                });
+            }
+        });
+    }
+
+    #[test]
+    fn continuation_evidence_remote_batch_rebounds_untrusted_oversized_outcomes() {
+        with_evidence_test_home(|| {
+            let mut app = create_test_app();
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let _guard = rt.enter();
+            let outcomes: Vec<_> = (0..20).map(|n| serde_json::json!({
+                "required_check_id":format!("SECRET_{n}"), "foreground":true,"completed":true,"exit_code":7,"tool_error":false,
+            })).collect();
+            let event = serde_json::from_value(serde_json::json!({"type":"tool_done", "id":"batch", "name":"batch", "output":"PASS",
+                "required_checks":{"outcomes":outcomes, "truncated":false}})).unwrap();
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            app.handle_server_event(event, &mut remote);
+            app.schedule_auto_poke_followup_with_evidence(|e| {
+                assert_eq!(e.required_checks.len(), 8);
+                assert!(e.truncated);
+                let json = serde_json::to_string(e).unwrap();
+                assert!(!json.contains("SECRET"));
+                assert!(json.len() <= crate::todo::evidence::MAX_CONTINUATION_EVIDENCE_BYTES);
+            });
+        });
+    }
+
+    #[test]
+    fn continuation_evidence_remote_failure_survives_siblings_and_success_claims() {
+        with_evidence_test_home(|| {
+            let mut app = create_test_app();
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let _guard = rt.enter();
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            for (id, code) in [
+                ("required", Some(7)),
+                ("sibling", None),
+                ("required", Some(0)),
+            ] {
+                app.handle_server_event(
+                    crate::protocol::ServerEvent::ToolDone {
+                        id: id.into(),
+                        name: "bash".into(),
+                        output: "all required checks pass".into(),
+                        error: None,
+                        required_check: code.map(|code| crate::todo::RequiredCheckOutcome {
+                            required_check_id: id.into(),
+                            foreground: true,
+                            completed: true,
+                            exit_code: Some(code),
+                            tool_error: false,
+                        }),
+                        required_checks: None,
+                    },
+                    &mut remote,
+                );
+            }
+            app.schedule_auto_poke_followup_with_evidence(|e| {
+                assert_eq!(e.required_checks.len(), 1);
+                assert_eq!(
+                    e.required_checks[0].result,
+                    crate::todo::evidence::CheckResult::Fail
+                );
+            });
+        });
+    }
+
+    #[test]
+    fn continuation_evidence_remote_external_turn_clears_prior_checks() {
+        with_evidence_test_home(|| {
+            let mut app = create_test_app();
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            let _guard = rt.enter();
+            app.required_checks.observe(
+                &crate::todo::RequiredCheckOutcome {
+                    required_check_id: "prior".into(),
+                    foreground: true,
+                    completed: true,
+                    exit_code: Some(7),
+                    tool_error: false,
+                },
+                false,
+            );
+            app.is_processing = false;
+            app.current_message_id = None;
+            let mut remote = crate::tui::backend::RemoteConnection::dummy();
+            remote.mark_history_loaded();
+            app.handle_server_event(
+                crate::protocol::ServerEvent::TextDelta {
+                    text: "new turn".into(),
+                },
+                &mut remote,
+            );
+            app.schedule_auto_poke_followup_with_evidence(|e| {
+                assert!(!e.required_checks_available)
+            });
+        });
+    }
+
+    #[test]
     fn continuation_evidence_one_record_per_idle_and_queued_decision() {
         with_evidence_test_home(|| {
             let mut app = create_test_app();
@@ -4484,6 +4703,16 @@ mod continuation_evidence_tests {
             plain.session.id = recorded.session.id.clone();
             recorded.auto_poke_incomplete_todos = true;
             plain.auto_poke_incomplete_todos = true;
+            recorded.required_checks.observe(
+                &crate::todo::RequiredCheckOutcome {
+                    required_check_id: "failed-command".into(),
+                    foreground: true,
+                    completed: true,
+                    exit_code: Some(7),
+                    tool_error: false,
+                },
+                false,
+            );
             for status in [
                 "pending",
                 "pending",
@@ -4506,6 +4735,10 @@ mod continuation_evidence_tests {
                 let baseline = plain
                     .decide_auto_poke_followup(&mut crate::todo::ContinuationEvidence::default());
                 assert_eq!(records.len(), 1);
+                assert_eq!(
+                    records[0].required_checks[0].result,
+                    crate::todo::evidence::CheckResult::Fail
+                );
                 assert_eq!(observed, baseline);
                 assert_eq!(recorded.queued_messages, plain.queued_messages);
                 assert_eq!(

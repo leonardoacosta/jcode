@@ -88,6 +88,7 @@ impl App {
         event_stream: &mut EventStream,
         mut bus_receiver: Option<&mut tokio::sync::broadcast::Receiver<crate::bus::BusEvent>>,
     ) -> Result<()> {
+        self.clear_required_checks_for_turn();
         let eager_stream_redraw = !crate::perf::tui_policy().enable_decorative_animations;
         let mut redraw_period = crate::tui::redraw_interval(self);
         let mut redraw_interval = super::run_shell::redraw_timer(redraw_period);
@@ -1634,6 +1635,12 @@ impl App {
                 self.subagent_status = None; // Clear status after tool completes
                 self.batch_progress = None; // Clear batch progress after tool completes
                 let tool_duration_ms = tool_start.elapsed().as_millis() as u64;
+                self.note_required_check_result(
+                    &tc.name,
+                    &tc.input,
+                    result.as_ref().ok(),
+                    result.is_err(),
+                );
                 let (output, is_error, tool_title) = match result {
                     Ok(o) => {
                         Bus::global().publish(BusEvent::ToolUpdated(ToolEvent {

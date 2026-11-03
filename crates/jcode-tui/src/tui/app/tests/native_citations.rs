@@ -18,6 +18,8 @@ fn native_citation_suffix_correction_flushes_pacing_and_preserves_message_bounda
             name: "web_search".into(),
         },
         ServerEvent::ToolDone {
+            required_checks: None,
+            required_check: None,
             id: "ws_citation".into(),
             name: "web_search".into(),
             output: "Search completed".into(),

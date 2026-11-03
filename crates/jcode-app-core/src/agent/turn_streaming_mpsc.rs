@@ -641,6 +641,8 @@ impl Agent {
                                     });
                                 }
                                 let _ = event_tx.send(ServerEvent::ToolDone {
+                                    required_checks: None,
+                                    required_check: None,
                                     id,
                                     name,
                                     output,
@@ -798,6 +800,8 @@ impl Agent {
                             .cloned()
                             .unwrap_or_default();
                         let _ = event_tx.send(ServerEvent::ToolDone {
+                            required_checks: None,
+                            required_check: None,
                             id: tool_use_id.clone(),
                             name: tool_name,
                             output: content.clone(),
@@ -1596,6 +1600,8 @@ impl Agent {
                     });
                     logging::warn(&error_msg);
                     let _ = event_tx.send(ServerEvent::ToolDone {
+                        required_checks: None,
+                        required_check: None,
                         id: tc.id.clone(),
                         name: tc.name.clone(),
                         output: error_msg.clone(),
@@ -1745,6 +1751,16 @@ impl Agent {
                         Ok(output) => {
                             let output = cap_tool_output_for_history(&tc.name, output);
                             let _ = event_tx.send(ServerEvent::ToolDone {
+                                required_checks: crate::tool::required_check_batch(
+                                    &tc.name,
+                                    Some(&output),
+                                ),
+                                required_check: crate::tool::required_check_outcome(
+                                    &tc.name,
+                                    &tc.input,
+                                    Some(&output),
+                                    false,
+                                ),
                                 id: tc.id.clone(),
                                 name: tc.name.clone(),
                                 output: output.output.clone(),
@@ -1777,6 +1793,10 @@ impl Agent {
                         Err(e) => {
                             let error_msg = format!("Error: {}", e);
                             let _ = event_tx.send(ServerEvent::ToolDone {
+                                required_checks: None,
+                                required_check: crate::tool::required_check_outcome(
+                                    &tc.name, &tc.input, None, true,
+                                ),
                                 id: tc.id.clone(),
                                 name: tc.name.clone(),
                                 output: error_msg.clone(),
@@ -1811,6 +1831,8 @@ impl Agent {
                         reload_interrupted_tool_result(tc, tool_elapsed.as_secs_f64());
 
                     let _ = event_tx.send(ServerEvent::ToolDone {
+                        required_checks: None,
+                        required_check: None,
                         id: tc.id.clone(),
                         name: tc.name.clone(),
                         output: interrupted_msg.clone(),
@@ -1865,6 +1887,8 @@ impl Agent {
                     );
 
                     let _ = event_tx.send(ServerEvent::ToolDone {
+                        required_checks: None,
+                        required_check: None,
                         id: tc.id.clone(),
                         name: tc.name.clone(),
                         output: bg_msg.clone(),

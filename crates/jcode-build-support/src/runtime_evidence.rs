@@ -117,7 +117,20 @@ impl RuntimeEvidence {
             .output()
             .ok()
             .is_some_and(|output| output.status.code() == Some(1) && output.stdout.is_empty());
-        let dirty = filters_absent
+        let index_observable = Command::new("git")
+            .args(["-c", "core.fsmonitor=false", "ls-files", "-v", "-z"])
+            .current_dir(repo_dir)
+            .output()
+            .ok()
+            .filter(|output| output.status.success())
+            .is_some_and(|output| {
+                output
+                    .stdout
+                    .split(|byte| *byte == 0)
+                    .filter(|entry| !entry.is_empty())
+                    .all(|entry| entry.first() == Some(&b'H'))
+            });
+        let dirty = (filters_absent && index_observable)
             .then(|| {
                 Command::new("git")
                     .args([
@@ -141,6 +154,41 @@ impl RuntimeEvidence {
 mod tests {
     use super::*;
     use jcode_selfdev_types::RuntimeIdentity;
+
+    #[test]
+    fn runtime_evidence_hidden_index_flags_are_not_clean_evidence() {
+        let repo = tempfile::tempdir().unwrap();
+        let git = |args: &[&str]| {
+            let output = Command::new("git")
+                .args(args)
+                .current_dir(repo.path())
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+            String::from_utf8(output.stdout).unwrap().trim().to_owned()
+        };
+        git(&["init", "-q"]);
+        std::fs::write(repo.path().join("source.rs"), "original").unwrap();
+        git(&["add", "source.rs"]);
+        for flag in ["--assume-unchanged", "--skip-worktree"] {
+            git(&["update-index", flag, "source.rs"]);
+            std::fs::write(repo.path().join("source.rs"), "changed").unwrap();
+            let report = RuntimeEvidence::capture(
+                repo.path(),
+                "abcdef012",
+                false,
+                Some(server("abcdef012", false)),
+            );
+            assert_eq!(report.source_dirty, None);
+            assert_ne!(report.verdict, EvidenceVerdict::Matched);
+            git(&[
+                "update-index",
+                "--no-assume-unchanged",
+                "--no-skip-worktree",
+                "source.rs",
+            ]);
+        }
+    }
 
     #[test]
     fn runtime_evidence_capture_never_executes_repository_filters_or_fsmonitor() {

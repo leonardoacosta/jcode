@@ -1804,3 +1804,21 @@ async fn one_shot_cleanup_preserves_the_original_command_error() {
         ));
     }
 }
+
+#[test]
+fn ndjson_tool_done_ignores_required_check_identity() {
+    let event: crate::protocol::ServerEvent = serde_json::from_value(serde_json::json!({
+        "type":"tool_done", "id":"call", "name":"bash", "output":"done", "error":null,
+        "required_check":{"required_check_id":"SECRET_TOKEN", "foreground":true,
+            "completed":true, "exit_code":7, "tool_error":false}
+    }))
+    .unwrap();
+    let mut output = Vec::new();
+    emit_ndjson_event(&mut output, &mut NdjsonRunState::default(), event).unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(
+        value,
+        serde_json::json!({"type":"tool_done", "id":"call", "name":"bash", "output":"done", "error":null})
+    );
+    assert!(!String::from_utf8(output).unwrap().contains("SECRET_TOKEN"));
+}
