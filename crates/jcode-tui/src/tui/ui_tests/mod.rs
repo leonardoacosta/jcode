@@ -109,7 +109,7 @@ fn native_scrollbar_visibility_requires_overflow() {
 }
 
 #[derive(Clone, Default)]
-struct TestState {
+pub(super) struct TestState {
     input: String,
     cursor_pos: usize,
     provider_name: Option<String>,
@@ -256,7 +256,7 @@ impl crate::tui::TuiState for TestState {
     fn status(&self) -> ProcessingStatus {
         self.status.clone()
     }
-    fn command_suggestions(&self) -> Vec<(String, &'static str)> {
+    fn command_suggestions(&self) -> Vec<crate::tui::CommandCandidate> {
         Vec::new()
     }
     fn active_skill(&self) -> Option<String> {

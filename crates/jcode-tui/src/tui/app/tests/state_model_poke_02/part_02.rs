@@ -129,7 +129,12 @@ fn test_agents_ctrl_g_toggles_scope_and_saves_to_the_chosen_scope() {
         assert!(!app.agent_models_global_scope);
         let roles = app.inline_interactive_state.as_ref().expect("role list");
         assert!(roles.is_agent_target_picker());
-        assert!(roles.entries.iter().all(|entry| entry.name.ends_with("[session]")));
+        assert!(
+            roles
+                .entries
+                .iter()
+                .all(|entry| entry.name.ends_with("[session]"))
+        );
         configure_test_remote_models(&mut app);
         app.open_agent_model_picker(crate::tui::AgentModelTarget::Review);
         app.is_remote = false;
@@ -331,7 +336,7 @@ fn test_model_command_suggestions_include_matching_models() {
 
     let suggestions = app.get_suggestions_for("/model g52c");
     assert_eq!(
-        suggestions.first().map(|(cmd, _)| cmd.as_str()),
+        suggestions.first().map(|candidate| candidate.name.as_str()),
         Some("/model gpt-5.2-codex")
     );
 }
@@ -345,7 +350,7 @@ fn test_model_command_trailing_space_shows_model_suggestions() {
     assert!(
         suggestions
             .iter()
-            .any(|(cmd, _)| cmd == "/model gpt-5.3-codex")
+            .any(|candidate| candidate.name == "/model gpt-5.3-codex")
     );
 }
 
@@ -355,7 +360,10 @@ fn test_model_command_provider_suggestions_include_openrouter_routes() {
     configure_test_remote_openrouter_provider_routes(&mut app);
 
     let suggestions = app.get_suggestions_for("/model anthropic/claude-sonnet-4@");
-    let commands: Vec<&str> = suggestions.iter().map(|(cmd, _)| cmd.as_str()).collect();
+    let commands: Vec<&str> = suggestions
+        .iter()
+        .map(|candidate| candidate.name.as_str())
+        .collect();
 
     assert!(commands.contains(&"/model anthropic/claude-sonnet-4@auto"));
     assert!(commands.contains(&"/model anthropic/claude-sonnet-4@Fireworks"));
@@ -369,7 +377,7 @@ fn test_model_command_provider_suggestions_rank_matching_provider_prefix() {
 
     let suggestions = app.get_suggestions_for("/model anthropic/claude-sonnet-4@fi");
     assert_eq!(
-        suggestions.first().map(|(cmd, _)| cmd.as_str()),
+        suggestions.first().map(|candidate| candidate.name.as_str()),
         Some("/model anthropic/claude-sonnet-4@Fireworks")
     );
 }
@@ -380,7 +388,7 @@ fn test_model_command_provider_suggestions_normalize_bare_openai_model_to_openro
 
     let suggestions = app.get_suggestions_for("/model gpt-5.4@op");
     assert_eq!(
-        suggestions.first().map(|(cmd, _)| cmd.as_str()),
+        suggestions.first().map(|candidate| candidate.name.as_str()),
         Some("/model openai/gpt-5.4@OpenAI")
     );
 }
@@ -390,7 +398,10 @@ fn test_model_command_provider_suggestions_include_auto_for_normalized_bare_open
     let (app, _set_model_calls) = create_openrouter_spec_capture_test_app();
 
     let suggestions = app.get_suggestions_for("/model gpt-5.4@");
-    let commands: Vec<&str> = suggestions.iter().map(|(cmd, _)| cmd.as_str()).collect();
+    let commands: Vec<&str> = suggestions
+        .iter()
+        .map(|candidate| candidate.name.as_str())
+        .collect();
 
     assert!(commands.contains(&"/model openai/gpt-5.4@auto"));
     assert!(commands.contains(&"/model openai/gpt-5.4@OpenAI"));
@@ -410,7 +421,10 @@ fn test_remote_fallback_provider_suggestions_normalize_bare_openai_openrouter_ro
         app.remote_model_options.clear();
 
         let suggestions = app.get_suggestions_for("/model gpt-5.4@");
-        let commands: Vec<&str> = suggestions.iter().map(|(cmd, _)| cmd.as_str()).collect();
+        let commands: Vec<&str> = suggestions
+            .iter()
+            .map(|candidate| candidate.name.as_str())
+            .collect();
 
         assert!(commands.contains(&"/model openai/gpt-5.4@auto"));
         assert!(commands.contains(&"/model openai/gpt-5.4@OpenAI"));
@@ -431,10 +445,10 @@ fn test_login_command_suggestions_follow_provider_catalog() {
 
     for provider in crate::provider_catalog::tui_login_providers() {
         assert!(
-            suggestions
-                .iter()
-                .any(|(cmd, detail)| cmd == &format!("/login {}", provider.id)
-                    && detail == &provider.menu_detail),
+            suggestions.iter().any(
+                |candidate| candidate.name == format!("/login {}", provider.id)
+                    && candidate.description == provider.menu_detail
+            ),
             "missing /login suggestion for provider {}",
             provider.id
         );

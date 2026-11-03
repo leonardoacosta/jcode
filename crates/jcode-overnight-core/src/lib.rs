@@ -45,6 +45,9 @@ impl OvernightRunStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OvernightManifest {
+    /// Optional unattended task authority. Legacy manual runs carry no snapshot.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task_admission: Option<jcode_config_types::TaskAdmissionSnapshot>,
     pub version: u32,
     pub run_id: String,
     pub parent_session_id: String,

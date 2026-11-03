@@ -12,7 +12,16 @@ fn cached_suggestions_match_uncached_across_input_mutations() {
     let mut app = create_test_app();
 
     for input in [
-        "", "/", "/m", "/mod", "/model", "/help", "/conifg", "/goals ", "/rewind ", "not a command",
+        "",
+        "/",
+        "/m",
+        "/mod",
+        "/model",
+        "/help",
+        "/conifg",
+        "/goals ",
+        "/rewind ",
+        "not a command",
         "/",
     ] {
         app.input = input.to_string();
@@ -55,7 +64,9 @@ fn editing_input_within_a_frame_invalidates_the_memo() {
         "changing the input must not return the previous input's suggestions"
     );
     assert!(
-        for_mod.iter().any(|(cmd, _)| cmd.starts_with("/model")),
+        for_mod
+            .iter()
+            .any(|candidate| candidate.name.starts_with("/model")),
         "expected /model suggestions after typing /mod, got {for_mod:?}"
     );
 }
@@ -124,7 +135,10 @@ fn pending_prompt_transition_invalidates_the_memo() {
 
     assert_eq!(
         pending,
-        vec![("/cancel".to_string(), "Cancel the pending prompt")],
+        vec![CommandCandidate::from((
+            "/cancel".to_string(),
+            "Cancel the pending prompt"
+        ))],
         "a pending prompt must suppress the palette down to /cancel"
     );
 }

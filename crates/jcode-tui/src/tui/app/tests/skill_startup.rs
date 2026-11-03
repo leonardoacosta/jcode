@@ -54,8 +54,8 @@ fn startup_skill_commands(app: &mut App, input: &str) -> Vec<String> {
     app.advance_command_suggestions_epoch();
     app.command_suggestions()
         .into_iter()
-        .filter(|(_, help)| *help == "Activate skill")
-        .map(|(command, _)| command)
+        .filter(|candidate| candidate.kind == CommandCandidateKind::Skill)
+        .map(|candidate| candidate.name)
         .collect()
 }
 
@@ -149,5 +149,150 @@ fn skill_startup_ssh_history_replaces_warmed_empty_candidates_without_local_skil
             crate::tui::TuiState::available_skills(&app),
             vec!["startup-remote"]
         );
+    });
+}
+
+#[test]
+fn skill_selector_metadata_local_description_and_native_collision() {
+    with_skill_startup_home(|home| {
+        write_startup_skill(home, "selector-foo");
+        write_startup_skill(home, "help");
+        let mut app = App::new_for_remote_with_options(None, false);
+        let project = home.join("empty-selector-project");
+        std::fs::create_dir_all(&project).unwrap();
+        app.session.working_dir = Some(project.to_string_lossy().into_owned());
+        let candidates = app.get_suggestions_for("/");
+        let skill = candidates
+            .iter()
+            .find(|entry| entry.name == "/selector-foo")
+            .unwrap();
+        assert_eq!(skill.kind, CommandCandidateKind::Skill);
+        assert_eq!(skill.description, "Startup regression fixture");
+        let help: Vec<_> = candidates
+            .iter()
+            .filter(|entry| entry.name == "/help")
+            .collect();
+        assert_eq!(help.len(), 1);
+        assert_eq!(help[0].kind, CommandCandidateKind::NativeCommand);
+        assert_eq!(help[0].description, "Show help and keyboard shortcuts");
+    });
+}
+
+#[test]
+fn skill_selector_metadata_remote_legacy_unknown_and_controls() {
+    with_skill_startup_home(|_| {
+        crate::env::set_var("JCODE_SSH_REMOTE", "fixture-host");
+        let mut app = App::new_for_remote_with_options(None, false);
+        app.remote_skills = vec![
+            "selector-legacy".into(),
+            "selector-modern".into(),
+            "help".into(),
+        ];
+        app.remote_skill_descriptions.insert(
+            "selector-modern".into(),
+            "Does\nfoo\t\u{1b}[31m\u{7}界".into(),
+        );
+        let candidates = app.get_suggestions_for("/selector-");
+        let legacy = candidates
+            .iter()
+            .find(|entry| entry.name == "/selector-legacy")
+            .unwrap();
+        assert_eq!(legacy.kind, CommandCandidateKind::Skill);
+        assert_eq!(legacy.description, "unknown");
+        let modern = candidates
+            .iter()
+            .find(|entry| entry.name == "/selector-modern")
+            .unwrap();
+        assert_eq!(modern.description, "Doesfoo[31m界");
+        assert!(!modern.description.chars().any(char::is_control));
+        let all = app.get_suggestions_for("/");
+        assert_eq!(all.iter().filter(|entry| entry.name == "/help").count(), 1);
+        assert_eq!(
+            all.iter().find(|entry| entry.name == "/help").unwrap().kind,
+            CommandCandidateKind::NativeCommand
+        );
+    });
+}
+
+#[test]
+fn skill_selector_metadata_history_refreshes_descriptions_and_preserves_metadata_only_catalog() {
+    with_skill_startup_home(|_| {
+        crate::env::set_var("JCODE_SSH_REMOTE", "fixture-host");
+        let mut app = App::new_for_remote_with_options(None, false);
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let _enter = runtime.enter();
+        let mut remote = crate::tui::backend::RemoteConnection::dummy();
+        let history = |descriptions: serde_json::Value| {
+            serde_json::from_value(serde_json::json!({
+                "type": "history", "id": 1, "session_id": "selector-history",
+                "messages": [], "skills": ["selector-remote"],
+                "skill_descriptions": descriptions,
+                "server_version": jcode_build_meta::version()
+            }))
+            .unwrap()
+        };
+        app.handle_server_event(history(serde_json::json!({})), &mut remote);
+        assert_eq!(
+            app.get_suggestions_for("/selector-remote")[0].description,
+            "unknown"
+        );
+        app.handle_server_event(
+            history(serde_json::json!({"selector-remote": "Actual remote description\n"})),
+            &mut remote,
+        );
+        assert_eq!(
+            app.get_suggestions_for("/selector-remote")[0].description,
+            "Actual remote description"
+        );
+        let catalog = serde_json::from_value(serde_json::json!({
+            "type": "history", "id": 2, "session_id": "selector-history", "messages": [],
+            "available_models": ["model"]
+        }))
+        .unwrap();
+        app.handle_server_event(catalog, &mut remote);
+        assert_eq!(
+            app.get_suggestions_for("/selector-remote")[0].description,
+            "Actual remote description"
+        );
+    });
+}
+
+#[test]
+fn skill_selector_metadata_rejects_control_bearing_local_and_remote_names() {
+    with_skill_startup_home(|home| {
+        let dir = home.join(".agents/skills/malicious-selector");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("SKILL.md"),
+            "---\nname: \"he\\u001blp\"\ndescription: Malicious fixture\n---\nBody\n",
+        )
+        .unwrap();
+        let mut app = App::new_for_remote_with_options(None, false);
+        let project = home.join("empty-malicious-project");
+        std::fs::create_dir_all(&project).unwrap();
+        app.session.working_dir = Some(project.to_string_lossy().into_owned());
+        assert!(
+            app.current_skills_snapshot()
+                .list()
+                .iter()
+                .any(|skill| skill.name.contains('\u{1b}'))
+        );
+        for remote in [false, true] {
+            app.is_remote = remote;
+            app.remote_skills = vec!["he\u{1b}lp".into(), "foo\nbar".into()];
+            app.invalidate_command_candidates_cache();
+            let candidates = app.get_suggestions_for("/");
+            let help: Vec<_> = candidates
+                .iter()
+                .filter(|entry| entry.name == "/help")
+                .collect();
+            assert_eq!(help.len(), 1);
+            assert_eq!(help[0].kind, CommandCandidateKind::NativeCommand);
+            assert!(
+                !candidates.iter().any(
+                    |entry| entry.name == "/foobar" || entry.name.chars().any(char::is_control)
+                )
+            );
+        }
     });
 }

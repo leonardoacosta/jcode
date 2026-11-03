@@ -502,6 +502,7 @@ fn startup_history(session_id: &str) -> ServerEvent {
         available_model_routes: vec![],
         mcp_servers: vec![],
         skills: vec![],
+        skill_descriptions: Default::default(),
         total_tokens: None,
         token_usage_totals: None,
         all_sessions: vec![],

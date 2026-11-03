@@ -1013,7 +1013,7 @@ impl crate::tui::TuiState for App {
             .or_else(|| self.elapsed())
     }
 
-    fn command_suggestions(&self) -> Vec<(String, &'static str)> {
+    fn command_suggestions(&self) -> Vec<crate::tui::CommandCandidate> {
         App::command_suggestions(self)
     }
 

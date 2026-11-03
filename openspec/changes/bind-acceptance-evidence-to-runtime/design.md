@@ -1,0 +1,9 @@
+# Runtime acceptance evidence design
+
+Use the existing build-support facade for a point-in-time source/client/server comparison. Source revision and dirty status come from Git in the active working directory. Client identity comes from build metadata. Daemon identity comes from the actual process handling an existing read-only Ping, including current_exe rather than a channel symlink. No agent or provider is created to query identity.
+
+Pong carries optional serde-default server_runtime. Older peers omit it and yield unknown. Remote TUI requests Ping during connection and retains the actual identity separately from human-readable server_version. Keepalive pongs without identity must not erase a previously observed identity. Local in-process TUI uses its own build identity as the serving process.
+
+Only valid hexadecimal hashes can match. Proven source/client/server revision differences or observed dirty states report mismatched even when another observation is absent. Matched requires complete authoritative cleanliness. Current cached build metadata does not prove final binary cleanliness, so production `cleanliness_verified` is false and `server_dirty` is unknown. This intentionally leaves real clean-match acceptance incomplete rather than fabricating a match or dirty state. SSH source paths are never inspected as local paths. Disconnect clears daemon identity, while same-connection keepalives preserve it. JSON extends the existing version fields additively. Version rows reuse display-cell ellipsis truncation.
+
+Acceptance: helper tests cover matching, mismatching, dirty and missing/invalid observations. Protocol tests cover old and modern Pong. Public CLI acceptance must query an isolated serving daemon without changing the shared daemon, and TUI tests must cover retained remote identity and bounded version rows. Final full crate gates and independent review remain required before archive.

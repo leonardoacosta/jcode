@@ -103,6 +103,8 @@ struct ProviderCurrentReport {
 
 #[derive(Debug, Serialize)]
 pub(super) struct VersionReport {
+    #[serde(flatten)]
+    pub(super) runtime: crate::build::RuntimeEvidence,
     pub(super) version: String,
     pub(super) semver: String,
     pub(super) base_semver: String,
@@ -431,8 +433,34 @@ pub(super) async fn run_provider_current_command(
     Ok(())
 }
 
-pub(super) fn run_version_command(emit_json: bool) -> Result<()> {
+pub(super) async fn run_version_command(emit_json: bool) -> Result<()> {
+    let server = tokio::time::timeout(Duration::from_secs(2), async {
+        use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+        let mut stream = crate::server::connect_socket(&crate::server::socket_path())
+            .await
+            .ok()?;
+        stream
+            .write_all(b"{\"type\":\"ping\",\"id\":1}\n")
+            .await
+            .ok()?;
+        let mut reader = BufReader::new(stream).take(64 * 1024);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.ok()?;
+        match serde_json::from_str::<crate::protocol::ServerEvent>(&line).ok()? {
+            crate::protocol::ServerEvent::Pong { server_runtime, .. } => server_runtime,
+            _ => None,
+        }
+    })
+    .await
+    .ok()
+    .flatten();
     let report = VersionReport {
+        runtime: crate::build::RuntimeEvidence::capture(
+            &std::env::current_dir()?,
+            jcode_build_meta::git_hash(),
+            jcode_build_meta::git_dirty(),
+            server,
+        ),
         version: jcode_build_meta::version().to_string(),
         semver: jcode_build_meta::semver().to_string(),
         base_semver: jcode_build_meta::base_semver().to_string(),
@@ -457,6 +485,7 @@ pub(super) fn run_version_command(emit_json: bool) -> Result<()> {
         println!("build_time\t{}", report.build_time);
         println!("git_date\t{}", report.git_date);
         println!("release_build\t{}", report.release_build);
+        println!("runtime\t{}", serde_json::to_string(&report.runtime)?);
     }
 
     Ok(())

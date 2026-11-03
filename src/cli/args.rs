@@ -150,6 +150,13 @@ pub(crate) struct Args {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum Command {
+    /// Print effective task/worktree policy and optional diagnostic admission JSON.
+    Policy {
+        /// Read a diagnostic snapshot only. This file never grants task authority.
+        #[arg(long, value_name = "JSON")]
+        admission: Option<std::path::PathBuf>,
+    },
+
     /// List configured MCP servers or manage remote-server OAuth credentials
     Mcp {
         #[command(subcommand)]

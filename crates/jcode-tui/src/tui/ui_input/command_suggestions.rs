@@ -2,7 +2,8 @@ use super::*;
 
 pub(super) fn command_suggestion_lines(
     app: &dyn TuiState,
-    suggestions: &[(String, &'static str)],
+    suggestions: &[crate::tui::CommandCandidate],
+    width: usize,
 ) -> Vec<Line<'static>> {
     // Highlight the characters of each command that the typed query matched.
     // We only highlight the command token itself (the part before the first
@@ -14,9 +15,12 @@ pub(super) fn command_suggestion_lines(
 
     let mut lines = Vec::new();
     if suggestions.len() == 1 {
-        let (cmd, desc) = &suggestions[0];
+        let candidate = &suggestions[0];
+        let cmd = &candidate.name;
+        let desc = &candidate.description;
         let base = Style::default().fg(rgb(255, 213, 128));
-        let mut spans = highlight(cmd, base);
+        let mut spans = vec![kind_span(candidate.kind)];
+        spans.extend(highlight(cmd, base));
         spans.push(Span::styled(format!("  {}", desc), base));
         lines.push(Line::from(spans));
     } else if !suggestions.is_empty() {
@@ -33,7 +37,9 @@ pub(super) fn command_suggestion_lines(
         let more_count = suggestions.len().saturating_sub(window_end);
         let selected_visible = selected.saturating_sub(window_start);
 
-        for (i, (cmd, desc)) in limited.iter().enumerate() {
+        for (i, candidate) in limited.iter().enumerate() {
+            let cmd = &candidate.name;
+            let desc = &candidate.description;
             let is_selected = i == selected_visible;
             let description_style = if is_selected {
                 Style::default().fg(rgb(255, 213, 128))
@@ -45,24 +51,45 @@ pub(super) fn command_suggestion_lines(
             } else {
                 Style::default().fg(rgb(128, 203, 196))
             };
-            let mut spans = highlight(cmd, command_style);
+            let mut spans = vec![kind_span(candidate.kind)];
+            spans.extend(highlight(cmd, command_style));
             spans.push(Span::styled(format!("  {}", desc), description_style));
+            let mut suffix = Vec::new();
             if i == 0 && window_start > 0 {
-                spans.push(Span::styled(
+                suffix.push(Span::styled(
                     format!("  ↑{}", window_start),
                     Style::default().fg(dim_color()),
                 ));
             }
             if i + 1 == limited.len() && more_count > 0 {
-                spans.push(Span::styled(
+                suffix.push(Span::styled(
                     format!("  +{} more", more_count),
                     Style::default().fg(dim_color()),
                 ));
             }
-            lines.push(Line::from(spans));
+            lines.push(super::super::truncate_line_preserving_suffix_to_width(
+                &Line::from(spans),
+                &Line::from(suffix),
+                width,
+            ));
         }
     }
     lines
+        .into_iter()
+        .map(|line| super::super::truncate_line_with_ellipsis_to_width(&line, width))
+        .collect()
+}
+
+fn kind_span(kind: crate::tui::CommandCandidateKind) -> Span<'static> {
+    use crate::tui::CommandCandidateKind;
+    match kind {
+        CommandCandidateKind::NativeCommand => {
+            Span::styled("cmd ", Style::default().fg(rgb(128, 203, 196)))
+        }
+        CommandCandidateKind::Skill => {
+            Span::styled("skill ", Style::default().fg(rgb(195, 170, 255)))
+        }
+    }
 }
 
 /// Build spans for a suggestion command, recoloring the characters that the
@@ -110,4 +137,74 @@ pub(super) fn highlight_command_spans(
         }
     }
     spans
+}
+
+#[cfg(test)]
+mod skill_selector_metadata_tests {
+    use super::*;
+
+    #[test]
+    fn skill_selector_metadata_rows_fit_unicode_cell_widths_and_style_kind() {
+        let state = crate::tui::ui::tests::TestState::default();
+        let candidates = vec![
+            crate::tui::CommandCandidate::skill(
+                "/界-foo".into(),
+                "Does foo 界 with a long explanation",
+            ),
+            crate::tui::CommandCandidate::from(("/help".into(), "Show help")),
+        ];
+        for width in [0, 1, 20, 40, 80] {
+            let lines = command_suggestion_lines(&state, &candidates, width);
+            assert_eq!(lines.len(), 2);
+            for line in &lines {
+                assert!(line.width() <= width, "{line:?} exceeds {width}");
+                let text: String = line
+                    .spans
+                    .iter()
+                    .map(|span| span.content.as_ref())
+                    .collect();
+                assert!(!text.chars().any(char::is_control));
+                if width == 0 {
+                    assert!(text.is_empty());
+                }
+                if width == 1 {
+                    assert_eq!(text, "…");
+                }
+            }
+            if width == 80 {
+                assert_eq!(lines[0].spans[0].content, "skill ");
+                assert_eq!(lines[1].spans[0].content, "cmd ");
+                assert_ne!(lines[0].spans[0].style, lines[1].spans[0].style);
+                assert!(lines[0].to_string().contains("Does foo 界"));
+            }
+            if width == 20 {
+                assert!(lines[0].to_string().ends_with('…'));
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod navigation_metadata_tests {
+    use super::*;
+
+    #[test]
+    fn skill_selector_metadata_long_descriptions_keep_more_indicator_visible() {
+        let state = crate::tui::ui::tests::TestState::default();
+        let candidates: Vec<_> = (0..app::COMMAND_SUGGESTION_VISIBLE_LIMIT + 2)
+            .map(|i| {
+                crate::tui::CommandCandidate::skill(
+                    format!("/skill-{i}"),
+                    &"界 description ".repeat(30),
+                )
+            })
+            .collect();
+        for width in [0, 1, 20, 40, 80] {
+            let lines = command_suggestion_lines(&state, &candidates, width);
+            assert!(lines.iter().all(|line| line.width() <= width));
+            if width >= 20 {
+                assert!(lines.last().unwrap().to_string().ends_with("  +2 more"));
+            }
+        }
+    }
 }

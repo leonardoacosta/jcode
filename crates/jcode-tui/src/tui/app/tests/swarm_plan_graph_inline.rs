@@ -546,6 +546,7 @@ fn history_event_for_session(session_id: &str) -> crate::protocol::ServerEvent {
         available_model_routes: vec![],
         mcp_servers: vec![],
         skills: vec![],
+        skill_descriptions: Default::default(),
         total_tokens: None,
         token_usage_totals: None,
         all_sessions: vec![],
@@ -1004,8 +1005,6 @@ fn assert_full_discard_clears_diagrams_and_plan_state(app: &mut App, path: &str)
     );
 }
 
-
-
 /// Margin-mode counterpart of path 1, the exact user-visible bug the fix
 /// targets: immediately after a local `/clear`, the Margin info widget
 /// (which draws `get_active_diagrams()[0]`, info_widget.rs) must no longer
@@ -1131,8 +1130,6 @@ fn test_recover_session_without_tools_leaves_stale_active_diagram_and_swarm_plan
 
     crate::tui::mermaid::clear_active_diagrams();
 }
-
-
 
 /// Path 5: Ctrl+L (all connection states) is a terminal-style clear: it
 /// appends a blank spacer and snaps to the bottom. The transcript, queue,

@@ -141,7 +141,8 @@ fn test_generated_image_event_roundtrip() -> Result<()> {
         metadata_path,
         output_format,
         revised_prompt,
-    } = decoded else {
+    } = decoded
+    else {
         return Err(anyhow!("wrong event type"));
     };
     assert_eq!(id, "ig_123");
@@ -218,6 +219,7 @@ fn test_history_event_roundtrip_preserves_side_panel_snapshot() -> Result<()> {
         available_service_tiers: None,
         mcp_servers: Vec::new(),
         skills: Vec::new(),
+        skill_descriptions: Default::default(),
         total_tokens: Some((123, 45)),
         token_usage_totals: Some(TokenUsageTotals {
             cache_prompt_tokens: Some(130),

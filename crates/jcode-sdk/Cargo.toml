@@ -10,6 +10,7 @@ anyhow = "1"
 jcode-harness-api = { path = "../jcode-harness-api" }
 jcode-applet-types = { path = "../jcode-applet-types" }
 jcode-todo-policy = { path = "../jcode-todo-policy" }
+jcode-config-types = { path = "../jcode-config-types" }
 jcode-provider-metadata = { path = "../jcode-provider-metadata" }
 jcode-transport = { path = "../jcode-transport" }
 jsonschema = { version = "0.49.3", default-features = false }

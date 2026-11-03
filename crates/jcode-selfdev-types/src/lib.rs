@@ -12,6 +12,16 @@ pub use desktop::desktop_repo_root;
 /// the `cli` subsystem.
 pub const CLIENT_SELFDEV_ENV: &str = "JCODE_CLIENT_SELFDEV_MODE";
 
+/// Identity reported by the process that actually serves a request, not a channel symlink.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RuntimeIdentity {
+    pub git_hash: String,
+    pub dirty: bool,
+    #[serde(default)]
+    pub cleanliness_verified: bool,
+    pub binary_path: Option<PathBuf>,
+}
+
 /// Returns true if the current process was launched in self-dev client mode
 /// (i.e. `CLIENT_SELFDEV_ENV` is set). Defined in this low-level crate so any
 /// consumer can check self-dev mode without depending on the `cli` subsystem.

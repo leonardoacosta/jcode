@@ -34,6 +34,12 @@ pub(super) async fn connection_presence_pong(
     let user_connected_session_ids = connected_user_ids(connected, &*members.read().await);
     ServerEvent::Pong {
         id,
+        server_runtime: Some(jcode_selfdev_types::RuntimeIdentity {
+            git_hash: jcode_build_meta::git_hash().to_owned(),
+            dirty: jcode_build_meta::git_dirty(),
+            cleanliness_verified: jcode_build_meta::cleanliness_verified(),
+            binary_path: std::env::current_exe().ok(),
+        }),
         native_ssh_protocol: Some(1),
         capabilities: vec![
             "session_tools".into(),

@@ -201,6 +201,7 @@ fn test_handle_server_event_history_clears_connection_type_on_session_change_whe
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -261,6 +262,7 @@ fn test_handle_server_event_history_preserves_connection_type_for_same_session_w
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -321,6 +323,7 @@ fn test_handle_server_event_history_preserves_reasoning_effort_for_same_session_
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -408,6 +411,7 @@ fn test_handle_server_event_history_session_change_clears_streaming_preview_diag
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -517,6 +521,7 @@ fn test_handle_server_event_history_same_session_rewind_reapply_clears_streaming
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -634,6 +639,7 @@ fn test_handle_server_event_history_same_session_midstream_duplicate_is_dropped_
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -723,6 +729,7 @@ fn test_handle_server_event_history_same_session_midstream_duplicate_is_dropped_
                 available_model_routes: vec![],
                 mcp_servers: vec![],
                 skills: vec![],
+                skill_descriptions: Default::default(),
                 total_tokens: None,
                 token_usage_totals: None,
                 all_sessions: vec![],
@@ -832,6 +839,7 @@ fn test_handle_server_event_history_same_session_rewind_then_late_done_does_not_
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -924,6 +932,7 @@ fn test_handle_server_event_history_session_change_clears_pending_interleaves() 
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -1189,22 +1198,6 @@ fn test_handle_post_connect_requests_client_reload_after_server_reload_even_with
 }
 
 include!("token_usage_streaming.rs");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #[test]
 fn test_handle_server_event_interrupted_clears_stream_state_and_sets_idle() {
@@ -1672,6 +1665,7 @@ fn test_pending_startup_notice_survives_history_bootstrap_for_fresh_session() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],

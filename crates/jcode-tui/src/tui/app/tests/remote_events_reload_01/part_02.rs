@@ -382,6 +382,7 @@ fn test_remote_rewind_completion_shows_undo_hint_after_history_refresh() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],

@@ -1,6 +1,39 @@
 use super::*;
 use crate::tui::core;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CommandCandidateKind {
+    NativeCommand,
+    Skill,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CommandCandidate {
+    pub kind: CommandCandidateKind,
+    pub name: String,
+    pub description: String,
+}
+
+impl From<(String, &'static str)> for CommandCandidate {
+    fn from((name, description): (String, &'static str)) -> Self {
+        Self {
+            kind: CommandCandidateKind::NativeCommand,
+            name,
+            description: description.into(),
+        }
+    }
+}
+
+impl CommandCandidate {
+    pub fn skill(name: String, description: &str) -> Self {
+        Self {
+            kind: CommandCandidateKind::Skill,
+            name,
+            description: description.chars().filter(|c| !c.is_control()).collect(),
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 struct RegisteredCommand {
     name: &'static str,
@@ -353,75 +386,76 @@ impl App {
         crate::tui::fuzzy::fuzzy_score(needle, haystack)
     }
 
-    pub(super) fn rank_suggestions(
+    pub(super) fn rank_suggestions<T: Into<CommandCandidate>>(
         &self,
         needle: &str,
-        candidates: Vec<(String, &'static str)>,
-    ) -> Vec<(String, &'static str)> {
+        candidates: Vec<T>,
+    ) -> Vec<CommandCandidate> {
         let needle = needle.to_lowercase();
-        // Bucket 1 = literal prefix matches (exact typing always wins).
-        // Bucket 0 = typo-tolerant fuzzy matches by descending score.
-        let mut scored: Vec<(u8, i32, String, &'static str)> = Vec::new();
-        for (cmd, help) in candidates {
-            let lower = cmd.to_lowercase();
+        let mut scored = Vec::new();
+        for candidate in candidates {
+            let candidate = candidate.into();
+            let lower = candidate.name.to_lowercase();
             if lower.starts_with(&needle) {
-                scored.push((1, i32::MAX, cmd, help));
+                scored.push((1, i32::MAX, candidate));
             } else if let Some(score) = Self::fuzzy_score(&needle, &lower) {
-                scored.push((0, score, cmd, help));
+                scored.push((0, score, candidate));
             }
         }
         scored.sort_by(|a, b| {
             b.0.cmp(&a.0)
                 .then_with(|| b.1.cmp(&a.1))
-                .then_with(|| a.2.len().cmp(&b.2.len()))
-                .then_with(|| a.2.cmp(&b.2))
+                .then_with(|| a.2.name.len().cmp(&b.2.name.len()))
+                .then_with(|| a.2.name.cmp(&b.2.name))
         });
         scored
             .into_iter()
-            .map(|(_, _, cmd, help)| (cmd, help))
+            .map(|(_, _, candidate)| candidate)
             .collect()
     }
 
-    fn command_candidates(&self) -> Vec<(String, &'static str)> {
+    fn command_candidates(&self) -> Vec<CommandCandidate> {
         if let Some(cache) = self.command_candidates_cache.borrow().as_ref() {
             return cache.candidates.clone();
         }
-
-        fn push_skill_commands(
-            commands: &mut Vec<(String, &'static str)>,
-            seen: &mut std::collections::HashSet<String>,
-            skills: &crate::skill::SkillRegistry,
-        ) {
-            for skill in skills.list() {
-                let command = format!("/{}", skill.name);
-                if seen.insert(command.clone()) {
-                    commands.push((command, "Activate skill"));
-                }
-            }
-        }
-
         let mut seen = std::collections::HashSet::new();
-        let mut commands: Vec<(String, &'static str)> = REGISTERED_COMMANDS
+        let mut commands: Vec<CommandCandidate> = REGISTERED_COMMANDS
             .iter()
             .filter(|command| !command.hidden)
             .filter_map(|command| {
                 let name = command.name.to_string();
-                seen.insert(name.clone()).then_some((name, command.help))
+                seen.insert(name.clone())
+                    .then(|| (name, command.help).into())
             })
             .collect();
-
-        let skills = self.current_skills_snapshot();
-        push_skill_commands(&mut commands, &mut seen, &skills);
-
-        if self.is_remote && !self.remote_skills.is_empty() {
-            for skill in &self.remote_skills {
-                let command = format!("/{skill}");
+        // A received remote catalog is authoritative over same-named local skills.
+        if self.is_remote {
+            for name in &self.remote_skills {
+                if name.chars().any(char::is_control) {
+                    continue;
+                }
+                let command = format!("/{name}");
                 if seen.insert(command.clone()) {
-                    commands.push((command, "Activate skill"));
+                    commands.push(CommandCandidate::skill(
+                        command,
+                        self.remote_skill_descriptions
+                            .get(name)
+                            .map(String::as_str)
+                            .unwrap_or("unknown"),
+                    ));
                 }
             }
         }
-
+        let skills = self.current_skills_snapshot();
+        for skill in skills.list() {
+            if skill.name.chars().any(char::is_control) {
+                continue;
+            }
+            let command = format!("/{}", skill.name);
+            if seen.insert(command.clone()) {
+                commands.push(CommandCandidate::skill(command, &skill.description));
+            }
+        }
         *self.command_candidates_cache.borrow_mut() = Some(CommandCandidatesCache {
             candidates: commands.clone(),
         });
@@ -543,7 +577,7 @@ impl App {
     }
 
     /// Get command suggestions based on current input (or base input for cycling)
-    pub(super) fn get_suggestions_for(&self, input: &str) -> Vec<(String, &'static str)> {
+    pub(super) fn get_suggestions_for(&self, input: &str) -> Vec<CommandCandidate> {
         let cursor = if input == self.input {
             self.cursor_pos.min(input.len())
         } else {
@@ -622,7 +656,10 @@ impl App {
 
             let suggestions = self.model_suggestion_candidates();
             if suggestions.is_empty() {
-                return vec![("/model".into(), "Open model picker")];
+                return vec![("/model".into(), "Open model picker")]
+                    .into_iter()
+                    .map(CommandCandidate::from)
+                    .collect();
             }
             return self.rank_suggestions(input, suggestions);
         }
@@ -694,7 +731,10 @@ impl App {
                 ("/autoreview on".into(), "Enable end-of-turn autoreview"),
                 ("/autoreview off".into(), "Disable end-of-turn autoreview"),
                 ("/autoreview now".into(), "Launch a reviewer immediately"),
-            ];
+            ]
+            .into_iter()
+            .map(CommandCandidate::from)
+            .collect();
         }
 
         if prefix.starts_with("/autojudge ") {
@@ -715,7 +755,10 @@ impl App {
                 ("/autojudge on".into(), "Enable end-of-turn autojudge"),
                 ("/autojudge off".into(), "Disable end-of-turn autojudge"),
                 ("/autojudge now".into(), "Launch a judge immediately"),
-            ];
+            ]
+            .into_iter()
+            .map(CommandCandidate::from)
+            .collect();
         }
 
         if prefix.starts_with("/review ") {
@@ -726,7 +769,10 @@ impl App {
         }
 
         if prefix_trimmed == "/review" {
-            return vec![("/review".into(), "Launch a one-shot review immediately")];
+            return vec![("/review".into(), "Launch a one-shot review immediately")]
+                .into_iter()
+                .map(CommandCandidate::from)
+                .collect();
         }
 
         if prefix.starts_with("/judge ") {
@@ -737,7 +783,10 @@ impl App {
         }
 
         if prefix_trimmed == "/judge" {
-            return vec![("/judge".into(), "Launch a one-shot judge immediately")];
+            return vec![("/judge".into(), "Launch a one-shot judge immediately")]
+                .into_iter()
+                .map(CommandCandidate::from)
+                .collect();
         }
 
         if prefix_trimmed == "/subagent-model" {
@@ -750,7 +799,10 @@ impl App {
                     "/subagent-model inherit".into(),
                     "Use the current active model",
                 ),
-            ];
+            ]
+            .into_iter()
+            .map(CommandCandidate::from)
+            .collect();
         }
 
         if prefix.starts_with("/subagent ") {
@@ -774,16 +826,25 @@ impl App {
         }
 
         if prefix_trimmed == "/subagent" {
-            return vec![("/subagent ".into(), "Launch a subagent with a prompt")];
+            return vec![("/subagent ".into(), "Launch a subagent with a prompt")]
+                .into_iter()
+                .map(CommandCandidate::from)
+                .collect();
         }
 
         // /model opens the interactive picker, and `/model <name>` supports direct completion.
         if prefix_trimmed == "/model" || prefix_trimmed == "/models" {
-            return vec![("/model".into(), "Open model picker or type `/model <name>`")];
+            return vec![("/model".into(), "Open model picker or type `/model <name>`")]
+                .into_iter()
+                .map(CommandCandidate::from)
+                .collect();
         }
 
         if prefix_trimmed == "/agents" {
-            return vec![("/agents".into(), "Open agent model config picker")];
+            return vec![("/agents".into(), "Open agent model config picker")]
+                .into_iter()
+                .map(CommandCandidate::from)
+                .collect();
         }
 
         if prefix.starts_with("/help ") || prefix.starts_with("/? ") {
@@ -792,10 +853,13 @@ impl App {
             } else {
                 "/help"
             };
-            let topics = self
+            let topics: Vec<CommandCandidate> = self
                 .command_candidates()
                 .into_iter()
-                .map(|(cmd, help)| (format!("{} {}", base, cmd.trim_start_matches('/')), help))
+                .map(|mut candidate| {
+                    candidate.name = format!("{} {}", base, candidate.name.trim_start_matches('/'));
+                    candidate
+                })
                 .collect();
             return self.rank_suggestions(input, topics);
         }
@@ -834,7 +898,10 @@ impl App {
         }
 
         if prefix_trimmed == "/git" {
-            return vec![("/git status".into(), "Show branch and working tree status")];
+            return vec![("/git status".into(), "Show branch and working tree status")]
+                .into_iter()
+                .map(CommandCandidate::from)
+                .collect();
         }
 
         if prefix.starts_with("/transcript ") {
@@ -851,7 +918,10 @@ impl App {
             return vec![(
                 "/transcript path".into(),
                 "Print transcript path without opening",
-            )];
+            )]
+            .into_iter()
+            .map(CommandCandidate::from)
+            .collect();
         }
 
         if prefix.starts_with("/effort ") {
@@ -1256,7 +1326,10 @@ impl App {
                 if let Ok(n) = arg.parse::<usize>()
                     && (1..=visible_count).contains(&n)
                 {
-                    return vec![(format!("/rewind {}", n), "Rewind to this message")];
+                    return vec![(format!("/rewind {}", n), "Rewind to this message")]
+                        .into_iter()
+                        .map(CommandCandidate::from)
+                        .collect();
                 }
                 return Vec::new();
             }
@@ -1271,7 +1344,7 @@ impl App {
     }
 
     /// Get command suggestions based on current input
-    pub fn command_suggestions(&self) -> Vec<(String, &'static str)> {
+    pub fn command_suggestions(&self) -> Vec<CommandCandidate> {
         // Read up to eight times per frame; recomputing each time re-ranks
         // every registered command and skill (and can touch disk for some
         // prefixes). Memoize on the exact input plus the guard state the
@@ -1323,7 +1396,7 @@ impl App {
     pub(super) fn command_suggestions_uncached(
         &self,
         signature: &CommandSuggestionsSignature,
-    ) -> Vec<(String, &'static str)> {
+    ) -> Vec<CommandCandidate> {
         // While an interactive prompt is waiting for typed input (API key,
         // OAuth callback, account label, SSH target), the composer is an
         // answer box, not a command line. Rendering the full command palette
@@ -1336,7 +1409,10 @@ impl App {
             let input = self.input.trim_start();
             let typed = input.trim_end();
             if !typed.is_empty() && typed.starts_with('/') && "/cancel".starts_with(typed) {
-                return vec![("/cancel".into(), "Cancel the pending prompt")];
+                return vec![("/cancel".into(), "Cancel the pending prompt")]
+                    .into_iter()
+                    .map(CommandCandidate::from)
+                    .collect();
             }
             return Vec::new();
         }
@@ -1361,7 +1437,7 @@ impl App {
         self.get_suggestions_for(&self.input)
     }
 
-    fn clamp_command_suggestion_selection(&mut self) -> Vec<(String, &'static str)> {
+    fn clamp_command_suggestion_selection(&mut self) -> Vec<CommandCandidate> {
         let suggestions = self.command_suggestions();
         if suggestions.is_empty() {
             self.command_suggestion_selected = 0;
@@ -1422,9 +1498,10 @@ impl App {
 
     pub(super) fn accept_selected_command_suggestion(&mut self) -> bool {
         let suggestions = self.clamp_command_suggestion_selection();
-        let Some((cmd, _)) = suggestions.get(self.command_suggestion_selected).cloned() else {
+        let Some(candidate) = suggestions.get(self.command_suggestion_selected) else {
             return false;
         };
+        let cmd = candidate.name.clone();
         if cmd == self.input.trim() {
             return false;
         }
@@ -1595,10 +1672,12 @@ impl App {
 
             // If current input is in base suggestions AND there are multiple options, continue cycling
             if base_suggestions.len() > 1
-                && base_suggestions.iter().any(|(cmd, _)| cmd == &self.input)
+                && base_suggestions
+                    .iter()
+                    .any(|candidate| candidate.name == self.input)
             {
                 let next_index = (idx + 1) % base_suggestions.len();
-                let (cmd, _) = &base_suggestions[next_index];
+                let cmd = &base_suggestions[next_index].name;
                 self.remember_input_undo_state();
                 self.input = cmd.clone();
                 self.cursor_pos = self.input.len();
@@ -1616,7 +1695,7 @@ impl App {
 
         // If only one suggestion and it matches exactly, add trailing space for commands
         // that accept arguments, then we're done
-        if current_suggestions.len() == 1 && current_suggestions[0].0 == self.input {
+        if current_suggestions.len() == 1 && current_suggestions[0].name == self.input {
             if !self.input.ends_with(' ') && Self::command_accepts_args(&self.input) {
                 self.remember_input_undo_state();
                 self.input.push(' ');
@@ -1631,7 +1710,7 @@ impl App {
         let selected = self
             .command_suggestion_selected
             .min(current_suggestions.len().saturating_sub(1));
-        let (cmd, _) = &current_suggestions[selected];
+        let cmd = &current_suggestions[selected].name;
         let base = self.input.clone();
         self.remember_input_undo_state();
         self.input = cmd.clone();
@@ -1648,7 +1727,7 @@ impl App {
     fn autocomplete_active_slash_token(
         &mut self,
         range: (usize, usize),
-        current_suggestions: Vec<(String, &'static str)>,
+        current_suggestions: Vec<CommandCandidate>,
     ) -> bool {
         let current_token = self.input[range.0..range.1].to_string();
 
@@ -1659,10 +1738,10 @@ impl App {
             if base_suggestions.len() > 1
                 && base_suggestions
                     .iter()
-                    .any(|(command, _)| command == &current_token)
+                    .any(|candidate| candidate.name == current_token)
             {
                 let next_index = (idx + 1) % base_suggestions.len();
-                let (command, _) = &base_suggestions[next_index];
+                let command = &base_suggestions[next_index].name;
                 self.remember_input_undo_state();
                 self.input.replace_range(range.0..range.1, command.as_str());
                 self.cursor_pos = range.0 + command.len();
@@ -1676,7 +1755,7 @@ impl App {
             return false;
         }
 
-        if current_suggestions.len() == 1 && current_suggestions[0].0 == current_token {
+        if current_suggestions.len() == 1 && current_suggestions[0].name == current_token {
             if Self::command_accepts_args(&current_token) {
                 self.remember_input_undo_state();
                 self.input
@@ -1691,7 +1770,7 @@ impl App {
         let selected = self
             .command_suggestion_selected
             .min(current_suggestions.len().saturating_sub(1));
-        let (command, _) = &current_suggestions[selected];
+        let command = &current_suggestions[selected].name;
         let base = self.input.clone();
         let mut replacement = command.clone();
         if current_suggestions.len() == 1 && Self::command_accepts_args(command) {

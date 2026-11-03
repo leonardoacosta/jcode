@@ -685,23 +685,31 @@ fn test_subagent_command_suggestions_include_manual_launch_and_model_policy() {
     let app = create_test_app();
 
     let subagent = app.get_suggestions_for("/subagent");
-    assert!(subagent.iter().any(|(cmd, _)| cmd == "/subagent "));
+    assert!(
+        subagent
+            .iter()
+            .any(|candidate| candidate.name == "/subagent ")
+    );
 
     let model = app.get_suggestions_for("/subagent-model ");
     assert!(
         model
             .iter()
-            .any(|(cmd, _)| cmd == "/subagent-model inherit")
+            .any(|candidate| candidate.name == "/subagent-model inherit")
     );
 
     let review = app.get_suggestions_for("/review");
-    assert!(review.iter().any(|(cmd, _)| cmd == "/review"));
+    assert!(review.iter().any(|candidate| candidate.name == "/review"));
 
     let judge = app.get_suggestions_for("/judge");
-    assert!(judge.iter().any(|(cmd, _)| cmd == "/judge"));
+    assert!(judge.iter().any(|candidate| candidate.name == "/judge"));
 
     let autojudge = app.get_suggestions_for("/autojudge");
-    assert!(autojudge.iter().any(|(cmd, _)| cmd == "/autojudge status"));
+    assert!(
+        autojudge
+            .iter()
+            .any(|candidate| candidate.name == "/autojudge status")
+    );
 }
 
 fn configure_test_remote_models_with_copilot(app: &mut App) {
@@ -862,14 +870,12 @@ fn test_catalog_snapshot_invalidates_service_tiers_only_when_identity_changes() 
         app.remote_provider_model = Some("gpt-6-astra".into());
         app.remote_available_service_tiers = Some(vec!["priority".into()]);
 
-        app.replace_remote_model_catalog_snapshot(
-            jcode_provider_core::ModelCatalogSnapshot::new(
-                Some(provider.into()),
-                Some(model.into()),
-                vec![],
-                vec![],
-            ),
-        );
+        app.replace_remote_model_catalog_snapshot(jcode_provider_core::ModelCatalogSnapshot::new(
+            Some(provider.into()),
+            Some(model.into()),
+            vec![],
+            vec![],
+        ));
 
         assert_eq!(
             app.remote_available_service_tiers.is_none(),

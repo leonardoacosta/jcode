@@ -2003,7 +2003,7 @@ pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
             ));
             if app.remote_server_has_update.unwrap_or(false) {
                 content.push_str(
-                    "\nstatus: server is older or differs from installed stable/current; reload recommended",
+                    "\nstatus: reload recommended; server differs from installed channel",
                 );
             } else {
                 content.push_str(
@@ -2013,6 +2013,49 @@ pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
         } else {
             content.push_str("\nmode: local/in-process");
         }
+        let local_runtime = jcode_selfdev_types::RuntimeIdentity {
+            git_hash: jcode_build_meta::git_hash().to_owned(),
+            dirty: jcode_build_meta::git_dirty(),
+            cleanliness_verified: jcode_build_meta::cleanliness_verified(),
+            binary_path: std::env::current_exe().ok(),
+        };
+        let runtime = if app.is_remote {
+            app.remote_server_runtime.clone()
+        } else {
+            Some(local_runtime)
+        };
+        let directory = super::commands::active_working_dir(app).unwrap_or_default();
+        let evidence = if crate::tui::is_ssh_remote() {
+            crate::build::RuntimeEvidence::new(
+                None,
+                None,
+                jcode_build_meta::git_hash().to_owned(),
+                jcode_build_meta::git_dirty(),
+                runtime,
+            )
+        } else {
+            crate::build::RuntimeEvidence::capture(
+                &directory,
+                jcode_build_meta::git_hash(),
+                jcode_build_meta::git_dirty(),
+                runtime,
+            )
+        };
+        content.push_str(&format!(
+            "\nsource: {}\nclient: {}\nserver: {}\nverdict: {:?}",
+            evidence.source_git_hash.as_deref().unwrap_or("unknown"),
+            evidence.client_git_hash,
+            evidence.server_git_hash.as_deref().unwrap_or("unknown"),
+            evidence.verdict
+        ));
+        let width = crossterm::terminal::size()
+            .map(|(width, _)| width.saturating_sub(4) as usize)
+            .unwrap_or(100);
+        content = content
+            .lines()
+            .map(|line| crate::tui::ui::tools_ui::truncate_end_display(line, width))
+            .collect::<Vec<_>>()
+            .join("\n");
         app.push_display_message(DisplayMessage {
             role: "system".to_string(),
             content,
@@ -2170,7 +2213,10 @@ pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
             .collect();
         app.push_display_message(DisplayMessage {
             role: "system".to_string(),
-            content: format!("Effective instructions (prompt order):\n{}", rows.join("\n")),
+            content: format!(
+                "Effective instructions (prompt order):\n{}",
+                rows.join("\n")
+            ),
             tool_calls: vec![],
             duration_secs: None,
             title: None,

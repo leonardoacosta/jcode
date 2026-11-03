@@ -13,6 +13,7 @@ fn task_card(id: &str, title: &str, status: &str) -> OvernightTaskCard {
 fn test_manifest(now: DateTime<Utc>) -> OvernightManifest {
     let run_dir = PathBuf::from("/tmp/overnight-run");
     OvernightManifest {
+        task_admission: None,
         version: OVERNIGHT_VERSION,
         run_id: "run-1".to_string(),
         parent_session_id: "parent".to_string(),
@@ -201,6 +202,7 @@ fn review_html_builder_includes_core_sections() {
     let now = Utc::now();
     let run_dir = PathBuf::from("/tmp/overnight-run");
     let manifest = OvernightManifest {
+        task_admission: None,
         version: OVERNIGHT_VERSION,
         run_id: "run-1".to_string(),
         parent_session_id: "parent".to_string(),

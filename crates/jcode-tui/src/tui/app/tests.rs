@@ -1030,6 +1030,20 @@ fn version_command_shows_remote_server_identity_and_update_status() {
 }
 
 #[test]
+fn runtime_identity_is_invalidated_on_disconnect() {
+    let mut app = create_test_app();
+    app.remote_server_runtime = Some(jcode_selfdev_types::RuntimeIdentity {
+        git_hash: "abcdef012".into(),
+        dirty: false,
+        cleanliness_verified: true,
+        binary_path: Some("/previous/daemon".into()),
+    });
+    let mut state = super::remote::RemoteRunState::default();
+    super::remote::handle_disconnect(&mut app, &mut state, None);
+    assert!(app.remote_server_runtime.is_none());
+}
+
+#[test]
 fn skills_command_lists_loaded_and_endorsed_skills() {
     let mut app = create_test_app();
 
@@ -1359,6 +1373,7 @@ fn stale_server_history_is_deferred_before_remote_state_is_applied() {
             available_model_routes: vec![],
             mcp_servers: vec!["stale-mcp:1".to_string()],
             skills: vec!["stale-skill".to_string()],
+            skill_descriptions: Default::default(),
             total_tokens: Some((99, 100)),
             token_usage_totals: None,
             all_sessions: vec!["session_from_stale_server".to_string()],
@@ -1457,6 +1472,7 @@ fn deferred_stale_server_history_captures_session_id_for_reload_handoff() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -1547,6 +1563,7 @@ fn ancient_server_history_is_deferred_via_client_side_release_check() {
             available_model_routes: vec![],
             mcp_servers: vec!["ancient-mcp:1".to_string()],
             skills: vec!["ancient-skill".to_string()],
+            skill_descriptions: Default::default(),
             total_tokens: Some((99, 100)),
             token_usage_totals: None,
             all_sessions: vec!["session_from_ancient_server".to_string()],
@@ -1636,6 +1653,7 @@ fn older_server_reporting_no_update_is_still_deferred_via_client_check() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -1747,6 +1765,7 @@ fn older_server_history_repairs_stale_shared_server_channel_end_to_end() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],
@@ -1830,6 +1849,7 @@ fn current_release_server_history_is_not_deferred_by_client_check() {
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec!["session_current".to_string()],

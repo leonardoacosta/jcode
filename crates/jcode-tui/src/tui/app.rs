@@ -66,8 +66,8 @@ mod commands_cloud;
 mod commands_colors;
 mod commands_desktop;
 mod commands_dispatch;
-mod commands_mcp;
 mod commands_improve;
+mod commands_mcp;
 mod commands_overnight;
 mod commands_plan;
 mod commands_remote;
@@ -114,6 +114,7 @@ mod update_rehearsal;
 mod update_sim;
 mod usage_reset;
 mod voice_input;
+pub use state_ui_input_helpers::{CommandCandidate, CommandCandidateKind};
 pub(crate) use state_ui_input_helpers::{registered_command_entries, registered_command_names};
 mod state_ui_maintenance;
 mod state_ui_messages;
@@ -775,7 +776,7 @@ pub(super) struct OvernightAutoPokeState {
 
 #[derive(Clone, Debug, Default)]
 struct CommandCandidatesCache {
-    candidates: Vec<(String, &'static str)>,
+    candidates: Vec<CommandCandidate>,
 }
 
 /// Memoized result of [`App::command_suggestions`] for one exact input buffer.
@@ -800,7 +801,7 @@ struct CommandSuggestionsCache {
     /// memo is deliberately scoped to a single frame: it collapses the ~8
     /// reads per frame into one computation and never survives into the next.
     epoch: u64,
-    suggestions: Vec<(String, &'static str)>,
+    suggestions: Vec<CommandCandidate>,
 }
 
 /// Non-input state that [`App::command_suggestions`] branches on before it
@@ -1362,6 +1363,7 @@ pub struct App {
     // Remote MCP servers and skills (set from server in remote mode)
     remote_mcp_servers: Vec<String>,
     remote_skills: Vec<String>,
+    remote_skill_descriptions: std::collections::HashMap<String, String>,
     // Total session token usage (from server in remote mode)
     remote_total_tokens: Option<(u64, u64)>,
     // Detailed persisted token/cache usage totals (from server in remote mode)
@@ -1370,6 +1372,7 @@ pub struct App {
     remote_is_canary: Option<bool>,
     // Remote server version (from server)
     remote_server_version: Option<String>,
+    remote_server_runtime: Option<jcode_selfdev_types::RuntimeIdentity>,
     // Whether the remote server has a newer binary available
     remote_server_has_update: Option<bool>,
     // Auto-reload server when stale (set on first connect if server_has_update)

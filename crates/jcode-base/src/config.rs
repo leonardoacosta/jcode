@@ -4,16 +4,17 @@
 //! Environment variables override config file settings.
 
 pub use jcode_config_types::{
-    AgentsConfig, AmbientConfig, AuthConfig, AutoJudgeConfig, AutoReviewConfig, CompactionConfig,
-    CompactionMode, CrossProviderFailoverMode, CustomWebSearchConfig, CustomWebSearchMethod,
-    DiagramDisplayMode, DiagramPanePosition, DiffDisplayMode, DisplayConfig, FeatureConfig,
-    GatewayConfig, HookCommands, HooksConfig, KeybindingsConfig, LatexRenderingMode,
-    LaunchHotkeyEntry, LaunchHotkeysConfig, MarkdownSpacingMode, MenubarConfig, NamedProviderAuth,
-    NamedProviderConfig, NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig,
-    NotificationsConfig, PowerConfig, ProviderConfig, ReasoningDisplayMode, SafetyConfig,
-    SessionConfig, SessionPickerResumeAction, SessionRetentionConfig, SessionsConfig,
-    SponsorsConfig, SwarmConfig, SwarmSpawnMode, SwarmStripLayout, TerminalConfig, UpdateChannel,
-    WebSearchConfig, WebSearchEngine,
+    AdmissionDecision, AdmissionState, AgentsConfig, AmbientConfig, AuthConfig, AutoJudgeConfig,
+    AutoReviewConfig, CompactionConfig, CompactionMode, CrossProviderFailoverMode,
+    CustomWebSearchConfig, CustomWebSearchMethod, DiagramDisplayMode, DiagramPanePosition,
+    DiffDisplayMode, DisplayConfig, FeatureConfig, GatewayConfig, HookCommands, HooksConfig,
+    KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
+    MarkdownSpacingMode, MenubarConfig, NamedProviderAuth, NamedProviderConfig,
+    NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig, NotificationsConfig,
+    PowerConfig, ProviderConfig, ReasoningDisplayMode, SafetyConfig, SessionConfig,
+    SessionPickerResumeAction, SessionRetentionConfig, SessionsConfig, SponsorsConfig, SwarmConfig,
+    SwarmSpawnMode, SwarmStripLayout, TaskAdmissionSnapshot, TaskAuthorization, TasksConfig,
+    TerminalConfig, UpdateChannel, WebSearchConfig, WebSearchEngine, WorktreesConfig,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -596,6 +597,12 @@ pub fn on_config_reloaded(listener: fn()) {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
+    /// User-scoped deterministic task admission policy.
+    pub tasks: TasksConfig,
+
+    /// User-scoped worktree placement and creation policy.
+    pub worktrees: WorktreesConfig,
+
     /// Idle session memory hibernation policy.
     pub session: SessionConfig,
 
@@ -983,6 +990,7 @@ mod config_file;
 mod default_file;
 mod display_summary;
 mod env_overrides;
+mod task_policy;
 
 #[cfg(test)]
 #[path = "config_tests.rs"]

@@ -78,7 +78,11 @@ fn embedded_suggestions_follow_the_cursor_not_the_whole_buffer() {
     app.cursor_pos = "prefix /hel".len();
 
     let suggestions = app.get_suggestions_for(&app.input);
-    assert!(suggestions.iter().any(|(command, _)| command == "/help"));
+    assert!(
+        suggestions
+            .iter()
+            .any(|candidate| candidate.name == "/help")
+    );
 }
 
 #[test]

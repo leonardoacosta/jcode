@@ -725,6 +725,7 @@ fn test_history_event_roundtrip_preserves_side_panel_snapshot() -> Result<()> {
         available_service_tiers: None,
         mcp_servers: Vec::new(),
         skills: Vec::new(),
+        skill_descriptions: Default::default(),
         total_tokens: Some((123, 45)),
         token_usage_totals: Some(TokenUsageTotals {
             cache_prompt_tokens: Some(130),
@@ -1010,4 +1011,45 @@ fn history_delta_fields_are_backward_compatible() {
         panic!("expected history");
     };
     assert_eq!(messages_base_count, None);
+}
+
+#[test]
+fn skill_selector_metadata_roundtrips_and_legacy_names_remain_compatible() -> Result<()> {
+    let mut value = serde_json::json!({
+        "type": "history", "id": 1, "session_id": "skills", "messages": [],
+        "skills": ["foo"]
+    });
+    let legacy = parse_event_json(&value.to_string())?;
+    let ServerEvent::History {
+        skill_descriptions, ..
+    } = &legacy
+    else {
+        return Err(anyhow!("wrong event type"));
+    };
+    assert!(skill_descriptions.is_empty());
+    assert!(
+        serde_json::to_value(legacy)?
+            .get("skill_descriptions")
+            .is_none()
+    );
+    value["skill_descriptions"] = serde_json::json!({"foo": "Does foo"});
+    let event = parse_event_json(&value.to_string())?;
+    let ServerEvent::History {
+        skills,
+        skill_descriptions,
+        ..
+    } = &event
+    else {
+        return Err(anyhow!("wrong event type"));
+    };
+    assert_eq!(skills, &["foo"]);
+    assert_eq!(
+        skill_descriptions.get("foo").map(String::as_str),
+        Some("Does foo")
+    );
+    assert_eq!(
+        serde_json::to_value(event)?["skill_descriptions"],
+        value["skill_descriptions"]
+    );
+    Ok(())
 }

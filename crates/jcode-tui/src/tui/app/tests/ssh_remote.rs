@@ -146,6 +146,10 @@ fn ssh_remote_subscribe_keeps_remote_only_id_and_filters_control_done() {
             let mut line = String::new();
             reader.read_line(&mut line).await.unwrap();
             let request: crate::protocol::Request = serde_json::from_str(&line).unwrap();
+            assert!(matches!(request, crate::protocol::Request::Ping { id: 0 }));
+            line.clear();
+            reader.read_line(&mut line).await.unwrap();
+            let request: crate::protocol::Request = serde_json::from_str(&line).unwrap();
             let id = match request {
                 crate::protocol::Request::Subscribe {
                     id, target_session_id, client_has_local_history, continue_on_disconnect,
@@ -236,6 +240,7 @@ fn ssh_remote_history_is_authoritative_even_when_empty_or_server_version_differs
             available_model_routes: vec![],
             mcp_servers: vec![],
             skills: vec![],
+            skill_descriptions: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],

@@ -21,6 +21,7 @@ pub(super) fn stream_keepalive_ticker() -> time::Interval {
 
 pub(super) fn send_stream_keepalive_mpsc(event_tx: &mpsc::UnboundedSender<ServerEvent>) {
     let _ = event_tx.send(ServerEvent::Pong {
+        server_runtime: None,
         id: STREAM_KEEPALIVE_PONG_ID,
         native_ssh_protocol: None,
         capabilities: Vec::new(),
