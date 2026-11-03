@@ -2031,6 +2031,7 @@ pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
                 None,
                 jcode_build_meta::git_hash().to_owned(),
                 jcode_build_meta::git_dirty(),
+                jcode_build_meta::cleanliness_verified(),
                 runtime,
             )
         } else {
@@ -2038,6 +2039,7 @@ pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
                 &directory,
                 jcode_build_meta::git_hash(),
                 jcode_build_meta::git_dirty(),
+                jcode_build_meta::cleanliness_verified(),
                 runtime,
             )
         };

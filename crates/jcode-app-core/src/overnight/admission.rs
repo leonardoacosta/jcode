@@ -12,7 +12,7 @@ pub(super) fn read_manifest_at(path: &Path) -> Result<OvernightManifest> {
 /// A held OS lock, not execution authority. Dispatch remains denied until a
 /// provider can reserve an authoritative monetary upper bound before sending.
 pub struct TaskAttemptClaim {
-    _owner_lock: File,
+    _owner_lock: AdmissionLock,
     decision: crate::config::AdmissionDecision,
     manifest_path: PathBuf,
     scope: String,
@@ -208,7 +208,17 @@ fn bounded_task_attempt(
     claim_task_attempt_bounded(path, &current, scope, restart, Some(account))
 }
 
-fn lock(path: &Path) -> Result<File> {
+struct AdmissionLock(File);
+
+impl Drop for AdmissionLock {
+    fn drop(&mut self) {
+        // Close alone can retain flock ownership in a concurrent fork until exec.
+        // Unlock the shared open description when this operation finishes.
+        let _ = self.0.unlock();
+    }
+}
+
+fn lock(path: &Path) -> Result<AdmissionLock> {
     if let Ok(meta) = std::fs::symlink_metadata(path) {
         anyhow::ensure!(
             meta.is_file() && !meta.file_type().is_symlink(),
@@ -226,7 +236,7 @@ fn lock(path: &Path) -> Result<File> {
     file.try_lock().map_err(|_| {
         anyhow::anyhow!("Overnight state/attempt is owned by a live operation; retry later")
     })?;
-    Ok(file)
+    Ok(AdmissionLock(file))
 }
 
 /// Serialize every writer on a stable sidecar, because atomic JSON replacement
@@ -755,6 +765,39 @@ mod tests {
                 ..Default::default()
             },
         )
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn task_admission_releases_claim_while_fork_child_retains_descriptor() {
+        use std::os::fd::AsRawFd;
+        use std::os::unix::net::UnixStream;
+        let (_temp, path, policy) = fixture();
+        let claim = start_task_attempt(&path, &policy, "bounded").unwrap();
+        let (signal, wait) = UnixStream::pair().unwrap();
+        // A concurrent spawn can fork while this thread holds the claim. Its
+        // copy of the open file description survives until exec or child exit.
+        // SAFETY: the child uses only async-signal-safe libc calls before _exit.
+        let child = unsafe { libc::fork() };
+        assert!(child >= 0);
+        if child == 0 {
+            unsafe {
+                libc::close(signal.as_raw_fd());
+                let mut byte = 0u8;
+                libc::read(wait.as_raw_fd(), (&mut byte as *mut u8).cast(), 1);
+                libc::_exit(0);
+            }
+        }
+        drop(wait);
+        assert!(restart_task_attempt(&path, &policy, "bounded").is_err());
+        drop(claim);
+        let restarted = restart_task_attempt(&path, &policy, "bounded");
+        drop(signal);
+        let mut status = 0;
+        // SAFETY: child is our forked child and status points to writable memory.
+        assert_eq!(unsafe { libc::waitpid(child, &mut status, 0) }, child);
+        assert_eq!(status, 0);
+        drop(restarted.expect("dropped owner must release even with inherited descriptors"));
     }
 
     #[test]
