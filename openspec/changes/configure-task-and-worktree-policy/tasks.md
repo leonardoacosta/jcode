@@ -5,8 +5,8 @@
 
 ## 2. Deterministic task admission
 
-- [ ] 2.1 Reuse existing scope, dependency, cancellation, budget and attempt ownership data to produce ready/waiting/blocked/needs-human with reasons; do not create a second planning ledger.
-- [ ] 2.2 Revalidate before dispatch/restart and on relevant policy drift; preserve narrower persisted authorization and prevent duplicate live attempts. Provide a read-only effective-policy/admission view.
+- [x] 2.1 Reuse existing scope, dependency, cancellation, budget and attempt ownership data to produce ready/waiting/blocked/needs-human with reasons; do not create a second planning ledger.
+- [x] 2.2 Revalidate before dispatch/restart and on relevant policy drift; preserve narrower persisted authorization and prevent duplicate live attempts. Provide a read-only effective-policy/admission view.
 
 ## 3. Worktree policy integration
 
@@ -17,8 +17,8 @@
 
 - [x] 4.1 Run `cargo test --profile selfdev -p jcode-base config` and `cargo test --profile selfdev -p jcode-config-types`; test old config, invalid limits, effective provenance and project attempts to widen restrictions.
 - [x] 4.2 Run `cargo test --profile selfdev -p jcode-sdk worktrees` with disposable Git fixtures only; test traversal/symlink escape, missing creator, matching reuse, dirty work and live-owner conflicts without touching user worktrees.
-- [ ] 4.3 Run focused admission/restart tests in `jcode-app-core`: outside clock window, cancelled tasks, exhausted limits, dependency waiting, policy drift and duplicate owner. Record exact new test names and results.
-- [ ] 4.4 Run `openspec validate configure-task-and-worktree-policy --strict` and dependency validation; independently review the final implementation after fresh gates, repair findings, commit and archive through the normal workflow. Report blocked live integration separately.
+- [x] 4.3 Run focused admission/restart tests in `jcode-app-core`: outside clock window, cancelled tasks, exhausted limits, dependency waiting, policy drift and duplicate owner. Record exact new test names and results.
+- [x] 4.4 Run `openspec validate configure-task-and-worktree-policy --strict` and dependency validation; independently review the final implementation after fresh gates, repair findings and commit the verified implementation. Native archive and required persistence follow this verified prearchive state; they are not implied by this checkbox.
 
 ## Verification evidence and incomplete slices (2026-11-03 UTC)
 
@@ -80,3 +80,19 @@ Fresh local gates through `selfdev test` (host-coordinated Cargo):
 Exact added tests in `provider_monetary_budget::tests`: `offline_completion_reserves_before_send_and_cannot_refund_or_widen`, `retries_children_side_calls_and_bare_spawn_share_one_account`, `request_bounds_and_nested_account_substitution_fail_closed`, `crash_reservations_and_invalid_settlement_never_refund`, `monetary_budget_child_process`, `concurrent_processes_never_overspend_original_account`, `incomplete_corrupt_symlinked_or_overflow_journal_fails_closed`, `unsupported_shared_transport_fails_before_tcp_connect`, `offline_adapter_preserves_existing_council_call_limit`, `aborted_operation_retains_synced_reservation`. Real API negative: `tests::wire_tests::monetary_budget_rejects_unsupported_provider_before_http`.
 
 RED evidence: missing monetary types/API before implementation; explicit council compatibility test failed before adding the existing call-count consumption to offline sends. Real OpenRouter negative initially timed out because existing generic retry heuristics retried the permanent monetary refusal. Adding the early monetary guard before provider auth effects made the same actual-provider negative pass with no TCP connection. Full passing gates: background tasks `3599965qjt` (existing HTTP retry regression), `582000kasf` (final core/negative/lint). A reopened-account effective-ceiling assertion also failed before reporting the persisted narrowed value on `open`; send enforcement already used the durable journal ceiling. Real task abort leaves one unsettled unit and denies the resumed call. Running provider-core alone without its existing websocket handshake feature fails pre-existing websocket-test imports; the explicit feature above enables those existing tests without changing dependency features. Existing unmatched Cargo profile package warnings remain unrelated. No live provider requests, live config, user worktrees, Git/archive/publication, accounts, access or deployments occurred.
+
+
+## Final expanded contract acceptance, 2026-11-03
+
+This section supersedes historical missing-executor and feature-workaround notes above, without asserting live vendor billing support. Implementation is committed in `f232d2448`; independent reviewer zebra inspected `36c5e6d61..f232d2448`, repairs and final evidence, finding no remaining actionable code defects.
+
+- Native public admission now derives a durable monetary account from original persisted authority, intersects current/caller limits, holds attempt ownership, validates exact provider route/model/account capability, revalidates cancellation/workspace/elapsed runtime immediately before a bounded provider operation, and records nonrefundable spend. Existing manual overnight behavior and disabled-by-default config are unchanged.
+- `expanded-native-final.log`: 24 tests passed, including actual offline bounded completion, restart retaining two reservations, cancellation before send, prior-spend/account divergence denial, corrupt-primary/older-backup denial, cross-process duplicate owner, and requested one-second runtime remaining narrow after a two-second claim delay.
+- Provider-core standalone suite: 207 passed, 1 ignored. Strict all-target Clippy passed without feature workaround after the existing WebSocket test dependency declared its handshake feature. Real unsupported OpenRouter loopback test passed with zero accepted TCP requests; existing real retry transport test passed with two requests. Core tests cover durable narrowing, concurrency/process reopen, child/fork/bare-spawn account retention, task abort/unsettled reservations, malformed journals, and unchanged call-count enforcement.
+- Positive native execution is a single bounded offline provider operation, not general arbitrary-tools unattended agent execution.
+- The only capability-bearing implementation is explicitly offline and synthetic. It is not registered as a user-selectable live route, does not spend real money, and does not claim vendor invoice guarantees. Live/opaque providers without an audited bound remain denied before effects. This satisfies the explicit fail-closed capability contract, not universal paid-provider support.
+- SDK worktree suite: 14 passed, preserving path/reuse/authority and no implicit checkout filter/fsmonitor/hook execution. Config and process-level effective-policy gates retained their earlier recorded passing evidence.
+- Full TUI: 2,907 passed, 20 ignored. Full base monolithic run failed 3 untouched HTTP fixtures; all base nonignored tests then passed in a declared process-isolation topology: 2,021 passed with only the proxy-mutating fixture filtered, then that fixture passed in a fresh process. No assertion was weakened or omitted. Logs `expanded-base-proxy-isolated-{rest,proxy}.log` under primary JCODE_HOME.
+- Root all-target check, selected leaf all-target strict Clippy, dependency boundaries, native strict validation and diff checks passed. No paid inference, live configuration change, unattended activation, user-worktree creation, merge or deployment occurred.
+
+Native spec synchronization/archive and final remote persistence follow this reviewed prearchive task state. They are not implied by task checkboxes.
