@@ -1,7 +1,7 @@
 # skill-selector-metadata Specification
 
 ## Purpose
-TBD - created by archiving change add-typed-skill-selector-metadata. Update Purpose after archive.
+Help users distinguish native commands from skills and inspect accurate local or remote skill descriptions before invocation, while preserving native command precedence and terminal-cell-bounded selector rows.
 
 ## Requirements
 
