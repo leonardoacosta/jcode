@@ -12,8 +12,11 @@
 - [x] Verify bounded/redacted model, unknown external-check availability, and pure-policy state/decision parity.
 - [x] Verify TUI one-per-decision, wait, failed scheduler-predicate, and queue/cap/fingerprint parity tests.
 - [x] Integrate typed required-check identity/outcomes and verify a failed required command remains `fail` without reading command output or model claims.
-- [ ] Verify actual session log emission against a rebuilt isolated runtime.
-- [ ] Coordinator: final fresh gates, independent review, scoped commit, archive, and required persistence.
+- [x] Verify actual session log emission against a rebuilt isolated runtime.
+- [x] Coordinator: final fresh gates, independent review, and scoped implementation commit.
+
+Native archive and required persistence follow this verified prearchive state; they are not inferred from checked tasks.
+Final independent reviewer dolphin inspected `9df91d357..8fdff4204`, actual isolated runtime artifacts and final gates on 2026-11-03, found no actionable defects and declared this change eligible for archive. Implementation is committed in `8fdff4204`; runtime evidence is committed before archive.
 
 ## Observed evidence
 
@@ -150,3 +153,30 @@ All Cargo commands used `JCODE_REMOTE_CARGO=0 CARGO_TARGET_DIR=/home/nyaptor/.jc
   model turn (isolated mock provider or authorized provider), not merely debug-tool
   execution. Unit real-process/local/wire tests do not substitute for session logs.
   Coordinator owns the actual runtime test and any fixture scope decision.
+
+### Actual isolated TUI runtime acceptance
+
+2026-11-03T05:11:10Z, scratch-only authorized loopback provider fixture.
+Command: `python3 /home/nyaptor/.jcode/scratch/continuation-runtime-fixture.py`.
+Exit 0 with `ACCEPTANCE_PASS`; no production source or live config changed.
+
+- Binary `/home/nyaptor/.jcode/target/selfdev/jcode`, actual tester/server version
+  `v0.99.178-dev (9df91d357, dirty)`. Isolated daemon socket, HOME/JCODE_HOME,
+  workdir/config, no inherited credentials, no paid or external provider. Stdlib
+  loopback HTTP emitted native bash call then final response through real runtime.
+- Actual command `printf 'runtime fixture PASS claim'; exit 7`, explicit
+  `required_check_id=PRIVATE_fixture`. Follow-up mock request contains real tool
+  result `Exit code: 7`. This assertion checks the runtime test artifact, not
+  production evidence extraction; production status still comes from process metadata.
+- Actual TUI decision emitted exactly one `CONTINUATION_EVIDENCE` line in
+  `/home/nyaptor/.jcode/scratch/continuation-runtime-7gb0naiu/data/logs/jcode-2026-11-02.log`.
+  `required_checks_available=true`, `check_1.result=fail`, `truncated=true`, no supplied
+  identity, 418-byte compact record. Scratch `auto_poke=false` yields unchanged
+  disabled decision, no synthetic follow-up authorization. Policy parity separately
+  covered by integration tests; runtime does not claim counterfactual proof.
+- Harness evidence: scratch run `evidence.json`, `request-1.json`, `request-2.json`,
+  daemon log, and `/home/nyaptor/.jcode/scratch/continuation-runtime-fixture.log`.
+- Harness stopped tester, isolated daemon, and HTTP server. `data/testers.json=[]`
+  and process inspection found no remaining harness/isolated-runtime process.
+- Earlier provider-free debug boundary gap is resolved by this permitted isolated
+  loopback model fixture, not by fabricating a log or calling serialization directly.
