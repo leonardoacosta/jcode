@@ -6,6 +6,7 @@ execution:
 # Proposal
 
 Roadmap owner: [P02: Discoverable native tools, MCP and skills provenance](../../../docs/plans/PRODUCT_ROADMAP.md#p02-discoverable-native-tools-mcp-and-skills-provenance).
+Required outcome: P02.O3, both `capability-provenance` requirements, tasks 1.1–1.4 and 2.1–2.3. Predecessor: delivered P02.O1 typed selector metadata.
 Supporting: [mcp-management-experience](../archive/2026-11-02-mcp-management-experience/proposal.md) (already shows MCP server scope source in `/mcp`).
 
 ## Why

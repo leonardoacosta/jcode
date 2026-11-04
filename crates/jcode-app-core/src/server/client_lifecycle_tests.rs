@@ -1773,6 +1773,41 @@ async fn sdk_socket_workflow(response_only: bool) {
             .unwrap();
         return;
     }
+    send(
+        &mut client_writer,
+        json!({"type":"discover_tools","id":200,"query":"BASH"}),
+    )
+    .await;
+    let ServerEvent::ToolList {
+        session_id,
+        entries,
+        ..
+    } = until(&mut client_reader, |event| {
+        matches!(event, ServerEvent::ToolList { id: 200, .. })
+    })
+    .await
+    else {
+        panic!("expected discovery inventory")
+    };
+    assert!(sessions.read().await.contains_key(&session_id));
+    assert!(
+        entries
+            .iter()
+            .any(|entry| entry.name == "bash" && entry.kind == "tool")
+    );
+    send(
+        &mut client_writer,
+        json!({"type":"discover_tools","id":201,"query":"ZZZ-NO-SUCH-CAPABILITY"}),
+    )
+    .await;
+    let ServerEvent::ToolList { entries, .. } = until(&mut client_reader, |event| {
+        matches!(event, ServerEvent::ToolList { id: 201, .. })
+    })
+    .await
+    else {
+        panic!("expected empty discovery inventory")
+    };
+    assert!(entries.is_empty());
     send(&mut client_writer, json!({"type":"configure_tools","id":2,"tools":{"enabled":[],"custom":[{"name":"read","description":"SDK read callback","parameters":{"type":"object"}}]}})).await;
     let configured = until(&mut client_reader, |e| {
         matches!(

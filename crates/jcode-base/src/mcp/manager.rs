@@ -572,6 +572,21 @@ impl McpManager {
         None
     }
 
+    pub async fn connected_server_scope(&self, name: &str) -> Option<String> {
+        if let Some(handle) = self.pool_handles.read().await.get(name)
+            && !handle.is_closed()
+        {
+            return handle.source_scope.clone();
+        }
+        self.owned_clients
+            .read()
+            .await
+            .get(name)
+            .map(|client| client.handle())
+            .filter(|handle| !handle.is_closed())
+            .and_then(|handle| handle.source_scope)
+    }
+
     /// Get all available tools from all connected servers
     pub async fn all_tools(&self) -> Vec<(String, McpToolDef)> {
         let mut tools = Vec::new();
@@ -845,6 +860,65 @@ mod tests {
     use super::*;
     use std::time::Duration;
 
+    #[tokio::test]
+    async fn connected_provenance_scope_rejects_adhoc_and_pooled_config_mismatch() {
+        let temp = tempfile::tempdir().unwrap();
+        let command = provenance_integration_tests::write_fake_mcp_server(temp.path())
+            .to_string_lossy()
+            .into_owned();
+        let mut global: McpServerConfig =
+            serde_json::from_value(serde_json::json!({"command":command})).unwrap();
+        global.source_scope = Some("global".into());
+        let mut config = McpConfig::default();
+        config.servers.insert("same".into(), global.clone());
+        config.server_scopes.insert("same".into(), "global".into());
+        let manager = McpManager::with_config(config.clone());
+        manager.connect("same", &global).await.unwrap();
+        assert_eq!(
+            manager.connected_server_scope("same").await.as_deref(),
+            Some("global")
+        );
+        manager.disconnect("same").await.unwrap();
+        let mut adhoc = global.clone();
+        adhoc.source_scope = None;
+        adhoc.env.insert("ADHOC_FIXTURE".into(), "different".into());
+        manager.connect("same", &adhoc).await.unwrap();
+        assert_eq!(manager.connected_server_scope("same").await, None);
+        manager.disconnect("same").await.unwrap();
+        assert_eq!(manager.connected_server_scope("same").await, None);
+        manager.connect("same", &global).await.unwrap();
+        assert_eq!(
+            manager.connected_server_scope("same").await.as_deref(),
+            Some("global")
+        );
+        manager.disconnect_all().await;
+        let pool = Arc::new(SharedMcpPool::new(config.clone()));
+        pool.connect_server("same", &global).await.unwrap();
+        let mut project_manager = McpManager::with_shared_pool(pool.clone(), "project".into());
+        project_manager.config = config;
+        let mut project_definition = global.clone();
+        project_definition.source_scope = Some("project".into());
+        project_manager
+            .config
+            .servers
+            .insert("same".into(), project_definition);
+        project_manager
+            .config
+            .server_scopes
+            .insert("same".into(), "project".into());
+        project_manager.connect_all().await.unwrap();
+        assert_eq!(project_manager.all_tools().await.len(), 1);
+        assert_eq!(
+            project_manager
+                .connected_server_scope("same")
+                .await
+                .as_deref(),
+            Some("global")
+        );
+        project_manager.disconnect_all().await;
+        pool.disconnect_all().await;
+    }
+
     fn empty_config() -> McpConfig {
         McpConfig::default()
     }
@@ -911,6 +985,7 @@ mod tests {
         config.servers.insert(
             "off".to_string(),
             McpServerConfig {
+                source_scope: None,
                 command: "true".to_string(),
                 args: vec![],
                 env: HashMap::new(),
@@ -947,6 +1022,7 @@ mod tests {
         config.servers.insert(
             "broken".to_string(),
             McpServerConfig {
+                source_scope: None,
                 // `true` exits 0 immediately: the stdio handshake gets EOF, so
                 // connect fails fast instead of waiting on the initialize bound.
                 command: "true".to_string(),
@@ -1064,6 +1140,7 @@ done
         config.servers.insert(
             "counted".to_string(),
             McpServerConfig {
+                source_scope: None,
                 command: script.display().to_string(),
                 args: Vec::new(),
                 env,
@@ -1189,7 +1266,7 @@ mod provenance_integration_tests {
 
     /// Write a minimal stdio MCP server as a shell script: answers
     /// initialize, tools/list, and tools/call with canned JSON-RPC replies.
-    fn write_fake_mcp_server(dir: &std::path::Path) -> std::path::PathBuf {
+    pub(super) fn write_fake_mcp_server(dir: &std::path::Path) -> std::path::PathBuf {
         let path = dir.join("fake-mcp-server.sh");
         let script = r##"#!/bin/bash
 while IFS= read -r line; do
@@ -1256,6 +1333,7 @@ done
         config.servers.insert(
             "agentcard".to_string(),
             McpServerConfig {
+                source_scope: None,
                 command: command.clone(),
                 args: vec![],
                 env: HashMap::new(),

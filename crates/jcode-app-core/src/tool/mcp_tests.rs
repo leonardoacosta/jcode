@@ -407,6 +407,7 @@ async fn test_list_shows_disabled_configured_server() {
     config.servers.insert(
         "off-server".to_string(),
         McpServerConfig {
+            source_scope: None,
             command: "some-bin".to_string(),
             args: vec![],
             env: HashMap::new(),

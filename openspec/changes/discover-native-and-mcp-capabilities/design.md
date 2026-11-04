@@ -1,0 +1,27 @@
+# Design
+
+## Context
+
+See proposal.md and specs/capability-discovery/spec.md. Execution base is `4bad0bb71d2871ab92e55c66df7c63c05c1168cb`. Typed selector metadata is integrated and its archived tasks include protocol, full TUI and actual isolated local/remote-mode PTY evidence. Existing `McpManager::all_tools` and `server_tools` read only live connections; `searchable_tools` also reads cached disconnected entries and is not the discovery contract.
+
+## Decisions
+
+- Add `/tools [query]` to the existing command dispatch, not a second MCP management screen. Reuse typed presentation and Unicode display-cell truncation. Sanitize untrusted names/descriptions and preserve one visual row per compact entry.
+- Collect native metadata plus connected MCP metadata without invoking tools, initiating connections or consulting the disconnected schema cache. Keep effective native names first and colliding MCP entries under their server namespace. Sort deterministically; filter names/descriptions case-insensitively. An unmatched query displays an explicit notice.
+- Use an additive request/event with server-authoritative metadata for remote clients. Negotiate support before sending an unsupported request, using the existing capability handshake pattern; legacy peers display exactly `tool list unavailable from this server`. Never substitute the remote client's local registry.
+- Coordinate optional MCP config scope metadata with `show-skill-and-mcp-provenance`. Server identity is known from the connected manager. Scope is optional and becomes `unknown` when its effective source is not established. Do not transmit config credentials, headers, URLs or skill contents.
+- Listing is display-only and does not change tool exposure, invocation precedence, installation, authorization or plan restrictions. Native and MCP invocation remain in their existing dispatch paths.
+
+## Risks and verification
+
+Remote capability negotiation and session-specific registries are integration boundaries. Test actual server request dispatch, old-peer fallback and refresh without stale cross-session results. Cover mixed/native/MCP collisions, empty query and no match, disconnected lazy-server non-start, control text and widths 0/1/20/40/80. Run the task-specified app-core and full TUI gates, protocol tests, build/check and relevant lint. Coordinator will replay a rebuilt binary through isolated real daemon and local/remote-mode debug tester frames. Remote-mode loopback acceptance does not prove SSH network transport; record that boundary explicitly.
+
+## Initial execution preflight
+
+Observed 2026-11-04 06:03 UTC, rubric `preflight-check-v2-shadow`, phase `initial-dispatch`. Both selected changes strictly validate and native apply reports `ready` after missing designs were supplied. `/usr/bin/python3 /home/nyaptor/dev/personal/.agents/scripts/openspec/validate_dependencies.py --root /home/nyaptor/.jcode --json discover-native-and-mcp-capabilities show-skill-and-mcp-provenance` passed the complete selected prerequisite closure. Default `python3` lacks YAML; system Python has installed YAML 6.0.3, no dependency installed. Required P02.O1 acceptance is separately documented in its archived tasks (real isolated PTY/protocol/TUI), not inferred from ancestry alone. P01 final gates/review and actual promoted serving binary evidence are in the existing P01 closeout record.
+
+G1 scope/authority 2: explicit user selected both Apply All proposals, no activation or extra successor. G2 verification route 2: configured Cargo wrapper, native debug testers and existing isolated PTY harness are available; fresh whole-result checks and a separate native reviewer remain mandatory. G3 checkout/delivery 2: preserve current `main`; origin HEAD is actually `dev`, so no branch switch is authorized or needed. Configured upstream origin/main currently equals the execution base. Configured user identity exists. No active pre-push hook; main push triggers CI, release is tag/manual-triggered, no tag/deployment included. Final non-force sync is part of selected Apply All closeout, never permission to bypass required controls. G4 runtime owner 2: this repository TUI/CLI/session server; isolated fixtures only, shared daemon remains unchanged. G5 preservation 2: tracked source initially clean; unrelated untracked backups, councils, devices, exit records, judge feedback, file claims, add-config-composition and warn-on-goal-drift preserved. Only selected designs/proposal bindings and roadmap mapping changed during readiness. G6 completion coverage 2: all fourteen selected tasks map to the design verification paragraphs and P02.O2/O3; shared protocol/TUI/server files are serialized rather than treated as a semantic dependency. Advisory quality 12/12 = 100, not an approval or execution gate. Implementation eligibility requires owner exact-file claims and transfer at overlaps; final acceptance/review/archive are not yet complete.
+
+## Execution ownership and closeout
+
+Discovery owner receives the first serialized editing window on shared protocol/server/TUI paths; provenance owner may work only on disjoint loader paths until transfer. Exact native file claims precede edits. Coordinator owns shared Git, final whole-result gates, independent review and amendments, verified task updates, commits, canonical spec synchronization, native archive, roadmap evidence and authorized non-force origin/main persistence. No RC activation, release/tag, paid inference or unrelated changes are included.

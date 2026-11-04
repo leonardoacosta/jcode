@@ -1,6 +1,69 @@
 use super::*;
 
 #[test]
+fn provenance_mcp_scope_tracks_winner_and_unavailable_is_unknown() {
+    let project = tempfile::tempdir().unwrap();
+    let path = project.path().join("claude.json");
+    std::fs::write(
+        &path,
+        serde_json::to_vec(&serde_json::json!({
+            "mcpServers": {"same": {"command":"global"}, "kept": {"command":"stdio"}},
+            "projects": {project.path().to_string_lossy().as_ref(): {"mcpServers": {
+                "same": {"command":"project"},
+                "kept": {"url":"https://example.invalid/mcp"}
+            }}}
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+    let config = McpConfig::load_claude_json(&path, Some(project.path()));
+    assert_eq!(config.server_scope("same"), Some("project"));
+    assert_eq!(
+        config.servers["same"].source_scope.as_deref(),
+        Some("project")
+    );
+    assert_eq!(
+        config.servers["kept"].source_scope.as_deref(),
+        Some("global")
+    );
+    assert_eq!(config.server_scope("kept"), Some("global"));
+    assert_eq!(config.server_scope("missing"), None);
+    assert_eq!(config.servers["same"].command, "project");
+    std::fs::write(
+        project.path().join(".mcp.json"),
+        r#"{"mcpServers":{"same":{"command":"local"}}}"#,
+    )
+    .unwrap();
+    let mut effective = config.clone();
+    effective.merge_scoped(McpConfig::load_project_locals(project.path()));
+    assert_eq!(effective.server_scope("same"), Some("project"));
+    assert_eq!(effective.servers["same"].command, "local");
+    let mut unknown = McpConfig::default();
+    unknown
+        .servers
+        .insert("same".into(), effective.servers["same"].clone());
+    effective.merge_scoped(unknown);
+    assert_eq!(effective.server_scope("same"), None);
+    let raw: McpConfig = serde_json::from_value(serde_json::json!({
+        "servers": {"raw": {"command":"raw", "source_scope":"global"}}, "server_scopes": {"raw":"project"}
+    }))
+    .unwrap();
+    assert_eq!(raw.server_scope("raw"), None);
+    assert!(raw.servers["raw"].source_scope.is_none());
+    assert!(
+        serde_json::to_value(&raw).unwrap()["servers"]["raw"]
+            .get("source_scope")
+            .is_none()
+    );
+    assert!(
+        serde_json::to_value(config)
+            .unwrap()
+            .get("server_scopes")
+            .is_none()
+    );
+}
+
+#[test]
 fn issue_790_load_uses_process_cwd_while_unbound_load_for_dir_does_not() {
     let _guard = crate::storage::lock_test_env();
     let original_cwd = std::env::current_dir().expect("current cwd");

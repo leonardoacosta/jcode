@@ -19,7 +19,7 @@ pub(super) fn command_suggestion_lines(
         let cmd = &candidate.name;
         let desc = &candidate.description;
         let base = Style::default().fg(rgb(255, 213, 128));
-        let mut spans = vec![kind_span(candidate.kind)];
+        let mut spans = vec![kind_span(candidate)];
         spans.extend(highlight(cmd, base));
         spans.push(Span::styled(format!("  {}", desc), base));
         lines.push(Line::from(spans));
@@ -51,7 +51,7 @@ pub(super) fn command_suggestion_lines(
             } else {
                 Style::default().fg(rgb(128, 203, 196))
             };
-            let mut spans = vec![kind_span(candidate.kind)];
+            let mut spans = vec![kind_span(candidate)];
             spans.extend(highlight(cmd, command_style));
             spans.push(Span::styled(format!("  {}", desc), description_style));
             let mut suffix = Vec::new();
@@ -80,16 +80,49 @@ pub(super) fn command_suggestion_lines(
         .collect()
 }
 
-fn kind_span(kind: crate::tui::CommandCandidateKind) -> Span<'static> {
+fn kind_span(candidate: &crate::tui::CommandCandidate) -> Span<'static> {
     use crate::tui::CommandCandidateKind;
-    match kind {
+    match candidate.kind {
         CommandCandidateKind::NativeCommand => {
             Span::styled("cmd ", Style::default().fg(rgb(128, 203, 196)))
         }
         CommandCandidateKind::Skill => {
-            Span::styled("skill ", Style::default().fg(rgb(195, 170, 255)))
+            let source = crate::message::strip_ansi_escape_sequences(
+                candidate.source.as_deref().unwrap_or("unknown"),
+            )
+            .chars()
+            .filter(|c| !c.is_control())
+            .collect::<String>();
+            Span::styled(
+                format!("skill[{source}] "),
+                Style::default().fg(rgb(195, 170, 255)),
+            )
         }
+        CommandCandidateKind::Tool => {
+            Span::styled("tool ", Style::default().fg(rgb(128, 203, 196)))
+        }
+        CommandCandidateKind::Mcp => Span::styled("mcp ", Style::default().fg(rgb(195, 170, 255))),
     }
+}
+
+pub(crate) fn candidate_line(
+    candidate: &crate::tui::CommandCandidate,
+    width: usize,
+) -> Line<'static> {
+    let clean = |text: &str| {
+        crate::message::strip_ansi_escape_sequences(text)
+            .chars()
+            .filter(|c| !c.is_control())
+            .collect::<String>()
+    };
+    super::super::truncate_line_with_ellipsis_to_width(
+        &Line::from(vec![
+            kind_span(candidate),
+            Span::raw(clean(&candidate.name)),
+            Span::raw(format!("  {}", clean(&candidate.description))),
+        ]),
+        width,
+    )
 }
 
 /// Build spans for a suggestion command, recoloring the characters that the
@@ -144,6 +177,21 @@ mod skill_selector_metadata_tests {
     use super::*;
 
     #[test]
+    fn skill_provenance_source_labels_fit_compact_rows() {
+        let state = crate::tui::ui::tests::TestState::default();
+        let mut candidate = crate::tui::CommandCandidate::skill("/界-skill".into(), "Description");
+        candidate.source = Some("project".into());
+        for width in [0, 1, 20, 40, 80] {
+            let lines = command_suggestion_lines(&state, &[candidate.clone()], width);
+            assert_eq!(lines.len(), 1);
+            assert!(lines[0].width() <= width);
+            if width >= 40 {
+                assert!(lines[0].to_string().contains("skill[project]"));
+            }
+        }
+    }
+
+    #[test]
     fn skill_selector_metadata_rows_fit_unicode_cell_widths_and_style_kind() {
         let state = crate::tui::ui::tests::TestState::default();
         let candidates = vec![
@@ -172,7 +220,7 @@ mod skill_selector_metadata_tests {
                 }
             }
             if width == 80 {
-                assert_eq!(lines[0].spans[0].content, "skill ");
+                assert_eq!(lines[0].spans[0].content, "skill[unknown] ");
                 assert_eq!(lines[1].spans[0].content, "cmd ");
                 assert_ne!(lines[0].spans[0].style, lines[1].spans[0].style);
                 assert!(lines[0].to_string().contains("Does foo 界"));

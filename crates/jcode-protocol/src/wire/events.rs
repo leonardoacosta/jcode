@@ -116,6 +116,12 @@ pub enum ServerEvent {
         id: u64,
         tools: Vec<SessionToolDefinition>,
     },
+    #[serde(rename = "tool_list")]
+    ToolList {
+        id: u64,
+        session_id: String,
+        entries: Vec<ToolListEntry>,
+    },
     #[serde(rename = "tool_call")]
     ToolCall {
         session_id: String,
@@ -636,6 +642,9 @@ pub enum ServerEvent {
         /// Optional skill descriptions, keyed by the names in `skills`.
         #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
         skill_descriptions: std::collections::HashMap<String, String>,
+        /// Optional display-only provenance from the server session's workspace.
+        #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+        skill_metadata: std::collections::HashMap<String, SkillMetadata>,
         /// Total session token usage (input, output)
         #[serde(skip_serializing_if = "Option::is_none")]
         total_tokens: Option<(u64, u64)>,

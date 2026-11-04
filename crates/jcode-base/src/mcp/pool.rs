@@ -1083,6 +1083,7 @@ mod tests {
         config.servers.insert(
             "owned-only".to_string(),
             crate::mcp::protocol::McpServerConfig {
+                source_scope: None,
                 command: "/nonexistent/jcode-test-mcp-557".to_string(),
                 args: vec![],
                 env: Default::default(),

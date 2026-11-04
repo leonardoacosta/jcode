@@ -1949,6 +1949,50 @@ pub(super) fn transcript_links<'a>(contents: impl Iterator<Item = &'a str>) -> V
 }
 
 pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
+    if trimmed == "/skill info"
+        || trimmed
+            .strip_prefix("/skill info")
+            .is_some_and(|arg| arg.starts_with(char::is_whitespace))
+    {
+        let name = trimmed.strip_prefix("/skill info").unwrap_or("").trim();
+        let output = if name.is_empty() {
+            "Usage: /skill info <name>".to_string()
+        } else if app.is_remote {
+            if app.remote_skills.iter().any(|skill| skill == name) {
+                crate::skill::format_skill_info(
+                    name,
+                    app.remote_skill_descriptions
+                        .get(name)
+                        .map(String::as_str)
+                        .unwrap_or("unknown"),
+                    app.remote_skill_metadata
+                        .get(name)
+                        .unwrap_or(&crate::protocol::SkillMetadata::default()),
+                )
+            } else {
+                format!(
+                    "Skill '{}' not found",
+                    name.chars().filter(|c| !c.is_control()).collect::<String>()
+                )
+            }
+        } else {
+            app.current_skills_snapshot()
+                .get(name)
+                .map(|skill| skill.info())
+                .unwrap_or_else(|| {
+                    format!(
+                        "Skill '{}' not found",
+                        name.chars().filter(|c| !c.is_control()).collect::<String>()
+                    )
+                })
+        };
+        app.push_display_message(DisplayMessage::system(output).with_title("Skill info"));
+        app.set_status_notice("Skill info");
+        return true;
+    }
+    if super::commands_mcp::handle_tools_command(app, trimmed) {
+        return true;
+    }
     if trimmed == "/skills" {
         // Sync from disk first so skills added by agent-side `skill_manage
         // reload_all` (which only updates the server process registry) show up

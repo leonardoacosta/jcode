@@ -1,4 +1,21 @@
 #[test]
+fn tool_discovery_additive_wire_roundtrip() {
+    let request: Request = serde_json::from_value(serde_json::json!({
+        "type":"discover_tools", "id":901, "query":"READ"
+    }))
+    .unwrap();
+    assert_eq!(request.id(), 901);
+    let event: ServerEvent = serde_json::from_value(serde_json::json!({
+        "type":"tool_list", "id":901, "session_id":"remote-workspace",
+        "entries":[{"kind":"mcp","name":"read","description":"Remote read","server":"docs"}]
+    }))
+    .unwrap();
+    let value = serde_json::to_value(event).unwrap();
+    assert_eq!(value["entries"][0]["server"], "docs");
+    assert!(value["entries"][0].get("scope").is_none());
+}
+
+#[test]
 fn plan_only_wire_flag_defaults_off_and_roundtrips() {
     let old: Request =
         serde_json::from_value(serde_json::json!({"type":"message","id":1,"content":"hello"}))
@@ -741,6 +758,7 @@ fn test_history_event_roundtrip_preserves_side_panel_snapshot() -> Result<()> {
         mcp_servers: Vec::new(),
         skills: Vec::new(),
         skill_descriptions: Default::default(),
+        skill_metadata: Default::default(),
         total_tokens: Some((123, 45)),
         token_usage_totals: Some(TokenUsageTotals {
             cache_prompt_tokens: Some(130),
@@ -1026,6 +1044,33 @@ fn history_delta_fields_are_backward_compatible() {
         panic!("expected history");
     };
     assert_eq!(messages_base_count, None);
+}
+
+#[test]
+fn skill_provenance_metadata_roundtrips_and_legacy_is_unknown() -> Result<()> {
+    let mut value = serde_json::json!({"type":"history", "id":1, "session_id":"s", "messages":[], "skills":["foo"]});
+    let legacy = parse_event_json(&value.to_string())?;
+    let ServerEvent::History { skill_metadata, .. } = &legacy else {
+        panic!("history")
+    };
+    assert!(skill_metadata.is_empty());
+    assert!(
+        serde_json::to_value(legacy)?
+            .get("skill_metadata")
+            .is_none()
+    );
+    value["skill_metadata"] = serde_json::json!({"foo": {"source":"project", "path":"/discovered/SKILL.md", "resolved_path":"/target/SKILL.md", "is_symlink":true, "shadowed_roots":["plugin", "global"]}});
+    let event = parse_event_json(&value.to_string())?;
+    let ServerEvent::History { skill_metadata, .. } = &event else {
+        panic!("history")
+    };
+    assert_eq!(skill_metadata["foo"].source.as_deref(), Some("project"));
+    assert_eq!(skill_metadata["foo"].is_symlink, Some(true));
+    assert_eq!(
+        serde_json::to_value(event)?["skill_metadata"],
+        value["skill_metadata"]
+    );
+    Ok(())
 }
 
 #[test]

@@ -153,6 +153,151 @@ fn skill_startup_ssh_history_replaces_warmed_empty_candidates_without_local_skil
 }
 
 #[test]
+fn skill_provenance_enter_with_real_global_and_project_does_not_send() {
+    with_skill_startup_home(|home| {
+        write_startup_skill(home, "audit-fixture");
+        write_startup_skill(home, "skill");
+        let project = tempfile::tempdir().unwrap();
+        write_startup_skill(project.path(), "audit-fixture");
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let _enter = runtime.enter();
+        let mut app = App::new_for_remote_with_options(None, false);
+        app.session.working_dir = Some(project.path().to_string_lossy().into_owned());
+        let snapshot = app.current_skills_snapshot();
+        let metadata = snapshot.get("audit-fixture").unwrap().metadata();
+        assert_eq!(metadata.source.as_deref(), Some("project"));
+        assert!(metadata.shadowed_roots.iter().any(|root| root == "agents"));
+        app.remote_skills = vec!["audit-fixture".into()];
+        app.remote_skill_metadata
+            .insert("audit-fixture".into(), metadata);
+        let mut remote = crate::tui::backend::RemoteConnection::dummy();
+        remote.mark_history_loaded();
+        for ssh in [false, true] {
+            if ssh {
+                crate::env::set_var("JCODE_SSH_REMOTE", "fixture-host");
+            }
+            app.input = "/skill info audit-fixture".into();
+            runtime
+                .block_on(crate::tui::app::remote::handle_remote_key(
+                    &mut app,
+                    crossterm::event::KeyCode::Enter,
+                    crossterm::event::KeyModifiers::empty(),
+                    &mut remote,
+                ))
+                .unwrap();
+            assert!(
+                app.display_messages
+                    .last()
+                    .unwrap()
+                    .content
+                    .contains("Source: project"),
+                "{:?}",
+                app.display_messages.last()
+            );
+            assert!(app.active_skill().is_none());
+            assert!(!app.pending_turn);
+            assert!(!app.is_processing);
+            assert!(
+                !app.display_messages
+                    .iter()
+                    .any(|message| message.role == "user")
+            );
+        }
+    });
+}
+
+#[test]
+fn skill_provenance_info_is_read_only_and_remote_authoritative() {
+    with_skill_startup_home(|home| {
+        write_startup_skill(home, "provenance-info");
+        let mut local = App::new_for_remote_with_options(None, false);
+        local.is_remote = false;
+        assert!(crate::tui::app::state_ui::handle_info_command(
+            &mut local,
+            "/skill info provenance-info"
+        ));
+        assert!(
+            local
+                .display_messages
+                .last()
+                .unwrap()
+                .content
+                .contains("Source: agents")
+        );
+        assert!(local.active_skill().is_none());
+        assert!(crate::tui::app::state_ui::handle_info_command(
+            &mut local,
+            "/skill info missing"
+        ));
+        assert!(
+            local
+                .display_messages
+                .last()
+                .unwrap()
+                .content
+                .contains("not found")
+        );
+        assert!(local.active_skill().is_none());
+        crate::env::set_var("JCODE_SSH_REMOTE", "fixture-host");
+        let mut remote = App::new_for_remote_with_options(None, false);
+        remote.remote_skills = vec!["provenance-info".into()];
+        assert!(crate::tui::app::state_ui::handle_info_command(
+            &mut remote,
+            "/skill info provenance-info"
+        ));
+        assert!(
+            remote
+                .display_messages
+                .last()
+                .unwrap()
+                .content
+                .contains("Source: unknown")
+        );
+        assert!(
+            remote
+                .display_messages
+                .last()
+                .unwrap()
+                .content
+                .contains("Path: unknown")
+        );
+        remote.remote_skill_metadata.insert(
+            "provenance-info".into(),
+            crate::protocol::SkillMetadata {
+                source: Some("project".into()),
+                path: Some("/server\n\u{1b}/SKILL.md".into()),
+                resolved_path: Some("/target/SKILL.md".into()),
+                is_symlink: Some(true),
+                shadowed_roots: vec!["global".into()],
+            },
+        );
+        assert!(crate::tui::app::state_ui::handle_info_command(
+            &mut remote,
+            "/skill info provenance-info"
+        ));
+        let content = &remote.display_messages.last().unwrap().content;
+        assert!(content.contains("Source: project"));
+        assert!(content.contains("Symlink: true"));
+        assert!(content.contains("Shadowed roots: global"));
+        assert!(!content.contains('\u{1b}'));
+        assert!(remote.active_skill().is_none());
+        remote.remote_skills.clear();
+        assert!(crate::tui::app::state_ui::handle_info_command(
+            &mut remote,
+            "/skill info provenance-info"
+        ));
+        assert!(
+            remote
+                .display_messages
+                .last()
+                .unwrap()
+                .content
+                .contains("not found")
+        );
+    });
+}
+
+#[test]
 fn skill_selector_metadata_local_description_and_native_collision() {
     with_skill_startup_home(|home| {
         write_startup_skill(home, "selector-foo");
@@ -167,6 +312,7 @@ fn skill_selector_metadata_local_description_and_native_collision() {
             .find(|entry| entry.name == "/selector-foo")
             .unwrap();
         assert_eq!(skill.kind, CommandCandidateKind::Skill);
+        assert_eq!(skill.source.as_deref(), Some("agents"));
         assert_eq!(skill.description, "Startup regression fixture");
         let help: Vec<_> = candidates
             .iter()
@@ -198,6 +344,7 @@ fn skill_selector_metadata_remote_legacy_unknown_and_controls() {
             .find(|entry| entry.name == "/selector-legacy")
             .unwrap();
         assert_eq!(legacy.kind, CommandCandidateKind::Skill);
+        assert_eq!(legacy.source.as_deref(), Some("unknown"));
         assert_eq!(legacy.description, "unknown");
         let modern = candidates
             .iter()
@@ -244,6 +391,19 @@ fn skill_selector_metadata_history_refreshes_descriptions_and_preserves_metadata
             app.get_suggestions_for("/selector-remote")[0].description,
             "Actual remote description"
         );
+        let modern = serde_json::from_value(serde_json::json!({
+            "type":"history", "id":3, "session_id":"selector-history", "messages":[],
+            "skills":["selector-remote"], "server_version": jcode_build_meta::version(),
+            "skill_metadata":{"selector-remote":{"source":"project", "path":"/server/SKILL.md"}}
+        }))
+        .unwrap();
+        app.handle_server_event(modern, &mut remote);
+        assert_eq!(
+            app.get_suggestions_for("/selector-remote")[0]
+                .source
+                .as_deref(),
+            Some("project")
+        );
         let catalog = serde_json::from_value(serde_json::json!({
             "type": "history", "id": 2, "session_id": "selector-history", "messages": [],
             "available_models": ["model"]
@@ -251,9 +411,19 @@ fn skill_selector_metadata_history_refreshes_descriptions_and_preserves_metadata
         .unwrap();
         app.handle_server_event(catalog, &mut remote);
         assert_eq!(
-            app.get_suggestions_for("/selector-remote")[0].description,
-            "Actual remote description"
+            app.get_suggestions_for("/selector-remote")[0]
+                .source
+                .as_deref(),
+            Some("project")
         );
+        app.handle_server_event(history(serde_json::json!({})), &mut remote);
+        assert_eq!(
+            app.get_suggestions_for("/selector-remote")[0]
+                .source
+                .as_deref(),
+            Some("unknown")
+        );
+        assert!(app.remote_skill_metadata.is_empty());
     });
 }
 

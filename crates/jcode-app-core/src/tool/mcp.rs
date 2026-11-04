@@ -545,6 +545,7 @@ fn connection_config(
         }
     }
     Ok(McpServerConfig {
+        source_scope: None,
         command: params.command.clone().unwrap_or_default(),
         args: params.args.clone().unwrap_or_default(),
         env: params.env.clone().unwrap_or_default(),
@@ -590,6 +591,7 @@ impl McpManagementTool {
     }
 
     pub fn with_registry(mut self, registry: crate::tool::Registry) -> Self {
+        registry.bind_mcp_manager(&self.manager);
         self.registry = Some(registry.downgrade());
         self
     }

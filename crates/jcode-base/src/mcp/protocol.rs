@@ -190,6 +190,9 @@ pub struct ResourceContent {
 /// MCP server configuration
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct McpServerConfig {
+    /// Runtime discovery source only. Never accepted from or written to config JSON.
+    #[serde(skip)]
+    pub source_scope: Option<String>,
     /// Command for stdio servers. Empty for remote (HTTP/SSE) servers, which
     /// are reached at `url` instead.
     #[serde(default)]
@@ -414,9 +417,40 @@ pub struct McpConfig {
     /// `server/tool` entries registered directly as `mcp__<server>__<tool>`.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub pin_tools: Vec<String>,
+    /// Effective source labels, assigned by loaders only and never persisted.
+    #[serde(skip)]
+    pub server_scopes: std::collections::HashMap<String, String>,
 }
 
 impl McpConfig {
+    pub fn server_scope(&self, server: &str) -> Option<&str> {
+        self.servers.get(server)?;
+        self.server_scopes.get(server).map(String::as_str)
+    }
+
+    fn with_scope(mut self, scope: &str) -> Self {
+        for server in self.servers.values_mut() {
+            server.source_scope = Some(scope.to_string());
+        }
+        self.server_scopes = self
+            .servers
+            .keys()
+            .map(|name| (name.clone(), scope.to_string()))
+            .collect();
+        self
+    }
+
+    fn merge_scoped(&mut self, incoming: Self) {
+        let winners = Self::merge_servers_preferring_runnable(&mut self.servers, incoming.servers);
+        for name in winners {
+            if let Some(scope) = incoming.server_scopes.get(&name) {
+                self.server_scopes.insert(name, scope.clone());
+            } else {
+                self.server_scopes.remove(&name);
+            }
+        }
+    }
+
     /// Whether `server`'s `tool` should be a direct model tool.
     pub fn is_direct_tool(&self, server: &str, tool: &str) -> bool {
         self.servers
@@ -700,6 +734,7 @@ impl McpConfig {
                     config.servers.insert(
                         name.clone(),
                         McpServerConfig {
+                            source_scope: None,
                             command,
                             args,
                             env,
@@ -777,7 +812,11 @@ impl McpConfig {
                 std::collections::HashMap<String, McpServerConfig>,
             >(map.clone())
         {
-            config.servers.extend(servers);
+            config = Self {
+                servers,
+                ..Self::default()
+            }
+            .with_scope("global");
         }
 
         // Per-project servers under `projects.<abs_path>.mcpServers`.
@@ -791,7 +830,13 @@ impl McpConfig {
                     std::collections::HashMap<String, McpServerConfig>,
                 >(map.clone())
             {
-                Self::merge_servers_preferring_runnable(&mut config.servers, servers);
+                config.merge_scoped(
+                    Self {
+                        servers,
+                        ..Self::default()
+                    }
+                    .with_scope("project"),
+                );
             }
         }
 
@@ -809,7 +854,7 @@ impl McpConfig {
             if path.exists()
                 && let Ok(config) = Self::load_from_file(&path)
             {
-                Self::merge_servers_preferring_runnable(&mut merged.servers, config.servers);
+                merged.merge_scoped(config.with_scope("project"));
             }
         }
         merged
@@ -846,7 +891,13 @@ impl McpConfig {
             let jcode_mcp = jcode_dir.join("mcp.json");
             if jcode_mcp.exists() {
                 if let Ok(config) = Self::load_from_file(&jcode_mcp) {
+                    let config = config.with_scope("global");
                     merged.servers.extend(config.servers);
+                    merged.server_scopes = merged
+                        .servers
+                        .keys()
+                        .map(|name| (name.clone(), "global".to_string()))
+                        .collect();
                     merged.pin_tools.extend(config.pin_tools);
                 }
             }
@@ -866,7 +917,7 @@ impl McpConfig {
                         "~/.claude.json",
                     ));
                 }
-                Self::merge_servers_preferring_runnable(&mut merged.servers, config.servers);
+                merged.merge_scoped(config);
             }
         }
 
@@ -885,16 +936,13 @@ impl McpConfig {
                         "~/.claude/mcp.json (legacy)",
                     ));
                 }
-                Self::merge_servers_preferring_runnable(&mut merged.servers, config.servers);
+                merged.merge_scoped(config.with_scope("global"));
             }
         }
 
         // Project-local config files, resolved against the project directory.
         if let Some(project_root) = project_dir {
-            Self::merge_servers_preferring_runnable(
-                &mut merged.servers,
-                Self::load_project_locals(project_root).servers,
-            );
+            merged.merge_scoped(Self::load_project_locals(project_root));
         }
 
         // Claude Code expands environment references after source precedence is
@@ -929,7 +977,8 @@ impl McpConfig {
     fn merge_servers_preferring_runnable(
         existing: &mut std::collections::HashMap<String, McpServerConfig>,
         incoming: std::collections::HashMap<String, McpServerConfig>,
-    ) {
+    ) -> Vec<String> {
+        let mut winners = Vec::new();
         for (name, cfg) in incoming {
             if let Some(current) = existing.get(&name)
                 && current.is_stdio()
@@ -942,8 +991,10 @@ impl McpConfig {
                 ));
                 continue;
             }
+            winners.push(name.clone());
             existing.insert(name, cfg);
         }
+        winners
     }
 }
 

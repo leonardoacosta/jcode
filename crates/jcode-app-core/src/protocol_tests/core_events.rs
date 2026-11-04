@@ -220,6 +220,7 @@ fn test_history_event_roundtrip_preserves_side_panel_snapshot() -> Result<()> {
         mcp_servers: Vec::new(),
         skills: Vec::new(),
         skill_descriptions: Default::default(),
+        skill_metadata: Default::default(),
         total_tokens: Some((123, 45)),
         token_usage_totals: Some(TokenUsageTotals {
             cache_prompt_tokens: Some(130),

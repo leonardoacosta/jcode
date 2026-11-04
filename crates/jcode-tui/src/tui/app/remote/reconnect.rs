@@ -494,6 +494,10 @@ pub(in crate::tui::app) async fn connect_with_retry(
         session_to_resume.and_then(|session_id| app.take_history_base_for_subscribe(session_id));
     let client_instance_id = app.remote_client_instance_id.clone();
     let allow_session_takeover = should_allow_reconnect_takeover(app, state, session_to_resume);
+    // A new socket must negotiate independently, even when resuming the same session.
+    app.remote_tool_discovery = false;
+    app.pending_tool_query = None;
+    app.pending_tool_list = None;
     let connect = RemoteConnection::connect_with_session(
         session_to_resume,
         Some(client_instance_id.as_str()),

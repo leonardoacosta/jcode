@@ -9,6 +9,95 @@ use std::path::Path;
 const CONFIG_PATHS: &str = "~/.jcode/mcp.json, ~/.claude.json, ~/.claude/mcp.json, \
     <project>/.mcp.json, <project>/.jcode/mcp.json, <project>/.claude/mcp.json";
 
+pub(crate) fn tool_list_lines(
+    entries: &[crate::protocol::ToolListEntry],
+    width: usize,
+) -> Vec<ratatui::text::Line<'static>> {
+    entries
+        .iter()
+        .map(|entry| {
+            let candidate = crate::tui::CommandCandidate {
+                source: None,
+                kind: if entry.server.is_some() {
+                    crate::tui::CommandCandidateKind::Mcp
+                } else {
+                    crate::tui::CommandCandidateKind::Tool
+                },
+                name: entry.server.as_ref().map_or_else(
+                    || entry.name.clone(),
+                    |server| format!("{server}/{}", entry.name),
+                ),
+                description: if entry.server.is_some() {
+                    format!(
+                        "[{}] {}",
+                        entry.scope.as_deref().unwrap_or("unknown"),
+                        entry.description
+                    )
+                } else {
+                    entry.description.clone()
+                },
+            };
+            crate::tui::ui::input_ui::candidate_line(&candidate, width)
+        })
+        .collect()
+}
+
+pub(super) fn show_tool_list(app: &mut App, entries: Vec<crate::protocol::ToolListEntry>) {
+    if entries.is_empty() {
+        app.push_display_message(DisplayMessage::system("No matching tools."));
+    } else if let Ok(content) = serde_json::to_string(&entries) {
+        app.push_display_message(DisplayMessage::system(content).with_title("Tools"));
+    }
+}
+
+pub(super) fn poll_tool_list(app: &mut App) -> bool {
+    let Some(receiver) = app.local_tool_list.as_mut() else {
+        return false;
+    };
+    match receiver.try_recv() {
+        Ok(entries) => {
+            app.local_tool_list = None;
+            show_tool_list(app, entries);
+            true
+        }
+        Err(tokio::sync::oneshot::error::TryRecvError::Closed) => {
+            app.local_tool_list = None;
+            app.push_display_message(DisplayMessage::error("Tool list unavailable."));
+            true
+        }
+        Err(tokio::sync::oneshot::error::TryRecvError::Empty) => false,
+    }
+}
+
+pub(super) fn handle_tools_command(app: &mut App, trimmed: &str) -> bool {
+    let Some(query) = trimmed.strip_prefix("/tools") else {
+        return false;
+    };
+    if !query.is_empty() && !query.starts_with(char::is_whitespace) {
+        return false;
+    }
+    let query = query.trim().to_owned();
+    if app.is_remote {
+        if app.remote_tool_discovery {
+            app.pending_tool_query = Some(query);
+        } else {
+            app.push_display_message(DisplayMessage::system(
+                "tool list unavailable from this server",
+            ));
+        }
+    } else if let Ok(runtime) = tokio::runtime::Handle::try_current() {
+        let registry = app.registry.clone();
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        app.local_tool_list = Some(rx);
+        runtime.spawn(async move {
+            let _ = tx.send(registry.tool_list(&query).await);
+        });
+    } else {
+        app.push_display_message(DisplayMessage::error("No async runtime for tool list."));
+    }
+    true
+}
+
 fn server_state(
     cfg: &crate::mcp::McpServerConfig,
     tools: Option<usize>,
@@ -169,6 +258,36 @@ fn start_login(app: &mut App, config: &McpConfig, name: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tool_discovery_rows_fit_cells_and_sanitize_controls() {
+        let entries = vec![crate::protocol::ToolListEntry {
+            kind: "mcp".into(),
+            name: "read\n界🙂".into(),
+            description: "Read\r\nremote\u{1b}[31m docs".into(),
+            server: Some("server\t界".into()),
+            scope: None,
+        }];
+        for width in [0, 1, 20, 40, 80] {
+            let lines = tool_list_lines(&entries, width);
+            assert_eq!(lines.len(), 1);
+            let text: String = lines[0].spans.iter().map(|s| s.content.as_ref()).collect();
+            assert!(unicode_width::UnicodeWidthStr::width(text.as_str()) <= width);
+            assert!(!text.chars().any(char::is_control));
+            let message = DisplayMessage::system(serde_json::to_string(&entries).unwrap())
+                .with_title("Tools");
+            let rendered = crate::tui::ui::render_system_message(
+                &message,
+                width as u16,
+                crate::config::DiffDisplayMode::default(),
+            );
+            assert_eq!(rendered, lines);
+        }
+        let lines = tool_list_lines(&entries, 80);
+        let text: String = lines[0].spans.iter().map(|s| s.content.as_ref()).collect();
+        assert!(text.contains("mcp server界/read界🙂"), "{text}");
+        assert!(text.contains("unknown"), "{text}");
+    }
 
     fn config() -> McpConfig {
         serde_json::from_value(serde_json::json!({"servers": {

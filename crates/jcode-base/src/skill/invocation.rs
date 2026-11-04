@@ -60,6 +60,7 @@ mod tests {
                     description: "Test skill".to_string(),
                     allowed_tools: None,
                     content: "content".to_string(),
+                    provenance: None,
                     path: PathBuf::from(format!("/tmp/{name}/SKILL.md")),
                     search_text: std::sync::OnceLock::from(build_skill_search_text(
                         name,

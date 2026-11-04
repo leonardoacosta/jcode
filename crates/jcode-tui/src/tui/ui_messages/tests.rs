@@ -632,6 +632,24 @@ fn render_system_message_renders_markdown_formatting() {
 }
 
 #[test]
+fn skill_provenance_detail_preserves_every_field_in_actual_renderer() {
+    let content = "Skill: audit-fixture\nDescription: fixture\nSource: project\nPath: /discovered/SKILL.md\nResolved path: /target/SKILL.md\nSymlink: true\nShadowed roots: agents";
+    let message = DisplayMessage::system(content).with_title("Skill info");
+    for width in [20, 40, 80, 120] {
+        let lines = render_system_message(&message, width, crate::config::DiffDisplayMode::Off);
+        let text = lines
+            .iter()
+            .map(extract_line_text)
+            .collect::<Vec<_>>()
+            .join("\n");
+        for field in ["Resolved path:", "Symlink:", "Shadowed roots:"] {
+            assert!(text.contains(field), "width={width}: {text}");
+        }
+        assert!(lines.iter().all(|line| line.width() <= width as usize));
+    }
+}
+
+#[test]
 fn explicit_system_report_preserves_indentation_and_newlines() {
     let msg = DisplayMessage::system("Header line\n  indented detail\n\nNext block")
         .with_title("Context");

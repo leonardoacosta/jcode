@@ -338,6 +338,7 @@ fn accepts_large_output(input: &Value) -> bool {
 /// the lifetime of the registry, including aliases retired after a reconnect.
 #[derive(Default)]
 struct McpPolicyIndex {
+    manager: Option<std::sync::Weak<RwLock<crate::mcp::McpManager>>>,
     current: HashMap<String, (String, String)>,
     history: HashMap<(String, String), HashSet<String>>,
     /// `expose: direct` servers and `pin_tools` from the session config.
@@ -686,6 +687,56 @@ impl Registry {
     pub async fn tool_names(&self) -> Vec<String> {
         let tools = self.tools.read().await;
         tools.keys().cloned().collect()
+    }
+
+    /// Snapshot native and connected MCP metadata without connecting or reading caches.
+    pub async fn tool_list(&self, query: &str) -> Vec<crate::protocol::ToolListEntry> {
+        let mut entries: Vec<_> = self
+            .tools
+            .read()
+            .await
+            .iter()
+            .filter(|(_, tool)| tool.mcp_identity().is_none())
+            .map(|(name, tool)| crate::protocol::ToolListEntry {
+                kind: "tool".into(),
+                name: name.clone(),
+                description: tool.description().into(),
+                server: None,
+                scope: None,
+            })
+            .collect();
+        entries.sort_by(|a, b| a.name.cmp(&b.name));
+        let manager = self
+            .mcp_policy
+            .read()
+            .ok()
+            .and_then(|policy| policy.manager.as_ref().and_then(std::sync::Weak::upgrade));
+        if let Some(manager) = manager {
+            let manager = manager.read().await;
+            let mut tools = manager.all_tools().await;
+            tools.sort_by(|a, b| (&a.0, &a.1.name).cmp(&(&b.0, &b.1.name)));
+            for (server, tool) in tools {
+                entries.push(crate::protocol::ToolListEntry {
+                    kind: "mcp".into(),
+                    name: tool.name,
+                    description: tool.description.unwrap_or_default(),
+                    scope: manager.connected_server_scope(&server).await,
+                    server: Some(server),
+                });
+            }
+        }
+        let query = query.trim().to_lowercase();
+        entries.retain(|entry| {
+            entry.name.to_lowercase().contains(&query)
+                || entry.description.to_lowercase().contains(&query)
+        });
+        entries
+    }
+
+    pub(super) fn bind_mcp_manager(&self, manager: &Arc<RwLock<crate::mcp::McpManager>>) {
+        if let Ok(mut policy) = self.mcp_policy.write() {
+            policy.manager = Some(Arc::downgrade(manager));
+        }
     }
 
     /// Tool definitions a session may call, honoring its registered allow and
@@ -1808,6 +1859,7 @@ impl Registry {
                         .write()
                         .unwrap_or_else(|e| e.into_inner());
                     index.direct = crate::mcp::McpConfig {
+                        server_scopes: config.server_scopes.clone(),
                         servers: config
                             .servers
                             .iter()

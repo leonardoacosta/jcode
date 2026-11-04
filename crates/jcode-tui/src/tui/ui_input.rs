@@ -1,5 +1,6 @@
 #[path = "ui_input/command_suggestions.rs"]
 mod command_suggestions;
+pub(crate) use command_suggestions::candidate_line;
 use command_suggestions::*;
 
 use super::inline_interactive_ui::format_elapsed;

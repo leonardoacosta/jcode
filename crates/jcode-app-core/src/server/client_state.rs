@@ -351,6 +351,7 @@ pub(super) async fn handle_get_model_catalog(
         mcp_servers: Vec::new(),
         skills: Vec::new(),
         skill_descriptions: Default::default(),
+        skill_metadata: Default::default(),
         total_tokens: None,
         token_usage_totals: None,
         all_sessions: Vec::new(),
@@ -771,6 +772,7 @@ async fn send_history_from_persisted_session(
         mcp_servers: Vec::new(),
         skills: Vec::new(),
         skill_descriptions: Default::default(),
+        skill_metadata: Default::default(),
         total_tokens: optional_total_tokens(token_usage_totals),
         token_usage_totals: optional_token_usage_totals(token_usage_totals),
         all_sessions,
@@ -867,6 +869,7 @@ async fn send_history_with_guard(
         available_model_routes,
         skills,
         skill_descriptions,
+        skill_metadata,
         tool_names,
         upstream_provider,
         resolved_credential,
@@ -916,6 +919,11 @@ async fn send_history_with_guard(
             .iter()
             .map(|skill| (skill.name.clone(), skill.description.clone()))
             .collect::<std::collections::HashMap<_, _>>();
+        let skill_metadata = skill_snapshot
+            .list()
+            .iter()
+            .map(|skill| (skill.name.clone(), skill.metadata()))
+            .collect();
         let skills_ms = skills_start.elapsed().as_millis();
 
         let provider_meta_start = Instant::now();
@@ -939,6 +947,7 @@ async fn send_history_with_guard(
             available_model_routes,
             skills,
             skill_descriptions,
+            skill_metadata,
             tool_names,
             agent_guard.last_upstream_provider(),
             agent_guard.active_resolved_credential(),
@@ -1089,6 +1098,7 @@ async fn send_history_with_guard(
         mcp_servers,
         skills,
         skill_descriptions,
+        skill_metadata,
         total_tokens: optional_total_tokens(token_usage_totals),
         token_usage_totals: optional_token_usage_totals(token_usage_totals),
         all_sessions,

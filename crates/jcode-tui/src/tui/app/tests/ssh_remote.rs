@@ -241,6 +241,7 @@ fn ssh_remote_history_is_authoritative_even_when_empty_or_server_version_differs
             mcp_servers: vec![],
             skills: vec![],
             skill_descriptions: Default::default(),
+            skill_metadata: Default::default(),
             total_tokens: None,
             token_usage_totals: None,
             all_sessions: vec![],

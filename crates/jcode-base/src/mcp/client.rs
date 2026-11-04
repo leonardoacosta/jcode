@@ -17,6 +17,7 @@ use tokio::sync::{Mutex, mpsc, oneshot};
 #[derive(Clone)]
 pub struct McpHandle {
     pub(crate) name: String,
+    pub(crate) source_scope: Option<String>,
     request_id: Arc<AtomicU64>,
     pending: Arc<Mutex<HashMap<u64, oneshot::Sender<JsonRpcResponse>>>>,
     /// Set by the reader on stdout EOF: no reply can arrive, so requests fail fast.
@@ -376,6 +377,7 @@ impl McpClient {
 
         let handle = McpHandle {
             name: name.clone(),
+            source_scope: config.source_scope.clone(),
             request_id: Arc::new(AtomicU64::new(1)),
             pending,
             closed,
@@ -429,6 +431,7 @@ impl McpClient {
     ) -> McpHandle {
         McpHandle {
             name: name.to_string(),
+            source_scope: config.source_scope.clone(),
             request_id: Arc::new(AtomicU64::new(1)),
             pending,
             closed,
@@ -750,6 +753,7 @@ while IFS= read -r line; do
 done
 "#;
         McpServerConfig {
+            source_scope: None,
             command: "/bin/sh".to_string(),
             args: vec!["-c".to_string(), script.to_string()],
             env: Default::default(),

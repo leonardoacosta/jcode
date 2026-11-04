@@ -361,6 +361,8 @@ their existing unselected scope; this clarification assigns no stretch work.
 | --- | --- |
 | P01.O1 | Runtime identity distinguishes matched, stale and unknown serving builds. `bind-acceptance-evidence-to-runtime`: requirement “Evidence names the serving binary”, tasks 1–6 in file order. |
 | P02.O1 | Local/remote selector shows typed descriptions, legacy unknowns, native precedence and cell-bounded rows. `add-typed-skill-selector-metadata`: both requirements, tasks 1.1–1.4 and 2.1–2.4. |
+| P02.O2 | Native and connected MCP tools are discoverable locally/remotely without invocation or lazy-server startup. `discover-native-and-mcp-capabilities`: both requirements in `capability-discovery`, tasks 1.1–1.3 and 2.1–2.4. Selected for execution 2026-11-04; acceptance pending. |
+| P02.O3 | Skill root, resolved target, symlink and shadowed roots plus MCP server/config scope are visible with explicit unknowns. `show-skill-and-mcp-provenance`: both requirements in `capability-provenance`, tasks 1.1–1.4 and 2.1–2.3. Selected for execution 2026-11-04; acceptance pending. |
 | P03.O1 | Each continuation decision emits bounded redacted evidence without changing policy. `add-structured-continuation-evidence`: requirement “Structured continuation evidence record”, tasks 1–5 in file order. |
 | P05.O1 | Deterministic task/worktree policy preserves authority, limits, ownership and safe placement. `configure-task-and-worktree-policy`: all requirements in `task-admission-policy` and `worktree-policy`, tasks 1.1–4.4. |
 

@@ -215,6 +215,15 @@ pub(in crate::tui::app) async fn submit_remote_slash_input(
     prepared: input::PreparedInput,
 ) -> Result<()> {
     let raw_input = prepared.raw_input.clone();
+    let trimmed = prepared.expanded.trim();
+    if (trimmed == "/skill info"
+        || trimmed
+            .strip_prefix("/skill info")
+            .is_some_and(|arg| arg.starts_with(char::is_whitespace)))
+        && app_mod::state_ui::handle_info_command(app, trimmed)
+    {
+        return Ok(());
+    }
 
     if crate::tui::is_ssh_remote() {
         let trimmed = prepared.expanded.trim();

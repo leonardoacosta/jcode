@@ -704,13 +704,20 @@ async fn assert_history_service_tier_and_pdf_capability(
             provider_oauth_account_label,
             skills,
             skill_descriptions,
+            skill_metadata,
             ..
         } => {
             if busy {
+                assert!(skill_metadata.is_empty());
                 assert!(skills.is_empty());
                 assert!(skill_descriptions.is_empty());
             } else {
                 assert!(skills.iter().any(|name| name == "selector-wire"));
+                assert_eq!(
+                    skill_metadata["selector-wire"].source.as_deref(),
+                    Some("project")
+                );
+                assert!(skill_metadata["selector-wire"].resolved_path.is_some());
                 assert_eq!(
                     skill_descriptions.get("selector-wire").map(String::as_str),
                     Some("Actual wire description")

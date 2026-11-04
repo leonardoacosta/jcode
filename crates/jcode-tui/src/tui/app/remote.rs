@@ -89,6 +89,14 @@ pub(super) enum RemoteEventOutcome {
 }
 
 pub(super) async fn handle_tick(app: &mut App, remote: &mut RemoteConnection) -> bool {
+    if let Some(query) = app.pending_tool_query.take() {
+        app.pending_tool_list = None;
+        match remote.discover_tools(query).await {
+            Ok(id) => app.pending_tool_list = Some(id),
+            Err(error) => app
+                .push_display_message(DisplayMessage::error(format!("Tool list failed: {error}"))),
+        }
+    }
     app.refresh_terminal_title_metrics();
     app.sync_herdr_agent_state();
     crate::tui::ui::set_frame_input_attribution(crate::tui::ui::FrameInputAttribution {

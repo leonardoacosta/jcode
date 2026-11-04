@@ -19,6 +19,32 @@ pub struct SessionToolDefinition {
     pub parameters: serde_json::Value,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SkillMetadata {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolved_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub is_symlink: Option<bool>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub shadowed_roots: Vec<String>,
+}
+
+/// Display-only inventory. No schemas, credentials or invocation authority.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ToolListEntry {
+    pub kind: String,
+    pub name: String,
+    pub description: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub server: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scope: Option<String>,
+}
+
 /// Replaces the session SDK overlay. None inherits normal selection.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SessionToolConfig {
@@ -38,6 +64,13 @@ pub enum Request {
     ConfigureTools { id: u64, tools: SessionToolConfig },
     #[serde(rename = "list_tools")]
     ListTools { id: u64 },
+    /// Read-only native and connected MCP display metadata, independent of SDK selection.
+    #[serde(rename = "discover_tools")]
+    DiscoverTools {
+        id: u64,
+        #[serde(default)]
+        query: String,
+    },
     #[serde(rename = "tool_result")]
     ToolResult {
         id: u64,

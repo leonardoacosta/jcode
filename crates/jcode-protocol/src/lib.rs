@@ -353,6 +353,7 @@ pub type ReloadRecoverySnapshot = jcode_selfdev_types::ReloadRecoveryDirective;
 mod wire;
 pub use wire::{AccountUsageSnapshot, McpServerHealth, Request, ServerEvent};
 pub use wire::{SessionToolConfig, SessionToolDefinition};
+pub use wire::{SkillMetadata, ToolListEntry};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolCallSummary {
@@ -757,6 +758,7 @@ impl Request {
             Request::RuntimeCommand { id, .. } => *id,
             Request::ConfigureTools { id, .. }
             | Request::ListTools { id }
+            | Request::DiscoverTools { id, .. }
             | Request::ToolResult { id, .. } => *id,
             Request::Message { id, .. } => *id,
             Request::Cancel { id } => *id,

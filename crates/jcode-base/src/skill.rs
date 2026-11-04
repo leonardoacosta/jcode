@@ -1,6 +1,6 @@
 use anyhow::Result;
 use chrono::Utc;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -11,6 +11,34 @@ use tokio::sync::RwLock;
 mod invocation;
 pub use invocation::SkillInvocation;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SkillSource {
+    Plugin,
+    Global,
+    Agents,
+    Project,
+}
+
+impl SkillSource {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Plugin => "plugin",
+            Self::Global => "global",
+            Self::Agents => "agents",
+            Self::Project => "project",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SkillProvenance {
+    pub source: SkillSource,
+    pub resolved_path: Option<PathBuf>,
+    pub is_symlink: bool,
+    pub shadowed_roots: Vec<SkillSource>,
+}
+
 /// A skill definition from SKILL.md
 #[derive(Debug, Clone)]
 pub struct Skill {
@@ -19,6 +47,7 @@ pub struct Skill {
     pub allowed_tools: Option<Vec<String>>,
     pub content: String,
     pub path: PathBuf,
+    pub provenance: Option<SkillProvenance>,
     /// Normalized search text, built on first use. Normalizing every skill
     /// body eagerly dominated `load_global` (the TUI loads it before its first
     /// frame), yet only memory-entry conversion ever reads it.
@@ -273,7 +302,7 @@ impl SkillRegistry {
         if let Ok(jcode_dir) = crate::storage::jcode_dir() {
             let jcode_skills = jcode_dir.join("skills");
             if jcode_skills.exists() {
-                registry.load_from_dir(&jcode_skills)?;
+                registry.load_from_dir_with_source(&jcode_skills, SkillSource::Global)?;
             }
         }
 
@@ -281,7 +310,7 @@ impl SkillRegistry {
         if let Ok(agents_skills) = crate::storage::user_home_path(".agents/skills")
             && agents_skills.exists()
         {
-            registry.load_from_dir(&agents_skills)?;
+            registry.load_from_dir_with_source(&agents_skills, SkillSource::Agents)?;
         }
 
         Ok(registry)
@@ -304,7 +333,9 @@ impl SkillRegistry {
     /// over same-named global skills, mirroring the historical load order
     /// (project dirs loaded last).
     pub fn merge_overlay(&mut self, overlay: Self) {
-        self.skills.extend(overlay.skills);
+        for skill in overlay.skills.into_values() {
+            self.insert_skill(skill);
+        }
     }
 
     /// Effective skills for a session: shared global skills plus the
@@ -387,8 +418,8 @@ impl SkillRegistry {
             }
             let skill_file = path.join("SKILL.md");
             if skill_file.exists() {
-                if let Ok(skill) = Self::parse_skill(&skill_file) {
-                    self.skills.insert(skill.name.clone(), skill);
+                if let Ok(skill) = Self::parse_skill(&skill_file, SkillSource::Project) {
+                    self.insert_skill(skill);
                 }
             } else {
                 self.load_nested(&path, depth + 1, visited);
@@ -409,7 +440,9 @@ impl SkillRegistry {
     fn load_plugin_skills_from_root(&mut self, plugins_root: &Path) -> usize {
         let mut count = 0;
         for dir in Self::plugin_skill_dirs_under(plugins_root) {
-            count += self.load_from_dir_count(&dir).unwrap_or(0);
+            count += self
+                .load_from_dir_count(&dir, SkillSource::Plugin)
+                .unwrap_or(0);
         }
         count
     }
@@ -523,39 +556,54 @@ impl SkillRegistry {
         })
     }
 
-    /// Load skills from a directory
+    fn insert_skill(&mut self, mut skill: Skill) {
+        if let Some(previous) = self
+            .skills
+            .get(&skill.name)
+            .and_then(|s| s.provenance.as_ref())
+            && let Some(provenance) = skill.provenance.as_mut()
+        {
+            let mut roots = previous.shadowed_roots.clone();
+            roots.push(previous.source);
+            roots.extend(provenance.shadowed_roots.iter().copied());
+            roots.dedup();
+            provenance.shadowed_roots = roots;
+        }
+        self.skills.insert(skill.name.clone(), skill);
+    }
+
+    #[cfg(test)]
     fn load_from_dir(&mut self, dir: &Path) -> Result<()> {
-        if !dir.is_dir() {
-            return Ok(());
-        }
+        self.load_from_dir_with_source(dir, SkillSource::Global)
+    }
 
-        for entry in std::fs::read_dir(dir)? {
-            let entry = entry?;
-            let path = entry.path();
-
-            if path.is_dir() {
-                let skill_file = path.join("SKILL.md");
-                if skill_file.exists()
-                    && let Ok(skill) = Self::parse_skill(&skill_file)
-                {
-                    self.skills.insert(skill.name.clone(), skill);
-                }
-            }
-        }
-
-        Ok(())
+    fn load_from_dir_with_source(&mut self, dir: &Path, source: SkillSource) -> Result<()> {
+        self.load_from_dir_count(dir, source).map(|_| ())
     }
 
     /// Parse a SKILL.md file
-    fn parse_skill(path: &Path) -> Result<Skill> {
-        Self::parse_skill_inner(path).map_err(|error| {
-            crate::logging::warn(&format!(
-                "Failed to parse skill file '{}': {}",
-                path.display(),
+    fn parse_skill(path: &Path, source: SkillSource) -> Result<Skill> {
+        Self::parse_skill_inner(path)
+            .map(|mut skill| {
+                skill.provenance = Some(SkillProvenance {
+                    source,
+                    resolved_path: path.canonicalize().ok(),
+                    is_symlink: path.ancestors().any(|ancestor| {
+                        std::fs::symlink_metadata(ancestor)
+                            .is_ok_and(|m| m.file_type().is_symlink())
+                    }),
+                    shadowed_roots: Vec::new(),
+                });
+                skill
+            })
+            .map_err(|error| {
+                crate::logging::warn(&format!(
+                    "Failed to parse skill file '{}': {}",
+                    path.display(),
+                    error
+                ));
                 error
-            ));
-            error
-        })
+            })
     }
 
     fn parse_skill_inner(path: &Path) -> Result<Skill> {
@@ -586,6 +634,7 @@ impl SkillRegistry {
             allowed_tools,
             content: body,
             path: path.to_path_buf(),
+            provenance: None,
             search_text: std::sync::OnceLock::new(),
         })
     }
@@ -634,11 +683,16 @@ impl SkillRegistry {
     /// Reload a specific skill by name
     pub fn reload(&mut self, name: &str) -> Result<bool> {
         // Find the skill's path first
-        let path = self.skills.get(name).map(|s| s.path.clone());
+        let previous = self.skills.get(name).cloned();
 
-        if let Some(path) = path {
+        if let Some(previous) = previous {
+            let path = previous.path;
             if path.exists() {
-                let skill = Self::parse_skill(&path)?;
+                let mut skill = Self::parse_skill_inner(&path)?;
+                if let Some(provenance) = previous.provenance {
+                    skill = Self::parse_skill(&path, provenance.source)?;
+                    skill.provenance.as_mut().unwrap().shadowed_roots = provenance.shadowed_roots;
+                }
                 self.skills.insert(skill.name.clone(), skill);
                 Ok(true)
             } else {
@@ -686,7 +740,7 @@ impl SkillRegistry {
         if let Ok(jcode_dir) = crate::storage::jcode_dir() {
             let jcode_skills = jcode_dir.join("skills");
             if jcode_skills.exists() {
-                count += self.load_from_dir_count(&jcode_skills)?;
+                count += self.load_from_dir_count(&jcode_skills, SkillSource::Global)?;
             }
         }
 
@@ -694,14 +748,14 @@ impl SkillRegistry {
         if let Ok(agents_skills) = crate::storage::user_home_path(".agents/skills")
             && agents_skills.exists()
         {
-            count += self.load_from_dir_count(&agents_skills)?;
+            count += self.load_from_dir_count(&agents_skills, SkillSource::Agents)?;
         }
 
         Ok(count)
     }
 
     /// Load skills from a directory and return count
-    fn load_from_dir_count(&mut self, dir: &Path) -> Result<usize> {
+    fn load_from_dir_count(&mut self, dir: &Path, source: SkillSource) -> Result<usize> {
         if !dir.is_dir() {
             return Ok(0);
         }
@@ -714,9 +768,9 @@ impl SkillRegistry {
             if path.is_dir() {
                 let skill_file = path.join("SKILL.md");
                 if skill_file.exists()
-                    && let Ok(skill) = Self::parse_skill(&skill_file)
+                    && let Ok(skill) = Self::parse_skill(&skill_file, source)
                 {
-                    self.skills.insert(skill.name.clone(), skill);
+                    self.insert_skill(skill);
                     count += 1;
                 }
             }
@@ -980,7 +1034,58 @@ fn name_mismatch_warning(name: &str, path: &Path) -> Option<String> {
     })
 }
 
+pub fn format_skill_info(
+    name: &str,
+    description: &str,
+    metadata: &jcode_protocol::SkillMetadata,
+) -> String {
+    let shadowed = if metadata.source.is_none() {
+        "unknown".into()
+    } else if metadata.shadowed_roots.is_empty() {
+        "none".into()
+    } else {
+        metadata.shadowed_roots.join(", ")
+    };
+    let symlink = metadata
+        .is_symlink
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "unknown".into());
+    let safe = |text: &str| text.chars().filter(|c| !c.is_control()).collect::<String>();
+    format!(
+        "Skill: {}\nDescription: {}\nSource: {}\nPath: {}\nResolved path: {}\nSymlink: {}\nShadowed roots: {}",
+        safe(name),
+        safe(description),
+        safe(metadata.source.as_deref().unwrap_or("unknown")),
+        safe(metadata.path.as_deref().unwrap_or("unknown")),
+        safe(metadata.resolved_path.as_deref().unwrap_or("unknown")),
+        symlink,
+        safe(&shadowed)
+    )
+}
+
 impl Skill {
+    pub fn metadata(&self) -> jcode_protocol::SkillMetadata {
+        jcode_protocol::SkillMetadata {
+            path: Some(self.path.display().to_string()),
+            source: self.provenance.as_ref().map(|p| p.source.label().into()),
+            resolved_path: self
+                .provenance
+                .as_ref()
+                .and_then(|p| p.resolved_path.as_ref())
+                .map(|p| p.display().to_string()),
+            is_symlink: self.provenance.as_ref().map(|p| p.is_symlink),
+            shadowed_roots: self
+                .provenance
+                .as_ref()
+                .map(|p| p.shadowed_roots.iter().map(|s| s.label().into()).collect())
+                .unwrap_or_default(),
+        }
+    }
+
+    pub fn info(&self) -> String {
+        format_skill_info(&self.name, &self.description, &self.metadata())
+    }
+
     /// Non-blocking lint warnings for this skill.
     pub fn warnings(&self) -> Vec<String> {
         name_mismatch_warning(&self.name, &self.path)
@@ -1064,6 +1169,7 @@ mod tests {
             allowed_tools: None,
             content: content.to_string(),
             path: PathBuf::from(format!("/tmp/{name}/SKILL.md")),
+            provenance: None,
             search_text: std::sync::OnceLock::from(build_skill_search_text(
                 name,
                 description,
@@ -1377,7 +1483,7 @@ mod tests {
 
         let mut counted_registry = SkillRegistry::default();
         let count = counted_registry
-            .load_from_dir_count(&skills_dir)
+            .load_from_dir_count(&skills_dir, SkillSource::Global)
             .expect("count skills while skipping malformed file");
         assert_eq!(count, 1);
         assert!(counted_registry.contains("valid"));
@@ -1413,6 +1519,103 @@ mod tests {
         assert!(
             skill.path.starts_with(temp.path()),
             "project-local overlay must win over a same-named global skill"
+        );
+    }
+
+    #[test]
+    fn provenance_detail_sanitizes_paths_without_rewriting_identity() {
+        let mut skill = test_skill("odd\u{1b}name", "line\nnext", "DO NOT ACTIVATE");
+        skill.path = PathBuf::from("/root\n\u{1b}[31m/SKILL.md");
+        let metadata = skill.metadata();
+        assert_eq!(metadata.path.as_deref(), Some("/root\n\u{1b}[31m/SKILL.md"));
+        assert_eq!(metadata.source, None);
+        let text = skill.info();
+        assert!(!text.contains('\u{1b}'));
+        assert!(text.contains("Source: unknown"));
+        assert!(text.contains("Resolved path: unknown"));
+        assert!(!text.contains("DO NOT ACTIVATE"));
+        assert_eq!(skill.name, "odd\u{1b}name");
+        assert_eq!(skill.path, PathBuf::from("/root\n\u{1b}[31m/SKILL.md"));
+    }
+
+    #[test]
+    fn provenance_accumulates_roots_across_overlay_and_reload() {
+        let temp = tempfile::tempdir().unwrap();
+        let plugins = temp.path().join("plugins");
+        write_plugin_skill(&plugins.join("repos/test"), "shared");
+        write_test_skill(temp.path(), ".jcode", "shared");
+        write_test_skill(temp.path(), ".agents", "shared");
+        let mut base = SkillRegistry::default();
+        base.load_plugin_skills_from_root(&plugins);
+        base.load_from_dir_with_source(&temp.path().join(".jcode/skills"), SkillSource::Global)
+            .unwrap();
+        base.load_from_dir_with_source(&temp.path().join(".agents/skills"), SkillSource::Agents)
+            .unwrap();
+        let original = base.get("shared").unwrap();
+        assert_eq!(
+            original.provenance.as_ref().unwrap().source,
+            SkillSource::Agents
+        );
+        assert_eq!(
+            original.provenance.as_ref().unwrap().shadowed_roots,
+            vec![SkillSource::Plugin, SkillSource::Global]
+        );
+        let project = tempfile::tempdir().unwrap();
+        write_test_skill(project.path(), ".jcode", "shared");
+        let mut effective = SkillRegistry::effective_for_working_dir(&base, Some(project.path()));
+        let provenance = effective.get("shared").unwrap().provenance.clone().unwrap();
+        assert_eq!(provenance.source, SkillSource::Project);
+        assert_eq!(
+            provenance.shadowed_roots,
+            vec![
+                SkillSource::Plugin,
+                SkillSource::Global,
+                SkillSource::Agents
+            ]
+        );
+        assert!(effective.reload("shared").unwrap());
+        assert_eq!(
+            effective.get("shared").unwrap().provenance.as_ref(),
+            Some(&provenance)
+        );
+        assert_eq!(
+            base.get("shared")
+                .unwrap()
+                .provenance
+                .as_ref()
+                .unwrap()
+                .source,
+            SkillSource::Agents
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn provenance_tracks_symlink_ancestors_and_keeps_invocation_path() {
+        let project = tempfile::tempdir().unwrap();
+        let target = tempfile::tempdir().unwrap();
+        write_skill_file(
+            target.path(),
+            "linked",
+            "---\nname: linked\ndescription: linked\n---\nbody",
+        );
+        let root = project.path().join(".jcode");
+        std::fs::create_dir_all(&root).unwrap();
+        std::os::unix::fs::symlink(target.path(), root.join("skills")).unwrap();
+        let registry = SkillRegistry::load_project_overlay(Some(project.path())).unwrap();
+        let skill = registry.get("linked").unwrap();
+        assert_eq!(skill.path, root.join("skills/linked/SKILL.md"));
+        let provenance = skill.provenance.as_ref().unwrap();
+        assert!(provenance.is_symlink);
+        assert_eq!(
+            provenance.resolved_path,
+            Some(
+                target
+                    .path()
+                    .join("linked/SKILL.md")
+                    .canonicalize()
+                    .unwrap()
+            )
         );
     }
 
@@ -1719,8 +1922,10 @@ mod tests {
             )
             .unwrap();
         }
-        let load =
-            |f: &str| SkillRegistry::parse_skill(&dir.path().join(f).join("SKILL.md")).unwrap();
+        let load = |f: &str| {
+            SkillRegistry::parse_skill(&dir.path().join(f).join("SKILL.md"), SkillSource::Global)
+                .unwrap()
+        };
         assert!(load("good").warnings().is_empty());
         assert!(load("ns").warnings().is_empty());
         let bad = load("folder");

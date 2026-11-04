@@ -1289,6 +1289,10 @@ pub(in crate::tui::app) async fn submit_remote_enter_input(
             return Ok(());
         }
 
+        if app_mod::commands_mcp::handle_tools_command(app, trimmed) {
+            return Ok(());
+        }
+
         if app_mod::commands::handle_agents_command(app, trimmed) {
             return Ok(());
         }

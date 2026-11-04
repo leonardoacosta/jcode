@@ -731,6 +731,14 @@ impl RemoteConnection {
         Ok(id)
     }
 
+    pub async fn discover_tools(&mut self, query: String) -> Result<u64> {
+        let id = self.next_request_id;
+        self.next_request_id += 1;
+        self.send_request(Request::DiscoverTools { id, query })
+            .await?;
+        Ok(id)
+    }
+
     /// Request account quotas from the daemon, never from the render thread.
     /// The daemon shares in-flight fetches and applies provider retry backoff.
     pub async fn poll_account_usage(&mut self) -> Result<()> {

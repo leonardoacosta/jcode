@@ -67,7 +67,7 @@ mod commands_colors;
 mod commands_desktop;
 mod commands_dispatch;
 mod commands_improve;
-mod commands_mcp;
+pub(crate) mod commands_mcp;
 mod commands_overnight;
 mod commands_plan;
 mod commands_remote;
@@ -1172,6 +1172,10 @@ pub struct App {
     // Cached MCP server names and tool counts (updated on connect/disconnect)
     mcp_server_names: Vec<(String, usize)>,
     mcp_health: Vec<crate::protocol::McpServerHealth>,
+    remote_tool_discovery: bool,
+    pending_tool_query: Option<String>,
+    pending_tool_list: Option<u64>,
+    local_tool_list: Option<tokio::sync::oneshot::Receiver<Vec<crate::protocol::ToolListEntry>>>,
     // When the current connection phase (authenticating/connecting/waiting) began.
     // Reset on every phase change so the "suspiciously long" yellow status is
     // measured per-attempt instead of inheriting the whole-turn elapsed time
@@ -1375,6 +1379,7 @@ pub struct App {
     remote_mcp_servers: Vec<String>,
     remote_skills: Vec<String>,
     remote_skill_descriptions: std::collections::HashMap<String, String>,
+    remote_skill_metadata: std::collections::HashMap<String, crate::protocol::SkillMetadata>,
     // Total session token usage (from server in remote mode)
     remote_total_tokens: Option<(u64, u64)>,
     // Detailed persisted token/cache usage totals (from server in remote mode)

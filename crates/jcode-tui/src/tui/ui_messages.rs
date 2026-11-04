@@ -73,7 +73,7 @@ fn render_single_line_system_notice(
     // readable. Markdown or a newline alone is not a reason to expand a notice.
     if matches!(
         msg.title.as_deref(),
-        Some("Skills" | "Context" | "Support" | "Cloud transfer")
+        Some("Skills" | "Skill info" | "Context" | "Support" | "Cloud transfer")
     ) || msg.content.starts_with("Shell command · ")
         || msg.content.starts_with("Authentication Status:")
         || (msg.content.contains('\n') && msg.content.contains("/cancel"))
@@ -511,6 +511,12 @@ pub(crate) fn render_system_message(
     width: u16,
     _diff_mode: crate::config::DiffDisplayMode,
 ) -> Vec<Line<'static>> {
+    if msg.title.as_deref() == Some("Tools")
+        && let Ok(entries) =
+            serde_json::from_str::<Vec<crate::protocol::ToolListEntry>>(&msg.content)
+    {
+        return crate::tui::app::commands_mcp::tool_list_lines(&entries, width as usize);
+    }
     if msg.title.as_deref() == Some("OpenAI login")
         && let Some(parsed) = jcode_tui_messages::parse_collapsible_swarm_content(&msg.content)
     {

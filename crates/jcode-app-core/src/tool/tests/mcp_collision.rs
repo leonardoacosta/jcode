@@ -1,5 +1,44 @@
 use super::*;
 
+#[tokio::test]
+async fn mcp_collision_discovery_is_read_only_and_ignores_cached_tools() {
+    let registry = Registry::new(Arc::new(MockProvider)).await;
+    let dir = tempfile::tempdir().unwrap();
+    let marker = dir.path().join("lazy-started");
+    let config = serde_json::from_value(serde_json::json!({"servers": {
+        "lazy": {"command":"/bin/sh", "args":["-c", format!("touch '{}'", marker.display())], "lazy":true}
+    }})).unwrap();
+    let manager = Arc::new(RwLock::new(crate::mcp::McpManager::with_config(config)));
+    let _management =
+        mcp::McpManagementTool::new(Arc::clone(&manager)).with_registry(registry.clone());
+    registry
+        .reconcile_mcp_tools(crate::mcp::create_mcp_tools_from_cached_many(
+            &collision_catalog(),
+            manager,
+        ))
+        .await;
+    let rows = registry.tool_list("").await;
+    assert!(
+        rows.iter()
+            .any(|row| row.name == "bash" && row.kind == "tool")
+    );
+    assert!(rows.iter().all(|row| row.server.is_none()));
+    assert!(
+        registry
+            .tool_list("ZZZ-NO-SUCH-CAPABILITY")
+            .await
+            .is_empty()
+    );
+    assert_eq!(
+        registry.tool_list("BASH").await,
+        registry.tool_list("bash").await
+    );
+    assert!(
+        !marker.exists(),
+        "inventory started configured lazy MCP server"
+    );
+}
+
 fn collision_catalog() -> Vec<(String, crate::mcp::McpToolDef)> {
     [("server-a", "query-docs"), ("server_a", "query_docs")]
         .into_iter()
@@ -246,6 +285,20 @@ fn mcp_collision_manual_lifecycle_real_stdio() {
                 if index == 1 { assert!(output.output.contains(&aliases[1]), "{}", output.output); }
             }
             assert!(!registry.tool_names().await.contains(&legacy));
+            let inventory = registry.tool_list("").await;
+            assert!(inventory.iter().any(|entry| entry.kind == "tool" && entry.name == "bash"));
+            assert_eq!(inventory.iter().filter(|entry| entry.kind == "mcp").count(), 2);
+            assert!(inventory.iter().any(|entry| entry.server.as_deref() == Some("server-a") && entry.name == "query-docs"));
+            assert_eq!(registry.tool_list("SERVER-A:QUERY-DOCS").await.len(), 1);
+            management.execute(serde_json::json!({
+                "action":"connect", "server":"native-collision", "command":std::env::var(PYTHON).unwrap(),
+                "args":["-I", "-S", "-u", "-c", SERVER, "native-collision", "[\"bash\"]"]
+            }), ctx.clone()).await.unwrap();
+            let collisions = registry.tool_list("bash").await;
+            assert_eq!(collisions[0].kind, "tool");
+            assert!(collisions.iter().any(|entry| entry.kind == "mcp" && entry.name == "bash" && entry.server.as_deref() == Some("native-collision")));
+            management.execute(serde_json::json!({"action":"disconnect", "server":"native-collision"}), ctx.clone()).await.unwrap();
+            assert!(!registry.tool_list("").await.iter().any(|entry| entry.server.as_deref() == Some("native-collision")));
             let listed = management.execute(serde_json::json!({"action":"list"}), ctx.clone()).await.unwrap();
             let discovered = management.execute(serde_json::json!({"action":"search"}), ctx.clone()).await.unwrap();
             let discovered: Value = serde_json::from_str(&discovered.output).unwrap();

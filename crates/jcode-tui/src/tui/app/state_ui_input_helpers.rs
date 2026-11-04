@@ -5,6 +5,8 @@ use crate::tui::core;
 pub enum CommandCandidateKind {
     NativeCommand,
     Skill,
+    Tool,
+    Mcp,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -12,6 +14,7 @@ pub struct CommandCandidate {
     pub kind: CommandCandidateKind,
     pub name: String,
     pub description: String,
+    pub source: Option<String>,
 }
 
 impl From<(String, &'static str)> for CommandCandidate {
@@ -20,6 +23,7 @@ impl From<(String, &'static str)> for CommandCandidate {
             kind: CommandCandidateKind::NativeCommand,
             name,
             description: description.into(),
+            source: None,
         }
     }
 }
@@ -30,6 +34,7 @@ impl CommandCandidate {
             kind: CommandCandidateKind::Skill,
             name,
             description: description.chars().filter(|c| !c.is_control()).collect(),
+            source: Some("unknown".into()),
         }
     }
 }
@@ -191,6 +196,11 @@ const REGISTERED_COMMANDS: &[RegisteredCommand] = &[
         "List instruction files loaded into the prompt",
     ),
     RegisteredCommand::public("/mcp", "Show MCP servers; /mcp login <server> for OAuth"),
+    RegisteredCommand::public(
+        "/tools",
+        "List native and connected MCP tools; /tools [query]",
+    ),
+    RegisteredCommand::public("/skill info", "Show skill provenance without activation"),
     RegisteredCommand::public(
         "/skills",
         "Show loaded skills and jcode-endorsed recommendations",
@@ -436,13 +446,20 @@ impl App {
                 }
                 let command = format!("/{name}");
                 if seen.insert(command.clone()) {
-                    commands.push(CommandCandidate::skill(
+                    let mut candidate = CommandCandidate::skill(
                         command,
                         self.remote_skill_descriptions
                             .get(name)
                             .map(String::as_str)
                             .unwrap_or("unknown"),
-                    ));
+                    );
+                    candidate.source = Some(
+                        self.remote_skill_metadata
+                            .get(name)
+                            .and_then(|metadata| metadata.source.clone())
+                            .unwrap_or_else(|| "unknown".into()),
+                    );
+                    commands.push(candidate);
                 }
             }
         }
@@ -453,7 +470,16 @@ impl App {
             }
             let command = format!("/{}", skill.name);
             if seen.insert(command.clone()) {
-                commands.push(CommandCandidate::skill(command, &skill.description));
+                let mut candidate = CommandCandidate::skill(command, &skill.description);
+                candidate.source = Some(
+                    skill
+                        .provenance
+                        .as_ref()
+                        .map(|p| p.source.label())
+                        .unwrap_or("unknown")
+                        .into(),
+                );
+                commands.push(candidate);
             }
         }
         *self.command_candidates_cache.borrow_mut() = Some(CommandCandidatesCache {
@@ -1829,6 +1855,7 @@ impl App {
         matches!(
             cmd.trim(),
             "/help"
+                | "/tools"
                 | "/?"
                 | "/btw"
                 | "/fork"

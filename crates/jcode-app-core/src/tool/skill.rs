@@ -65,7 +65,7 @@ impl Tool for SkillTool {
                 "intent": super::intent_schema_property(),
                 "action": {
                     "type": "string",
-                    "enum": ["load", "list", "reload", "reload_all", "read"],
+                    "enum": ["load", "list", "info", "reload", "reload_all", "read"],
                     "description": "Action."
                 },
                 "name": {
@@ -88,6 +88,13 @@ impl Tool for SkillTool {
                     .await
             }
             "list" => self.list_skills(ctx.working_dir.as_deref()).await,
+            "info" => {
+                let name = normalize_skill_name(params.name, "info")?;
+                let registry = self.effective_registry(ctx.working_dir.as_deref()).await;
+                let output = registry.get(&name).map(|skill| skill.info())
+                    .unwrap_or_else(|| format!("Skill '{}' not found", name.chars().filter(|c| !c.is_control()).collect::<String>()));
+                Ok(ToolOutput::new(output).with_title("Skill info"))
+            }
             "reload" => self.reload_skill(params.name).await,
             "reload_all" => self.reload_all_skills(ctx.working_dir.as_deref()).await,
             "read" => {
@@ -95,7 +102,7 @@ impl Tool for SkillTool {
                     .await
             }
             _ => Ok(ToolOutput::new(format!(
-                "Unknown action: {}. Use 'load', 'list', 'reload', 'reload_all', or 'read'.",
+                "Unknown action: {}. Use 'load', 'list', 'info', 'reload', 'reload_all', or 'read'.",
                 params.action
             ))),
         }
@@ -436,13 +443,51 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn info_is_read_only_and_reports_project_provenance() {
+        let workspace = tempfile::tempdir().unwrap();
+        let dir = workspace.path().join(".jcode/skills/info-only");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("SKILL.md"),
+            "---\nname: info-only\ndescription: Test\n---\nDO NOT ACTIVATE THIS BODY",
+        )
+        .unwrap();
+        let tool = create_test_tool();
+        let mut ctx = create_test_context();
+        ctx.working_dir = Some(workspace.path().to_path_buf());
+        let output = tool
+            .execute(json!({"action":"info", "name":"info-only"}), ctx.clone())
+            .await
+            .unwrap();
+        assert!(
+            output.output.contains("Source: project"),
+            "{}",
+            output.output
+        );
+        assert!(output.output.contains("Resolved path:"));
+        assert!(!output.output.contains("DO NOT ACTIVATE THIS BODY"));
+        assert!(tool.registry.read().await.list().is_empty());
+        let missing = tool
+            .execute(json!({"action":"info", "name":"missing"}), ctx)
+            .await
+            .unwrap();
+        assert!(missing.output.contains("not found"));
+        assert!(tool.registry.read().await.list().is_empty());
+    }
+
+    #[tokio::test]
     async fn test_list_empty() {
         let tool = create_test_tool();
-        let ctx = create_test_context();
+        let home_agents = crate::storage::user_home_path(".agents").unwrap();
+        let ctx = context_with_working_dir(home_agents.parent().unwrap());
         let input = json!({"action": "list"});
 
         let result = tool.execute(input, ctx).await.unwrap();
-        assert!(result.output.contains("No skills loaded"));
+        assert!(
+            result.output.contains("No skills loaded"),
+            "{}",
+            result.output
+        );
         // Even with no skills loaded, the endorsed catalog should be listed.
         assert!(result.output.contains("Endorsed skills"));
     }

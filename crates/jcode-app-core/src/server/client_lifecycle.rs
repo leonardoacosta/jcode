@@ -1175,6 +1175,13 @@ pub(super) async fn handle_client(
         let sdk_session_before_request = client_session_id.clone();
         match request {
             Request::ConfigureTools { .. } | Request::ListTools { .. } | Request::ToolResult { .. } => unreachable!("SDK controls dispatched before acknowledgment"),
+            Request::DiscoverTools { id, query } => {
+                let registry = agent.lock().await.registry();
+                let entries = registry.tool_list(&query).await;
+                let _ = client_event_tx.send(ServerEvent::ToolList {
+                    id, session_id: client_session_id.clone(), entries,
+                });
+            }
             Request::Message {
                 id,
                 content,

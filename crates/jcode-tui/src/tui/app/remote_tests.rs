@@ -13,6 +13,91 @@ use anyhow::Result;
 use std::sync::Arc;
 
 #[test]
+fn tool_discovery_legacy_notice_and_session_bound_response() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    let mut app = create_test_app();
+    let mut remote = crate::tui::backend::RemoteConnection::dummy();
+    app.is_remote = true;
+    assert!(super::super::commands_mcp::handle_tools_command(
+        &mut app,
+        "/tools READ"
+    ));
+    assert!(app.pending_tool_query.is_none());
+    assert!(
+        app.display_messages()
+            .last()
+            .unwrap()
+            .content
+            .contains("tool list unavailable from this server")
+    );
+    app.clear_display_messages();
+    handle_server_event(
+        &mut app,
+        ServerEvent::Pong {
+            id: 0,
+            server_runtime: None,
+            native_ssh_protocol: None,
+            capabilities: vec!["tool_discovery".into()],
+            user_connected_session_ids: None,
+        },
+        &mut remote,
+    );
+    assert!(super::super::commands_mcp::handle_tools_command(
+        &mut app,
+        "/tools READ"
+    ));
+    assert_eq!(app.pending_tool_query.as_deref(), Some("READ"));
+    app.pending_tool_list = Some(42);
+    app.remote_session_id = Some("server-session".into());
+    let entries = || {
+        vec![crate::protocol::ToolListEntry {
+            kind: "mcp".into(),
+            name: "remote-only".into(),
+            description: "Server tool".into(),
+            server: Some("server-docs".into()),
+            scope: None,
+        }]
+    };
+    handle_server_event(
+        &mut app,
+        ServerEvent::ToolList {
+            id: 41,
+            session_id: "server-session".into(),
+            entries: entries(),
+        },
+        &mut remote,
+    );
+    handle_server_event(
+        &mut app,
+        ServerEvent::ToolList {
+            id: 42,
+            session_id: "old-session".into(),
+            entries: entries(),
+        },
+        &mut remote,
+    );
+    assert!(app.display_messages().is_empty());
+    handle_server_event(
+        &mut app,
+        ServerEvent::ToolList {
+            id: 42,
+            session_id: "server-session".into(),
+            entries: entries(),
+        },
+        &mut remote,
+    );
+    assert_eq!(app.pending_tool_list, None);
+    assert!(
+        app.display_messages()
+            .last()
+            .unwrap()
+            .content
+            .contains("remote-only")
+    );
+}
+
+#[test]
 fn plan_ack_requires_matching_server_enforcement() {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let _guard = rt.enter();
@@ -829,6 +914,7 @@ fn startup_history(session_id: &str) -> ServerEvent {
         mcp_servers: vec![],
         skills: vec![],
         skill_descriptions: Default::default(),
+        skill_metadata: Default::default(),
         total_tokens: None,
         token_usage_totals: None,
         all_sessions: vec![],

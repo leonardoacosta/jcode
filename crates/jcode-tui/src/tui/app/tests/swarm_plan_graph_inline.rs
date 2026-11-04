@@ -547,6 +547,7 @@ fn history_event_for_session(session_id: &str) -> crate::protocol::ServerEvent {
         mcp_servers: vec![],
         skills: vec![],
         skill_descriptions: Default::default(),
+        skill_metadata: Default::default(),
         total_tokens: None,
         token_usage_totals: None,
         all_sessions: vec![],

@@ -1030,9 +1030,30 @@ pub(in crate::tui::app) fn handle_server_event(
             app.update_terminal_title();
             false
         }
-        ServerEvent::Pong { server_runtime, .. } => {
+        ServerEvent::Pong {
+            server_runtime,
+            capabilities,
+            ..
+        } => {
+            app.remote_tool_discovery = capabilities
+                .iter()
+                .any(|capability| capability == "tool_discovery");
             if server_runtime.is_some() {
                 app.remote_server_runtime = server_runtime;
+            }
+            false
+        }
+        ServerEvent::ToolList {
+            id,
+            session_id,
+            entries,
+        } => {
+            if app.pending_tool_list == Some(id)
+                && app.remote_session_id.as_deref() == Some(session_id.as_str())
+            {
+                app.pending_tool_list = None;
+                super::super::commands_mcp::show_tool_list(app, entries);
+                return true;
             }
             false
         }
@@ -1407,6 +1428,9 @@ pub(in crate::tui::app) fn handle_server_event(
             retry_after_secs,
             ..
         } => {
+            if app.pending_tool_list == Some(id) {
+                app.pending_tool_list = None;
+            }
             if app.pending_agent_model_request_id == Some(id) {
                 app.pending_agent_model_request_id = None;
                 app.push_display_message(DisplayMessage::error(format!(
@@ -1839,6 +1863,7 @@ pub(in crate::tui::app) fn handle_server_event(
             mcp_servers,
             skills,
             skill_descriptions,
+            skill_metadata,
             total_tokens,
             all_sessions,
             client_count,
@@ -2012,6 +2037,10 @@ pub(in crate::tui::app) fn handle_server_event(
             crate::set_current_session(&session_id);
             app.note_client_focus(true);
             let session_changed = prev_session_id.as_deref() != Some(session_id.as_str());
+            if session_changed {
+                app.pending_tool_list = None;
+                app.pending_tool_query = None;
+            }
             let failed_prompts = if !session_changed || prev_session_id.is_none() {
                 app.display_messages()
                     .iter()
@@ -2198,6 +2227,7 @@ pub(in crate::tui::app) fn handle_server_event(
             if authoritative || !skills.is_empty() {
                 app.remote_skills = skills;
                 app.remote_skill_descriptions = skill_descriptions;
+                app.remote_skill_metadata = skill_metadata;
                 app.invalidate_command_candidates_cache();
             }
             if authoritative {
