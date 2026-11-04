@@ -20,6 +20,20 @@ pub mod service_tier;
 pub mod transport;
 pub mod ws_deflate;
 
+tokio::task_local! { static PLAN_ONLY: bool; }
+
+/// Per-request policy, never a persistent provider setting.
+pub async fn scope_plan_mode<T>(
+    plan_only: bool,
+    future: impl std::future::Future<Output = T>,
+) -> T {
+    PLAN_ONLY.scope(plan_only, future).await
+}
+
+pub fn plan_mode_active() -> bool {
+    PLAN_ONLY.try_with(|active| *active).unwrap_or(false)
+}
+
 pub use jcode_usage_types::{ModelUsage, compare_model_usage};
 pub use transport::is_transient_transport_error;
 

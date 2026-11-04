@@ -83,6 +83,8 @@ use subscribe_context::*;
 
 struct ProcessingMessage {
     id: u64,
+    plan_only: bool,
+    plan_turn_id: Option<String>,
     content: String,
     images: Vec<(String, String)>,
     system_reminder: Option<String>,
@@ -1091,6 +1093,10 @@ pub(super) async fn handle_client(
         }
 
         // Send ack
+        if let Request::Message { id, plan_only: true, .. } = &request {
+            let json = encode_event(&ServerEvent::PlanMode { id: *id, enforced: true });
+            if writer.lock().await.write_all(json.as_bytes()).await.is_err() { break; }
+        }
         let ack = ServerEvent::Ack { id: request.id() };
         let json = encode_event(&ack);
         {
@@ -1176,12 +1182,16 @@ pub(super) async fn handle_client(
                 system_reminder,
                 active_skill,
                 no_reply,
+                plan_only,
+                plan_turn_id,
             } => {
                 if no_reply {
                     append_context_message(
                         id,
                         &content,
                         images,
+                        plan_only,
+                        plan_turn_id.as_deref(),
                         &client_session_id,
                         client_is_processing,
                         &agent,
@@ -1207,6 +1217,8 @@ pub(super) async fn handle_client(
                 start_processing_message(
                     ProcessingMessage {
                         id,
+                        plan_only,
+                        plan_turn_id,
                         content,
                         images,
                         system_reminder,
@@ -1327,6 +1339,8 @@ pub(super) async fn handle_client(
                     start_processing_message(
                         ProcessingMessage {
                             id,
+                            plan_only: false,
+                            plan_turn_id: None,
                             content,
                             images,
                             system_reminder: None,
@@ -3371,10 +3385,23 @@ async fn record_processing_completion(
     }
 }
 
+fn admit_plan_user_turn(session: &str, plan_only: bool, token: Option<&str>) -> Result<()> {
+    anyhow::ensure!(
+        plan_only || token.is_none(),
+        "plan_turn_id requires plan_only"
+    );
+    if let Some(token) = token {
+        crate::session::judge_feedback::begin_user_turn_once(session, token)?;
+    }
+    Ok(())
+}
+
 async fn append_context_message(
     id: u64,
     content: &str,
     images: Vec<(String, String)>,
+    plan_only: bool,
+    plan_turn_id: Option<&str>,
     client_session_id: &str,
     client_is_processing: bool,
     agent: &Arc<Mutex<Agent>>,
@@ -3390,7 +3417,18 @@ async fn append_context_message(
         );
         return;
     };
-    let result = agent.append_user_context_message(content, images);
+    let result = admit_plan_user_turn(client_session_id, plan_only, plan_turn_id).and_then(|()| {
+        if plan_only {
+            agent.append_user_context_message_with_display_role(
+                content,
+                images,
+                Some(crate::session::StoredDisplayRole::System),
+                true,
+            )
+        } else {
+            agent.append_user_context_message(content, images)
+        }
+    });
     let event = match result {
         Ok(()) => ServerEvent::ContextMessageAdded { id },
         Err(error) => ServerEvent::Error {
@@ -3415,6 +3453,8 @@ async fn start_processing_message(
 ) {
     let ProcessingMessage {
         id,
+        plan_only,
+        plan_turn_id,
         content,
         images,
         system_reminder,
@@ -3453,6 +3493,15 @@ async fn start_processing_message(
         return;
     }
 
+    if let Err(error) = admit_plan_user_turn(client_session_id, plan_only, plan_turn_id.as_deref())
+    {
+        let _ = client_event_tx.send(ServerEvent::Error {
+            id,
+            message: error.to_string(),
+            retry_after_secs: None,
+        });
+        return;
+    }
     *state.client_is_processing = true;
     *state.message_id = Some(id);
     *state.session_id = Some(client_session_id.to_string());
@@ -3498,7 +3547,9 @@ async fn start_processing_message(
     );
     let done_tx = processing_done_tx.clone();
     crate::logging::info(&format!("Processing message id={} spawning task", id));
+    let plan_guard = plan_only.then(|| crate::tool::PlanTurnGuard::new(client_session_id));
     *state.task = crate::runtime_activity::spawn(async move {
+        let plan_guard = plan_guard;
         let event_tx = tx.clone();
         let mut stop_reason = crate::protocol::TurnStopReason::Failure;
         let result = match std::panic::AssertUnwindSafe(crate::hooks::with_client_terminal_env(
@@ -3576,6 +3627,7 @@ async fn start_processing_message(
         if pending > 0 {
             let _ = tx.send(ServerEvent::SoftInterruptQueue { pending });
         }
+        drop(plan_guard);
         let _ = tx.send(terminal_event);
         let _ = done_tx.send((id, result, completion_report));
     });
@@ -3934,8 +3986,15 @@ pub(super) async fn process_message_streaming_mpsc(
     event_tx: tokio::sync::mpsc::UnboundedSender<ServerEvent>,
 ) -> Result<()> {
     let mut agent = agent.lock().await;
-    process_locked_message_streaming_mpsc(&mut agent, content, images, system_reminder, event_tx)
-        .await
+    process_locked_message_streaming_mpsc(
+        &mut agent,
+        content,
+        images,
+        system_reminder,
+        event_tx,
+        None,
+    )
+    .await
 }
 
 /// Same as [`process_message_streaming_mpsc`] for a caller that already holds
@@ -3947,10 +4006,17 @@ pub(super) async fn process_locked_message_streaming_mpsc(
     images: Vec<(String, String)>,
     system_reminder: Option<String>,
     event_tx: tokio::sync::mpsc::UnboundedSender<ServerEvent>,
+    display_role: Option<crate::session::StoredDisplayRole>,
 ) -> Result<()> {
     let session_id = agent.session_id().to_string();
     let result = agent
-        .run_once_streaming_mpsc(content, images, system_reminder, event_tx)
+        .run_once_streaming_mpsc_with_display_role(
+            content,
+            images,
+            system_reminder,
+            event_tx,
+            display_role,
+        )
         .await;
     if result.is_ok() {
         crate::runtime_memory_log::emit_event(

@@ -1417,7 +1417,10 @@ impl OpenAIProvider {
         // The hosted `image_generation` tool is only available to general
         // ChatGPT/GPT models on the Responses backend. Codex models
         // (`*-codex*`) reject unknown hosted tools, so don't attach it for them.
-        if is_chatgpt_mode && model_supports_image_generation(model_id) {
+        if is_chatgpt_mode
+            && model_supports_image_generation(model_id)
+            && !jcode_provider_core::plan_mode_active()
+        {
             tools.push(serde_json::json!({ "type": "image_generation" }));
         }
 

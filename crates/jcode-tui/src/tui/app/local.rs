@@ -24,6 +24,8 @@ pub(super) async fn process_turn_with_input(
     event_stream: &mut EventStream,
     bus_receiver: &mut Receiver<BusEvent>,
 ) {
+    let plan_guard = std::mem::take(&mut app.next_turn_plan_only)
+        .then(|| crate::tool::PlanTurnGuard::new(app.session_id()));
     match app
         .run_turn_interactive(terminal, event_stream, Some(bus_receiver))
         .await
@@ -51,6 +53,7 @@ pub(super) async fn process_turn_with_input(
         }
     }
 
+    drop(plan_guard);
     if app.cloud_handoff_blocks_work() {
         finish_turn(app);
         app.poll_cloud_job();

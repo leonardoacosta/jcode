@@ -42,6 +42,8 @@ fn test_remote_account_failover_prompt_does_not_hold_or_retry_same_account() {
         openai_oauth_route("gpt-5.5"),
     ];
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "hi".to_string(),
         images: vec![],
         is_system: false,
@@ -121,6 +123,8 @@ fn remote_exact_failover_fixture() -> (App, crate::tui::backend::RemoteConnectio
     target.api_method = "openai-oauth@openai-fox".into();
     app.remote_model_options = vec![target];
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "hi".into(),
         images: vec![],
         is_system: false,
@@ -526,6 +530,8 @@ fn test_remote_auth_error_arms_fallback_offer_with_resend_payload() {
         claude_oauth_route("claude-sonnet-4"),
     ];
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "hi".to_string(),
         images: vec![],
         is_system: false,
@@ -586,6 +592,8 @@ fn test_remote_usage_limit_shows_error_and_single_switch_line() {
         claude_oauth_route("claude-sonnet-4"),
     ];
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "hi".to_string(),
         images: vec![],
         is_system: false,
@@ -640,6 +648,8 @@ fn test_remote_fallback_offer_accept_stages_switch_and_resends() {
         claude_oauth_route("claude-sonnet-4"),
     ];
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "hi".to_string(),
         images: vec![],
         is_system: false,
@@ -716,6 +726,8 @@ fn test_remote_fallback_resend_dropped_when_switch_fails() {
 
     app.is_remote = true;
     app.pending_fallback_resend = Some(crate::tui::app::FallbackResendPayload {
+        plan_only: false,
+        plan_turn_id: None,
         content: "hi".to_string(),
         images: vec![],
         is_system: false,

@@ -7,6 +7,8 @@ fn issue_1685_user_turn(
     retry_attempts: u8,
 ) -> PendingRemoteMessage {
     PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: content.to_string(),
         images: vec![],
         is_system: false,

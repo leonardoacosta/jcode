@@ -617,6 +617,26 @@ impl RemoteConnection {
         system_reminder: Option<String>,
         active_skill: Option<String>,
     ) -> Result<u64> {
+        self.send_message_with_plan_policy(
+            content,
+            images,
+            system_reminder,
+            active_skill,
+            false,
+            None,
+        )
+        .await
+    }
+
+    pub async fn send_message_with_plan_policy(
+        &mut self,
+        content: String,
+        images: Vec<(String, String)>,
+        system_reminder: Option<String>,
+        active_skill: Option<String>,
+        plan_only: bool,
+        plan_turn_id: Option<String>,
+    ) -> Result<u64> {
         // Output token usage snapshots are cumulative within a single API call.
         // Reset per-call watermark before sending the next user request.
         self.reset_call_output_tokens_seen();
@@ -629,6 +649,8 @@ impl RemoteConnection {
             system_reminder,
             active_skill,
             no_reply: false,
+            plan_only,
+            plan_turn_id,
         };
         self.next_request_id += 1;
         self.send_request(request).await?;

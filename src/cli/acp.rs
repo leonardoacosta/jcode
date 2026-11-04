@@ -1041,6 +1041,8 @@ impl AcpRuntime {
                 system_reminder: None,
                 active_skill,
                 no_reply: false,
+                plan_only: false,
+                plan_turn_id: None,
             })
             .await;
         if let Err(err) = send_result {

@@ -39,6 +39,7 @@ mod crash;
 pub use agent_models::AgentModelOverrides;
 pub mod exit_record;
 mod journal;
+pub mod judge_feedback;
 mod load_telemetry;
 mod maintenance;
 mod memory_profile;

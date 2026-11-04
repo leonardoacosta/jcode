@@ -332,6 +332,8 @@ pub(super) async fn handle_tick(app: &mut App, remote: &mut RemoteConnection) ->
                 )
             };
             app.push_display_message(DisplayMessage::system(status));
+            app.next_turn_plan_only = pending.plan_only;
+            app.next_plan_turn_id = pending.plan_turn_id.clone();
             let _ = begin_remote_send(
                 app,
                 remote,
@@ -361,9 +363,19 @@ pub(super) async fn handle_tick(app: &mut App, remote: &mut RemoteConnection) ->
         needs_redraw = true;
     } else if !app.is_processing && !app.queued_messages.is_empty() {
         let queued_messages = std::mem::take(&mut app.queued_messages);
+        let human_input = std::mem::take(&mut app.queued_human_input);
+        app.next_turn_plan_only = std::mem::take(&mut app.queued_plan_only);
+        app.next_plan_turn_id = app.queued_plan_turn_id.take();
         let hidden_reminders = std::mem::take(&mut app.hidden_queued_system_messages);
-        let (messages, reminder, display_system_messages) =
-            super::helpers::partition_queued_messages(queued_messages, hidden_reminders);
+        let (messages, reminder, display_system_messages) = if human_input {
+            (
+                queued_messages,
+                (!hidden_reminders.is_empty()).then(|| hidden_reminders.join("\n\n")),
+                Vec::new(),
+            )
+        } else {
+            super::helpers::partition_queued_messages(queued_messages, hidden_reminders)
+        };
         let combined = messages.join("\n\n");
         let auto_retry = reminder.is_some() && messages.is_empty();
         crate::logging::info(&format!(
@@ -381,7 +393,7 @@ pub(super) async fn handle_tick(app: &mut App, remote: &mut RemoteConnection) ->
             remote,
             combined.clone(),
             vec![],
-            true,
+            !human_input,
             reminder.clone(),
             auto_retry,
             0,
@@ -396,6 +408,11 @@ pub(super) async fn handle_tick(app: &mut App, remote: &mut RemoteConnection) ->
             crate::logging::error(
                 "Failed to send queued continuation message; restoring it to the queue",
             );
+            app.queued_human_input |= human_input;
+            app.queued_plan_only |= app.next_turn_plan_only;
+            if app.next_plan_turn_id.is_some() {
+                app.queued_plan_turn_id = app.next_plan_turn_id.take();
+            }
             if let Some(reminder) = reminder {
                 app.hidden_queued_system_messages.insert(0, reminder);
             }
@@ -1470,6 +1487,8 @@ pub(super) async fn process_remote_followups(app: &mut App, remote: &mut RemoteC
         }
         app.last_submitted_input = payload.raw_input.clone();
         crate::logging::info("Resending failed turn after accepted fallback route switch");
+        app.next_turn_plan_only = payload.plan_only;
+        app.next_plan_turn_id = payload.plan_turn_id.clone();
         if let Err(error) = begin_remote_send(
             app,
             remote,
@@ -1695,9 +1714,19 @@ pub(super) async fn process_remote_followups(app: &mut App, remote: &mut RemoteC
         }
     } else if !app.queued_messages.is_empty() {
         let queued_messages = std::mem::take(&mut app.queued_messages);
+        let human_input = std::mem::take(&mut app.queued_human_input);
+        app.next_turn_plan_only = std::mem::take(&mut app.queued_plan_only);
+        app.next_plan_turn_id = app.queued_plan_turn_id.take();
         let hidden_reminders = std::mem::take(&mut app.hidden_queued_system_messages);
-        let (messages, reminder, display_system_messages) =
-            super::helpers::partition_queued_messages(queued_messages, hidden_reminders);
+        let (messages, reminder, display_system_messages) = if human_input {
+            (
+                queued_messages,
+                (!hidden_reminders.is_empty()).then(|| hidden_reminders.join("\n\n")),
+                Vec::new(),
+            )
+        } else {
+            super::helpers::partition_queued_messages(queued_messages, hidden_reminders)
+        };
         let combined = messages.join("\n\n");
         let preserve_visible_turn = super::commands::queued_messages_are_only_pokes(&messages);
         let auto_retry = reminder.is_some() && messages.is_empty();
@@ -1721,7 +1750,7 @@ pub(super) async fn process_remote_followups(app: &mut App, remote: &mut RemoteC
             remote,
             combined.clone(),
             vec![],
-            true,
+            !human_input,
             reminder.clone(),
             auto_retry,
             0,
@@ -1734,6 +1763,11 @@ pub(super) async fn process_remote_followups(app: &mut App, remote: &mut RemoteC
             crate::logging::error(
                 "Failed to send queued continuation message; restoring it to the queue",
             );
+            app.queued_human_input |= human_input;
+            app.queued_plan_only |= app.next_turn_plan_only;
+            if app.next_plan_turn_id.is_some() {
+                app.queued_plan_turn_id = app.next_plan_turn_id.take();
+            }
             if let Some(reminder) = reminder {
                 app.hidden_queued_system_messages.insert(0, reminder);
             }
@@ -2076,6 +2110,7 @@ fn queue_message_for_reconnect(app: &mut App) {
     }
 
     let prepared = input::take_prepared_input(app);
+    app.queued_human_input = true;
     app.queued_messages.push(prepared.expanded);
 
     let queued_count = app.queued_messages.len();

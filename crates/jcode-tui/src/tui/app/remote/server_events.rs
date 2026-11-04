@@ -1164,7 +1164,20 @@ pub(in crate::tui::app) fn handle_server_event(
             }
             true
         }
+        ServerEvent::PlanMode { id, enforced } => {
+            if app.pending_plan_ack == Some(id) && enforced {
+                app.pending_plan_ack = None;
+            }
+            false
+        }
         ServerEvent::Ack { id } => {
+            if app.pending_plan_ack == Some(id) {
+                app.pending_plan_ack = None;
+                app.push_display_message(DisplayMessage::error(
+                    "Plan restrictions are UNENFORCED: this server did not acknowledge plan mode. The planning prompt alone cannot prevent edits. Upgrade the server before relying on read-only execution.".to_string(),
+                ));
+                return true;
+            }
             let _ = app.acknowledge_pending_soft_interrupt(id);
             false
         }
@@ -1510,6 +1523,8 @@ pub(in crate::tui::app) fn handle_server_event(
             // accepts a switch to a working route.
             let failed_fallback_payload = app.rate_limit_pending_message.as_ref().map(|pending| {
                 app_mod::FallbackResendPayload {
+                    plan_only: pending.plan_only,
+                    plan_turn_id: pending.plan_turn_id.clone(),
                     content: pending.content.clone(),
                     images: pending.images.clone(),
                     is_system: pending.is_system,

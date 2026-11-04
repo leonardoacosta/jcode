@@ -1312,6 +1312,19 @@ impl Provider for MidStreamAccountSwitchProvider {
 }
 
 #[tokio::test]
+async fn plan_mode_refuses_internally_executing_provider_before_completion() {
+    let _home = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+    let provider: Arc<dyn Provider> = Arc::new(SignatureSessionProvider::default());
+    let registry = Registry::new(provider.clone()).await;
+    let mut agent = Agent::new(provider, registry);
+    let guard = crate::tool::PlanTurnGuard::new(agent.session_id());
+    let error = agent.run_once_capture("plan only").await.unwrap_err();
+    assert!(error.to_string().contains("Plan mode"), "{error:#}");
+    drop(guard);
+    assert!(agent.run_once_capture("ordinary").await.is_ok());
+}
+
+#[tokio::test]
 async fn run_turn_streaming_mpsc_emits_account_only_change_without_email() {
     let _guard = crate::storage::lock_test_env();
     let provider: Arc<dyn Provider> = Arc::new(MidStreamAccountSwitchProvider {

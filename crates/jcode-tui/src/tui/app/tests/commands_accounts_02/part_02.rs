@@ -61,6 +61,7 @@ fn test_plan_command_is_plan_only_and_presents_plan_card() {
     app.submit_input();
 
     // /plan is a one-shot, not a resumable improve/refactor loop.
+    assert!(app.next_turn_plan_only);
     assert_eq!(app.improve_mode, None);
     assert!(app.is_processing());
 

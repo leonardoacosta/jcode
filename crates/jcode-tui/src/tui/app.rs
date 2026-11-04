@@ -157,6 +157,8 @@ fn active_runtime_provider_key() -> Option<String> {
 
 #[derive(Debug, Clone)]
 struct PendingRemoteMessage {
+    plan_only: bool,
+    plan_turn_id: Option<String>,
     content: String,
     images: Vec<(String, String)>,
     is_system: bool,
@@ -431,6 +433,8 @@ struct PendingFallbackOffer {
 /// one-keypress accept can resend it after the route switch completes.
 #[derive(Debug, Clone)]
 struct FallbackResendPayload {
+    plan_only: bool,
+    plan_turn_id: Option<String>,
     /// Expanded message content that was sent to the server.
     content: String,
     /// Inline image attachments that accompanied the message.
@@ -1007,6 +1011,12 @@ pub struct App {
     should_quit: bool,
     // Message queueing
     queued_messages: Vec<String>,
+    queued_human_input: bool,
+    next_turn_plan_only: bool,
+    next_plan_turn_id: Option<String>,
+    queued_plan_only: bool,
+    queued_plan_turn_id: Option<String>,
+    pending_plan_ack: Option<u64>,
     /// Slash (`/...`) and shell (`!...`) commands queued with Ctrl+Enter while
     /// a turn was running. They run as real commands once the turn ends.
     queued_commands: Vec<String>,

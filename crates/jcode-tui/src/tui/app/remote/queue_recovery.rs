@@ -143,7 +143,7 @@ fn recover_queued_continuation(app: &mut App, reason: &str, rejected: bool) -> b
         .rate_limit_pending_message
         .as_ref()
         .is_some_and(|pending| {
-            pending.is_system
+            (rejected || pending.is_system)
                 && (rejected || !pending.auto_retry)
                 && (!pending.content.trim().is_empty() || pending.system_reminder.is_some())
         });
@@ -154,6 +154,11 @@ fn recover_queued_continuation(app: &mut App, reason: &str, rejected: bool) -> b
         return false;
     };
     app.rate_limit_reset = None;
+    app.queued_plan_only |= pending.plan_only;
+    app.queued_human_input |= !pending.is_system;
+    if pending.plan_turn_id.is_some() {
+        app.queued_plan_turn_id = pending.plan_turn_id.clone();
+    }
     crate::logging::info(&format!(
         "Recovering in-flight queued continuation into queued follow-ups after {} (content_chars={}, has_reminder={})",
         reason,
@@ -181,6 +186,7 @@ pub(super) fn recover_local_interleave_to_queue(app: &mut App, reason: &str) -> 
         "Recovering unsent interleave into queued follow-ups after {}",
         reason
     ));
+    app.queued_human_input = true;
     app.queued_messages.insert(0, interleave);
     true
 }
@@ -215,6 +221,7 @@ pub(super) async fn recover_stranded_soft_interrupts(
     app.pending_soft_interrupt_requests.clear();
 
     let mut recovered_queue = recovered_interrupts;
+    app.queued_human_input = true;
     recovered_queue.append(&mut app.queued_messages);
     app.queued_messages = recovered_queue;
     app.set_status_notice("Recovered queued interleave after turn finished");

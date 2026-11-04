@@ -1285,6 +1285,7 @@ pub(super) fn expand_paste_placeholders(app: &App, input: &str) -> String {
 
 pub(super) fn queue_message(app: &mut App) {
     let prepared = take_prepared_input(app);
+    app.queued_human_input = true;
     app.queued_messages.push(prepared.expanded);
 }
 
@@ -3076,6 +3077,7 @@ pub(super) fn handle_basic_key(app: &mut App, code: KeyCode) -> bool {
                     app.pending_images.append(&mut app.interleave_images);
                 }
                 app.interleave_images.clear();
+                app.queued_human_input |= !followups.is_empty();
                 followups.append(&mut app.queued_messages);
                 app.queued_messages = followups;
                 app.set_status_notice("Interrupting... sending your next prompt");
@@ -4188,6 +4190,13 @@ impl App {
         if super::remote::stage_turn_for_remote_tick_loop(self, &input) {
             return;
         }
+        if let Err(error) = crate::session::judge_feedback::begin_user_turn(&self.session.id) {
+            self.push_display_message(DisplayMessage::error(format!(
+                "Could not start judge feedback budget: {error}"
+            )));
+            self.restore_failed_prompt(input);
+            return;
+        }
 
         self.push_display_message(DisplayMessage {
             role: "user".to_string(),
@@ -4288,12 +4297,38 @@ impl App {
             // Combine all currently queued messages into one, treating [SYSTEM: ...]
             // startup continuations as system reminders rather than user turns.
             let queued_messages = std::mem::take(&mut self.queued_messages);
+            let original_messages = queued_messages.clone();
+            let human_input = std::mem::take(&mut self.queued_human_input);
+            self.next_turn_plan_only = std::mem::take(&mut self.queued_plan_only);
             let hidden_reminders = std::mem::take(&mut self.hidden_queued_system_messages);
-            let (messages, reminder, display_system_messages) =
-                super::helpers::partition_queued_messages(queued_messages, hidden_reminders);
+            let original_reminders = hidden_reminders.clone();
+            let (messages, reminder, display_system_messages) = if human_input {
+                (
+                    queued_messages,
+                    (!hidden_reminders.is_empty()).then(|| hidden_reminders.join("\n\n")),
+                    Vec::new(),
+                )
+            } else {
+                super::helpers::partition_queued_messages(queued_messages, hidden_reminders)
+            };
             let combined = messages.join("\n\n");
             let has_combined = !combined.is_empty();
             let preserve_visible_turn = super::commands::queued_messages_are_only_pokes(&messages);
+
+            if has_combined && human_input && !self.next_turn_plan_only {
+                if let Err(error) =
+                    crate::session::judge_feedback::begin_user_turn(&self.session.id)
+                {
+                    self.queued_messages = original_messages;
+                    self.queued_human_input |= human_input;
+                    self.hidden_queued_system_messages = original_reminders;
+                    self.queued_plan_only |= self.next_turn_plan_only;
+                    self.push_display_message(DisplayMessage::error(format!(
+                        "Cannot start user turn: {error}"
+                    )));
+                    break;
+                }
+            }
 
             self.commit_pending_streaming_assistant_message();
 
@@ -4356,6 +4391,8 @@ impl App {
             self.is_processing = true;
             self.status = ProcessingStatus::Sending;
 
+            let _plan_guard = std::mem::take(&mut self.next_turn_plan_only)
+                .then(|| crate::tool::PlanTurnGuard::new(self.session_id()));
             match self
                 .run_turn_interactive(terminal, event_stream, None)
                 .await

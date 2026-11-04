@@ -62,8 +62,19 @@ pub(super) fn plan_launch_notice(goal: Option<&str>, interrupted: bool) -> Strin
 }
 
 pub(super) fn handle_plan_command_local(app: &mut App, command: PlanCommand) {
+    if let Err(error) = crate::session::judge_feedback::begin_user_turn(&app.session.id) {
+        app.restore_failed_prompt(match command.goal.as_deref() {
+            Some(goal) => format!("/plan {goal}"),
+            None => "/plan".into(),
+        });
+        app.push_display_message(DisplayMessage::error(format!(
+            "Cannot start plan turn: {error}"
+        )));
+        return;
+    }
     let prompt = build_plan_prompt(command.goal.as_deref());
     if app.is_processing {
+        app.queued_plan_only = true;
         interrupt_and_queue_synthetic_message(
             app,
             prompt,
@@ -71,6 +82,7 @@ pub(super) fn handle_plan_command_local(app: &mut App, command: PlanCommand) {
             plan_launch_notice(command.goal.as_deref(), true),
         );
     } else {
+        app.next_turn_plan_only = true;
         app.push_display_message(DisplayMessage::system(plan_launch_notice(
             command.goal.as_deref(),
             false,

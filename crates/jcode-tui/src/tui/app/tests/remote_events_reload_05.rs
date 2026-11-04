@@ -130,6 +130,8 @@ fn test_disconnect_recovers_inflight_queued_continuation_to_queue() {
     app.status = ProcessingStatus::Streaming;
     app.current_message_id = Some(12);
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "queued follow-up in flight".to_string(),
         images: vec![],
         is_system: true,
@@ -163,6 +165,8 @@ fn test_disconnect_still_clears_pending_for_non_queued_shapes() {
     // clear it rather than re-queueing as a system continuation.
     app.is_processing = true;
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "user retry message".to_string(),
         images: vec![],
         is_system: false,
@@ -190,6 +194,8 @@ fn test_save_input_for_reload_persists_inflight_queued_continuation() {
     // already dequeued into the in-flight pending slot.
     app.queued_messages.push("still queued".to_string());
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "dispatched but unfinished".to_string(),
         images: vec![],
         is_system: true,
@@ -969,19 +975,15 @@ fn test_gate_digest_is_delivered_at_turn_end_and_rearms_next_cycle() {
 // session, followed by no pokes for the rest of the day).
 include!("auto_poke_cycles.rs");
 
-
-
-
-
-
-
 #[test]
 fn peer_user_prompt_renders_as_user_message() {
     with_temp_jcode_home(|| {
         let mut app = create_test_app();
         app.handle_peer_user_message("can you show me what he sent?");
-        assert!(app.display_messages().iter().any(
-            |msg| msg.role == "user" && msg.content == "can you show me what he sent?"
-        ));
+        assert!(
+            app.display_messages()
+                .iter()
+                .any(|msg| msg.role == "user" && msg.content == "can you show me what he sent?")
+        );
     });
 }

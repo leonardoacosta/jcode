@@ -1,4 +1,17 @@
 #[test]
+fn plan_only_wire_flag_defaults_off_and_roundtrips() {
+    let old: Request =
+        serde_json::from_value(serde_json::json!({"type":"message","id":1,"content":"hello"}))
+            .unwrap();
+    assert_eq!(serde_json::to_value(old).unwrap().get("plan_only"), None);
+    let plan: Request = serde_json::from_value(
+        serde_json::json!({"type":"message","id":2,"content":"plan","plan_only":true}),
+    )
+    .unwrap();
+    assert_eq!(serde_json::to_value(plan).unwrap()["plan_only"], true);
+}
+
+#[test]
 fn provider_oauth_account_label_defaults_and_roundtrips() -> Result<()> {
     for legacy in [
         r#"{"type":"history","id":1,"session_id":"test","messages":[]}"#,
@@ -135,6 +148,8 @@ fn test_request_roundtrip() -> Result<()> {
         system_reminder: None,
         active_skill: Some("verification".to_string()),
         no_reply: false,
+        plan_only: false,
+        plan_turn_id: None,
     };
     let json = serde_json::to_string(&req)?;
     let decoded = parse_request_json(&json)?;

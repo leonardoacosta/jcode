@@ -322,6 +322,12 @@ pub(super) fn reset_current_session(app: &mut App) {
     app.swarm_plan_version = None;
     app.swarm_plan_swarm_id = None;
     app.queued_messages.clear();
+    app.queued_plan_only = false;
+    app.queued_plan_turn_id = None;
+    app.next_plan_turn_id = None;
+    app.queued_human_input = false;
+    app.next_turn_plan_only = false;
+    app.pending_plan_ack = None;
     app.queued_commands.clear();
     app.pasted_contents.clear();
     app.pending_images.clear();
@@ -722,6 +728,9 @@ pub(super) fn prepare_review_spawned_session(
             session.parent_id = Some(parent_session_id);
         }
         if let Some(title) = title_override.clone() {
+            if is_analysis_feedback_session_title(Some(&title)) {
+                session.worker_role = Some(title.clone());
+            }
             session.title = Some(title);
         }
         if let Some(model) = model_override {

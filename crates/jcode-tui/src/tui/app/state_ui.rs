@@ -9,6 +9,11 @@ pub(super) struct RestoredReloadInput {
     pub pending_images: Vec<(String, String)>,
     pub submit_on_restore: bool,
     pub queued_messages: Vec<String>,
+    pub queued_human_input: bool,
+    pub queued_plan_only: bool,
+    pub queued_plan_turn_id: Option<String>,
+    pub next_turn_plan_only: bool,
+    pub next_plan_turn_id: Option<String>,
     pub queued_commands: Vec<String>,
     pub hidden_queued_system_messages: Vec<String>,
     pub startup_status_notice: Option<String>,
@@ -305,6 +310,8 @@ impl App {
                 } else {
                     self.rate_limit_pending_message.as_ref().map(|pending| {
                         serde_json::json!({
+                            "plan_only": pending.plan_only,
+                            "plan_turn_id": pending.plan_turn_id,
                             "content": pending.content,
                             "images": pending.images,
                             "is_system": pending.is_system,
@@ -342,6 +349,11 @@ impl App {
                 })).collect::<Vec<_>>(),
                 "submit_on_restore": resume_prompt.is_some(),
                 "queued_messages": queued_messages,
+                "queued_human_input": self.queued_human_input || inflight_continuation.is_some_and(|p| !p.is_system),
+                "queued_plan_only": self.queued_plan_only || inflight_continuation.is_some_and(|p| p.plan_only),
+                "queued_plan_turn_id": inflight_continuation.and_then(|p| p.plan_turn_id.as_ref()).or(self.queued_plan_turn_id.as_ref()),
+                "next_turn_plan_only": self.next_turn_plan_only || resume_prompt.is_some_and(|p| p.plan_only),
+                "next_plan_turn_id": resume_prompt.and_then(|p| p.plan_turn_id.as_ref()).or(self.next_plan_turn_id.as_ref()),
                 "queued_commands": self.queued_commands,
                 "hidden_queued_system_messages": hidden_queued_system_messages,
                 "interleave_message": self.interleave_message,
@@ -514,6 +526,14 @@ impl App {
                 .get("rate_limit_pending_message")
                 .and_then(|pending| pending.as_object())
                 .map(|pending| super::PendingRemoteMessage {
+                    plan_turn_id: pending
+                        .get("plan_turn_id")
+                        .and_then(|v| v.as_str())
+                        .map(str::to_owned),
+                    plan_only: pending
+                        .get("plan_only")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false),
                     content: pending
                         .get("content")
                         .and_then(|v| v.as_str())
@@ -589,6 +609,26 @@ impl App {
                 .unwrap_or(false);
             let cursor = cursor.min(input.len());
             return Some(RestoredReloadInput {
+                queued_human_input: value
+                    .get("queued_human_input")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
+                next_plan_turn_id: value
+                    .get("next_plan_turn_id")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned),
+                queued_plan_turn_id: value
+                    .get("queued_plan_turn_id")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_owned),
+                queued_plan_only: value
+                    .get("queued_plan_only")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
+                next_turn_plan_only: value
+                    .get("next_turn_plan_only")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
                 input,
                 cursor,
                 pending_images,
@@ -624,6 +664,11 @@ impl App {
         let cursor = cursor_str.parse::<usize>().unwrap_or(0);
         let cursor = cursor.min(input.len());
         Some(RestoredReloadInput {
+            queued_human_input: false,
+            next_plan_turn_id: None,
+            queued_plan_turn_id: None,
+            queued_plan_only: false,
+            next_turn_plan_only: false,
             input: input.to_string(),
             cursor,
             pending_images: Vec::new(),

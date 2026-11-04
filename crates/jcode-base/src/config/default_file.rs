@@ -25,6 +25,11 @@ impl Config {
 # Environment variables override these settings.
 # Run `/config` in jcode to see current settings.
 
+[autojudge]
+# Automatic judge continuations per genuine user turn. 0 disables continuation.
+# Judge advice never authorizes external actions. Reviews remain display-only.
+max_continuations_per_turn = 3
+
 [keybindings]
 # Scroll keys (vim-style by default)
 # Supports: ctrl, alt, shift modifiers + any key

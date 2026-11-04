@@ -194,6 +194,7 @@ pub(super) async fn process_locked_message_with_server_failover(
         images,
         system_reminder,
         event_tx.clone(),
+        Some(crate::session::StoredDisplayRole::System),
     )
     .await;
     retry_turn_with_server_failover(agent, result, reminder, event_tx).await
@@ -479,6 +480,16 @@ mod tests {
                     session,
                     None,
                 )));
+                use crate::session::judge_feedback::{self, FeedbackAdmission};
+                let parent = agent.lock().await.session_id().to_string();
+                let mut first_judge = crate::session::Session::create(Some(parent.clone()), None);
+                first_judge.worker_role = Some("judge".into());
+                first_judge.save().unwrap();
+                assert!(matches!(
+                    judge_feedback::admit(&parent, &first_judge.id, "CONTINUE: before wake", 1)
+                        .unwrap(),
+                    Some(FeedbackAdmission::Continue(_))
+                ));
                 let (tx, _rx) = mpsc::unbounded_channel();
                 let result = process_server_initiated_message(
                     Arc::clone(&agent),
@@ -488,6 +499,14 @@ mod tests {
                     tx,
                 )
                 .await;
+                let mut next_judge = crate::session::Session::create(Some(parent.clone()), None);
+                next_judge.worker_role = Some("judge".into());
+                next_judge.save().unwrap();
+                assert!(matches!(
+                    judge_feedback::admit(&parent, &next_judge.id, "CONTINUE: still capped", 1)
+                        .unwrap(),
+                    Some(FeedbackAdmission::Note(_))
+                ));
                 let calls = provider.calls.lock().unwrap().clone();
                 match prev_home {
                     Some(value) => crate::env::set_var("JCODE_HOME", value),

@@ -4,7 +4,9 @@ fn assistant_tool_use(id: &str, name: &str, input: serde_json::Value) -> ChatMes
         content: vec![ContentBlock::ToolUse {
             id: id.to_string(),
             name: name.to_string(),
-            input, thought_signature: None, }],
+            input,
+            thought_signature: None,
+        }],
         timestamp: None,
         tool_duration_ms: None,
     }
@@ -208,8 +210,8 @@ fn test_build_responses_input_keeps_image_context_after_tool_output() {
 
 #[test]
 fn test_build_responses_input_replaces_oversized_native_compaction_with_text() {
-    let oversized =
-        "x".repeat(jcode_base::provider::openai_request::OPENAI_ENCRYPTED_CONTENT_SAFE_MAX_CHARS + 1);
+    let oversized = "x"
+        .repeat(jcode_base::provider::openai_request::OPENAI_ENCRYPTED_CONTENT_SAFE_MAX_CHARS + 1);
     let messages = vec![ChatMessage {
         role: Role::User,
         content: vec![ContentBlock::OpenAICompaction {
@@ -329,6 +331,53 @@ fn test_build_response_request_for_gpt_5_4_1m_uses_base_model_without_extra_flag
             .as_array()
             .expect("tools should be an array")
             .contains(&serde_json::json!({ "type": "image_generation" }))
+    );
+}
+
+#[tokio::test]
+async fn plan_mode_omits_hosted_image_generation() {
+    jcode_provider_core::scope_plan_mode(true, async {
+        let request = OpenAIProvider::build_response_request(
+            "gpt-5",
+            "test".into(),
+            &[],
+            &[],
+            true,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        );
+        assert!(
+            !request["tools"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|tool| tool["type"] == "image_generation")
+        );
+    })
+    .await;
+    let ordinary = OpenAIProvider::build_response_request(
+        "gpt-5",
+        "test".into(),
+        &[],
+        &[],
+        true,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    );
+    assert!(
+        ordinary["tools"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|tool| tool["type"] == "image_generation")
     );
 }
 

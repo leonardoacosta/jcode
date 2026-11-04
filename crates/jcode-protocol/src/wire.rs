@@ -63,6 +63,12 @@ pub enum Request {
         /// acknowledges it without starting a model turn.
         #[serde(default, skip_serializing_if = "is_false")]
         no_reply: bool,
+        /// Request server-enforced read-only tool admission for this turn only.
+        #[serde(default, skip_serializing_if = "is_false")]
+        plan_only: bool,
+        /// Stable explicit-human plan identity, retained on retries.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        plan_turn_id: Option<String>,
     },
 
     /// Cancel current generation

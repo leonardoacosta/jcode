@@ -614,6 +614,8 @@ fn test_remote_error_without_retry_recovers_pending_followups() {
     remote.mark_history_loaded();
 
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "retry me".to_string(),
         images: vec![],
         is_system: false,
@@ -680,6 +682,8 @@ fn test_remote_error_with_retryable_pending_schedules_retry() {
     let mut remote = crate::tui::backend::RemoteConnection::dummy();
 
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "retry me".to_string(),
         images: vec![],
         is_system: true,
@@ -734,6 +738,8 @@ fn test_remote_non_retryable_error_gets_short_auto_poke_retry() {
     app.queued_messages
         .push("You have 1 incomplete todo. Continue working, or update the todo tool.".to_string());
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "You have 1 incomplete todo. Continue working, or update the todo tool."
             .to_string(),
         images: vec![],
@@ -801,6 +807,8 @@ fn test_remote_non_retryable_error_stops_auto_poke_after_short_retry_budget() {
     app.queued_messages
         .push("You have 1 incomplete todo. Continue working, or update the todo tool.".to_string());
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "You have 1 incomplete todo. Continue working, or update the todo tool."
             .to_string(),
         images: vec![],
@@ -847,6 +855,8 @@ fn test_remote_fatal_model_endpoint_error_fails_fast_without_retry_budget() {
     app.queued_messages
         .push("You have 1 incomplete todo. Continue working, or update the todo tool.".to_string());
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "continue".to_string(),
         images: vec![],
         is_system: true,
@@ -901,6 +911,8 @@ fn test_remote_connectivity_error_waits_for_network_with_bounded_retry_budget() 
     app.queued_messages
         .push("You have 1 incomplete todo. Continue working, or update the todo tool.".to_string());
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "You have 1 incomplete todo. Continue working, or update the todo tool."
             .to_string(),
         images: vec![],
@@ -964,6 +976,8 @@ fn test_remote_connectivity_error_without_auto_retry_still_waits_for_network() {
     app.queued_messages
         .push("You have 1 incomplete todo. Continue working, or update the todo tool.".to_string());
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "Continue working on the task.".to_string(),
         images: vec![],
         is_system: true,
@@ -1013,6 +1027,8 @@ include!("remote_failover_routes.rs");
 fn test_schedule_pending_remote_retry_respects_retry_limit() {
     let mut app = create_test_app();
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "retry me".to_string(),
         images: vec![],
         is_system: true,
@@ -1051,6 +1067,8 @@ fn test_provider_guardrail_event_offers_opus_reroute_with_resend_payload() {
         claude_oauth_route("claude-opus-4-8"),
     ];
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "please help".to_string(),
         images: vec![],
         is_system: false,
@@ -2792,6 +2810,8 @@ fn test_credential_failure_breaker_trips_after_consecutive_auth_errors() {
 
     for attempt in 0..App::CREDENTIAL_FAILURE_BREAKER_THRESHOLD {
         app.rate_limit_pending_message = Some(PendingRemoteMessage {
+            plan_only: false,
+            plan_turn_id: None,
             content: "poke".to_string(),
             images: vec![],
             is_system: true,
@@ -2869,6 +2889,8 @@ fn test_rejected_refresh_token_stops_all_automatic_resends_immediately() {
                 app.queued_messages
                     .push("Keep my queued prompt".to_string());
                 app.rate_limit_pending_message = Some(PendingRemoteMessage {
+                    plan_only: false,
+                    plan_turn_id: None,
                     content: "keep going".to_string(),
                     images: vec![],
                     is_system: false,

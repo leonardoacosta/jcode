@@ -571,6 +571,8 @@ fn test_message_request_roundtrip_preserves_images_and_system_reminder() -> Resu
         system_reminder: Some("be concise".to_string()),
         active_skill: Some("verification".to_string()),
         no_reply: true,
+        plan_only: false,
+        plan_turn_id: None,
     };
     let json = serde_json::to_string(&req)?;
     let decoded = parse_request_json(&json)?;
@@ -581,6 +583,7 @@ fn test_message_request_roundtrip_preserves_images_and_system_reminder() -> Resu
         system_reminder,
         active_skill,
         no_reply,
+        ..
     } = decoded
     else {
         return Err(anyhow!("expected Message"));

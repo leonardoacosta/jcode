@@ -88,6 +88,10 @@ impl App {
         event_stream: &mut EventStream,
         mut bus_receiver: Option<&mut tokio::sync::broadcast::Receiver<crate::bus::BusEvent>>,
     ) -> Result<()> {
+        let plan_only = crate::tool::plan_turn_active(self.session_id());
+        if plan_only && self.provider.handles_tools_internally() {
+            return Err(crate::tool::PlanModeDenied("this provider executes tools outside Jcode dispatch; select a native-tool provider for /plan".into()).into());
+        }
         self.clear_required_checks_for_turn();
         let eager_stream_redraw = !crate::perf::tui_policy().enable_decorative_animations;
         let mut redraw_period = crate::tui::redraw_interval(self);
@@ -188,12 +192,15 @@ impl App {
             );
 
             // Make API call non-blocking - poll it in select! so we can handle input while waiting
-            let mut api_future = std::pin::pin!(provider.complete_split(
-                &request_messages,
-                &tools,
-                &static_part,
-                &dynamic_part,
-                session_id_clone.as_deref()
+            let mut api_future = std::pin::pin!(jcode_provider_core::scope_plan_mode(
+                plan_only,
+                provider.complete_split(
+                    &request_messages,
+                    &tools,
+                    &static_part,
+                    &dynamic_part,
+                    session_id_clone.as_deref()
+                )
             ));
 
             let mut stream = loop {

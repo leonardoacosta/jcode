@@ -37,6 +37,9 @@ impl Agent {
         let _runtime_activity = crate::runtime_activity::global().try_enter()?;
         self.announce_late_mcp_tools().await;
         self.announce_late_skills();
+        if !user_message.trim().is_empty() {
+            crate::session::judge_feedback::begin_user_turn(&self.session.id)?;
+        }
         let input_id = self.add_message(
             Role::User,
             vec![ContentBlock::Text {
@@ -77,6 +80,9 @@ impl Agent {
         let _runtime_activity = crate::runtime_activity::global().try_enter()?;
         self.announce_late_mcp_tools().await;
         self.announce_late_skills();
+        if display_role.is_none() && !user_message.trim().is_empty() {
+            crate::session::judge_feedback::begin_user_turn(&self.session.id)?;
+        }
         let input_id = self.add_message_with_display_role(
             Role::User,
             vec![ContentBlock::Text {
@@ -235,7 +241,7 @@ impl Agent {
         self.append_user_context_message_with_display_role(user_message, images, None, false)
     }
 
-    fn append_user_context_message_with_display_role(
+    pub(crate) fn append_user_context_message_with_display_role(
         &mut self,
         user_message: &str,
         images: Vec<(String, String)>,
@@ -269,6 +275,10 @@ impl Agent {
         }
 
         let starts_turn = !continues_turn && (blocks.len() > 1 || !user_message.trim().is_empty());
+        if starts_turn && display_role.is_none() && !crate::tool::plan_turn_active(&self.session.id)
+        {
+            crate::session::judge_feedback::begin_user_turn(&self.session.id)?;
+        }
         let input_id = self.add_message_with_display_role(Role::User, blocks, display_role);
         if starts_turn {
             self.begin_model_usage_turn(&input_id);
@@ -283,6 +293,9 @@ impl Agent {
     /// submission and the first tool call. No-op (without building the payload)
     /// when the hook is not configured.
     fn fire_turn_start_hook(&self, source: &str) {
+        if crate::tool::plan_turn_active(&self.session.id) {
+            return;
+        }
         if !crate::hooks::hook_configured("turn_start") {
             return;
         }
@@ -304,6 +317,9 @@ impl Agent {
         started_at: Instant,
         start_message_index: usize,
     ) {
+        if crate::tool::plan_turn_active(&self.session.id) {
+            return;
+        }
         if !crate::hooks::hook_configured("turn_end") {
             return;
         }

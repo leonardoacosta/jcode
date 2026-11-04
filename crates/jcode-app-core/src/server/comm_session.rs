@@ -73,12 +73,13 @@ fn create_visible_spawn_session(
     selfdev_requested: bool,
     council_id: Option<&str>,
     worker_role: Option<&str>,
+    parent_session_id: Option<&str>,
 ) -> anyhow::Result<(String, PathBuf)> {
     let cwd = working_dir
         .map(PathBuf::from)
         .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
 
-    let mut session = Session::create(None, None);
+    let mut session = Session::create(parent_session_id.map(str::to_string), None);
     session.council_id = council_id.map(str::to_string);
     session.worker_role = worker_role.map(str::to_string);
     session.working_dir = Some(cwd.display().to_string());
@@ -460,6 +461,7 @@ fn prepare_visible_spawn_session<F>(
     startup_message: Option<&str>,
     council_id: Option<&str>,
     worker_role: Option<&str>,
+    parent_session_id: Option<&str>,
     launch_visible: F,
 ) -> anyhow::Result<(String, bool)>
 where
@@ -475,6 +477,7 @@ where
         selfdev_requested,
         council_id,
         worker_role,
+        parent_session_id,
     )?;
 
     if let Some(message) = startup_message {
@@ -708,6 +711,7 @@ pub(super) async fn spawn_swarm_agent(
             startup_message.as_deref(),
             council_id.as_deref(),
             worker_role.as_deref(),
+            Some(req_session_id),
             |session_id, cwd, selfdev_requested, provider_key| {
                 // Tag the headed window as a swarm-agent spawn so spawn hooks
                 // and terminals can identify and reroute it (JCODE_SPAWN_*).

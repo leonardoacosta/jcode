@@ -1,10 +1,11 @@
-use super::live_turn::{LiveTurnSwarmContext, run_live_turn_if_idle};
+use super::live_turn::{LiveTurnSwarmContext, run_live_system_turn_if_idle, run_live_turn_if_idle};
 use super::{
     ClientConnectionInfo, SessionInterruptQueues, SwarmEvent, SwarmEventType, SwarmMember,
     fanout_session_event, queue_soft_interrupt_for_session, record_swarm_event, truncate_detail,
 };
 use crate::agent::Agent;
 use crate::protocol::{CommDeliveryMode, NotificationType, ServerEvent};
+use crate::session::judge_feedback::{self, FeedbackAdmission};
 use jcode_agent_runtime::SoftInterruptSource;
 use jcode_swarm_core::ChannelIndex;
 use std::collections::{HashMap, HashSet};
@@ -394,8 +395,30 @@ pub(super) async fn handle_comm_message(
                 } else {
                     from_label
                 };
-                let delivery_mode = resolve_comm_delivery_mode(scope, delivery, wake);
-                let notification_msg = format!("{} from {}: {}", scope_label, from_label, message);
+                let mut delivery_mode = resolve_comm_delivery_mode(scope, delivery, wake);
+                let feedback = if scope == "dm" {
+                    match judge_feedback::admit(
+                        session_id,
+                        &from_session,
+                        &message,
+                        crate::config::config().autojudge.max_continuations_per_turn,
+                    ) {
+                        Ok(admission) => admission,
+                        Err(error) => Some(FeedbackAdmission::Note(format!(
+                            "judge feedback unavailable (display only): {error}\n{message}"
+                        ))),
+                    }
+                } else {
+                    None
+                };
+                if matches!(&feedback, Some(FeedbackAdmission::Note(_))) {
+                    delivery_mode = CommDeliveryMode::Notify;
+                }
+                let feedback_continue = matches!(&feedback, Some(FeedbackAdmission::Continue(_)));
+                let body = feedback
+                    .as_ref()
+                    .map_or(message.as_str(), FeedbackAdmission::message);
+                let notification_msg = format!("{} from {}: {}", scope_label, from_label, body);
                 let _ = fanout_session_event(
                     swarm_members,
                     session_id,
@@ -465,20 +488,31 @@ pub(super) async fn handle_comm_message(
                             delivered_targets += 1;
                             continue;
                         }
-                        let woke_immediately = run_live_turn_if_idle(
-                            session_id,
-                            &notification_msg,
-                            reminder,
-                            sessions,
-                            LiveTurnSwarmContext::new(
-                                swarm_members,
-                                swarms_by_id,
-                                event_history,
-                                event_counter,
-                                swarm_event_tx,
-                            ),
-                        )
-                        .await;
+                        let swarm = LiveTurnSwarmContext::new(
+                            swarm_members,
+                            swarms_by_id,
+                            event_history,
+                            event_counter,
+                            swarm_event_tx,
+                        );
+                        let woke_immediately = if feedback_continue {
+                            run_live_system_turn_if_idle(
+                                session_id,
+                                &notification_msg,
+                                sessions,
+                                swarm,
+                            )
+                            .await
+                        } else {
+                            run_live_turn_if_idle(
+                                session_id,
+                                &notification_msg,
+                                reminder,
+                                sessions,
+                                swarm,
+                            )
+                            .await
+                        };
 
                         if !woke_immediately {
                             let _ = queue_soft_interrupt_for_session(

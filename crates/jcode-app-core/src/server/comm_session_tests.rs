@@ -272,6 +272,32 @@ async fn register_visible_spawned_member_marks_startup_as_running() {
 }
 
 #[test]
+fn judge_feedback_visible_spawn_records_parent_before_launch() {
+    let _home = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+    let (id, launched) = prepare_visible_spawn_session(
+        None,
+        None,
+        None,
+        None,
+        None,
+        false,
+        None,
+        None,
+        Some("judge"),
+        Some("judge-parent"),
+        |id, _, _, _| {
+            let session = crate::session::Session::load_startup_stub(id).unwrap();
+            assert_eq!(session.worker_role.as_deref(), Some("judge"));
+            assert_eq!(session.parent_id.as_deref(), Some("judge-parent"));
+            Ok(true)
+        },
+    )
+    .unwrap();
+    assert!(launched);
+    assert!(!id.is_empty());
+}
+
+#[test]
 fn prepare_visible_council_spawn_persists_policy_and_startup_before_launch() {
     let _guard = crate::storage::lock_test_env();
     let temp_home = tempfile::TempDir::new().expect("temp home");
@@ -289,6 +315,7 @@ fn prepare_visible_council_spawn_persists_policy_and_startup_before_launch() {
         false,
         Some(startup),
         Some("council-visible-test"),
+        None,
         None,
         |session_id, _cwd: &std::path::Path, _selfdev, provider_key| {
             assert_eq!(provider_key, None);
@@ -350,6 +377,7 @@ fn prepare_visible_research_spawn_enforces_policy_in_new_process() {
         None,
         None,
         Some("research"),
+        None,
         |session_id, _, _, _| {
             for mode in ["startup", "remote", "full"] {
                 let output = std::process::Command::new(std::env::current_exe().unwrap())
@@ -396,6 +424,7 @@ fn prepare_visible_spawn_session_cleans_startup_when_launch_not_started() {
         Some("Do the thing."),
         None,
         None,
+        None,
         |_session_id, _cwd: &std::path::Path, _selfdev, _provider_key| Ok(false),
     )
     .expect("visible spawn preparation should succeed even when launch is skipped");
@@ -432,6 +461,7 @@ fn prepare_visible_spawn_session_cleans_session_when_launch_errors() {
         None,
         false,
         Some("Do the thing."),
+        None,
         None,
         None,
         |_session_id, _cwd: &std::path::Path, _selfdev, _provider_key| {
@@ -472,6 +502,7 @@ fn prepare_visible_spawn_session_persists_and_launches_provider_key_for_openrout
         None,
         None,
         None,
+        None,
         |_session_id, _cwd: &std::path::Path, _selfdev, provider_key| {
             assert_eq!(provider_key, Some("openrouter"));
             Ok(true)
@@ -501,6 +532,7 @@ fn prepare_visible_spawn_session_persists_requested_effort() {
         None,
         Some("low"),
         false,
+        None,
         None,
         None,
         None,
@@ -534,6 +566,7 @@ fn prepare_visible_spawn_session_prefers_parent_provider_key_over_model_guess() 
         None,
         None,
         false,
+        None,
         None,
         None,
         None,

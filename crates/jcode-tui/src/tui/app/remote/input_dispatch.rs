@@ -17,14 +17,31 @@ pub(in crate::tui::app) async fn begin_remote_send(
     retry_attempts: u8,
 ) -> Result<u64> {
     app.pending_remote_turn_error = None;
+    let plan_only = app.next_turn_plan_only;
+    let plan_turn_id = app.next_plan_turn_id.clone();
+    let (wire_content, wire_reminder) = if is_system && images.is_empty() {
+        let reminder = match system_reminder.as_deref() {
+            Some(reminder) if !content.is_empty() => format!("{content}\n\n{reminder}"),
+            Some(reminder) => reminder.to_string(),
+            None => content.clone(),
+        };
+        (String::new(), Some(reminder))
+    } else {
+        (content.clone(), system_reminder.clone())
+    };
     let msg_id = remote
-        .send_message_with_images_reminder_and_skill(
-            content.clone(),
+        .send_message_with_plan_policy(
+            wire_content,
             images.clone(),
-            system_reminder.clone(),
+            wire_reminder,
             app.active_skill.clone(),
+            plan_only,
+            plan_turn_id.clone(),
         )
         .await?;
+    app.next_turn_plan_only = false;
+    app.next_plan_turn_id = None;
+    app.pending_plan_ack = plan_only.then_some(msg_id);
     app.clear_required_checks_for_turn();
     app.current_message_id = Some(msg_id);
     app.deferred_stream_done_id = None;
@@ -50,6 +67,8 @@ pub(in crate::tui::app) async fn begin_remote_send(
     app.thinking_prefix_emitted = false;
     app.thinking_buffer.clear();
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only,
+        plan_turn_id,
         content,
         images,
         is_system,
@@ -642,6 +661,7 @@ pub(in crate::tui::app) fn stage_turn_for_remote_tick_loop(app: &mut App, input:
         input::stage_local_interleave(app, input.to_string(), images);
         return true;
     }
+    app.queued_human_input = true;
     app.queued_messages.push(input.to_string());
     app.pending_images.clear();
     true

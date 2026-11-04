@@ -403,6 +403,11 @@ impl Tool for BrowserTool {
             "setup" => provider.setup_for(params.browser.as_deref()).await,
             "handoff" => browser_fast::handoff(provider, &params, &ctx).await,
             other => {
+                if super::plan_turn_active(&ctx.session_id) {
+                    // Admission already limits actions. Do not auto-update or
+                    // launch a browser just to observe an existing page.
+                    return provider.execute(other, &params, &ctx).await;
+                }
                 let setup_message = provider.ensure_ready_for(params.browser.as_deref()).await?;
                 let output = provider.execute(other, &params, &ctx).await?;
                 Ok(match setup_message {

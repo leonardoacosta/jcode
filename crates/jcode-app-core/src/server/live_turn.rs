@@ -104,7 +104,7 @@ pub(super) async fn spawn_tracked_live_turn(
     mut agent: OwnedMutexGuard<Agent>,
     message: String,
     system_reminder: Option<String>,
-    display_role: Option<crate::session::StoredDisplayRole>,
+    _display_role: Option<crate::session::StoredDisplayRole>,
     status_detail: Option<String>,
     swarm: LiveTurnSwarmContext,
 ) -> bool {
@@ -129,26 +129,14 @@ pub(super) async fn spawn_tracked_live_turn(
         let start_message_index = agent.message_count();
         let pending_queue = agent.soft_interrupt_queue();
         let (result, stop_reason) = catch_live_turn_panic(async {
-            if let Some(display_role) = display_role {
-                agent
-                    .run_once_streaming_mpsc_with_display_role(
-                        &message,
-                        vec![],
-                        system_reminder,
-                        event_tx.clone(),
-                        Some(display_role),
-                    )
-                    .await
-            } else {
-                process_locked_message_with_server_failover(
-                    &mut agent,
-                    &message,
-                    vec![],
-                    system_reminder,
-                    event_tx.clone(),
-                )
-                .await
-            }
+            process_locked_message_with_server_failover(
+                &mut agent,
+                &message,
+                vec![],
+                system_reminder,
+                event_tx.clone(),
+            )
+            .await
         })
         .await;
         let completion_report = result

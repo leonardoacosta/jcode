@@ -60,13 +60,21 @@ impl Agent {
         &mut self,
         event_tx: mpsc::UnboundedSender<ServerEvent>,
     ) -> Result<()> {
+        let plan_only = crate::tool::plan_turn_active(&self.session.id);
+        if plan_only && self.provider.handles_tools_internally() {
+            return Err(crate::tool::PlanModeDenied("this provider executes tools outside Jcode dispatch; select a native-tool provider for /plan".into()).into());
+        }
         let budget = self
             .session
             .council_id
             .as_deref()
             .map(crate::tool::council::provider_call_budget)
             .transpose()?;
-        provider_call_budget::scope(budget, self.run_turn_streaming_budgeted(event_tx)).await
+        jcode_provider_core::scope_plan_mode(
+            plan_only,
+            provider_call_budget::scope(budget, self.run_turn_streaming_budgeted(event_tx)),
+        )
+        .await
     }
 
     async fn run_turn_streaming_budgeted(

@@ -1,6 +1,18 @@
 use super::*;
 use std::io::Read;
 
+#[tokio::test]
+async fn plan_mode_refuses_cursor_before_transport() {
+    let provider = CursorCliProvider::new();
+    let result =
+        jcode_provider_core::scope_plan_mode(true, provider.complete(&[], &[], "", None)).await;
+    let error = match result {
+        Ok(_) => panic!("plan must not start Cursor transport"),
+        Err(error) => error,
+    };
+    assert!(error.to_string().contains("Plan mode"), "{error:#}");
+}
+
 #[test]
 fn routed_prompt_includes_system_and_namespaced_tool_directive() {
     let tools = vec![ToolDefinition {

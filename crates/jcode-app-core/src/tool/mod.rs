@@ -11,11 +11,11 @@ mod calendar;
 mod codemode;
 mod communicate;
 mod compile_remote;
-pub(crate) mod council;
 #[cfg(target_os = "macos")]
 mod computer;
 mod config_edit_notice;
 mod conversation_search;
+pub(crate) mod council;
 mod debug_socket;
 mod desktop_selfdev;
 mod discover;
@@ -38,6 +38,11 @@ mod name_suggestions;
 mod open;
 mod panel;
 mod patch;
+mod plan_guard;
+#[cfg(test)]
+use plan_guard::plan_bash_argv;
+pub use plan_guard::plan_turn_active;
+pub use plan_guard::{PlanModeDenied, PlanTurnGuard};
 mod read;
 pub(crate) mod sdk;
 pub mod selfdev;
@@ -1044,6 +1049,10 @@ impl Registry {
         let tools = self.tools.read().await;
         let resolved_name = Self::resolve_tool_name_for_session(&ctx.session_id, name);
         let is_custom = sdk::custom(&ctx.session_id, resolved_name);
+        let plan_only = plan_guard::plan_turn_active(&ctx.session_id);
+        if plan_only {
+            plan_guard::admit_plan_tool(resolved_name, &input, is_custom)?;
+        }
         if is_custom && let Some(config) = sdk::config(&ctx.session_id) {
             let disabled = config.disabled.into_iter().collect();
             anyhow::ensure!(
@@ -1118,17 +1127,22 @@ impl Registry {
             .working_dir
             .as_ref()
             .map(|dir| dir.display().to_string());
-        let input = crate::hooks::transform_tool_input(
-            &ctx.session_id,
-            working_dir.as_deref(),
-            resolved_name,
-            input,
-        )
-        .await;
+        // Plan calls never run user executable hooks or hook rewrites.
+        let input = if plan_only {
+            input
+        } else {
+            crate::hooks::transform_tool_input(
+                &ctx.session_id,
+                working_dir.as_deref(),
+                resolved_name,
+                input,
+            )
+            .await
+        };
 
         // User-configured pre_tool gate: external policy hook that can block
         // this call (exit 2). Skipped entirely when not configured.
-        if crate::hooks::hook_configured("pre_tool") {
+        if !plan_only && crate::hooks::hook_configured("pre_tool") {
             let input_json = input.to_string();
             let decision = crate::hooks::run_pre_tool_gate(
                 &ctx.session_id,
@@ -1154,11 +1168,17 @@ impl Registry {
         );
 
         let started_at = std::time::Instant::now();
-        let result = tool.execute(input.clone(), ctx.clone()).await;
+        let result = if plan_only && resolved_name == "bash" {
+            plan_guard::execute_plan_bash(&input, &ctx).await
+        } else {
+            tool.execute(input.clone(), ctx.clone()).await
+        };
         let latency_ms = started_at.elapsed().as_millis().min(u128::from(u64::MAX)) as u64;
 
         crate::telemetry::record_tool_execution(resolved_name, &input, result.is_ok(), latency_ms);
-        Self::fire_post_tool_hook(resolved_name, &input, &ctx, &result, latency_ms);
+        if !plan_only {
+            Self::fire_post_tool_hook(resolved_name, &input, &ctx, &result, latency_ms);
+        }
 
         let mut output = match result {
             Ok(output) => output,
@@ -1172,7 +1192,10 @@ impl Registry {
             }
         };
 
-        Self::apply_post_tool_feedback(resolved_name, &input, &ctx, latency_ms, &mut output).await;
+        if !plan_only {
+            Self::apply_post_tool_feedback(resolved_name, &input, &ctx, latency_ms, &mut output)
+                .await;
+        }
 
         // Context overflow guard: check if this output would push us over the limit
         output = self

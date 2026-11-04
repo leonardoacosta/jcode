@@ -1062,13 +1062,25 @@ impl Default for SponsorsConfig {
 }
 
 /// Automatic end-of-turn execution judging configuration.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AutoJudgeConfig {
     /// Enable autojudge by default for new/resumed sessions (default: false)
     pub enabled: bool,
     /// Optional model override for autojudge sessions.
     pub model: Option<String>,
+    /// Maximum automatic judge continuations per genuine user turn. Zero disables them.
+    pub max_continuations_per_turn: u32,
+}
+
+impl Default for AutoJudgeConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            model: None,
+            max_continuations_per_turn: 3,
+        }
+    }
 }
 
 /// Keybinding configuration

@@ -5,6 +5,11 @@ impl App {
         &mut self,
         restored: RestoredReloadInput,
     ) {
+        self.queued_human_input = restored.queued_human_input;
+        self.queued_plan_only = restored.queued_plan_only;
+        self.queued_plan_turn_id = restored.queued_plan_turn_id;
+        self.next_plan_turn_id = restored.next_plan_turn_id;
+        self.next_turn_plan_only = restored.next_turn_plan_only;
         self.input = restored.input;
         self.cursor_pos = restored.cursor;
         self.pending_images = restored.pending_images;
@@ -60,6 +65,7 @@ impl App {
             recovered_followups.extend(recovered_interrupts);
         }
         if !recovered_followups.is_empty() {
+            self.queued_human_input = true;
             let mut recovered_queue = recovered_followups;
             recovered_queue.append(&mut queued_messages);
             queued_messages = recovered_queue;

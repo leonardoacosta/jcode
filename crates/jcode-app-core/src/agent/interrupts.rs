@@ -415,6 +415,13 @@ impl Agent {
                     cache_control: None,
                 });
             }
+            if source == SoftInterruptSource::User {
+                if let Err(error) =
+                    crate::session::judge_feedback::begin_user_turn(agent.session_id())
+                {
+                    logging::warn(&format!("Judge feedback budget remains closed: {error}"));
+                }
+            }
             agent.add_message_with_display_role(
                 Role::User,
                 blocks,

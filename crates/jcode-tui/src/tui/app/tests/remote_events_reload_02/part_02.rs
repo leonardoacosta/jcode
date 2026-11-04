@@ -269,6 +269,8 @@ fn test_handle_remote_disconnect_retryable_pending_schedules_retry() {
     app.status = ProcessingStatus::Streaming;
     app.current_message_id = Some(7);
     app.rate_limit_pending_message = Some(PendingRemoteMessage {
+        plan_only: false,
+        plan_turn_id: None,
         content: "retry me".to_string(),
         images: vec![],
         is_system: true,

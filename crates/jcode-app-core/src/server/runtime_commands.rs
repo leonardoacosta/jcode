@@ -71,7 +71,8 @@ pub(super) async fn execute(
                 .registry()
                 .execute(
                     "swarm",
-                    json!({"action": "spawn", "label": label, "prompt": prompt, "model": model}),
+                    json!({"action": "spawn", "label": label, "prompt": prompt, "model": model,
+                        "role": matches!(command, RuntimeCommand::Review | RuntimeCommand::Judge).then_some(role)}),
                     crate::tool::ToolContext {
                         session_id: agent.session_id().into(),
                         message_id: crate::id::new_id("msg"),

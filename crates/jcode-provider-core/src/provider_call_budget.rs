@@ -83,7 +83,13 @@ fn current() -> Option<Scope> {
 /// Retain the scope explicitly when spawning tool/provider worker tasks.
 /// Tokio task locals are otherwise not inherited by a new task.
 pub fn inherit<F: Future>(future: F) -> impl Future<Output = F::Output> {
-    crate::provider_monetary_budget::inherit(CURRENT.scope(current(), future))
+    // Turn futures are large. Do not copy them through each nested scope on
+    // the caller's Tokio worker stack before spawn can heap-allocate the task.
+    let future = Box::pin(future);
+    crate::scope_plan_mode(
+        crate::plan_mode_active(),
+        crate::provider_monetary_budget::inherit(CURRENT.scope(current(), future)),
+    )
 }
 
 pub fn spawn<F>(future: F) -> tokio::task::JoinHandle<F::Output>
@@ -207,6 +213,25 @@ mod tests {
                 .is_err()
         );
         std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn inherited_future_has_bounded_inline_size() {
+        let payload = [0u8; 256 * 1024];
+        let future = inherit(async move { std::hint::black_box(payload).len() });
+        let size = std::mem::size_of_val(&future);
+        assert!(size < 4096, "inherited future stores {size} bytes inline");
+    }
+
+    #[tokio::test]
+    async fn plan_mode_scope_is_inherited_and_cleared() {
+        assert!(!crate::plan_mode_active());
+        crate::scope_plan_mode(true, async {
+            assert!(spawn(async { crate::plan_mode_active() }).await.unwrap());
+        })
+        .await;
+        assert!(!crate::plan_mode_active());
+        assert!(!spawn(async { crate::plan_mode_active() }).await.unwrap());
     }
 
     #[test]

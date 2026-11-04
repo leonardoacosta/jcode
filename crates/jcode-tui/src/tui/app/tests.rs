@@ -2118,6 +2118,8 @@ fn failed_prompt_disconnect_preserves_source_and_newer_draft_without_resending()
         app.input = "new draft".to_string();
         app.cursor_pos = 3;
         app.rate_limit_pending_message = Some(PendingRemoteMessage {
+            plan_only: false,
+            plan_turn_id: None,
             content: source.to_string(),
             images: vec![],
             is_system: false,

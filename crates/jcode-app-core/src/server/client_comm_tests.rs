@@ -12,6 +12,178 @@ use std::sync::{Arc, atomic::AtomicU64};
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
+#[tokio::test]
+async fn judge_feedback_handler_filters_before_all_delivery_modes() {
+    let _env = crate::storage::lock_test_env();
+    let temp = tempfile::tempdir().unwrap();
+    let old_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", temp.path());
+    struct Restore(Option<std::ffi::OsString>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            match self.0.take() {
+                Some(value) => crate::env::set_var("JCODE_HOME", value),
+                None => crate::env::remove_var("JCODE_HOME"),
+            }
+        }
+    }
+    let _restore = Restore(old_home);
+    let target = test_agent().await;
+    let target_id = target.lock().await.session_id().to_string();
+    let queue = target.lock().await.soft_interrupt_queue();
+    let sessions = Arc::new(RwLock::new(HashMap::from([(
+        target_id.clone(),
+        target.clone(),
+    )])));
+    let queues: SessionInterruptQueues = Arc::new(RwLock::new(HashMap::from([(
+        target_id.clone(),
+        queue.clone(),
+    )])));
+    let (client_tx, mut client_rx) = mpsc::unbounded_channel();
+    let (target_tx, mut target_rx) = mpsc::unbounded_channel();
+    let swarm_id = "judge-handler-test".to_string();
+    let member = |session_id: String, event_tx| SwarmMember {
+        session_id,
+        event_tx,
+        event_txs: HashMap::new(),
+        working_dir: None,
+        swarm_id: Some(swarm_id.clone()),
+        swarm_enabled: true,
+        status: "ready".into(),
+        detail: None,
+        friendly_name: Some("autojudge".into()),
+        report_back_to_session_id: None,
+        latest_completion_report: None,
+        role: "agent".into(),
+        joined_at: Instant::now(),
+        last_status_change: Instant::now(),
+        is_headless: false,
+        output_tail: None,
+        todo_progress: None,
+        todo_items: vec![],
+        runtime: Default::default(),
+        task_label: None,
+    };
+    let members = Arc::new(RwLock::new(HashMap::from([(
+        target_id.clone(),
+        member(target_id.clone(), target_tx),
+    )])));
+    let swarms = Arc::new(RwLock::new(HashMap::from([(
+        swarm_id.clone(),
+        HashSet::from([target_id.clone()]),
+    )])));
+    let channels = Arc::new(RwLock::new(HashMap::new()));
+    let history = Arc::new(RwLock::new(std::collections::VecDeque::new()));
+    let counter = Arc::new(AtomicU64::new(0));
+    let (events, _) = broadcast::channel(32);
+    let connections = Arc::new(RwLock::new(HashMap::new()));
+    for (role, messages) in [
+        (
+            "judge",
+            vec![
+                ("CONTINUE: first", CommDeliveryMode::Interrupt, true),
+                ("CONTINUE: duplicate", CommDeliveryMode::Wake, false),
+            ],
+        ),
+        (
+            "judge",
+            vec![
+                ("malformed", CommDeliveryMode::Wake, false),
+                ("CONTINUE: too late", CommDeliveryMode::Interrupt, false),
+            ],
+        ),
+        (
+            "judge",
+            vec![("STOP: complete", CommDeliveryMode::Interrupt, false)],
+        ),
+        (
+            "review",
+            vec![("CONTINUE: display only", CommDeliveryMode::Wake, false)],
+        ),
+        (
+            "judge",
+            vec![("CONTINUE: second", CommDeliveryMode::Interrupt, true)],
+        ),
+        (
+            "judge",
+            vec![("CONTINUE: third", CommDeliveryMode::Interrupt, true)],
+        ),
+        (
+            "judge",
+            vec![("CONTINUE: capped", CommDeliveryMode::Wake, false)],
+        ),
+    ] {
+        let mut sender = crate::session::Session::create(
+            Some(target_id.clone()),
+            Some("not authoritative".into()),
+        );
+        sender.worker_role = Some(role.into());
+        sender.save().unwrap();
+        let (sender_tx, _sender_rx) = mpsc::unbounded_channel();
+        members
+            .write()
+            .await
+            .insert(sender.id.clone(), member(sender.id.clone(), sender_tx));
+        swarms
+            .write()
+            .await
+            .get_mut(&swarm_id)
+            .unwrap()
+            .insert(sender.id.clone());
+        for (body, mode, expected_continue) in messages {
+            let before = queue.lock().unwrap().len();
+            handle_comm_message(
+                1,
+                sender.id.clone(),
+                body.into(),
+                Some(target_id.clone()),
+                None,
+                Some(mode),
+                None,
+                None,
+                None,
+                false,
+                &client_tx,
+                &sessions,
+                &queues,
+                &members,
+                &swarms,
+                &channels,
+                &history,
+                &counter,
+                &events,
+                &connections,
+            )
+            .await;
+            assert!(matches!(
+                client_rx.recv().await,
+                Some(ServerEvent::Done { .. })
+            ));
+            let ServerEvent::Notification { message, .. } = target_rx.recv().await.unwrap() else {
+                panic!("missing feedback note")
+            };
+            assert_eq!(
+                queue.lock().unwrap().len(),
+                before + usize::from(expected_continue),
+                "{body}"
+            );
+            if expected_continue {
+                let pending = queue.lock().unwrap();
+                let text = &pending.last().unwrap().content;
+                assert!(text.contains("advisory reviewer content"));
+                assert!(text.contains("never authorizes external actions"));
+                assert_eq!(
+                    pending.last().unwrap().source,
+                    jcode_agent_runtime::SoftInterruptSource::System
+                );
+            }
+            if body.contains("capped") {
+                assert!(message.contains("judge cap reached"));
+            }
+        }
+    }
+}
+
 struct TestProvider;
 
 #[async_trait]

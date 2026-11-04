@@ -906,6 +906,7 @@ async fn handle_remote_key_internal(
             match app.send_action(true) {
                 SendAction::Submit => submit_prepared_remote_input(app, remote, prepared).await?,
                 SendAction::Queue => {
+                    app.queued_human_input = true;
                     app.queued_messages.push(prepared.expanded);
                 }
                 SendAction::Interleave => {
@@ -1864,6 +1865,12 @@ pub(in crate::tui::app) async fn submit_remote_enter_input(
             app.clear_provider_messages();
             app.clear_display_messages();
             app.queued_messages.clear();
+            app.queued_plan_only = false;
+            app.queued_plan_turn_id = None;
+            app.next_plan_turn_id = None;
+            app.queued_human_input = false;
+            app.next_turn_plan_only = false;
+            app.pending_plan_ack = None;
             app.queued_commands.clear();
             app.pasted_contents.clear();
             app.pending_images.clear();
@@ -2412,8 +2419,11 @@ pub(in crate::tui::app) async fn submit_remote_enter_input(
         }
 
         if let Some(command) = app_mod::commands::parse_plan_command(trimmed) {
+            let plan_turn_id = crate::id::new_id("plan");
             let prompt = app_mod::commands::build_plan_prompt(command.goal.as_deref());
             if app.is_processing {
+                app.queued_plan_only = true;
+                app.queued_plan_turn_id = Some(plan_turn_id);
                 remote.cancel_with_reason("slash_plan").await?;
                 app.set_status_notice("Interrupting for /plan...");
                 app.push_display_message(DisplayMessage::system(
@@ -2421,6 +2431,8 @@ pub(in crate::tui::app) async fn submit_remote_enter_input(
                 ));
                 app.queued_messages.push(prompt);
             } else {
+                app.next_turn_plan_only = true;
+                app.next_plan_turn_id = Some(plan_turn_id);
                 app.push_display_message(DisplayMessage::system(
                     app_mod::commands::plan_launch_notice(command.goal.as_deref(), false),
                 ));
@@ -2754,6 +2766,7 @@ pub(in crate::tui::app) async fn submit_remote_enter_input(
         match app.send_action(false) {
             SendAction::Submit => submit_prepared_remote_input(app, remote, prepared).await?,
             SendAction::Queue => {
+                app.queued_human_input = true;
                 app.queued_messages.push(prepared.expanded);
             }
             SendAction::Interleave => {

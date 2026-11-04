@@ -136,6 +136,10 @@ pub enum ServerEvent {
     #[serde(rename = "ack")]
     Ack { id: u64 },
 
+    /// This server enforces the requested per-turn plan tool policy.
+    #[serde(rename = "plan_mode")]
+    PlanMode { id: u64, enforced: bool },
+
     /// Authoritative worker routing after a successful session preference update.
     #[serde(rename = "agent_models_changed")]
     AgentModelsChanged {

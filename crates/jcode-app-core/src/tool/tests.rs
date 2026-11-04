@@ -8,6 +8,208 @@ use async_trait::async_trait;
 use serde_json::Value;
 use std::ffi::OsString;
 
+#[tokio::test]
+async fn plan_mode_denies_mutation_and_restores_dispatch() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("sentinel");
+    std::fs::write(&path, "before").unwrap();
+    let registry = Registry::new(Arc::new(MockProvider)).await;
+    let session = format!("plan-{}", uuid::Uuid::new_v4());
+    let ctx = || ToolContext {
+        session_id: session.clone(),
+        message_id: "plan".into(),
+        tool_call_id: uuid::Uuid::new_v4().to_string(),
+        working_dir: Some(dir.path().into()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: ToolExecutionMode::Direct,
+    };
+    let guard = super::PlanTurnGuard::new(&session);
+    for (tool, input) in [
+        (
+            "edit",
+            serde_json::json!({"file_path":path,"old_string":"before","new_string":"after"}),
+        ),
+        (
+            "write",
+            serde_json::json!({"file_path":path,"content":"after"}),
+        ),
+        (
+            "apply_patch",
+            serde_json::json!({"patch_text":format!("*** Begin Patch\n*** Update File: {}\n@@\n-before\n+after\n*** End Patch", path.display())}),
+        ),
+        ("mcp", serde_json::json!({"action":"search"})),
+        ("mcp__anything__read", serde_json::json!({})),
+        ("browser", serde_json::json!({"action":"click"})),
+        ("unknown_future_tool", serde_json::json!({})),
+    ] {
+        let error = registry.execute(tool, input, ctx()).await.unwrap_err();
+        assert!(
+            error.downcast_ref::<super::PlanModeDenied>().is_some(),
+            "{tool}: {error:#}"
+        );
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "before");
+    }
+    let read = registry
+        .execute("read", serde_json::json!({"file_path":path}), ctx())
+        .await
+        .unwrap();
+    assert!(read.output.contains("before"));
+    assert!(
+        registry
+            .execute(
+                "agentgrep",
+                serde_json::json!({"query":"before","path":dir.path()}),
+                ctx()
+            )
+            .await
+            .is_ok()
+    );
+    drop(guard);
+    registry
+        .execute(
+            "write",
+            serde_json::json!({"file_path":path,"content":"after"}),
+            ctx(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), "after");
+}
+
+#[test]
+fn plan_mode_bash_allowlist_fails_closed() {
+    for command in [
+        "git status --short",
+        "git diff --stat",
+        "git log --oneline -5",
+        "rg -n 'needle' src",
+        "ls -la",
+        "cat README.md",
+    ] {
+        assert!(super::plan_bash_argv(command).is_ok(), "{command}");
+    }
+    for command in [
+        "touch x",
+        "git status; touch x",
+        "cat x > y",
+        "cat $(touch x)",
+        "cat `touch x`",
+        "cat <(touch x)",
+        "ls\nwhoami",
+        "alias cat=touch",
+        "git -c alias.status=whatever status",
+        "git diff --ext-diff",
+        "git diff --textconv",
+        "git diff --output=x",
+        "git log --output x",
+        "git status --no-optional-locks",
+        "git checkout x",
+        "rg --pre touch x",
+        "rg --pre-glob x",
+        "rg --hostname-bin touch x",
+        "cat --output x",
+        "ls --unknown",
+        "bash -c ls",
+        "/bin/ls",
+        "X=y ls",
+        "cat x | tee y",
+        "cat x &",
+        "cat x # ignored",
+    ] {
+        assert!(super::plan_bash_argv(command).is_err(), "{command}");
+    }
+}
+
+#[tokio::test]
+async fn plan_mode_cancel_and_batch_cannot_leak_authority() {
+    let session = format!("plan-cancel-{}", uuid::Uuid::new_v4());
+    let started = Arc::new(tokio::sync::Notify::new());
+    let signal = started.clone();
+    let id = session.clone();
+    let task = tokio::spawn(async move {
+        let _guard = super::PlanTurnGuard::new(&id);
+        signal.notify_one();
+        std::future::pending::<()>().await;
+    });
+    started.notified().await;
+    assert!(super::plan_guard::plan_turn_active(&session));
+    task.abort();
+    let _ = task.await;
+    assert!(!super::plan_guard::plan_turn_active(&session));
+    let registry = Registry::new(Arc::new(MockProvider)).await;
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("no-write");
+    let ctx = ToolContext {
+        session_id: session.clone(),
+        message_id: "test".into(),
+        tool_call_id: "batch".into(),
+        working_dir: Some(dir.path().into()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: ToolExecutionMode::Direct,
+    };
+    let _guard = super::PlanTurnGuard::new(&session);
+    let output = registry.execute("batch", serde_json::json!({"tool_calls":[{"tool":"functions.write","file_path":path,"content":"bad"}]}), ctx).await.unwrap();
+    assert!(
+        output.output.contains("Plan mode denied"),
+        "{}",
+        output.output
+    );
+    assert!(!path.exists());
+}
+
+#[tokio::test]
+#[cfg(unix)]
+async fn plan_mode_bash_reads_without_shell_and_bounds_output() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("input"), "safe").unwrap();
+    std::fs::write(dir.path().join("large"), "x".repeat(1_000_000)).unwrap();
+    let ctx = ToolContext {
+        session_id: "plan-bash".into(),
+        message_id: "test".into(),
+        tool_call_id: "bash".into(),
+        working_dir: Some(dir.path().into()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: ToolExecutionMode::Direct,
+    };
+    let output =
+        super::plan_guard::execute_plan_bash(&serde_json::json!({"command":"cat input"}), &ctx)
+            .await
+            .unwrap();
+    assert!(output.output.contains("safe"));
+    assert_eq!(output.metadata.unwrap()["process"]["exit_code"], 0);
+    let output = super::plan_guard::execute_plan_bash(
+        &serde_json::json!({"command":"cat large","timeout":2000}),
+        &ctx,
+    )
+    .await
+    .unwrap();
+    assert!(output.output.len() <= 30_000);
+    std::fs::create_dir_all(dir.path().join(".git/objects")).unwrap();
+    std::fs::create_dir_all(dir.path().join(".git/refs/heads")).unwrap();
+    std::fs::write(dir.path().join(".git/HEAD"), "ref: refs/heads/main\n").unwrap();
+    std::fs::write(dir.path().join(".git/config"), "[core]\nrepositoryformatversion = 0\nbare = false\nfsmonitor = touch pwned\n[filter \"bad\"]\nclean = touch pwned\n").unwrap();
+    let error =
+        super::plan_guard::execute_plan_bash(&serde_json::json!({"command":"git diff"}), &ctx)
+            .await
+            .unwrap_err();
+    assert!(error.to_string().contains("filters"), "{error:#}");
+    assert!(!dir.path().join("pwned").exists());
+    std::fs::write(dir.path().join(".git/config"), "[core]\nrepositoryformatversion = 0\nbare = false\nfsmonitor = touch pwned\n[log]\nshowSignature = true\n[gpg]\nprogram = touch pwned\n").unwrap();
+    for command in [
+        "git status --short",
+        "git diff --stat",
+        "git log --oneline -5",
+    ] {
+        super::plan_guard::execute_plan_bash(&serde_json::json!({"command":command}), &ctx)
+            .await
+            .unwrap();
+        assert!(!dir.path().join("pwned").exists());
+    }
+}
+
 #[test]
 fn base_tools_do_not_expose_invalid_reporting_tool() {
     let skills = Arc::new(RwLock::new(crate::skill::SkillRegistry::default()));
@@ -2134,6 +2336,44 @@ fn touched_paths_include_patch_headers_and_path_keys() {
 
     let diff = "--- a/src/x.rs\n+++ b/src/x.rs\n@@ -1 +1 @@\n-a\n+b\n--- /dev/null\n+++ b/new.md\n";
     assert_eq!(Registry::patch_paths(diff), vec!["src/x.rs", "new.md"]);
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn plan_mode_read_skips_executable_feedback_hook() {
+    let _env_lock = crate::storage::lock_test_env();
+    let dir = tempfile::tempdir().unwrap();
+    let target = dir.path().join("readme");
+    std::fs::write(&target, "safe").unwrap();
+    let marker = dir.path().join("hook-ran");
+    let previous = std::env::var_os("JCODE_HOOK_POST_TOOL_FEEDBACK");
+    crate::env::set_var(
+        "JCODE_HOOK_POST_TOOL_FEEDBACK",
+        format!("touch '{}'", marker.display()),
+    );
+    crate::config::invalidate_config_cache();
+    let registry = Registry::new(Arc::new(MockProvider)).await;
+    let mut ctx = mcp_test_context(dir.path());
+    ctx.session_id = format!("plan-hook-{}", uuid::Uuid::new_v4());
+    let guard = super::PlanTurnGuard::new(&ctx.session_id);
+    let plan = registry
+        .execute("read", serde_json::json!({"file_path":target}), ctx.clone())
+        .await;
+    let plan_hook_ran = marker.exists();
+    drop(guard);
+    let ordinary = registry
+        .execute("read", serde_json::json!({"file_path":target}), ctx)
+        .await;
+    let ordinary_hook_ran = marker.exists();
+    match previous {
+        Some(v) => crate::env::set_var("JCODE_HOOK_POST_TOOL_FEEDBACK", v),
+        None => crate::env::remove_var("JCODE_HOOK_POST_TOOL_FEEDBACK"),
+    }
+    crate::config::invalidate_config_cache();
+    assert!(plan.is_ok());
+    assert!(!plan_hook_ran);
+    assert!(ordinary.is_ok());
+    assert!(ordinary_hook_ran);
 }
 
 #[cfg(unix)]

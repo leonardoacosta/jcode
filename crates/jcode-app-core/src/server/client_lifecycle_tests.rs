@@ -1,4 +1,39 @@
 #![cfg_attr(test, allow(clippy::await_holding_lock))]
+
+#[test]
+fn plan_mode_human_token_resets_server_budget_once() {
+    use crate::session::judge_feedback::{self, FeedbackAdmission};
+    let _home = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+    let mut parent = crate::session::Session::create(None, None);
+    parent.save().unwrap();
+    let child = || {
+        let mut child = crate::session::Session::create(Some(parent.id.clone()), None);
+        child.worker_role = Some("judge".into());
+        child.save().unwrap();
+        child.id
+    };
+    assert!(matches!(
+        judge_feedback::admit(&parent.id, &child(), "CONTINUE: first", 1).unwrap(),
+        Some(FeedbackAdmission::Continue(_))
+    ));
+    admit_plan_user_turn(&parent.id, true, None).unwrap();
+    assert!(matches!(
+        judge_feedback::admit(&parent.id, &child(), "CONTINUE: synthetic", 1).unwrap(),
+        Some(FeedbackAdmission::Note(_))
+    ));
+    admit_plan_user_turn(&parent.id, true, Some("plan_human_1")).unwrap();
+    assert!(matches!(
+        judge_feedback::admit(&parent.id, &child(), "CONTINUE: human", 1).unwrap(),
+        Some(FeedbackAdmission::Continue(_))
+    ));
+    admit_plan_user_turn(&parent.id, true, Some("plan_human_1")).unwrap();
+    assert!(matches!(
+        judge_feedback::admit(&parent.id, &child(), "CONTINUE: retry", 1).unwrap(),
+        Some(FeedbackAdmission::Note(_))
+    ));
+    assert!(admit_plan_user_turn(&parent.id, false, Some("plan_human_2")).is_err());
+}
+
 use super::*;
 use crate::message::{ContentBlock, Message, StreamEvent, ToolDefinition};
 use crate::provider::{EventStream, Provider};
@@ -261,6 +296,8 @@ async fn context_message_persists_without_starting_turn() {
         77,
         "remember this context",
         vec![("image/png".to_string(), "AAA".to_string())],
+        false,
+        None,
         session_id,
         false,
         &agent,
@@ -305,6 +342,8 @@ async fn context_message_rejects_while_busy_without_waiting_for_agent_lock() {
             78,
             "too busy",
             Vec::new(),
+            false,
+            None,
             "session_context_busy",
             true,
             &agent,
@@ -998,6 +1037,8 @@ fn reload_starting_rejects_new_turn_without_spawning_processing_task() {
 
         start_processing_message(
             ProcessingMessage {
+                plan_only: false,
+                plan_turn_id: None,
                 id: 42,
                 content: "do not start during reload".to_string(),
                 images: Vec::new(),
@@ -1100,6 +1141,8 @@ async fn client_initiated_turn_fans_out_stream_and_terminal_events_to_live_attac
 
     start_processing_message(
         ProcessingMessage {
+            plan_only: false,
+            plan_turn_id: None,
             id: 479,
             content: "stream to every attachment".to_string(),
             images: Vec::new(),
@@ -1226,6 +1269,8 @@ fn accepted_reload_recovery_continuation_marks_intent_delivered() -> anyhow::Res
 
         start_processing_message(
             ProcessingMessage {
+                plan_only: false,
+                plan_turn_id: None,
                 id: 77,
                 content: "continue after reload".to_string(),
                 images: Vec::new(),
@@ -1327,6 +1372,8 @@ fn reload_starting_rejects_new_turns_for_multiple_sessions() {
 
             start_processing_message(
                 ProcessingMessage {
+                    plan_only: false,
+                    plan_turn_id: None,
                     id: message_id,
                     content: format!("do not start {session_id} during reload"),
                     images: Vec::new(),

@@ -12,6 +12,332 @@ use crate::tui::info_widget::{MemoryState, StepStatus};
 use anyhow::Result;
 use std::sync::Arc;
 
+#[test]
+fn plan_ack_requires_matching_server_enforcement() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    let mut app = create_test_app();
+    let mut remote = crate::tui::backend::RemoteConnection::dummy();
+    app.pending_plan_ack = Some(42);
+    handle_server_event(
+        &mut app,
+        ServerEvent::PlanMode {
+            id: 41,
+            enforced: true,
+        },
+        &mut remote,
+    );
+    assert_eq!(app.pending_plan_ack, Some(42));
+    handle_server_event(&mut app, ServerEvent::Ack { id: 42 }, &mut remote);
+    assert!(
+        app.display_messages()
+            .iter()
+            .any(|m| m.content.contains("UNENFORCED"))
+    );
+    app.clear_display_messages();
+    app.pending_plan_ack = Some(43);
+    handle_server_event(
+        &mut app,
+        ServerEvent::PlanMode {
+            id: 43,
+            enforced: true,
+        },
+        &mut remote,
+    );
+    handle_server_event(&mut app, ServerEvent::Ack { id: 43 }, &mut remote);
+    assert!(
+        !app.display_messages()
+            .iter()
+            .any(|m| m.content.contains("UNENFORCED"))
+    );
+}
+
+#[test]
+fn plan_queue_and_reload_keep_typed_restriction() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    let mut app = create_test_app();
+    app.is_processing = true;
+    crate::tui::app::commands::handle_plan_command_local(
+        &mut app,
+        crate::tui::app::commands_plan::PlanCommand {
+            goal: Some("inspect".into()),
+        },
+    );
+    assert!(app.queued_plan_only);
+    assert!(!app.next_turn_plan_only);
+    let session = app.session.id.clone();
+    app.save_input_for_reload(&session);
+    let restored = crate::tui::app::App::restore_input_for_reload(&session).unwrap();
+    assert!(restored.queued_plan_only);
+    assert!(!restored.next_turn_plan_only);
+    assert!(
+        restored
+            .queued_messages
+            .iter()
+            .any(|m| m.contains("planning mode"))
+    );
+}
+
+#[test]
+fn plan_remote_wire_preserves_guard_and_system_origin() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    let mut app = create_test_app();
+    let mut remote = crate::tui::backend::RemoteConnection::dummy();
+    let peer = remote.take_dummy_peer().unwrap();
+    app.next_turn_plan_only = true;
+    rt.block_on(async {
+        use tokio::io::AsyncBufReadExt;
+        super::input_dispatch::begin_remote_send(
+            &mut app,
+            &mut remote,
+            "plan payload".into(),
+            vec![],
+            true,
+            None,
+            true,
+            0,
+        )
+        .await
+        .unwrap();
+        let mut reader = tokio::io::BufReader::new(peer);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let request: serde_json::Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(request["plan_only"], true);
+        assert_eq!(request["content"], "");
+        assert_eq!(request["system_reminder"], "plan payload");
+        assert!(app.rate_limit_pending_message.as_ref().unwrap().plan_only);
+        assert!(!app.next_turn_plan_only);
+    });
+}
+
+#[test]
+fn plan_explicit_user_resets_budget_but_synthetic_turn_does_not() {
+    use crate::session::judge_feedback::{self, FeedbackAdmission};
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    for remote_mode in [false, true] {
+        let mut app = create_test_app();
+        let parent = app.session.id.clone();
+        let child = || {
+            let mut judge = crate::session::Session::create(Some(parent.clone()), None);
+            judge.worker_role = Some("judge".into());
+            judge.save().unwrap();
+            judge.id
+        };
+        assert!(matches!(
+            judge_feedback::admit(&parent, &child(), "CONTINUE: first", 1).unwrap(),
+            Some(FeedbackAdmission::Continue(_))
+        ));
+        let mut remote = crate::tui::backend::RemoteConnection::dummy();
+        app.input = "/plan inspect".into();
+        if remote_mode {
+            app.is_remote = true;
+            app.remote_session_id = Some(parent.clone());
+            rt.block_on(super::key_handling::submit_remote_enter_input(
+                &mut app,
+                &mut remote,
+            ))
+            .unwrap();
+        } else {
+            app.submit_input();
+        }
+        let admission =
+            judge_feedback::admit(&parent, &child(), "CONTINUE: after human plan", 1).unwrap();
+        if remote_mode {
+            assert!(
+                matches!(admission, Some(FeedbackAdmission::Note(_))),
+                "remote client must not reset its local ledger"
+            );
+            assert!(
+                app.rate_limit_pending_message
+                    .as_ref()
+                    .unwrap()
+                    .plan_turn_id
+                    .is_some()
+            );
+        } else {
+            assert!(matches!(admission, Some(FeedbackAdmission::Continue(_))));
+        }
+        rt.block_on(super::input_dispatch::begin_remote_send(
+            &mut app,
+            &mut remote,
+            "synthetic continuation".into(),
+            vec![],
+            true,
+            None,
+            true,
+            0,
+        ))
+        .unwrap();
+        assert!(matches!(
+            judge_feedback::admit(&parent, &child(), "CONTINUE: synthetic remains capped", 1)
+                .unwrap(),
+            Some(FeedbackAdmission::Note(_))
+        ));
+    }
+}
+
+#[test]
+fn plan_failed_queued_send_retains_policy_and_token() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    for tick in [false, true] {
+        let mut app = create_test_app();
+        app.is_remote = true;
+        app.queued_messages.push("plan payload".into());
+        app.queued_plan_only = true;
+        app.queued_plan_turn_id = Some("plan_stable_retry".into());
+        let mut dead = crate::tui::backend::RemoteConnection::dummy();
+        dead.mark_history_loaded();
+        drop(dead.take_dummy_peer());
+        rt.block_on(async {
+            if tick {
+                super::handle_tick(&mut app, &mut dead).await;
+            } else {
+                process_remote_followups(&mut app, &mut dead).await;
+            }
+            assert!(app.queued_plan_only, "failed send lost plan policy");
+            assert_eq!(
+                app.queued_plan_turn_id.as_deref(),
+                Some("plan_stable_retry")
+            );
+            let mut live = crate::tui::backend::RemoteConnection::dummy();
+            live.mark_history_loaded();
+            let peer = live.take_dummy_peer().unwrap();
+            process_remote_followups(&mut app, &mut live).await;
+            use tokio::io::AsyncBufReadExt;
+            let mut reader = tokio::io::BufReader::new(peer);
+            let mut line = String::new();
+            reader.read_line(&mut line).await.unwrap();
+            let request: serde_json::Value = serde_json::from_str(&line).unwrap();
+            assert_eq!(request["plan_only"], true);
+            assert_eq!(request["plan_turn_id"], "plan_stable_retry");
+        });
+    }
+}
+
+#[test]
+fn plan_reset_discards_pending_tokens() {
+    let mut app = create_test_app();
+    app.queued_plan_only = true;
+    app.next_turn_plan_only = true;
+    app.queued_plan_turn_id = Some("old_queue".into());
+    app.next_plan_turn_id = Some("old_next".into());
+    crate::tui::app::commands::reset_current_session(&mut app);
+    assert!(app.queued_plan_turn_id.is_none());
+    assert!(app.next_plan_turn_id.is_none());
+}
+
+#[test]
+fn plan_queue_human_literal_poke_stays_human_but_synthetic_does_not() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    for human in [true, false] {
+        let mut app = create_test_app();
+        app.is_remote = true;
+        if human {
+            app.input = "[SYSTEM: auto-poke]".into();
+            crate::tui::app::input::queue_message(&mut app);
+        } else {
+            app.queued_messages.push("[SYSTEM: auto-poke]".into());
+        }
+        let mut remote = crate::tui::backend::RemoteConnection::dummy();
+        remote.mark_history_loaded();
+        let peer = remote.take_dummy_peer().unwrap();
+        rt.block_on(async {
+            process_remote_followups(&mut app, &mut remote).await;
+            use tokio::io::AsyncBufReadExt;
+            let mut r = tokio::io::BufReader::new(peer);
+            let mut line = String::new();
+            r.read_line(&mut line).await.unwrap();
+            let req: serde_json::Value = serde_json::from_str(&line).unwrap();
+            if human {
+                assert_eq!(req["content"], "[SYSTEM: auto-poke]");
+            } else {
+                assert_eq!(req["content"], "");
+                assert!(req["system_reminder"].is_string());
+            }
+        });
+    }
+}
+
+#[test]
+fn plan_human_queue_reload_preserves_origin_and_clear_drops_tokens() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    let mut app = create_test_app();
+    app.input = "human queued".into();
+    crate::tui::app::input::queue_message(&mut app);
+    let id = app.session.id.clone();
+    app.save_input_for_reload(&id);
+    let restored = crate::tui::app::App::restore_input_for_reload(&id).unwrap();
+    assert!(restored.queued_human_input);
+    app.apply_restored_reload_input(restored);
+    assert!(app.queued_human_input);
+    app.queued_plan_turn_id = Some("stale_queue".into());
+    app.next_plan_turn_id = Some("stale_next".into());
+    app.input = "/clear".into();
+    app.is_remote = true;
+    let mut remote = crate::tui::backend::RemoteConnection::dummy();
+    rt.block_on(super::key_handling::submit_remote_enter_input(
+        &mut app,
+        &mut remote,
+    ))
+    .unwrap();
+    assert!(!app.queued_human_input);
+    assert!(app.queued_plan_turn_id.is_none());
+    assert!(app.next_plan_turn_id.is_none());
+}
+
+#[test]
+fn plan_recovered_human_inputs_keep_origin() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    for interrupt in [false, true] {
+        let mut app = create_test_app();
+        if interrupt {
+            app.pending_soft_interrupts.push("recovered human".into());
+            app.pending_soft_interrupt_requests
+                .push((17, "recovered human".into()));
+        } else {
+            app.interleave_message = Some("recovered human".into());
+        }
+        let id = app.session.id.clone();
+        app.save_input_for_reload(&id);
+        let restored = crate::tui::app::App::restore_input_for_reload(&id).unwrap();
+        app.apply_restored_reload_input(restored);
+        assert!(app.queued_human_input);
+    }
+    let mut app = create_test_app();
+    let mut remote = crate::tui::backend::RemoteConnection::dummy();
+    app.pending_soft_interrupts.push("stranded human".into());
+    rt.block_on(super::queue_recovery::recover_stranded_soft_interrupts(
+        &mut app,
+        &mut remote,
+    ));
+    assert!(app.queued_human_input);
+    app.queued_human_input = false;
+    rt.block_on(super::input_dispatch::begin_remote_send(
+        &mut app,
+        &mut remote,
+        "queued human".into(),
+        vec![],
+        false,
+        None,
+        false,
+        0,
+    ))
+    .unwrap();
+    assert!(super::queue_recovery::recover_rejected_queued_continuation(
+        &mut app
+    ));
+    assert!(app.queued_human_input);
+    assert!(app.queued_messages.iter().any(|s| s == "queued human"));
+}
+
 #[path = "remote_tests/korean_input.rs"]
 mod korean_input;
 

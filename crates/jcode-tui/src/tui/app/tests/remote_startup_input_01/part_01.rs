@@ -138,6 +138,60 @@ fn test_startup_message_restore_uses_hidden_system_queue() {
 }
 
 #[test]
+fn judge_feedback_launch_records_role_not_title_inference() {
+    with_temp_jcode_home(|| {
+        for role in ["review", "autoreview", "judge", "autojudge"] {
+            let mut child = crate::session::Session::create(Some("synthetic-parent".into()), None);
+            child.save().unwrap();
+            super::commands::prepare_review_spawned_session(
+                &child.id,
+                "startup".into(),
+                None,
+                None,
+                Some(role.into()),
+                None,
+            );
+            let recorded = crate::session::Session::load(&child.id).unwrap();
+            assert_eq!(recorded.worker_role.as_deref(), Some(role));
+        }
+    });
+}
+
+#[test]
+fn judge_feedback_local_budget_resets_only_on_user_submit() {
+    use crate::session::judge_feedback::{self, FeedbackAdmission};
+    with_temp_jcode_home(|| {
+        let mut app = create_test_app();
+        let child = |parent: &str| {
+            let mut session = crate::session::Session::create(Some(parent.into()), None);
+            session.worker_role = Some("judge".into());
+            session.save().unwrap();
+            session
+        };
+        let parent = app.session.id.clone();
+        assert!(matches!(
+            judge_feedback::admit(&parent, &child(&parent).id, "CONTINUE: first", 1).unwrap(),
+            Some(FeedbackAdmission::Continue(_))
+        ));
+        app.append_turn_system_reminder(Some("synthetic continuation".into()));
+        assert!(matches!(
+            judge_feedback::admit(&parent, &child(&parent).id, "CONTINUE: still capped", 1)
+                .unwrap(),
+            Some(FeedbackAdmission::Note(_))
+        ));
+        app.is_processing = false;
+        app.pending_turn = false;
+        app.input = "genuine next input".into();
+        app.submit_input();
+        assert!(matches!(
+            judge_feedback::admit(&parent, &child(&parent).id, "CONTINUE: new user turn", 1)
+                .unwrap(),
+            Some(FeedbackAdmission::Continue(_))
+        ));
+    });
+}
+
+#[test]
 fn test_review_and_judge_startup_prompts_are_analysis_only() {
     let prompts = [
         super::commands::build_autoreview_startup_message("session_parent"),

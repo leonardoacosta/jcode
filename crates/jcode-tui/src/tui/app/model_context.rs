@@ -223,6 +223,7 @@ impl App {
                     return false;
                 }
                 let prepared = super::input::take_prepared_input(self);
+                self.queued_human_input = true;
                 self.queued_messages.push(prepared.expanded);
                 let to_label = self
                     .pending_provider_failover
@@ -346,6 +347,8 @@ impl App {
             self.rate_limit_pending_message
                 .as_ref()
                 .map(|pending| super::FallbackResendPayload {
+                    plan_only: pending.plan_only,
+                    plan_turn_id: pending.plan_turn_id.clone(),
                     content: pending.content.clone(),
                     images: pending.images.clone(),
                     is_system: pending.is_system,
@@ -546,6 +549,8 @@ impl App {
             self.rate_limit_pending_message
                 .as_ref()
                 .map(|pending| super::FallbackResendPayload {
+                    plan_only: pending.plan_only,
+                    plan_turn_id: pending.plan_turn_id.clone(),
                     content: pending.content.clone(),
                     images: pending.images.clone(),
                     is_system: pending.is_system,
@@ -802,6 +807,8 @@ impl App {
             self.rate_limit_pending_message
                 .as_ref()
                 .map(|pending| super::FallbackResendPayload {
+                    plan_only: pending.plan_only,
+                    plan_turn_id: pending.plan_turn_id.clone(),
                     content: pending.content.clone(),
                     images: pending.images.clone(),
                     is_system: pending.is_system,
