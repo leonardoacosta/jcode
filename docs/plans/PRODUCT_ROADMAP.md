@@ -43,8 +43,8 @@ that authoring after its scope, evidence and publication boundaries are reviewed
 All ten phases started Planned; no implementation, cost saving or outcome improvement
 was claimed by creating the roadmap. P01 now has one committed proposal,
 `record-continuation-evidence`; its implemented baseline and canonical capability
-are archived and committed locally. Broader P01 completion and remote publication
-are not claimed. Later archived slices also move P04, P07, P08, P09 and P10 to
+are archived and committed locally. That historical baseline alone did not establish P01 completion or remote publication;
+the final accepted-scope completion is recorded in the P01 section below. Later archived slices also move P04, P07, P08, P09 and P10 to
 In progress; none of them establishes a phase outcome.
 
 ## Cross-cutting acceptance contract
@@ -79,7 +79,7 @@ other candidate ships. Independent slices may proceed concurrently.
 
 | Stable ID | Phase | Depends on | Status | Real OpenSpec changes | Phase evidence |
 | --- | --- | --- | --- | --- | --- |
-| P01 | Trusted core and evidence baseline | None | In progress | [admit-judge-feedback-with-bounds](../../openspec/changes/admit-judge-feedback-with-bounds/proposal.md), [bind-acceptance-evidence-to-runtime](../../openspec/changes/archive/2026-11-03-bind-acceptance-evidence-to-runtime/proposal.md), [restrict-plan-command-execution](../../openspec/changes/restrict-plan-command-execution/proposal.md) (cut, not implemented), [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md), [hot-file-test-coverage](../../openspec/changes/archive/2026-11-02-hot-file-test-coverage/proposal.md), `improve-workflow-suite` (historical archive reference; artifact absent from this checkout) (archived); supporting, no completion credit: [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived), [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived) | P01.O1 delivered, merged and activated; judge-feedback and plan-only enforcement remain open |
+| P01 | Trusted core and evidence baseline | None | Complete | [admit-judge-feedback-with-bounds](../../openspec/changes/archive/2026-11-03-admit-judge-feedback-with-bounds/proposal.md), [bind-acceptance-evidence-to-runtime](../../openspec/changes/archive/2026-11-03-bind-acceptance-evidence-to-runtime/proposal.md), [restrict-plan-command-execution](../../openspec/changes/archive/2026-11-03-restrict-plan-command-execution/proposal.md) (archived), [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md), [hot-file-test-coverage](../../openspec/changes/archive/2026-11-02-hot-file-test-coverage/proposal.md), `improve-workflow-suite` (historical archive reference; artifact absent from this checkout) (archived); supporting, no completion credit: [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived), [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived) | P01 accepted scope complete: runtime evidence, bounded judge feedback and enforced plan turns verified; both remaining proposals archived |
 | P02 | Discoverable native tools, MCP and skills | P01 | Planned | [add-typed-skill-selector-metadata](../../openspec/changes/archive/2026-11-02-add-typed-skill-selector-metadata/proposal.md), [discover-native-and-mcp-capabilities](../../openspec/changes/discover-native-and-mcp-capabilities/proposal.md), [show-skill-and-mcp-provenance](../../openspec/changes/show-skill-and-mcp-provenance/proposal.md) (cut, not implemented), [mcp-failure-backoff](../../openspec/changes/archive/2026-11-02-mcp-failure-backoff/proposal.md), [mcp-management-experience](../../openspec/changes/archive/2026-11-02-mcp-management-experience/proposal.md), [lint-skill-name-and-folder](../../openspec/changes/archive/2026-11-02-lint-skill-name-and-folder/proposal.md), [tool-timeout-and-patch-recovery](../../openspec/changes/archive/2026-11-02-tool-timeout-and-patch-recovery/proposal.md), [evaluate-code-search-strategies](../../openspec/changes/evaluate-code-search-strategies/proposal.md); supporting, no completion credit: [add-lifecycle-hooks](../../openspec/changes/add-lifecycle-hooks/proposal.md), `improve-workflow-suite` (historical archive reference; artifact absent from this checkout) (archived) | Not established |
 | P03 | Jev semantic poke continuation | P01 | Planned | [add-structured-continuation-evidence](../../openspec/changes/archive/2026-11-02-add-structured-continuation-evidence/proposal.md), [admit-semantic-poke-in-shadow](../../openspec/changes/admit-semantic-poke-in-shadow/proposal.md), [route-jev-supervision-explicitly](../../openspec/changes/route-jev-supervision-explicitly/proposal.md) (cut, not implemented) | Not established |
 | P04 | Swarm collaboration and handoffs | P01 | In progress | [add-swarm-handoff-contracts](../../openspec/changes/add-swarm-handoff-contracts/proposal.md) (cut, not implemented), [report-agent-lifecycle-to-herdr](../../openspec/changes/report-agent-lifecycle-to-herdr/proposal.md), [surface-worker-stall-and-block-reasons](../../openspec/changes/surface-worker-stall-and-block-reasons/proposal.md), [focus-worker-herdr-pane](../../openspec/changes/focus-worker-herdr-pane/proposal.md) (cut, not implemented), [return-full-swarm-reports](../../openspec/changes/archive/2026-11-02-return-full-swarm-reports/proposal.md), [queue-messages-to-busy-workers](../../openspec/changes/archive/2026-11-02-queue-messages-to-busy-workers/proposal.md), [show-resolved-worker-model](../../openspec/changes/archive/2026-11-02-show-resolved-worker-model/proposal.md), [add-swarm-file-claims](../../openspec/changes/archive/2026-11-02-add-swarm-file-claims/proposal.md), [recover-swarm-workers-after-reload](../../openspec/changes/archive/2026-11-02-recover-swarm-workers-after-reload/proposal.md), [add-council-tool](../../openspec/changes/archive/2026-11-02-add-council-tool/proposal.md); [swarm-communicate-reliability](../../openspec/changes/archive/2026-11-01-swarm-communicate-reliability/proposal.md) (archived), [swarm-module-split](../../openspec/changes/archive/2026-11-01-swarm-module-split/proposal.md) (archived), [swarm-state-async-safety](../../openspec/changes/archive/2026-11-01-swarm-state-async-safety/proposal.md) (archived), [swarm-widget-cell-width](../../openspec/changes/archive/2026-11-01-swarm-widget-cell-width/proposal.md) (archived); supporting, no completion credit: [add-role-model-slots](../../openspec/changes/archive/2026-11-02-add-role-model-slots/proposal.md) | Archived slices delivered; phase outcome not established. |
@@ -97,7 +97,7 @@ completion across TUI/CLI/daemon sessions without new ceremony for simple tasks.
 **Candidate features, uncut titles only:** None; all candidates cut.
 **Dependencies:** None. Reuse review/judge semantics; explicitly adopt any local-only
 workflow contract before treating it as a committed requirement.
-**Real changes:** [admit-judge-feedback-with-bounds](../../openspec/changes/admit-judge-feedback-with-bounds/proposal.md), [bind-acceptance-evidence-to-runtime](../../openspec/changes/archive/2026-11-03-bind-acceptance-evidence-to-runtime/proposal.md), [restrict-plan-command-execution](../../openspec/changes/restrict-plan-command-execution/proposal.md) (cut, not implemented); [hot-file-test-coverage](../../openspec/changes/archive/2026-11-02-hot-file-test-coverage/proposal.md) (archived); `improve-workflow-suite` (historical archive reference; artifact absent from this checkout) (archived); supporting, no completion credit: [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived), [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived); [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md)
+**Real changes:** [admit-judge-feedback-with-bounds](../../openspec/changes/archive/2026-11-03-admit-judge-feedback-with-bounds/proposal.md), [bind-acceptance-evidence-to-runtime](../../openspec/changes/archive/2026-11-03-bind-acceptance-evidence-to-runtime/proposal.md), [restrict-plan-command-execution](../../openspec/changes/archive/2026-11-03-restrict-plan-command-execution/proposal.md) (archived); [hot-file-test-coverage](../../openspec/changes/archive/2026-11-02-hot-file-test-coverage/proposal.md) (archived); `improve-workflow-suite` (historical archive reference; artifact absent from this checkout) (archived); supporting, no completion credit: [evaluate-personalized-jcode-prompt](../../openspec/changes/archive/2026-10-27-evaluate-personalized-jcode-prompt/proposal.md) (archived), [automate-personal-prompt-experiments](../../openspec/changes/archive/2026-10-28-automate-personal-prompt-experiments/proposal.md) (archived), [extend-personal-prompt-experiment-adapters](../../openspec/changes/archive/2026-10-28-extend-personal-prompt-experiment-adapters/proposal.md) (archived), [app-core-clippy-clean](../../openspec/changes/archive/2026-11-01-app-core-clippy-clean/proposal.md) (archived); [record-continuation-evidence](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/proposal.md)
 ([requirements](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/specs/continuation-evidence/spec.md),
 [design](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/design.md),
 [tasks](../../openspec/changes/archive/2026-10-26-record-continuation-evidence/tasks.md)). This is the
@@ -106,11 +106,13 @@ slice, not all of P01. It does not add a separate receipt store or require gatew
 changes. The native baseline and bounded test-only repairs pass local regression
 and strict lint checks and independent implementation review. The [canonical
 specification](../../openspec/specs/continuation-evidence/spec.md) is synchronized
-and the archive is committed. **P01 remains In progress, not Complete.** Its selected
+and the archive is committed. **P01 is Complete for its accepted scope (2026-11-04).** Its selected
 runtime-identity slice P01.O1 is delivered, independently reviewed, merged into
-`main` and synced at `2a8fe38e0` (2026-11-03). Required judge-feedback admission
-and enforced plan-only execution remain open in their linked authoritative tasks;
-first-wave completion does not complete this phase.
+`main` and synced at `2a8fe38e0` (2026-11-03). The remaining judge-feedback admission and plan-only execution requirements passed
+whole-result gates, actual private-daemon/PTY acceptance and independent review.
+They were committed in `81346b6c7`, synchronized to canonical specs and natively
+archived under local-date names `2026-11-03-admit-judge-feedback-with-bounds` and
+`2026-11-03-restrict-plan-command-execution`. This closes P01, not other phases.
 **Gates/evidence:** actual plan-only actions cannot cross the declared capability
 boundary; explicit approval transitions work; cancellation and pending required
 checks survive session transitions. Verify scoped revision/check attribution,
@@ -378,7 +380,8 @@ cleanliness for this promoted RC is not attested. No public stable release or ta
 was created. Live-provider smoke success is not hard-dollar budget enforcement;
 unsupported live monetary capabilities remain denied. Earlier statements above
 that exclude activation describe the original archive checkpoint, not this later
-verified delivery. P01 stays In progress until its remaining required outcomes pass.
+verified delivery. That historical checkpoint left P01 In progress. The separately authorized remaining
+P01 proposals subsequently passed and closed the phase as recorded above.
 
 Execution guidance:
 - The four selected first-wave slices may progress concurrently after file ownership
@@ -401,3 +404,27 @@ from scratch or treat checked tasks as fresh acceptance. Workspace role slots ha
 an archived prerequisite; only hooks remain active. Unbound operational changes
 `enforce-role-based-compression-routing` and `fix-mcp-health-blocked-session-bootstrap`
 remain outside this selected first wave and receive no phase completion credit here.
+
+
+## P01 final acceptance (2026-11-04)
+
+Accepted scope is complete: bounded advisory judge feedback and enforced plan-turn
+admission now join the previously delivered runtime/evidence baseline. All seven
+new scenarios passed mapped checks; independent full review approved the integrated
+result after seven actionable lifecycle findings were repaired and re-reviewed.
+Final broad checks passed 2,918 TUI tests (20 ignored), 2,029 base tests plus the
+isolated proxy test (8 ignored), provider-core209 (1 ignored), protocol105, and the
+remaining configured integration/check/lint gates. One scroll assertion failed once;
+its isolated and unchanged-source full reruns passed, with failure evidence retained.
+
+Real private daemon/PTY checks covered plan write/shell denial, allowed reads,
+completion/cancel restoration, actual old-server UNENFORCED display, judge cap and
+first-message rules, distinct-home authoritative reset, retry/reconnect replay,
+queued human versus synthetic input, and local App 413 recovery. Local App recovery
+used the real public App/terminal boundary because the shipped CLI has no local-mode
+entry. Current candidate runtime identity correctly rejects dirty/unverified matching.
+The baseline clean immutable/stale-server evidence remains its separately verified
+first-wave record. Plan mode is tool admission, not an OS sandbox; file/network reads
+and harness persistence remain allowed. Raw local control socket retains its existing
+trusted-client boundary. No paid-provider request, shared-daemon activation, stable
+release or wider roadmap completion is claimed by this closeout.
