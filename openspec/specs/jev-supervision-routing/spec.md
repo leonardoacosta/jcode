@@ -1,7 +1,7 @@
 # jev-supervision-routing Specification
 
 ## Purpose
-TBD - created by archiving change route-jev-supervision-explicitly. Update Purpose after archive.
+Define explicit, independently configured Jev supervision routing with typed refusal when configuration is missing or invalid, without cross-purpose fallback.
 
 ## Requirements
 
