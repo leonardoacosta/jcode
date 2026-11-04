@@ -73,6 +73,24 @@ fn arm_debug_client_parent_death_signal() {}
 
 pub(crate) async fn run_main(mut args: Args) -> Result<()> {
     arm_debug_client_parent_death_signal();
+    if let Some(Command::SemanticPokeReplay { input }) = &args.command {
+        use std::io::Read;
+        let mut bytes = Vec::new();
+        anyhow::ensure!(
+            std::fs::metadata(input)?.is_file(),
+            "shadow replay input must be a regular file"
+        );
+        let file = std::fs::File::open(input)?;
+        anyhow::ensure!(
+            file.metadata()?.is_file(),
+            "shadow replay input must be a regular file"
+        );
+        file.take((crate::todo::shadow::MAX_SHADOW_REPLAY_BYTES + 1) as u64)
+            .read_to_end(&mut bytes)?;
+        let report = crate::todo::shadow::replay_shadow_json(&bytes).map_err(anyhow::Error::msg)?;
+        println!("{}", serde_json::to_string_pretty(&report)?);
+        return Ok(());
+    }
     if args.ssh.is_some() {
         // A remote session ID and working directory belong to the remote host.
         // Do not run local resume lookup, provider bootstrap, or self-dev setup.
@@ -162,6 +180,9 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
     }
 
     match args.command {
+        Some(Command::SemanticPokeReplay { .. }) => {
+            unreachable!("offline replay handled before bootstrap")
+        }
         Some(Command::Policy { .. }) => unreachable!("policy handled before bootstrap"),
         Some(Command::Mcp { action }) => super::mcp::run(action).await?,
         Some(Command::Serve {

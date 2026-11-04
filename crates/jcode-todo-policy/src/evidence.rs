@@ -1,11 +1,11 @@
 //! Redacted continuation diagnostics. No prompt, command, or tool-output text is accepted.
 use crate::{FollowUpKind, TodoItem, canonical_todo_status};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Fixed keys, enums and scalar counts keep every serialized record below this cap.
 pub const MAX_CONTINUATION_EVIDENCE_BYTES: usize = 2048;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum CheckResult {
     Pass,
@@ -21,7 +21,8 @@ impl From<bool> for CheckResult {
 }
 
 /// Scheduler predicates, not evidence that external required commands passed.
-#[derive(Clone, Debug, Default, Serialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct SchedulerChecks {
     pub ownership_delivery: CheckResult,
     pub completion_confidence: CheckResult,
@@ -29,7 +30,7 @@ pub struct SchedulerChecks {
     pub gate_budget: CheckResult,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ContinuationReason {
     #[default]
@@ -50,7 +51,8 @@ pub enum ContinuationReason {
     IncompleteTodos,
 }
 
-#[derive(Clone, Debug, Default, Serialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct TodoCounts {
     pub pending: usize,
     pub in_progress: usize,
@@ -104,14 +106,16 @@ impl RequiredChecks {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct RequiredCheckEvidence {
     /// Turn-local pseudonym. Supplied names never enter diagnostic logs.
     pub check_id: String,
     pub result: CheckResult,
 }
 
-#[derive(Clone, Debug, Default, Serialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ContinuationEvidence {
     pub kind: Option<FollowUpKind>,
     pub reason: ContinuationReason,
@@ -120,6 +124,10 @@ pub struct ContinuationEvidence {
     pub fingerprint_changed: Option<bool>,
     pub scheduler_checks: SchedulerChecks,
     pub required_checks_available: bool,
+    /// All observed check outcomes survived validation and bounding, not merely redaction.
+    /// Legacy records without this field cannot establish completeness.
+    #[serde(default)]
+    pub required_checks_complete: bool,
     pub required_checks: Vec<RequiredCheckEvidence>,
     pub waiting: bool,
     /// A declared dependency exists. Its identity and prose are omitted.
@@ -130,6 +138,7 @@ pub struct ContinuationEvidence {
 impl ContinuationEvidence {
     pub fn record_required_checks(&mut self, checks: &RequiredChecks) {
         self.required_checks_available = !checks.entries.is_empty();
+        self.required_checks_complete = self.required_checks_available && !checks.truncated;
         self.truncated |= checks.truncated || !checks.entries.is_empty();
         self.required_checks = checks
             .entries

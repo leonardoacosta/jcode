@@ -1264,6 +1264,8 @@ pub struct FeatureConfig {
     /// incomplete todos). `/poke on` / `/poke off` still override this per session
     /// (default: true)
     pub auto_poke: bool,
+    /// Observe deterministic continuation through explicit Jev supervision (default: false).
+    pub semantic_poke_shadow: bool,
     /// Inject timestamps into user messages and tool results sent to the model (default: true)
     pub message_timestamps: bool,
     /// Persist auto-recalled memory injections into normal session history instead of sending
@@ -1287,6 +1289,7 @@ impl Default for FeatureConfig {
             swarm: true,
             mermaid: true,
             auto_poke: true,
+            semantic_poke_shadow: false,
             message_timestamps: true,
             persist_memory_injections: false,
             kv_cache_miss_notices: true,
@@ -1654,6 +1657,16 @@ pub struct LaunchHotkeysConfig {
 #[cfg(test)]
 mod reasoning_display_defaults_tests {
     use super::*;
+
+    #[test]
+    fn semantic_poke_shadow_is_explicitly_opt_in() {
+        assert!(!FeatureConfig::default().semantic_poke_shadow);
+        let defaults: FeatureConfig = serde_json::from_str("{}").unwrap();
+        assert!(!defaults.semantic_poke_shadow);
+        let enabled: FeatureConfig =
+            serde_json::from_str(r#"{"semantic_poke_shadow":true}"#).unwrap();
+        assert!(enabled.semantic_poke_shadow);
+    }
 
     #[test]
     fn explicit_reasoning_display_is_distinguishable_from_the_legacy_fallback() {

@@ -5,6 +5,8 @@ execution:
 ---
 Roadmap owner: [P03: Jev semantic poke continuation](../../../docs/plans/PRODUCT_ROADMAP.md#p03-jev-semantic-poke-continuation)
 
+Selected outcome: P03.O3, both `semantic-poke-admission` requirements and all scenarios, tasks 1–6 in file order. Depends on accepted P03.O1 evidence and P03.O2 routing. Shadow observation only, never production semantic decisions.
+
 ## Why
 
 Continuation is driven by open todo counts and fingerprints in `FollowUpPolicy` (`crates/jcode-todo-policy/src/followup.rs:111`, kinds at `:63`), so it can poke on unchanged waits or stop after a persuasive final answer. The roadmap requires shadow evaluation before any semantic decision is enabled; `JevClient::evaluate` already special-cases supervision (`crates/jcode-base/src/jev.rs:358-359`).

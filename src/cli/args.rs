@@ -150,6 +150,11 @@ pub(crate) struct Args {
 
 #[derive(Subcommand, Debug)]
 pub(crate) enum Command {
+    /// Compare recorded semantic shadow verdicts offline. Never invokes inference.
+    SemanticPokeReplay {
+        /// JSON array of SEMANTIC_POKE_SHADOW records, at most 4 MiB.
+        input: std::path::PathBuf,
+    },
     /// Print effective task/worktree policy and optional diagnostic admission JSON.
     Policy {
         /// Read a diagnostic snapshot only. This file never grants task authority.
@@ -1146,3 +1151,16 @@ pub(crate) enum MemoryCommand {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod semantic_poke_replay_tests {
+    use super::*;
+
+    #[test]
+    fn semantic_poke_replay_is_a_public_offline_command() {
+        let args = Args::try_parse_from(["jcode", "semantic-poke-replay", "capture.json"]).unwrap();
+        assert!(
+            matches!(args.command, Some(Command::SemanticPokeReplay { input }) if input == std::path::Path::new("capture.json"))
+        );
+    }
+}

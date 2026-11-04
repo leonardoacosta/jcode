@@ -1,5 +1,7 @@
 #![cfg_attr(test, allow(clippy::items_after_test_module))]
 
+#[path = "input/semantic_shadow.rs"]
+mod semantic_shadow;
 #[path = "input/shell_commands.rs"]
 mod shell_commands;
 use shell_commands::*;
@@ -1639,11 +1641,38 @@ impl App {
     }
 
     pub(super) fn schedule_auto_poke_followup_if_needed(&mut self) -> bool {
-        self.schedule_auto_poke_followup_with_evidence(|evidence| {
+        let mut captured = None;
+        let queued = self.schedule_auto_poke_followup_with_evidence(|evidence| {
             if let Ok(json) = serde_json::to_string(evidence) {
                 crate::logging::info(&format!("CONTINUATION_EVIDENCE {json}"));
             }
-        })
+            captured = Some(evidence.clone());
+        });
+        let config = crate::config::config();
+        if config.features.semantic_poke_shadow {
+            let session = self
+                .remote_session_id
+                .as_ref()
+                .unwrap_or(&self.session.id)
+                .clone();
+            let log_session = session.clone();
+            semantic_shadow::OBSERVER
+                .get_or_init(Default::default)
+                .submit(
+                    true,
+                    &config.jev,
+                    captured.expect("one deterministic evidence record"),
+                    queued,
+                    session,
+                    move |record| {
+                        crate::logging::set_session(&log_session);
+                        if let Ok(json) = serde_json::to_string(&record) {
+                            crate::logging::info(&format!("SEMANTIC_POKE_SHADOW {json}"));
+                        }
+                    },
+                );
+        }
+        queued
     }
 
     fn schedule_auto_poke_followup_with_evidence(
@@ -4457,6 +4486,70 @@ mod key_dispatch_tests;
 mod continuation_evidence_tests {
     use crate::todo::{ContinuationReason, TodoItem};
     use crate::tui::app::tests::create_test_app;
+
+    #[test]
+    fn semantic_shadow_production_caller_preserves_deterministic_queue_and_caps() {
+        with_evidence_test_home(|| {
+            let runtime = tokio::runtime::Runtime::new().unwrap();
+            let _guard = runtime.enter();
+            let path = std::path::PathBuf::from(std::env::var_os("JCODE_HOME").unwrap())
+                .join("config.toml");
+            std::fs::write(&path, "[features]\nsemantic_poke_shadow = true\n").unwrap();
+            crate::config::invalidate_config_cache();
+            assert!(crate::config::config().features.semantic_poke_shadow);
+            let mut observed = create_test_app();
+            let mut baseline = create_test_app();
+            baseline.session.id = observed.session.id.clone();
+            observed.auto_poke_incomplete_todos = true;
+            baseline.auto_poke_incomplete_todos = true;
+            for status in [
+                "pending",
+                "pending",
+                "completed",
+                "completed",
+                "in_progress",
+            ] {
+                crate::todo::save_todos(
+                    &observed.session.id,
+                    &[TodoItem {
+                        content: "synthetic parity control".into(),
+                        status: status.into(),
+                        ..Default::default()
+                    }],
+                )
+                .unwrap();
+                let actual = observed.schedule_auto_poke_followup_if_needed();
+                let expected = baseline.schedule_auto_poke_followup_with_evidence(|_| {});
+                assert_eq!(actual, expected);
+                assert_eq!(observed.queued_messages, baseline.queued_messages);
+                assert_eq!(
+                    observed.last_auto_poke_fingerprint,
+                    baseline.last_auto_poke_fingerprint
+                );
+                assert_eq!(
+                    observed.todo_completion_gate_attempts,
+                    baseline.todo_completion_gate_attempts
+                );
+                assert_eq!(
+                    observed.final_response_todo_fingerprint,
+                    baseline.final_response_todo_fingerprint
+                );
+                observed.queued_messages.clear();
+                baseline.queued_messages.clear();
+                observed.pending_queued_dispatch = false;
+                baseline.pending_queued_dispatch = false;
+            }
+            assert!(super::semantic_shadow::OBSERVER.get().is_some());
+            std::fs::write(&path, "[features]\nsemantic_poke_shadow = false\n").unwrap();
+            crate::config::invalidate_config_cache();
+            assert!(!crate::config::config().features.semantic_poke_shadow);
+            assert_eq!(
+                observed.schedule_auto_poke_followup_if_needed(),
+                baseline.schedule_auto_poke_followup_with_evidence(|_| {})
+            );
+        });
+        crate::config::invalidate_config_cache();
+    }
 
     fn with_evidence_test_home(run: impl FnOnce()) {
         let _lock = crate::storage::lock_test_env();

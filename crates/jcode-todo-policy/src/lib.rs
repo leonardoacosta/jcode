@@ -8,6 +8,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod evidence;
+pub mod shadow;
 pub use evidence::{ContinuationEvidence, ContinuationReason};
 pub mod followup;
 pub mod store;
