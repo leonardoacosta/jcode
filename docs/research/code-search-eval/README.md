@@ -50,9 +50,13 @@ recall, model efficiency, or production workload advantage follows from them.
 
 ## Corrected harness contract
 
-- `queries.json` retains the original 20 queries: seven symbols, seven concepts,
-  two callers, four cross-crate. File existence is checked, not exhaustive relevance
-  or symbol-level correctness. One curated target per query favors location tasks.
+- `queries.json` retains the original 20 query texts and search inputs: seven symbols,
+  seven concepts, two callers, four cross-crate. Eight answer-only `answer_symbols`
+  anchors supplement existing `sym` fields without feeding extra priors to adapters.
+  The harness checks paths and lexical definition/call anchors before trials, not AST
+  correctness, semantic symbol resolution, exhaustive relevance, or full caller sets.
+  Block comments/strings can match; inline declaration/body calls can be excluded.
+  One curated target per query favors location tasks.
 - All local adapters target Rust paths under `crates/` and `src/`. Agentgrep uses
   JSON file records with an explicit source glob, without Python definition reranking.
   Graft uses only JSON `hits[].pointer`, never paths inside snippets, titles, or scope
@@ -148,9 +152,100 @@ Keep existing product behavior unchanged. The local smoke test provides no basis
 new ast-grep adoption, replacing graft, rejecting a search subagent, or claiming that
 agentgrep is the best default across workloads. ast-grep's curated structural coverage
 is promising but incomplete. The repo map is only an approximation. Final adopt/reject
-conclusions remain pending clean pinned-source/index evidence and the missing fixed-model
-agent trials. No follow-up implementation proposal was created.
+conclusions remain pending fixed-model agent trials. The clean offline snapshot below
+resolves the earlier source-pin gap, not matched-model acceptance.
+No follow-up implementation proposal was created.
 
 External performance figures, including WarpGrep's reported ~0.73 F1 / ~4 steps,
 remain unverified here. The notes attribute that number to a third-party skill, not a
 reproduced Jcode measurement. No live-web or network model research was performed.
+
+## Clean offline preparation, 2026-11-04
+
+Source: `6393b322b481453c058c504cec087d982abc74ea`, extracted with `git archive`.
+Evidence: `scratch/code-search-offline.3a80pt/` (local scratch, not committed results).
+Only its disposable Git fixture was initialized and pointed at the existing base
+commit. No shared Git metadata, branches, worktrees, commits, or archive changed.
+The primary checkout stayed on `main`; cached remote HEAD names `origin/dev`.
+The reciprocal proposal/roadmap P02.O4 bindings were preserved.
+
+The fresh deterministic Graft build used no `--deep`, LSP, existing graph, or model.
+It parsed 1,879 files into 43,907 nodes, 62,093 edges and 1,879 cards. Graph-build and
+trial processes ran under `bwrap --unshare-net`, with the host read-only except the
+scratch evidence directory. `DO_NOT_TRACK=1 CI=1` disabled CLI telemetry. No tools
+were installed or built; installed versions: agentgrep 0.1.7, Graft 0.21.1, ast-grep
+0.40.0. Entrypoint hashes and exact search argv/stdout/stderr/exits are in JSON.
+Graft's hash covers its JS entrypoint, not its complete npm dependency closure.
+
+Final run: `final-local-results.json`, status `partial`, exit 0; source/index stable,
+Git clean before/after, 1,613 Rust source hashes and 1,884 graph files. All 1,613 Rust
+hashes matched base Git blobs. All 20 answer paths and lexical symbol/call anchors
+were checked; `audit.log` records concrete file:line anchors. These checks do not
+prove exhaustive relevance or semantic caller correctness. The final 19-test suite
+passed, including two new test-first regressions for anchor validation. Final run
+and prior `local-results.json` are separate exclusive-created files, not replacements
+for historical measurements. Historical `results.json` remains byte-identical with
+SHA-256 `cc8c9152cf52ce5f53243c590ebd169c1d954cbfaaf55044120a4ad662d5842b`.
+
+The clean run reproduced the corrected local recall table above exactly: 72 scored
+pairs, eight unsupported ast-grep queries, 20 explicit subagent skips, no command
+errors. Same 12 IDs: `q01-q07`, `q15-q18`, `q20`. No agent tokens or agent tool turns
+were measured. These CLI/heuristic observations do not replace the five required
+fixed-model strategy trials or justify adopt/reject decisions.
+
+Exact preparation/trial commands from the repository root (use a fresh `EVIDENCE`
+directory for reproduction; commands mutate Git only inside `source/`):
+
+```bash
+BASE=6393b322b481453c058c504cec087d982abc74ea
+EVIDENCE=$(mktemp -d "$JCODE_SCRATCH_DIR/code-search-offline.XXXXXX")
+mkdir "$EVIDENCE/source"
+git archive "$BASE" | tar -x -C "$EVIDENCE/source"
+git -C "$EVIDENCE/source" init -q
+git -C "$EVIDENCE/source" fetch --quiet --no-tags /home/nyaptor/.jcode "$BASE"
+git -C "$EVIDENCE/source" reset --quiet --mixed FETCH_HEAD
+bwrap --unshare-net --ro-bind / / --bind "$EVIDENCE" "$EVIDENCE" \
+  --dev-bind /dev /dev --proc /proc --chdir "$EVIDENCE/source" \
+  env DO_NOT_TRACK=1 CI=1 graft build --no-gitignore --no-ignore
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+  -s docs/research/code-search-eval -p test_harness.py -v
+bwrap --unshare-net --ro-bind / / --bind "$EVIDENCE" "$EVIDENCE" \
+  --dev-bind /dev /dev --proc /proc --chdir /home/nyaptor/.jcode \
+  env DO_NOT_TRACK=1 CI=1 PYTHONDONTWRITEBYTECODE=1 \
+  python3 docs/research/code-search-eval/harness.py --root "$EVIDENCE/source" \
+  --agentgrep /home/nyaptor/.jcode/scratch/agtarget/release/agentgrep \
+  --graft /home/nyaptor/.local/share/mise/installs/node/25.0.0/bin/graft \
+  --ast-grep /home/nyaptor/.empryo/bin/ast-grep \
+  --output "$EVIDENCE/final-local-results.json"
+git diff --check -- docs/research/code-search-eval \
+  openspec/changes/evaluate-code-search-strategies/tasks.md
+```
+
+### Live-run decision required, not authorized or executed
+
+Current replacement-owner scope explicitly forbids network model calls, inference
+spend and worker spawning. The old approval of a fixed-model default names neither
+an exact model nor a spend/disclosure envelope. Tasks 2.1, 3.1 and 3.2 remain open.
+
+Exact provider/model remains a user decision. A concrete candidate, not a verified
+available or cost-effective recommendation, is provider `openai`, model `gpt-5.4`
+(named in `docs/WRAPPERS.md`), reasoning effort `medium`. Availability, supported
+settings, pricing and cap support have not been checked. Recommend one explicitly
+approved fixed route, identical settings and frozen source/query/prompt inputs,
+20 queries each, one trial per pair, at most 12 tool calls and 120 seconds per pair,
+no fallback model and no automatic retries. Proposed total spend ceiling: **USD 10**,
+not a cost estimate. Require observable usage and an enforceable pre-dispatch cost
+cap before starting; if unsupported, remain blocked rather than overspend. Log
+input/output/reasoning/cached tokens separately where exposed, otherwise unknown.
+The search-subagent arm must count parent and child usage in the same envelope.
+
+The decision must explicitly permit sending only the pinned source, query
+texts and resulting snippets/tool outputs to that provider. Exclude credentials,
+home configuration, session logs, dirty/untracked files and historical private
+artifacts. Public visibility was not rechecked offline. Authentication/model access
+and the spend-cap mechanism are unverified.
+If that disclosure/budget is not approved, retain this offline evidence with no
+adopt/reject result. No new follow-up proposal is authorized. A real Empryo-style
+map/agent workflow and live runner still need verification, not relabeling of this
+regex approximation. Independent final review, commit and archive are also outside
+this owner's authorization, so the proposal remains incomplete and unarchived.

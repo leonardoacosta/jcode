@@ -94,6 +94,7 @@
   "id": "q08",
   "kind": "concept",
   "q": "destructive bash command refusal gate",
+  "answer_symbols": ["destructive_command_refusal"],
   "answers": [
    "crates/jcode-app-core/src/tool/bash_destructive_gate.rs"
   ]
@@ -102,6 +103,7 @@
   "id": "q09",
   "kind": "concept",
   "q": "apply patch tool implementation",
+  "answer_symbols": ["ApplyPatchTool"],
   "answers": [
    "crates/jcode-app-core/src/tool/apply_patch.rs"
   ]
@@ -110,6 +112,7 @@
   "id": "q10",
   "kind": "concept",
   "q": "edit tool exact string replacement",
+  "answer_symbols": ["EditTool"],
   "answers": [
    "crates/jcode-app-core/src/tool/edit.rs"
   ]
@@ -118,6 +121,7 @@
   "id": "q11",
   "kind": "concept",
   "q": "skill tool load list reload skills",
+  "answer_symbols": ["SkillTool"],
   "answers": [
    "crates/jcode-app-core/src/tool/skill.rs"
   ]
@@ -126,6 +130,7 @@
   "id": "q12",
   "kind": "concept",
   "q": "memory tool remember recall forget",
+  "answer_symbols": ["MemoryTool"],
   "answers": [
    "crates/jcode-app-core/src/tool/memory.rs"
   ]
@@ -134,6 +139,7 @@
   "id": "q13",
   "kind": "concept",
   "q": "debug socket tool command",
+  "answer_symbols": ["DebugSocketTool"],
   "answers": [
    "crates/jcode-app-core/src/tool/debug_socket.rs"
   ]
@@ -142,6 +148,7 @@
   "id": "q14",
   "kind": "concept",
   "q": "login picker truncate with ellipsis",
+  "answer_symbols": ["truncate_with_ellipsis"],
   "answers": [
    "crates/jcode-tui/src/tui/login_picker.rs"
   ]
@@ -202,6 +209,7 @@
   "id": "q19",
   "kind": "cross-crate",
   "q": "selfdev CLI subcommand",
+  "answer_symbols": ["run_self_dev"],
   "answers": [
    "src/cli/selfdev.rs"
   ]

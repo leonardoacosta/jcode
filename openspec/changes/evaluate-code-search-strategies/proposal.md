@@ -7,6 +7,8 @@ execution:
 
 Roadmap owner: [P02: Discoverable native tools, MCP and skills provenance](../../../docs/plans/PRODUCT_ROADMAP.md#p02-discoverable-native-tools-mcp-and-skills-provenance).
 
+Selected outcome: P02.O4, all `code-search-evaluation` requirements and scenarios, tasks 1.1–3.2. Research only; existing partial local results do not satisfy matched-model acceptance.
+
 ## Why
 
 Agents spend many tool calls and tokens locating code. jcode has several options (`agentgrep` in `crates/jcode-app-core/src/tool/agentgrep.rs`, `graft` index with callers graph, `ast-grep`, a search subagent) and external claims (WarpGrep ~0.73 F1 in ~4 steps) but no measured comparison on this repo. Notes: `scratch/grep.md`; several external claims there are unverified.

@@ -126,6 +126,23 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def validate_ground_truth(qs, root, sources):
+    for q in qs:
+        if not q["answers"] or any(a not in sources for a in q["answers"]):
+            raise ValueError(f"Invalid ground-truth path: {q['id']}")
+        anchors = q.get("answer_symbols", [q["sym"]] if q.get("sym") else [])
+        if not anchors:
+            raise ValueError(f"Missing ground-truth symbols: {q['id']}")
+        for answer in q["answers"]:
+            text = (root / answer).read_text()
+            calls = "\n".join(line for line in text.splitlines() if not line.lstrip().startswith("//")
+                              and not re.search(r"\bfn\s+", line))
+            present = (all(re.search(r"\b" + re.escape(s) + r"\s*\(", calls) for s in anchors)
+                       if q.get("kind") == "caller" else set(anchors).issubset(DEF.findall(text)))
+            if not present:
+                raise ValueError(f"Invalid ground-truth symbols: {q['id']} in {answer}")
+
+
 def provenance(root):
     git = lambda *args: subprocess.check_output(["git", *args], cwd=root, text=True).strip()
     files = sorted(set(git("ls-files", "--cached", "--others", "--exclude-standard", "*.rs").splitlines()))
@@ -171,9 +188,7 @@ def main():
         qs = json.loads(queries_bytes)
         if len({q["id"] for q in qs}) != len(qs):
             raise ValueError("Duplicate query ID")
-        for q in qs:
-            if not q["answers"] or any(a not in before["source_sha256"] for a in q["answers"]):
-                raise ValueError(f"Invalid ground-truth path: {q['id']}")
+        validate_ground_truth(qs, root, before["source_sha256"])
         tools = {}
         for s in LOCAL[:-1]:
             binary = getattr(args, s.replace("-", "_"))

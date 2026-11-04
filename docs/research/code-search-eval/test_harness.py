@@ -5,6 +5,7 @@ import json
 import pathlib
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -21,6 +22,31 @@ def result(output, code=0):
 
 
 class HarnessTests(unittest.TestCase):
+    def test_ground_truth_requires_real_symbol_anchor_in_each_answer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / "src").mkdir()
+            (root / A).write_text("pub struct Present;\n// Missing\n")
+            q = {"id": "q", "answers": [A], "answer_symbols": ["Present"]}
+            harness.validate_ground_truth([q], root, {A: "hash"})
+            for changes in ({"answer_symbols": ["Missing"]}, {"answer_symbols": []},
+                            {"answers": [B]}, {"answers": []}):
+                with self.subTest(changes=changes), self.assertRaises(ValueError):
+                    harness.validate_ground_truth([dict(q, **changes)], root, {A: "hash"})
+            harness.validate_ground_truth([{"id": "q", "answers": [A], "sym": "Present"}], root, {A: "hash"})
+
+    def test_caller_anchor_requires_call_not_declaration_or_comment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = pathlib.Path(directory)
+            (root / "src").mkdir()
+            q = {"id": "q", "kind": "caller", "answers": [A], "sym": "target"}
+            for text in ("fn target() {}\n", "pub async fn target() {}\n", "// target()\n"):
+                (root / A).write_text(text)
+                with self.subTest(text=text), self.assertRaises(ValueError):
+                    harness.validate_ground_truth([q], root, {A: "hash"})
+            (root / A).write_text("    self.target().await;\n")
+            harness.validate_ground_truth([q], root, {A: "hash"})
+
     def test_help_does_not_run_benchmark(self):
         r = subprocess.run([sys.executable, str(HERE / "harness.py"), "--help"],
                            capture_output=True, text=True, timeout=5)
