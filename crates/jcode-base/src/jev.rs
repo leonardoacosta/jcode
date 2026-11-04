@@ -84,7 +84,9 @@ impl JevPurpose {
             Self::Memory => PROVIDER_ENV,
             Self::Browser => BROWSER_PROVIDER_ENV,
             Self::Voice => VOICE_PROVIDER_ENV,
-            Self::Supervision => unreachable!("requires explicit provider"),
+            Self::Supervision => {
+                bail!("Jev supervision requires explicit [jev.supervision] configuration")
+            }
         };
         match env(key) {
             Ok(value) => Ok(value),
@@ -92,7 +94,9 @@ impl JevPurpose {
                 Self::Memory => memory_default(),
                 Self::Browser => "auto".into(),
                 Self::Voice => "auto".into(),
-                Self::Supervision => unreachable!("requires explicit provider"),
+                Self::Supervision => {
+                    bail!("Jev supervision requires explicit [jev.supervision] configuration")
+                }
             }),
             Err(_) => bail!("{key} must contain a valid provider name"),
         }
@@ -212,6 +216,20 @@ pub fn browser_jev_model_label() -> String {
     resolve_jev_model(JevPurpose::Browser, JevProvider::OpenRouter)
 }
 
+/// Local routing failure. Reasons never include configuration values or secrets.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NotConfigured {
+    pub reason: &'static str,
+}
+
+impl std::fmt::Display for NotConfigured {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.reason)
+    }
+}
+
+impl std::error::Error for NotConfigured {}
+
 /// Do not derive Debug: this contains a provider secret.
 #[derive(Clone)]
 pub struct JevClient {
@@ -250,6 +268,31 @@ impl JevClient {
     /// explicitly select typesafe or jcode. Evaluation never changes accounts.
     pub fn for_voice() -> Result<Self> {
         Self::for_purpose(JevPurpose::Voice)
+    }
+
+    /// Resolve only the explicit supervision table, without probing the network.
+    /// A successful result establishes local routing, not health or entitlement.
+    pub fn from_supervision_config(
+        config: &crate::config::JevConfig,
+    ) -> std::result::Result<Self, NotConfigured> {
+        let route = config.supervision.as_ref().ok_or(NotConfigured {
+            reason: "Set provider and model in [jev.supervision]",
+        })?;
+        let provider = route.provider.as_deref().unwrap_or("").trim();
+        if provider.is_empty() || provider.eq_ignore_ascii_case("auto") {
+            return Err(NotConfigured {
+                reason: "Jev supervision requires an explicit provider, not auto",
+            });
+        }
+        let model = route.model.as_deref().unwrap_or("").trim();
+        if model.is_empty() || model.eq_ignore_ascii_case("auto") {
+            return Err(NotConfigured {
+                reason: "Jev supervision requires an explicit model, not auto",
+            });
+        }
+        Self::for_supervision(provider, model).map_err(|_| NotConfigured {
+            reason: "Jev supervision provider, credential, endpoint, or client configuration is invalid",
+        })
     }
 
     /// Create a shadow-only route; both values are required and no provider
@@ -2149,6 +2192,82 @@ mod tests {
         assert_eq!(JevProvider::Jcode.model(), "typesafe/jev-1.13");
         assert_eq!(JevProvider::TypeSafe.model(), "jev-latest");
         assert_eq!(JevProvider::Aimlapi.model(), "typesafe/jev");
+    }
+
+    #[test]
+    fn supervision_selector_refuses_other_purposes_without_panicking() {
+        let result = JevPurpose::Supervision.selector_with(
+            |_| panic!("supervision must not read purpose environment selectors"),
+            || panic!("supervision must not use memory defaults"),
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn supervision_config_resolves_only_its_explicit_route() {
+        let sandbox = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+        sandbox
+            .write_env_file(
+                "openrouter.env",
+                "OPENROUTER_API_KEY",
+                "supervision-fixture",
+            )
+            .unwrap();
+        let config: crate::config::Config = toml::from_str(
+            "[agents]\nmemory_jev_provider = 'typesafe'\nmemory_jev_model = 'memory-only'\nbrowser_jev_model = 'browser-only'\nvoice_jev_model = 'voice-only'\n[jev.supervision]\nprovider = 'openrouter'\nmodel = ' supervision-only '\n",
+        ).unwrap();
+        let client = JevClient::from_supervision_config(&config.jev).unwrap();
+        assert_eq!(client.purpose, JevPurpose::Supervision);
+        assert_eq!(client.purpose.capability(), "supervision_jev");
+        assert_eq!(client.provider_name(), "openrouter");
+        assert_eq!(client.model_id(), "supervision-only");
+        assert_eq!(client.api_key, "supervision-fixture");
+        assert!(client.hedge_clients.is_empty());
+        assert!(JevClient::from_supervision_config(&crate::config::JevConfig::default()).is_err());
+    }
+
+    #[test]
+    fn supervision_config_invalid_values_are_typed_and_do_not_fallback() {
+        let sandbox = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+        sandbox
+            .write_env_file(
+                "openrouter.env",
+                "OPENROUTER_API_KEY",
+                "other-route-fixture",
+            )
+            .unwrap();
+        for input in [
+            "",
+            "[jev.supervision]",
+            "[jev.supervision]\nprovider = 'auto'\nmodel = 'jev'",
+            "[jev.supervision]\nprovider = ' '\nmodel = 'jev'",
+            "[jev.supervision]\nprovider = 'unknown-secret-fixture'\nmodel = 'jev'",
+            "[jev.supervision]\nprovider = 'openrouter'",
+            "[jev.supervision]\nmodel = 'jev'",
+            "[jev.supervision]\nprovider = 'openrouter'\nmodel = 'auto'",
+            "[jev.supervision]\nprovider = 'openrouter'\nmodel = ' '",
+        ] {
+            let config: crate::config::Config = toml::from_str(input).unwrap();
+            let error: NotConfigured = match JevClient::from_supervision_config(&config.jev) {
+                Ok(_) => panic!("invalid configuration must not resolve"),
+                Err(error) => error,
+            };
+            assert!(!error.reason.is_empty());
+            assert!(!error.to_string().contains("fixture"));
+        }
+        sandbox
+            .write_env_file("openrouter.env", "OPENROUTER_API_KEY", "")
+            .unwrap();
+        sandbox
+            .write_env_file("typesafe.env", "TYPESAFE_API_KEY", "other-route-fixture")
+            .unwrap();
+        let config: crate::config::Config =
+            toml::from_str("[jev.supervision]\nprovider = 'openrouter'\nmodel = 'jev'").unwrap();
+        let error: NotConfigured = JevClient::from_supervision_config(&config.jev)
+            .err()
+            .unwrap();
+        assert!(!error.reason.is_empty());
+        assert!(!error.to_string().contains("other-route-fixture"));
     }
 
     #[test]

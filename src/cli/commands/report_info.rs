@@ -27,6 +27,17 @@ struct AuthStatusProviderReport {
 struct AuthStatusReport {
     any_available: bool,
     providers: Vec<AuthStatusProviderReport>,
+    jev_supervision: JevSupervisionReport,
+}
+
+#[derive(Debug, Serialize)]
+struct JevSupervisionReport {
+    status: &'static str,
+    provider: Option<String>,
+    model: Option<String>,
+    reason: Option<&'static str>,
+    health: &'static str,
+    entitlement: &'static str,
 }
 
 #[derive(Debug, Serialize)]
@@ -172,9 +183,23 @@ pub(super) fn run_auth_status_command(emit_json: bool) -> Result<()> {
                 provider.validation.as_deref().unwrap_or("not validated")
             );
         }
+        println!("{}", format_supervision_route(&report.jev_supervision));
     }
 
     Ok(())
+}
+
+fn format_supervision_route(route: &JevSupervisionReport) -> String {
+    let field = |value: &str| value.replace(char::is_control, " ");
+    format!(
+        "jev.supervision\t{}\t{}\t{}\thealth={}\tentitlement={}\t{}",
+        route.status,
+        field(route.provider.as_deref().unwrap_or("-")),
+        field(route.model.as_deref().unwrap_or("-")),
+        route.health,
+        route.entitlement,
+        route.reason.unwrap_or("local route only; not validated"),
+    )
 }
 
 fn build_auth_status_report() -> AuthStatusReport {
@@ -208,9 +233,29 @@ fn build_auth_status_report() -> AuthStatusReport {
         })
         .collect::<Vec<_>>();
 
+    let resolution = crate::jev::JevClient::from_supervision_config(&crate::config::config().jev);
+    let jev_supervision = match resolution {
+        Ok(client) => JevSupervisionReport {
+            status: "configured",
+            provider: Some(client.provider_name().to_string()),
+            model: Some(client.model_id().to_string()),
+            reason: None,
+            health: "not_checked",
+            entitlement: "not_checked",
+        },
+        Err(error) => JevSupervisionReport {
+            status: "not_configured",
+            provider: None,
+            model: None,
+            reason: Some(error.reason),
+            health: "not_checked",
+            entitlement: "not_checked",
+        },
+    };
     AuthStatusReport {
         any_available: status.has_any_available(),
         providers: reports,
+        jev_supervision,
     }
 }
 
@@ -730,6 +775,79 @@ fn auth_state_label(state: crate::auth::AuthState) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn auth_status_supervision_route_is_local_explicit_and_secret_free() {
+        let sandbox = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+        let path = sandbox.root().join("config.toml");
+        let report = build_auth_status_report();
+        let json = serde_json::to_value(&report).unwrap();
+        assert_eq!(json["jev_supervision"]["status"], "not_configured");
+        assert_eq!(json["jev_supervision"]["health"], "not_checked");
+        assert_eq!(json["jev_supervision"]["entitlement"], "not_checked");
+        assert!(
+            format_supervision_route(&report.jev_supervision)
+                .starts_with("jev.supervision\tnot_configured\t")
+        );
+
+        sandbox
+            .write_env_file(
+                "openrouter.env",
+                "OPENROUTER_API_KEY",
+                "status-secret-fixture",
+            )
+            .unwrap();
+        for (provider, model, expected) in [
+            ("openrouter", "explicit/model", "configured"),
+            ("auto", "explicit/model", "not_configured"),
+            ("openrouter", "auto", "not_configured"),
+            ("invalid-secret-fixture", "explicit/model", "not_configured"),
+        ] {
+            std::fs::write(
+                &path,
+                format!("[jev.supervision]\nprovider = '{provider}'\nmodel = '{model}'\n"),
+            )
+            .unwrap();
+            crate::config::invalidate_config_cache();
+            let report = build_auth_status_report();
+            let route = &report.jev_supervision;
+            let json = serde_json::to_value(&report).unwrap();
+            let plain = format_supervision_route(route);
+            assert_eq!(json["jev_supervision"]["status"], expected);
+            assert_eq!(json["jev_supervision"]["health"], "not_checked");
+            assert_eq!(json["jev_supervision"]["entitlement"], "not_checked");
+            assert!(plain.starts_with(&format!("jev.supervision\t{expected}\t")));
+            assert!(plain.contains("health=not_checked"));
+            assert!(plain.contains("entitlement=not_checked"));
+            assert!(!json.to_string().contains("secret-fixture"));
+            assert!(!plain.contains("secret-fixture"));
+            if expected == "configured" {
+                assert_eq!(json["jev_supervision"]["provider"], "openrouter");
+                assert_eq!(json["jev_supervision"]["model"], "explicit/model");
+                assert!(plain.contains("openrouter\texplicit/model"));
+            } else {
+                assert!(json["jev_supervision"]["reason"].is_string());
+                assert!(json["jev_supervision"]["provider"].is_null());
+            }
+        }
+    }
+
+    #[test]
+    fn supervision_plain_status_keeps_configured_model_on_one_row() {
+        let route = JevSupervisionReport {
+            status: "configured",
+            provider: Some("openrouter".into()),
+            model: Some("model\tforged\nrow\r\u{1b}[31m".into()),
+            reason: None,
+            health: "not_checked",
+            entitlement: "not_checked",
+        };
+        let plain = format_supervision_route(&route);
+        assert_eq!(plain.lines().count(), 1);
+        assert_eq!(plain.matches('\t').count(), 6);
+        assert!(!plain.contains('\u{1b}'));
+        assert!(!plain.contains('\r'));
+    }
 
     #[test]
     fn usage_json_preserves_confirmed_zero_and_distinguishes_unknown_resets() {

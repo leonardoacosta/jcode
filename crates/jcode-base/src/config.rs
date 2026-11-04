@@ -593,6 +593,22 @@ pub fn on_config_reloaded(listener: fn()) {
         .push(listener);
 }
 
+/// Explicit Jev routes. Unset purposes stay disabled.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct JevConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub supervision: Option<JevSupervisionConfig>,
+}
+
+/// Missing fields remain unset so the resolver can report `NotConfigured`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct JevSupervisionConfig {
+    pub provider: Option<String>,
+    pub model: Option<String>,
+}
+
 /// Main configuration struct
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]
@@ -647,6 +663,9 @@ pub struct Config {
     /// base_url = "https://llm.example.com/v1"
     /// api_key_env = "MY_GATEWAY_API_KEY"
     pub providers: BTreeMap<String, NamedProviderConfig>,
+
+    /// Explicit purpose-specific Jev routing, independent of agent defaults.
+    pub jev: JevConfig,
 
     /// Agent-specific model defaults
     pub agents: AgentsConfig,

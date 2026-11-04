@@ -15,6 +15,24 @@ fn restore_env_var(key: &str, previous: Option<OsString>) {
 }
 
 #[test]
+fn jev_supervision_config_preserves_explicit_values_without_defaults() {
+    assert!(Config::default().jev.supervision.is_none());
+    let config: Config =
+        toml::from_str("[jev.supervision]\nprovider = 'typesafe'\nmodel = 'explicit-model'\n")
+            .unwrap();
+    let route = config.jev.supervision.as_ref().unwrap();
+    assert_eq!(route.provider.as_deref(), Some("typesafe"));
+    assert_eq!(route.model.as_deref(), Some("explicit-model"));
+    let encoded = toml::to_string(&config).unwrap();
+    let roundtrip: Config = toml::from_str(&encoded).unwrap();
+    assert_eq!(roundtrip.jev.supervision.unwrap().model, route.model);
+    let empty: Config = toml::from_str("[jev.supervision]\n").unwrap();
+    let route = empty.jev.supervision.unwrap();
+    assert!(route.provider.is_none());
+    assert!(route.model.is_none());
+}
+
+#[test]
 fn hibernation_environment_override_accepts_seconds_and_zero_but_not_invalid_values() {
     let _lock = crate::storage::lock_test_env();
     let key = "JCODE_HIBERNATION_IDLE_SECS";
