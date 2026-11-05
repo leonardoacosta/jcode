@@ -104,6 +104,70 @@ fn custom_post_merges_body_and_optional_count() {
 }
 
 #[test]
+fn custom_gateway_policy_disables_native_and_local_bypass() {
+    let config: crate::config::WebSearchConfig = serde_json::from_value(json!({
+        "engine": "custom",
+        "prefer_native": false,
+        "fallback_engines": [],
+        "custom": {
+            "endpoint": "https://pi5.tail296462.ts.net:8443/v1/search",
+            "method": "POST",
+            "query_param": "query",
+            "count_param": "max_results",
+            "body": {"routing_policy": "firecrawl-first-brave-quota"},
+            "header_env": {"x-api-key": "JCODE_PROVIDER_OMNIPI_API_KEY"},
+            "results_pointer": "/results",
+            "title_pointer": "/title",
+            "url_pointer": "/url",
+            "snippet_pointer": "/snippet"
+        }
+    }))
+    .unwrap();
+    assert!(!config.native_enabled());
+    assert_eq!(
+        local_engine_order(config.engine, &config.fallback_engines),
+        vec![WebSearchEngine::Custom]
+    );
+    let request = custom_request(
+        &reqwest::Client::new(),
+        config.custom.as_ref().unwrap(),
+        "rust & c++ / 日本語",
+        3,
+        |name| {
+            assert_eq!(name, "JCODE_PROVIDER_OMNIPI_API_KEY");
+            Some("test-key".into())
+        },
+    )
+    .unwrap();
+    assert_eq!(request.method(), reqwest::Method::POST);
+    assert!(request.url().query().is_none());
+    assert_eq!(request.headers()["x-api-key"], "test-key");
+    assert!(request.headers()["x-api-key"].is_sensitive());
+    let body: Value = serde_json::from_slice(request.body().unwrap().as_bytes().unwrap()).unwrap();
+    assert_eq!(
+        body,
+        json!({
+            "routing_policy": "firecrawl-first-brave-quota",
+            "query": "rust & c++ / 日本語",
+            "max_results": 3
+        })
+    );
+    let results = parse_custom_results(
+        &json!({"results": [
+            {"title": "Rust", "url": "https://rust.test", "snippet": "JSON"},
+            {"title": "Extra", "url": "https://extra.test", "snippet": "Omitted"}
+        ]}),
+        config.custom.as_ref().unwrap(),
+        1,
+    )
+    .unwrap();
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].title, "Rust");
+    assert_eq!(results[0].url, "https://rust.test");
+    assert_eq!(results[0].snippet, "JSON");
+}
+
+#[test]
 fn custom_maps_nested_and_escaped_pointers() {
     let mut config = custom_config();
     config.results_pointer = "/data/hits".into();
@@ -226,6 +290,86 @@ async fn custom_local_http_and_redirect_safety() {
             let results = result.unwrap();
             assert_eq!(results[0].title, "Rust");
             assert_eq!(results[0].snippet, "JSON");
+        }
+        server.await.unwrap();
+    }
+}
+
+#[tokio::test]
+async fn custom_post_policy_transport_and_http_errors() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    for status in [200, 400, 401, 402, 429, 500] {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut received = Vec::new();
+            loop {
+                let mut buffer = [0; 1024];
+                let n = stream.read(&mut buffer).await.unwrap();
+                assert!(n > 0);
+                received.extend_from_slice(&buffer[..n]);
+                if let Some(end) = received.windows(4).position(|w| w == b"\r\n\r\n") {
+                    let headers = std::str::from_utf8(&received[..end]).unwrap();
+                    let length: usize = headers
+                        .lines()
+                        .find_map(|line| {
+                            line.to_ascii_lowercase()
+                                .strip_prefix("content-length: ")
+                                .map(str::to_owned)
+                        })
+                        .unwrap()
+                        .parse()
+                        .unwrap();
+                    if received.len() >= end + 4 + length {
+                        assert!(headers.starts_with("POST /v1/search HTTP/1.1"));
+                        assert!(headers.to_ascii_lowercase().contains("x-api-key: test-key"));
+                        let body: Value = serde_json::from_slice(&received[end + 4..]).unwrap();
+                        assert_eq!(
+                            body,
+                            json!({
+                                "routing_policy": "firecrawl-first-brave-quota",
+                                "query": "rust & json",
+                                "max_results": 2
+                            })
+                        );
+                        break;
+                    }
+                }
+            }
+            let body = if status == 200 {
+                r#"{"results":[]}"#
+            } else {
+                "credential-sentinel"
+            };
+            let response = format!(
+                "HTTP/1.1 {status} Test\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream.write_all(response.as_bytes()).await.unwrap();
+            assert!(
+                tokio::time::timeout(std::time::Duration::from_millis(100), listener.accept())
+                    .await
+                    .is_err()
+            );
+        });
+        let config = CustomWebSearchConfig {
+            endpoint: format!("http://{address}/v1/search"),
+            method: CustomWebSearchMethod::Post,
+            query_param: "query".into(),
+            count_param: Some("max_results".into()),
+            body: json!({"routing_policy": "firecrawl-first-brave-quota"}),
+            headers: [("x-api-key".into(), "test-key".into())].into(),
+            ..Default::default()
+        };
+        let result = search_custom(&config, "rust & json", 2).await;
+        if status == 200 {
+            assert!(result.unwrap().is_empty());
+        } else {
+            let error = result.unwrap_err().to_string();
+            assert!(error.contains(&status.to_string()), "{error}");
+            assert!(!error.contains("credential-sentinel"));
+            assert!(!error.contains("rust & json"));
         }
         server.await.unwrap();
     }

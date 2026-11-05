@@ -81,3 +81,58 @@ are supported. Missing/non-string/blank URLs are skipped. Missing/non-string or
 blank titles fall back to the URL; missing/non-string snippets become empty.
 Malformed JSON, invalid pointer syntax, or a missing/non-array results mapping
 fails clearly and uses configured fallbacks. An empty valid array is no results.
+
+## OmniRoute Firecrawl-first policy
+
+For the OmniRoute gateway with the named policy installed, use this opt-in
+recipe. Confirm deployment before activation: an older gateway may not implement
+the selector. This documentation does not install or activate it.
+
+```toml
+[websearch]
+engine = "custom"
+prefer_native = false
+fallback_engines = []
+
+[websearch.custom]
+endpoint = "https://pi5.tail296462.ts.net:8443/v1/search"
+method = "POST"
+query_param = "query"
+count_param = "max_results"
+body = { routing_policy = "firecrawl-first-brave-quota" }
+header_env = { "x-api-key" = "JCODE_PROVIDER_OMNIPI_API_KEY" }
+results_pointer = "/results"
+title_pointer = "/title"
+url_pointer = "/url"
+snippet_pointer = "/snippet"
+```
+
+`JCODE_PROVIDER_OMNIPI_API_KEY` must be available to the process running the tool.
+For `x-api-key`, its complete header value is the raw gateway key, without a
+`Bearer ` prefix. Do not copy a credential into this file. Do not add `provider`
+to `body`: the named policy owns provider selection. Omitting `routing_policy`
+selects legacy gateway routing, not this policy.
+
+The request body contains `routing_policy`, the query string as `query`, and the
+requested result count as integer `max_results`. OmniRoute owns Firecrawl-first routing
+and permits Brave only after classified Firecrawl billing or quota exhaustion.
+Jcode does not classify gateway failures or implement that fallback itself.
+HTTP errors and empty results have no local fallback with this recipe. Existing
+custom-request limits still apply, including the 30-second timeout and no redirects.
+
+## Provider-native search boundary
+
+The custom endpoint handles Jcode's local `websearch` tool, not every provider's
+hosted search. OpenAI Responses adds hosted `web_search` only for the first-party
+API or ChatGPT backend, models without `codex` in their name, native-enabled
+configuration, and a session that offers the local search tool. Anthropic adds its
+server search tool only for OAuth or the first-party Messages API and a session
+that offers search. Custom OpenAI/Anthropic gateway transports retain the local
+search tool instead of automatically receiving hosted search definitions.
+
+Set `prefer_native = false` with `engine = "custom"` to use the custom search
+endpoint even when the model transport supports native search. Native search
+requests intercepted inside a gateway follow that gateway's separately verified
+routes and settings. This configuration does not enable or prove interception
+for all model providers. Custom result mapping exposes only title, URL and
+snippet, not gateway routing metadata outside those mapped fields.
