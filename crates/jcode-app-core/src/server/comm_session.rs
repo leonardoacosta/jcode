@@ -28,6 +28,19 @@ type SessionAgents = Arc<RwLock<HashMap<String, Arc<Mutex<Agent>>>>>;
 type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
 type ClientConnections = Arc<RwLock<HashMap<String, ClientConnectionInfo>>>;
 
+fn swarm_startup_message(message: &str, worker_role: Option<&str>) -> String {
+    if worker_role == Some("reviewer") {
+        format!(
+            "{message}\n\n<system-reminder>\nThe server automatically records your final assistant response \
+             as the completion report after this turn settles. Include the complete review verdict, \
+             source binding, findings, verification and limits there. Do not call the swarm report tool \
+             or send a separate final DM.\n</system-reminder>"
+        )
+    } else {
+        append_swarm_completion_report_instructions(message)
+    }
+}
+
 /// Serialize spawn admission through member registration within one swarm.
 /// Without a reservation or lock, many recursive agents can all observe the same
 /// free slot and burst past the configured limit before any child is registered.
@@ -693,7 +706,7 @@ pub(super) async fn spawn_swarm_agent(
 
     let startup_message = initial_message
         .as_deref()
-        .map(append_swarm_completion_report_instructions);
+        .map(|message| swarm_startup_message(message, worker_role.as_deref()));
 
     let visible_spawn = match resolved_spawn_mode {
         // Inline workers run in-process like headless ones; the difference is

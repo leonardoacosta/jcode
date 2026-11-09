@@ -220,6 +220,79 @@ async fn late_mcp_tools_are_announced_once_in_the_transcript() {
     );
 }
 
+#[tokio::test]
+async fn reviewer_late_mcp_discovery_is_compact_and_preserves_tools() {
+    let _guard = crate::storage::lock_test_env();
+    for (parent, role, compact) in [
+        (Some("coordinator"), Some("reviewer"), true),
+        (None, Some("reviewer"), false),
+        (Some("coordinator"), Some("edit"), false),
+        (Some("coordinator"), None, false),
+    ] {
+        let provider: Arc<dyn Provider> = Arc::new(NativeAutoCompactionProvider);
+        let registry = Registry::new(provider.clone()).await;
+        register_fake_deferred_mcp_surface(&registry).await;
+        let mut agent = Agent::new(provider, registry);
+        agent.session.parent_id = parent.map(str::to_string);
+        agent.session.worker_role = role.map(str::to_string);
+        agent.mcp_tools_mode = crate::config::McpToolsMode::Auto;
+        let before = agent.tool_definitions().await;
+        agent
+            .registry
+            .register(
+                "mcp__late__tool".into(),
+                Arc::new(FakeMcpTool {
+                    name: "tool".into(),
+                }) as Arc<dyn crate::tool::Tool>,
+            )
+            .await;
+        let prompt_before = agent.build_system_prompt_split(None).static_part;
+        assert!(
+            agent
+                .registry
+                .definitions(None)
+                .await
+                .iter()
+                .any(|tool| { tool.name == "mcp__late__tool" && tool.input_schema.is_object() })
+        );
+        agent.announce_late_mcp_tools().await;
+        let texts = transcript_texts(&agent);
+        let notice = texts
+            .iter()
+            .find(|text| text.contains("New MCP tools are available."))
+            .unwrap();
+        if compact {
+            assert!(notice.contains("mcp action=search"));
+            assert!(notice.len() < 400, "{notice}");
+            assert!(
+                !notice.contains("input_schema:"),
+                "reviewer must discover schemas on demand"
+            );
+        } else {
+            assert!(
+                notice.contains("input_schema:"),
+                "ordinary announcements must be unchanged"
+            );
+        }
+        agent.announce_late_mcp_tools().await;
+        assert_eq!(
+            transcript_texts(&agent)
+                .iter()
+                .filter(|text| text.contains("New MCP tools are available."))
+                .count(),
+            1
+        );
+        assert_eq!(
+            serde_json::to_value(&before).unwrap(),
+            serde_json::to_value(agent.tool_definitions().await).unwrap()
+        );
+        assert_eq!(
+            prompt_before,
+            agent.build_system_prompt_split(None).static_part
+        );
+    }
+}
+
 /// Tools already described by an `mcp connect`/`mcp_search` result (tool
 /// references in the transcript) must not be announced again, and nothing
 /// is announced on the native deferred path or in eager mode.

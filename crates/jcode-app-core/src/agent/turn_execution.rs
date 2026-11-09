@@ -752,9 +752,9 @@ impl Agent {
     ///
     /// Only used on the fixed `mcp` search/call surface (providers
     /// without native deferred loading, in any mode but `eager`). The cached
-    /// tool list must never change, so this appended note, which carries
-    /// each tool's input schema, is how the model learns about servers that
-    /// finished connecting mid-session. Each tool is announced once.
+    /// tool list must never change. Ordinary sessions receive schemas here;
+    /// reviewer workers receive a compact notice and discover schemas on demand.
+    /// Each tool is announced once.
     pub(crate) async fn announce_late_mcp_tools(&mut self) {
         if self.mcp_tools_mode == crate::config::McpToolsMode::Eager || self.native_deferred_mcp() {
             return;
@@ -774,7 +774,20 @@ impl Agent {
             "<system-reminder>\nNew MCP tools are available. They are not in your tool list; \
              call them with mcp action=call (server, tool, arguments matching input_schema).\n",
         );
-        for tool in fresh.iter().take(MAX_ANNOUNCED_MCP_TOOLS) {
+        let compact_review = self.session.parent_id.is_some()
+            && self.session.worker_role.as_deref() == Some("reviewer");
+        if compact_review {
+            text = format!(
+                "<system-reminder>\nNew MCP tools are available. {} tools can be discovered with \
+                 mcp action=search; read the returned input_schema before mcp action=call.\n",
+                fresh.len()
+            );
+        }
+        for tool in fresh.iter().take(if compact_review {
+            0
+        } else {
+            MAX_ANNOUNCED_MCP_TOOLS
+        }) {
             let (server, raw) = self
                 .registry
                 .mcp_identity_for_alias(&tool.name)
@@ -789,7 +802,7 @@ impl Agent {
                 serde_json::to_string(&tool.input_schema).unwrap_or_else(|_| "{}".to_string()),
             ));
         }
-        if fresh.len() > MAX_ANNOUNCED_MCP_TOOLS {
+        if !compact_review && fresh.len() > MAX_ANNOUNCED_MCP_TOOLS {
             text.push_str(&format!(
                 "... and {} more; use mcp action=search to find them.\n",
                 fresh.len() - MAX_ANNOUNCED_MCP_TOOLS

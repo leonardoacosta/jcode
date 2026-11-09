@@ -20,6 +20,24 @@ use std::sync::atomic::AtomicU64;
 use std::time::Instant;
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
+#[test]
+fn reviewer_startup_uses_automatic_final_report_without_extra_tool_roundtrip() {
+    let prompt = "Review exact source and checks.";
+    let review = super::swarm_startup_message(prompt, Some("reviewer"));
+    assert!(review.starts_with(prompt));
+    assert!(review.contains("automatically records your final assistant response"));
+    assert!(review.contains("Do not call the swarm report tool"));
+    assert!(!review.contains("Before finishing, call the swarm tool"));
+    assert!(
+        super::swarm_startup_message(prompt, None)
+            .contains("Before finishing, call the swarm tool")
+    );
+    assert!(
+        super::swarm_startup_message(prompt, Some("edit"))
+            .contains("Before finishing, call the swarm tool")
+    );
+}
+
 struct MockProvider;
 
 struct RoutingProvider(std::sync::Mutex<String>);
