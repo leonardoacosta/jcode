@@ -42,6 +42,7 @@ struct ErrorBodyReadTimeout {
     endpoint: String,
     model: String,
     timeout: std::time::Duration,
+    retry_after: Option<std::time::Duration>,
 }
 
 impl std::fmt::Display for ErrorBodyReadTimeout {
@@ -50,7 +51,17 @@ impl std::fmt::Display for ErrorBodyReadTimeout {
             formatter,
             "Timed out reading HTTP {} error body from {} for model {} after {:?}",
             self.status, self.endpoint, self.model, self.timeout
-        )
+        )?;
+        if let Some(delay) = self.retry_after {
+            write!(formatter, "; server Retry-After: {}s", delay.as_secs())?;
+        }
+        if self.timeout.is_zero() {
+            write!(
+                formatter,
+                "; request deadline exhausted before error body could be read"
+            )?;
+        }
+        Ok(())
     }
 }
 
@@ -64,6 +75,8 @@ async fn read_http_error_body(
     tx: &mpsc::Sender<Result<StreamEvent>>,
     timeout: std::time::Duration,
 ) -> Result<Option<String>> {
+    let retry_after =
+        jcode_provider_core::retry_after::uncapped_retry_after_delay(response.headers());
     tokio::select! {
         _ = tx.closed() => Ok(None),
         body = tokio::time::timeout(timeout, jcode_base::util::http_error_body(response, "HTTP error")) => {
@@ -72,6 +85,7 @@ async fn read_http_error_body(
                 endpoint: endpoint.to_owned(),
                 model: model.to_owned(),
                 timeout,
+                retry_after,
             }))
         }
     }
@@ -948,7 +962,7 @@ mod tests {
                 let _ = stream.read(&mut request).unwrap();
                 stream
                     .write_all(
-                        b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 1024\r\nConnection: close\r\n\r\n{\"error\":",
+                        b"HTTP/1.1 503 Service Unavailable\r\nRetry-After: 7\r\nContent-Length: 1024\r\nConnection: close\r\n\r\n{\"error\":",
                     )
                     .unwrap();
                 stream.flush().unwrap();
@@ -968,6 +982,20 @@ mod tests {
             .unwrap_err();
         assert!(error.downcast_ref::<ErrorBodyReadTimeout>().is_some());
         assert!(error.to_string().contains("HTTP 503 error body"));
+        assert!(error.to_string().contains("server Retry-After: 7s"));
+        let timeout_error = error.downcast_ref::<ErrorBodyReadTimeout>().unwrap();
+        assert_eq!(
+            timeout_error.retry_after,
+            Some(std::time::Duration::from_secs(7))
+        );
+        let expired = ErrorBodyReadTimeout {
+            status: 503,
+            endpoint: "fixture".into(),
+            model: "model".into(),
+            timeout: std::time::Duration::ZERO,
+            retry_after: None,
+        };
+        assert!(expired.to_string().contains("request deadline exhausted"));
 
         let response = client.get(&url).send().await.unwrap();
         let (tx, rx) = mpsc::channel(1);
