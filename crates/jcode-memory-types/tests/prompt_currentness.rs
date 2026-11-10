@@ -4,6 +4,19 @@ use jcode_memory_types::{
 };
 
 #[test]
+fn store_filters_superseded_before_top_k_limit() {
+    let mut stale = MemoryEntry::new(MemoryCategory::Fact, "obsolete value");
+    stale.superseded_by = Some("replacement".into());
+    stale.access_count = 100;
+    let current = MemoryEntry::new(MemoryCategory::Fact, "current value");
+    let mut store = jcode_memory_types::MemoryStore::new();
+    store.add(stale);
+    store.add(current);
+    assert_eq!(store.get_relevant(1)[0].content, "current value");
+    assert!(store.format_for_prompt(1).unwrap().contains("current value"));
+}
+
+#[test]
 fn prompt_formatters_exclude_active_but_superseded_legacy_entries() {
     let mut superseded = MemoryEntry::new(MemoryCategory::Fact, "obsolete value");
     superseded.superseded_by = Some("replacement".into());

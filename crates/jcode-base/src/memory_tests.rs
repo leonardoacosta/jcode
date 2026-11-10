@@ -6,6 +6,21 @@ fn manager_without_project_dir_does_not_use_process_cwd() {
 }
 
 #[test]
+fn prompt_memory_manager_filters_superseded_before_limit() {
+    with_temp_home(|_| {
+        let manager = MemoryManager::new();
+        let mut stale = MemoryEntry::new(MemoryCategory::Fact, "obsolete value");
+        stale.superseded_by = Some("replacement".into());
+        stale.updated_at = chrono::Utc::now() + chrono::Duration::hours(1);
+        let mut store = MemoryStore::new();
+        store.add(stale);
+        store.add(MemoryEntry::new(MemoryCategory::Fact, "current value"));
+        manager.save_global(&store).unwrap();
+        assert!(manager.get_prompt_memories(1).unwrap().contains("current value"));
+    });
+}
+
+#[test]
 fn remember_known_secret_rejects_whole_entry_before_persistence() {
     with_temp_home(|_| {
         let manager = MemoryManager::new().with_project_dir("/memory-secret-test");

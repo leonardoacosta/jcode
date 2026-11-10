@@ -10,6 +10,19 @@ fn test_link_target_from_screen_detects_chat_url() {
 }
 
 #[test]
+fn keyboard_selection_resolves_centered_side_image_on_blank_row() {
+    let _lock = viewport_snapshot_test_lock();
+    clear_copy_viewport_snapshot();
+    record_side_pane_snapshot(&vec![Line::from(""); 10], 0, 10, Rect::new(50, 0, 40, 10));
+    panel_image_preview::clear_regions();
+    panel_image_preview::record_image(Rect::new(60, 2, 10, 4), 42);
+    let point = copy_point_from_screen(60, 3).unwrap();
+    let (x, y) = copy_point_screen_position(point).unwrap();
+    assert_eq!(panel_image_preview::image_at(x, y), Some(42));
+    panel_image_preview::clear_regions();
+}
+
+#[test]
 fn test_link_target_from_screen_detects_side_pane_url() {
     let _lock = viewport_snapshot_test_lock();
     clear_copy_viewport_snapshot();

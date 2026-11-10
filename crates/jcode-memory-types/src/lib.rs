@@ -584,7 +584,7 @@ impl MemoryStore {
         ranking::top_k_by_score(
             self.entries
                 .iter()
-                .filter(|entry| entry.active)
+                .filter(|entry| entry.active && entry.superseded_by.is_none())
                 .map(|entry| (entry, memory_score(entry) as f32)),
             limit,
         )

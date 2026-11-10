@@ -882,6 +882,7 @@ impl MemoryManager {
             self.collect_memories_scoped(scope)
                 .ok()?
                 .into_iter()
+                .filter(|entry| entry.active && entry.superseded_by.is_none())
                 .map(|entry| {
                     let updated_at = entry.updated_at.timestamp_millis();
                     (entry, updated_at)

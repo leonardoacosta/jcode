@@ -28,6 +28,16 @@ pub(crate) fn image_at(column: u16, row: u16) -> Option<u64> {
     })
 }
 
+pub(super) fn image_position_on_row(pane: Rect, row: u16) -> Option<(u16, u16)> {
+    IMAGE_REGIONS.with(|regions| {
+        regions.borrow().iter().rev().find_map(|(area, _)| {
+            let x = area.x.max(pane.x);
+            (row >= area.y && row < area.bottom() && x < area.right().min(pane.right()))
+                .then_some((x, row))
+        })
+    })
+}
+
 pub(super) fn draw_preview(frame: &mut Frame, area: Rect, hash: u64) {
     let block = ratatui::widgets::Block::bordered()
         .title(" Image preview ")

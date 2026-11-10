@@ -2200,6 +2200,15 @@ pub(crate) fn copy_point_screen_position(
         .checked_add(point.column)?;
     let y = usize::from(snapshot.content_area.y).checked_add(row)?;
     let position = (u16::try_from(x).ok()?, u16::try_from(y).ok()?);
+    if point.pane == crate::tui::CopySelectionPane::SidePane
+        && snapshot.wrapped_plain_line(point.abs_line).is_some_and(str::is_empty)
+        && let Some(image_position) = panel_image_preview::image_position_on_row(
+            snapshot.content_area,
+            position.1,
+        )
+    {
+        return Some(image_position);
+    }
     (copy_point_from_screen(position.0, position.1) == Some(point)).then_some(position)
 }
 
