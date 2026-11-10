@@ -2207,7 +2207,8 @@ pub(crate) fn copy_point_screen_position(
             position.1,
         )
     {
-        return Some(image_position);
+        return (copy_point_from_screen(image_position.0, image_position.1) == Some(point))
+            .then_some(image_position);
     }
     (copy_point_from_screen(position.0, position.1) == Some(point)).then_some(position)
 }
