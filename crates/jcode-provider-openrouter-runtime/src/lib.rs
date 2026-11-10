@@ -58,6 +58,7 @@ use catalog_fetch::fetch_models_from_api;
 mod openai_compatible_runtime;
 
 mod request_headers;
+mod session_cache_affinity;
 use request_headers::*;
 
 /// Base delay for exponential backoff (in milliseconds)
@@ -853,6 +854,7 @@ pub struct OpenRouterProvider {
     /// OpenCode (Zen / Go) endpoints, which require it for routing (issue #1167).
     /// Each provider instance (and each `fork()`) gets a fresh UUID.
     conversation_id: String,
+    session_cache_affinity: Option<session_cache_affinity::SessionCacheAffinity>,
     models_cache: Arc<RwLock<ModelsCache>>,
     model_catalog_refresh: Arc<Mutex<ModelCatalogRefreshState>>,
     /// Provider routing preferences
@@ -1345,6 +1347,17 @@ impl OpenRouterProvider {
     ) -> Result<Self> {
         let responses_api =
             opencode_go_responses::named_profile_responses_api(profile_name, profile)?;
+        if profile.session_cache_affinity
+            && profile.auth == jcode_base::config::NamedProviderAuth::Header
+            && profile
+                .auth_header
+                .as_deref()
+                .is_some_and(|name| name.eq_ignore_ascii_case("x-session-id"))
+        {
+            anyhow::bail!(
+                "session cache affinity: x-session-id cannot also be the authentication header"
+            );
+        }
         jcode_base::env::set_var("JCODE_OPENROUTER_CACHE_NAMESPACE", profile_name);
         let api_base = normalize_api_base(&profile.base_url).ok_or_else(|| {
             anyhow::anyhow!("Provider profile '{}' has invalid base_url", profile_name)
@@ -1477,6 +1490,15 @@ impl OpenRouterProvider {
             static_image_input_support,
             send_openrouter_headers: false,
             conversation_id: new_conversation_id(),
+            session_cache_affinity: profile
+                .session_cache_affinity
+                .then(|| {
+                    session_cache_affinity::SessionCacheAffinity::new(
+                        profile_name,
+                        &profile.headers,
+                    )
+                })
+                .transpose()?,
             models_cache: Arc::new(RwLock::new(ModelsCache::default())),
             model_catalog_refresh: Arc::new(Mutex::new(ModelCatalogRefreshState::default())),
             provider_routing: Arc::new(RwLock::new(ProviderRouting::default())),
@@ -1720,6 +1742,7 @@ impl OpenRouterProvider {
             static_image_input_support: HashMap::new(),
             send_openrouter_headers,
             conversation_id: new_conversation_id(),
+            session_cache_affinity: None,
             models_cache: Arc::new(RwLock::new(ModelsCache::default())),
             model_catalog_refresh: Arc::new(Mutex::new(ModelCatalogRefreshState::default())),
             provider_routing: Arc::new(RwLock::new(provider_routing)),
@@ -1778,6 +1801,7 @@ impl OpenRouterProvider {
             static_image_input_support: HashMap::new(),
             send_openrouter_headers: false,
             conversation_id: new_conversation_id(),
+            session_cache_affinity: None,
             models_cache: Arc::new(RwLock::new(ModelsCache::default())),
             model_catalog_refresh: Arc::new(Mutex::new(ModelCatalogRefreshState::default())),
             provider_routing: Arc::new(RwLock::new(ProviderRouting::default())),
@@ -1828,6 +1852,7 @@ impl OpenRouterProvider {
             static_image_input_support: HashMap::new(),
             send_openrouter_headers: true,
             conversation_id: new_conversation_id(),
+            session_cache_affinity: None,
             models_cache: Arc::new(RwLock::new(ModelsCache::default())),
             model_catalog_refresh: Arc::new(Mutex::new(ModelCatalogRefreshState::default())),
             provider_routing: Arc::new(RwLock::new(Self::parse_provider_routing())),
@@ -2036,6 +2061,7 @@ impl OpenRouterProvider {
                 static_image_input_support: HashMap::new(),
                 send_openrouter_headers: true,
                 conversation_id: new_conversation_id(),
+                session_cache_affinity: None,
                 models_cache: Arc::new(RwLock::new(ModelsCache::default())),
                 model_catalog_refresh: Arc::new(Mutex::new(ModelCatalogRefreshState::default())),
                 provider_routing: Arc::new(RwLock::new(ProviderRouting::default())),
@@ -2929,3 +2955,6 @@ mod placeholder_default_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod session_cache_affinity_tests;

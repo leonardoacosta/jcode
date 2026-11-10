@@ -109,6 +109,7 @@ fn run_azure(base: String) -> Vec<Result<StreamEvent>> {
                 },
                 false,
                 "azure-retry-test".into(),
+                None,
                 serde_json::json!({"model":"deployment", "input":[], "stream":true}),
                 true,
                 tx,

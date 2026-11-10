@@ -2,6 +2,7 @@ use super::*;
 mod catalog_memo;
 mod saved_account_selection;
 mod session_binding;
+mod session_cache_affinity;
 mod startup_pool;
 use crate::provider::models::{ensure_model_allowed_for_subscription, filtered_display_models};
 

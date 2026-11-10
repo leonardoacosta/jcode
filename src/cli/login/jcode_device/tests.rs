@@ -1,19 +1,54 @@
 use super::*;
 use std::future;
-use std::io::{Read, Write};
+use std::io::{BufRead, Read, Write};
 
 type ScriptedHttpResponse = (u16, Vec<(&'static str, &'static str)>, String);
+
+fn accept_token_request(listener: &std::net::TcpListener) -> std::net::TcpStream {
+    loop {
+        let (mut stream, _) = listener.accept().expect("accept test request");
+        stream
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .expect("set request read timeout");
+        let mut request = std::io::BufReader::new(&mut stream);
+        let mut headers = request.by_ref().take(64 * 1024);
+        let mut line = String::new();
+        assert_ne!(headers.read_line(&mut line).expect("read request line"), 0);
+        let is_token_request = line == "POST /v1/auth/token HTTP/1.1\r\n";
+        let mut content_length = 0;
+        loop {
+            line.clear();
+            assert_ne!(headers.read_line(&mut line).expect("read header"), 0);
+            if line == "\r\n" {
+                break;
+            }
+            if let Some((name, value)) = line.split_once(':') {
+                if name.eq_ignore_ascii_case("content-length") {
+                    content_length = value.trim().parse().expect("request content length");
+                }
+            }
+        }
+        assert!(
+            content_length <= 64 * 1024,
+            "request body exceeds fixture limit"
+        );
+        let mut body = vec![0; content_length];
+        request.read_exact(&mut body).expect("read request body");
+        if is_token_request {
+            return stream;
+        }
+        // Local HTTP probes must not consume a scripted token response.
+        let _ = stream
+            .write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+    }
+}
 
 fn spawn_scripted_http_server(responses: Vec<ScriptedHttpResponse>) -> String {
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).expect("bind test server");
     let addr = listener.local_addr().expect("local addr");
     std::thread::spawn(move || {
         for (status, headers, body) in responses {
-            let Ok((mut stream, _)) = listener.accept() else {
-                return;
-            };
-            let mut buf = [0u8; 4096];
-            let _ = stream.read(&mut buf);
+            let mut stream = accept_token_request(&listener);
             let headers = headers
                 .into_iter()
                 .map(|(name, value)| format!("{name}: {value}\r\n"))
@@ -26,6 +61,53 @@ fn spawn_scripted_http_server(responses: Vec<ScriptedHttpResponse>) -> String {
         }
     });
     format!("http://127.0.0.1:{}/v1", addr.port())
+}
+
+#[test]
+fn token_fixture_rejects_oversized_headers_and_bodies() {
+    for request in [
+        format!(
+            "POST /v1/auth/token HTTP/1.1\r\nX-Padding: {}\r\nContent-Length: 0\r\n\r\n",
+            "x".repeat(64 * 1024)
+        ),
+        format!(
+            "POST /v1/auth/token HTTP/1.1\r\nContent-Length: 65537\r\n\r\n{}",
+            "x".repeat(65537)
+        ),
+    ] {
+        let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).expect("bind fixture");
+        let address = listener.local_addr().unwrap();
+        let server = std::thread::spawn(move || accept_token_request(&listener));
+        let mut stream = std::net::TcpStream::connect(address).expect("connect fixture");
+        let _ = stream.write_all(request.as_bytes());
+        let _ = stream.shutdown(std::net::Shutdown::Write);
+        assert!(
+            server.join().is_err(),
+            "oversized request must fail fixture"
+        );
+    }
+}
+
+#[tokio::test]
+async fn scripted_responses_are_not_consumed_by_unrelated_http_probes() {
+    let body = r#"{"error":"authorization_pending"}"#;
+    let base = spawn_scripted_http_server(vec![(428, vec![], body.to_string())]);
+    let client = test_client();
+    let probe = client
+        .get(base.trim_end_matches("/v1"))
+        .header("User-Agent", "Go-http-client/1.1")
+        .send()
+        .await
+        .expect("unrelated HTTP probe");
+    assert_eq!(probe.status(), 404);
+    let response = client
+        .post(format!("{base}/auth/token"))
+        .json(&serde_json::json!({ "device_code": "x".repeat(8192) }))
+        .send()
+        .await
+        .expect("token request after probe");
+    assert_eq!(response.status(), 428);
+    assert_eq!(response.text().await.expect("scripted response body"), body);
 }
 
 fn test_client() -> reqwest::Client {
@@ -110,9 +192,7 @@ async fn cancellation_during_consumed_exchange_finishes_and_returns_the_key() {
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).expect("bind test server");
     let addr = listener.local_addr().expect("local addr");
     std::thread::spawn(move || {
-        let (mut stream, _) = listener.accept().expect("accept exchange");
-        let mut buf = [0u8; 4096];
-        let _ = stream.read(&mut buf);
+        let mut stream = accept_token_request(&listener);
         std::thread::sleep(Duration::from_millis(300));
         let body = r#"{"api_key":"jck_live_test","account_id":"acct_42","email":"user@example.com","tier":"pro","status":"active"}"#;
         let response = format!(

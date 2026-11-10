@@ -497,6 +497,9 @@ pub struct NamedProviderConfig {
     pub model_catalog: bool,
     #[serde(default)]
     pub allow_provider_pinning: bool,
+    /// Send a stable per-profile/session prompt cache key and matching x-session-id.
+    #[serde(default)]
+    pub session_cache_affinity: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub models: Vec<NamedProviderModelConfig>,
     /// Extra top-level JSON fields merged into every chat/completions request
@@ -541,6 +544,7 @@ impl Default for NamedProviderConfig {
             provider_routing: false,
             model_catalog: false,
             allow_provider_pinning: false,
+            session_cache_affinity: false,
             models: Vec::new(),
             extra_body: None,
             supports_reasoning_effort: None,

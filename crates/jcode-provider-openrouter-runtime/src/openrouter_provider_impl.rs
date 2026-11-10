@@ -5,6 +5,12 @@ use jcode_base::provider::{ModelCatalogRefreshSummary, summarize_model_catalog_r
 
 #[async_trait]
 impl Provider for OpenRouterProvider {
+    fn set_session_id(&self, session_id: &str) {
+        if let Some(affinity) = &self.session_cache_affinity {
+            affinity.bind(session_id);
+        }
+    }
+
     fn runtime_display_name(&self) -> String {
         OpenRouterProvider::runtime_display_name(self)
     }
@@ -43,6 +49,23 @@ impl Provider for OpenRouterProvider {
         _resume_session_id: Option<&str>,
     ) -> Result<EventStream> {
         jcode_provider_core::provider_monetary_budget::reject_unsupported()?;
+        // Validate the effective configured identity before auth refresh or metadata HTTP.
+        let session_cache_key = self
+            .session_cache_affinity
+            .as_ref()
+            .map(|affinity| {
+                let mut identity = serde_json::json!({});
+                affinity.insert_default(&mut identity);
+                if let Some(key) = self
+                    .extra_body
+                    .as_ref()
+                    .and_then(|extra| extra.get("prompt_cache_key"))
+                {
+                    identity["prompt_cache_key"] = key.clone();
+                }
+                affinity.final_key(&identity)
+            })
+            .transpose()?;
         if self.profile_id.as_deref() == Some("muse-subscription") {
             jcode_base::auth::muse::ensure_enabled()?;
             let client = jcode_base::auth::muse::http_client()?;
@@ -217,6 +240,10 @@ impl Provider for OpenRouterProvider {
             request["provider"] = obj;
         }
 
+        if let Some(key) = &session_cache_key {
+            request["prompt_cache_key"] = Value::String(key.clone());
+        }
+
         // Merge user-configured extra request-body fields last so they can
         // satisfy non-standard backend requirements (e.g. NVIDIA NIM
         // DeepSeek-V4 `chat_template_kwargs`) and intentionally override any
@@ -267,6 +294,9 @@ impl Provider for OpenRouterProvider {
                     jcode_provider_openrouter::request::sanitize_tool_parameters_schema,
                 );
             }
+            if let Some(key) = &session_cache_key {
+                request["prompt_cache_key"] = Value::String(key.clone());
+            }
             if let Some(extra) = self.extra_body.as_ref()
                 && let Some(request_obj) = request.as_object_mut()
             {
@@ -275,6 +305,12 @@ impl Provider for OpenRouterProvider {
                 }
             }
         }
+
+        let session_cache_key = self
+            .session_cache_affinity
+            .as_ref()
+            .map(|affinity| affinity.final_key(&request))
+            .transpose()?;
 
         let message_items = request
             .get("messages")
@@ -349,6 +385,7 @@ impl Provider for OpenRouterProvider {
                 auth,
                 send_openrouter_headers,
                 conversation_id,
+                session_cache_key,
                 request_for_retries,
                 false,
                 tx,
@@ -884,6 +921,10 @@ impl Provider for OpenRouterProvider {
             // A fork is a new conversation (new session or subagent), so it
             // gets its own stable id.
             conversation_id: new_conversation_id(),
+            session_cache_affinity: self
+                .session_cache_affinity
+                .as_ref()
+                .map(|affinity| affinity.fork()),
             models_cache: Arc::clone(&self.models_cache),
             model_catalog_refresh: Arc::clone(&self.model_catalog_refresh),
             provider_routing: Arc::new(RwLock::new(
@@ -981,6 +1022,7 @@ impl OpenRouterProvider {
                 auth,
                 false,
                 conversation_id,
+                None,
                 request,
                 true,
                 tx,

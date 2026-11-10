@@ -176,6 +176,7 @@ pub(crate) fn configure_provider_profile(
         provider_routing: options.provider_routing,
         model_catalog: options.model_catalog,
         allow_provider_pinning: options.provider_routing,
+        session_cache_affinity: false,
         models: vec![NamedProviderModelConfig {
             id: model.clone(),
             reasoning: None,

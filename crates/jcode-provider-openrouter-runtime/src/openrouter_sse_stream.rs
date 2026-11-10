@@ -203,6 +203,7 @@ pub(super) async fn run_stream_with_retries(
     auth: ProviderAuth,
     send_openrouter_headers: bool,
     conversation_id: String,
+    session_cache_key: Option<String>,
     request: Value,
     azure_responses: bool,
     tx: mpsc::Sender<Result<StreamEvent>>,
@@ -291,6 +292,7 @@ pub(super) async fn run_stream_with_retries(
             auth.clone(),
             send_openrouter_headers,
             &conversation_id,
+            session_cache_key.as_deref(),
             request.clone(),
             azure_responses,
             attempt_tx,
@@ -395,6 +397,7 @@ async fn stream_response(
     auth: ProviderAuth,
     send_openrouter_headers: bool,
     conversation_id: &str,
+    session_cache_key: Option<&str>,
     request: Value,
     azure_responses: bool,
     tx: mpsc::Sender<Result<StreamEvent>>,
@@ -445,6 +448,9 @@ async fn stream_response(
         req = req
             .header("HTTP-Referer", "https://github.com/jcode")
             .header("X-Title", "jcode");
+    }
+    if let Some(key) = session_cache_key {
+        req = req.header("x-session-id", key);
     }
     req = apply_opencode_session_header(req, &api_base, conversation_id);
     req = apply_grok_cli_turn_headers(req, &auth, &model, conversation_id);
