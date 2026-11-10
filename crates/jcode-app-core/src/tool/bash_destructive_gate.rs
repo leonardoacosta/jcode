@@ -68,7 +68,7 @@ pub(super) fn bash_parameters_schema() -> serde_json::Value {
                 "type": "string",
                 "maxLength": 64,
                 "pattern": "^[A-Za-z0-9_.:-]+$",
-                "description": "Optional explicit required-check identifier for process evidence. Does not grant execution permission. Foreground exit status only, never output text."
+                "description": "Explicit check ID. Evidence uses foreground exit status, never output. Grants no execution permission."
             },
             "timeout": {
                 "type": "integer",

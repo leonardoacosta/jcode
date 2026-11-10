@@ -1057,6 +1057,25 @@ mod tests {
             picker.selected_item().map(|item| item.title.as_str()),
             Some(expected_first_action.as_str())
         );
+        picker
+            .handle_overlay_key(KeyCode::End, KeyModifiers::NONE)
+            .unwrap();
+        picker
+            .handle_overlay_key(KeyCode::Home, KeyModifiers::NONE)
+            .unwrap();
+        assert_eq!(
+            picker.selected_item().unwrap().title,
+            expected_first_action,
+            "keyboard parity missing: account action selection"
+        );
+        let expected = match picker.selected_item().unwrap().command.clone() {
+            AccountPickerCommand::SubmitInput(command) => command,
+            _ => panic!("fixture requires a submit command"),
+        };
+        assert!(
+            matches!(picker.handle_overlay_key(KeyCode::Enter, KeyModifiers::NONE).unwrap(),
+                OverlayAction::Execute(AccountPickerCommand::SubmitInput(command)) if command == expected)
+        );
     }
 
     #[test]

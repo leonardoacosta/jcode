@@ -453,6 +453,35 @@ impl App {
     ) -> bool {
         let extend = modifiers.contains(KeyModifiers::SHIFT);
         match code {
+            KeyCode::Char('o' | 'O' | '+' | '=' | '-' | '_')
+                if (modifiers - KeyModifiers::SHIFT).is_empty() =>
+            {
+                let position = self
+                    .copy_selection_cursor
+                    .and_then(crate::tui::ui::copy_point_screen_position);
+                let handled = position.is_some_and(|(x, y)| {
+                    if matches!(code, KeyCode::Char('+' | '=' | '-' | '_')) {
+                        let direction = if matches!(code, KeyCode::Char('+' | '=')) {
+                            1
+                        } else {
+                            -1
+                        };
+                        return self.try_zoom_inline_image_at(x, y, direction);
+                    }
+                    if let Some(hash) = crate::tui::ui::panel_image_preview::image_at(x, y) {
+                        self.panel_image_preview = Some(hash);
+                        crate::tui::mermaid::clear_image_state();
+                        return true;
+                    }
+                    self.try_cycle_image_expand_at(x, y)
+                        || self.try_toggle_swarm_expand_at(x, y)
+                        || self.try_open_link_at(x, y)
+                });
+                if !handled {
+                    self.set_status_notice("No action at selection cursor");
+                }
+                true
+            }
             KeyCode::Char('p' | 'P') => {
                 self.copy_failed_prompt_to_clipboard();
                 true

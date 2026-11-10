@@ -656,7 +656,12 @@ fn test_repository_markdown_link_opens_in_focused_side_panel() {
         &[0],
     );
 
-    assert!(app.try_open_link_at(10, 0));
+    let point = crate::tui::ui::copy_point_from_screen(10, 0).unwrap();
+    assert_eq!(crate::tui::ui::copy_point_screen_position(point), Some((10, 0)));
+    app.copy_selection_mode = true;
+    app.copy_selection_anchor = Some(point);
+    app.copy_selection_cursor = Some(point);
+    assert!(app.handle_copy_selection_key(KeyCode::Char('o'), KeyModifiers::NONE));
 
     let page = app
         .side_panel
@@ -691,6 +696,105 @@ fn test_repository_markdown_link_cannot_escape_working_directory() {
         app.status_notice(),
         Some("Refused to open a Markdown file outside the repository".to_string())
     );
+}
+
+#[test]
+fn rendered_repository_markdown_destination_opens_with_keyboard() {
+    let _render_lock = scroll_render_test_lock();
+    let repository = tempfile::tempdir().unwrap();
+    std::fs::create_dir(repository.path().join("docs")).unwrap();
+    std::fs::write(repository.path().join("docs/guide.md"), "# Actual guide\n").unwrap();
+    let mut app = create_test_app();
+    app.session.working_dir = Some(repository.path().to_string_lossy().into_owned());
+    app.push_display_message(DisplayMessage {
+        role: "assistant".into(),
+        content: "Read [guide](docs/guide.md#setup)".into(),
+        tool_calls: vec![],
+        duration_secs: None,
+        title: None,
+        tool_data: None,
+    });
+    let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(100, 30)).unwrap();
+    let screen = render_and_snap(&app, &mut terminal);
+    let (row, line) = screen
+        .lines()
+        .enumerate()
+        .find(|(_, line)| line.contains("docs/guide.md"))
+        .unwrap();
+    let column = line.find("docs/guide.md").unwrap() as u16;
+    app.copy_selection_mode = true;
+    let point = crate::tui::ui::copy_point_from_screen(column, row as u16).unwrap();
+    app.copy_selection_anchor = Some(point);
+    app.copy_selection_cursor = Some(point);
+    assert!(app.handle_copy_selection_key(KeyCode::Char('o'), KeyModifiers::NONE));
+    assert_eq!(
+        app.status_notice().as_deref(),
+        Some("Opened Markdown: guide.md")
+    );
+    assert_eq!(
+        app.side_panel.focused_page().unwrap().content,
+        "# Actual guide\n"
+    );
+}
+
+#[test]
+fn rendered_markdown_mouse_keyboard_parity_and_containment() {
+    let _render_lock = scroll_render_test_lock();
+    let parent = tempfile::tempdir().unwrap();
+    let repo = parent.path().join("repo");
+    std::fs::create_dir(&repo).unwrap();
+    std::fs::write(repo.join("guide.md"), "# Inside\n").unwrap();
+    std::fs::write(parent.path().join("outside.md"), "must not open").unwrap();
+    for width in [24, 100] {
+        for (target, expected) in [
+            ("guide.md#setup", "Opened Markdown: guide.md"),
+            (
+                "../outside.md",
+                "Refused to open a Markdown file outside the repository",
+            ),
+        ] {
+            for keyboard in [false, true] {
+                let mut app = create_test_app();
+                app.session.working_dir = Some(repo.to_string_lossy().into_owned());
+                app.push_display_message(DisplayMessage {
+                    role: "assistant".into(),
+                    content: format!("界 [guide]({target})"),
+                    tool_calls: vec![],
+                    duration_secs: None,
+                    title: None,
+                    tool_data: None,
+                });
+                let mut terminal =
+                    ratatui::Terminal::new(ratatui::backend::TestBackend::new(width, 30)).unwrap();
+                render_and_snap(&app, &mut terminal);
+                let position = (0..30)
+                    .find_map(|y| {
+                        (0..width).find_map(|x| {
+                            (crate::tui::ui::link_target_from_screen(x, y).as_deref()
+                                == Some(target))
+                            .then_some((x, y))
+                        })
+                    })
+                    .expect("rendered Markdown destination must remain actionable after wrapping");
+                if keyboard {
+                    app.copy_selection_mode = true;
+                    let point =
+                        crate::tui::ui::copy_point_from_screen(position.0, position.1).unwrap();
+                    app.copy_selection_anchor = Some(point);
+                    app.copy_selection_cursor = Some(point);
+                    app.handle_copy_selection_key(KeyCode::Char('o'), KeyModifiers::NONE);
+                } else {
+                    assert!(app.try_open_link_at(position.0, position.1));
+                }
+                assert_eq!(app.status_notice().as_deref(), Some(expected));
+                if target.starts_with("../") {
+                    assert!(app.side_panel.focused_page().is_none());
+                } else {
+                    assert_eq!(app.side_panel.focused_page().unwrap().content, "# Inside\n");
+                }
+            }
+        }
+    }
 }
 
 #[test]

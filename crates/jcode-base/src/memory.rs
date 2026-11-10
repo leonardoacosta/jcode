@@ -64,6 +64,15 @@ const LEGACY_NOTE_CATEGORY: &str = "note";
 const MEMORY_RELEVANCE_MAX_CANDIDATES: usize = 30;
 const MEMORY_RELEVANCE_MAX_RESULTS: usize = 10;
 
+/// Reject known secret patterns, not all confidential information.
+pub fn validate_remember_text(text: &str) -> Result<()> {
+    anyhow::ensure!(
+        crate::message::redact_secrets(text) == text,
+        "Memory request contains a known secret pattern; remove sensitive values and resubmit"
+    );
+    Ok(())
+}
+
 /// Producer of synthetic [`MemoryEntry`] values contributed by a higher layer.
 ///
 /// Used to invert the legacy `memory -> skill` dependency: the `skill` layer
@@ -386,6 +395,7 @@ impl MemoryManager {
     /// Store without embedding inference. Exact duplicates reinforce an existing
     /// entry only within the requested scope, never mutate a different project.
     pub fn remember_project(&self, entry: MemoryEntry) -> Result<String> {
+        Self::validate_remember_entry(&entry)?;
         anyhow::ensure!(
             self.project_memory_path()?.is_some(),
             "Project memory requires a working directory; use global scope explicitly"
@@ -397,6 +407,7 @@ impl MemoryManager {
     }
 
     pub fn remember_global(&self, entry: MemoryEntry) -> Result<String> {
+        Self::validate_remember_entry(&entry)?;
         let mut graph = self.load_global_graph()?;
         let id = Self::remember_in_graph(&mut graph, entry);
         self.save_global_graph(&graph)?;
@@ -419,6 +430,17 @@ impl MemoryManager {
             return id;
         }
         graph.add_memory(entry)
+    }
+
+    fn validate_remember_entry(entry: &MemoryEntry) -> Result<()> {
+        for text in std::iter::once(entry.content.as_str())
+            .chain(entry.tags.iter().map(String::as_str))
+            .chain(std::iter::once(entry.search_text.as_str()))
+            .chain(entry.source.as_deref())
+        {
+            validate_remember_text(text)?;
+        }
+        Ok(())
     }
 
     /// Insert or update a memory with a stable ID in the project graph.

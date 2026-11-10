@@ -628,7 +628,10 @@ fn selected_entries_for_prompt(entries: &[MemoryEntry], limit: usize) -> Vec<&Me
     let mut selected = Vec::new();
     let mut seen_content = HashSet::new();
 
-    for entry in entries.iter().filter(|entry| entry.active) {
+    for entry in entries
+        .iter()
+        .filter(|entry| entry.active && entry.superseded_by.is_none())
+    {
         if selected.len() >= limit {
             break;
         }

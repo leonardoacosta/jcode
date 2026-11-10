@@ -1,0 +1,15 @@
+{
+  "id":"updated", "kind":"synthetic",
+  "messages":[
+    {"role":"user","text":"Set the polling interval to 30 seconds."},
+    {"role":"assistant","text":"The initial plan uses a 30-second interval."},
+    {"role":"user","text":"Correction: use 90 seconds, not 30 seconds. Do not enable auto-retry."},
+    {"role":"assistant","text":"The latest requirement is 90 seconds; auto-retry remains disabled. src/poll.rs is not edited yet."}
+  ],
+  "must_retain":[
+    {"id":"latest","text":"90 seconds, not 30 seconds"},
+    {"id":"no-retry","text":"auto-retry remains disabled"},
+    {"id":"unmodified","text":"src/poll.rs is not edited yet"}
+  ],
+  "scripted_summary":"Latest requirement: 90 seconds, not 30 seconds; auto-retry remains disabled. src/poll.rs is not edited yet."
+}

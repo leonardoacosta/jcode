@@ -1,0 +1,15 @@
+{
+  "id":"resumed", "kind":"synthetic",
+  "previous_summary":"Working on docs/setup.md. Keep the offline installation path. Tests were not run.",
+  "messages":[
+    {"role":"user","text":"Resume the setup guide. The existing draft is in docs/setup.md."},
+    {"role":"assistant","text":"The offline installation path remains required. Waiting for the fixture archive before validation."}
+  ],
+  "must_retain":[
+    {"id":"file","text":"docs/setup.md"},
+    {"id":"offline","text":"offline installation path"},
+    {"id":"blocker","text":"fixture archive"},
+    {"id":"unverified","text":"Tests were not run"}
+  ],
+  "scripted_summary":"Resume docs/setup.md; preserve offline installation path; awaiting fixture archive. Tests were not run."
+}

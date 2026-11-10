@@ -4,6 +4,72 @@ use super::*;
 fn manager_without_project_dir_does_not_use_process_cwd() {
     assert!(MemoryManager::new().get_project_dir().is_none());
 }
+
+#[test]
+fn remember_known_secret_rejects_whole_entry_before_persistence() {
+    with_temp_home(|_| {
+        let manager = MemoryManager::new().with_project_dir("/memory-secret-test");
+        let secret = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123";
+        for global in [false, true] {
+            for tag_secret in [false, true] {
+                let entry = if tag_secret {
+                    MemoryEntry::new(MemoryCategory::Fact, "ordinary content")
+                        .with_tags(vec![secret.into()])
+                } else {
+                    MemoryEntry::new(MemoryCategory::Fact, format!("keep this token: {secret}"))
+                };
+                let result = if global {
+                    manager.remember_global(entry)
+                } else {
+                    manager.remember_project(entry)
+                };
+                let error = result
+                    .expect_err("known secret pattern must not be stored")
+                    .to_string();
+                assert!(!error.contains(secret));
+                assert!(manager.list_all().unwrap().is_empty());
+            }
+        }
+        manager
+            .remember_project(MemoryEntry::new(
+                MemoryCategory::Fact,
+                "Use the configured credential, never its value",
+            ))
+            .unwrap();
+        assert_eq!(
+            manager.list_all().unwrap()[0].content,
+            "Use the configured credential, never its value"
+        );
+    });
+}
+
+#[test]
+fn remember_secret_validation_reuses_known_patterns_without_echoing_values() {
+    for text in [
+        "OPENAI_API_KEY=sk-test-openai-example",
+        "SERVICE_PASSWORD=synthetic-private-value",
+        "Authorization: Bearer synthetic-bearer-value",
+        "-----BEGIN PRIVATE KEY-----\nsynthetic-key-material\n-----END PRIVATE KEY-----",
+    ] {
+        let error = validate_remember_text(text)
+            .expect_err("known pattern")
+            .to_string();
+        assert_eq!(
+            error,
+            "Memory request contains a known secret pattern; remove sensitive values and resubmit"
+        );
+        assert!(!error.contains(text));
+    }
+    for text in [
+        "Use API keys from a vault",
+        "Keep cancellation tokens scoped",
+        "path: Foo/bar",
+        "認証は設定から読み込む",
+    ] {
+        validate_remember_text(text).expect("ordinary text stays unchanged");
+    }
+}
+
 use crate::message::{ContentBlock, Message, Role};
 use serde_json::json;
 use std::fs;

@@ -1165,6 +1165,19 @@ fn test_mouse_scroll_only_affects_hovered_pane_without_changing_focus() {
         picker.selected_session().map(|s| s.id.as_str()),
         Some("session_2")
     );
+    picker.focus = PaneFocus::Sessions;
+    picker
+        .handle_overlay_key(KeyCode::Up, KeyModifiers::NONE)
+        .unwrap();
+    assert_ne!(picker.selected_session().unwrap().id, "session_2");
+    picker
+        .handle_overlay_key(KeyCode::Down, KeyModifiers::NONE)
+        .unwrap();
+    assert_eq!(
+        picker.selected_session().unwrap().id,
+        "session_2",
+        "keyboard parity missing: session picker wheel selection"
+    );
 }
 
 #[test]

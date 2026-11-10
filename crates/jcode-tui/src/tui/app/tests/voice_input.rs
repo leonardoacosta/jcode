@@ -105,6 +105,72 @@ fn voice_esc_passes_through_when_not_recording() {
 }
 
 #[test]
+fn voice_missing_key_preserves_composer_without_starting_capture() {
+    if std::env::var_os("JCODE_TEST_VOICE_MISSING_KEY").is_none() {
+        let temp = tempfile::tempdir().unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "tui::app::tests::voice_missing_key_preserves_composer_without_starting_capture",
+            ])
+            .env("JCODE_TEST_VOICE_MISSING_KEY", "1")
+            .env("HOME", temp.path())
+            .env("JCODE_HOME", temp.path())
+            .env("XDG_CONFIG_HOME", temp.path().join("config"))
+            .env_remove("NARI_API_KEY")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
+        return;
+    }
+    let mut app = create_test_app();
+    app.set_input_for_test("keep my draft");
+    app.cursor_pos = 4;
+    assert!(app.handle_voice_key_event(&crossterm::event::KeyEvent::new(
+        KeyCode::Char(' '),
+        KeyModifiers::CONTROL,
+    )));
+    assert!(app.voice_input.is_none());
+    assert_eq!(app.input(), "keep my draft");
+    assert_eq!(app.cursor_pos(), 4);
+    assert!(!app.pending_turn);
+    assert!(!app.is_processing);
+    assert_eq!(
+        app.status_notice().as_deref(),
+        Some("Voice input not configured")
+    );
+    assert!(
+        app.display_messages()
+            .last()
+            .unwrap()
+            .content
+            .contains("Nari API key")
+    );
+}
+
+#[test]
+fn voice_transcript_slash_command_is_user_data_not_a_command() {
+    let mut app = create_test_app();
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _guard = rt.enter();
+    app.set_input_for_test("draft");
+    super::remote::submit_voice_transcript(&mut app, "/clear");
+    assert_eq!(
+        app.display_messages().last().unwrap().content,
+        "<transcription>\n/clear\n</transcription>"
+    );
+    assert_eq!(app.display_messages().last().unwrap().role, "user");
+    assert!(app.pending_turn);
+    assert_eq!(app.input(), "draft");
+}
+
+#[test]
 fn voice_input_help_and_command_are_registered() {
     assert!(super::commands_dispatch::contains_registered_slash_command("/voice"));
     let mut app = create_test_app();

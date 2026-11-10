@@ -140,6 +140,10 @@ impl Tool for MemoryTool {
                 let content = input
                     .content
                     .ok_or_else(|| anyhow::anyhow!("content required"))?;
+                memory::validate_remember_text(&content)?;
+                for tag in input.tags.iter().flatten() {
+                    memory::validate_remember_text(tag)?;
+                }
                 let category: MemoryCategory = input
                     .category
                     .as_deref()
@@ -540,6 +544,52 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[tokio::test]
+    async fn remember_secret_request_never_reaches_activity_or_storage() {
+        let _guard = crate::storage::lock_test_env();
+        let home = tempfile::tempdir().unwrap();
+        let _env = OfflineEnv::new(home.path());
+        let project = tempfile::tempdir().unwrap();
+        let tool = MemoryTool::new();
+        let secret = "ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123";
+        crate::memory::clear_activity();
+        for input in [
+            json!({"action":"remember", "scope":"global", "content":secret}),
+            json!({"action":"remember", "scope":"project", "content":"ordinary note", "tags":[secret]}),
+        ] {
+            let error = tool
+                .execute(input, test_ctx(Some(project.path().to_path_buf())))
+                .await
+                .expect_err("known secret must be rejected")
+                .to_string();
+            assert!(!error.contains(secret));
+            let activity = format!("{:?}", crate::memory::get_activity());
+            assert!(!activity.contains(secret));
+            assert!(!activity.contains("ghp_"));
+            let listed = tool
+                .execute(
+                    json!({"action":"list", "scope":"all"}),
+                    test_ctx(Some(project.path().to_path_buf())),
+                )
+                .await
+                .unwrap();
+            assert!(!listed.output.contains(secret));
+            assert!(!listed.output.contains("ordinary note"));
+        }
+        let output = tool
+            .execute(
+                json!({"action":"remember", "content":"Use credentials from the configured vault"}),
+                test_ctx(Some(project.path().to_path_buf())),
+            )
+            .await
+            .unwrap();
+        assert!(
+            output
+                .output
+                .contains("Use credentials from the configured vault")
+        );
     }
 
     #[tokio::test]

@@ -1,0 +1,17 @@
+{
+  "id": "coding",
+  "kind": "synthetic",
+  "messages": [
+    {"role":"user","text":"Fix retry accounting in src/retry.rs. Do not change the public API."},
+    {"role":"assistant","text":"I traced timeout handling and reproduced a duplicate attempt count."},
+    {"role":"user","text":"Keep the retry cap at 3 and preserve cancellation."},
+    {"role":"assistant","text":"Added a regression. Validation remains pending; no commit or deployment."}
+  ],
+  "must_retain": [
+    {"id":"file","text":"src/retry.rs"},
+    {"id":"cap","text":"retry cap at 3"},
+    {"id":"cancel","text":"preserve cancellation"},
+    {"id":"validation","text":"Validation remains pending"}
+  ],
+  "scripted_summary":"Fix src/retry.rs without public API changes; retry cap at 3; preserve cancellation; Validation remains pending."
+}

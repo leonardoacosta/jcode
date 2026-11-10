@@ -47,6 +47,103 @@ fn test_scroll_ctrl_k_j_offset() {
 }
 
 #[test]
+fn overlay_wheel_actions_have_named_keyboard_equivalents() {
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let _runtime = rt.enter();
+    for name in ["help", "changelog", "model status", "commit log"] {
+        let mut mouse = create_test_app();
+        let mut keyboard = create_test_app();
+        let mut remote_app = create_test_app();
+        let mut remote = crate::tui::backend::RemoteConnection::dummy();
+        for app in [&mut mouse, &mut keyboard, &mut remote_app] {
+            app.input = "preserved draft".into();
+            match name {
+                "help" => app.help_scroll = Some(5),
+                "changelog" => app.changelog_scroll = Some(5),
+                "model status" => app.model_status_scroll = Some(5),
+                "commit log" => {
+                    app.commit_log_overlay = Some(super::commit_log::CommitLogOverlay {
+                        scroll: 5,
+                        entries: (0..40)
+                            .map(|i| super::commit_log::CommitLogEntry {
+                                hash: format!("{i:07x}"),
+                                date: String::new(),
+                                author: String::new(),
+                                refs: String::new(),
+                                subject: "fixture".into(),
+                            })
+                            .collect(),
+                        ..Default::default()
+                    })
+                }
+                _ => unreachable!(),
+            }
+        }
+        let scroll = |app: &App| match name {
+            "help" => app.help_scroll,
+            "changelog" => app.changelog_scroll,
+            "model status" => app.model_status_scroll,
+            "commit log" => app
+                .commit_log_overlay
+                .as_ref()
+                .map(|overlay| overlay.scroll),
+            _ => unreachable!(),
+        };
+        for (wheel, key) in [
+            (MouseEventKind::ScrollDown, KeyCode::Down),
+            (MouseEventKind::ScrollUp, KeyCode::Up),
+        ] {
+            mouse.handle_mouse_event(MouseEvent {
+                kind: wheel,
+                column: 10,
+                row: 5,
+                modifiers: KeyModifiers::NONE,
+            });
+            for _ in 0..3 {
+                keyboard.handle_key(key, KeyModifiers::NONE).unwrap();
+                rt.block_on(remote_app.handle_remote_key(key, KeyModifiers::NONE, &mut remote))
+                    .unwrap();
+            }
+            assert_eq!(
+                scroll(&mouse),
+                scroll(&keyboard),
+                "keyboard parity missing: {name} wheel action"
+            );
+            assert_eq!(
+                scroll(&mouse),
+                scroll(&remote_app),
+                "remote keyboard parity missing: {name} wheel action"
+            );
+        }
+        assert_eq!(
+            keyboard.input, "preserved draft",
+            "{name} navigation must not edit composer"
+        );
+        assert!(
+            !keyboard.pending_turn && !keyboard.is_processing,
+            "{name} navigation must stay local"
+        );
+        keyboard
+            .handle_key(KeyCode::Esc, KeyModifiers::NONE)
+            .unwrap();
+        assert_eq!(
+            scroll(&keyboard),
+            None,
+            "keyboard parity missing: {name} dismiss"
+        );
+        rt.block_on(remote_app.handle_remote_key(KeyCode::Esc, KeyModifiers::NONE, &mut remote))
+            .unwrap();
+        assert_eq!(
+            scroll(&remote_app),
+            None,
+            "remote keyboard parity missing: {name} dismiss"
+        );
+        assert_eq!(remote_app.input, "preserved draft");
+        assert!(!remote_app.is_processing && !remote_app.pending_turn);
+    }
+}
+
+#[test]
 fn test_scroll_offset_capped() {
     let _render_lock = scroll_render_test_lock();
     let (mut app, mut terminal) = create_scroll_test_app(100, 30, 1, 4);
@@ -1772,4 +1869,95 @@ fn test_alt_e_expands_prompt_preview_to_multiple_prompts() {
         .unwrap();
     assert!(after.contains("question number 2"), "{after}");
     assert!(after.contains("question number 3"), "{after}");
+}
+
+#[test]
+fn keyboard_selection_opens_swarm_badge_without_mouse() {
+    let _render_lock = scroll_render_test_lock();
+    let mut app = create_test_app();
+    app.display_messages = vec![DisplayMessage::swarm("DM from worker", jcode_tui_messages::encode_collapsible_swarm_content("summary", "Detailed keyboard-only content"))];
+    app.bump_display_messages_version();
+    let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(90, 30)).unwrap();
+    render_and_snap(&app, &mut terminal);
+    let buffer = terminal.backend().buffer();
+    let mut point = None;
+    for y in 0..30 {
+        let line: String = (0..90).map(|x| buffer[(x,y)].symbol()).collect();
+        if let Some(byte) = line.find("▸ expand") {
+            let x = unicode_width::UnicodeWidthStr::width(&line[..byte]) as u16;
+            point = crate::tui::ui::copy_point_from_screen(x, y);
+            break;
+        }
+    }
+    let point = point.expect("badge must map to keyboard selection cursor");
+    app.copy_selection_mode = true;
+    app.copy_selection_anchor = Some(point);
+    app.copy_selection_cursor = Some(point);
+    assert!(app.handle_copy_selection_key(KeyCode::Char('o'), KeyModifiers::NONE));
+    assert!(jcode_tui_messages::parse_collapsible_swarm_content(&app.display_messages[0].content).unwrap().expanded);
+    assert!(app.copy_selection_mode, "activation must preserve keyboard navigation mode");
+    assert!(!app.is_processing, "presentation activation must not start model turn");
+}
+
+#[test]
+fn keyboard_selection_image_zoom_and_invalid_cursor_are_bounded() {
+    use crate::tui::ui::inline_image_ui::{AllFit, ImageExpandLevel, InlineImageItem, build_section};
+    use jcode_tui_messages::PreparedChatFrame;
+    let _render_lock = scroll_render_test_lock();
+    let mut app = create_test_app();
+    let section = build_section(&[InlineImageItem { id: 0xB1AD, width: 320, height: 200, label: "keyboard.png".into(), uses_text_fallback: false }], 80, 40, false, true, &AllFit);
+    let prepared = std::sync::Arc::new(PreparedChatFrame::from_single(std::sync::Arc::new(section)));
+    let end = prepared.wrapped_plain_line_count();
+    crate::tui::ui::clear_copy_viewport_snapshot();
+    crate::tui::ui::record_copy_viewport_frame_snapshot_for_test(prepared, 0, end, Rect::new(2, 3, 80, end as u16), &vec![0; end]);
+    let point = (3..3+end as u16).find_map(|y| {
+        (2..82).find_map(|x| {
+            (crate::tui::ui::inline_image_expand_target_from_screen(x, y) == Some(0xB1AD))
+                .then(|| crate::tui::ui::copy_point_from_screen(x, y)).flatten()
+        })
+    }).expect("visible image label target");
+    app.copy_selection_mode = true;
+    app.copy_selection_anchor = Some(point);
+    app.copy_selection_cursor = Some(point);
+    for (key, expected) in [('+', ImageExpandLevel::Large), ('+', ImageExpandLevel::Large), ('-', ImageExpandLevel::Fit), ('-', ImageExpandLevel::Fit)] {
+        assert!(app.handle_copy_selection_key(KeyCode::Char(key), KeyModifiers::NONE));
+        assert_eq!(app.image_expand_level(0xB1AD), expected);
+    }
+    let unchanged = app.expanded_images_version;
+    for invalid in [crate::tui::CopySelectionPoint { abs_line: end, ..point }, crate::tui::CopySelectionPoint { column: usize::MAX, ..point }, crate::tui::CopySelectionPoint { pane: crate::tui::CopySelectionPane::Input, ..point }] {
+        app.copy_selection_cursor = Some(invalid);
+        assert!(crate::tui::ui::copy_point_screen_position(invalid).is_none());
+        assert!(app.handle_copy_selection_key(KeyCode::Char('+'), KeyModifiers::NONE));
+        assert_eq!(app.expanded_images_version, unchanged);
+        assert_eq!(app.status_notice().as_deref(), Some("No action at selection cursor"));
+    }
+    app.copy_selection_cursor = Some(point);
+    assert!(!app.handle_copy_selection_key(KeyCode::Char('o'), KeyModifiers::CONTROL));
+    assert!(!app.handle_copy_selection_key(KeyCode::Char('o'), KeyModifiers::ALT));
+    assert_eq!(app.expanded_images_version, unchanged);
+    crate::tui::ui::clear_copy_viewport_snapshot();
+    assert!(crate::tui::ui::copy_point_screen_position(point).is_none());
+}
+
+#[test]
+fn keyboard_activation_reachable_from_copy_mode_entry() {
+    let _render_lock = scroll_render_test_lock();
+    let mut app = create_test_app();
+    app.display_messages = vec![DisplayMessage::swarm("DM", jcode_tui_messages::encode_collapsible_swarm_content("summary", "Keyboard body"))];
+    app.bump_display_messages_version();
+    let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(90, 30)).unwrap();
+    render_and_snap(&app, &mut terminal);
+    app.handle_key(KeyCode::Char('y'), KeyModifiers::ALT).unwrap();
+    assert!(app.copy_selection_mode);
+    for _ in 0..30 {
+        app.handle_key(KeyCode::End, KeyModifiers::NONE).unwrap();
+        app.handle_key(KeyCode::Left, KeyModifiers::NONE).unwrap();
+        app.handle_key(KeyCode::Char('o'), KeyModifiers::NONE).unwrap();
+        if jcode_tui_messages::parse_collapsible_swarm_content(&app.display_messages[0].content).unwrap().expanded {
+            assert!(!app.is_processing);
+            return;
+        }
+        app.handle_key(KeyCode::Down, KeyModifiers::NONE).unwrap();
+    }
+    panic!("keyboard parity missing: swarm disclosure cannot be reached from copy-mode entry");
 }

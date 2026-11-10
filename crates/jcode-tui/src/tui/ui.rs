@@ -2183,6 +2183,26 @@ pub(crate) fn copy_point_from_screen(
     }
 }
 
+/// Resolve a keyboard selection cursor only when it still names a visible cell.
+pub(crate) fn copy_point_screen_position(
+    point: crate::tui::CopySelectionPoint,
+) -> Option<(u16, u16)> {
+    if point.pane == crate::tui::CopySelectionPane::Input {
+        return None;
+    }
+    let snapshot = copy_snapshot_for_pane(point.pane)?;
+    let row = point.abs_line.checked_sub(snapshot.scroll)?;
+    if point.abs_line >= snapshot.visible_end || row >= usize::from(snapshot.content_area.height) {
+        return None;
+    }
+    let x = usize::from(snapshot.content_area.x)
+        .checked_add(usize::from(*snapshot.left_margins.get(row).unwrap_or(&0)))?
+        .checked_add(point.column)?;
+    let y = usize::from(snapshot.content_area.y).checked_add(row)?;
+    let position = (u16::try_from(x).ok()?, u16::try_from(y).ok()?);
+    (copy_point_from_screen(position.0, position.1) == Some(point)).then_some(position)
+}
+
 /// Number of rows at the top/bottom of a pane that act as the browser-style
 /// auto-scroll "hot zone". Dragging a selection anywhere inside this band keeps
 /// pulling in more transcript, instead of requiring the cursor to land exactly

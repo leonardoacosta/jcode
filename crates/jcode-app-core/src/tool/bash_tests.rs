@@ -995,12 +995,11 @@ async fn bash_holds_a_risky_delete_until_justified_then_runs_it() {
     std::fs::create_dir_all(&target).expect("target");
     std::fs::write(target.join("f.txt"), "x").expect("file");
 
-    // The concrete outside-workspace directory is allowed by policy. Its glob
-    // keeps this test focused on the Confirm path for a statically unknown set
-    // of affected files.
+    // Wildcard directory components require confirmation even under a temp
+    // root. A filename-only glob there is intentionally classified as low risk.
     let command = format!(
-        "rm -rf {}/* && rmdir {}",
-        target.display(),
+        "rm -rf {}/*/f.txt && rmdir {}",
+        temp.path().display(),
         target.display()
     );
     let tool = BashTool::new();

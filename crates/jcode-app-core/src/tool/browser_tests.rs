@@ -277,6 +277,54 @@ fn description_tells_models_to_check_status_before_setup() {
     assert!(description.contains("setup only if not ready"));
 }
 
+#[tokio::test]
+async fn public_browser_status_without_bridge_is_explicit_and_bounded() {
+    if std::env::var_os("JCODE_TEST_BROWSER_UNAVAILABLE").is_none() {
+        let temp = tempfile::tempdir().unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "tool::browser::browser_tests::public_browser_status_without_bridge_is_explicit_and_bounded"])
+            .env("JCODE_TEST_BROWSER_UNAVAILABLE", "1")
+            .env("HOME", temp.path())
+            .env("JCODE_HOME", temp.path())
+            .env("JCODE_BROWSER_AUTOLAUNCH", "0")
+            .env("JCODE_BROWSER_AUTO_UPDATE", "0")
+            .env_remove("BROWSER_SESSION")
+            .output().unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
+        return;
+    }
+    let ctx = ToolContext {
+        session_id: "browser-unavailable-boundary".into(),
+        message_id: "m".into(),
+        tool_call_id: "t".into(),
+        working_dir: None,
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: super::super::ToolExecutionMode::Direct,
+    };
+    let output = tokio::time::timeout(
+        std::time::Duration::from_secs(5),
+        BrowserTool::new().execute(json!({"action":"status","browser":"firefox"}), ctx),
+    )
+    .await
+    .expect("unavailable bridge must return within five seconds")
+    .unwrap();
+    assert_eq!(output.metadata.as_ref().unwrap()["ready"], false);
+    assert!(output.output.contains("not installed"), "{}", output.output);
+    assert!(
+        !crate::storage::jcode_dir()
+            .unwrap()
+            .join("browser")
+            .exists()
+    );
+}
+
 #[cfg(unix)]
 #[tokio::test]
 async fn readiness_does_not_trust_a_stale_setup_marker() {

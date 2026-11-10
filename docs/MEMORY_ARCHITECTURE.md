@@ -121,6 +121,14 @@ links remain available without paid access. Query-based `memory recall` and CLI
 `memory search --semantic` use Jev. The old tool mode names `semantic` and
 `cascade` are compatibility aliases for Jev, not vector/graph recall.
 
+`remember` rejects an entire request when its content or tags match the existing
+known-secret patterns, before publishing memory activity or storing the entry.
+The manager also checks stored content, tags, search text and source for direct
+remember calls. The error does not echo the value. Remove the sensitive value
+and submit the safe fact again. This is not comprehensive confidentiality
+screening, does not clean existing memories, and does not add retention or purge
+behavior. Other graph import/update paths are not covered by this remember gate.
+
 ## Learning is separate from recall
 
 Jev does not generate prose summaries. The main agent can still write concise

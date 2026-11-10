@@ -974,6 +974,22 @@ mod tests {
             picker.selected_item().map(|item| item.provider.id),
             Some("claude")
         );
+        let clicked = picker.selected_item().unwrap().provider.id;
+        picker
+            .handle_overlay_key(KeyCode::Home, KeyModifiers::NONE)
+            .unwrap();
+        picker
+            .handle_overlay_key(KeyCode::Down, KeyModifiers::NONE)
+            .unwrap();
+        assert_eq!(
+            picker.selected_item().unwrap().provider.id,
+            clicked,
+            "keyboard parity missing: login provider selection"
+        );
+        assert!(
+            matches!(picker.handle_overlay_key(KeyCode::Enter, KeyModifiers::NONE).unwrap(),
+                OverlayAction::Execute(provider) if provider.id == "claude")
+        );
     }
 
     #[test]

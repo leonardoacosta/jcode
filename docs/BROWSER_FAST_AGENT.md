@@ -228,6 +228,23 @@ actions. These use the currently compiled test binary. The separate isolated
 CLI procedure verifies the CLI/daemon boundary too. Passing mock tests alone
 is not evidence of either live acceptance workflow.
 
+## Offline browser and voice boundary checks
+
+`public_browser_status_without_bridge_is_explicit_and_bounded` runs the real
+browser tool's status dispatch in a child process with a private home and no
+bridge installation. It requires `ready=false` within five seconds, an explicit
+not-installed message, and no browser installation. It does not validate a live
+handoff or extension.
+
+The TUI tests `voice_missing_key_preserves_composer_without_starting_capture`
+and `voice_transcript_slash_command_is_user_data_not_a_command` exercise the
+normal voice-key and transcript-submit paths. A missing key must leave capture
+inactive and preserve the draft and cursor. A transcript containing `/clear`
+must become a user message inside `<transcription>` tags, not a slash command.
+These checks do not open a microphone or contact a transcription provider.
+Active-recording Escape cancellation and missing-recorder acceptance still need
+isolated capture fixtures. Do not infer them from idle Escape or missing-key tests.
+
 ## Safe shared-server activation
 
 Inspect only while other work is active:

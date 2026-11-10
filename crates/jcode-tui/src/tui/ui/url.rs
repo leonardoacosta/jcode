@@ -67,6 +67,22 @@ pub(crate) fn link_target_for_display_column(raw_text: &str, column: usize) -> O
         }
     }
 
+    // Markdown rendering prints destinations as `label (path)`, not source
+    // syntax. Resolve only the displayed relative path, after enclosing URLs.
+    static RENDERED_MARKDOWN_PATH: OnceLock<Regex> = OnceLock::new();
+    let paths = RENDERED_MARKDOWN_PATH
+        .get_or_init(|| Regex::new(r"(?i)\(([^\s():]+\.md(?:[?#][^\s)]*)?)\)").unwrap());
+    for captures in paths.captures_iter(raw_text) {
+        let target = captures.get(1)?;
+        let start = raw_text[..target.start()].width();
+        if column >= start
+            && column < start + target.as_str().width()
+            && !std::path::Path::new(target.as_str()).is_absolute()
+        {
+            return Some(target.as_str().to_string());
+        }
+    }
+
     None
 }
 
@@ -164,5 +180,42 @@ mod tests {
             Some("docs/guide.md#setup".to_string())
         );
         assert_eq!(link_target_for_display_column(text, 8), None);
+    }
+
+    #[test]
+    fn rendered_markdown_destinations_are_cell_bounded() {
+        let text = "界 guide (docs/guide.md#setup) after";
+        let start = unicode_width::UnicodeWidthStr::width("界 guide (");
+        assert_eq!(
+            link_target_for_display_column(text, start),
+            Some("docs/guide.md#setup".into())
+        );
+        assert_eq!(link_target_for_display_column(text, start - 1), None);
+        assert_eq!(
+            link_target_for_display_column(text, start + "docs/guide.md#setup".len()),
+            None
+        );
+        assert_eq!(
+            link_target_for_display_column("guide (/private/guide.md)", 10),
+            None
+        );
+        assert_eq!(
+            link_target_for_display_column("guide (docs/guide.txt)", 10),
+            None
+        );
+        assert_eq!(
+            link_target_for_display_column("guide (https://example.com/guide.md)", 10),
+            Some("https://example.com/guide.md".into())
+        );
+    }
+
+    #[test]
+    fn rendered_relative_path_does_not_override_enclosing_url() {
+        let text = "https://example.test/(docs/guide.md)";
+        let column = text.find("guide.md").unwrap();
+        assert_eq!(
+            link_target_for_display_column(text, column),
+            Some(text.into())
+        );
     }
 }
