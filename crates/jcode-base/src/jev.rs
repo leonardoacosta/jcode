@@ -2388,14 +2388,30 @@ mod tests {
                 };
                 counter.fetch_add(1, Ordering::SeqCst);
                 std::thread::spawn(move || {
+                    stream
+                        .set_read_timeout(Some(Duration::from_secs(5)))
+                        .unwrap();
                     let mut bytes = Vec::new();
                     let mut buffer = [0u8; 4096];
-                    while !bytes.windows(4).any(|part| part == b"\r\n\r\n") {
+                    loop {
                         let n = stream.read(&mut buffer).unwrap_or(0);
                         if n == 0 {
                             return;
                         }
                         bytes.extend_from_slice(&buffer[..n]);
+                        if let Some(end) = bytes.windows(4).position(|part| part == b"\r\n\r\n") {
+                            let length = String::from_utf8_lossy(&bytes[..end])
+                                .lines()
+                                .find_map(|line| {
+                                    let (name, value) = line.split_once(':')?;
+                                    name.eq_ignore_ascii_case("content-length")
+                                        .then(|| value.trim().parse::<usize>().unwrap())
+                                })
+                                .unwrap_or(0);
+                            if bytes.len() >= end + 4 + length {
+                                break;
+                            }
+                        }
                     }
                     std::thread::sleep(delay);
                     let body = response().to_string();
@@ -2404,6 +2420,31 @@ mod tests {
             }
         });
         (base, seen)
+    }
+
+    #[test]
+    fn concurrent_mock_waits_for_complete_request_body() {
+        let (base, _) = concurrent_mock(vec![(Duration::ZERO, 200)]);
+        let mut stream = std::net::TcpStream::connect(base.trim_start_matches("http://")).unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_millis(100)))
+            .unwrap();
+        stream
+            .write_all(b"POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 4\r\n\r\n")
+            .unwrap();
+        let mut byte = [0];
+        let error = stream
+            .read(&mut byte)
+            .expect_err("fixture replied before receiving the request body");
+        assert!(matches!(
+            error.kind(),
+            std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+        ));
+        stream.write_all(b"test").unwrap();
+        stream
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .unwrap();
+        assert_eq!(stream.read(&mut byte).unwrap(), 1);
     }
 
     #[tokio::test]
