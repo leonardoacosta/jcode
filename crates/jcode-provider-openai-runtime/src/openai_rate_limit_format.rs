@@ -19,7 +19,16 @@ pub(crate) fn format_rate_limit_error(body: &str, retry_after: Option<Duration>)
         return format_unstructured_rate_limit_error(body, retry_after);
     };
 
-    let mut output = format!("Rate limited: {message}");
+    let quota = jcode_provider_core::classify_provider_failure(body)
+        == jcode_provider_core::ProviderFailureKind::QuotaExhausted;
+    let mut output = format!(
+        "{}: {message}",
+        if quota {
+            "QuotaExhausted"
+        } else {
+            "Rate limited"
+        }
+    );
     ensure_sentence_ending(&mut output);
 
     if let Some(plan) = error
@@ -130,12 +139,22 @@ mod tests {
 
         assert_eq!(
             message,
-            "Rate limited: The usage limit has been reached. Plan: team. Resets in 30d 4h 29m (2026-08-21 04:31 UTC)."
+            "QuotaExhausted: The usage limit has been reached. Plan: team. Resets in 30d 4h 29m (2026-08-21 04:31 UTC)."
         );
         assert!(!message.contains('{'));
         assert!(!message.contains("usage_limit_reached"));
         assert!(!message.contains("eligible_promo"));
         assert!(!message.contains("2608165"));
+    }
+
+    #[test]
+    fn structured_quota_preserves_kind_when_message_omits_error_code() {
+        let body = r#"{"error":{"type":"insufficient_quota","message":"Limit reached"}}"#;
+        let message = format_rate_limit_error(body, None);
+        assert_eq!(
+            jcode_provider_core::classify_provider_failure(&message),
+            jcode_provider_core::ProviderFailureKind::QuotaExhausted
+        );
     }
 
     #[test]

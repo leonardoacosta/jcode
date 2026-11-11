@@ -3,7 +3,7 @@
 - [ ] 1.1 Add item state and acknowledgement to `ScheduleQueue`
 - [ ] 1.2 Startup recovery marks dispatched-without-ack items uncertain and overdue items missed; require explicit manual retry
 - [ ] 1.3 Bounded history in `schedule list`
-- [ ] 1.4 Tests: crash-before-ack stays uncertain without redelivery; lost ack after execution does not duplicate work; explicit retry is recorded; acknowledged item not redelivered; overdue shown as missed
+- [ ] 1.4 Tests: crash-before-ack stays uncertain without redelivery; lost ack after execution does not automatically duplicate work; manual retry warns of possible previous effects and preserves attempt history; acknowledged delivery is not task-success evidence; revoked/cancelled targets never wake; overdue shown as missed.
 
 ## 2. Verification
 

@@ -1212,6 +1212,9 @@ pub fn render_image_widget_fit_stable(
     centered: bool,
     draw_border: bool,
 ) -> bool {
+    if runtime::images_disabled() {
+        return false;
+    }
     if VIDEO_EXPORT_MODE.load(Ordering::Relaxed) {
         return true;
     }
@@ -1361,6 +1364,9 @@ pub fn render_image_widget_viewport_precise(
     zoom_percent: u16,
     draw_border: bool,
 ) -> u16 {
+    if runtime::images_disabled() {
+        return 0;
+    }
     if VIDEO_EXPORT_MODE.load(Ordering::Relaxed) {
         return area.height;
     }

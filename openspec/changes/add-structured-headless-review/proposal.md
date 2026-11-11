@@ -11,7 +11,7 @@ Autoreview returns a free-text DM: the reviewer is told to summarize findings "o
 
 ## What Changes
 
-- Define a review verdict JSON schema: `verdict` (`pass`|`fail`|`inconclusive`|`cancelled`|`budget_exhausted`), `revision` (git HEAD + dirty flag), `checks` run with exit status, and `findings` (severity, path, message).
+- Define a review verdict JSON schema: `verdict` (`pass`|`fail`|`inconclusive`|`cancelled`|`budget_exhausted`), `revision` (base/head IDs plus exact reviewed diff/content digest, including scoped untracked content, not merely a dirty flag), `checks` run with exit status, and `findings` (severity, path, message).
 - Add a headless entry (`jcode review --json`) that runs one reviewer session read-only and prints exactly one verdict object; exit code maps from verdict.
 - Have autoreview request the same structured output and display it; invalid or missing JSON yields `inconclusive`.
 

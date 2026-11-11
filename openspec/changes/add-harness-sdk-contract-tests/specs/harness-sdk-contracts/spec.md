@@ -14,7 +14,11 @@ Rust and TypeScript clients SHALL parse the same golden protocol fixtures, and v
 
 ### Requirement: Error and cancel ordering
 
-The server SHALL reject unsupported versions and malformed frames with typed errors, and SHALL emit exactly one terminal event after `Cancel`.
+The server SHALL reject unsupported versions and malformed frames with typed errors. After `Cancel`, it SHALL emit exactly one completion boundary (`TurnDone`) for the cancelled execution generation and no later content deltas for that generation. `TurnStopped` and typed error/status events MAY precede that boundary according to the existing protocol; they SHALL NOT be counted as duplicate completion boundaries. Cancellation acknowledgment SHALL NOT be treated as durable session-stop settlement.
+
+#### Scenario: Malformed frame
+- **WHEN** a malformed request frame reaches the real server protocol boundary
+- **THEN** it returns a typed error without creating a session or fabricating a successful turn completion
 
 #### Scenario: Unsupported version
 - **WHEN** a client sends `hello` with `min_version` above the server major
@@ -22,4 +26,4 @@ The server SHALL reject unsupported versions and malformed frames with typed err
 
 #### Scenario: Cancel mid-stream
 - **WHEN** a client sends `Cancel` during streaming
-- **THEN** no deltas follow the single terminal event for that generation
+- **THEN** the allowed abnormal-stop/status events precede exactly one `TurnDone`, no content deltas for that generation follow it, and another generation is not mistaken for a late delta

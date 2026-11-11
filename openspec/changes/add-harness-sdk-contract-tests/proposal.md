@@ -13,13 +13,14 @@ The Rust harness API and the TypeScript SDK duplicate the protocol by hand: both
 
 - Add shared JSON golden fixtures (requests, events, error frames) generated from the Rust types and consumed by a TypeScript test.
 - Add a check that Rust and TypeScript version constants match.
-- Add server contract tests for: unsupported major version, malformed frame, and cancel producing exactly one terminal event after in-flight deltas.
+- Add server contract tests for unsupported major version, malformed frame, and cancel producing exactly one `TurnDone` completion boundary after allowed `TurnStopped`/error status events, with no later content delta for that execution generation.
 
 ## Non-scope
 
 - New API features or a version bump.
 - Desktop client changes (consumer boundary only).
 - Lifecycle hook events (add-lifecycle-hooks).
+- New durable stop semantics or generation allocation (make-worker-stop-durable). These tests pin the current protocol boundary and gain additive compatibility cases as that foundation evolves; they are recommended early, not a hard prerequisite cycle.
 
 ## Capabilities
 

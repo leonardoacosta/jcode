@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [make-worker-stop-durable]
 ---
 # Proposal
 
@@ -13,10 +13,10 @@ Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODU
 
 ## What Changes
 
-- Share one lifecycle enum (`spawned`, `running`, `waiting`, `blocked`, `stalled`, `done`, `failed`) between swarm members and background tasks; the widget renders from it.
+- Derive a shared presentation projection from existing swarm/background types and durable control state without replacing those types. Preserve stopped, crashed, cancelled, draining and unresolved meaning; never collapse them into successful done. Display state is not execution authority.
 - Show `stalled Nm` and a short blocked reason (awaiting approval, waiting on dependency, waiting on network) with age, within existing display-cell truncation.
-- Mark done/failed rows unseen until the widget or `/agents` view is shown; show an unseen count in the widget header.
-- On a stall, show a coordinator toast with nudge / stop / open-pane actions instead of relying on the opt-in silent nudge.
+- Track a completion-event ID and per-consumer seen cursor. Viewing the widget or `/agents` marks only that consumer's completion seen; it does not change execution state or implicitly clear Herdr's cursor.
+- On a stall, show only supported authorized actions. Stop consumes the durable control contract; open-pane is offered only with verified pane identity from focus-worker-herdr-pane. Its absence does not block stall visibility. Nudge never revives revoked work.
 
 ## Capabilities
 

@@ -2,7 +2,7 @@
 
 ### Requirement: Durable scheduled delivery
 
-Scheduled items SHALL remain persisted until delivery is acknowledged.
+Scheduled items SHALL remain persisted until target delivery is acknowledged. Acknowledgment SHALL identify target acceptance and generation, not successful execution. Delivery SHALL revalidate cancellation/revocation and SHALL NOT wake a stale generation. Manual uncertain retry SHALL warn that prior effects may already exist and preserve separate attempt history; it SHALL NOT claim exactly-once execution.
 
 #### Scenario: Delivery acknowledgment missing
 

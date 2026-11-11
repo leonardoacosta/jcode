@@ -543,67 +543,76 @@ fn claim_task_attempt_bounded(
 mod tests {
     use super::*;
 
-    #[tokio::test]
-    async fn task_admission_bounded_provider_dispatch_persists_nonrefundable_spend() {
-        use jcode_provider_core::provider_monetary_budget::OfflineBoundedProvider;
+    #[test]
+    fn task_admission_bounded_provider_dispatch_persists_nonrefundable_spend() {
         let _env = storage::lock_test_env();
-        let (temp, path, policy) = fixture();
-        let previous = std::env::var_os("JCODE_HOME");
-        crate::env::set_var("JCODE_HOME", temp.path());
-        std::fs::write(
-            temp.path().join("config.toml"),
-            "[tasks]\nunattended = true\n",
-        )
-        .unwrap();
-        let directory = temp.path().join("overnight/runs/atomic");
-        std::fs::create_dir_all(&directory).unwrap();
-        let trusted = directory.join("manifest.json");
-        std::fs::copy(path, &trusted).unwrap();
-        let result = async {
-            let account = task_monetary_account(&trusted, &policy, "bounded")?;
-            let provider = OfflineBoundedProvider::new(account.clone());
-            let claim = start_task_attempt_with_provider(&trusted, &policy, "bounded", &provider)?;
-            claim
-                .complete_with_provider(&provider, "synthetic request", "fixture")
-                .await?;
-            anyhow::ensure!(
-                account.totals()?.reserved_microusd == 1,
-                "actual send must reserve first"
-            );
-            let restarted =
-                restart_task_attempt_with_provider(&trusted, &policy, "bounded", &provider)?;
-            restarted
-                .complete_with_provider(&provider, "synthetic request", "fixture")
-                .await?;
-            anyhow::ensure!(
-                account.totals()?.reserved_microusd == 2,
-                "restart must not refund"
-            );
-            let claim =
-                restart_task_attempt_with_provider(&trusted, &policy, "bounded", &provider)?;
-            let mut cancelled = read_manifest_at(&trusted)?;
-            cancelled.cancel_requested_at = Some(Utc::now());
-            cancelled.status = OvernightRunStatus::CancelRequested;
-            save_manifest_at(&trusted, &cancelled)?;
-            anyhow::ensure!(
-                claim
-                    .complete_with_provider(&provider, "must not send", "fixture")
-                    .await
-                    .is_err(),
-                "cancellation must deny before provider effects"
-            );
-            anyhow::ensure!(
-                account.totals()?.reserved_microusd == 2,
-                "denied dispatch must not send or refund"
-            );
-            Ok::<_, anyhow::Error>(())
-        }
-        .await;
-        match previous {
-            Some(value) => crate::env::set_var("JCODE_HOME", value),
-            None => crate::env::remove_var("JCODE_HOME"),
-        }
-        result.unwrap();
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                use jcode_provider_core::provider_monetary_budget::OfflineBoundedProvider;
+                let (temp, path, policy) = fixture();
+                let previous = std::env::var_os("JCODE_HOME");
+                crate::env::set_var("JCODE_HOME", temp.path());
+                std::fs::write(
+                    temp.path().join("config.toml"),
+                    "[tasks]\nunattended = true\n",
+                )
+                .unwrap();
+                let directory = temp.path().join("overnight/runs/atomic");
+                std::fs::create_dir_all(&directory).unwrap();
+                let trusted = directory.join("manifest.json");
+                std::fs::copy(path, &trusted).unwrap();
+                let result = async {
+                    let account = task_monetary_account(&trusted, &policy, "bounded")?;
+                    let provider = OfflineBoundedProvider::new(account.clone());
+                    let claim =
+                        start_task_attempt_with_provider(&trusted, &policy, "bounded", &provider)?;
+                    claim
+                        .complete_with_provider(&provider, "synthetic request", "fixture")
+                        .await?;
+                    anyhow::ensure!(
+                        account.totals()?.reserved_microusd == 1,
+                        "actual send must reserve first"
+                    );
+                    let restarted = restart_task_attempt_with_provider(
+                        &trusted, &policy, "bounded", &provider,
+                    )?;
+                    restarted
+                        .complete_with_provider(&provider, "synthetic request", "fixture")
+                        .await?;
+                    anyhow::ensure!(
+                        account.totals()?.reserved_microusd == 2,
+                        "restart must not refund"
+                    );
+                    let claim = restart_task_attempt_with_provider(
+                        &trusted, &policy, "bounded", &provider,
+                    )?;
+                    let mut cancelled = read_manifest_at(&trusted)?;
+                    cancelled.cancel_requested_at = Some(Utc::now());
+                    cancelled.status = OvernightRunStatus::CancelRequested;
+                    save_manifest_at(&trusted, &cancelled)?;
+                    anyhow::ensure!(
+                        claim
+                            .complete_with_provider(&provider, "must not send", "fixture")
+                            .await
+                            .is_err(),
+                        "cancellation must deny before provider effects"
+                    );
+                    anyhow::ensure!(
+                        account.totals()?.reserved_microusd == 2,
+                        "denied dispatch must not send or refund"
+                    );
+                    Ok::<_, anyhow::Error>(())
+                }
+                .await;
+                match previous {
+                    Some(value) => crate::env::set_var("JCODE_HOME", value),
+                    None => crate::env::remove_var("JCODE_HOME"),
+                }
+                result.unwrap();
+            });
     }
 
     #[test]
@@ -638,37 +647,44 @@ mod tests {
         }
     }
 
-    #[tokio::test]
-    async fn task_admission_claim_retains_requested_runtime_ceiling() {
-        use jcode_provider_core::provider_monetary_budget::OfflineBoundedProvider;
+    #[test]
+    fn task_admission_claim_retains_requested_runtime_ceiling() {
         let _env = storage::lock_test_env();
-        let (temp, path, mut policy) = fixture();
-        let previous = std::env::var_os("JCODE_HOME");
-        crate::env::set_var("JCODE_HOME", temp.path());
-        std::fs::write(
-            temp.path().join("config.toml"),
-            "[tasks]\nunattended = true\n",
-        )
-        .unwrap();
-        let directory = temp.path().join("overnight/runs/atomic");
-        std::fs::create_dir_all(&directory).unwrap();
-        let trusted = directory.join("manifest.json");
-        std::fs::copy(path, &trusted).unwrap();
-        policy.max_runtime_seconds = 1;
-        let account = task_monetary_account(&trusted, &policy, "bounded").unwrap();
-        let provider = OfflineBoundedProvider::new(account.clone());
-        let claim =
-            start_task_attempt_with_provider(&trusted, &policy, "bounded", &provider).unwrap();
-        tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-        let result = claim
-            .complete_with_provider(&provider, "must not send", "fixture")
-            .await;
-        match previous {
-            Some(value) => crate::env::set_var("JCODE_HOME", value),
-            None => crate::env::remove_var("JCODE_HOME"),
-        }
-        assert!(result.is_err());
-        assert_eq!(account.totals().unwrap().reserved_microusd, 0);
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(async {
+                use jcode_provider_core::provider_monetary_budget::OfflineBoundedProvider;
+                let (temp, path, mut policy) = fixture();
+                let previous = std::env::var_os("JCODE_HOME");
+                crate::env::set_var("JCODE_HOME", temp.path());
+                std::fs::write(
+                    temp.path().join("config.toml"),
+                    "[tasks]\nunattended = true\n",
+                )
+                .unwrap();
+                let directory = temp.path().join("overnight/runs/atomic");
+                std::fs::create_dir_all(&directory).unwrap();
+                let trusted = directory.join("manifest.json");
+                std::fs::copy(path, &trusted).unwrap();
+                policy.max_runtime_seconds = 1;
+                let account = task_monetary_account(&trusted, &policy, "bounded").unwrap();
+                let provider = OfflineBoundedProvider::new(account.clone());
+                let claim =
+                    start_task_attempt_with_provider(&trusted, &policy, "bounded", &provider)
+                        .unwrap();
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                let result = claim
+                    .complete_with_provider(&provider, "must not send", "fixture")
+                    .await;
+                match previous {
+                    Some(value) => crate::env::set_var("JCODE_HOME", value),
+                    None => crate::env::remove_var("JCODE_HOME"),
+                }
+                assert!(result.is_err());
+                assert_eq!(account.totals().unwrap().reserved_microusd, 0);
+            });
     }
     use std::sync::{Arc, Barrier};
 

@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [make-worker-stop-durable]
 ---
 Roadmap owner: [P06: Provider/auth/usage-budget reliability](../../../docs/plans/PRODUCT_ROADMAP.md#p06-providerauthusage-budget-reliability)
 
@@ -12,6 +12,7 @@ Overnight preflight projects usage with fixed heuristics (`overnight.rs:446-527`
 ## What Changes
 
 - Aggregate provider-reported usage per overnight run across coordinator, resumed sessions and run-owned swarm workers.
+- Consume retained run/session/generation ownership from durable worker control, with event/request dedup across retries, restart and resumed workers. Post-request accounting is observation, not authoritative pre-send monetary reservation or proof of hard currency caps.
 - At run end, record `usage_reconciled`: projected range, observed usage, and source (`reported` or `estimated`) per provider.
 - Render it in the morning report using the info widget's limit-bar renderer.
 

@@ -26,9 +26,10 @@ where
     if tx.is_closed() {
         return Ok(None);
     }
-    // Rotation may have already happened remotely. Finish persistence and
-    // the in-memory commit before observing consumer cancellation again.
-    let token = authenticate.await?;
+    // Cancellation can stop a queued exchange. A dispatched transaction owns
+    // persistence and memory commit even after this caller stops waiting.
+    let token =
+        jcode_base::auth::oauth::with_refresh_cancellation(tx.closed(), authenticate).await?;
     Ok(while_consumer_open(tx, transport(token)).await)
 }
 
@@ -55,14 +56,14 @@ mod tests {
         let task = tokio::spawn(async move {
             after_authentication(
                 &tx,
-                async move {
+                jcode_base::auth::oauth::run_refresh_transaction(async move {
                     started_tx.send(()).unwrap();
                     release_rx.await.unwrap();
                     persisted_task.store(true, Ordering::SeqCst);
                     tokio::task::yield_now().await;
                     committed_task.store(true, Ordering::SeqCst);
                     Ok("synthetic-access".to_string())
-                },
+                }),
                 move |_| async move {
                     called_task.store(true, Ordering::SeqCst);
                 },
@@ -76,8 +77,15 @@ mod tests {
         let result = tokio::time::timeout(Duration::from_secs(1), task)
             .await
             .unwrap()
-            .unwrap()
             .unwrap();
+        assert!(result.is_err());
+        tokio::time::timeout(Duration::from_secs(1), async {
+            while !committed.load(Ordering::SeqCst) {
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
         assert!(
             persisted.load(Ordering::SeqCst),
             "consumer cancellation must not discard rotated-token persistence"
@@ -86,8 +94,21 @@ mod tests {
             committed.load(Ordering::SeqCst),
             "in-memory commit must finish with persistence"
         );
-        assert!(result.is_none());
         assert!(!called_transport.load(Ordering::SeqCst));
+    }
+
+    #[tokio::test]
+    async fn cancellation_before_authentication_does_not_start_exchange() {
+        let (tx, rx) = mpsc::channel(1);
+        drop(rx);
+        let result = after_authentication(
+            &tx,
+            async { panic!("cancelled before exchange must leave credentials unchanged") },
+            |_| async { panic!("cancelled turn must not start transport") },
+        )
+        .await
+        .unwrap();
+        assert!(result.is_none());
     }
 
     #[tokio::test]

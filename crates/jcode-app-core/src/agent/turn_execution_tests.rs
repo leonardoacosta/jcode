@@ -210,8 +210,9 @@ async fn continue_turn_after_failover_runs_streaming_turn() {
         .append_user_context_message("retry me", Vec::new())
         .unwrap();
     let (tx, _rx) = mpsc::unbounded_channel();
+    let lease = agent.claim_server_turn().unwrap();
     agent
-        .continue_turn_after_failover(Some("ignored reminder".into()), tx)
+        .continue_turn_after_failover(&lease, Some("ignored reminder".into()), tx)
         .await
         .unwrap();
     assert_eq!(calls.load(Ordering::SeqCst), 1);
@@ -234,7 +235,11 @@ async fn continue_turn_after_failover_noops_on_graceful_shutdown() {
     agent.request_graceful_shutdown();
     let before = agent.message_count();
     let (tx, _rx) = mpsc::unbounded_channel();
-    agent.continue_turn_after_failover(None, tx).await.unwrap();
+    let lease = agent.claim_server_turn().unwrap();
+    agent
+        .continue_turn_after_failover(&lease, None, tx)
+        .await
+        .unwrap();
     assert_eq!(calls.load(Ordering::SeqCst), 0);
     assert_eq!(agent.message_count(), before);
 }

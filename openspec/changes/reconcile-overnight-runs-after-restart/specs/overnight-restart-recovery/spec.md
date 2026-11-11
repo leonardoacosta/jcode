@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Restart recovery is admission-driven
-After restart the system SHALL reconcile interrupted runs against current configured task admission policy and persisted authorization. An overnight wake time alone SHALL NOT authorize or exclude work. Cancellation, scope and finite resource limits SHALL remain enforced.
+After restart the system SHALL reconcile interrupted runs against current configured task admission policy and persisted authorization. An overnight wake time alone SHALL NOT authorize or exclude work. Cancellation, scope and finite resource limits SHALL remain enforced. It SHALL consume the admission and background-ownership contracts, retain unresolved predecessor/child work as interrupted, and require authoritative pre-send monetary capability for chargeable execution rather than infer eligibility from archive presence.
 
 #### Scenario: Eligible authorized task
 - **WHEN** a supervisor is gone and its persisted task is still authorized, within remaining resource limits, dependency-ready and accepted by current admission policy

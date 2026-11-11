@@ -4,6 +4,7 @@ pub mod memory_tiles;
 pub mod swarm_gallery;
 pub mod swarm_tiles;
 
+use jcode_tui_style::theme::chrome_symbol;
 use ratatui::prelude::{Line, Span, Style};
 
 pub fn render_rounded_box(
@@ -37,12 +38,20 @@ pub fn render_rounded_box(
 
     let box_width = box_content_width + 4;
     let border_chars = box_width.saturating_sub(title_len + 2);
-    let left_border = "─".repeat(border_chars / 2);
-    let right_border = "─".repeat(border_chars - border_chars / 2);
+    let horizontal = chrome_symbol("─", "-");
+    let left_border = horizontal.repeat(border_chars / 2);
+    let right_border = horizontal.repeat(border_chars - border_chars / 2);
 
     let mut lines: Vec<Line<'static>> = Vec::new();
     lines.push(Line::from(Span::styled(
-        format!("╭{}{}{}╮", left_border, title_text, right_border),
+        format!(
+            "{}{}{}{}{}",
+            chrome_symbol("╭", "+"),
+            left_border,
+            title_text,
+            right_border,
+            chrome_symbol("╮", "+")
+        ),
         border_style,
     )));
 
@@ -50,18 +59,23 @@ pub fn render_rounded_box(
         let truncated = truncate_line_to_width(&line, box_content_width);
         let padding = box_content_width.saturating_sub(truncated.width());
         let mut spans: Vec<Span<'static>> = Vec::new();
-        spans.push(Span::styled("│ ", border_style));
+        spans.push(Span::styled(chrome_symbol("│ ", "| "), border_style));
         spans.extend(truncated.spans);
         if padding > 0 {
             spans.push(Span::raw(" ".repeat(padding)));
         }
-        spans.push(Span::styled(" │", border_style));
+        spans.push(Span::styled(chrome_symbol(" │", " |"), border_style));
         lines.push(Line::from(spans));
     }
 
-    let bottom_border = "─".repeat(box_width.saturating_sub(2));
+    let bottom_border = horizontal.repeat(box_width.saturating_sub(2));
     lines.push(Line::from(Span::styled(
-        format!("╰{}╯", bottom_border),
+        format!(
+            "{}{}{}",
+            chrome_symbol("╰", "+"),
+            bottom_border,
+            chrome_symbol("╯", "+")
+        ),
         border_style,
     )));
 
@@ -117,7 +131,7 @@ pub fn truncate_line_with_ellipsis_to_width(line: &Line<'static>, width: usize) 
         return line.clone();
     }
     if width == 1 {
-        return Line::from(Span::raw("…"));
+        return Line::from(Span::raw(chrome_symbol("…", "."))).style(line.style);
     }
 
     let mut spans: Vec<Span<'static>> = Vec::new();
@@ -153,8 +167,8 @@ pub fn truncate_line_with_ellipsis_to_width(line: &Line<'static>, width: usize) 
         }
     }
 
-    spans.push(Span::styled("…", ellipsis_style));
-    let mut truncated = Line::from(spans);
+    spans.push(Span::styled(chrome_symbol("…", "."), ellipsis_style));
+    let mut truncated = Line::from(spans).style(line.style);
     truncated.alignment = line.alignment;
     truncated
 }
@@ -199,4 +213,114 @@ pub fn line_plain_text(line: &Line<'_>) -> String {
         .iter()
         .map(|span| span.content.as_ref())
         .collect::<String>()
+}
+
+#[cfg(test)]
+mod ascii_tests {
+    use super::*;
+    use ratatui::{Terminal, backend::TestBackend, widgets::Paragraph};
+
+    #[test]
+    fn ascii_chrome_environment_matrix() {
+        if std::env::var_os("JCODE_TEST_ASCII_CHROME_CHILD").is_none() {
+            for value in [
+                None,
+                Some("on"),
+                Some(" TRUE "),
+                Some("1"),
+                Some("yes"),
+                Some("off"),
+                Some("0"),
+                Some("false"),
+                Some("no"),
+                Some(""),
+                Some("invalid"),
+            ] {
+                let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+                command
+                    .args([
+                        "--exact",
+                        "ascii_tests::ascii_chrome_environment_matrix",
+                        "--nocapture",
+                    ])
+                    .env("JCODE_TEST_ASCII_CHROME_CHILD", "1")
+                    .env_remove("JCODE_ASCII_SAFE");
+                if let Some(value) = value {
+                    command.env("JCODE_ASCII_SAFE", value);
+                }
+                let output = command.output().unwrap();
+                assert!(
+                    output.status.success(),
+                    "{value:?}: {}{}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+            return;
+        }
+        let ascii = matches!(
+            std::env::var("JCODE_ASCII_SAFE")
+                .unwrap_or_default()
+                .trim()
+                .to_ascii_lowercase()
+                .as_str(),
+            "on" | "true" | "1" | "yes"
+        );
+        let border = Style::default().fg(ratatui::prelude::Color::Red);
+        let content = "中文 α /tmp/路径 https://例子.test/✓ tool→output";
+        let lines = render_rounded_box("标题 ✓", vec![Line::from(content)], 100, border);
+        let text = lines
+            .iter()
+            .map(line_plain_text)
+            .collect::<Vec<_>>()
+            .join("\n");
+        assert!(text.contains(content), "content changed: {text}");
+        assert!(text.contains("标题 ✓"), "title changed: {text}");
+        assert_eq!(text.contains('╭'), !ascii);
+        assert_eq!(text.contains('+'), ascii);
+        for width in 0..25 {
+            let line = truncate_line_with_ellipsis_to_width(&Line::from("中文abcdefghi"), width);
+            assert!(line.width() <= width);
+            if width > 0 && width < 13 {
+                assert!(line_plain_text(&line).ends_with(if ascii { "." } else { "…" }));
+            }
+            let box_lines = render_rounded_box(
+                "title",
+                vec![Line::from("long generated chrome")],
+                width,
+                border,
+            );
+            assert!(box_lines.iter().all(|line| line.width() <= width));
+        }
+        let spinner = jcode_tui_style::theme::activity_indicator(0.0, 12.5, false);
+        assert_eq!(spinner.is_ascii(), ascii);
+        assert!(jcode_tui_style::theme::is_activity_indicator_frame(spinner));
+        let mut terminal = Terminal::new(TestBackend::new(20, 4)).unwrap();
+        terminal
+            .draw(|frame| {
+                crate::chrome::draw_right_rail_chrome(
+                    frame,
+                    frame.area(),
+                    Line::from("中文/title"),
+                    border,
+                );
+            })
+            .unwrap();
+        assert_eq!(
+            terminal.backend().buffer()[(0, 1)].symbol(),
+            if ascii { "|" } else { "│" }
+        );
+        let lines = render_rounded_box("title", vec![Line::from("content")], 20, border);
+        terminal
+            .draw(|frame| frame.render_widget(Paragraph::new(lines), frame.area()))
+            .unwrap();
+        let buffer = terminal.backend().buffer();
+        assert_eq!(buffer[(0, 0)].symbol(), if ascii { "+" } else { "╭" });
+        assert!(
+            buffer
+                .content
+                .iter()
+                .all(|cell| !ascii || cell.symbol().is_ascii())
+        );
+    }
 }

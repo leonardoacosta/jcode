@@ -3,6 +3,87 @@
 use crate::*;
 
 #[test]
+fn shared_protocol_goldens_match_rust_types() {
+    let requests = [
+        ClientFrame::new(
+            1,
+            ApiRequest::Hello {
+                min_version: API_VERSION_MAJOR,
+                max_version: API_VERSION_MAJOR,
+                client: "contract-fixture".into(),
+                supports_user_response: false,
+            },
+        ),
+        ClientFrame::new(
+            2,
+            ApiRequest::Cancel {
+                session_id: "fixture-session".into(),
+            },
+        ),
+    ];
+    let events = [
+        ServerFrame::reply(
+            1,
+            ApiEvent::HelloOk {
+                version: API_VERSION_MAJOR,
+                server: "contract-fixture".into(),
+                capabilities: vec!["streaming".into()],
+            },
+        ),
+        ServerFrame::event(ApiEvent::TextDelta {
+            session_id: "fixture-session".into(),
+            text: "fixture text".into(),
+            message_id: Some("generation-1".into()),
+        }),
+        ServerFrame::event(ApiEvent::TurnStopped {
+            session_id: "fixture-session".into(),
+            reason: TurnStopReason::Interrupted,
+            message: "cancelled".into(),
+            provider_stop_reason: None,
+        }),
+        ServerFrame::event(ApiEvent::TurnDone {
+            session_id: "fixture-session".into(),
+            pending_soft_interrupts: None,
+        }),
+        ServerFrame::reply(
+            3,
+            ApiEvent::Error {
+                code: ErrorCode::UnsupportedVersion,
+                message: "unsupported major".into(),
+            },
+        ),
+        ServerFrame::event(ApiEvent::Error {
+            code: ErrorCode::InvalidRequest,
+            message: "malformed frame".into(),
+        }),
+    ];
+    let expected = serde_json::json!({"major": API_VERSION_MAJOR, "minor": API_VERSION_MINOR, "requests": requests, "events": events});
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("fixtures/protocol.json");
+    if std::env::var_os("JCODE_UPDATE_PROTOCOL_FIXTURES").is_some() {
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(
+            &path,
+            format!("{}\n", serde_json::to_string_pretty(&expected).unwrap()),
+        )
+        .unwrap();
+    }
+    let raw = std::fs::read_to_string(&path)
+        .expect("generate typed fixture with JCODE_UPDATE_PROTOCOL_FIXTURES=1");
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&raw).unwrap(),
+        expected
+    );
+    for frame in expected["requests"].as_array().unwrap() {
+        let decoded: ClientFrame = serde_json::from_value(frame.clone()).unwrap();
+        assert_eq!(serde_json::to_value(decoded).unwrap(), *frame);
+    }
+    for frame in expected["events"].as_array().unwrap() {
+        let decoded: ServerFrame = serde_json::from_value(frame.clone()).unwrap();
+        assert_eq!(serde_json::to_value(decoded).unwrap(), *frame);
+    }
+}
+
+#[test]
 fn create_session_system_prompt_roundtrip_and_legacy_default() {
     let legacy = serde_json::json!({"req": "create_session"});
     let decoded: ApiRequest = serde_json::from_value(legacy.clone()).unwrap();
@@ -38,6 +119,7 @@ fn token_usage_preserves_cache_creation_and_accepts_legacy_frames() {
             output: 5,
             cache_read_input: Some(2),
             cache_creation_input,
+            effective_budget: None,
         });
         let wire = serde_json::to_value(&frame).unwrap();
         assert_eq!(wire["cache_creation_input"], cache_creation_input.unwrap());

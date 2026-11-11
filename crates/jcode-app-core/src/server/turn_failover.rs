@@ -94,7 +94,7 @@ pub(super) fn pick_failover_target(agent: &Agent, error: &str) -> Option<Failove
         crate::provider::FallbackPickOptions {
             credential_failure: true,
         },
-        &pool.members,
+        &pool.ordered_members(),
     );
     ranked
         .into_iter()
@@ -153,6 +153,7 @@ pub(super) fn apply_failover_target(
 
 /// Run a message turn, and when enabled, transparently fail over to the next
 /// pool-approved account and retry the same turn on a usage/rate-limit error.
+#[cfg(test)]
 pub(super) async fn process_message_with_server_failover(
     agent: Arc<Mutex<Agent>>,
     content: &str,
@@ -161,25 +162,52 @@ pub(super) async fn process_message_with_server_failover(
     event_tx: mpsc::UnboundedSender<ServerEvent>,
     enabled: bool,
 ) -> anyhow::Result<()> {
+    let lease = agent.lock().await.claim_server_turn()?;
+    process_reserved_message_with_server_failover(
+        agent,
+        &lease,
+        content,
+        images,
+        system_reminder,
+        event_tx,
+        enabled,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn process_reserved_message_with_server_failover(
+    agent: Arc<Mutex<Agent>>,
+    lease: &crate::agent::TurnLease,
+    content: &str,
+    images: Vec<(String, String)>,
+    system_reminder: Option<String>,
+    event_tx: mpsc::UnboundedSender<ServerEvent>,
+    enabled: bool,
+) -> anyhow::Result<()> {
     let reminder = system_reminder.clone();
-    let result = super::client_lifecycle::process_message_streaming_mpsc(
-        Arc::clone(&agent),
+    let mut guard = agent.lock().await;
+    let result = super::client_lifecycle::process_reserved_message_streaming_mpsc(
+        &mut guard,
+        lease,
         content,
         images,
         system_reminder,
         event_tx.clone(),
+        None,
     )
     .await;
-    if !enabled || result.is_ok() {
+    if !enabled && result.is_err() {
         return result;
     }
-    let mut guard = agent.lock().await;
-    retry_turn_with_server_failover(&mut guard, result, reminder, event_tx).await
+    retry_turn_with_server_failover(&mut guard, lease, result, reminder, event_tx.clone()).await?;
+    super::runtime_ssh_loops::run_reserved_followups(&mut guard, lease, event_tx).await
 }
 
 /// Server-initiated turn (swarm spawn/assign, wake, headless reload recovery)
 /// on an already locked agent. No client runs a countdown for these turns, so
 /// the server always applies the account router itself.
+#[cfg(test)]
 pub(super) async fn process_locked_message_with_server_failover(
     agent: &mut Agent,
     content: &str,
@@ -187,9 +215,31 @@ pub(super) async fn process_locked_message_with_server_failover(
     system_reminder: Option<String>,
     event_tx: mpsc::UnboundedSender<ServerEvent>,
 ) -> anyhow::Result<()> {
-    let reminder = system_reminder.clone();
-    let result = super::client_lifecycle::process_locked_message_streaming_mpsc(
+    let lease = agent.claim_server_turn()?;
+    process_reserved_locked_message_with_server_failover(
         agent,
+        &lease,
+        content,
+        images,
+        system_reminder,
+        event_tx,
+    )
+    .await
+}
+
+pub(super) async fn process_reserved_locked_message_with_server_failover(
+    agent: &mut Agent,
+    lease: &crate::agent::TurnLease,
+    content: &str,
+    images: Vec<(String, String)>,
+    system_reminder: Option<String>,
+    event_tx: mpsc::UnboundedSender<ServerEvent>,
+) -> anyhow::Result<()> {
+    agent.validate_server_turn(lease)?;
+    let reminder = system_reminder.clone();
+    let result = super::client_lifecycle::process_reserved_message_streaming_mpsc(
+        agent,
+        lease,
         content,
         images,
         system_reminder,
@@ -197,11 +247,13 @@ pub(super) async fn process_locked_message_with_server_failover(
         Some(crate::session::StoredDisplayRole::System),
     )
     .await;
-    retry_turn_with_server_failover(agent, result, reminder, event_tx).await
+    retry_turn_with_server_failover(agent, lease, result, reminder, event_tx.clone()).await?;
+    super::runtime_ssh_loops::run_reserved_followups(agent, lease, event_tx).await
 }
 
 /// [`process_locked_message_with_server_failover`] for callers holding an
 /// `Arc<Mutex<Agent>>`.
+#[cfg(test)]
 pub(super) async fn process_server_initiated_message(
     agent: Arc<Mutex<Agent>>,
     content: &str,
@@ -225,10 +277,12 @@ pub(super) async fn process_server_initiated_message(
 /// usage/rate-limit error.
 pub(super) async fn retry_turn_with_server_failover(
     agent: &mut Agent,
+    lease: &crate::agent::TurnLease,
     mut result: anyhow::Result<()>,
     reminder: Option<String>,
     event_tx: mpsc::UnboundedSender<ServerEvent>,
 ) -> anyhow::Result<()> {
+    agent.validate_server_turn(lease)?;
     let mut attempts = 0;
     while let Err(error) = &result {
         if attempts >= MAX_SERVER_FAILOVERS {
@@ -253,7 +307,7 @@ pub(super) async fn retry_turn_with_server_failover(
         }
         attempts += 1;
         result = agent
-            .continue_turn_after_failover(reminder.clone(), event_tx.clone())
+            .continue_turn_after_failover(lease, reminder.clone(), event_tx.clone())
             .await;
     }
     result
@@ -355,10 +409,11 @@ mod tests {
     #[test]
     fn usage_limit_switches_pool_account_and_retries_same_turn() {
         let _guard = crate::storage::lock_test_env();
+        // Serialize process-wide environment outside the asynchronous runtime.
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .unwrap()
+            .expect("test runtime")
             .block_on(async {
                 let home = tempfile::tempdir().unwrap();
                 let prev_home = std::env::var_os("JCODE_HOME");
@@ -413,7 +468,7 @@ mod tests {
                         message.role == crate::message::Role::User
                             && message.content.iter().any(|block| {
                                 matches!(block, crate::message::ContentBlock::Text { text, .. }
-                            if text.contains("hello"))
+                                if text.contains("hello"))
                             })
                     })
                     .count();
@@ -448,10 +503,11 @@ mod tests {
     #[test]
     fn server_initiated_turns_always_use_account_router() {
         let _guard = crate::storage::lock_test_env();
+        // Serialize process-wide environment outside the asynchronous runtime.
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .unwrap()
+            .expect("test runtime")
             .block_on(async {
                 let home = tempfile::tempdir().unwrap();
                 let prev_home = std::env::var_os("JCODE_HOME");
@@ -525,10 +581,11 @@ mod tests {
     #[test]
     fn disabled_clients_keep_the_original_error() {
         let _guard = crate::storage::lock_test_env();
+        // Serialize process-wide environment outside the asynchronous runtime.
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .unwrap()
+            .expect("test runtime")
             .block_on(async {
                 let provider = TwoAccountProvider {
                     on_openai: Arc::new(StdMutex::new(false)),

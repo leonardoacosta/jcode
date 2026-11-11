@@ -1652,7 +1652,7 @@ fn test_click_on_swarm_expand_badge_toggles_tldr_collapse() {
         "collapsed card must show the tldr:\n{collapsed}"
     );
     assert!(
-        collapsed.contains("▸ expand"),
+        collapsed.contains("⊞"),
         "collapsed card must show the expand badge:\n{collapsed}"
     );
     assert!(
@@ -1669,7 +1669,7 @@ fn test_click_on_swarm_expand_badge_toggles_tldr_collapse() {
         for col in 0..area.width {
             line.push_str(buf[(col, row)].symbol());
         }
-        if let Some(byte) = line.find("▸ expand") {
+        if let Some(byte) = line.find("⊞") {
             let col = line[..byte].chars().count() as u16;
             badge = Some((col, row));
             break 'rows;
@@ -1716,7 +1716,7 @@ fn test_click_on_swarm_expand_badge_toggles_tldr_collapse() {
         "expanded card must show the body:\n{expanded}"
     );
     assert!(
-        expanded.contains("▾ collapse"),
+        expanded.contains("⊟"),
         "expanded card must show the collapse badge:\n{expanded}"
     );
 
@@ -1729,7 +1729,7 @@ fn test_click_on_swarm_expand_badge_toggles_tldr_collapse() {
         for col in 0..area.width {
             line.push_str(buf[(col, row)].symbol());
         }
-        if let Some(byte) = line.find("▾ collapse") {
+        if let Some(byte) = line.find("⊟") {
             let col = line[..byte].chars().count() as u16;
             collapse_badge = Some((col, row));
             break 'rows2;
@@ -1875,28 +1875,69 @@ fn test_alt_e_expands_prompt_preview_to_multiple_prompts() {
 fn keyboard_selection_opens_swarm_badge_without_mouse() {
     let _render_lock = scroll_render_test_lock();
     let mut app = create_test_app();
-    app.display_messages = vec![DisplayMessage::swarm("DM from worker", jcode_tui_messages::encode_collapsible_swarm_content("summary", "Detailed keyboard-only content"))];
+    app.display_messages = vec![DisplayMessage::swarm(
+        "DM from worker",
+        jcode_tui_messages::encode_collapsible_swarm_content(
+            "summary",
+            "Detailed keyboard-only content",
+        ),
+    )];
     app.bump_display_messages_version();
     let mut terminal = ratatui::Terminal::new(ratatui::backend::TestBackend::new(90, 30)).unwrap();
     render_and_snap(&app, &mut terminal);
     let buffer = terminal.backend().buffer();
-    let mut point = None;
-    for y in 0..30 {
-        let line: String = (0..90).map(|x| buffer[(x,y)].symbol()).collect();
-        if let Some(byte) = line.find("▸ expand") {
-            let x = unicode_width::UnicodeWidthStr::width(&line[..byte]) as u16;
-            point = crate::tui::ui::copy_point_from_screen(x, y);
+    let position = (0..30)
+        .find_map(|y| {
+            (0..90)
+                .find(|&x| buffer[(x, y)].symbol() == "⊞")
+                .map(|x| (x, y))
+        })
+        .expect("expand badge must be rendered");
+    let point = crate::tui::ui::copy_point_from_screen(position.0, position.1)
+        .expect("badge must map to keyboard selection cursor");
+    assert_eq!(
+        crate::tui::ui::copy_point_screen_position(point),
+        Some(position)
+    );
+    assert_eq!(
+        crate::tui::ui::swarm_expand_target_from_screen(position.0, position.1),
+        Some(0)
+    );
+    app.handle_key(KeyCode::Char('y'), KeyModifiers::ALT)
+        .unwrap();
+    app.handle_key(KeyCode::Char('g'), KeyModifiers::NONE)
+        .unwrap();
+    for _ in 0..point.abs_line {
+        app.handle_key(KeyCode::Down, KeyModifiers::NONE).unwrap();
+    }
+    for _ in 0..point.column {
+        if app.copy_selection_cursor == Some(point) {
             break;
         }
+        app.handle_key(KeyCode::Right, KeyModifiers::NONE).unwrap();
     }
-    let point = point.expect("badge must map to keyboard selection cursor");
-    app.copy_selection_mode = true;
-    app.copy_selection_anchor = Some(point);
-    app.copy_selection_cursor = Some(point);
-    assert!(app.handle_copy_selection_key(KeyCode::Char('o'), KeyModifiers::NONE));
-    assert!(jcode_tui_messages::parse_collapsible_swarm_content(&app.display_messages[0].content).unwrap().expanded);
-    assert!(app.copy_selection_mode, "activation must preserve keyboard navigation mode");
-    assert!(!app.is_processing, "presentation activation must not start model turn");
+    assert_eq!(app.copy_selection_cursor, Some(point));
+    app.handle_key(KeyCode::Char('o'), KeyModifiers::NONE)
+        .unwrap();
+    assert!(
+        jcode_tui_messages::parse_collapsible_swarm_content(&app.display_messages[0].content)
+            .unwrap()
+            .expanded
+    );
+    assert!(
+        app.copy_selection_mode,
+        "activation must preserve keyboard navigation mode"
+    );
+    assert!(
+        !app.is_processing,
+        "presentation activation must not start model turn"
+    );
+    let expanded = render_and_snap(&app, &mut terminal);
+    assert!(
+        expanded.contains("Detailed keyboard-only content"),
+        "{expanded}"
+    );
+    assert!(expanded.contains("⊟"), "{expanded}");
 }
 
 #[test]
@@ -1905,7 +1946,7 @@ fn keyboard_selection_image_zoom_and_invalid_cursor_are_bounded() {
     use jcode_tui_messages::PreparedChatFrame;
     let _render_lock = scroll_render_test_lock();
     let mut app = create_test_app();
-    let section = build_section(&[InlineImageItem { id: 0xB1AD, width: 320, height: 200, label: "keyboard.png".into(), uses_text_fallback: false }], 80, 40, false, true, &AllFit);
+    let section = build_section(&[InlineImageItem { collapsed_by_default: false, id: 0xB1AD, width: 320, height: 200, label: "keyboard.png".into(), uses_text_fallback: false }], 80, 40, false, true, &AllFit);
     let prepared = std::sync::Arc::new(PreparedChatFrame::from_single(std::sync::Arc::new(section)));
     let end = prepared.wrapped_plain_line_count();
     crate::tui::ui::clear_copy_viewport_snapshot();

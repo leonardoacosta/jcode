@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [classify-provider-auth-failures]
 ---
 # Proposal
 
@@ -13,7 +13,7 @@ First-run onboarding (`crates/jcode-tui/src/tui/ui_onboarding.rs:138`, `:284`) c
 
 ## What Changes
 
-- At the end of onboarding, show one status row: the resolved provider/model, or "no working provider" plus the exact `jcode login --provider <provider>` next step reused from provider doctor.
+- At the end of onboarding, show the selected resolved provider/model as configured/untested when credentials are only present, or missing credentials plus the supported `jcode login --provider <provider>` remedy. Presence is not working/healthy evidence. Reuse shared failure classification and doctor messages without probing other accounts.
 - On a first-prompt auth failure, show the same next step inline instead of only the raw provider error.
 - Rows obey display-cell truncation.
 

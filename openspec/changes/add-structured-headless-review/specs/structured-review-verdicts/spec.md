@@ -2,7 +2,7 @@
 
 ### Requirement: Typed review verdict
 
-`jcode review --json` SHALL print exactly one verdict object bound to the reviewed revision and checks, and SHALL NOT derive the verdict from free-text matching.
+`jcode review --json` SHALL print exactly one verdict object bound to base/head identities, the exact scoped diff/content digest (including reviewed untracked content), execution identity and checks. A boolean dirty flag alone SHALL NOT identify reviewed content. Changed bytes or checks SHALL invalidate an earlier pass. The verdict SHALL NOT be derived from free-text matching.
 
 #### Scenario: Passing review
 - **WHEN** the reviewer returns a valid verdict with `verdict = pass`

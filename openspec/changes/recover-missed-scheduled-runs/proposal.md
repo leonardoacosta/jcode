@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [make-worker-stop-durable]
 ---
 Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/plans/PRODUCT_ROADMAP.md#p05-durable-overnight-scheduling-and-recovery)
 
@@ -11,7 +11,7 @@ Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/p
 
 ## What Changes
 
-- Mark items `dispatched` (not removed) on pop; remove only after delivery is acknowledged.
+- Mark items `dispatched` (not removed) on pop; remove only after delivery is acknowledged. Delivery acknowledgment means the intended target accepted the generation-bound message, not that the work executed successfully. Recheck target cancellation/revocation before delivery and suppress stale wakes.
 - At startup, items `dispatched` without acknowledgement become `uncertain` and require explicit manual retry; overdue items are marked `missed` with their delay. Neither state automatically triggers delivery.
 - `schedule list` includes the last N terminal items with status `delivered|missed|uncertain|cancelled`.
 
@@ -32,4 +32,4 @@ Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/p
 
 ## Resolved defaults
 
-Unacknowledged deliveries are marked uncertain and require explicit manual retry. Never automatically redeliver an item merely because its acknowledgment is missing; the first delivery may already have executed.
+Unacknowledged deliveries are marked uncertain and require explicit manual retry with a duplicate-effect warning: missing acknowledgment does not establish that the first attempt did not run. Record a new attempt and preserve prior history. Never automatically redeliver an item merely because its acknowledgment is missing; the first delivery may already have executed.

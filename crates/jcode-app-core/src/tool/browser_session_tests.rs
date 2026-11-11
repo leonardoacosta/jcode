@@ -13,11 +13,26 @@ struct BrowserFixture {
 impl BrowserFixture {
     fn new() -> Self {
         let guard = crate::storage::lock_test_env();
-        let temp = tempfile::tempdir().unwrap();
+        Self::with_temp(guard, tempfile::tempdir().unwrap())
+    }
+
+    fn with_temp(guard: std::sync::MutexGuard<'static, ()>, temp: tempfile::TempDir) -> Self {
         let previous_home = std::env::var_os("JCODE_HOME");
         let previous_session = std::env::var_os("BROWSER_SESSION");
-        crate::env::set_var("JCODE_HOME", temp.path());
+        // macOS temp paths can start with /var, a symlink to /private/var.
+        // Private cloud environment state deliberately rejects symlink ancestors,
+        // so pass the real fixture root rather than weakening that guard.
+        crate::env::set_var("JCODE_HOME", temp.path().canonicalize().unwrap());
         crate::env::remove_var("BROWSER_SESSION");
+        // Exercise repository shell wrapping without depending on TMPDIR ancestry.
+        std::fs::create_dir(temp.path().join(".git")).unwrap();
+        std::fs::create_dir(temp.path().join("scripts")).unwrap();
+        std::fs::write(
+            temp.path().join("Cargo.toml"),
+            "[package]\nname = \"jcode\"\n",
+        )
+        .unwrap();
+        std::fs::write(temp.path().join("scripts/dev_cargo.sh"), "#!/bin/sh\n").unwrap();
         let bin = temp.path().join("browser/browser");
         std::fs::create_dir_all(bin.parent().unwrap()).unwrap();
         std::fs::write(&bin, r#"#!/usr/bin/env python3
@@ -79,7 +94,7 @@ else:
             session_id: format!("brtest-{}-{name}", std::process::id()),
             message_id: "m".into(),
             tool_call_id: "t".into(),
-            working_dir: None,
+            working_dir: Some(self.temp.path().canonicalize().unwrap()),
             stdin_request_tx: None,
             graceful_shutdown_signal: None,
             execution_mode: crate::tool::ToolExecutionMode::Direct,
@@ -111,6 +126,33 @@ impl Drop for BrowserFixture {
             None => crate::env::remove_var("BROWSER_SESSION"),
         }
     }
+}
+
+#[tokio::test]
+async fn browser_session_bash_uses_canonical_fixture_home() {
+    let guard = crate::storage::lock_test_env();
+    let parent = tempfile::tempdir().unwrap();
+    let real = parent.path().join("real");
+    let alias = parent.path().join("alias");
+    std::fs::create_dir(&real).unwrap();
+    std::os::unix::fs::symlink(&real, &alias).unwrap();
+    let temp = tempfile::tempdir_in(&alias).unwrap();
+    assert_ne!(temp.path(), temp.path().canonicalize().unwrap());
+    let fixture = BrowserFixture::with_temp(guard, temp);
+    let ctx = fixture.context("symlink-home");
+    let home = std::path::PathBuf::from(std::env::var_os("JCODE_HOME").unwrap());
+    assert_eq!(home, home.canonicalize().unwrap());
+    assert!(
+        crate::cloud_environment::load_environment(ctx.working_dir.as_deref().unwrap())
+            .unwrap()
+            .is_empty()
+    );
+    let result = crate::tool::bash::BashTool::new()
+        .execute(json!({"command": "browser ping"}), ctx)
+        .await
+        .expect("BashTool must load fixture state through its canonical home");
+    assert!(result.output.contains("\"ok\": true"), "{result:?}");
+    assert_eq!(fixture.starts().len(), 1);
 }
 
 #[tokio::test]
@@ -220,7 +262,8 @@ async fn browser_session_stalled_startup_keeps_healthy_calls_and_workers_respons
         call.await.unwrap().unwrap();
     }
     for call in bash_calls {
-        call.await.unwrap().unwrap();
+        let result = call.await.unwrap().unwrap();
+        assert!(result.output.contains("\"ok\": true"), "{result:?}");
     }
     healthy_result.unwrap();
     assert!(

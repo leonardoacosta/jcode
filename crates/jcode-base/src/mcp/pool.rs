@@ -112,12 +112,16 @@ impl FailedConnectRecord {
     }
 
     fn retry_after(&self) -> Duration {
-        backoff_for(self.failures).saturating_sub(self.failed_at.elapsed())
+        failed_connect_cooldown(self.failures).saturating_sub(self.failed_at.elapsed())
     }
 }
 
 fn config_fingerprint(config: &McpServerConfig) -> String {
     serde_json::to_string(config).unwrap_or_default()
+}
+
+fn failed_connect_cooldown(failures: u32) -> Duration {
+    backoff_for(failures)
 }
 
 enum ConnectAttempt {
@@ -1106,6 +1110,22 @@ mod tests {
         assert!(
             failures.is_empty(),
             "non-shared server must be skipped, got failures: {failures:?}"
+        );
+    }
+}
+
+#[cfg(test)]
+mod backoff_tests {
+    use super::*;
+
+    #[test]
+    fn failed_connect_cooldown_grows_and_caps() {
+        assert_eq!(failed_connect_cooldown(1), Duration::from_secs(30));
+        assert_eq!(failed_connect_cooldown(2), Duration::from_secs(60));
+        assert_eq!(failed_connect_cooldown(4), Duration::from_secs(240));
+        assert_eq!(
+            failed_connect_cooldown(50),
+            BACKOFF_CAP
         );
     }
 }

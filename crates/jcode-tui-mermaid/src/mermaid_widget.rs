@@ -85,6 +85,9 @@ pub fn render_image_widget(
     centered: bool,
     crop_top: bool,
 ) -> u16 {
+    if runtime::images_disabled() {
+        return 0;
+    }
     // In video export mode, skip terminal image protocol rendering.
     // The placeholder marker stays in the buffer so the SVG pipeline
     // can detect it and embed the cached PNG directly.
@@ -339,6 +342,9 @@ fn render_image_widget_fit_inner(
     draw_border: bool,
     scale_up: bool,
 ) -> u16 {
+    if runtime::images_disabled() {
+        return 0;
+    }
     if VIDEO_EXPORT_MODE.load(Ordering::Relaxed) {
         return area.height;
     }

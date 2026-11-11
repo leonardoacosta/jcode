@@ -188,6 +188,21 @@ pub fn complete_pending_activation_for_session(session_id: &str) -> Result<Optio
     Ok(Some(pending.new_version))
 }
 
+/// Verify the serving revision, not a channel link or a successful socket bind.
+pub fn verify_reload_revision(expected: &str, serving: Option<&RuntimeIdentity>) -> Result<()> {
+    let actual = serving
+        .map(|identity| identity.git_hash.as_str())
+        .unwrap_or("unknown");
+    let known = |hash: &str| {
+        (7..=64).contains(&hash.len()) && hash.bytes().all(|byte| byte.is_ascii_hexdigit())
+    };
+    anyhow::ensure!(
+        known(expected) && known(actual) && expected.eq_ignore_ascii_case(actual),
+        "Reload identity verification failed: expected revision {expected}, serving revision {actual}"
+    );
+    Ok(())
+}
+
 pub fn rollback_pending_activation_for_session(session_id: &str) -> Result<Option<String>> {
     let mut manifest = BuildManifest::load()?;
     let Some(pending) = manifest.pending_activation.clone() else {

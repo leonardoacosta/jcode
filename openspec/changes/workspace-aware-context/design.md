@@ -15,4 +15,4 @@
 
 - Workspace `hooks` entries append to global hooks for the same event; matching `command` replaces. Requires `add-lifecycle-hooks`.
 - Model precedence: explicit spawn `model` > workspace `swarm_model`/role slot > `agents.swarm_model` > inherit. Requires `add-role-model-slots`.
-- Coordinator passes resolved workspace id to workers so they do not re-resolve from a different cwd.
+- Coordinator passes context as provenance; workers verify the actual target repository/workspace before applying hooks, tracker/identity hints or model overrides. Verified same-repository worktrees can inherit identity; differing/unknown targets cannot silently inherit another workspace. Config fingerprints include effective sources, not only root mtimes.

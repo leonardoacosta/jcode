@@ -2,6 +2,9 @@
 
 #[path = "input/semantic_shadow.rs"]
 mod semantic_shadow;
+mod terminal_reports;
+mod word_boundaries;
+
 #[path = "input/shell_commands.rs"]
 mod shell_commands;
 use shell_commands::*;
@@ -15,10 +18,11 @@ use crate::bus::{
     Bus, BusEvent, ClipboardPasteCompleted, ClipboardPasteContent, ClipboardPasteKind,
     InputShellCompleted,
 };
+use crate::tui::terminal_events::EventStream;
 use crate::util::truncate_str;
 use anyhow::Result;
 use base64::Engine;
-use crossterm::event::{EventStream, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::DefaultTerminal;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -649,145 +653,7 @@ impl App {
     }
 }
 
-/// Strip terminal escape-sequence remnants from text headed for the composer.
-///
-/// Mouse reporting, bracketed paste, and focus events all arrive as CSI
-/// sequences. When a read is torn mid-sequence (a fast wheel flick split across
-/// two reads, a loaded machine, a slow SSH link), the terminal-event parser can
-/// resynchronize partway through and hand the tail of the sequence back as
-/// ordinary text, which then lands in the draft as noise like `[<65;50;24M`
-/// (issue #540). Whether that happens depends on the terminal and on timing, so
-/// rather than rely on the parser never mis-syncing, drop the remnants at the
-/// single insertion boundary every input path shares.
-///
-/// Deliberately conservative: only ESC-introduced sequences and bare CSI-shaped
-/// runs are removed, plus C0 control characters other than tab and newline.
-///
-/// A *bare* run (one whose ESC introducer was consumed by the torn read) is only
-/// stripped when it looks unmistakably like a terminal report: `[`, at least one
-/// parameter byte, and a final byte that terminals actually emit for the
-/// sequences we enable (`M`/`m` mouse, `~` bracketed paste and special keys,
-/// `R` cursor position, `I`/`O` focus). This is what keeps ordinary typed text
-/// such as `array[0]`, `list[1]`, or `[TODO]` intact, since `]` and letters like
-/// `O` only qualify with a preceding numeric parameter for the specific finals
-/// listed. Anything else is left alone: a missed remnant is cosmetic, whereas
-/// eating a user's real characters is not.
-pub(super) fn strip_terminal_control_sequences(text: &str) -> std::borrow::Cow<'_, str> {
-    let looks_suspicious = text
-        .chars()
-        .any(|ch| ch == '\x1b' || ch == '\u{9b}' || (ch.is_control() && ch != '\t' && ch != '\n'));
-    let has_csi_run = text.contains("\x1b[") || text.contains('\u{9b}') || {
-        let bytes = text.as_bytes();
-        bytes.iter().enumerate().any(|(index, byte)| {
-            *byte == b'[' && bare_terminal_report_length(&bytes[index..]).is_some()
-        })
-    };
-    if !looks_suspicious && !has_csi_run {
-        return std::borrow::Cow::Borrowed(text);
-    }
-
-    let bytes = text.as_bytes();
-    let mut cleaned = String::with_capacity(text.len());
-    let mut index = 0usize;
-    while index < bytes.len() {
-        let byte = bytes[index];
-        // ESC-introduced sequence: skip the introducer, then the body.
-        if byte == 0x1b {
-            index += 1;
-            if index < bytes.len() && bytes[index] == b'[' {
-                match csi_run_length(&bytes[index..]) {
-                    Some(len) => index += len,
-                    // Unterminated: the rest is a truncated sequence, drop it.
-                    None => index = bytes.len(),
-                }
-            } else if index < bytes.len() {
-                // Two-character escape such as ESC O or ESC ].
-                index += 1;
-            }
-            continue;
-        }
-        // 8-bit CSI introducer (UTF-8 encoded U+009B).
-        if byte == 0xc2 && bytes.get(index + 1) == Some(&0x9b) {
-            index += 2;
-            if bytes.get(index) == Some(&b'[') {
-                match csi_run_length(&bytes[index..]) {
-                    Some(len) => index += len,
-                    None => index = bytes.len(),
-                }
-            }
-            continue;
-        }
-        // A bare report-shaped run left behind by a torn read.
-        if byte == b'['
-            && let Some(len) = bare_terminal_report_length(&bytes[index..])
-        {
-            index += len;
-            continue;
-        }
-        // Drop stray C0 controls; keep tab and newline, which are meaningful.
-        if byte < 0x20 && byte != b'\t' && byte != b'\n' {
-            index += 1;
-            continue;
-        }
-        // Copy one whole UTF-8 character.
-        let char_len = text[index..]
-            .chars()
-            .next()
-            .map(char::len_utf8)
-            .unwrap_or(1);
-        cleaned.push_str(&text[index..index + char_len]);
-        index += char_len;
-    }
-
-    std::borrow::Cow::Owned(cleaned)
-}
-
-/// Length of a CSI run starting at `bytes[0]` (the `[`), including its final
-/// byte, or `None` when the run is unterminated.
-///
-/// A CSI body is parameter bytes `0x30..=0x3f`, then intermediate bytes
-/// `0x20..=0x2f`, then one final byte `0x40..=0x7e`.
-fn csi_run_length(bytes: &[u8]) -> Option<usize> {
-    debug_assert_eq!(bytes.first(), Some(&b'['));
-    let mut index = 1usize;
-    while index < bytes.len() && (0x30..=0x3f).contains(&bytes[index]) {
-        index += 1;
-    }
-    while index < bytes.len() && (0x20..=0x2f).contains(&bytes[index]) {
-        index += 1;
-    }
-    let final_byte = *bytes.get(index)?;
-    if (0x40..=0x7e).contains(&final_byte) {
-        Some(index + 1)
-    } else {
-        None
-    }
-}
-
-/// Length of a bare (ESC-less) run that is unmistakably a terminal report, or
-/// `None` when the run could plausibly be text the user typed.
-///
-/// Requires at least one parameter byte and one of the final bytes emitted by
-/// the reporting modes jcode enables, so `array[0]` and `[TODO]` are left alone
-/// while `[<65;50;24M` and `[200~` are recognized.
-fn bare_terminal_report_length(bytes: &[u8]) -> Option<usize> {
-    debug_assert_eq!(bytes.first(), Some(&b'['));
-    let len = csi_run_length(bytes)?;
-    let params = &bytes[1..len - 1];
-    if params.is_empty() {
-        return None;
-    }
-    // Mouse/paste/cursor/focus reports carry digits, `;`, and an optional
-    // leading `<`. Reject anything with other parameter bytes.
-    if !params
-        .iter()
-        .all(|byte| byte.is_ascii_digit() || *byte == b';' || *byte == b'<')
-    {
-        return None;
-    }
-    const REPORT_FINALS: [u8; 6] = *b"Mm~RIO";
-    REPORT_FINALS.contains(&bytes[len - 1]).then_some(len)
-}
+pub(super) use terminal_reports::strip_terminal_control_sequences;
 
 /// Remove late OSC 10/11 color replies that the terminal delivered as keys.
 ///
@@ -1471,6 +1337,7 @@ impl App {
         self.interleave_message.is_some()
             || !self.queued_messages.is_empty()
             || !self.hidden_queued_system_messages.is_empty()
+            || self.has_pending_cloud_recovery()
     }
 
     /// True when the user typed a follow-up prompt while this turn ran, and
@@ -1562,8 +1429,26 @@ impl App {
     /// guardrail circuit breaker first, then tries auto-poke and overnight
     /// poke scheduling. Returns true when a follow-up was queued.
     pub(super) fn schedule_turn_end_followups(&mut self) -> bool {
+        self.schedule_turn_end_followups_after_response(false)
+    }
+
+    pub(super) fn schedule_turn_end_followups_after_response(
+        &mut self,
+        final_response_delivered: bool,
+    ) -> bool {
+        // SSH workflow state and todo reads belong to the remote daemon.
+        // Even the guardrail/report checks below consult laptop session files.
+        if crate::tui::is_ssh_remote() {
+            return false;
+        }
         if self.guardrail_stops_exhausted_at_turn_end() {
             self.stop_auto_continuation_after_guardrail();
+            return false;
+        }
+        // A handoff owns this idle boundary. Queuing a local continuation here
+        // makes its dispatch safety check see new unsent work and cancel the
+        // transfer, even though the user did not submit anything else.
+        if self.cloud_handoff_blocks_work() {
             return false;
         }
         // The user's own next prompt goes first. A poke queued now would be
@@ -1571,54 +1456,18 @@ impl App {
         if self.has_pending_user_followup() {
             return false;
         }
-        self.schedule_auto_poke_followup_if_needed()
+        if self.all_open_todos_are_paused() {
+            self.last_auto_poke_fingerprint = None;
+            self.auto_poke_attempts = 0;
+            return false;
+        }
+        self.schedule_auto_poke_followup_after_response(final_response_delivered)
             || self.schedule_overnight_poke_followup_if_needed()
     }
 
-    /// Deliver this turn's deferred quality-check reminder, if anything is
-    /// still unresolved. Returns true when a continuation was queued.
-    ///
-    /// Delivered at most once per turn: the reminder asks the model to verify
-    /// weak points, and re-asking after it has done so would loop. The
-    /// observation log is cleared either way, so the next turn starts clean.
-    fn deliver_deferred_gate_digest_if_needed(&mut self) -> bool {
-        if self.todo_gate_digest_delivered {
-            return false;
-        }
-        // In a remote client `self.session` is the local wrapper session, while
-        // todo tools execute against the remote session. Reading the wrapper's
-        // files makes every persisted remote assessment appear to be missing.
-        let session_id = self
-            .remote_session_id
-            .as_deref()
-            .unwrap_or_else(|| self.session_id())
-            .to_string();
-        let observations = crate::todo::load_gate_observations(&session_id).unwrap_or_default();
-        if observations.is_empty() {
-            return false;
-        }
-        let plan = crate::todo::load_plan(&session_id).unwrap_or_default();
-        let goals = crate::todo::load_goals(&session_id).unwrap_or_default();
-        let digest = crate::todo::build_gate_digest(&observations, &plan, &goals);
-        let _ = crate::todo::clear_gate_observations(&session_id);
-        let Some(digest) = digest else {
-            crate::logging::info(&format!(
-                "TODO_GATE_DIGEST action=skip reason=nothing_to_report observations={}",
-                observations.len()
-            ));
-            return false;
-        };
-        self.todo_gate_digest_delivered = true;
-        crate::logging::info(&format!(
-            "TODO_GATE_DIGEST action=queue observations={}",
-            observations.len()
-        ));
-        self.push_display_message(DisplayMessage::system(
-            "🔎 We asked the agent to double-check this turn's weak points.",
-        ));
-        self.queued_messages.push(digest);
-        self.pending_queued_dispatch = true;
-        true
+    #[cfg(test)]
+    pub(super) fn schedule_auto_poke_followup_if_needed(&mut self) -> bool {
+        self.schedule_auto_poke_followup_after_response(false)
     }
 
     pub(super) fn clear_required_checks_for_turn(&mut self) {
@@ -1640,14 +1489,18 @@ impl App {
         }
     }
 
-    pub(super) fn schedule_auto_poke_followup_if_needed(&mut self) -> bool {
+    fn schedule_auto_poke_followup_after_response(
+        &mut self,
+        final_response_delivered: bool,
+    ) -> bool {
         let mut captured = None;
-        let queued = self.schedule_auto_poke_followup_with_evidence(|evidence| {
-            if let Ok(json) = serde_json::to_string(evidence) {
-                crate::logging::info(&format!("CONTINUATION_EVIDENCE {json}"));
-            }
-            captured = Some(evidence.clone());
-        });
+        let queued =
+            self.schedule_auto_poke_followup_with_response(final_response_delivered, |evidence| {
+                if let Ok(json) = serde_json::to_string(evidence) {
+                    crate::logging::info(&format!("CONTINUATION_EVIDENCE {json}"));
+                }
+                captured = Some(evidence.clone());
+            });
         let config = crate::config::config();
         if config.features.semantic_poke_shadow {
             let session = self
@@ -1675,22 +1528,56 @@ impl App {
         queued
     }
 
+    #[cfg(test)]
     fn schedule_auto_poke_followup_with_evidence(
         &mut self,
         record: impl FnOnce(&crate::todo::ContinuationEvidence),
     ) -> bool {
+        self.schedule_auto_poke_followup_with_response(false, record)
+    }
+
+    fn schedule_auto_poke_followup_with_response(
+        &mut self,
+        final_response_delivered: bool,
+        record: impl FnOnce(&crate::todo::ContinuationEvidence),
+    ) -> bool {
         let mut evidence = crate::todo::ContinuationEvidence::default();
-        let queued = self.decide_auto_poke_followup(&mut evidence);
+        let queued =
+            self.decide_auto_poke_followup_after_response(&mut evidence, final_response_delivered);
         evidence.record_required_checks(&self.required_checks);
         record(&evidence);
         queued
     }
 
+    #[cfg(test)]
     fn decide_auto_poke_followup(
         &mut self,
         evidence: &mut crate::todo::ContinuationEvidence,
     ) -> bool {
+        self.decide_auto_poke_followup_after_response(evidence, false)
+    }
+
+    fn decide_auto_poke_followup_after_response(
+        &mut self,
+        evidence: &mut crate::todo::ContinuationEvidence,
+        final_response_delivered: bool,
+    ) -> bool {
         use crate::todo::{ContinuationReason as Reason, FollowUpKind as Kind};
+        if crate::tui::is_ssh_remote() {
+            return false;
+        }
+        // Completion is visible even with /poke off, and never needs another
+        // model turn merely to show the plan's remaining weaknesses.
+        self.refresh_completed_todo_report(true);
+        // Report display remains independent of the optional model follow-up.
+        let observation_session_id = self
+            .remote_session_id
+            .as_deref()
+            .unwrap_or_else(|| self.session_id());
+        if !crate::config::config().features.todo_gate_digest {
+            let _ = crate::todo::clear_gate_observations(observation_session_id);
+        }
+
         // The completion-gate circuit breaker clears auto_poke_incomplete_todos,
         // and it can only trip while every todo is complete, so the restore in
         // the all-complete branch never runs for an agent that adds open work
@@ -1722,6 +1609,19 @@ impl App {
 
         let todos = super::commands::poke_todos(self);
         *evidence = crate::todo::ContinuationEvidence::new(&todos);
+        let incomplete: Vec<_> = todos
+            .iter()
+            .filter(|todo| super::commands::is_incomplete_poke_todo(todo))
+            .filter(|todo| !self.todo_is_paused_for_auto_followup(todo))
+            .cloned()
+            .collect();
+        if incomplete.is_empty() && todos.iter().any(super::commands::is_incomplete_poke_todo) {
+            // User-only blockers and live waits are neither resistance nor
+            // completion. Do not spend work or assessment review budgets.
+            self.last_auto_poke_fingerprint = None;
+            self.auto_poke_attempts = 0;
+            return false;
+        }
         let todo_session_id = self
             .remote_session_id
             .as_deref()
@@ -1747,7 +1647,9 @@ impl App {
             self.todo_confidence_spike_challenged = false;
             self.last_todo_ownership_fingerprint = None;
         }
-        if !todos.is_empty()
+        let quality_reviews_enabled = crate::config::config().features.todo_gate_digest;
+        if quality_reviews_enabled
+            && !todos.is_empty()
             && crate::todo::take_long_session_review_if_due(&todo_session_id).unwrap_or(false)
         {
             evidence.kind = Some(Kind::LongSessionReview);
@@ -1760,16 +1662,12 @@ impl App {
             self.pending_queued_dispatch = true;
             return true;
         }
-        let incomplete: Vec<_> = todos
-            .iter()
-            .filter(|todo| super::commands::is_incomplete_poke_todo(todo))
-            .cloned()
-            .collect();
         if incomplete.is_empty() {
             // Completing or removing a todo list ends the prior poke cycle. If
             // equivalent work appears later, it is a new cycle and deserves
             // one fresh nudge rather than being mistaken for the old stall.
             self.last_auto_poke_fingerprint = None;
+            self.auto_poke_attempts = 0;
             if todos.is_empty() {
                 // No todo list exists yet for this session. Auto-poke is armed
                 // by default (`features.auto_poke`), so disarming here would
@@ -1781,20 +1679,30 @@ impl App {
                 crate::logging::info("AUTO_POKE_DECISION action=idle reason=no_todos incomplete=0");
                 self.todo_final_response_requested = false;
                 self.last_todo_ownership_fingerprint = None;
+                self.todo_gate_digest_delivered = false;
                 return false;
             }
-            // Deferred quality checks land here, once, instead of interrupting
-            // every todo write during the turn. Every point recorded during the
-            // turn is raised, including ones whose score later climbed: work
-            // done while the score was low never benefited from the assessment
-            // that arrived after it.
-            if self.deliver_deferred_gate_digest_if_needed() {
-                evidence.kind = Some(Kind::GateDigest);
-                evidence.reason = Reason::GateDigest;
-                return true;
+            if crate::config::config().features.todo_gate_digest {
+                let observations =
+                    crate::todo::load_gate_observations(&todo_session_id).unwrap_or_default();
+                let _ = crate::todo::clear_gate_observations(&todo_session_id);
+                if !self.todo_gate_digest_delivered
+                    && let Some(message) =
+                        crate::todo::build_gate_digest(&observations, &plan, &goals)
+                {
+                    evidence.kind = Some(Kind::GateDigest);
+                    evidence.reason = Reason::GateDigest;
+                    self.todo_gate_digest_delivered = true;
+                    self.push_display_message(DisplayMessage::system(
+                        "🔍 Double-checking this turn's weak points...",
+                    ));
+                    self.queued_messages.push(message);
+                    self.pending_queued_dispatch = true;
+                    return true;
+                }
             }
-            let ownership_needs_followup =
-                !crate::todo::completed_groups_have_sufficient_delivery(&todos, &goals);
+            let ownership_needs_followup = quality_reviews_enabled
+                && !crate::todo::completed_groups_have_sufficient_delivery(&todos, &goals);
             let gate_budget_left =
                 self.todo_completion_gate_attempts < Self::TODO_COMPLETION_GATE_MAX_ATTEMPTS;
             evidence.scheduler_checks.ownership_delivery = (!ownership_needs_followup).into();
@@ -1839,17 +1747,16 @@ impl App {
                 return true;
             }
             let confidence_summary = super::commands::todo_confidence_summary(&todos);
-            let confidence_label =
-                super::commands::format_todo_completion_confidence(confidence_summary);
             evidence.scheduler_checks.completion_confidence =
                 (!confidence_summary.completion_confidence_needs_validation).into();
             evidence.scheduler_checks.confidence_spike =
                 (!confidence_summary.confidence_spike_detected).into();
-            let needs_spike_challenge = confidence_summary.confidence_spike_detected
+            let needs_spike_challenge = quality_reviews_enabled
+                && confidence_summary.confidence_spike_detected
                 && !self.todo_confidence_spike_challenged;
-            if (confidence_summary.completion_confidence_needs_validation || needs_spike_challenge)
-                && gate_budget_left
-            {
+            let needs_validation = quality_reviews_enabled
+                && confidence_summary.completion_confidence_needs_validation;
+            if (needs_validation || needs_spike_challenge) && gate_budget_left {
                 self.todo_completion_gate_attempts =
                     self.todo_completion_gate_attempts.saturating_add(1);
                 let notice = if confidence_summary.completion_confidence_needs_validation {
@@ -1874,9 +1781,7 @@ impl App {
                 self.pending_queued_dispatch = true;
                 return true;
             }
-            if (ownership_needs_followup
-                || confidence_summary.completion_confidence_needs_validation
-                || needs_spike_challenge)
+            if (ownership_needs_followup || needs_validation || needs_spike_challenge)
                 && !gate_budget_left
             {
                 // The gate keeps failing but the model is no longer making
@@ -1912,10 +1817,15 @@ impl App {
                 evidence.reason = Reason::FinalResponse;
                 self.todo_final_response_requested = true;
                 self.final_response_todo_fingerprint = todo_fingerprint;
-                self.push_display_message(DisplayMessage::system(format!(
-                    "✅ All todos done. Completion confidence: {}.",
-                    confidence_label
-                )));
+                // The ordinary answer already wrapped up this work. Keep the
+                // completed fingerprint latched, but do not buy another turn
+                // merely to repeat it. Quality gates above still run normally.
+                if final_response_delivered {
+                    crate::logging::info(
+                        "AUTO_POKE_DECISION action=idle reason=final_response_already_delivered",
+                    );
+                    return false;
+                }
                 self.queued_messages
                     .push(crate::todo::TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE.to_string());
                 self.pending_queued_dispatch = true;
@@ -1931,13 +1841,17 @@ impl App {
         // Open work begins a new completion cycle. Keep the prior spike check
         // latched until this point so the synthetic final-response turn cannot
         // retrigger the same evidence gate against unchanged completed todos.
+        self.todo_gate_digest_delivered = false;
         self.todo_confidence_spike_challenged = false;
         self.last_todo_ownership_fingerprint = None;
         let fingerprint = crate::todo::incomplete_todo_fingerprint(&incomplete)
             .unwrap_or_else(|_| poke_message.clone());
         evidence.fingerprint_changed =
             Some(self.last_auto_poke_fingerprint.as_ref() != Some(&fingerprint));
-        if self.last_auto_poke_fingerprint.as_ref() == Some(&fingerprint) {
+        if self.last_auto_poke_fingerprint.as_ref() != Some(&fingerprint) {
+            self.auto_poke_attempts = 0;
+        }
+        if self.auto_poke_attempts >= crate::todo::INCOMPLETE_TODO_MAX_ATTEMPTS {
             evidence.reason = Reason::UnchangedTodos;
             crate::logging::info(&format!(
                 "AUTO_POKE_DECISION action=idle reason=unchanged_todos incomplete={}",
@@ -1968,6 +1882,7 @@ impl App {
         // exhaustion should only trip when the gate itself stops moving.
         self.todo_completion_gate_attempts = 0;
         self.last_auto_poke_fingerprint = Some(fingerprint);
+        self.auto_poke_attempts += 1;
         self.queued_messages.push(poke_message);
         self.pending_queued_dispatch = true;
         true
@@ -1979,6 +1894,7 @@ impl App {
         let incomplete: Vec<_> = super::commands::poke_todos(self)
             .into_iter()
             .filter(super::commands::is_incomplete_poke_todo)
+            .filter(|todo| !self.todo_is_paused_for_auto_followup(todo))
             .collect();
         if incomplete.is_empty() {
             return None;
@@ -2028,11 +1944,15 @@ impl App {
         if let Some(fingerprint) = self.current_incomplete_poke_fingerprint()
             && text.starts_with("You have ")
         {
+            // A peer owns continuation for this unchanged state. Do not send
+            // competing retries from every attached window.
             self.last_auto_poke_fingerprint = Some(fingerprint);
+            self.auto_poke_attempts = crate::todo::INCOMPLETE_TODO_MAX_ATTEMPTS;
         }
     }
 
     pub(super) fn schedule_queued_dispatch_after_interrupt(&mut self) {
+        self.streaming.response_output.reset();
         if self.has_queued_followups() {
             self.pending_queued_dispatch = true;
         }
@@ -2406,11 +2326,28 @@ pub(super) fn handle_alt_key(app: &mut App, code: KeyCode) -> bool {
     }
 }
 
+pub(super) fn handle_account_shortcut(
+    app: &mut App,
+    code: KeyCode,
+    modifiers: KeyModifiers,
+) -> bool {
+    if modifiers == (KeyModifiers::CONTROL | KeyModifiers::ALT)
+        && matches!(code, KeyCode::Char('j' | 'k'))
+    {
+        app.cycle_account(code == KeyCode::Char('j'));
+        return true;
+    }
+    false
+}
+
 pub(super) fn handle_navigation_shortcuts(
     app: &mut App,
     code: KeyCode,
     modifiers: KeyModifiers,
 ) -> bool {
+    if handle_account_shortcut(app, code, modifiers) {
+        return true;
+    }
     if let Some(amount) = app.scroll_keys.scroll_amount(code, modifiers) {
         if amount < 0 {
             app.scroll_up((-amount) as usize);
@@ -2552,6 +2489,9 @@ pub(super) fn handle_pre_control_shortcuts(
     code: KeyCode,
     modifiers: KeyModifiers,
 ) -> bool {
+    if handle_account_shortcut(app, code, modifiers) {
+        return true;
+    }
     // Plain Ctrl+K kills to end of line (emacs habit). Ctrl+Shift+K must fall
     // through to the scroll handler: with the Kitty keyboard protocol enabled,
     // terminals report Ctrl+Shift+K as Char('k') + CONTROL|SHIFT, so without the
@@ -2646,7 +2586,9 @@ pub(super) fn handle_pre_control_shortcuts(
     }
     {
         use crate::tui::TuiState as _;
-        if app.swarm_panel_focused() && app.handle_swarm_panel_key(code, modifiers) {
+        if app.handle_swarm_agent_shortcut(code, modifiers)
+            || (app.swarm_panel_focused() && app.handle_swarm_panel_key(code, modifiers))
+        {
             return true;
         }
     }
@@ -2657,6 +2599,9 @@ pub(super) fn handle_pre_control_shortcuts(
     if app.open_resume_key_matches(code, modifiers) {
         app.record_keybinding_fast(super::shortcut_hints::LearnableAction::Resume);
         app.open_session_picker();
+        if let Some(picker) = app.session_picker_overlay.as_ref() {
+            picker.borrow_mut().activate_search();
+        }
         return true;
     }
     if let Some(direction) = app.model_switch_keys.direction_for(code, modifiers) {
@@ -2957,9 +2902,21 @@ pub(super) fn handle_global_control_shortcuts(
             } else if !app.input.is_empty() {
                 // First Ctrl+C: clear the input box
                 app.input.clear();
+                let detached = app
+                    .pending_images
+                    .iter()
+                    .filter(|(_, data)| !data.is_empty())
+                    .count();
                 app.pending_images.clear();
                 app.cursor_pos = 0;
-                app.set_status_notice("Input cleared. Press Ctrl+C again to quit");
+                if detached > 0 {
+                    app.set_status_notice(format!(
+                        "Input cleared · Detached {detached} image{} · 0 attached. Press Ctrl+C again to quit",
+                        if detached == 1 { "" } else { "s" }
+                    ));
+                } else {
+                    app.set_status_notice("Input cleared. Press Ctrl+C again to quit");
+                }
             } else {
                 // Second Ctrl+C (input already empty): proceed with quit
                 app.handle_quit_request();
@@ -3150,7 +3107,7 @@ pub(super) fn take_prepared_input(app: &mut App) -> PreparedInput {
     app.record_prompt_history(&raw_input);
     let expanded = expand_paste_placeholders(app, &raw_input);
     app.pasted_contents.clear();
-    let images = std::mem::take(&mut app.pending_images);
+    let images = app.take_pending_image_payloads();
     app.cursor_pos = 0;
     app.clear_input_undo_history();
     PreparedInput {
@@ -3179,6 +3136,40 @@ fn attach_image(app: &mut App, media_type: String, base64_data: String) {
     app.cursor_pos += placeholder.len();
     app.sync_model_picker_preview_from_input();
     app.set_status_notice(format!("Pasted {} ({} KB)", media_type, size_kb));
+}
+
+impl App {
+    /// Removing an attachment marker detaches its payload. Keep empty slots so
+    /// surviving image numbers remain stable and restored text cannot silently
+    /// refer to a different image.
+    pub(super) fn sync_input_image_attachments(&mut self) {
+        let mut removed = 0;
+        for (index, (media_type, data)) in self.pending_images.iter_mut().enumerate() {
+            if !data.is_empty() && !self.input.contains(&format!("[image {}]", index + 1)) {
+                media_type.clear();
+                data.clear();
+                removed += 1;
+            }
+        }
+        if removed > 0 {
+            let remaining = self
+                .pending_images
+                .iter()
+                .filter(|(_, data)| !data.is_empty())
+                .count();
+            self.set_status_notice(format!(
+                "Detached {removed} image{} · {remaining} attached",
+                if removed == 1 { "" } else { "s" }
+            ));
+        }
+    }
+
+    pub(super) fn take_pending_image_payloads(&mut self) -> Vec<(String, String)> {
+        std::mem::take(&mut self.pending_images)
+            .into_iter()
+            .filter(|(media_type, data)| !media_type.is_empty() && !data.is_empty())
+            .collect()
+    }
 }
 
 fn paste_placeholder(content: &str) -> String {
@@ -3581,6 +3572,35 @@ impl App {
         self.copy_badge_ui.key_active = Some((key, expiry));
     }
 
+    /// Everything a key *release* can change on screen: the held-modifier and
+    /// held-key copy badges and the voice-input phase. Compared before and
+    /// after a release so releases that change none of it skip the full
+    /// frame. Under kitty's keyboard protocol every keystroke also reports a
+    /// release, which doubled the frames drawn while typing.
+    pub(super) fn key_release_visible_state(
+        &self,
+    ) -> (
+        bool,
+        bool,
+        Option<char>,
+        Option<super::voice_input::VoicePhase>,
+    ) {
+        // Badges render only through the `*_is_active` gates (the held key
+        // only shows under Alt+Shift), so compare those, not raw fields.
+        let now = std::time::Instant::now();
+        let badge = &self.copy_badge_ui;
+        let shift = badge.shift_is_active(now);
+        (
+            badge.alt_is_active(now),
+            shift,
+            badge
+                .key_active
+                .filter(|(_, expires_at)| shift && *expires_at > now)
+                .map(|(c, _)| c.to_ascii_lowercase()),
+            self.voice_input.as_ref().map(|voice| voice.phase),
+        )
+    }
+
     pub(super) fn record_copy_badge_feedback(&mut self, key: char, success: bool) {
         self.copy_badge_ui.copied_feedback = Some(crate::tui::app::CopyBadgeFeedback {
             key,
@@ -3907,6 +3927,7 @@ impl App {
     /// replayed from the top, so everything from the aborted attempt must
     /// disappear or the replay would render duplicated output.
     pub(super) fn rollback_streaming_attempt(&mut self) {
+        self.streaming.response_output.reset();
         self.stream_buffer.clear();
         self.clear_streaming_render_state();
         self.streaming_tool_calls.clear();
@@ -4236,7 +4257,10 @@ impl App {
             tool_data: None,
         });
         // Send expanded content (with actual pasted text) to model
-        let images = std::mem::take(&mut self.pending_images);
+        let images = self.take_pending_image_payloads();
+        if !images.is_empty() {
+            self.invalidate_side_pane_images_signature();
+        }
         if !images.is_empty() {
             crate::logging::info(&format!(
                 "Submitting with {} image(s): {}",
@@ -4273,7 +4297,11 @@ impl App {
             });
             self.session.add_message(Role::User, blocks);
         }
-        self.append_turn_system_reminder(mission_turn_reminder(&self.session.id));
+        let reminder = merge_turn_reminders(
+            mission_turn_reminder(&self.session.id),
+            self.take_cloud_recovery_reminder(),
+        );
+        self.append_turn_system_reminder(reminder);
         crate::telemetry::record_turn();
         self.session_save_pending = true;
 
@@ -4321,7 +4349,9 @@ impl App {
         event_stream: &mut EventStream,
     ) {
         while !self.cloud_handoff_blocks_work()
-            && (!self.queued_messages.is_empty() || !self.hidden_queued_system_messages.is_empty())
+            && (!self.queued_messages.is_empty()
+                || !self.hidden_queued_system_messages.is_empty()
+                || self.has_pending_cloud_recovery())
         {
             // Combine all currently queued messages into one, treating [SYSTEM: ...]
             // startup continuations as system reminders rather than user turns.
@@ -4344,19 +4374,20 @@ impl App {
             let has_combined = !combined.is_empty();
             let preserve_visible_turn = super::commands::queued_messages_are_only_pokes(&messages);
 
-            if has_combined && human_input && !self.next_turn_plan_only {
-                if let Err(error) =
+            if has_combined
+                && human_input
+                && !self.next_turn_plan_only
+                && let Err(error) =
                     crate::session::judge_feedback::begin_user_turn(&self.session.id)
-                {
-                    self.queued_messages = original_messages;
-                    self.queued_human_input |= human_input;
-                    self.hidden_queued_system_messages = original_reminders;
-                    self.queued_plan_only |= self.next_turn_plan_only;
-                    self.push_display_message(DisplayMessage::error(format!(
-                        "Cannot start user turn: {error}"
-                    )));
-                    break;
-                }
+            {
+                self.queued_messages = original_messages;
+                self.queued_human_input |= human_input;
+                self.hidden_queued_system_messages = original_reminders;
+                self.queued_plan_only |= self.next_turn_plan_only;
+                self.push_display_message(DisplayMessage::error(format!(
+                    "Cannot start user turn: {error}"
+                )));
+                break;
             }
 
             self.commit_pending_streaming_assistant_message();
@@ -4373,6 +4404,8 @@ impl App {
 
             let turn_reminder =
                 merge_turn_reminders(reminder, mission_turn_reminder(&self.session.id));
+            let turn_reminder =
+                merge_turn_reminders(turn_reminder, self.take_cloud_recovery_reminder());
 
             if has_combined {
                 let combined = crate::prompt::with_swarm_user_message_reminder(
@@ -4478,6 +4511,9 @@ impl App {
 
 #[cfg(test)]
 mod terminal_control_sequence_tests;
+
+#[cfg(test)]
+mod ssh_loop_followup_tests;
 
 #[cfg(test)]
 mod key_dispatch_tests;
@@ -4794,10 +4830,22 @@ mod continuation_evidence_tests {
             assert_eq!(records[1].fingerprint_changed, Some(true));
             app.queued_messages.clear();
             app.pending_queued_dispatch = false;
+            for _ in 1..crate::todo::INCOMPLETE_TODO_MAX_ATTEMPTS {
+                assert!(app.schedule_auto_poke_followup_with_evidence(|e| records.push(e.clone())));
+                assert_eq!(records.last().unwrap().fingerprint_changed, Some(false));
+                app.queued_messages.clear();
+                app.pending_queued_dispatch = false;
+            }
             assert!(!app.schedule_auto_poke_followup_with_evidence(|e| records.push(e.clone())));
-            assert_eq!(records.len(), 3);
-            assert_eq!(records[2].reason, ContinuationReason::UnchangedTodos);
-            assert_eq!(records[2].fingerprint_changed, Some(false));
+            assert_eq!(
+                records.len(),
+                usize::from(crate::todo::INCOMPLETE_TODO_MAX_ATTEMPTS) + 2
+            );
+            assert_eq!(
+                records.last().unwrap().reason,
+                ContinuationReason::UnchangedTodos
+            );
+            assert_eq!(records.last().unwrap().fingerprint_changed, Some(false));
             assert!(
                 !serde_json::to_string(&records)
                     .unwrap()
@@ -4898,6 +4946,10 @@ mod continuation_evidence_tests {
     #[test]
     fn continuation_evidence_observes_failed_scheduler_check_not_claimed_success() {
         with_evidence_test_home(|| {
+            let config = std::path::PathBuf::from(std::env::var_os("JCODE_HOME").unwrap())
+                .join("config.toml");
+            std::fs::write(config, "[features]\ntodo_gate_digest = true\n").unwrap();
+            crate::config::invalidate_config_cache();
             let mut app = create_test_app();
             app.auto_poke_incomplete_todos = true;
             crate::todo::save_todos(

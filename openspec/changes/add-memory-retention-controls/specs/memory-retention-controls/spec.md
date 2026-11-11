@@ -2,7 +2,7 @@
 
 ### Requirement: Memory purge is explicit
 
-`jcode memory purge` SHALL report matching entries without deleting unless `--apply` is given, and SHALL only delete entries matching the given filters.
+`jcode memory purge` SHALL report matching entries without deleting unless `--apply` is given, and SHALL only delete entries matching the given filters. Automatic retention SHALL remain disabled unless the user explicitly enables a bounded policy, and SHALL remove only inactive/superseded entries matching that policy. Recall and deletion SHALL share stored memory identity and safe persistence so a stale save cannot resurrect a purged entry. Secret-pattern rejection SHALL NOT be presented as proof that all confidential content is detected.
 
 #### Scenario: Dry run
 - **WHEN** the user runs `jcode memory purge --inactive`
@@ -11,6 +11,14 @@
 #### Scenario: Apply with filter
 - **WHEN** the user runs `jcode memory purge --inactive --older-than 30 --apply`
 - **THEN** only inactive entries older than 30 days are deleted and active entries remain
+
+#### Scenario: Retention disabled by default
+- **WHEN** configuration has no explicitly enabled retention policy
+- **THEN** age or supersession alone triggers no automatic deletion
+
+#### Scenario: Concurrent recall and purge
+- **WHEN** a scoped memory is purged while recall or another save holds an older snapshot
+- **THEN** no later save resurrects the deleted identity and the next recall excludes it
 
 ### Requirement: Secrets are not stored in memory
 

@@ -29,11 +29,15 @@ Key differences: every shell-based harness converged on exit 2 + Claude-style JS
 ## Decision: C
 
 - Latency: notification hooks (`SubagentStop`, `PostToolUse`) default to `async`, so they never stall a turn.
-- Safety: only `PreToolUse` and `Stop` honor decisions, only in `blocking` mode; `fail_closed` applies only to `blocking`.
-- Compat: B is the wire contract, so Claude/Codex/Gemini scripts work unchanged; `mode` is an additive jcode field.
+- Safety: only `PreToolUse` and natural-completion `Stop` honor decisions in blocking mode. Explicit user/coordinator cancellation, budgets and revoked generations take precedence, never run a continuation. Limit Stop continuation to one per completion event, preserve recursion prevention, and account hook children in generation settlement. `fail_closed` applies only to blocking mode.
+- Compat: compatible JSON payload/output fields are the target, with explicit fixtures for supported forms. Current external scripts are not guaranteed unchanged across harness versions. `mode` is additive and existing Jcode keys remain supported.
 - Explicitness: whether a hook can gate execution is visible in config instead of inferred per event.
 
 Defaults: `PreToolUse`, `Stop` = `blocking`; `SessionStart`, `PreCompact` = `observe`; `PostToolUse`, `SubagentStop` = `async`. Setting `blocking` on a non-blockable event is a config warning and behaves as `observe`.
+
+## Existing-runner compatibility and dependency
+
+Extend `crates/jcode-base/src/hooks.rs` and current `HooksConfig`; retain legacy snake_case hook keys, env overrides, direct argv execution, pre_tool_transform and post_tool_feedback behavior. Map new event names additively with explicit precedence and tests so one event never fires twice. Do not replace the existing hook ecosystem or import external config. Consumes make-worker-stop-durable admission/generation/settlement; its dependency does not make hooks a prerequisite of worker control. External compatibility examples above are historical observations, not a current upstream guarantee.
 
 ## Confirmed decisions
 

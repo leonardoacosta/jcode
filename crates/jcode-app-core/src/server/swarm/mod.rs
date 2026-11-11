@@ -65,8 +65,18 @@ pub(in crate::server) use status::*;
 mod plan;
 #[allow(unused_imports)]
 pub(in crate::server) use plan::*;
-mod run;
+/// Inline workers have no entry in the server's live-session map. Clean their
+/// ephemeral environment on normal completion, errors, and future cancellation.
+struct InlineWorkerEnv(String);
+
+impl Drop for InlineWorkerEnv {
+    fn drop(&mut self) {
+        crate::session_env::remove_session_env(&self.0);
+    }
+}
+
 mod claims;
+mod run;
 #[allow(unused_imports)]
 pub(in crate::server) use claims::*;
 pub(crate) use claims::{FileClaims, claim_files};
@@ -79,3 +89,7 @@ mod swarm_cascade_tests;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "../swarm_tests.rs"]
+mod upstream_tests;

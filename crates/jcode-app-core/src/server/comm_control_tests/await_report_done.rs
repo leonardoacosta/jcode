@@ -29,3 +29,21 @@ async fn awaited_statuses_require_report_for_ready_and_keep_reported_stopped_don
     assert!(mode_satisfied(&statuses[1..], None));
     let _ = timeout_summary;
 }
+#[tokio::test]
+async fn unknown_member_never_satisfies_terminal_wait() {
+    let statuses = awaited_member_statuses(
+        "requester",
+        "swarm",
+        &["missing".to_string()],
+        &["stopped".to_string(), "completed".to_string()],
+        &Arc::new(RwLock::new(HashMap::new())),
+        &Arc::new(RwLock::new(HashMap::new())),
+    )
+    .await;
+    assert_eq!(statuses[0].status, "unknown");
+    assert!(
+        !statuses[0].done,
+        "missing membership cannot prove execution settlement"
+    );
+    assert!(!mode_satisfied(&statuses, None));
+}

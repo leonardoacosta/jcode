@@ -204,6 +204,8 @@ mod tests {
     #[test]
     fn non_repo_reports_error() {
         let dir = tempfile::tempdir().unwrap();
+        // TMPDIR can be inside the checkout. Block discovery of its parent repo.
+        std::fs::write(dir.path().join(".git"), "not a repository").unwrap();
         let overlay = load_commit_log(Some(dir.path()));
         assert!(overlay.entries.is_empty());
         assert!(overlay.error.is_some());

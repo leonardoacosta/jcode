@@ -4,7 +4,7 @@
 The system SHALL show the resolved provider or an actionable login next step at the end of first run and on first-prompt auth failure.
 
 #### Scenario: Success path
-- **WHEN** onboarding finishes with a stored credential **THEN** the status row SHALL name the resolved provider and model within the available cell width
+- **WHEN** onboarding finishes with a stored credential **THEN** the status row SHALL name the selected resolved provider/model within the available cell width, label it configured/untested and SHALL NOT claim healthy or working without an observed request
 
 #### Scenario: Failure path
-- **WHEN** no credential exists or the first prompt fails authentication **THEN** the TUI SHALL show "no working provider" and the `jcode login --provider <provider>` next step, and SHALL NOT show only a raw provider error
+- **WHEN** the selected route has no credential or its first prompt fails authentication **THEN** the TUI SHALL show the classified missing/auth-failed state and supported `jcode login --provider <provider>` next step without probing other routes or showing only a raw error

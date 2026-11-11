@@ -32,9 +32,22 @@ pub enum ImageProtocol {
     None,
 }
 
+/// Explicit opt-out takes precedence over terminal protocol detection.
+pub fn images_disabled() -> bool {
+    std::env::var("JCODE_IMAGES").is_ok_and(|value| {
+        matches!(
+            value.trim().to_ascii_lowercase().as_str(),
+            "0" | "false" | "no" | "off"
+        )
+    })
+}
+
 impl ImageProtocol {
     /// Detect the best available image protocol for the current terminal
     pub fn detect() -> Self {
+        if images_disabled() {
+            return Self::None;
+        }
         // Check for Kitty first (most capable)
         if std::env::var("KITTY_WINDOW_ID").is_ok() {
             return Self::Kitty;
@@ -489,6 +502,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn explicit_image_off_overrides_detected_protocols() {
+        const CHILD: &str = "JCODE_TEST_IMAGE_OFF_CHILD";
+        if std::env::var_os(CHILD).is_some() {
+            assert_eq!(ImageProtocol::detect(), ImageProtocol::None);
+            return;
+        }
+        for program in ["kitty", "iTerm.app", "WezTerm"] {
+            for disabled in ["off", "0", "false", "no"] {
+                let output = Command::new(std::env::current_exe().unwrap())
+                    .args([
+                        "--exact",
+                        "display::tests::explicit_image_off_overrides_detected_protocols",
+                    ])
+                    .env(CHILD, "1")
+                    .env("JCODE_IMAGES", disabled)
+                    .env("KITTY_WINDOW_ID", "1")
+                    .env("TERM", "xterm-kitty")
+                    .env("TERM_PROGRAM", program)
+                    .env("JCODE_ITERM2_IMAGES", "1")
+                    .output()
+                    .unwrap();
+                assert!(
+                    output.status.success(),
+                    "{program}/{disabled}: {}",
+                    String::from_utf8_lossy(&output.stdout)
+                );
+            }
+        }
+    }
+
+    #[test]
     fn test_protocol_detection() {
         // This test just verifies the detection doesn't panic
         let protocol = ImageProtocol::detect();
@@ -573,6 +617,7 @@ mod tests {
             .env("TERM", "xterm-256color")
             .env("TERM_PROGRAM", "jcode-desktop")
             .env("COLORTERM", "truecolor")
+            .env_remove("JCODE_IMAGES")
             .env_remove("KITTY_WINDOW_ID")
             .env_remove("LC_TERMINAL")
             .output()

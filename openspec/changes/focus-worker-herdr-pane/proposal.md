@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [recover-swarm-workers-after-reload, make-worker-stop-durable]
 ---
 # Proposal
 
@@ -15,7 +15,7 @@ Visible workers launched in Herdr get a pane (`crates/jcode-terminal-launch/src/
 
 - Record the Herdr pane ID on the swarm member at spawn and persist it with swarm state.
 - Add a focus-pane action to `/agents` and the worker widget row that runs `herdr pane focus <id>`; hide it when no pane is known.
-- Each worker pane reports its own session resume argv so Herdr can restore it.
+- Each worker pane reports its session resume argv and repository/session/generation binding. Pane IDs are hints, not execution authority; restore must revalidate target identity and durable stop state and never revive a revoked generation automatically.
 
 ## Capabilities
 

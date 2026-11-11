@@ -20,10 +20,10 @@ fn keyboard_selection_resolves_centered_side_image_on_blank_row() {
     let (x, y) = copy_point_screen_position(point).unwrap();
     assert_eq!(panel_image_preview::image_at(x, y), Some(42));
     for column in [1, 40] {
-        assert_eq!(copy_point_screen_position(crate::tui::CopySelectionPoint {
-            column,
-            ..point
-        }), None);
+        assert_eq!(
+            copy_point_screen_position(crate::tui::CopySelectionPoint { column, ..point }),
+            None
+        );
     }
     panel_image_preview::clear_regions();
 }

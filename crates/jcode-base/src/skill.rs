@@ -298,19 +298,19 @@ impl SkillRegistry {
             registry.load_plugin_skills_from_root(&plugins_root);
         }
 
+        // Later inserts win: plugins < shared agents < explicit jcode skills.
+        if let Ok(agents_skills) = crate::storage::user_home_path(".agents/skills")
+            && agents_skills.exists()
+        {
+            registry.load_from_dir_with_source(&agents_skills, SkillSource::Agents)?;
+        }
+
         // Load from ~/.jcode/skills/ (jcode's own global skills)
         if let Ok(jcode_dir) = crate::storage::jcode_dir() {
             let jcode_skills = jcode_dir.join("skills");
             if jcode_skills.exists() {
                 registry.load_from_dir_with_source(&jcode_skills, SkillSource::Global)?;
             }
-        }
-
-        // Load from ~/.agents/skills/ (shared cross-tool `.agents` convention)
-        if let Ok(agents_skills) = crate::storage::user_home_path(".agents/skills")
-            && agents_skills.exists()
-        {
-            registry.load_from_dir_with_source(&agents_skills, SkillSource::Agents)?;
         }
 
         Ok(registry)
@@ -334,7 +334,7 @@ impl SkillRegistry {
     /// (project dirs loaded last).
     pub fn merge_overlay(&mut self, overlay: Self) {
         for skill in overlay.skills.into_values() {
-            self.insert_skill(skill);
+            self.insert_loaded_skill(skill);
         }
     }
 
@@ -380,7 +380,7 @@ impl SkillRegistry {
 
     fn load_project_local_dirs(&mut self, working_dir: Option<&Path>) -> Result<()> {
         for root in Self::project_roots(working_dir) {
-            for name in [".jcode", ".agents", ".claude"] {
+            for name in [".claude", ".agents", ".jcode"] {
                 let dir = root.join(name).join("skills");
                 if dir.is_dir() {
                     let mut visited = std::collections::HashSet::new();
@@ -419,7 +419,7 @@ impl SkillRegistry {
             let skill_file = path.join("SKILL.md");
             if skill_file.exists() {
                 if let Ok(skill) = Self::parse_skill(&skill_file, SkillSource::Project) {
-                    self.insert_skill(skill);
+                    self.insert_loaded_skill(skill);
                 }
             } else {
                 self.load_nested(&path, depth + 1, visited);
@@ -736,19 +736,19 @@ impl SkillRegistry {
             count += self.load_plugin_skills_from_root(&plugins_root);
         }
 
+        // Keep the same precedence as load_global: plugins < agents < jcode.
+        if let Ok(agents_skills) = crate::storage::user_home_path(".agents/skills")
+            && agents_skills.exists()
+        {
+            count += self.load_from_dir_count(&agents_skills, SkillSource::Agents)?;
+        }
+
         // Load from ~/.jcode/skills/ (jcode's own global skills)
         if let Ok(jcode_dir) = crate::storage::jcode_dir() {
             let jcode_skills = jcode_dir.join("skills");
             if jcode_skills.exists() {
                 count += self.load_from_dir_count(&jcode_skills, SkillSource::Global)?;
             }
-        }
-
-        // Load from ~/.agents/skills/ (shared cross-tool `.agents` convention)
-        if let Ok(agents_skills) = crate::storage::user_home_path(".agents/skills")
-            && agents_skills.exists()
-        {
-            count += self.load_from_dir_count(&agents_skills, SkillSource::Agents)?;
         }
 
         Ok(count)
@@ -770,13 +770,27 @@ impl SkillRegistry {
                 if skill_file.exists()
                     && let Ok(skill) = Self::parse_skill(&skill_file, source)
                 {
-                    self.insert_skill(skill);
+                    self.insert_loaded_skill(skill);
                     count += 1;
                 }
             }
         }
 
         Ok(count)
+    }
+
+    fn insert_loaded_skill(&mut self, skill: Skill) {
+        if let Some(shadowed) = self.skills.get(&skill.name)
+            && shadowed.path != skill.path
+        {
+            crate::logging::warn(&format!(
+                "Skill '{}' from '{}' shadows '{}'",
+                skill.name,
+                skill.path.display(),
+                shadowed.path.display()
+            ));
+        }
+        self.insert_skill(skill);
     }
 
     /// Parse `/skill-name` and `/skill-name prompt...` invocations.
@@ -1932,4 +1946,90 @@ mod tests {
         assert_eq!(bad.name, "other");
         assert!(bad.warnings()[0].contains("folder name 'folder'"));
     }
+    #[test]
+    fn project_skill_precedence_covers_all_source_combinations() {
+        let scopes = [".jcode", ".agents", ".claude"];
+        for mask in 1u32..8 {
+            let temp = tempfile::tempdir().expect("tempdir");
+            for (index, scope) in scopes.iter().enumerate() {
+                if mask & (1 << index) != 0 {
+                    write_skill_file(
+                        &temp.path().join(scope).join("skills"),
+                        "demo",
+                        &format!("---\nname: demo\ndescription: from {scope}\n---\n{scope}\n"),
+                    );
+                }
+            }
+            let expected = scopes[mask.trailing_zeros() as usize];
+            let overlay = SkillRegistry::load_project_overlay(Some(temp.path())).unwrap();
+            let skill = overlay.get("demo").unwrap();
+            assert_eq!(skill.content, expected, "source combination {mask}");
+            assert_eq!(
+                skill.path,
+                temp.path().join(expected).join("skills/demo/SKILL.md")
+            );
+
+            let mut global = SkillRegistry::default();
+            global
+                .skills
+                .insert("demo".into(), test_skill("demo", "global", "global"));
+            let effective = SkillRegistry::effective_for_working_dir(&global, Some(temp.path()));
+            assert_eq!(effective.get("demo").unwrap().content, expected);
+            // The combined loader uses the same ordering, even atop globals.
+            global.load_project_local_dirs(Some(temp.path())).unwrap();
+            assert_eq!(global.get("demo").unwrap().content, expected);
+        }
+    }
+
+    #[test]
+    fn global_skill_precedence_is_identical_on_load_and_reload() {
+        let _guard = crate::storage::lock_test_env();
+        struct RestoreHome(Option<std::ffi::OsString>);
+        impl Drop for RestoreHome {
+            fn drop(&mut self) {
+                match self.0.take() {
+                    Some(value) => crate::env::set_var("JCODE_HOME", value),
+                    None => crate::env::remove_var("JCODE_HOME"),
+                }
+            }
+        }
+        let _restore = RestoreHome(std::env::var_os("JCODE_HOME"));
+        let temp = tempfile::tempdir().unwrap();
+        crate::env::set_var("JCODE_HOME", temp.path());
+        let install = temp
+            .path()
+            .join("external/.claude/plugins/cache/test/plugin/1");
+        for name in ["jcode-wins", "agents-wins", "plugin-only"] {
+            write_plugin_skill(&install, name);
+        }
+        for name in ["jcode-wins", "agents-wins"] {
+            write_test_skill(&temp.path().join("external"), ".agents", name);
+        }
+        write_skill_file(
+            &temp.path().join("skills"),
+            "jcode-wins",
+            "---\nname: jcode-wins\ndescription: explicit jcode\n---\nJCODE\n",
+        );
+        let mut registry = SkillRegistry::load_global().unwrap();
+        for reload in [false, true] {
+            if reload {
+                assert_eq!(registry.reload_global().unwrap(), 6);
+            }
+            assert_eq!(registry.get("jcode-wins").unwrap().content, "JCODE");
+            assert_eq!(
+                registry.get("jcode-wins").unwrap().path,
+                temp.path().join("skills/jcode-wins/SKILL.md")
+            );
+            assert_eq!(
+                registry.get("agents-wins").unwrap().path,
+                temp.path()
+                    .join("external/.agents/skills/agents-wins/SKILL.md")
+            );
+            assert_eq!(
+                registry.get("plugin-only").unwrap().path,
+                install.join("skills/plugin-only/SKILL.md")
+            );
+        }
+    }
+
 }

@@ -4,10 +4,12 @@
 
 The overnight supervisor SHALL start a coordinator turn only after recording an `admitted` decision citing an eligible task or new signal.
 
+Every signal SHALL trigger deterministic revalidation of original authorization, current strict task/worktree policy, dependencies, owner/generation, cancellation and finite remaining limits, including required authoritative monetary reservations. A signal or usable credential alone SHALL NOT grant dispatch. Unsupported chargeable providers SHALL remain blocked.
+
 #### Scenario: Eligible work admitted
 
 - **WHEN** a background task completes during a run
-- **THEN** the supervisor SHALL record `admitted` citing that completion and start one turn
+- **THEN** the supervisor SHALL revalidate deterministic admission and only when eligible record `admitted` citing that completion and start one turn, otherwise record waiting/blocked without dispatch
 
 #### Scenario: No eligible work
 
@@ -16,14 +18,14 @@ The overnight supervisor SHALL start a coordinator turn only after recording an 
 
 ### Requirement: Auth-blocked preflight
 
-The run SHALL NOT start coordinator turns when preflight finds no usable provider auth.
+The run SHALL NOT start coordinator turns when the explicitly selected permitted provider route lacks usable auth. It SHALL NOT probe unrelated configured accounts or silently switch routes to find one that works.
 
 #### Scenario: All auth expired
 
-- **WHEN** every configured provider reports missing or expired auth at preflight
+- **WHEN** the explicitly selected permitted route reports missing or expired auth at preflight
 - **THEN** the run SHALL record `blocked` with the provider reasons and end without a coordinator turn
 
 #### Scenario: One provider usable
 
-- **WHEN** at least one provider authenticates
-- **THEN** the run SHALL proceed to admission normally
+- **WHEN** the selected permitted provider authenticates
+- **THEN** the run SHALL proceed to deterministic admission checks without inferring work or budget authorization

@@ -24,6 +24,11 @@ impl Agent {
         }
     }
 
+    /// True when this copy may not run turns on this machine.
+    pub(crate) fn session_lease_blocked(&self) -> bool {
+        self.session.migration_lease_block().is_some()
+    }
+
     /// True when a newer migrated transcript replaced this copy on disk.
     pub(crate) fn session_copy_is_stale(&self) -> bool {
         matches!(
@@ -34,7 +39,9 @@ impl Agent {
 
     /// Run a single turn with the given user message
     pub async fn run_once(&mut self, user_message: &str) -> Result<()> {
-        let _runtime_activity = crate::runtime_activity::global().try_enter()?;
+        let _turn = self.claim_server_turn()?;
+        let _runtime_activity =
+            crate::runtime_activity::global().try_enter_session(&self.session.id)?;
         self.announce_late_mcp_tools().await;
         self.announce_late_skills();
         if !user_message.trim().is_empty() {
@@ -77,7 +84,9 @@ impl Agent {
         user_message: &str,
         display_role: Option<crate::session::StoredDisplayRole>,
     ) -> Result<String> {
-        let _runtime_activity = crate::runtime_activity::global().try_enter()?;
+        let _turn = self.claim_server_turn()?;
+        let _runtime_activity =
+            crate::runtime_activity::global().try_enter_session(&self.session.id)?;
         self.announce_late_mcp_tools().await;
         self.announce_late_skills();
         if display_role.is_none() && !user_message.trim().is_empty() {
@@ -130,7 +139,31 @@ impl Agent {
         event_tx: mpsc::UnboundedSender<ServerEvent>,
         display_role: Option<crate::session::StoredDisplayRole>,
     ) -> Result<()> {
-        let _runtime_activity = crate::runtime_activity::global().try_enter()?;
+        let lease = self.claim_server_turn()?;
+        self.run_reserved_streaming_mpsc(
+            &lease,
+            user_message,
+            images,
+            system_reminder,
+            event_tx,
+            display_role,
+        )
+        .await
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) async fn run_reserved_streaming_mpsc(
+        &mut self,
+        lease: &TurnLease,
+        user_message: &str,
+        images: Vec<(String, String)>,
+        system_reminder: Option<String>,
+        event_tx: mpsc::UnboundedSender<ServerEvent>,
+        display_role: Option<crate::session::StoredDisplayRole>,
+    ) -> Result<()> {
+        self.validate_server_turn(lease)?;
+        let _runtime_activity =
+            crate::runtime_activity::global().try_enter_session(&self.session.id)?;
         // Inject any pending notifications before the user message
         let alerts = self.take_alerts();
         if !alerts.is_empty() {
@@ -197,9 +230,11 @@ impl Agent {
     /// retried on the new route exactly as if it had never been sent.
     pub(crate) async fn continue_turn_after_failover(
         &mut self,
+        lease: &TurnLease,
         system_reminder: Option<String>,
         event_tx: mpsc::UnboundedSender<ServerEvent>,
     ) -> Result<()> {
+        self.validate_server_turn(lease)?;
         if self.is_graceful_shutdown() {
             return Ok(());
         }
@@ -434,15 +469,17 @@ impl Agent {
         self.inline_output_tap = enabled;
     }
 
-    /// Whether this session streams an inline output tail to the bus.
+    /// Whether this session streams a public output tail to the bus. Owned
+    /// workers retain a tail in every spawn mode so forced stops can still
+    /// deliver recent output when transcript collection cannot finish.
     pub(crate) fn inline_output_tap(&self) -> bool {
-        self.inline_output_tap
+        self.inline_output_tap || self.session.parent_id.is_some()
     }
 
     /// Publish the current rolling activity tail to the bus for the
     /// coordinator's inline gallery. No-op unless the inline tap is enabled.
     pub(crate) fn publish_inline_tail(&self) {
-        if !self.inline_output_tap {
+        if !self.inline_output_tap() {
             return;
         }
         crate::bus::Bus::global().publish(crate::bus::BusEvent::SwarmOutputTail(
@@ -1052,7 +1089,15 @@ impl Agent {
             graceful_shutdown_signal: Some(self.graceful_shutdown.clone()),
             execution_mode: ToolExecutionMode::Direct,
         };
-        self.registry.execute(name, input, ctx).await
+        if crate::server::session_control::current_token().is_some() {
+            return self.registry.execute(name, input, ctx).await;
+        }
+        crate::server::session_control::run(
+            &self.session.id,
+            self.session.parent_id.as_deref(),
+            self.registry.execute(name, input, ctx),
+        )
+        .await?
     }
 
     pub fn add_manual_tool_use(
@@ -1605,60 +1650,9 @@ impl Agent {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct TurnTokenUsage {
-    prompt_tokens: Option<u64>,
-    input_tokens: u64,
-    output_tokens: u64,
-    cache_read_input_tokens: Option<u64>,
-    cache_creation_input_tokens: Option<u64>,
-}
-
-fn turn_token_usage_after(
-    messages: &[crate::session::StoredMessage],
-    start_message_index: usize,
-) -> Option<TurnTokenUsage> {
-    let mut usage = TurnTokenUsage {
-        prompt_tokens: None,
-        input_tokens: 0,
-        output_tokens: 0,
-        cache_read_input_tokens: None,
-        cache_creation_input_tokens: None,
-    };
-    let mut saw_usage = false;
-
-    for message in messages.iter().skip(start_message_index) {
-        if !matches!(&message.role, Role::Assistant) {
-            continue;
-        }
-        let Some(message_usage) = message.token_usage.as_ref() else {
-            continue;
-        };
-
-        saw_usage = true;
-        let add = |acc: Option<u64>, v: Option<u64>| {
-            v.map(|v| acc.unwrap_or(0).saturating_add(v)).or(acc)
-        };
-        usage.prompt_tokens = add(usage.prompt_tokens, message_usage.prompt_tokens);
-        usage.input_tokens = usage
-            .input_tokens
-            .saturating_add(message_usage.input_tokens);
-        usage.output_tokens = usage
-            .output_tokens
-            .saturating_add(message_usage.output_tokens);
-        usage.cache_read_input_tokens = add(
-            usage.cache_read_input_tokens,
-            message_usage.cache_read_input_tokens,
-        );
-        usage.cache_creation_input_tokens = add(
-            usage.cache_creation_input_tokens,
-            message_usage.cache_creation_input_tokens,
-        );
-    }
-
-    saw_usage.then_some(usage)
-}
-
+#[path = "turn_usage.rs"]
+mod turn_usage;
+use turn_usage::turn_token_usage_after;
 /// Cap on tools listed in one late-MCP transcript announcement.
 const MAX_ANNOUNCED_MCP_TOOLS: usize = 32;
 

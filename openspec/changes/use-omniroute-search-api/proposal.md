@@ -1,3 +1,8 @@
+---
+execution:
+  version: 1
+  depends_on: []
+---
 # Proposal
 
 ## Why
@@ -27,3 +32,5 @@ None. Existing generic custom search behavior remains unchanged.
 Implementation targets are `docs/custom-web-search.md` and `crates/jcode-app-core/src/tool/websearch_tests.rs`. Existing production request and parsing functions remain unchanged. No new dependencies, MCP integration, provider changes, commits, or deployment belong to this worker lane.
 
 The gateway lane must define the exact policy selector, authentication header support, and result shape before the recipe and contract-specific tests become executable. Coordinator owns combined validation, independent review, authorized persistence, runtime activation, and archival.
+
+The client selector contract is bound by the existing design evidence; separately authorized real gateway acceptance remains a terminal gate, not a fabricated local change dependency. Endpoint-owned search/fallback policy cannot be implemented or overridden in this Jcode recipe. Historical worker no-commit limits apply to that lane; this reconciliation changes artifacts only, without granting activation/publication authority.

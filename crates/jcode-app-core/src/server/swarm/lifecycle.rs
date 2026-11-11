@@ -52,7 +52,7 @@ impl DeadMemberSalvage {
             ));
         }
         parts.push(
-            "Queued tasks will be picked up by assign_next/run_plan; check plan_status for details."
+            "Queued worker lanes start automatically as dependencies and capacity allow; check plan_status for details."
                 .to_string(),
         );
         parts.join(" ")
@@ -229,6 +229,7 @@ pub(in crate::server) async fn remove_session_from_swarm(
     swarm_plans: &Arc<RwLock<HashMap<String, VersionedPlan>>>,
 ) {
     let started = Instant::now();
+    crate::agents_status::session_closed(session_id);
     log_swarm_lifecycle(
         "member_remove_start",
         vec![
@@ -260,8 +261,18 @@ pub(in crate::server) async fn remove_session_from_swarm(
     )
     .await;
     remove_plan_participant(swarm_id, session_id, swarm_plans).await;
-    // Removal covers stop, crash and orphan detection: free its file claims.
-    unregister_claim_worker(session_id);
+    crate::server::live_status::forget(session_id);
+    // Membership loss is not execution settlement. Controlled generations keep
+    // claims until the durable stop path proves their actual owned work ended.
+    let control = super::super::session_control::store();
+    let release = match control.inspect(session_id) {
+        Ok(None) => true,
+        Ok(Some(record)) => record.state == super::super::session_control::ControlState::Stopped,
+        Err(_) => false,
+    };
+    if release {
+        unregister_claim_worker(session_id);
+    }
 
     {
         let mut swarms = swarms_by_id.write().await;
@@ -459,6 +470,10 @@ pub(in crate::server) fn member_awaits_unrestored_notice(member: &SwarmMember) -
             detail.contains(crate::server::swarm_persistence::IDLE_WORKER_NOT_RESTORED_NOTE)
                 && !detail.contains(crate::server::swarm_persistence::OWNER_NOTIFIED_NOTE)
         })
+        // Shutdown can leave a ready snapshot even for work that has a durable
+        // continuation. Startup will restore that worker, so don't tell its
+        // coordinator it had no work in flight and needs replacing.
+        && !crate::server::reload_recovery::has_pending_for_session(&member.session_id)
 }
 
 /// Tell `owner_session_id` about idle headless workers that the last server
@@ -474,7 +489,14 @@ pub(in crate::server) fn member_awaits_unrestored_notice(member: &SwarmMember) -
 pub(in crate::server) async fn notify_owner_of_unrestored_idle_workers(
     owner_session_id: &str,
     swarm_state: &SwarmState,
+    sessions: &crate::server::SessionAgents,
+    soft_interrupt_queues: &crate::server::SessionInterruptQueues,
 ) -> usize {
+    // Concurrent subscribe/resume requests must not both observe an unnotified
+    // worker before either has queued its interrupt. This lock is independent
+    // of the swarm snapshot lock, which persistence acquires below.
+    static NOTICE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _notice_guard = NOTICE_LOCK.lock().await;
     let coordinated_swarms: HashSet<String> = {
         let coordinators = swarm_state.coordinators.read().await;
         coordinators
@@ -484,12 +506,12 @@ pub(in crate::server) async fn notify_owner_of_unrestored_idle_workers(
             .collect()
     };
     let (owner_name, reported) = {
-        let mut members = swarm_state.members.write().await;
+        let members = swarm_state.members.read().await;
         let owner_name = members
             .get(owner_session_id)
             .and_then(|member| member.friendly_name.clone());
         let mut reported: Vec<(String, String, Option<String>)> = Vec::new();
-        for member in members.values_mut() {
+        for member in members.values() {
             if member.session_id == owner_session_id || !member_awaits_unrestored_notice(member) {
                 continue;
             }
@@ -503,11 +525,6 @@ pub(in crate::server) async fn notify_owner_of_unrestored_idle_workers(
             if !(owned_by_report_back || owned_by_coordination) {
                 continue;
             }
-            member.detail = Some(format!(
-                "{} ({})",
-                member.detail.as_deref().unwrap_or_default(),
-                crate::server::swarm_persistence::OWNER_NOTIFIED_NOTE
-            ));
             reported.push((
                 member.session_id.clone(),
                 member
@@ -541,6 +558,32 @@ pub(in crate::server) async fn notify_owner_of_unrestored_idle_workers(
              They had no work in flight. Spawn replacements if you still need them."
         )
     };
+    if !crate::server::queue_soft_interrupt_for_session(
+        owner_session_id,
+        message.clone(),
+        false,
+        jcode_agent_runtime::SoftInterruptSource::System,
+        soft_interrupt_queues,
+        sessions,
+    )
+    .await
+    {
+        return 0;
+    }
+    {
+        let mut members = swarm_state.members.write().await;
+        for (session_id, _, _) in &reported {
+            if let Some(member) = members.get_mut(session_id)
+                && member_awaits_unrestored_notice(member)
+            {
+                member.detail = Some(format!(
+                    "{} ({})",
+                    member.detail.as_deref().unwrap_or_default(),
+                    crate::server::swarm_persistence::OWNER_NOTIFIED_NOTE
+                ));
+            }
+        }
+    }
     crate::logging::info(&format!(
         "Notifying {owner_session_id} of {count} idle headless worker(s) not restored after restart: {names}"
     ));
@@ -721,14 +764,7 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
     event_counter: Option<&Arc<std::sync::atomic::AtomicU64>>,
     swarm_event_tx: Option<&broadcast::Sender<SwarmEvent>>,
 ) {
-    let completion_report = normalize_completion_report(completion_report);
-    if matches!(
-        status,
-        "completed" | "done" | "stopped" | "failed" | "crashed" | "orphaned"
-    ) || (status == "ready" && completion_report.is_some())
-    {
-        release_file_claims_of(session_id);
-    }
+    let mut completion_report = normalize_completion_report(completion_report);
     let detail_present = detail.is_some();
     let (
         swarm_id,
@@ -740,52 +776,102 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
         report_back_to_session_id,
     ) = {
         let mut members = swarm_members.write().await;
-        if let Some(member) = members.get_mut(session_id) {
-            let previous_status = member.status.clone();
-            let status_changed = member.status != status;
-            let detail_changed = member.detail != detail;
-            let report_changed =
-                completion_report.is_some() && member.latest_completion_report != completion_report;
-            let member_changed = status_changed || detail_changed || report_changed;
-            if status_changed {
-                member.last_status_change = Instant::now();
-                if matches!(status, "running" | "streaming" | "thinking") {
-                    member.runtime.elapsed_secs = None;
-                } else if matches!(
-                    previous_status.as_str(),
-                    "running" | "streaming" | "thinking"
-                ) {
-                    member.runtime.elapsed_secs = Some(member.joined_at.elapsed().as_secs());
-                }
-            }
-            let name = member.friendly_name.clone();
-            let is_headless = member.is_headless;
-            let report_back_to_session_id = member.report_back_to_session_id.clone();
-            member.status = status.to_string();
-            member.detail = detail;
-            // Clear any live output tail when the worker reaches a terminal or
-            // idle state so the inline gallery viewport doesn't keep showing
-            // stale in-progress text after the turn finishes.
+        let projected = crate::server::session_control::store().project(session_id, status, || {
             if matches!(
                 status,
-                "ready" | "completed" | "done" | "failed" | "crashed" | "stopped"
-            ) {
-                member.output_tail = None;
+                "completed" | "done" | "stopped" | "failed" | "crashed" | "orphaned"
+            ) || (status == "ready" && completion_report.is_some())
+            {
+                release_file_claims_of(session_id);
             }
-            if completion_report.is_some() {
-                member.latest_completion_report = completion_report.clone();
+            if let Some(member) = members.get_mut(session_id) {
+                // Forced stops and crashes may abort the turn before its transcript
+                // can be collected. Preserve the already streamed public tail before
+                // the terminal transition clears the gallery buffer.
+                if completion_report.is_none()
+                    && matches!(
+                        status,
+                        "ready" | "completed" | "done" | "failed" | "crashed" | "stopped"
+                    )
+                {
+                    completion_report = member.output_tail.as_deref().and_then(|tail| {
+                        jcode_swarm_core::recent_output_tail(
+                            std::iter::once(tail),
+                            jcode_swarm_core::SWARM_OUTPUT_TAIL_TOKENS,
+                        )
+                    });
+                }
+                let previous_status = member.status.clone();
+                let status_changed = member.status != status;
+                let detail_changed = member.detail != detail;
+                if status_changed
+                    || detail_changed
+                    || crate::server::live_status::snapshot(session_id).is_none()
+                {
+                    if matches!(status, "running" | "streaming" | "thinking") {
+                        if !matches!(
+                            previous_status.as_str(),
+                            "running" | "streaming" | "thinking"
+                        ) || crate::server::live_status::snapshot(session_id).is_none()
+                        {
+                            crate::server::live_status::begin(session_id);
+                        }
+                    } else {
+                        crate::server::live_status::finish(session_id, status, detail.as_deref());
+                    }
+                }
+                let report_changed = completion_report.is_some()
+                    && member.latest_completion_report != completion_report;
+                let member_changed = status_changed || detail_changed || report_changed;
+                if status_changed {
+                    member.last_status_change = Instant::now();
+                    if matches!(status, "running" | "streaming" | "thinking") {
+                        member.runtime.elapsed_secs = None;
+                    } else if matches!(
+                        previous_status.as_str(),
+                        "running" | "streaming" | "thinking"
+                    ) {
+                        member.runtime.elapsed_secs = Some(member.joined_at.elapsed().as_secs());
+                    }
+                }
+                let name = member.friendly_name.clone();
+                let is_headless = member.is_headless;
+                let report_back_to_session_id = member.report_back_to_session_id.clone();
+                member.status = status.to_string();
+                member.detail = detail;
+                // Clear any live output tail when the worker reaches a terminal or
+                // idle state so the inline gallery viewport doesn't keep showing
+                // stale in-progress text after the turn finishes.
+                if matches!(
+                    status,
+                    "ready" | "completed" | "done" | "failed" | "crashed" | "stopped"
+                ) {
+                    member.output_tail = None;
+                }
+                if completion_report.is_some() {
+                    member.latest_completion_report = completion_report.clone();
+                }
+                (
+                    member.swarm_id.clone(),
+                    name,
+                    member_changed,
+                    status_changed,
+                    previous_status,
+                    is_headless,
+                    report_back_to_session_id,
+                )
+            } else {
+                (None, None, false, false, String::new(), false, None)
             }
-            (
-                member.swarm_id.clone(),
-                name,
-                member_changed,
-                status_changed,
-                previous_status,
-                is_headless,
-                report_back_to_session_id,
-            )
-        } else {
-            (None, None, false, false, String::new(), false, None)
+        });
+        match projected {
+            Ok(projected) => projected,
+            Err(error) => {
+                crate::logging::info(&format!(
+                    "Ignoring revoked session projection {session_id}: {error}"
+                ));
+                return;
+            }
         }
     };
     if let Some(ref id) = swarm_id {
@@ -839,7 +925,7 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
         let should_notify_coordinator = status_changed
             && ((status == "completed")
                 || (report_back_to_session_id.is_some()
-                    && old_status == "running"
+                    && matches!(old_status.as_str(), "running" | "streaming" | "thinking" | "running_stale")
                     && matches!(status, "ready" | "failed" | "stopped"))
                 // A crash is never routine: notify whoever is responsible
                 // (owner, else coordinator) whenever a member dies while it
@@ -875,6 +961,19 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
                     .unwrap_or(&session_id[..8.min(session_id.len())]);
                 let msg =
                     completion_notification_message(name, status, completion_report.as_deref());
+                // Display notifications alone never enter the owner's model
+                // context. Deliver reports through the reliable runtime bus,
+                // which wakes idle owners and queues reports for busy ones.
+                // Explicit stops are cancellation, not permission to restart.
+                if report_back_to_session_id.is_some() && status != "stopped" {
+                    crate::bus::Bus::global().publish(crate::bus::BusEvent::SwarmWorkerReported(
+                        crate::bus::SwarmWorkerReported {
+                            session_id: recipient_session_id.clone(),
+                            worker_session_id: session_id.to_string(),
+                            notification: msg.clone(),
+                        },
+                    ));
+                }
                 let _ = fanout_session_event(
                     swarm_members,
                     &recipient_session_id,

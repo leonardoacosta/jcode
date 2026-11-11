@@ -1,7 +1,7 @@
 - [ ] Extract provider doctor next-step text into a shared helper
 - [ ] Render end-of-onboarding provider status row
 - [ ] Render next step on first-prompt auth failure
-- [ ] Add TUI frame tests for credential present, absent, and 40-cell width
+- [ ] Add TUI/public onboarding tests for credential-present configured/untested, missing and classified auth failure at 40-cell width; verify no presence-to-health inference or unrequested route probes
 - [ ] Exercise first run in an isolated `JCODE_HOME` via a `debug_socket` tester and capture frames
 - [ ] Run `cargo test -p jcode` for touched modules and record results
 - [ ] Run `openspec validate clarify-first-run-provider-setup --strict`

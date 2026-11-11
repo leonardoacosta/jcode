@@ -1,3 +1,5 @@
+#[path = "tui_lifecycle_keybindings.rs"]
+mod keybindings;
 #[path = "tui_lifecycle_reload_input.rs"]
 mod reload_input;
 
@@ -6,45 +8,6 @@ use super::*;
 use crate::tui::{backend, keybind};
 
 impl App {
-    /// Re-parse keybinding snapshots when the config cache has reloaded.
-    ///
-    /// The parsed bindings are cached on `App` for cheap per-keystroke lookup,
-    /// so without this poll a config.toml keybinding edit would only take
-    /// effect after a restart. Called from the idle tick in both local and
-    /// remote run loops, and again immediately before dispatching a key press
-    /// so an edit lands on the very next keystroke even when the run loop is
-    /// sitting at the 5s deep-idle cadence. The generation check makes the
-    /// no-change path a single atomic load. Returns true when bindings were
-    /// re-parsed.
-    pub(super) fn refresh_keybindings_if_config_reloaded(&mut self) -> bool {
-        // config() performs the throttled file-fingerprint staleness check and
-        // bumps the reload generation when config.toml changed on disk.
-        crate::config::config();
-        let generation = crate::config::config_reload_generation();
-        if generation == self.keybindings_config_generation {
-            return false;
-        }
-        self.keybindings_config_generation = generation;
-        self.model_switch_keys = keybind::load_model_switch_keys();
-        self.effort_switch_keys = keybind::load_effort_switch_keys();
-        self.speed_switch_keys = keybind::load_speed_switch_keys();
-        self.centered_toggle_keys = keybind::load_centered_toggle_key();
-        self.toggle_keys = keybind::load_toggle_keys();
-        self.workspace_navigation_keys = keybind::load_workspace_navigation_keys();
-        self.dictation_key = keybind::load_dictation_key();
-        self.new_terminal_key = keybind::load_new_terminal_key();
-        self.open_resume_key = keybind::load_open_resume_key();
-        self.voice_input_key = keybind::load_voice_input_key();
-        self.fallback_switch_key = keybind::load_fallback_switch_key();
-        self.scroll_keys = keybind::load_scroll_keys();
-        crate::logging::info("KEYBINDINGS: reloaded from config change");
-        // Confirm the pickup to the user. Without this, an edit that is
-        // already live is indistinguishable from one that silently did
-        // nothing, which is the main source of "did that actually apply?".
-        self.set_status_notice("Config reloaded from disk");
-        true
-    }
-
     pub(super) async fn begin_remote_send(
         &mut self,
         remote: &mut backend::RemoteConnection,
@@ -369,6 +332,7 @@ impl App {
             display_edit_line_counts: (0, 0),
             terminal_title: RefCell::new(terminal_title::TerminalTitleState::default()),
             compacted_history_lazy: CompactedHistoryLazyState::default(),
+            recent_history_paging: Default::default(),
             pending_history_anchor: None,
             pending_resize_anchor: None,
             input: String::new(),
@@ -407,10 +371,15 @@ impl App {
             last_user_interaction: None,
             stream_message_ended: false,
             deferred_stream_done_id: None,
+            deferred_stream_done_identity: None,
+            remote_turn_fence: Default::default(),
+            remote_queue_retry_not_before: None,
             remote_resume_activity: None,
             queued_followup_starved_since: None,
             remote_interrupt_ack_deadline: None,
             pending_reload_reconnect_status: None,
+            scheduled_reload_recoveries: HashSet::new(),
+            reload_recovery_dispatch_pending: false,
             status: ProcessingStatus::default(),
             subagent_status: None,
             batch_progress: None,
@@ -431,6 +400,7 @@ impl App {
             final_response_todo_fingerprint: None,
             last_auto_poke_fingerprint: None,
             required_checks: Default::default(),
+            auto_poke_attempts: 0,
             turn_guardrail_stopped: false,
             consecutive_guardrail_stops: 0,
             overnight_auto_poke: None,
@@ -474,6 +444,11 @@ impl App {
             cloud_handoff_requested: None,
             cloud_job: None,
             pending_cloud_handoff: None,
+            cloud_interrupt_sent_for: None,
+            cloud_remote_interrupt_pending: false,
+            cloud_recovery_context: None,
+            cloud_recovery_auto_pending: false,
+            cloud_recovery_auto_attempted: Default::default(),
             pasted_contents: Vec::new(),
             pending_images: Vec::new(),
             route_next_prompt_to_new_session: false,
@@ -500,6 +475,7 @@ impl App {
             copy_selection_dragging: false,
             copy_selection_goal_column: None,
             copy_selection_edge_autoscroll: None,
+            input_selection_scroll: None,
             debug_tx: None,
             remote_client_instance_id: crate::id::new_id("client"),
             remote_provider_name: None,
@@ -547,6 +523,7 @@ impl App {
             is_remote: false,
             runtime_mode: AppRuntimeMode::TestHarness,
             pending_remote_rewind_notice: None,
+            ssh_sessions: remote::ssh_sessions::State::default(),
             remote_history_wait_started: None,
             remote_history_recovery_attempts: 0,
             remote_history_recovery_last_attempt: None,
@@ -559,11 +536,13 @@ impl App {
             tool_result_ids: HashSet::new(),
             tool_output_scan_index: 0,
             remote_session_id: None,
+            cloud_environment: Default::default(),
             remote_sessions: Vec::new(),
             remote_side_pane_images: Vec::new(),
             side_pane_images_signature_cache: std::cell::Cell::new(None),
             remote_swarm_members: Vec::new(),
             remote_swarm_members_received_at: None,
+            swarm_last_message_at: std::collections::HashMap::new(),
             swarm_plan_items: Vec::new(),
             swarm_plan_version: None,
             swarm_plan_swarm_id: None,
@@ -619,8 +598,12 @@ impl App {
             todos_view_markdown: String::new(),
             todos_view_updated_at_ms: 0,
             todos_view_rendered_hash: 0,
+            remote_todos_payload: None,
+            remote_todos_requested_at: None,
             todo_card_rendered_hash: 0,
+            todo_completion_report: Default::default(),
             pinned_todos_payload: None,
+            justrust_status: Default::default(),
             pinned_todos_rendered_hash: 0,
             pinned_todos_checked_at: None,
             pinned_todos_expanded: false,
@@ -658,6 +641,7 @@ impl App {
             pending_prompt_before_history: None,
             pending_startup_prompt_echo: None,
             pending_account_picker_action: None,
+            pending_account_switch_target: None,
             model_switch_keys: keybind::load_model_switch_keys(),
             effort_switch_keys: keybind::load_effort_switch_keys(),
             speed_switch_keys: keybind::load_speed_switch_keys(),
@@ -670,6 +654,7 @@ impl App {
             voice_input_key: keybind::load_voice_input_key(),
             voice_input: None,
             voice_input_last_press: None,
+            external_voice: None,
             fallback_switch_key: keybind::load_fallback_switch_key(),
             scroll_keys: keybind::load_scroll_keys(),
             keybindings_config_generation: crate::config::config_reload_generation(),
@@ -700,6 +685,8 @@ impl App {
             interleave_images: Vec::new(),
             pending_soft_interrupts: Vec::new(),
             pending_soft_interrupt_requests: Vec::new(),
+            sent_soft_interrupts: Vec::new(),
+            soft_interrupt_recovery: None,
             autoreview_after_current_turn: false,
             autojudge_after_current_turn: false,
             pending_split_startup_message: None,
@@ -761,6 +748,7 @@ impl App {
             account_picker_overlay: None,
             usage_overlay: None,
             usage_report_refreshing: false,
+            usage_provider_filter: None,
             usage_reset: Default::default(),
             productivity_refreshing: false,
             last_overnight_card_refresh: None,
@@ -870,6 +858,7 @@ impl App {
             display_edit_line_counts: (0, 0),
             terminal_title: RefCell::new(terminal_title::TerminalTitleState::default()),
             compacted_history_lazy: CompactedHistoryLazyState::default(),
+            recent_history_paging: Default::default(),
             pending_history_anchor: None,
             pending_resize_anchor: None,
             input: String::new(),
@@ -908,10 +897,15 @@ impl App {
             last_user_interaction: None,
             stream_message_ended: false,
             deferred_stream_done_id: None,
+            deferred_stream_done_identity: None,
+            remote_turn_fence: Default::default(),
+            remote_queue_retry_not_before: None,
             remote_resume_activity: None,
             queued_followup_starved_since: None,
             remote_interrupt_ack_deadline: None,
             pending_reload_reconnect_status: None,
+            scheduled_reload_recoveries: HashSet::new(),
+            reload_recovery_dispatch_pending: false,
             status: ProcessingStatus::default(),
             subagent_status: None,
             batch_progress: None,
@@ -932,6 +926,7 @@ impl App {
             final_response_todo_fingerprint: None,
             last_auto_poke_fingerprint: None,
             required_checks: Default::default(),
+            auto_poke_attempts: 0,
             turn_guardrail_stopped: false,
             consecutive_guardrail_stops: 0,
             overnight_auto_poke: None,
@@ -975,6 +970,11 @@ impl App {
             cloud_handoff_requested: None,
             cloud_job: None,
             pending_cloud_handoff: None,
+            cloud_interrupt_sent_for: None,
+            cloud_remote_interrupt_pending: false,
+            cloud_recovery_context: None,
+            cloud_recovery_auto_pending: false,
+            cloud_recovery_auto_attempted: Default::default(),
             pasted_contents: Vec::new(),
             pending_images: Vec::new(),
             route_next_prompt_to_new_session: false,
@@ -1001,6 +1001,7 @@ impl App {
             copy_selection_dragging: false,
             copy_selection_goal_column: None,
             copy_selection_edge_autoscroll: None,
+            input_selection_scroll: None,
             debug_tx: None,
             remote_client_instance_id: crate::id::new_id("client"),
             remote_provider_name: None,
@@ -1048,6 +1049,7 @@ impl App {
             is_remote: false,
             runtime_mode: AppRuntimeMode::TestHarness,
             pending_remote_rewind_notice: None,
+            ssh_sessions: remote::ssh_sessions::State::default(),
             remote_history_wait_started: None,
             remote_history_recovery_attempts: 0,
             remote_history_recovery_last_attempt: None,
@@ -1060,11 +1062,13 @@ impl App {
             tool_result_ids: HashSet::new(),
             tool_output_scan_index: 0,
             remote_session_id: None,
+            cloud_environment: Default::default(),
             remote_sessions: Vec::new(),
             remote_side_pane_images: Vec::new(),
             side_pane_images_signature_cache: std::cell::Cell::new(None),
             remote_swarm_members: Vec::new(),
             remote_swarm_members_received_at: None,
+            swarm_last_message_at: std::collections::HashMap::new(),
             swarm_plan_items: Vec::new(),
             swarm_plan_version: None,
             swarm_plan_swarm_id: None,
@@ -1120,8 +1124,12 @@ impl App {
             todos_view_markdown: String::new(),
             todos_view_updated_at_ms: 0,
             todos_view_rendered_hash: 0,
+            remote_todos_payload: None,
+            remote_todos_requested_at: None,
             todo_card_rendered_hash: 0,
+            todo_completion_report: Default::default(),
             pinned_todos_payload: None,
+            justrust_status: Default::default(),
             pinned_todos_rendered_hash: 0,
             pinned_todos_checked_at: None,
             pinned_todos_expanded: false,
@@ -1159,6 +1167,7 @@ impl App {
             pending_prompt_before_history: None,
             pending_startup_prompt_echo: None,
             pending_account_picker_action: None,
+            pending_account_switch_target: None,
             model_switch_keys: keybind::load_model_switch_keys(),
             effort_switch_keys: keybind::load_effort_switch_keys(),
             speed_switch_keys: keybind::load_speed_switch_keys(),
@@ -1171,6 +1180,7 @@ impl App {
             voice_input_key: keybind::load_voice_input_key(),
             voice_input: None,
             voice_input_last_press: None,
+            external_voice: None,
             fallback_switch_key: keybind::load_fallback_switch_key(),
             scroll_keys: keybind::load_scroll_keys(),
             keybindings_config_generation: crate::config::config_reload_generation(),
@@ -1201,6 +1211,8 @@ impl App {
             interleave_images: Vec::new(),
             pending_soft_interrupts: Vec::new(),
             pending_soft_interrupt_requests: Vec::new(),
+            sent_soft_interrupts: Vec::new(),
+            soft_interrupt_recovery: None,
             autoreview_after_current_turn: false,
             autojudge_after_current_turn: false,
             pending_split_startup_message: None,
@@ -1262,6 +1274,7 @@ impl App {
             account_picker_overlay: None,
             usage_overlay: None,
             usage_report_refreshing: false,
+            usage_provider_filter: None,
             usage_reset: Default::default(),
             productivity_refreshing: false,
             last_overnight_card_refresh: None,
@@ -1651,6 +1664,9 @@ impl App {
         }
 
         app.resume_session_id = resume_session;
+        // Paint persisted todos with the first frame, not a throttled tick after
+        // the server has finished loading the resumed conversation.
+        app.refresh_pinned_todos_now();
         // After `resume_session_id`: the hint needs to know whether this is a
         // new session (configured effort applies) or a resumed one.
         app.apply_remote_header_hint();

@@ -206,13 +206,32 @@ pub async fn run_self_dev(should_build: bool, resume_session: Option<String>) ->
         }
     }
 
-    if server_running
-        && let Ok(Some(version)) = build::complete_pending_activation_for_session(&session_id)
-    {
-        logging::info(&format!(
-            "Marked pending self-dev activation as successful for build {}",
-            version
-        ));
+    if server_running {
+        let manifest = build::BuildManifest::load()?;
+        if let Some(pending) = manifest
+            .pending_activation
+            .filter(|pending| pending.session_id == session_id)
+        {
+            let serving = tokio::time::timeout(std::time::Duration::from_secs(3), async {
+                crate::server::Client::connect_with_path(crate::server::socket_path())
+                    .await?
+                    .runtime_identity()
+                    .await
+            })
+            .await
+            .map_err(|_| anyhow::anyhow!("Reload identity verification timed out"))??;
+            let expected = pending
+                .new_version
+                .split("-dirty-")
+                .next()
+                .unwrap_or(&pending.new_version);
+            build::verify_reload_revision(expected, serving.as_ref())?;
+            if let Some(version) = build::complete_pending_activation_for_session(&session_id)? {
+                logging::info(&format!(
+                    "Verified pending self-dev activation for build {version}, serving revision {expected}"
+                ));
+            }
+        }
     }
 
     if !server_running {

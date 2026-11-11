@@ -87,6 +87,7 @@ impl Client {
             supports_pdf_panels: false,
             supports_user_response: false,
             supports_server_failover: false,
+            supports_turn_identity: false,
             id,
             working_dir: Some(working_dir),
             selfdev,
@@ -98,6 +99,7 @@ impl Client {
             crash_on_disconnect: false,
             continue_on_disconnect: false,
             terminal_env: crate::terminal_launch::snapshot_client_terminal_env(),
+            client_name: None,
         };
         let json = serde_json::to_string(&request)? + "\n";
         self.writer.write_all(json.as_bytes()).await?;
@@ -138,6 +140,32 @@ impl Client {
                 _ => return Ok(false),
             }
         }
+    }
+
+    pub async fn runtime_identity(
+        &mut self,
+    ) -> Result<Option<jcode_selfdev_types::RuntimeIdentity>> {
+        use tokio::io::AsyncReadExt;
+        let id = self.next_id;
+        self.next_id += 1;
+        tokio::time::timeout(std::time::Duration::from_secs(2), async {
+            self.writer
+                .write_all(format!("{{\"type\":\"ping\",\"id\":{id}}}\n").as_bytes())
+                .await?;
+            let mut reader = (&mut self.reader).take(64 * 1024);
+            let mut line = String::new();
+            reader.read_line(&mut line).await?;
+            match serde_json::from_str::<ServerEvent>(&line)? {
+                ServerEvent::Pong {
+                    id: reply_id,
+                    server_runtime,
+                    ..
+                } if reply_id == id => Ok(server_runtime),
+                _ => anyhow::bail!("Unexpected daemon runtime identity reply"),
+            }
+        })
+        .await
+        .map_err(|_| anyhow::anyhow!("Timed out querying daemon runtime identity"))?
     }
 
     pub async fn get_state(&mut self) -> Result<ServerEvent> {
@@ -222,6 +250,7 @@ impl Client {
             client_instance_id: None,
             client_has_local_history,
             allow_session_takeover,
+            client_name: None,
         };
         let json = serde_json::to_string(&request)? + "\n";
         self.writer.write_all(json.as_bytes()).await?;

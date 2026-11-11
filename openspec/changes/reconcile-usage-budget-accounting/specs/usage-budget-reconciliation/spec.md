@@ -4,6 +4,8 @@
 
 Each overnight run SHALL record projected versus observed usage at completion.
 
+Usage SHALL retain run/session/generation and provider/account attribution and deduplicate mirrored/replayed usage events. Estimated or post-request usage SHALL NOT authorize monetary dispatch or be labeled an authoritative hard-spend reservation. Cancelled/unresolved workers remain attributable without implying zero consumption.
+
 #### Scenario: Reported usage
 
 - **WHEN** providers report usage during the run

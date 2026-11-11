@@ -12,12 +12,12 @@ Failure handling is split across ad hoc string matching: Anthropic matches subst
 ## What Changes
 
 - Add a shared `ProviderFailureKind` in `jcode-provider-core`: `AuthExpired`, `AuthRevoked`, `QuotaExhausted`, `RateLimited`, `ModelUnavailable`, `Transient`, `Permanent`.
-- Map Anthropic and OpenAI runtime errors to it; `AuthExpired` triggers one refresh then retry; `AuthRevoked` stops with the exact `jcode login <provider>` remedy; never silently switch provider or identity.
-- Refresh cancelled by the user leaves stored credentials unchanged.
+- Map Anthropic and OpenAI runtime errors to it; `AuthExpired` triggers one refresh then retry; `AuthRevoked` stops with the exact supported `jcode login --provider <provider>` remedy; never silently switch provider or identity.
+- Cancellation before the refresh exchange starts leaves credentials unchanged. Once rotation may have been accepted, finish bounded safe persistence and the in-memory credential commit. Keep the user operation cancelled and start no subsequent inference transport.
 
 ## Non-scope
 
-- Model fallback chains (`fallback-on-transient-model-errors`).
+- Model fallback chain selection remains in `fallback-on-transient-model-errors`; both consume this single failure taxonomy rather than divergent string classifiers. A failed refresh transport is not proof of revoked credentials, and quota/billing exhaustion is not retryable rate limiting. Selected-route and gateway no-substitution constraints remain authoritative.
 - Providers beyond Anthropic and OpenAI in this slice.
 
 ## Capabilities
@@ -32,4 +32,6 @@ Failure handling is split across ad hoc string matching: Anthropic matches subst
 
 ## Resolved defaults
 
-1. Revoked vs expired detection when the provider returns a bare 401. Options: (a) attempt refresh, classify revoked if refresh fails; (b) treat all 401 as revoked. Selected default: (a), it matches current OpenAI behavior and avoids forcing needless re-login.
+- On 2026-11-10, the user explicitly superseded historical decision `2B`: before exchange, cancellation changes no credentials; once rotation may be accepted, bounded safe persistence plus memory commit must finish, with the turn still cancelled and no later inference transport. Historical `2B` and preparation evidence remain in `tasks.md`, not active blockers on the revised boundary.
+
+1. Revoked vs expired detection when the provider returns a bare 401. Options: (a) attempt refresh, classify revoked if refresh fails; (b) treat all 401 as revoked. Selected default: (a), attempt one refresh on the same route and identity. Infer revocation only from definitive rejection such as `invalid_grant`, never from a timeout or temporary transport failure.

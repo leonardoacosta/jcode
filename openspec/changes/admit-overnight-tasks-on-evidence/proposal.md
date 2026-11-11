@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [configure-task-and-worktree-policy, enforce-overnight-cancellation-and-limits, classify-provider-auth-failures]
 ---
 Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/plans/PRODUCT_ROADMAP.md#p05-durable-overnight-scheduling-and-recovery)
 
@@ -13,7 +13,8 @@ Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/p
 
 - Record an admission decision event before each coordinator turn: `admitted` (named eligible task or new signal) or `waiting` (no eligible work).
 - When `waiting`, the supervisor sleeps until a worker/background completion event, user message, or the handoff/wake boundary, instead of issuing another turn.
-- Preflight records a `blocked` admission when auth is missing/expired for every configured provider, and the run does not start a coordinator turn.
+- Preflight checks only the explicitly selected permitted provider/route, without probing unrelated configured accounts or switching identity. Auth failure blocks that route. Auth success or a completion signal is a trigger to re-evaluate existing deterministic task admission, never authorization by itself.
+- Consume original task scope, current strict policy, owner/dependency/cancellation state and nonrefundable authoritative monetary reservations from task-admission-policy. Unsupported chargeable provider capabilities remain denied despite the prerequisite's archive status.
 
 ## Non-scope
 

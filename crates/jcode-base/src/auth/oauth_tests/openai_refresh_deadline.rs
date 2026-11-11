@@ -203,7 +203,8 @@ async fn refresh_deadline_failure_leaves_stored_token_and_releases_lock() {
     )
     .await
     .expect_err("stalled refresh must time out");
-    assert!(format!("{err:#}").contains("timed out"));
+    let message = format!("{err:#}");
+    assert!(message.contains("timed out"), "{message}");
     // Uncertain outcome: never reset or rewrite the stored credential.
     assert_eq!(stored_refresh_token(&label).as_deref(), Some("rt_seed"));
 

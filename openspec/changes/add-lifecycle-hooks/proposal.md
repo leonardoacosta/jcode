@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [make-worker-stop-durable]
 ---
 # Proposal
 
@@ -9,14 +9,15 @@ Roadmap owner: [P08: SDK/API/tool integration contracts, including browser/voice
 
 ## Why
 
-jcode has one hook: `spawn_hook` (`crates/jcode-config-types/src/lib.rs:806-821`), which only wraps headed spawn launches. Users cannot run policy or notification commands at session, tool, compaction, or subagent boundaries. A concrete ask (pi workflow) is a notification when a subagent finishes; today that needs polling swarm status. Claude Code users already have hook scripts written against its stdin JSON contract; reusing them avoids a second ecosystem. Compaction lives in `crates/jcode-app-core/src/agent/compaction.rs`, tool dispatch in `crates/jcode-app-core/src/agent/turn_execution.rs`. Clean-room behavior notes: `~/.jcode/scratch/empryo-re/adjacent-behavior.md` (behavior only, no text reused).
+The original discovery predates the existing `HooksConfig` in `crates/jcode-config-types/src/lib.rs` and runner in `crates/jcode-base/src/hooks.rs`. Current hooks already cover session/turn/tool observers, input transformation, pre-tool gating and post-tool feedback. The remaining feature is compatible event matching, structured decisions and worker/compaction coverage through that runner, not a parallel hook system. Historical upstream compatibility notes are design inputs, not proof that every current external script works unchanged.
 
 ## What Changes
 
-- New `[hooks]` config table with events `SessionStart`, `PreToolUse`, `PostToolUse`, `SubagentStop`, `Stop`, `PreCompact`.
-- Each entry: `matcher` (tool name regex, optional `path` glob against tool file arguments), `command` (shell), `timeout` (default 10s), `fail_closed` (default false).
+- Extend the existing `[hooks]` config compatibly with events `SessionStart`, `PreToolUse`, `PostToolUse`, `SubagentStop`, `Stop`, `PreCompact`.
+- Each entry: `matcher` (tool name regex, optional `path` glob against tool file arguments), `command` (existing shell-style argv parsing/direct execution, no implicit shell), `timeout` (default 10s), `fail_closed` (default false).
 - Hook receives a Claude Code compatible JSON payload on stdin (`session_id`, `transcript_path`, `cwd`, `hook_event_name`, plus event fields such as `tool_name`, `tool_input`, `tool_response`, `trigger`, `source`).
 - Per-hook `mode = "blocking" | "observe" | "async"` (see `design.md`, option C). Defaults: `PreToolUse`/`Stop` blocking, `SessionStart`/`PreCompact` observe, `PostToolUse`/`SubagentStop` async.
+- Explicit cancel/stop and revoked generations always override hook continuation. Only natural turn completion can invoke a bounded Stop continuation, with a one-continuation-per-completion guard and no observer recursion. Hook subprocesses retain generation ownership for settlement.
 - Blocking hooks use the Claude Code contract: exit 2 blocks with stderr to the model; exit 0 with JSON stdout (`decision`, `reason`, `continue`, `stopReason`, `hookSpecificOutput.permissionDecision`, `additionalContext`); other non-zero codes are warnings unless `fail_closed`.
 - `SubagentStop` payload includes the worker's completion report (status, message, validation).
 
@@ -28,7 +29,7 @@ jcode has one hook: `spawn_hook` (`crates/jcode-config-types/src/lib.rs:806-821`
 
 ## Impact
 
-`crates/jcode-config-types/src/lib.rs` (new `HooksConfig`), new hook runner module in `crates/jcode-app-core/src/agent/`, call sites in `turn_execution.rs`, `compaction.rs`, session start, and swarm completion report handling (`crates/jcode-app-core/src/server/comm_session.rs`). `spawn_hook` unchanged.
+Existing `HooksConfig` in `crates/jcode-config-types/src/lib.rs` and runner in `crates/jcode-base/src/hooks.rs`, with bounded call-site extensions in turn execution, compaction, session and worker completion paths. Preserve legacy keys, env/direct-exec semantics and `spawn_hook`; map event aliases without duplicate dispatch.
 
 ## Confirmed decisions
 

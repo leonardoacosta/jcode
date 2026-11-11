@@ -13,7 +13,8 @@ Memory has single-id deletion (`MemoryManager::forget`, `crates/jcode-base/src/m
 
 - Add `jcode memory list|purge` with filters (`--scope project|global`, `--inactive`, `--older-than <days>`); purge is dry-run by default and requires `--apply`.
 - Reject the entire memory request matching an existing secret pattern before storing anything, reporting a safe rejection reason without echoing sensitive content. Permit a sanitized resubmission.
-- Optional `[memory.retention]` config (default off) to auto-purge inactive/superseded entries older than N days.
+- Optional `[memory.retention]` config (default off) to auto-purge inactive/superseded entries older than N days only after explicit user enablement. Keep concurrent recall/save from resurrecting deleted identities.
+- Reuse the stored IDs and inactive/superseded semantics consumed by `add-attributable-memory-recall`; these are shared data contracts, not a requirement that recall UI enrichment ships first. Secret-pattern rejection detects known patterns, not all confidential data.
 
 ## Non-scope
 

@@ -233,10 +233,11 @@ mod tests {
     #[test]
     fn idle_hibernation_monitor_skips_busy_and_running_then_releases_once() {
         let _env = crate::storage::lock_test_env();
+        // Serialize process-wide environment outside the asynchronous runtime.
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
-            .unwrap()
+            .expect("test runtime")
             .block_on(async {
                 let agent = Arc::new(Mutex::new(Agent::new(
                     Arc::new(IdleProvider),
@@ -263,10 +264,10 @@ mod tests {
                 );
                 let old = Instant::now() - Duration::from_secs(60);
                 member.last_status_change = old;
-                let sessions = Arc::new(RwLock::new(HashMap::from([(
-                    id.clone(),
-                    Arc::clone(&agent),
-                )])));
+                let sessions =
+                    Arc::new(crate::server::session_manager::SessionManager::from_agents(
+                        HashMap::from([(id.clone(), Arc::clone(&agent))]),
+                    ));
                 let members = Arc::new(RwLock::new(HashMap::from([(id.clone(), member)])));
                 let mut idle = HashMap::from([(id.clone(), IdleState::new(old, old))]);
                 let threshold = Duration::from_secs(1);

@@ -906,3 +906,20 @@ fn repair_never_downgrades_when_stable_is_older() {
         );
     });
 }
+#[test]
+fn reload_identity_requires_exact_known_serving_revision() {
+    let identity = RuntimeIdentity {
+        git_hash: "abcdef123".into(),
+        dirty: true,
+        cleanliness_verified: false,
+        binary_path: None,
+    };
+    assert!(verify_reload_revision("abcdef123", Some(&identity)).is_ok());
+    let error = verify_reload_revision("123456789", Some(&identity))
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("123456789") && error.contains("abcdef123"));
+    assert!(verify_reload_revision("unknown", Some(&identity)).is_err());
+    assert!(verify_reload_revision("abcdef123", None).is_err());
+    assert!(verify_reload_revision("abcdef1", Some(&identity)).is_err());
+}

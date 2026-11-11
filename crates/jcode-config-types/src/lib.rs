@@ -1,13 +1,19 @@
 use serde::{Deserialize, Serialize};
 
 mod display;
+mod update_policy;
+pub use update_policy::{CrossProviderFailoverMode, UpdateChannel};
 mod menubar;
 mod power;
 mod session;
 mod task_policy;
 pub use session::{HibernationMode, SessionConfig, SessionRetentionConfig, SessionsConfig};
 pub use task_policy::*;
-pub use {display::DisplayConfig, menubar::MenubarConfig, power::PowerConfig};
+pub use {
+    display::{DisplayConfig, ResumeOpenElsewhere, ResumeTimeMode},
+    menubar::MenubarConfig,
+    power::PowerConfig,
+};
 pub mod keybindings;
 mod serde_lenient;
 pub use keybindings::{
@@ -283,82 +289,6 @@ impl ReasoningDisplayMode {
     }
 }
 
-/// Update channel: how aggressively to receive updates.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum UpdateChannel {
-    /// Only update from tagged GitHub Releases (default).
-    #[default]
-    Stable,
-    /// Update from latest commit on main branch (bleeding edge).
-    Main,
-}
-
-impl UpdateChannel {
-    /// Parse a channel name, returning `None` for unknown values.
-    pub fn parse(value: &str) -> Option<Self> {
-        match value.trim().to_ascii_lowercase().as_str() {
-            "stable" | "release" => Some(Self::Stable),
-            "main" | "nightly" | "edge" => Some(Self::Main),
-            _ => None,
-        }
-    }
-}
-
-/// Config deserialization is deliberately lenient: an unknown or removed
-/// channel name (e.g. a stale `update_channel = "manual"` left in
-/// config.toml) falls back to the default channel instead of failing the
-/// entire config parse. A strict enum here once made the freshly exec'd
-/// server die during the reload handoff, leaving the handoff marker stuck
-/// in `starting` and clients re-requesting the reload forever (issue #349).
-impl<'de> Deserialize<'de> for UpdateChannel {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let value = String::deserialize(deserializer)?;
-        Ok(Self::parse(&value).unwrap_or_default())
-    }
-}
-
-impl std::fmt::Display for UpdateChannel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Stable => write!(f, "stable"),
-            Self::Main => write!(f, "main"),
-        }
-    }
-}
-
-/// Cross-provider failover behavior when the same input would be resent elsewhere.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum CrossProviderFailoverMode {
-    /// Show a 3-second cancelable countdown, then resend on another provider.
-    #[default]
-    Countdown,
-    /// Do not resend the prompt to another provider automatically.
-    #[serde(alias = "off", alias = "false", alias = "disabled", alias = "none")]
-    Manual,
-}
-
-impl CrossProviderFailoverMode {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Manual => "manual",
-            Self::Countdown => "countdown",
-        }
-    }
-
-    pub fn parse(value: &str) -> Option<Self> {
-        match value.trim().to_ascii_lowercase().as_str() {
-            "manual" | "off" | "false" | "disabled" | "none" => Some(Self::Manual),
-            "countdown" | "auto" | "automatic" => Some(Self::Countdown),
-            _ => None,
-        }
-    }
-}
-
 /// Compaction configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -366,14 +296,26 @@ pub struct CompactionConfig {
     /// Compaction mode: reactive (default), proactive, or semantic
     pub mode: CompactionMode,
 
+    /// [reactive] Context fraction that starts background compaction.
+    pub reactive_threshold: f32,
+
+    /// [reactive] Alternative token threshold, whichever is reached first.
+    /// Zero disables the token alternative.
+    pub reactive_threshold_tokens: usize,
+
     /// [proactive] Number of turns to look ahead when projecting token growth
     pub lookahead_turns: usize,
 
     /// [proactive] EWMA alpha for token growth smoothing (0.0-1.0, higher = more recency bias)
     pub ewma_alpha: f32,
 
-    /// [proactive/semantic] Minimum context fill level before any proactive check fires (0.0-1.0)
+    /// [proactive/semantic] Minimum context fill level (0.0-1.0), alternatively
+    /// satisfied by proactive_floor_tokens when that alternative is enabled.
     pub proactive_floor: f32,
+
+    /// [proactive/semantic] Alternative minimum token count. Either this count
+    /// or proactive_floor must be reached. Zero disables the token alternative.
+    pub proactive_floor_tokens: usize,
 
     /// [proactive/semantic] Minimum number of token snapshots needed before proactive check
     pub min_samples: usize,
@@ -408,9 +350,12 @@ impl Default for CompactionConfig {
     fn default() -> Self {
         Self {
             mode: CompactionMode::Reactive,
+            reactive_threshold: 0.80,
+            reactive_threshold_tokens: 400_000,
             lookahead_turns: 15,
             ewma_alpha: 0.3,
             proactive_floor: 0.40,
+            proactive_floor_tokens: 150_000,
             min_samples: 3,
             stall_window: 5,
             min_turns_between_compactions: 10,
@@ -581,9 +526,12 @@ pub struct AgentsConfig {
     ///
     /// Leave unset (or use `"inherit"` / `"coordinator"`) to have spawned swarm
     /// agents inherit the spawning coordinator's model. Set to a concrete model
-    /// string to change the worker default. An explicit `model` in the swarm
-    /// tool overrides this default for newly spawned workers.
+    /// string to change the worker default.
     pub swarm_model: Option<String>,
+    /// Opt in to agent-selected worker models, restricted to the exact allowlist.
+    pub swarm_model_selection: bool,
+    /// Exact model/route strings the agent may request. Empty denies all overrides.
+    pub swarm_model_allowlist: Vec<String>,
     /// Reasoning effort for spawned swarm workers (`"low"`, `"medium"`,
     /// `"high"`, ...). The swarm tool does not let agents choose worker
     /// effort. Unset means `"low"`.
@@ -741,6 +689,8 @@ impl Default for AgentsConfig {
     fn default() -> Self {
         Self {
             swarm_model: None,
+            swarm_model_selection: false,
+            swarm_model_allowlist: Vec::new(),
             swarm_effort: None,
             swarm_root_effort: None,
             swarm_spawn_mode: SwarmSpawnMode::default(),
@@ -769,6 +719,30 @@ impl Default for AgentsConfig {
 }
 
 impl AgentsConfig {
+    /// Validate an agent-supplied override before resolving any provider route.
+    /// Matching is exact: a bare model never authorizes another provider's route.
+    pub fn validate_swarm_model_request(&self, model: Option<&str>) -> Result<(), &'static str> {
+        let Some(model) = model else {
+            return Ok(());
+        };
+        if !self.swarm_model_selection {
+            return Err(
+                "Agent-selected swarm models are disabled. Omit model to use the user-configured default.",
+            );
+        }
+        if model.trim().is_empty()
+            || !self
+                .swarm_model_allowlist
+                .iter()
+                .any(|allowed| allowed == model)
+        {
+            return Err(
+                "Requested swarm model is not in agents.swarm_model_allowlist. Omit model to use the user-configured default.",
+            );
+        }
+        Ok(())
+    }
+
     /// Resolve swarm mode's root effort without allowing the orchestration
     /// sentinel to recurse into itself. Unknown values use the low-effort
     /// default without invalidating other settings.
@@ -1040,16 +1014,16 @@ pub struct AutoReviewConfig {
 /// Integration discovery configuration (legacy `[sponsors]` section name).
 ///
 /// Integration discovery makes third-party developer tools discoverable to
-/// the agent via a `discover_tools` tool backed by a hosted directory. Some
+/// the agent via an `integration_tools` tool backed by a hosted directory. Some
 /// providers may share revenue with Jcode when a referred user becomes a
 /// customer, but partnership status never influences recommendations.
 /// See <https://jcode.sh/discovery-tools>.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SponsorsConfig {
-    /// Enable integration discovery. Enabled by default; set to false to opt
-    /// out. When false, no discovery categories are added to the prompt, the
-    /// `discover_tools` tool is not registered, and jcode never contacts the
+    /// Enable integration discovery. Disabled by default; set to true to opt
+    /// in. When false, no discovery categories are added to the prompt, the
+    /// `integration_tools` tool is not registered, and jcode never contacts the
     /// discovery endpoint.
     pub enabled: bool,
     /// Base URL of the discovery endpoint.
@@ -1059,7 +1033,7 @@ pub struct SponsorsConfig {
 impl Default for SponsorsConfig {
     fn default() -> Self {
         Self {
-            enabled: true,
+            enabled: false,
             endpoint: "https://api.jcode.sh/v1/discovery".to_string(),
         }
     }
@@ -1270,6 +1244,14 @@ pub struct FeatureConfig {
     pub auto_poke: bool,
     /// Observe deterministic continuation through explicit Jev supervision (default: false).
     pub semantic_poke_shadow: bool,
+    /// Opt in to automatic todo quality reviews: weak-point digests, confidence
+    /// validation and spike checks, ownership checks, and long-session reviews.
+    /// Requires auto-poke; independent of the display-only completion report.
+    /// Disabled by default for every user.
+    pub todo_gate_digest: bool,
+    /// Show hypothetical disabled-gate findings in todo completion reports (default: false).
+    /// Display only: does not enable gates or follow-up turns.
+    pub todo_gate_diagnostics: bool,
     /// Inject timestamps into user messages and tool results sent to the model (default: true)
     pub message_timestamps: bool,
     /// Persist auto-recalled memory injections into normal session history instead of sending
@@ -1281,7 +1263,7 @@ pub struct FeatureConfig {
     /// classified as misses. Harness changes without a documented cause raise a
     /// warning, while explained misses are informational (default: true).
     pub kv_cache_miss_notices: bool,
-    /// Update channel: "stable" (releases only) or "main" (latest commits)
+    /// Update channel: "stable" (default), "preview" (v1 previews), or "main" (latest commits).
     pub update_channel: UpdateChannel,
 }
 
@@ -1294,6 +1276,8 @@ impl Default for FeatureConfig {
             mermaid: true,
             auto_poke: true,
             semantic_poke_shadow: false,
+            todo_gate_digest: false,
+            todo_gate_diagnostics: false,
             message_timestamps: true,
             persist_memory_injections: false,
             kv_cache_miss_notices: true,
@@ -1330,12 +1314,27 @@ pub struct ProviderConfig {
     pub preserve_reasoning_context: bool,
     /// How to handle cross-provider failover when the same input would be resent elsewhere.
     pub cross_provider_failover: CrossProviderFailoverMode,
+    /// Skip the cross-provider countdown for definitive exhausted usage only.
+    /// Manual cross-provider failover still disables automatic switching.
+    pub exhausted_usage_immediate_failover: bool,
+    /// Prefer bounded same-account retries for recoverable Anthropic rate limits
+    /// before rotating to another account. Long reset delays still yield.
+    pub anthropic_retry_recoverable_rate_limits: bool,
     /// Whether jcode should automatically try another account on the same provider
     /// before falling back to a different provider.
     pub same_provider_account_failover: bool,
     /// Automatic model fallback on transient errors: model id -> ordered
     /// fallback model ids. Unset means no automatic switching.
     pub model_fallback: std::collections::HashMap<String, Vec<String>>,
+    /// Automatically redeem an earned OpenAI banked reset when weekly OAuth
+    /// usage is exhausted. Never purchases credits. Disabled by default.
+    pub openai_auto_banked_reset: bool,
+    /// Automatically redeem earned Anthropic Fable resets for exhausted weekly
+    /// OAuth usage. Never purchases credits. Disabled by default.
+    pub anthropic_auto_fable_reset: bool,
+    /// Preserve earned resets while the account pool router has another ready route.
+    /// Applies to both OpenAI and Anthropic automatic resets. Default: true.
+    pub auto_reset_only_when_no_routes: bool,
     /// Copilot premium request mode: "normal", "one", or "zero"
     /// "zero" means all requests are free (no premium requests consumed)
     pub copilot_premium: Option<String>,
@@ -1380,7 +1379,7 @@ impl Default for ProviderConfig {
             default_model: None,
             default_provider: None,
             openai_reasoning_effort: Some("low".to_string()),
-            anthropic_reasoning_effort: None,
+            anthropic_reasoning_effort: Some("low".to_string()),
             anthropic_cache_ttl_1h: true,
             openai_transport: None,
             openai_service_tier: Some("priority".to_string()),
@@ -1388,8 +1387,13 @@ impl Default for ProviderConfig {
             openai_native_compaction_threshold_tokens: 200_000,
             preserve_reasoning_context: true,
             cross_provider_failover: CrossProviderFailoverMode::Countdown,
+            exhausted_usage_immediate_failover: true,
+            anthropic_retry_recoverable_rate_limits: true,
             same_provider_account_failover: true,
             model_fallback: Default::default(),
+            openai_auto_banked_reset: false,
+            anthropic_auto_fable_reset: false,
+            auto_reset_only_when_no_routes: true,
             copilot_premium: None,
             gemini_force_oauth: false,
             gemini_project: None,
@@ -1659,7 +1663,11 @@ pub struct LaunchHotkeysConfig {
 }
 
 #[cfg(test)]
-mod reasoning_display_defaults_tests {
+#[path = "reasoning_display_defaults_tests.rs"]
+mod reasoning_display_defaults_tests;
+
+#[cfg(test)]
+mod exhausted_usage_failover_tests {
     use super::*;
 
     #[test]
@@ -1692,9 +1700,29 @@ mod reasoning_display_defaults_tests {
             display.show_thinking,
             "any active display mode must keep reasoning requested from the provider"
         );
+    }
 
-        display.set_reasoning_display(ReasoningDisplayMode::Off);
-        assert!(display.has_explicit_reasoning_display());
-        assert!(!display.show_thinking);
+    #[test]
+    fn exhaustion_immediate_defaults_on_and_is_independent_of_manual_mode() {
+        let defaults: ProviderConfig = serde_json::from_str("{}").unwrap();
+        assert!(defaults.exhausted_usage_immediate_failover);
+        assert!(defaults.anthropic_retry_recoverable_rate_limits);
+        let rotate: ProviderConfig =
+            serde_json::from_str(r#"{"anthropic_retry_recoverable_rate_limits":false}"#).unwrap();
+        assert!(!rotate.anthropic_retry_recoverable_rate_limits);
+        let countdown: ProviderConfig =
+            serde_json::from_str(r#"{"exhausted_usage_immediate_failover":false}"#).unwrap();
+        assert!(!countdown.exhausted_usage_immediate_failover);
+        assert_eq!(
+            countdown.cross_provider_failover,
+            CrossProviderFailoverMode::Countdown
+        );
+        let manual: ProviderConfig =
+            serde_json::from_str(r#"{"cross_provider_failover":"manual"}"#).unwrap();
+        assert!(manual.exhausted_usage_immediate_failover);
+        assert_eq!(
+            manual.cross_provider_failover,
+            CrossProviderFailoverMode::Manual
+        );
     }
 }

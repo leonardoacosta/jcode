@@ -147,26 +147,18 @@ fn azure_clean_eof_retries_with_rollback_before_replayed_output() {
         .iter()
         .position(|event| matches!(event, StreamEvent::RetryRollback { .. }))
         .unwrap();
-    assert!(
-        events[..rollback]
-            .iter()
-            .any(|event| matches!(event, StreamEvent::TextDelta(text) if text == "partial"))
-    );
-    assert!(
-        events[..rollback]
-            .iter()
-            .any(|event| matches!(event, StreamEvent::OpenAIReasoning { .. }))
-    );
-    assert!(
-        events[..rollback]
-            .iter()
-            .any(|event| matches!(event, StreamEvent::ToolUseStart { .. }))
-    );
-    assert!(
-        events[rollback + 1..]
-            .iter()
-            .any(|event| matches!(event, StreamEvent::TextDelta(text) if text == "final"))
-    );
+    assert!(events[..rollback]
+        .iter()
+        .any(|event| matches!(event, StreamEvent::TextDelta(text) if text == "partial")));
+    assert!(events[..rollback]
+        .iter()
+        .any(|event| matches!(event, StreamEvent::OpenAIReasoning { .. })));
+    assert!(events[..rollback]
+        .iter()
+        .any(|event| matches!(event, StreamEvent::ToolUseStart { .. })));
+    assert!(events[rollback + 1..]
+        .iter()
+        .any(|event| matches!(event, StreamEvent::TextDelta(text) if text == "final")));
     assert_eq!(
         events
             .iter()
@@ -205,11 +197,9 @@ fn azure_transient_structured_failure_honors_retry_after() {
         "must honor two-second hint rather than one-second backoff"
     );
     assert!(events.iter().all(Result::is_ok));
-    assert!(
-        events
-            .iter()
-            .any(|event| matches!(event, Ok(StreamEvent::MessageEnd { .. })))
-    );
+    assert!(events
+        .iter()
+        .any(|event| matches!(event, Ok(StreamEvent::MessageEnd { .. }))));
 }
 
 #[test]

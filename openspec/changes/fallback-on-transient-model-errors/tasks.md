@@ -23,3 +23,7 @@
 - [x] 4.1 Unit tests: classifier, cooling window, chain ordering, 3-cycle cap, permanent error never switches.
 - [ ] 4.2 Integration test with a mock provider returning 503 then success on fallback, asserting transcript notice.
 - [x] 4.3 Run `openspec validate fallback-on-transient-model-errors --strict`.
+
+## 5. Reconciled shared classification acceptance
+
+- [ ] 5.1 Consume classify-provider-auth-failures categories and verify confirmed billing/quota 429 never triggers transient fallback, transport refresh failure never implies revocation, and gateway route prohibitions exclude cross-provider substitutions. Preserve historical checked implementation evidence; rerun real integration and transcript-notice gates before final review/closeout.

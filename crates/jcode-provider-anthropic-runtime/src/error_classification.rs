@@ -21,22 +21,28 @@ pub(super) fn is_account_limit_error(error: &str) -> bool {
     .any(|needle| error.contains(needle))
 }
 
+/// A short burst throttle can recover on the same login. Long reset windows
+/// belong to the account router, and explicit exhaustion must never be retried.
+pub(super) fn should_retry_recoverable_rate_limit(
+    error: &str,
+    retry_after: Option<std::time::Duration>,
+    enabled: bool,
+) -> bool {
+    enabled
+        && !jcode_provider_core::failover::is_definitive_usage_exhaustion(error)
+        && (error.contains("429 too many requests")
+            || error.contains("rate limit")
+            || error.contains("rate_limit"))
+        && retry_after.is_none_or(|delay| delay <= std::time::Duration::from_secs(5))
+}
+
 /// Check if an error is transient and should be retried
 pub(super) fn is_retryable_error(error_str: &str) -> bool {
-    jcode_provider_core::is_transient_transport_error(error_str)
-        // Server errors (5xx)
-        || error_str.contains("500 internal server error")
-        || error_str.contains("502 bad gateway")
-        || error_str.contains("503 service unavailable")
-        || error_str.contains("504 gateway timeout")
-        || error_str.contains("overloaded")
-        // Rate limiting (429)
-        || error_str.contains("429 too many requests")
-        || error_str.contains("rate limit")
-        || error_str.contains("rate_limit")
-        // API-level server errors (SSE error events)
-        || error_str.contains("api_error")
-        || error_str.contains("internal server error")
+    matches!(
+        jcode_provider_core::classify_provider_failure(error_str),
+        jcode_provider_core::ProviderFailureKind::Transient
+            | jcode_provider_core::ProviderFailureKind::RateLimited
+    )
 }
 
 pub(super) fn is_fable_scoped_limit_error(model: &str, error: &str) -> bool {
@@ -241,14 +247,8 @@ pub(super) fn anthropic_fallback_model(tried: &[String], error_str: &str) -> Opt
 }
 
 pub(super) fn is_oauth_auth_error(error_str: &str) -> bool {
-    error_str.contains("oauth token has expired")
-        || error_str.contains("token has expired")
-        || error_str.contains("authentication_error")
-        || error_str.contains("invalid token")
-        || error_str.contains("invalid_grant")
-        || error_str.contains("does not meet scope requirement")
-        || ((error_str.contains("401 unauthorized") || error_str.contains("403 forbidden"))
-            && (error_str.contains("oauth") || error_str.contains("token")))
+    jcode_provider_core::classify_provider_failure(error_str)
+        == jcode_provider_core::ProviderFailureKind::AuthExpired
 }
 
 pub(super) fn is_oauth_catalog_auth_error(error_str: &str) -> bool {

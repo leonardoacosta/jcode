@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [classify-provider-auth-failures]
 ---
 # Proposal
 
@@ -18,6 +18,7 @@ Model fallback is manual today. After a turn error the TUI only offers a switch 
 - On a transient error, after existing retries, try the next healthy model in the chain; cooling models (3 failures within 60s) are tried last; stop after 3 full cycles.
 - Write a visible transcript line for every switch (`A -> B`, with reason) and every skipped candidate.
 - Permanent errors never trigger an automatic switch; the manual `fallback_switch` offer is kept.
+- Reconciliation: consume shared failure categories before remaining integration acceptance. Confirmed quota/billing failure is not transient merely because HTTP is 429. An explicit model chain never overrides endpoint-owned gateway/account no-substitution rules; unsupported candidates are skipped with an attributable reason. Existing checked implementation is history, not proof of this new integration.
 
 ## Capabilities
 

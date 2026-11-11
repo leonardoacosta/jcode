@@ -410,6 +410,7 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
             super::args::AccountCommand::Manage => account::run_manage()?,
             super::args::AccountCommand::Logout => account::run_logout().await?,
         },
+        Some(Command::Mobile { action }) => account::run_mobile(action).await?,
         Some(Command::Repl) => {
             let (provider, registry) =
                 provider_init::init_provider_and_registry(&args.provider, args.model.as_deref())
@@ -417,8 +418,8 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
             let mut agent = agent::Agent::new(provider, registry);
             agent.repl().await?;
         }
-        Some(Command::Update) => {
-            hot_exec::run_update()?;
+        Some(Command::Update { channel }) => {
+            hot_exec::run_update(channel.as_deref())?;
         }
         Some(Command::Version { json }) => {
             commands::run_version_command(json).await?;
@@ -440,6 +441,8 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
         }) => {
             if command == "instructions" {
                 debug::run_instructions_command(dir.as_deref())?;
+            } else if command == "terminal" {
+                debug::run_terminal_command()?;
             } else {
                 debug::run_debug_command(&command, &arg, session, socket, wait).await?;
             }
@@ -540,8 +543,29 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
         }) => {
             commands::run_transcript_command(text, map_transcript_mode(mode), session).await?;
         }
-        Some(Command::Companion { status, no_voice }) => {
-            commands::run_companion_command(status, no_voice).await?;
+        Some(Command::Companion {
+            status,
+            no_voice,
+            no_voice_waveform,
+            no_voice_notifications,
+            no_open,
+            no_spawn_terminal,
+            no_lid,
+            no_browser_updates,
+        }) => {
+            commands::run_companion_command(
+                status,
+                commands::CompanionFlags {
+                    no_voice,
+                    no_voice_waveform,
+                    no_voice_notifications,
+                    no_open,
+                    no_spawn_terminal,
+                    no_lid,
+                    no_browser_updates,
+                },
+            )
+            .await?;
         }
         Some(Command::Dictate { r#type }) => {
             commands::run_dictate_command(r#type).await?;
@@ -642,16 +666,23 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
         }
         Some(Command::ProviderDoctor {
             provider,
+            coverage,
             tier,
             json,
         }) => {
-            crate::cli::provider_doctor::run_provider_doctor_command(
-                &provider,
-                args.model.as_deref(),
-                &tier,
-                json,
-            )
-            .await?;
+            if coverage {
+                crate::cli::provider_doctor::run_coverage_command(json)?;
+            } else {
+                crate::cli::provider_doctor::run_provider_doctor_command(
+                    provider
+                        .as_deref()
+                        .context("provider is required without --coverage")?,
+                    args.model.as_deref(),
+                    &tier,
+                    json,
+                )
+                .await?;
+            }
         }
         Some(Command::AuthTest {
             login,
@@ -720,31 +751,11 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
 /// Anthropic Messages runtime with the profile's base URL and auth, while
 /// `AnthropicApi` would pin an Anthropic API-key credential the profile may
 /// not have (e.g. `auth = "none"`).
-fn provider_choice_for_named_profile(profile_name: &str) -> ProviderChoice {
-    // Same source as `apply_named_provider_profile_env`, which already
-    // validated that the profile exists.
-    match crate::config::Config::load_strict() {
-        Ok(config) => provider_choice_for_named_profile_in(profile_name, &config),
-        Err(_) => provider_choice_for_named_profile_in(profile_name, crate::config::config()),
-    }
-}
-
-fn provider_choice_for_named_profile_in(
-    profile_name: &str,
-    config: &crate::config::Config,
-) -> ProviderChoice {
-    match config.providers.get(profile_name) {
-        Some(profile)
-            if matches!(
-                profile.provider_type,
-                crate::config::NamedProviderType::AnthropicCompatible
-            ) =>
-        {
-            ProviderChoice::Auto
-        }
-        _ => ProviderChoice::OpenaiCompatible,
-    }
-}
+#[path = "dispatch/named_profiles.rs"]
+mod named_profiles;
+use named_profiles::provider_choice_for_named_profile;
+#[cfg(test)]
+use named_profiles::provider_choice_for_named_profile_in;
 
 fn auth_doctor_provider_arg<'a>(
     positional_provider: Option<&'a str>,

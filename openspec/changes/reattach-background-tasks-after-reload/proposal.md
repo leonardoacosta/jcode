@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [make-worker-stop-durable]
 ---
 # Proposal
 
@@ -9,13 +9,14 @@ Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/p
 
 ## Why
 
-`recover-swarm-workers-after-reload` covers swarm members only. Background tasks started with `bash run_in_background` are not reattached after a server reload, so running builds and tests disappear from `bg list` and their completions never wake the session.
+The original discovery predates current background status files, detached-task registration, orphan reconciliation and persisted session recovery notes in `crates/jcode-base/src/background.rs`. Reuse that manager and characterize remaining process reattachment, ownership and completion-delivery gaps instead of adding another registry or claiming all persistence is absent.
 
 ## What Changes
 
-- Persist the background task registry (task ID, owning session, PID, start time, output path, wake/notify flags).
+- Extend existing persisted background task records only where needed: task ID, owning session/execution generation, PID/start identity, output path and delivery flags.
 - On reload, reattach tasks whose PID is alive and matches the start time; keep tailing output and deliver completion as before.
 - Mark tasks whose process is gone as `lost`, keeping the output file reachable.
+- Preserve durable stop/revocation when reconciling owned tasks. Completion delivery can update history but must not wake a revoked generation; uncertain liveness remains unresolved for worker settlement.
 
 ## Capabilities
 

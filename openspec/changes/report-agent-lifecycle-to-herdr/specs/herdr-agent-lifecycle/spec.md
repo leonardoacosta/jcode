@@ -3,6 +3,8 @@
 ### Requirement: Full lifecycle state reporting
 Jcode SHALL report `idle`, `working`, `blocked` or `done` to Herdr, and the coordinator SHALL include its headless workers and background tasks with precedence blocked > working > done > idle.
 
+This mapping SHALL consume the shared presentation projection while preserving original outcome metadata. Draining SHALL remain working; unresolved SHALL be blocked, not successful done. Failed/cancelled completion SHALL retain its outcome label. Herdr focus acknowledges only Herdr's completion-event cursor, not widget cursors or execution state.
+
 #### Scenario: Worker blocked
 - **WHEN** a headless worker owned by the session is blocked or stalled
 - **THEN** the session's Herdr pane state SHALL be `blocked`

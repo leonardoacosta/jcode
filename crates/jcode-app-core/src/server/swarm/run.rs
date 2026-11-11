@@ -56,6 +56,8 @@ pub(in crate::server) async fn run_swarm_task(
         .apply_to_allowed_set(&mut allowed);
 
     let mut worker = Agent::new_with_session(provider, registry, session, Some(allowed));
+    crate::session_env::inherit_session_env(&parent_session_id, &child_session_id);
+    let _environment_cleanup = InlineWorkerEnv(child_session_id.clone());
     match worker.run_once_capture(prompt).await {
         Ok(output) => {
             log_swarm_lifecycle(

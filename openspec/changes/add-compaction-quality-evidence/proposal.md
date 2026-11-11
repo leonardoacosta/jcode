@@ -11,7 +11,7 @@ Compaction is measured only by size. `CompactionEvent` records tokens, dropped/c
 
 ## What Changes
 
-- Add a deterministic fixture harness that replays recorded long conversations through `build_compaction_prompt` plus a scripted summary and checks a per-fixture list of must-retain facts.
+- Add deterministic synthetic fixture/checker tests and a separate actual compaction-interface evaluation that checks per-fixture must-retain facts. Scripted summaries validate the checker, not summarization quality.
 - Report per fixture: retained/missing facts, pre/post tokens and verdict `passed`/`failed`/`inconclusive` (inconclusive when no provider summary is available).
 - Add an opt-in live mode that uses the configured provider and labels results with model and revision.
 
@@ -34,4 +34,4 @@ New test fixtures under `crates/jcode-compaction-core/tests/`, a small eval bina
 
 ## Resolved defaults
 
-- Fixture source: synthetic conversations or redacted real sessions? Selected default: synthetic plus one redacted export via `Session::redacted_for_export` (`crates/jcode-base/src/session.rs:1219`), because synthetic alone misses real failure modes and raw sessions leak private data.
+- Use synthetic fixtures by default. A real-session export requires explicit corpus/content-class authorization even after `Session::redacted_for_export`: secret redaction does not make private source, messages or reasoning public. Actual provider evaluation is opt-in under its own route/disclosure/spend bounds; missing access is inconclusive, not checker success promoted to quality evidence.

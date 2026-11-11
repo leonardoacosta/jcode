@@ -3,6 +3,53 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
 use crate::server;
 
+pub fn run_terminal_command() -> Result<()> {
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&terminal_capability_report())?
+    );
+    Ok(())
+}
+
+fn terminal_capability_report() -> serde_json::Value {
+    use std::io::IsTerminal;
+    let color = jcode_tui_style::color_capability();
+    let image = crate::tui::image::ImageProtocol::detect();
+    let policy = crate::perf::tui_policy();
+    let stdout_is_terminal = std::io::stdout().is_terminal();
+    serde_json::json!({
+        "terminal": crate::message::redact_secrets(&crate::perf::profile().terminal),
+        "stdout_is_terminal": stdout_is_terminal,
+        "color": {
+            "detected": format!("{color:?}"),
+            "fallback": if jcode_tui_style::theme_mode::no_color() { "monochrome (NO_COLOR/JCODE_NO_COLOR)" } else if color == jcode_tui_style::ColorCapability::Color256 { "256-color quantization" } else { "none" },
+        },
+        "image": {
+            "detected": format!("{image:?}"),
+            "disabled_by_env": jcode_tui::tui::image::images_disabled(),
+            "fallback": if jcode_tui::tui::image::images_disabled() { "text (JCODE_IMAGES=off)" } else if image.is_supported() && stdout_is_terminal { "protocol output available" } else { "text (image protocol unavailable or redirected output)" },
+        },
+        "mouse": {
+            "configured": policy.enable_mouse_capture,
+            "terminal_probe": "not performed",
+            "fallback": if policy.enable_mouse_capture { "keyboard remains available" } else { "keyboard only" },
+        },
+        "ascii_safe": {
+            "enabled": jcode_tui_style::theme::ascii_safe(),
+            "scope": "shared box/rail borders, truncation markers, activity spinners, onboarding pill caps",
+            "fallback": if jcode_tui_style::theme::ascii_safe() { "ASCII symbols on covered chrome only" } else { "existing Unicode chrome" },
+            "content_transformed": false,
+            "full_ascii_output": false,
+            "coverage_gaps": "other generated chrome, Markdown decoration, header icons, usage bars, swarm glyphs and custom borders",
+        },
+        "unicode_width": {
+            "mode": "unicode-width",
+            "terminal_probe": "not performed",
+            "fallback": "fixed Unicode cell widths; terminal glyph compatibility is not probed",
+        },
+    })
+}
+
 /// Print every candidate instruction file for `dir` (default: cwd), in prompt order.
 pub fn run_instructions_command(dir: Option<&std::path::Path>) -> Result<()> {
     let dir = match dir {
@@ -24,28 +71,6 @@ fn instructions_report(dir: &std::path::Path) -> String {
         out.push('\n');
     }
     out
-}
-
-#[cfg(test)]
-mod instructions_tests {
-    use super::*;
-
-    #[test]
-    fn instructions_lists_project_file() {
-        let dir = tempfile::TempDir::new().unwrap();
-        std::fs::write(dir.path().join("AGENTS.md"), "x").unwrap();
-        let report = instructions_report(dir.path());
-        assert!(report.contains("loaded"));
-        assert!(report.contains("Project Instructions (AGENTS.md)"));
-        assert!(run_instructions_command(Some(dir.path())).is_ok());
-    }
-
-    #[test]
-    fn instructions_rejects_invalid_dir() {
-        let err = run_instructions_command(Some(std::path::Path::new("/nonexistent/jcode-x")))
-            .unwrap_err();
-        assert!(err.to_string().contains("not a directory"));
-    }
 }
 
 pub async fn run_debug_command(
@@ -336,4 +361,103 @@ async fn debug_start_server(arg: &str, socket_path: Option<String>) -> Result<()
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod instructions_tests {
+    use super::*;
+
+    #[test]
+    fn terminal_report_names_detected_capabilities_and_fallbacks() {
+        let report = terminal_capability_report();
+        for field in ["terminal", "color", "image", "mouse", "unicode_width"] {
+            assert!(report.get(field).is_some(), "{field}");
+        }
+        assert!(report["color"].get("fallback").is_some());
+        assert!(report["image"].get("fallback").is_some());
+        assert!(report["mouse"].get("fallback").is_some());
+        assert_eq!(report["unicode_width"]["mode"], "unicode-width");
+        assert_eq!(report["unicode_width"]["terminal_probe"], "not performed");
+    }
+
+    #[test]
+    fn terminal_report_no_color_environment() {
+        if std::env::var_os("JCODE_TEST_TERMINAL_REPORT_CHILD").is_none() {
+            for key in ["NO_COLOR", "JCODE_NO_COLOR"] {
+                let output = std::process::Command::new(std::env::current_exe().unwrap())
+                    .args([
+                        "--exact",
+                        "cli::debug::instructions_tests::terminal_report_no_color_environment",
+                        "--nocapture",
+                    ])
+                    .env_remove("NO_COLOR")
+                    .env_remove("JCODE_NO_COLOR")
+                    .env("JCODE_TEST_TERMINAL_REPORT_CHILD", "1")
+                    .env(key, "1")
+                    .output()
+                    .unwrap();
+                assert!(
+                    output.status.success(),
+                    "{} {}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+            return;
+        }
+        assert_eq!(
+            terminal_capability_report()["color"]["fallback"],
+            "monochrome (NO_COLOR/JCODE_NO_COLOR)"
+        );
+    }
+
+    #[test]
+    fn terminal_report_explicit_fallback_environment() {
+        if std::env::var_os("JCODE_TEST_EXPLICIT_FALLBACK_CHILD").is_none() {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "cli::debug::instructions_tests::terminal_report_explicit_fallback_environment",
+                    "--nocapture",
+                ])
+                .env("JCODE_TEST_EXPLICIT_FALLBACK_CHILD", "1")
+                .env("JCODE_ASCII_SAFE", "on")
+                .env("JCODE_IMAGES", "off")
+                .env("KITTY_WINDOW_ID", "1")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
+            return;
+        }
+        let report = terminal_capability_report();
+        assert_eq!(report["ascii_safe"]["enabled"], true);
+        assert_eq!(report["ascii_safe"]["content_transformed"], false);
+        assert_eq!(report["ascii_safe"]["full_ascii_output"], false);
+        assert_eq!(report["image"]["disabled_by_env"], true);
+        assert_eq!(report["image"]["detected"], "None");
+        assert_eq!(report["unicode_width"]["mode"], "unicode-width");
+    }
+
+    #[test]
+    fn instructions_lists_project_file() {
+        let dir = tempfile::TempDir::new().unwrap();
+        std::fs::write(dir.path().join("AGENTS.md"), "x").unwrap();
+        let report = instructions_report(dir.path());
+        assert!(report.contains("loaded"));
+        assert!(report.contains("Project Instructions (AGENTS.md)"));
+        assert!(run_instructions_command(Some(dir.path())).is_ok());
+    }
+
+    #[test]
+    fn instructions_rejects_invalid_dir() {
+        let err = run_instructions_command(Some(std::path::Path::new("/nonexistent/jcode-x")))
+            .unwrap_err();
+        assert!(err.to_string().contains("not a directory"));
+    }
 }

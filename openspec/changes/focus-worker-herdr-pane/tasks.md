@@ -9,6 +9,6 @@
 
 ## 3. Verify
 
-- [ ] 3.1 Tests for pane ID capture and persistence
+- [ ] 3.1 Tests for pane ID capture/persistence, reused/stale pane IDs, target identity and revoked-generation restore refusal; focusing a pane never grants new execution authority.
 - [ ] 3.2 Runtime check: spawn visible worker in Herdr, focus it, restore after Herdr restart
 - [ ] 3.3 `openspec validate focus-worker-herdr-pane --strict`

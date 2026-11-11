@@ -551,7 +551,8 @@ async fn configured_swarm_root_effort_resolves_without_changing_stored_mode() {
         "gpt-5.6".to_string(),
         vec!["low".into(), "medium".into(), "high".into(), "xhigh".into()],
     );
-    for mode in ["swarm"] {
+    {
+        let mode = "swarm";
         provider.set_reasoning_effort(mode).unwrap();
         for (configured, expected) in [
             ("low", "low"),

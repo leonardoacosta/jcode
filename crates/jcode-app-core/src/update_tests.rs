@@ -168,7 +168,12 @@ fn git_managed_auto_update_skip_logs_actionable_explanation() {
     assert!(logged[0].contains("Rebuild this checkout executable"));
     assert!(logged[0].contains("run `jcode update` and relaunch with the installed"));
 
-    let standalone = temp.path().join("standalone/jcode");
+    let standalone = std::env::current_exe()
+        .unwrap()
+        .ancestors()
+        .last()
+        .unwrap()
+        .join("standalone-jcode-test-bin/jcode");
     let mut unexpected_logs = Vec::new();
     assert!(should_auto_update_with(
         false,

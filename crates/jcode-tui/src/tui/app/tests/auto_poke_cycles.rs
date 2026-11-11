@@ -11,9 +11,11 @@ fn auto_poke_status_alias_does_not_rearm_but_required_work_does() {
             ..Default::default()
         }];
         crate::todo::save_todos(&app.session.id, &todos).unwrap();
-        assert!(app.schedule_auto_poke_followup_if_needed());
-        app.queued_messages.clear();
-        app.pending_queued_dispatch = false;
+        for _ in 0..crate::todo::INCOMPLETE_TODO_MAX_ATTEMPTS {
+            assert!(app.schedule_auto_poke_followup_if_needed());
+            app.queued_messages.clear();
+            app.pending_queued_dispatch = false;
+        }
         assert!(!app.schedule_auto_poke_followup_if_needed());
         todos[0].status = " IN-PROGRESS ".into();
         crate::todo::save_todos(&app.session.id, &todos).unwrap();
@@ -43,8 +45,59 @@ fn auto_poke_status_alias_does_not_rearm_but_required_work_does() {
 }
 
 #[test]
+fn default_auto_poke_does_not_recheck_completed_confidence_or_ownership() {
+    with_temp_jcode_home(|| {
+        assert!(!crate::config::config().features.todo_gate_digest);
+        for confidence in [
+            crate::todo::ConfidenceState::Speculative,
+            crate::todo::ConfidenceState::Verified,
+        ] {
+            let mut app = create_test_app();
+            app.auto_poke_incomplete_todos = true;
+            crate::todo::save_todos(
+                &app.session.id,
+                &[crate::todo::TodoItem {
+                    id: "done".into(),
+                    content: "Finished work".into(),
+                    status: "completed".into(),
+                    completion_confidence: Some(confidence),
+                    confidence_history: vec![
+                        crate::todo::ConfidenceState::Speculative,
+                        crate::todo::ConfidenceState::Verified,
+                    ],
+                    ..Default::default()
+                }],
+            )
+            .expect("save completed todo");
+            crate::todo::save_goals(
+                &app.session.id,
+                &[crate::todo::TodoGoal {
+                    delivery_state: Some(crate::todo::DeliveryState::ChangeMade),
+                    ..Default::default()
+                }],
+            )
+            .expect("save weak ownership");
+            assert!(app.schedule_auto_poke_followup_if_needed());
+            assert_eq!(
+                app.queued_messages,
+                vec![crate::todo::TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE.to_string()]
+            );
+            assert!(!app.todo_confidence_spike_challenged);
+            assert_eq!(app.todo_completion_gate_attempts, 0);
+            assert!(
+                !app.display_messages()
+                    .iter()
+                    .any(|message| message.content.contains("Double-checking")
+                        || message.content.contains("Checking end-to-end"))
+            );
+        }
+    });
+}
+
+#[test]
 fn auto_poke_stays_armed_when_a_turn_has_no_todos() {
     with_temp_jcode_home(|| {
+        assert!(!crate::config::config().features.todo_gate_digest);
         let mut app = create_test_app();
         app.auto_poke_incomplete_todos = true;
         app.auto_poke_default_on = true;
@@ -80,7 +133,7 @@ fn auto_poke_stays_armed_when_a_turn_has_no_todos() {
 }
 
 #[test]
-fn auto_poke_does_not_repeat_until_incomplete_todos_change() {
+fn auto_poke_retries_three_times_until_incomplete_todos_change() {
     with_temp_jcode_home(|| {
         let mut app = create_test_app();
         app.auto_poke_incomplete_todos = true;
@@ -99,10 +152,27 @@ fn auto_poke_does_not_repeat_until_incomplete_todos_change() {
         // Simulate dispatch and completion of the automatically poked turn.
         app.queued_messages.clear();
         app.pending_queued_dispatch = false;
+        for expected in 2..=3 {
+            assert!(app.schedule_auto_poke_followup_if_needed());
+            assert_eq!(app.auto_poke_attempts, expected);
+            app.queued_messages.clear();
+            app.pending_queued_dispatch = false;
+        }
         assert!(
             !app.schedule_auto_poke_followup_if_needed(),
-            "an unchanged list must not consume another model turn"
+            "an unchanged list must stop after three attempts"
         );
+
+        app.save_input_for_reload(&app.session.id);
+        let restored = App::restore_input_for_reload(&app.session.id).expect("retry budget saved");
+        let mut reloaded = create_test_app();
+        reloaded.session.id = app.session.id.clone();
+        reloaded.auto_poke_incomplete_todos = true;
+        reloaded.auto_poke_default_on = true;
+        reloaded.apply_restored_reload_input(restored);
+        assert_eq!(reloaded.auto_poke_attempts, 3);
+        assert!(!reloaded.schedule_auto_poke_followup_if_needed());
+        app = reloaded;
 
         crate::todo::save_todos(&app.session.id, &[pending("Review worker result")])
             .expect("update");
@@ -110,6 +180,7 @@ fn auto_poke_does_not_repeat_until_incomplete_todos_change() {
             app.schedule_auto_poke_followup_if_needed(),
             "changing the todo list must re-arm the automatic nudge"
         );
+        assert_eq!(app.auto_poke_attempts, 1);
 
         app.queued_messages.clear();
         app.pending_queued_dispatch = false;
@@ -134,6 +205,9 @@ fn completed_cycle_rearms_auto_poke_only_when_default_on() {
             priority: "high".to_string(),
             confidence: Some(crate::todo::ConfidenceState::from_legacy_score(100)),
             completion_confidence: Some(crate::todo::ConfidenceState::from_legacy_score(100)),
+            external_blocker: None,
+            completely_blocked: None,
+            waiting_on: Vec::new(),
             confidence_history: vec![
                 crate::todo::ConfidenceState::Validated,
                 crate::todo::ConfidenceState::Verified,
@@ -232,14 +306,12 @@ fn completed_cycle_rearms_auto_poke_only_when_default_on() {
         changed.completion_confidence = Some(crate::todo::ConfidenceState::Plausible);
         crate::todo::save_todos(&app.session.id, &[changed]).expect("save changed todo");
         assert!(app.schedule_auto_poke_followup_if_needed());
-        assert!(app.queued_messages[0].starts_with(crate::todo::TODO_GATE_DIGEST_PREFIX));
-        assert!(!app.todo_final_response_requested);
-        app.queued_messages.clear();
-        app.pending_queued_dispatch = false;
-        assert!(app.schedule_auto_poke_followup_if_needed());
-        assert!(
-            app.queued_messages[0].starts_with(crate::todo::TODO_COMPLETION_CONTINUATION_MESSAGE)
+        // Default-off quality reviews must not buy a validation turn.
+        assert_eq!(
+            app.queued_messages,
+            vec![crate::todo::TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE.to_string()]
         );
+        assert!(app.todo_final_response_requested);
         app.queued_messages.clear();
         app.pending_queued_dispatch = false;
         crate::todo::save_todos(&app.session.id, &[completed("todo-1")]).expect("save validated");
@@ -351,7 +423,9 @@ fn continuation_baseline_auto_poke_repeated_and_required() {
         assert!(app.schedule_auto_poke_followup_if_needed());
         assert_eq!(
             app.queued_messages,
-            vec![crate::todo::build_auto_poke_message(1)]
+            vec![crate::todo::build_actionable_poke_message(
+                &crate::todo::load_todos(&app.session.id).unwrap()
+            )]
         );
         assert!(app.pending_queued_dispatch);
         assert_eq!(app.todo_completion_gate_attempts, 0);
@@ -384,6 +458,13 @@ fn continuation_baseline_auto_poke_repeated_and_required() {
             },
         )
         .expect("save synthetic metadata-only plan");
+        for expected in 2..=crate::todo::INCOMPLETE_TODO_MAX_ATTEMPTS {
+            assert!(app.schedule_auto_poke_followup_if_needed());
+            assert_eq!(app.auto_poke_attempts, expected);
+            assert_eq!(app.last_auto_poke_fingerprint, first_fingerprint);
+            app.queued_messages.clear();
+            app.pending_queued_dispatch = false;
+        }
         assert!(!app.schedule_auto_poke_followup_if_needed());
         assert!(app.queued_messages.is_empty());
         assert!(!app.pending_queued_dispatch);
@@ -410,7 +491,9 @@ fn continuation_baseline_auto_poke_repeated_and_required() {
         assert!(app.schedule_auto_poke_followup_if_needed());
         assert_eq!(
             app.queued_messages,
-            vec![crate::todo::build_auto_poke_message(2)]
+            vec![crate::todo::build_actionable_poke_message(
+                &crate::todo::load_todos(&app.session.id).unwrap()
+            )]
         );
         assert!(app.pending_queued_dispatch);
         assert_eq!(app.todo_completion_gate_attempts, 0);
@@ -498,7 +581,9 @@ fn continuation_baseline_auto_poke_wait_stop_and_errors() {
         assert_eq!(stale.todo_completion_gate_attempts, 0);
         assert_eq!(
             stale.queued_messages,
-            vec![crate::todo::build_auto_poke_message(1)]
+            vec![crate::todo::build_actionable_poke_message(
+                &crate::todo::load_todos(&stale.session.id).unwrap()
+            )]
         );
         assert!(stale.pending_queued_dispatch);
 
@@ -519,7 +604,9 @@ fn continuation_baseline_auto_poke_wait_stop_and_errors() {
         assert!(errored.schedule_auto_poke_followup_if_needed());
         assert_eq!(
             errored.queued_messages,
-            vec![crate::todo::build_auto_poke_message(1)]
+            vec![crate::todo::build_actionable_poke_message(
+                &crate::todo::load_todos(&errored.session.id).unwrap()
+            )]
         );
         assert!(errored.pending_queued_dispatch);
         assert_eq!(
@@ -529,6 +616,9 @@ fn continuation_baseline_auto_poke_wait_stop_and_errors() {
 
         // Due review state is read and acknowledged before the review message
         // is queued. This is a local persisted write, not an inference ack.
+        let config = crate::storage::jcode_dir().unwrap().join("config.toml");
+        std::fs::write(config, "[features]\ntodo_gate_digest = true\n").unwrap();
+        crate::config::invalidate_config_cache();
         let mut due = create_test_app();
         due.auto_poke_incomplete_todos = true;
         crate::todo::save_todos(&due.session.id, &[pending()]).expect("save open todo");
@@ -562,5 +652,39 @@ fn continuation_baseline_auto_poke_wait_stop_and_errors() {
                 .any(|message| message.role == "system"
                     && message.content.contains("Rechecking the plan"))
         );
+    });
+}
+
+#[test]
+fn stale_incomplete_todo_poke_is_dropped_once_todos_are_done() {
+    with_temp_jcode_home(|| {
+        let app = create_test_app();
+        let done = crate::todo::TodoItem {
+            id: "todo-1".to_string(),
+            content: "Ship it".to_string(),
+            status: "completed".to_string(),
+            priority: "high".to_string(),
+            ..Default::default()
+        };
+        crate::todo::save_todos(&app.session.id, &[done.clone()]).expect("save");
+        let mut pending = done.clone();
+        pending.status = "pending".to_string();
+        let poke = crate::todo::build_actionable_poke_message(&[pending]);
+
+        let mut queued = vec![poke.clone(), "real follow-up".to_string()];
+        super::commands::drop_stale_incomplete_todo_pokes(&app, &mut queued);
+        assert_eq!(queued, vec!["real follow-up".to_string()]);
+
+        let mut gated = vec![crate::todo::TODO_FINAL_RESPONSE_CONTINUATION_MESSAGE.to_string()];
+        super::commands::drop_stale_incomplete_todo_pokes(&app, &mut gated);
+        assert_eq!(gated.len(), 1, "non incomplete-todo continuations are kept");
+
+        crate::todo::save_todos(&app.session.id, &[done]).expect("save");
+        let mut open_case = vec![poke];
+        let mut todo = crate::todo::load_todos(&app.session.id).unwrap();
+        todo[0].status = "in_progress".to_string();
+        crate::todo::save_todos(&app.session.id, &todo).expect("save");
+        super::commands::drop_stale_incomplete_todo_pokes(&app, &mut open_case);
+        assert_eq!(open_case.len(), 1, "poke is kept while todos are open");
     });
 }

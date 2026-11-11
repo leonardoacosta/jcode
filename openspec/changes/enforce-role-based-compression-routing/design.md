@@ -8,9 +8,11 @@ Read-only local runtime inspection of `/app/.build/next/server/chunks/16904.js` 
 
 Preflight `preflight-check-v2-shadow`, JIT at source `1d9b92579` on the existing `main` checkout: local source/test correction is eligible under the user's explicit correction. Related tracked targets started clean; preserve the five unrelated untracked runtime paths. Publication is not authorized and branch mismatch remains preserved. Existing broader gateway acceptance/archive prerequisites remain blocked. Tests use real provider and agent public paths with local synthetic transports. The prior notes below describe historical role-header selection, not the corrected implementation.
 
-User approval covers role-based profiles on the two existing gateways plus real TypeSafe Jev verification. Existing config uses Pi5 as the default, manual cross-provider failover, and inherited memory models. Request model aliases already exercise gateway routing combos. The missing contract is role-aware compression selection and observed resolver enforcement, not replacement upstream routing.
+Historical scope before the 2026-11-03 correction: role-based profiles and TypeSafe verification were selected. Later explicit direction makes endpoint-owned inherited defaults authoritative; role-selection notes below are retained as history only, not current client work. Native applied-plan evidence remains separate from a model alias or selector receipt.
 
-## Decisions
+## Historical decisions, superseded where they select client compression
+
+The endpoint-owned correction at the top is authoritative. The following request-header/role profile design is retained as historical evidence only and SHALL NOT guide new implementation. Current Jcode requests preserve selected endpoint/model identity without compression/cache overrides; pending native gateway applied-plan and final-review gates remain open.
 
 - Reuse OmniRoute's supported `x-omniroute-compression` request selector. Equivalent gateway profile names are `jcode-conservative` and `jcode-optimized`; exact requests use `off`. Do not use process-global environment changes to select per-session policy.
 - Keep policy state isolated per provider fork or pass a captured per-request value through background transport tasks. A task-local value alone is insufficient if request construction runs in a spawned task.

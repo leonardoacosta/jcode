@@ -1,4 +1,4 @@
-use super::{Session, SessionStatus, active_pids_dir, session_exists};
+use super::{Session, SessionStatus, active_pids_dir, session_exists, session_path};
 use crate::id::extract_session_name;
 use crate::message::{ContentBlock, Role};
 use crate::storage;
@@ -553,13 +553,12 @@ fn normalize_resume_lookup_text(text: &str) -> String {
         .to_lowercase()
 }
 
-fn session_matches_resume_title(session: &Session, normalized_query: &str) -> bool {
+fn resume_title_matches(title: Option<&str>, normalized_query: &str) -> bool {
     if normalized_query.is_empty() {
         return false;
     }
 
-    session
-        .display_title()
+    title
         .map(normalize_resume_lookup_text)
         .is_some_and(|title| title == normalized_query || title.contains(normalized_query))
 }
@@ -595,30 +594,22 @@ fn resolve_imported_snapshot_id(provider_id: &str) -> Option<String> {
 }
 
 /// Find a session by ID, memorable name, generated title, or custom rename.
-/// If the input doesn't load as a full session ID, scan recent session snapshots
-/// and return the newest matching short name/title.
+/// Existing exact snapshot IDs are resolved without reading their contents.
+/// The authoritative session load still validates snapshots and replays journals.
+/// Otherwise scan recent session snapshots for the newest matching name/title.
 /// Returns the full session ID if found.
 pub fn find_session_by_name_or_id(name_or_id: &str) -> Result<String> {
-    // Try loading directly first so stable imported IDs like `imported_codex_*`
-    // or other explicit session ids can be resumed without going through the
-    // short-name matcher. Every `--resume` (including each client re-exec in a
-    // reload storm) runs this, so validate with the metadata-only startup stub:
-    // a full load deserializes the whole transcript (0.4-0.6s for a 35MB
-    // session) just to discard it. Fall back to the full load for its error.
-    if Session::load_startup_stub(name_or_id).is_ok() {
+    // IDs are filename stems, never paths. Titles containing separators remain
+    // searchable, but cannot escape the sessions directory via exact lookup.
+    let is_stem = !name_or_id.is_empty()
+        && name_or_id != "."
+        && name_or_id != ".."
+        && !name_or_id.contains(['/', '\\', '\0']);
+    // Resolution is not validation. Reading a multi-MB snapshot here repeats
+    // startup metadata reads and server restore, and can trigger client-side
+    // backup recovery. Leave corruption detection to the authoritative load.
+    if is_stem && session_path(name_or_id)?.is_file() {
         return Ok(name_or_id.to_string());
-    }
-    match Session::load(name_or_id) {
-        Ok(_) => return Ok(name_or_id.to_string()),
-        Err(e) => {
-            if session_exists(name_or_id) {
-                anyhow::bail!(
-                    "Session '{}' exists but failed to load (possibly corrupt):\n  {}",
-                    name_or_id,
-                    e
-                );
-            }
-        }
     }
 
     // A *bare* external provider id (e.g. an OpenCode `ses_...` or a Codex/Claude
@@ -626,7 +617,10 @@ pub fn find_session_by_name_or_id(name_or_id: &str) -> Result<String> {
     // `imported_<tool>_<id>` stem. Resolve to that snapshot before falling back to
     // re-importing from the external tool's storage, which fails outright once the
     // user has removed/reinstalled that tool (issue #336).
-    if let Some(imported_id) = resolve_imported_snapshot_id(name_or_id) {
+    if let Some(imported_id) = is_stem
+        .then(|| resolve_imported_snapshot_id(name_or_id))
+        .flatten()
+    {
         return Ok(imported_id);
     }
 
@@ -638,6 +632,46 @@ pub fn find_session_by_name_or_id(name_or_id: &str) -> Result<String> {
         anyhow::bail!("No session found matching '{}'", name_or_id);
     }
 
+    // Generated session filenames already contain their memorable name. Read
+    // metadata only for matching candidates, rather than parsing every transcript
+    // just to discover that its name does not match. Keep updated_at (including
+    // journal metadata) authoritative when the same name has been reused.
+    let sessions_dir = storage::jcode_dir()?.join("sessions");
+    if sessions_dir.exists() {
+        let mut newest: Option<(String, DateTime<Utc>)> = None;
+        for entry in std::fs::read_dir(&sessions_dir)? {
+            let path = entry?.path();
+            if path.extension().is_none_or(|ext| ext != "json") {
+                continue;
+            }
+            let Some(stem) = path.file_stem().and_then(|s| s.to_str()) else {
+                continue;
+            };
+            if extract_session_name(stem).is_none_or(|name| name != name_or_id) {
+                continue;
+            }
+            if let Ok(session) = Session::load_startup_stub(stem).or_else(|_| Session::load(stem))
+                && newest
+                    .as_ref()
+                    .is_none_or(|(_, updated)| session.updated_at > *updated)
+            {
+                newest = Some((stem.to_string(), session.updated_at));
+            }
+        }
+        if let Some((id, _)) = newest {
+            return Ok(id);
+        }
+    }
+
+    find_session_by_metadata(name_or_id)
+}
+
+// Compatibility fallback for titles and legacy short names not encoded in IDs.
+fn find_session_by_metadata(name_or_id: &str) -> Result<String> {
+    find_session_by_metadata_impl(name_or_id, true)
+}
+
+fn find_session_by_metadata_impl(name_or_id: &str, use_cache: bool) -> Result<String> {
     // Otherwise, search for a session with matching short name or title.
     let sessions_dir = storage::jcode_dir()?.join("sessions");
     if !sessions_dir.exists() {
@@ -647,6 +681,7 @@ pub fn find_session_by_name_or_id(name_or_id: &str) -> Result<String> {
     let normalized_query = normalize_resume_lookup_text(name_or_id);
     let mut exact_matches: Vec<(String, chrono::DateTime<chrono::Utc>)> = Vec::new();
     let mut title_matches: Vec<(String, chrono::DateTime<chrono::Utc>)> = Vec::new();
+    let mut cache = use_cache.then(super::resume_cache::Cache::load);
 
     for entry in std::fs::read_dir(&sessions_dir)? {
         let entry = entry?;
@@ -661,21 +696,35 @@ pub fn find_session_by_name_or_id(name_or_id: &str) -> Result<String> {
 
         let short_name_matches =
             extract_session_name(stem).is_some_and(|short| short == name_or_id);
-        if short_name_matches {
-            if let Ok(session) = Session::load_startup_stub(stem).or_else(|_| Session::load(stem)) {
-                exact_matches.push((stem.to_string(), session.updated_at));
-            }
-            continue;
+        let (short_name, title, updated_at) =
+            match cache.as_mut().and_then(|cache| cache.get(stem, &path)) {
+                Some(entry) => (
+                    entry.short_name.clone(),
+                    entry.title.clone(),
+                    entry.updated_at,
+                ),
+                None => {
+                    let Ok(session) =
+                        Session::load_startup_stub(stem).or_else(|_| Session::load(stem))
+                    else {
+                        continue;
+                    };
+                    (
+                        session.short_name.clone(),
+                        session.display_title().map(str::to_owned),
+                        session.updated_at,
+                    )
+                }
+            };
+        if short_name_matches || short_name.as_deref() == Some(name_or_id) {
+            exact_matches.push((stem.to_string(), updated_at));
+        } else if resume_title_matches(title.as_deref(), &normalized_query) {
+            title_matches.push((stem.to_string(), updated_at));
         }
+    }
 
-        let Ok(session) = Session::load_startup_stub(stem).or_else(|_| Session::load(stem)) else {
-            continue;
-        };
-        if session.short_name.as_deref() == Some(name_or_id) {
-            exact_matches.push((stem.to_string(), session.updated_at));
-        } else if session_matches_resume_title(&session, &normalized_query) {
-            title_matches.push((stem.to_string(), session.updated_at));
-        }
+    if let Some(cache) = cache {
+        cache.finish();
     }
 
     let matches = if exact_matches.is_empty() {
@@ -694,7 +743,10 @@ pub fn find_session_by_name_or_id(name_or_id: &str) -> Result<String> {
 }
 
 #[cfg(test)]
-mod batch_crash_tests {
+mod batch_crash_tests;
+
+#[cfg(test)]
+mod local_batch_crash_tests {
     use super::*;
 
     #[test]

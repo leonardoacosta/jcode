@@ -938,7 +938,7 @@ impl McpManagementTool {
         let manager = self.manager.read().await;
         // Explicit connect clears backoff and `degraded` state.
         manager.reset_failures(&server_name).await;
-        match manager.connect(&server_name, &config).await {
+        match crate::mcp::interactive_connect(manager.connect(&server_name, &config)).await {
             Ok(()) => {
                 let tools = manager.all_tools().await;
                 let connected = manager.connected_servers().await;

@@ -16,6 +16,9 @@
 //! This provides better control and eliminates the Python dependency.
 
 mod reasoning_request;
+mod usage_recording;
+
+mod catalog;
 
 use jcode_base::auth;
 use jcode_base::auth::oauth;
@@ -575,66 +578,6 @@ impl AnthropicProvider {
         self.set_credential_mode(mode)
     }
 
-    /// Fetch the live Anthropic model catalog using the resolved credential.
-    ///
-    /// Mirrors [`Provider::prefetch_models`] but returns the model ids to the
-    /// caller (rather than only persisting them) so the doctor can assert the
-    /// live `GET /v1/models` endpoint works and that the model under test is in
-    /// the live catalog.
-    pub async fn fetch_live_model_ids_for_doctor(&self) -> Result<Vec<String>> {
-        let oauth_scope = self.catalog_scope_for_route(true);
-        let api_scope = self.catalog_scope_for_route(false);
-        let (token, is_oauth) = self.get_access_token().await?;
-        let scope = if is_oauth { oauth_scope } else { api_scope };
-        if token.trim().is_empty() {
-            anyhow::bail!("resolved an empty Anthropic access token");
-        }
-        let catalog = if is_oauth {
-            jcode_base::provider::fetch_anthropic_model_catalog_oauth(&token).await?
-        } else {
-            jcode_base::provider::fetch_anthropic_model_catalog(&token).await?
-        };
-        // Persist so the rest of the process benefits from the warm catalog,
-        // exactly like the runtime's own prefetch.
-        jcode_base::provider::persist_anthropic_model_catalog_for_scope(&scope, &catalog);
-        if !catalog.context_limits.is_empty() {
-            jcode_base::provider::populate_context_limits(catalog.context_limits.clone());
-        }
-        if !catalog.available_models.is_empty() {
-            jcode_base::provider::populate_anthropic_models_for_scope(
-                &scope,
-                catalog.available_models.clone(),
-            );
-        }
-        Ok(catalog.available_models)
-    }
-
-    async fn refresh_model_catalog_for_route(&self, oauth: bool, scope: &str) -> Result<()> {
-        let catalog = if oauth {
-            let (token, _) = self.get_oauth_access_token().await?;
-            match jcode_base::provider::fetch_anthropic_model_catalog_oauth(&token).await {
-                Ok(catalog) => catalog,
-                Err(err) if is_oauth_catalog_auth_error(&err.to_string()) => {
-                    let token = force_refresh_oauth_token(
-                        Arc::clone(&self.credentials),
-                        &self.oauth_refresh_label(),
-                    )
-                    .await?;
-                    jcode_base::provider::fetch_anthropic_model_catalog_oauth(&token).await?
-                }
-                Err(err) => return Err(err),
-            }
-        } else {
-            jcode_base::provider::fetch_anthropic_model_catalog(&self.direct_api_key()?).await?
-        };
-        jcode_base::provider::persist_anthropic_model_catalog_for_scope(scope, &catalog);
-        if !catalog.context_limits.is_empty() {
-            jcode_base::provider::populate_context_limits(catalog.context_limits);
-        }
-        jcode_base::provider::populate_anthropic_models_for_scope(scope, catalog.available_models);
-        Ok(())
-    }
-
     pub fn new() -> Self {
         let model = std::env::var("JCODE_ANTHROPIC_MODEL").unwrap_or_else(|_| {
             if Self::is_usage_exhausted() {
@@ -992,7 +935,17 @@ impl AnthropicProvider {
     /// Automatically refreshes OAuth tokens when expired
     async fn get_access_token(&self) -> Result<(String, bool)> {
         self.request_credential.store(0, Ordering::Release);
-        let result = self.resolve_access_token().await;
+        let result =
+            oauth::with_refresh_cancellation(std::future::pending(), self.resolve_access_token())
+                .await
+                .map_err(|error| {
+                    let kind =
+                        jcode_provider_core::classify_provider_failure(&format!("{error:#}"));
+                    anyhow::anyhow!(
+                        "{error:#}\n{}",
+                        kind.remedy(jcode_provider_core::DualAuthProvider::Anthropic)
+                    )
+                });
         if let Ok((_, is_oauth)) = &result {
             self.request_credential
                 .store(if *is_oauth { 1 } else { 2 }, Ordering::Release);
@@ -1019,6 +972,15 @@ impl AnthropicProvider {
         if matches!(mode, AnthropicCredentialMode::Auto) {
             match self.get_oauth_access_token().await {
                 Ok(token) => return Ok(token),
+                Err(oauth_err)
+                    if matches!(
+                        jcode_provider_core::classify_provider_failure(&format!("{oauth_err:#}")),
+                        jcode_provider_core::ProviderFailureKind::AuthRevoked
+                            | jcode_provider_core::ProviderFailureKind::Transient
+                    ) =>
+                {
+                    return Err(oauth_err);
+                }
                 Err(oauth_err) => match self.direct_api_key() {
                     Ok(key) => {
                         jcode_base::logging::warn(&format!(
@@ -1107,9 +1069,13 @@ impl AnthropicProvider {
                 "claude",
                 &fresh_creds.refresh_token,
             ) {
-                anyhow::bail!(
-                    "Claude OAuth refresh token was previously rejected by Anthropic and cannot be refreshed. Run `jcode login --provider claude` to mint a fresh token."
-                );
+                if fresh_creds.expires_at <= now {
+                    anyhow::bail!(
+                        "Claude OAuth refresh token was previously rejected by Anthropic and cannot be refreshed. Run `jcode login --provider claude` to mint a fresh token."
+                    );
+                }
+                // Rejection blocks refresh, not a still-live access token.
+                return Ok((fresh_creds.access_token, true));
             }
 
             jcode_base::logging::info(
@@ -1117,26 +1083,22 @@ impl AnthropicProvider {
             );
 
             let active_label = self.oauth_refresh_label();
-            let refreshed = match active_label.as_deref() {
-                Some(label) => {
-                    oauth::refresh_claude_tokens_for_account(&fresh_creds.refresh_token, label)
-                        .await
-                }
-                None => oauth::refresh_claude_tokens(&fresh_creds.refresh_token).await,
-            };
+            let refresh_token = fresh_creds.refresh_token.clone();
+            let refreshed =
+                refresh_and_commit_claude_tokens(Arc::clone(&self.credentials), async move {
+                    match active_label.as_deref() {
+                        Some(label) => {
+                            oauth::refresh_claude_tokens_for_account(&refresh_token, label).await
+                        }
+                        None => oauth::refresh_claude_tokens(&refresh_token).await,
+                    }
+                })
+                .await;
             match refreshed {
-                Ok(refreshed) => {
+                Ok(access_token) => {
                     jcode_base::logging::info("OAuth token refreshed successfully");
 
-                    // Cache the refreshed credentials
-                    let mut cached = self.credentials.write().await;
-                    *cached = Some(CachedCredentials {
-                        access_token: refreshed.access_token.clone(),
-                        refresh_token: refreshed.refresh_token,
-                        expires_at: refreshed.expires_at,
-                    });
-
-                    return Ok((refreshed.access_token, true));
+                    return Ok((access_token, true));
                 }
                 Err(e) => {
                     jcode_base::logging::error(&format!("OAuth token refresh failed: {}", e));
@@ -1145,7 +1107,13 @@ impl AnthropicProvider {
                     // expired, however, returning it only guarantees a 401 and
                     // prevents Auto mode from trying its API-key fallback.
                     if fresh_creds.expires_at <= now {
-                        anyhow::bail!("Claude OAuth token is expired and refresh failed: {e:#}");
+                        anyhow::bail!(
+                            "Claude OAuth token refresh failed: {e:#}\n{}",
+                            jcode_provider_core::classify_provider_failure(&format!(
+                                "refresh: {e:#}"
+                            ))
+                            .remedy(jcode_provider_core::DualAuthProvider::Anthropic)
+                        );
                     }
                 }
             }
@@ -1677,45 +1645,21 @@ impl Provider for AnthropicProvider {
     }
 
     async fn prefetch_models(&self) -> Result<()> {
-        // A custom messages URL (ANTHROPIC_BASE_URL / named profile) must not
-        // leak gateway API keys to Anthropic's official model-catalog
-        // endpoint. Genuine Anthropic OAuth credentials are a different case:
-        // users often route /v1/messages through a local proxy (e.g. a
-        // caching proxy) while authenticating with their real subscription,
-        // and skipping the refresh for them silently freezes the model list
-        // at the last disk snapshot, hiding newly released models. The
-        // catalog fetch itself always goes directly to api.anthropic.com.
-        let custom_gateway = self.direct_transport.api_url != API_URL;
-        // Discovery is independent of the selected chat credential mode. Do not
-        // mutate that mode on this shared provider just to inspect another route.
-        // API discovery gets first opportunity, OAuth still runs on API failure.
-        for oauth in [false, true] {
-            if custom_gateway && !oauth {
-                // Never send named gateway API keys to Anthropic's catalog.
-                continue;
-            }
-            let configured = if oauth {
-                auth::claude::load_credentials().is_ok()
-            } else {
-                self.direct_api_key().is_ok()
-            };
-            if !configured {
-                continue;
-            }
-            let scope = self.catalog_scope_for_route(oauth);
-            if !jcode_base::provider::begin_anthropic_model_catalog_refresh_for_scope(&scope) {
-                continue;
-            }
-            let result = self.refresh_model_catalog_for_route(oauth, &scope).await;
-            jcode_base::provider::finish_anthropic_model_catalog_refresh_for_scope(&scope);
-            if let Err(err) = result {
-                jcode_base::logging::warn(&format!(
-                    "Anthropic {} model catalog refresh failed; keeping cached list: {err}",
-                    if oauth { "OAuth" } else { "API key" }
-                ));
-            }
-        }
-        Ok(())
+        self.refresh_catalogs(false).await
+    }
+
+    async fn refresh_model_catalog(
+        &self,
+    ) -> Result<jcode_provider_core::ModelCatalogRefreshSummary> {
+        let before_models = self.available_models_display();
+        let before_routes = self.model_routes();
+        self.refresh_catalogs(true).await?;
+        Ok(jcode_provider_core::summarize_model_catalog_refresh(
+            before_models,
+            self.available_models_display(),
+            before_routes,
+            self.model_routes(),
+        ))
     }
 
     fn name(&self) -> &'static str {
@@ -1904,6 +1848,7 @@ async fn run_stream_with_retries(
     direct_transport: DirectTransportConfig,
     retry_settings: reasoning_request::RetrySettings,
 ) {
+    let usage_label = usage_recording::credential_label(is_oauth, &initial_token);
     let mut token = initial_token;
     let mut last_error = None;
     let mut next_retry_delay = None;
@@ -1915,6 +1860,9 @@ async fn run_stream_with_retries(
     let mut tried_models: Vec<String> = vec![original_model.clone()];
 
     for attempt in 0..MAX_RETRIES {
+        if tx.is_closed() {
+            return;
+        }
         if attempt > 0 {
             // Exponential backoff with jitter: ~1s, ~2s, ~4s
             let delay = jcode_provider_core::retry_after::retry_delay(
@@ -1930,7 +1878,11 @@ async fn run_stream_with_retries(
                     },
                 }))
                 .await;
-            tokio::time::sleep(delay).await;
+            tokio::select! {
+                biased;
+                _ = tx.closed() => return,
+                _ = tokio::time::sleep(delay) => {}
+            }
             jcode_base::logging::info(&format!(
                 "Retrying Anthropic API request (attempt {}/{})",
                 attempt + 1,
@@ -1966,6 +1918,7 @@ async fn run_stream_with_retries(
             &oauth_session_id,
             &direct_transport,
             &mut response_accepted,
+            usage_label.as_deref(),
         )
         .await
         {
@@ -1983,6 +1936,9 @@ async fn run_stream_with_retries(
 
                 // OAuth auth failures: force refresh and retry once immediately.
                 if is_oauth && is_oauth_auth_error(&error_str) && !attempted_forced_refresh {
+                    if tx.is_closed() {
+                        return;
+                    }
                     attempted_forced_refresh = true;
                     jcode_base::logging::info(
                         "Anthropic OAuth authentication failed, forcing token refresh...",
@@ -1992,8 +1948,14 @@ async fn run_stream_with_retries(
                             phase: jcode_message_types::ConnectionPhase::Authenticating,
                         }))
                         .await;
-                    match force_refresh_oauth_token(Arc::clone(&credentials), &oauth_account_label)
-                        .await
+                    if tx.is_closed() {
+                        return;
+                    }
+                    match oauth::with_refresh_cancellation(
+                        tx.closed(),
+                        force_refresh_oauth_token(Arc::clone(&credentials), &oauth_account_label),
+                    )
+                    .await
                     {
                         Ok(refreshed_token) => {
                             jcode_base::logging::info(
@@ -2006,14 +1968,31 @@ async fn run_stream_with_retries(
                         Err(refresh_err) => {
                             let _ = tx
                                 .send(Err(anyhow::anyhow!(
-                                    "{}\n\nAutomatic Claude OAuth refresh failed: {}\nRun `jcode login --provider claude` (preferred) or `claude`, then retry.",
-                                    e,
-                                    refresh_err
+                                    "Automatic Claude OAuth refresh failed: {refresh_err:#}\n{}",
+                                    jcode_provider_core::classify_provider_failure(&format!(
+                                        "refresh: {refresh_err:#}"
+                                    ))
+                                    .remedy(jcode_provider_core::DualAuthProvider::Anthropic)
                                 )))
                                 .await;
                             return;
                         }
                     }
+                }
+
+                let kind = jcode_provider_core::classify_provider_failure(&error_str);
+                if matches!(
+                    kind,
+                    jcode_provider_core::ProviderFailureKind::AuthRevoked
+                        | jcode_provider_core::ProviderFailureKind::AuthExpired
+                ) {
+                    let _ = tx
+                        .send(Err(anyhow::anyhow!(
+                            "{e:#}\n{}",
+                            kind.remedy(jcode_provider_core::DualAuthProvider::Anthropic)
+                        )))
+                        .await;
+                    return;
                 }
 
                 // Model not found (e.g. a retired or renamed model id): the
@@ -2111,6 +2090,56 @@ async fn run_stream_with_retries(
                     continue;
                 }
 
+                // Definitive exhaustion cannot recover by sleeping. Model-scoped
+                // recovery above still gets first refusal, including earned resets.
+                if is_oauth
+                    && !saw_output
+                    && is_account_limit_error(&error_str)
+                    && oauth_account_label.as_deref().is_some_and(|label| {
+                        jcode_base::usage::account_known_exhausted(
+                            jcode_base::usage::MultiAccountProviderKind::Anthropic,
+                            label,
+                        )
+                    })
+                {
+                    // The API often uses the same generic 429 for exhausted plan
+                    // usage and burst throttles. Preserve verified account usage
+                    // evidence so the outer router can skip its countdown too.
+                    if tx
+                        .send(Err(anyhow::anyhow!("Usage exhausted: {e:#}")))
+                        .await
+                        .is_err()
+                    {
+                        jcode_base::logging::debug("Anthropic exhaustion event receiver closed");
+                    }
+                    return;
+                }
+                if !saw_output
+                    && jcode_provider_core::failover::is_definitive_usage_exhaustion(&error_str)
+                {
+                    let kind = jcode_provider_core::classify_provider_failure(&error_str);
+                    if tx
+                        .send(Err(anyhow::anyhow!(
+                            "{} {e:#}",
+                            kind.remedy(jcode_provider_core::DualAuthProvider::Anthropic)
+                        )))
+                        .await
+                        .is_err()
+                    {
+                        jcode_base::logging::debug("Anthropic exhaustion event receiver closed");
+                    }
+                    return;
+                }
+
+                let retry_recoverable_limit =
+                    error_classification::should_retry_recoverable_rate_limit(
+                        &error_str,
+                        jcode_provider_core::retry_after::retry_after_from_error(&e),
+                        jcode_base::config::Config::load()
+                            .provider
+                            .anthropic_retry_recoverable_rate_limits,
+                    );
+
                 // Account routing owns pre-output OAuth quota/auth failures when
                 // other pool members exist, even if they are cooling down. Let
                 // the router decide whether to rotate or report exhaustion.
@@ -2124,8 +2153,15 @@ async fn run_stream_with_retries(
                     && !response_accepted
                     && (is_account_limit_error(&error_str) || is_oauth_auth_error(&error_str))
                     && jcode_base::provider::has_alternate_account_in_pool("claude")
+                    && !retry_recoverable_limit
                 {
-                    let _ = tx.send(Err(e)).await;
+                    let kind = jcode_provider_core::classify_provider_failure(&error_str);
+                    let _ = tx
+                        .send(Err(anyhow::anyhow!(
+                            "{} {e:#}",
+                            kind.remedy(jcode_provider_core::DualAuthProvider::Anthropic)
+                        )))
+                        .await;
                     return;
                 }
 
@@ -2171,16 +2207,13 @@ async fn run_stream_with_retries(
                 }
 
                 // Non-retryable or final attempt
-                if is_oauth && is_oauth_auth_error(&error_str) {
-                    let _ = tx
-                        .send(Err(anyhow::anyhow!(
-                            "{}\n\nClaude OAuth authentication failed. Run `jcode login --provider claude` (preferred) or `claude`, then retry.",
-                            e
-                        )))
-                        .await;
-                } else {
-                    let _ = tx.send(Err(e)).await;
-                }
+                let kind = jcode_provider_core::classify_provider_failure(&error_str);
+                let _ = tx
+                    .send(Err(anyhow::anyhow!(
+                        "{e:#}\n{}",
+                        kind.remedy(jcode_provider_core::DualAuthProvider::Anthropic)
+                    )))
+                    .await;
                 return;
             }
         }
@@ -2224,27 +2257,36 @@ async fn force_refresh_oauth_token(
         loaded.refresh_token
     };
 
-    let result = match account_label.as_deref() {
-        Some(label) => oauth::refresh_claude_tokens_for_account(&refresh_token, label).await,
-        None => oauth::refresh_claude_tokens(&refresh_token).await,
-    };
-    let refreshed = match result {
-        Ok(refreshed) => refreshed,
-        Err(err) => {
-            anyhow::bail!("OAuth refresh endpoint rejected the refresh token: {err:#}");
+    let account_label = account_label.clone();
+    refresh_and_commit_claude_tokens(credentials, async move {
+        match account_label.as_deref() {
+            Some(label) => oauth::refresh_claude_tokens_for_account(&refresh_token, label).await,
+            None => oauth::refresh_claude_tokens(&refresh_token).await,
         }
-    };
+    })
+    .await
+}
 
-    {
-        let mut cached = credentials.write().await;
-        *cached = Some(CachedCredentials {
-            access_token: refreshed.access_token.clone(),
-            refresh_token: refreshed.refresh_token,
-            expires_at: refreshed.expires_at,
-        });
-    }
-
-    Ok(refreshed.access_token)
+async fn refresh_and_commit_claude_tokens(
+    credentials: Arc<RwLock<Option<CachedCredentials>>>,
+    refresh: impl std::future::Future<Output = Result<oauth::OAuthTokens>> + Send + 'static,
+) -> Result<String> {
+    // Each Claude exchange has a 15s transport deadline (including the one
+    // invalid-scope retry). Do not abandon persistence after token rotation.
+    oauth::with_refresh_cancellation(
+        std::future::pending(),
+        oauth::run_refresh_transaction(async move {
+            let refreshed = refresh.await?;
+            let access_token = refreshed.access_token.clone();
+            *credentials.write().await = Some(CachedCredentials {
+                access_token: refreshed.access_token,
+                refresh_token: refreshed.refresh_token,
+                expires_at: refreshed.expires_at,
+            });
+            Ok(access_token)
+        }),
+    )
+    .await
 }
 
 /// Stream the response from Anthropic API
@@ -2262,6 +2304,7 @@ async fn stream_response(
     oauth_session_id: &str,
     direct_transport: &DirectTransportConfig,
     response_accepted: &mut bool,
+    usage_label: Option<&str>,
 ) -> Result<()> {
     use jcode_message_types::ConnectionPhase;
     let requested_model_base = strip_1m_suffix(&request.model).to_ascii_lowercase();
@@ -2377,6 +2420,22 @@ async fn stream_response(
         response.status()
     ));
 
+    if is_oauth && (response.status().is_success() || response.status().as_u16() == 429) {
+        // Model responses already return real subscription limits, including
+        // quota walls. Keep those visible even when usage lookups are throttled.
+        // Recording them avoids a separate, heavily throttled usage lookup
+        // while the account is active. Never attribute API-key quotas here.
+        let headers = response.headers().clone();
+        let label = usage_label.map(str::to_owned);
+        let quota_token = token.clone();
+        tokio::task::spawn_blocking(move || {
+            jcode_base::usage::record_anthropic_response_limits(
+                &quota_token,
+                label.as_deref(),
+                &headers,
+            );
+        });
+    }
     if !response.status().is_success() {
         let status = response.status();
         let retry_after = jcode_provider_core::retry_after::retry_after(response.headers());
@@ -2397,6 +2456,7 @@ async fn stream_response(
     // Parse SSE stream
     let mut stream = response.bytes_stream();
     let mut buffer = String::new();
+    let mut utf8 = jcode_base::util::Utf8StreamDecoder::new();
     let mut sse_state = SseStreamState {
         requested_model_base,
         ..SseStreamState::default()
@@ -2420,12 +2480,16 @@ async fn stream_response(
                 );
             }
         };
-        let chunk_str = String::from_utf8_lossy(&chunk);
-        buffer.push_str(&chunk_str);
+        buffer.push_str(&utf8.decode(&chunk));
 
         // Process complete SSE events
         while let Some(event) = parse_sse_event(&mut buffer) {
             let events = process_sse_event(&event, &mut sse_state, is_oauth);
+            if event.event_type == "message_stop" {
+                usage_recording::record(usage_label, &request.model, &sse_state).await;
+                usage_recording::send_final_usage(&tx, &sse_state).await;
+                return Ok(());
+            }
             for stream_event in events {
                 if let StreamEvent::Error { ref message, .. } = stream_event
                     && is_retryable_error(&message.to_lowercase())
@@ -2439,27 +2503,7 @@ async fn stream_response(
         }
     }
 
-    // Send final token usage if we have it
-    if sse_state.input_tokens.is_some() || sse_state.output_tokens.is_some() {
-        // Log cache usage for debugging
-        if sse_state.cache_read_input_tokens.is_some()
-            || sse_state.cache_creation_input_tokens.is_some()
-        {
-            jcode_base::logging::info(&format!(
-                "Prompt cache: read={:?} created={:?}",
-                sse_state.cache_read_input_tokens, sse_state.cache_creation_input_tokens
-            ));
-        }
-        let _ = tx
-            .send(Ok(StreamEvent::TokenUsage {
-                input_tokens: sse_state.input_tokens,
-                output_tokens: sse_state.output_tokens,
-                cache_read_input_tokens: sse_state.cache_read_input_tokens,
-                cache_creation_input_tokens: sse_state.cache_creation_input_tokens,
-            }))
-            .await;
-    }
-
+    usage_recording::send_final_usage(&tx, &sse_state).await;
     Ok(())
 }
 
@@ -2524,6 +2568,10 @@ struct SseStreamState {
     output_tokens: Option<u64>,
     cache_read_input_tokens: Option<u64>,
     cache_creation_input_tokens: Option<u64>,
+    served_model: Option<String>,
+    service_tier: Option<String>,
+    cache_creation_5m: Option<u64>,
+    cache_creation_1h: Option<u64>,
     /// Lowercased base id of the model we asked for, so `message_start` can flag
     /// a silent server-side substitution (e.g. an unavailable id aliased to a
     /// different model). Empty when unknown (e.g. in unit tests).
@@ -2548,6 +2596,7 @@ fn process_sse_event(
                 // Log it so we can confirm there was no silent server-side
                 // substitution (and surface it under JCODE_LOG_SERVED_MODEL).
                 if let Some(served) = parsed.message.model.as_deref() {
+                    state.served_model = Some(served.to_string());
                     jcode_base::logging::info(&format!("Anthropic served model={}", served));
                     if std::env::var("JCODE_LOG_SERVED_MODEL").is_ok() {
                         eprintln!("[anthropic] served model={served}");
@@ -2576,19 +2625,7 @@ fn process_sse_event(
                     }
                 }
                 if let Some(usage) = parsed.message.usage {
-                    state.input_tokens = usage.input_tokens.map(|t| t as u64);
-                    state.cache_read_input_tokens = usage.cache_read_input_tokens.map(|t| t as u64);
-                    state.cache_creation_input_tokens =
-                        usage.cache_creation_input_tokens.map(|t| t as u64);
-                    if let Some(tier) = usage.service_tier.as_deref() {
-                        jcode_base::logging::info(&format!(
-                            "Anthropic granted service_tier={}",
-                            tier
-                        ));
-                        if std::env::var("JCODE_LOG_SERVICE_TIER").is_ok() {
-                            eprintln!("[anthropic] granted service_tier={tier}");
-                        }
-                    }
+                    usage_recording::update_usage(state, usage);
                 }
             }
         }
@@ -2694,7 +2731,7 @@ fn process_sse_event(
         "message_delta" => {
             if let Ok(parsed) = serde_json::from_str::<MessageDeltaEvent>(&event.data) {
                 if let Some(usage) = parsed.usage {
-                    state.output_tokens = usage.output_tokens.map(|t| t as u64);
+                    usage_recording::update_usage(state, usage);
                 }
                 if let Some(stop_reason) = parsed.delta.stop_reason {
                     events.push(StreamEvent::MessageEnd {
@@ -2786,3 +2823,29 @@ mod account_failover_tests;
 
 #[cfg(test)]
 mod account_binding_tests;
+
+#[cfg(test)]
+mod sse_utf8_chunk_tests {
+    use super::parse_sse_event;
+
+    /// Regression for #2087: a multibyte character split across transport
+    /// chunks must not decode to U+FFFD.
+    #[test]
+    fn multibyte_char_split_across_chunks_decodes_cleanly() {
+        let payload = "event: content_block_delta\ndata: {\"text\":\"你好世界\"}\n\n";
+        let bytes = payload.as_bytes();
+        let split = payload.find('你').unwrap() + 1; // inside the 3-byte char
+        let mut utf8 = jcode_base::util::Utf8StreamDecoder::new();
+        let mut buffer = String::new();
+        for chunk in [
+            &bytes[..split],
+            &bytes[split..split + 3],
+            &bytes[split + 3..],
+        ] {
+            buffer.push_str(&utf8.decode(chunk));
+        }
+        let event = parse_sse_event(&mut buffer).expect("complete event");
+        assert!(!event.data.contains('\u{FFFD}'));
+        assert!(event.data.contains("你好世界"));
+    }
+}

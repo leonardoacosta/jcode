@@ -962,22 +962,29 @@ fn test_system_param_split_oauth() {
     let result = build_system_param_split(static_content, dynamic_content, true);
 
     if let Some(ApiSystem::Blocks(blocks)) = result {
-        // Should have 4 blocks: identity, notice, static (cached), dynamic (not cached)
-        assert_eq!(blocks.len(), 4);
+        // 3 blocks: billing attribution, static (cached), dynamic (not cached).
+        // No identity sentence: it made the model claim Jcode is built on the
+        // Claude Agent SDK, and the billing block alone is enough for OAuth.
+        assert_eq!(blocks.len(), 3);
 
-        // Block 0: identity (no cache)
+        // Block 0: billing attribution (no cache)
         assert!(blocks[0].cache_control.is_none());
+        assert!(blocks[0].text.starts_with("x-anthropic-billing-header: "));
 
-        // Block 1: notice (no cache)
-        assert!(blocks[1].cache_control.is_none());
+        // Block 1: static (cached)
+        assert!(blocks[1].cache_control.is_some());
+        assert!(blocks[1].text.contains("static"));
 
-        // Block 2: static (cached)
-        assert!(blocks[2].cache_control.is_some());
-        assert!(blocks[2].text.contains("static"));
+        // Block 2: dynamic (not cached)
+        assert!(blocks[2].cache_control.is_none());
+        assert!(blocks[2].text.contains("dynamic"));
 
-        // Block 3: dynamic (not cached)
-        assert!(blocks[3].cache_control.is_none());
-        assert!(blocks[3].text.contains("dynamic"));
+        assert!(
+            !blocks.iter().any(|b| b.text.contains("Agent SDK")
+                || b.text.contains("You are a Claude agent")
+                || b.text.contains("You are Claude Code")),
+            "OAuth system blocks must not inject a Claude identity sentence"
+        );
     } else {
         panic!("Expected Blocks variant");
     }
@@ -1450,6 +1457,42 @@ async fn explicit_oauth_mode_does_not_silently_fall_back_to_api_key() {
 
     let error = provider.get_access_token().await.unwrap_err().to_string();
     assert!(error.contains("expired"), "unexpected error: {error}");
+}
+
+#[tokio::test]
+async fn rejected_refresh_preserves_access_until_real_expiry() {
+    let _guard = jcode_base::storage::lock_test_env();
+    let temp = tempfile::TempDir::new().unwrap();
+    let _home = EnvVarGuard::set("JCODE_HOME", temp.path());
+    let _runtime = EnvVarGuard::set("JCODE_RUNTIME_PROVIDER", "claude");
+    let refresh = "test-permanently-rejected-refresh";
+    jcode_base::auth::refresh_state::record_permanent_rejection("claude", refresh, "invalid_grant")
+        .unwrap();
+    for expired in [false, true] {
+        jcode_base::auth::claude::upsert_account(jcode_base::auth::claude::AnthropicAccount {
+            label: "claude-otter".into(),
+            access: "test-live-access".into(),
+            refresh: refresh.into(),
+            expires: chrono::Utc::now().timestamp_millis()
+                + if expired { -60_000 } else { 120_000 },
+            email: None,
+            subscription_type: Some("max".into()),
+            scopes: vec!["user:inference".into()],
+        })
+        .unwrap();
+        let provider = AnthropicProvider::new();
+        let result = provider.get_oauth_access_token().await;
+        if expired {
+            assert!(
+                result
+                    .unwrap_err()
+                    .to_string()
+                    .contains("previously rejected")
+            );
+        } else {
+            assert_eq!(result.unwrap(), ("test-live-access".into(), true));
+        }
+    }
 }
 
 #[test]
@@ -2026,4 +2069,53 @@ fn opus_55_empty_signed_thinking_is_replayed_unchanged() {
             }])
         );
     }
+}
+
+#[test]
+fn taxonomy_blocks_quota_revocation_and_permanent_retries() {
+    for error in [
+        "429 too many requests: insufficient_quota",
+        "429 billing exhausted, retry after timeout",
+        "invalid_grant: refresh token revoked, connection reset",
+        "403 forbidden rate limit",
+    ] {
+        assert!(!is_retryable_error(error), "{error}");
+    }
+    assert!(is_retryable_error(
+        "Claude token refresh failed: 503 service unavailable"
+    ));
+    assert!(!is_oauth_auth_error("invalid_grant: refresh token revoked"));
+}
+
+#[tokio::test]
+async fn auto_mode_revoked_oauth_does_not_substitute_api_key() {
+    let _guard = jcode_base::storage::lock_test_env();
+    let temp = tempfile::TempDir::new().unwrap();
+    let _home = EnvVarGuard::set("JCODE_HOME", temp.path());
+    let _api_key = EnvVarGuard::set("ANTHROPIC_API_KEY", "test-key-never-used");
+    let _runtime = EnvVarGuard::set("JCODE_RUNTIME_PROVIDER", "auto");
+    jcode_base::auth::claude::upsert_account(jcode_base::auth::claude::AnthropicAccount {
+        label: "revoked".into(),
+        access: "old-access".into(),
+        refresh: "rejected-refresh".into(),
+        expires: 0,
+        email: None,
+        subscription_type: None,
+        scopes: vec!["user:inference".into()],
+    })
+    .unwrap();
+    jcode_base::auth::refresh_state::record_permanent_rejection(
+        "claude",
+        "rejected-refresh",
+        "invalid_grant",
+    )
+    .unwrap();
+    let provider = AnthropicProvider::new();
+    let error = provider.get_access_token().await.unwrap_err().to_string();
+    assert!(error.contains("jcode login --provider claude"), "{error}");
+    assert_eq!(provider.active_resolved_credential(), None);
+    assert_eq!(
+        provider.credential_mode_snapshot(),
+        AnthropicCredentialMode::Auto
+    );
 }

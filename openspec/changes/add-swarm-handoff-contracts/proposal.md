@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: [return-full-swarm-reports]
+  depends_on: [return-full-swarm-reports, make-worker-stop-durable]
 ---
 Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODUCT_ROADMAP.md#p04-swarm-collaboration-and-handoffs)
 
@@ -13,6 +13,7 @@ Plan items carry `file_scope`, `blocked_by` and `assigned_to` (`crates/jcode-pla
 
 - Add optional `base_rev`, `acceptance_check` (command string) and `turn_budget` to plan items; spawn/assign records current HEAD as `base_rev` if unset.
 - Worker reports gain structured `base_rev`, `head_rev`, changed files, and each acceptance check with exit status.
+- Consume the stable session/execution generation and generation-bound report/wait contract from `make-worker-stop-durable`. This change owns evidence enrichment, not a second lifecycle authority; a stopped execution is not successful work.
 - The coordinator view warns when changed files fall outside `file_scope` or the acceptance result is missing.
 - Exceeding `turn_budget` marks the member `blocked` with reason `budget`.
 

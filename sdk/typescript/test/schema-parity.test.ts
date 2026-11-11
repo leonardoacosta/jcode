@@ -12,15 +12,31 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { NdjsonDecoder, encodeFrame } from "../src/framing.ts";
 import {
   API_VERSION_MAJOR,
   API_VERSION_MINOR,
   KNOWN_EVENT_KINDS,
   KNOWN_REQUEST_KINDS,
-} from "../dist/index.js";
+} from "../dist/protocol.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const rustCrate = path.resolve(here, "../../../crates/jcode-harness-api/src");
+
+test("Rust-generated protocol goldens roundtrip through TypeScript framing", () => {
+  const fixture = JSON.parse(fs.readFileSync(path.join(rustCrate, "../fixtures/protocol.json"), "utf8"));
+  assert.equal(fixture.major, API_VERSION_MAJOR);
+  assert.equal(fixture.minor, API_VERSION_MINOR);
+  for (const frame of [...fixture.requests, ...fixture.events]) {
+    const decoder = new NdjsonDecoder();
+    const encoded = encodeFrame(frame);
+    const midpoint = Math.floor(encoded.length / 2);
+    assert.deepEqual(decoder.push(encoded.slice(0, midpoint)), []);
+    assert.deepEqual(decoder.push(encoded.slice(midpoint)), [frame]);
+    if (frame.req) assert.ok(KNOWN_REQUEST_KINDS.includes(frame.req));
+    if (frame.ev) assert.ok(KNOWN_EVENT_KINDS.includes(frame.ev));
+  }
+});
 
 function snakeCase(variant: string): string {
   return variant.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();

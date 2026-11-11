@@ -1,0 +1,64 @@
+{
+  "events": [
+    {
+      "capabilities": [
+        "streaming"
+      ],
+      "ev": "hello_ok",
+      "reply_to": 1,
+      "server": "contract-fixture",
+      "v": 1,
+      "version": 1
+    },
+    {
+      "ev": "text_delta",
+      "message_id": "generation-1",
+      "session_id": "fixture-session",
+      "text": "fixture text",
+      "v": 1
+    },
+    {
+      "ev": "turn_stopped",
+      "message": "cancelled",
+      "reason": "interrupted",
+      "session_id": "fixture-session",
+      "v": 1
+    },
+    {
+      "ev": "turn_done",
+      "session_id": "fixture-session",
+      "v": 1
+    },
+    {
+      "code": "unsupported_version",
+      "ev": "error",
+      "message": "unsupported major",
+      "reply_to": 3,
+      "v": 1
+    },
+    {
+      "code": "invalid_request",
+      "ev": "error",
+      "message": "malformed frame",
+      "v": 1
+    }
+  ],
+  "major": 1,
+  "minor": 11,
+  "requests": [
+    {
+      "client": "contract-fixture",
+      "id": 1,
+      "max_version": 1,
+      "min_version": 1,
+      "req": "hello",
+      "v": 1
+    },
+    {
+      "id": 2,
+      "req": "cancel",
+      "session_id": "fixture-session",
+      "v": 1
+    }
+  ]
+}

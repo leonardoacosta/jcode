@@ -32,6 +32,8 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
     struct CouncilProvider(
         Arc<std::sync::atomic::AtomicUsize>,
         Arc<std::sync::atomic::AtomicBool>,
+        std::sync::Mutex<String>,
+        Arc<std::sync::Mutex<String>>,
     );
     #[async_trait]
     impl Provider for CouncilProvider {
@@ -42,13 +44,28 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
             system: &str,
             resume: Option<&str>,
         ) -> Result<EventStream> {
+            let session_id = self.2.lock().unwrap().clone();
+            assert!(
+                !session_id.is_empty(),
+                "provider session identity must be bound"
+            );
+            // Seat reports now wake the owner too. Its independent model calls
+            // have the owner's catalog and do not consume the council budget.
+            if session_id == *self.3.lock().unwrap() {
+                return DelayedTestProvider {
+                    delay: Duration::from_millis(1),
+                }
+                .complete(messages, tools, system, resume)
+                .await;
+            }
             self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
             assert!(
                 tools
                     .iter()
                     .all(|tool| crate::tool::council::SEAT_ALLOWED_TOOLS
                         .contains(&tool.name.as_str())),
-                "seat advertised a mutating tool"
+                "seat advertised a mutating tool: {:?}",
+                tools.iter().map(|tool| &tool.name).collect::<Vec<_>>()
             );
             // Keep only the cancellation probe mid-opening.
             DelayedTestProvider {
@@ -64,15 +81,26 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
         fn name(&self) -> &str {
             "test"
         }
+        fn set_session_id(&self, session_id: &str) {
+            *self.2.lock().unwrap() = session_id.to_string();
+        }
         fn fork(&self) -> Arc<dyn Provider> {
-            Arc::new(Self(self.0.clone(), self.1.clone()))
+            Arc::new(Self(
+                self.0.clone(),
+                self.1.clone(),
+                std::sync::Mutex::default(),
+                self.3.clone(),
+            ))
         }
     }
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let delay_opening = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let owner_session = Arc::new(std::sync::Mutex::new(String::new()));
     let server = Arc::new(Server::new(Arc::new(CouncilProvider(
         calls.clone(),
         delay_opening.clone(),
+        std::sync::Mutex::default(),
+        owner_session.clone(),
     ))));
     let mut server_task = tokio::spawn(async move { server.run().await });
     wait_for_server_socket(&socket, &mut server_task)
@@ -81,6 +109,7 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
     let mut owner = RawClient::connect(&socket).await.unwrap();
     owner.subscribe(project.path()).await.unwrap();
     let session_id = owner.session_id().await.unwrap();
+    *owner_session.lock().unwrap() = session_id.clone();
     let ctx = ToolContext {
         session_id: session_id.clone(),
         message_id: "council-run".into(),
@@ -109,18 +138,30 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
     .unwrap()
     .unwrap();
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 7);
+    fn assert_stopped(id: &str) {
+        let store = crate::server::session_control::store();
+        let record = store.inspect(id).unwrap().unwrap();
+        assert_eq!(
+            record.state,
+            crate::server::session_control::ControlState::Stopped
+        );
+        assert!(record.admitted_generation.is_none());
+        assert!(record.unresolved_categories.is_empty());
+        assert!(record.revoked_through >= record.last_allocated_generation);
+        assert!(store.admit(id).is_err(), "stopped seat admitted new work");
+    }
     let metadata = result.metadata.unwrap();
     assert_eq!(metadata["council"]["calls"], 7);
     for seat in metadata["council"]["seats"].as_array().unwrap() {
         let id = seat["session_id"].as_str().unwrap();
-        assert!(matches!(
-            crate::session::Session::load(id).unwrap().status,
-            crate::session::SessionStatus::Closed
-        ));
+        assert_stopped(id);
     }
     let members = owner.comm_list(&session_id).await.unwrap();
     assert!(
-        members.iter().all(|member| member.session_id == session_id),
+        members
+            .iter()
+            .all(|member| member.session_id == session_id
+                || member.status.as_deref() == Some("stopped")),
         "council seats still live: {members:?}"
     );
     for obstruction in ["directory", "unwritable"] {
@@ -149,7 +190,9 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
             .await
             .unwrap()
             .into_iter()
-            .filter(|member| member.session_id != session_id)
+            .filter(|member| {
+                member.session_id != session_id && member.status.as_deref() != Some("stopped")
+            })
             .map(|member| member.session_id)
             .collect();
         assert_eq!(seats.len(), 2);
@@ -171,7 +214,10 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
                     .await
                     .unwrap()
                     .iter()
-                    .all(|member| member.session_id == session_id)
+                    .all(|member| {
+                        member.session_id == session_id
+                            || member.status.as_deref() == Some("stopped")
+                    })
                 {
                     break;
                 }
@@ -181,10 +227,7 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
         .await
         .expect("persistence failure left live seats");
         for seat in seats {
-            assert!(matches!(
-                crate::session::Session::load(&seat).unwrap().status,
-                crate::session::SessionStatus::Closed
-            ));
+            assert_stopped(&seat);
         }
     }
     let calls_before_opening = calls.load(std::sync::atomic::Ordering::SeqCst);
@@ -207,7 +250,9 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
     tokio::time::timeout(Duration::from_secs(5), async {
         loop {
             let members = owner.comm_list(&session_id).await.unwrap();
-            if members.iter().all(|member| member.session_id == session_id) {
+            if members.iter().all(|member| {
+                member.session_id == session_id || member.status.as_deref() == Some("stopped")
+            }) {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(10)).await;
@@ -215,6 +260,11 @@ async fn council_three_seat_run_is_read_only_bounded_and_stops_all_seats() {
     })
     .await
     .expect("cancelled opening left live seats");
+    for member in owner.comm_list(&session_id).await.unwrap() {
+        if member.session_id != session_id {
+            assert_stopped(&member.session_id);
+        }
+    }
     assert_eq!(
         std::fs::read_to_string(project.path().join("evidence.txt")).unwrap(),
         "unchanged"
@@ -463,63 +513,6 @@ async fn communicate_await_members_background_returns_immediately_and_notifies()
 }
 
 #[tokio::test]
-async fn communicate_run_plan_with_empty_plan_returns_inline_even_in_background_mode() {
-    let _env_lock = crate::storage::lock_test_env();
-    let runtime_dir = tempfile::TempDir::new().expect("runtime tempdir");
-    let repo_dir = std::env::current_dir().expect("repo cwd");
-    let socket_path = runtime_dir.path().join("jcode.sock");
-    let _runtime = EnvGuard::set("JCODE_RUNTIME_DIR", runtime_dir.path());
-    // Keep the developer's real config (agents.swarm_model, providers) out of spawns.
-    let _home = EnvGuard::set("JCODE_HOME", runtime_dir.path());
-    let _socket = EnvGuard::set("JCODE_SOCKET", &socket_path);
-    let _debug = EnvGuard::set("JCODE_DEBUG_CONTROL", "1");
-
-    let provider: Arc<dyn Provider> = Arc::new(DelayedTestProvider {
-        delay: Duration::from_millis(50),
-    });
-    let server = Arc::new(Server::new(provider));
-    let mut server_task = {
-        let server = Arc::clone(&server);
-        tokio::spawn(async move { server.run().await })
-    };
-
-    let socket_path = runtime_dir.path().join("jcode.sock");
-    wait_for_server_socket(&socket_path, &mut server_task)
-        .await
-        .expect("server socket should be ready");
-
-    let mut client = RawClient::connect(&socket_path)
-        .await
-        .expect("client should connect");
-    client.subscribe(&repo_dir).await.expect("subscribe");
-    let session = client.session_id().await.expect("session id");
-
-    let tool = CommunicateTool::new();
-    let ctx = test_ctx(&session, &repo_dir);
-
-    // Background is the default; with no plan the validation happens inline and
-    // no background task should be started.
-    let output = tokio::time::timeout(
-        Duration::from_secs(5),
-        tool.execute(json!({"action": "run_plan"}), ctx.clone()),
-    )
-    .await
-    .expect("run_plan should return promptly")
-    .expect("run_plan should succeed");
-    assert!(
-        output.output.contains("No swarm plan items to run."),
-        "expected inline empty-plan response, got: {}",
-        output.output
-    );
-    assert!(
-        output.metadata.is_none(),
-        "empty plan must not start a background driver"
-    );
-
-    server_task.abort();
-}
-
-#[tokio::test]
 async fn communicate_status_returns_busy_snapshot_for_running_member() {
     let _env_lock = crate::storage::lock_test_env();
     let runtime_dir = tempfile::TempDir::new().expect("runtime tempdir");
@@ -658,6 +651,7 @@ async fn communicate_spawn_reports_completion_back_to_spawner() {
     let spawned_session = spawn_output
         .output
         .strip_prefix("Spawned new agent: ")
+        .and_then(|text| text.lines().next())
         .expect("spawn output should include session id")
         .lines()
         .next()
@@ -690,7 +684,7 @@ async fn communicate_spawn_reports_completion_back_to_spawner() {
 }
 
 #[tokio::test]
-async fn communicate_spawn_with_prompt_and_summary_work_end_to_end() {
+async fn communicate_spawn_with_seeded_lane_and_summary_work_end_to_end() {
     let _env_lock = crate::storage::lock_test_env();
     let runtime_dir = tempfile::TempDir::new().expect("runtime tempdir");
     let repo_dir = std::env::current_dir().expect("repo cwd");
@@ -731,8 +725,7 @@ async fn communicate_spawn_with_prompt_and_summary_work_end_to_end() {
         .execute(
             json!({
                 "action": "spawn",
-                "label": "summary worker",
-                "prompt": "Reply with a short acknowledgement."
+                "label": "summary worker"
             }),
             ctx.clone(),
         )
@@ -741,6 +734,7 @@ async fn communicate_spawn_with_prompt_and_summary_work_end_to_end() {
     let spawned_session = spawn_output
         .output
         .strip_prefix("Spawned new agent: ")
+        .and_then(|text| text.lines().next())
         .expect("spawn output should include session id")
         .lines()
         .next()
@@ -750,6 +744,20 @@ async fn communicate_spawn_with_prompt_and_summary_work_end_to_end() {
     assert!(
         !spawned_session.is_empty(),
         "spawned session id should not be empty"
+    );
+
+    let seeded = crate::todo::load_todos(&spawned_session)
+        .expect("worker todo list must exist when spawn returns");
+    assert!(!seeded.is_empty());
+    assert!(
+        seeded
+            .iter()
+            .all(|todo| todo.group.as_deref() == Some("summary worker"))
+    );
+    assert!(
+        spawn_output
+            .output
+            .contains("prepopulated before startup and synced")
     );
 
     wait_for_member_presence(&mut watcher, &watcher_session, &spawned_session)

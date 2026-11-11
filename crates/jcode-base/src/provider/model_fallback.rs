@@ -26,39 +26,18 @@ impl ErrorClass {
     }
 }
 
-fn has_code(haystack: &str, code: &str) -> bool {
-    haystack.match_indices(code).any(|(i, _)| {
-        let b = haystack.as_bytes();
-        let before = i == 0 || !b[i - 1].is_ascii_digit();
-        let after = b.get(i + code.len()).is_none_or(|c| !c.is_ascii_digit());
-        before && after
-    })
-}
-
 /// Classify a turn error. Unknown errors are permanent so we never switch
 /// models on something we do not understand.
 pub(super) fn classify(message: &str) -> ErrorClass {
-    let m = message.to_ascii_lowercase();
-    const PERMANENT: &[&str] = &[
-        "401", "403", "unauthorized", "forbidden", "authentication", "invalid api key",
-        "invalid_api_key", "invalid request", "invalid_request", "not configured",
-        "no credentials", "permission",
-    ];
-    if PERMANENT.iter().any(|p| if p.chars().all(|c| c.is_ascii_digit()) { has_code(&m, p) } else { m.contains(p) }) {
+    // An uncertain refresh failure is not revocation, but changing models must
+    // not escape the selected login's failed authentication transaction.
+    if message.to_ascii_lowercase().contains("refresh") {
         return ErrorClass::Permanent;
     }
-    const TRANSIENT_CODES: &[&str] = &["429", "529", "408", "500", "502", "503", "504"];
-    const TRANSIENT_TEXT: &[&str] = &[
-        "rate limit", "rate_limit", "overloaded", "too many requests", "service unavailable",
-        "bad gateway", "gateway timeout", "internal server error", "timed out", "timeout",
-        "connection reset", "connection refused", "connection closed", "broken pipe",
-        "stream ended", "stream closed", "unexpected eof", "error sending request",
-    ];
-    if TRANSIENT_CODES.iter().any(|c| has_code(&m, c)) || TRANSIENT_TEXT.iter().any(|t| m.contains(t))
-    {
-        ErrorClass::Transient
-    } else {
-        ErrorClass::Permanent
+    match jcode_provider_core::classify_provider_failure(message) {
+        jcode_provider_core::ProviderFailureKind::Transient
+        | jcode_provider_core::ProviderFailureKind::RateLimited => ErrorClass::Transient,
+        _ => ErrorClass::Permanent,
     }
 }
 
@@ -131,6 +110,18 @@ mod tests {
             assert_eq!(classify(p), ErrorClass::Permanent, "{p}");
         }
         assert_eq!(classify("port 14290"), ErrorClass::Permanent);
+    }
+
+    #[test]
+    fn shared_taxonomy_never_substitutes_after_quota_or_refresh_failure() {
+        for message in [
+            "429 insufficient_quota",
+            "429 billing exhausted",
+            "invalid_grant connection reset",
+            "OpenAI token refresh failed: HTTP 503 service unavailable",
+        ] {
+            assert_eq!(classify(message), ErrorClass::Permanent, "{message}");
+        }
     }
 
     #[test]

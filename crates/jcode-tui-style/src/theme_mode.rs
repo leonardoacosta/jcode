@@ -12,8 +12,8 @@
 //! the terminal's own (light) default background shows through, exactly like
 //! it does on dark themes today.
 //!
-//! The mode itself is set once at startup by the TUI's terminal-background
-//! detection (OSC 11 query / `JCODE_THEME` / `display.theme` config) and
+//! The mode is initialized by the TUI's terminal-background detection and
+//! refreshed during auto-theme sessions (OSC 11 / `JCODE_THEME` / config). It
 //! defaults to dark, which keeps every existing code path byte-identical.
 
 use ratatui::buffer::Buffer;
@@ -32,8 +32,8 @@ pub enum ThemeMode {
 
 static THEME_MODE: AtomicU8 = AtomicU8::new(0);
 
-/// Set the global theme mode. Called once at startup after terminal
-/// background detection (and again if the user overrides it).
+/// Set the global theme mode at startup and when the terminal background
+/// changes during an auto-theme session (or the user overrides it).
 pub fn set_theme_mode(mode: ThemeMode) {
     THEME_MODE.store(
         match mode {
@@ -246,18 +246,34 @@ pub fn adapt_buffer_for_theme(buf: &mut Buffer) {
 /// Final display pipeline. Attribute user overrides on the original colors,
 /// before contrast repair can make distinct muted grays converge to one ink.
 pub fn adapt_buffer_for_display(buf: &mut Buffer) {
+    if no_color() {
+        for cell in &mut buf.content {
+            cell.fg = Color::Reset;
+            cell.bg = Color::Reset;
+            cell.underline_color = Color::Reset;
+        }
+        return;
+    }
     let palette = crate::palette::configured_palette();
     adapt_buffer_impl(buf, theme_mode(), palette.as_ref());
 }
 
 /// The same ordering for a foreground patched outside a full-frame redraw.
 pub fn adapt_foreground_for_display(color: Color, background: Color) -> Color {
+    if no_color() {
+        return Color::Reset;
+    }
     if let Some(palette) = crate::palette::configured_palette()
         && let Some(chosen) = crate::palette::configured_native_color(&palette, color)
     {
         return chosen;
     }
     adapt_foreground_for_theme(color, background)
+}
+
+/// Whether the user requested terminal-default colors through the CLI convention.
+pub fn no_color() -> bool {
+    std::env::var_os("NO_COLOR").is_some() || std::env::var_os("JCODE_NO_COLOR").is_some()
 }
 
 /// Explicit-mode variant of [`adapt_buffer_for_theme`]. Useful for tests and
@@ -337,6 +353,55 @@ fn adapt_buffer_impl(buf: &mut Buffer, mode: ThemeMode, palette: Option<&crate::
 mod tests {
     use super::*;
     use ratatui::layout::Rect;
+
+    #[test]
+    fn no_color_display_environment_matrix() {
+        if std::env::var_os("JCODE_TEST_NO_COLOR_CHILD").is_none() {
+            for key in ["NO_COLOR", "JCODE_NO_COLOR"] {
+                for value in ["", "1", "0"] {
+                    let output = std::process::Command::new(std::env::current_exe().unwrap())
+                        .args([
+                            "--exact",
+                            "theme_mode::tests::no_color_display_environment_matrix",
+                            "--nocapture",
+                        ])
+                        .env_remove("NO_COLOR")
+                        .env_remove("JCODE_NO_COLOR")
+                        .env("JCODE_TEST_NO_COLOR_CHILD", "1")
+                        .env(key, value)
+                        .output()
+                        .unwrap();
+                    assert!(
+                        output.status.success(),
+                        "{key}={value:?}: {}",
+                        String::from_utf8_lossy(&output.stdout)
+                    );
+                }
+            }
+            return;
+        }
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 3, 1));
+        buffer[(0, 0)]
+            .set_symbol(">")
+            .set_fg(Color::Red)
+            .set_bg(Color::Blue);
+        buffer[(0, 0)].underline_color = Color::Green;
+        buffer[(0, 0)].modifier = Modifier::BOLD | Modifier::REVERSED;
+        let before = buffer.clone();
+        adapt_buffer_for_display(&mut buffer);
+        for cell in &buffer.content {
+            assert_eq!(
+                (cell.fg, cell.bg, cell.underline_color),
+                (Color::Reset, Color::Reset, Color::Reset)
+            );
+        }
+        assert_eq!(buffer[(0, 0)].symbol(), before[(0, 0)].symbol());
+        assert_eq!(buffer[(0, 0)].modifier, before[(0, 0)].modifier);
+        assert_eq!(
+            adapt_foreground_for_display(Color::Red, Color::Blue),
+            Color::Reset
+        );
+    }
 
     struct ThemeGuard;
     impl Drop for ThemeGuard {

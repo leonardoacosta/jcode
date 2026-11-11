@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Prompt budget check
-The prompt budget check SHALL measure system prompt, instruction, and skill context token counts for a fixed fixture and SHALL fail when any section exceeds its recorded budget plus tolerance.
+The prompt budget check SHALL measure system prompt, instruction, and skill context with a named/versioned deterministic offline token approximation for a fixed fixture and SHALL fail when any section exceeds its recorded budget plus tolerance. `--check` SHALL be read-only. Measurements SHALL NOT imply exact provider tokens, behavioral quality or bill savings.
 
 #### Scenario: Growth past budget fails
 - **WHEN** the skills section measures 5% above its recorded budget with 2% tolerance
@@ -13,6 +13,8 @@ The prompt budget check SHALL measure system prompt, instruction, and skill cont
 
 ### Requirement: Explicit acceptance
 Raising a budget SHALL require an explicit accept command with a non-empty reason, and SHALL record the change in the ledger.
+
+Tightening after a reduction greater than 5% SHALL also occur only through that explicit acceptance command, never automatically during measurement or CI.
 
 #### Scenario: Accept without reason
 - **WHEN** a user runs accept with no reason

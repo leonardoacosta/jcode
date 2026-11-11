@@ -8,9 +8,7 @@ use super::{
 use crate::plan::PlanItem;
 use crate::protocol::{NotificationType, ServerEvent};
 use crate::server::{SwarmMember, VersionedPlan};
-use jcode_swarm_core::{
-    append_swarm_completion_report_instructions, summarize_plan_items, truncate_detail,
-};
+use jcode_swarm_core::{summarize_plan_items, truncate_detail};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -60,17 +58,17 @@ fn parse_swarm_tasks_accepts_wrapped_json() {
 }
 
 #[test]
-fn append_swarm_completion_report_instructions_is_idempotent() {
-    let prompt = "Implement the task.";
-    let with_instructions = append_swarm_completion_report_instructions(prompt);
-
-    assert!(with_instructions.starts_with(prompt));
-    assert!(with_instructions.contains("SWARM COMPLETION REPORT REQUIRED"));
-    assert!(with_instructions.contains("swarm tool with action=\"report\""));
-    assert_eq!(
-        append_swarm_completion_report_instructions(&with_instructions),
-        with_instructions
-    );
+fn parse_swarm_tasks_preserves_worker_prompt_without_injecting_reports() {
+    for prompt in [
+        "Implement the task.\n  Preserve this indentation.",
+        "Use the swarm tool with action=\"report\" when requested.",
+    ] {
+        let text = serde_json::json!([{"description": "Task", "prompt": prompt}]).to_string();
+        let tasks = parse_swarm_tasks(&text);
+        assert_eq!(tasks.len(), 1);
+        assert_eq!(tasks[0].prompt, prompt);
+        assert!(tasks[0].subagent_type.is_none());
+    }
 }
 
 pub(super) fn swarm_member(
@@ -438,38 +436,11 @@ async fn swarm_plan_broadcast_versions_can_invert_on_one_member_channel() {
     );
 }
 
-/// Deterministic demonstration of the SwarmStatus immediate-path
-/// snapshot-vs-send inversion (wiring-audit.status-proposal-ordering).
-///
-/// `broadcast_swarm_status_now` snapshots member statuses under
-/// `swarm_members.read()`, drops the guard, then awaits
-/// `fanout_session_event` (a `swarm_members.write()` acquisition) before
-/// sending. Swarms below `JCODE_SWARM_STATUS_DEBOUNCE_MEMBER_THRESHOLD`
-/// (default 2) take this immediate, non-debounced path on every status
-/// change, so two concurrent broadcasts can deliver an old snapshot after
-/// a newer one on the same ordered mpsc channel. A last-write-wins
-/// consumer (the TUI SwarmStatus handler) is then left showing the stale
-/// status until the next unrelated broadcast.
-///
-/// Unlike the SwarmPlan inversion test above, there is no second lock we
-/// can gate on: the status path snapshots from the same `swarm_members`
-/// lock it later writes, so holding any guard also blocks the mutator.
-/// Instead this test uses tokio's cooperative budget (128 units per task
-/// poll on a current-thread runtime; every RwLock acquisition consumes
-/// exactly one). Draining 126 units leaves broadcast A exactly enough for
-/// `swarms_by_id.read()` and the `swarm_members.read()` snapshot, forcing
-/// a yield at the (uncontended) `swarm_members.write()` inside
-/// `fanout_session_event`, i.e. precisely inside the race window between
-/// snapshot and send.
-///
-/// If this test starts failing with `["running", "running"]` or
-/// `["ready", "running"]`, the race has been fixed (e.g. by holding the
-/// read lock through the send, or by stamping a monotonic sequence on
-/// SwarmStatus and dropping stale ones consumer-side); update the wiring
-/// audit. If it fails because broadcast A parks somewhere else, the tokio
-/// coop budget constants changed: re-derive the `128 - 2` drain count.
+/// Snapshot and send share one member lock, so a concurrent update cannot
+/// enqueue an older status after a newer one. Exercise the former yield window
+/// with Tokio's cooperative budget on the current-thread runtime.
 #[tokio::test]
-async fn swarm_status_immediate_broadcasts_can_invert_on_one_member_channel() {
+async fn swarm_status_immediate_broadcasts_preserve_order_on_one_member_channel() {
     let (worker, mut worker_rx) = swarm_member("worker", "agent", false);
     let swarm_members = Arc::new(RwLock::new(HashMap::from([("worker".to_string(), worker)])));
     let swarms_by_id = Arc::new(RwLock::new(HashMap::from([(
@@ -477,38 +448,29 @@ async fn swarm_status_immediate_broadcasts_can_invert_on_one_member_channel() {
         HashSet::from(["worker".to_string()]),
     )])));
 
-    // Broadcast A: snapshots status "ready", then is forced to yield at
-    // the fanout write acquisition, before sending.
+    // Broadcast A must finish sending "ready" before releasing the member lock.
     let a = tokio::spawn({
         let swarm_members = Arc::clone(&swarm_members);
         let swarms_by_id = Arc::clone(&swarms_by_id);
         async move {
-            // Initial task budget is 128. Leave exactly 2 units so the two
-            // read acquisitions (session-id list + status snapshot)
-            // succeed and the fanout write acquisition forces a yield.
+            // Leave two units for the session-ID read and member write lock.
+            // A separate fanout lock acquisition would yield and expose the race.
             for _ in 0..126 {
                 tokio::task::coop::consume_budget().await;
             }
             broadcast_swarm_status("swarm-1", &swarm_members, &swarms_by_id).await;
         }
     });
-    // Single yield on the current-thread runtime: A runs its entire first
-    // poll (budget drain + both reads) and parks after snapshotting
-    // "ready". Its coop yield happens *before* joining the lock queue, so
-    // every acquisition below is uncontended and the mutator finishes
-    // within one poll, before A is re-polled.
+    // Let A consume its first poll before the concurrent status update.
     tokio::task::yield_now().await;
 
-    // Concurrent mutator: flips the status and completes its own
-    // immediate broadcast while A is parked between snapshot and send.
+    // The mutator must not overtake an already captured snapshot.
     {
         let mut members = swarm_members.write().await;
         members.get_mut("worker").expect("worker member").status = "running".to_string();
     }
     broadcast_swarm_status("swarm-1", &swarm_members, &swarms_by_id).await;
 
-    // Release A: it resumes with a fresh budget and sends its stale
-    // "ready" snapshot after "running" on the same ordered channel.
     a.await.expect("broadcast task");
 
     let mut statuses = Vec::new();
@@ -521,10 +483,8 @@ async fn swarm_status_immediate_broadcasts_can_invert_on_one_member_channel() {
     }
     assert_eq!(
         statuses,
-        vec!["running".to_string(), "ready".to_string()],
-        "expected status inversion (new-then-old) on one member channel; \
-         if this fails with the correct order, the snapshot-vs-send race \
-         may have been fixed (update the wiring audit)"
+        vec!["ready".to_string(), "running".to_string()],
+        "status snapshots must reach a member in update order"
     );
 }
 
@@ -868,8 +828,17 @@ async fn owner_is_notified_once_of_idle_headless_workers_stopped_by_restart() {
         HashMap::from([("swarm-1".to_string(), "coord".to_string())]),
     );
 
+    let sessions = Arc::new(crate::server::session_manager::SessionManager::from_agents(
+        HashMap::new(),
+    ));
+    let queue = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let queues = Arc::new(RwLock::new(HashMap::from([(
+        "coord".to_string(),
+        Arc::clone(&queue),
+    )])));
     assert_eq!(
-        super::notify_owner_of_unrestored_idle_workers("coord", &swarm_state).await,
+        super::notify_owner_of_unrestored_idle_workers("coord", &swarm_state, &sessions, &queues)
+            .await,
         1
     );
     let notices: Vec<String> = std::iter::from_fn(|| coord_rx.try_recv().ok())
@@ -884,7 +853,8 @@ async fn owner_is_notified_once_of_idle_headless_workers_stopped_by_restart() {
 
     // Delivered once: a later reattach does not repeat it.
     assert_eq!(
-        super::notify_owner_of_unrestored_idle_workers("coord", &swarm_state).await,
+        super::notify_owner_of_unrestored_idle_workers("coord", &swarm_state, &sessions, &queues)
+            .await,
         0
     );
     let members = swarm_state.members.read().await;
@@ -1102,16 +1072,24 @@ async fn update_member_status_includes_completion_report_in_owner_notification()
     )
     .await;
 
+    assert_eq!(
+        swarm_members.read().await["worker"]
+            .latest_completion_report
+            .as_deref(),
+        Some("Validated the parser and all tests passed.")
+    );
     let events: Vec<_> = std::iter::from_fn(|| coord_rx.try_recv().ok()).collect();
     assert!(events.iter().any(|event| {
         matches!(
             event,
             ServerEvent::Notification {
-                notification_type: NotificationType::Message { .. },
+                from_session,
+                notification_type: NotificationType::Message { scope: Some(scope), .. },
                 message,
                 ..
-            } if message.contains("Report:\nValidated the parser")
-                && !message.contains("No final textual report")
+            } if from_session == "worker" && scope == "swarm"
+                && message.contains("Recent output (automatically captured):\nValidated the parser and all tests passed.")
+                && !message.contains("No recent assistant output was captured")
         )
     }));
 }

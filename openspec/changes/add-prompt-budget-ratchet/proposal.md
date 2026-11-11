@@ -31,10 +31,12 @@ Prompt context (system prompt, instruction files, overlay, skill list) grows sil
 
 ## Open decisions
 
-1. Token counting. Recommended: deterministic local tokenizer approximation (bytes/4 or tiktoken-equivalent bundled) so CI is offline. Alternative: provider token-count API (exact, needs network and credentials).
-2. Ratchet direction. Recommended: auto-tighten budget when usage drops more than 5%. Alternative: manual only (simpler, lets slack accumulate).
+1. Token counting: use a deterministic offline approximation with method/version labels. Do not label bytes/4 as exact provider tokens or compare unlike counters.
+2. Ratchet direction: a drop greater than 5% computes a proposed tighter budget during explicit acceptance. `--check` is read-only; neither CI nor ordinary measurement writes budgets or silently records KEEP/REVERT. Apply tightening only through the existing explicit accept command and reason.
 3. Personal overlay/skills. Recommended: CI measures a fixture with no personal files; personal skills measured only in local mode. Alternative: include them (not reproducible in CI).
 
 ## Approval
 
 Approved 2026-11-01 with recommended defaults for all open decisions.
+
+Reconciliation 2026-11-07: size measures are not task correctness or cost guarantees. `add-compaction-quality-evidence` is a recommended independent evidence lane, not a hard dependency for measuring size. CI integration is blocked while the user-owned `.github/workflows/ci.yml` deletion is unresolved; this proposal does not authorize restoring or replacing that file.

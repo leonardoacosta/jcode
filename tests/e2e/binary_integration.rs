@@ -686,3 +686,129 @@ async fn binary_integration_selfdev_full_reload_resumes_session_quickly() -> Res
 
     test_result
 }
+
+// Synthetic OAuth endpoints only. Linux namespace has loopback and no external route.
+#[cfg(target_os = "linux")]
+#[test]
+#[ignore = "actual binary, isolated Linux network namespace and synthetic TLS CA"]
+fn binary_oauth_failure_taxonomy_keeps_route_and_identity() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let namespace = std::fs::read_link("/proc/self/ns/net").unwrap();
+    let output = std::process::Command::new("/usr/bin/timeout")
+        .args(["--kill-after=5", "120", "/usr/bin/unshare", "--user", "--map-root-user", "--net", "/usr/bin/python3", "-c"])
+        .arg(r###"import hashlib,http.server,json,os,select,socket,ssl,subprocess,sys,tempfile,threading,time
+from pathlib import Path
+root,binary,parent_net=Path(sys.argv[1]),Path(sys.argv[2]).resolve(),sys.argv[3]
+assert os.readlink('/proc/self/ns/net')!=parent_net,'refusing shared network namespace'
+subprocess.run(['/usr/sbin/ip','link','set','lo','up'],check=True)
+assert {x['ifname'] for x in json.loads(subprocess.check_output(['/usr/sbin/ip','-json','link','show']))}=={'lo'}
+assert not subprocess.check_output(['/usr/sbin/ip','route','show','default'])
+source=subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip()
+sha=lambda data:hashlib.sha256(data).hexdigest()
+with tempfile.TemporaryDirectory(prefix='jc-auth-',dir=root/'scratch') as tmp:
+ state=Path(tmp);cert,key,ca,cakey,csr,extensions=[state/name for name in ['cert.pem','key.pem','ca.pem','ca-key.pem','leaf.csr','leaf.ext']]
+ subprocess.run(['/usr/bin/openssl','req','-x509','-newkey','rsa:2048','-nodes','-keyout',str(cakey),'-out',str(ca),'-days','1','-subj','/CN=isolated-oauth-fixture-ca','-addext','basicConstraints=critical,CA:TRUE','-addext','keyUsage=critical,keyCertSign,cRLSign'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+ subprocess.run(['/usr/bin/openssl','req','-new','-newkey','rsa:2048','-nodes','-keyout',str(key),'-out',str(csr),'-subj','/CN=api.anthropic.com'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+ extensions.write_text('subjectAltName=DNS:api.anthropic.com,DNS:platform.claude.com\nbasicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\nextendedKeyUsage=serverAuth\n')
+ subprocess.run(['/usr/bin/openssl','x509','-req','-in',str(csr),'-CA',str(ca),'-CAkey',str(cakey),'-CAcreateserial','-out',str(cert),'-days','1','-extfile',str(extensions)],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+ tls=ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER);tls.load_cert_chain(cert,key)
+ for case in (sys.argv[4:] or ['refresh_once','revoked','quota','refresh_transport']):
+  home=state/case;home.mkdir(mode=0o700);runtime=home/'runtime';runtime.mkdir(mode=0o700)
+  native=runtime/'native.sock';assert not native.exists()
+  (home/'config.toml').write_text('[features]\nmemory=false\nauto_poke=false\ncheck_updates=false\n[autojudge]\nmax_continuations_per_turn=0\n[agents]\nmemory_sidecar_enabled=false\n[provider]\nrequest_compression="off"\n')
+  initial={'anthropic_accounts':[{'label':'claude-otter','access':'synthetic-access-old','refresh':'synthetic-refresh-old','expires':int(time.time()*1000)+3600000,'scopes':['user:inference']},{'label':'claude-fox','access':'synthetic-alternate-never-used','refresh':'synthetic-alternate-refresh','expires':int(time.time()*1000)+3600000,'scopes':['user:inference']}],'active_anthropic_account':'claude-otter'}
+  auth=home/'auth.json';auth.write_text(json.dumps(initial));auth.chmod(0o600)
+  counts={'messages':0,'refresh':0};faults=[];frames=[]
+  class Fixture(http.server.BaseHTTPRequestHandler):
+   protocol_version='HTTP/1.1'
+   def log_message(self,*args):pass
+   def do_CONNECT(self):
+    if self.path not in ['api.anthropic.com:443','platform.claude.com:443']:
+     faults.append('unexpected host');self.send_error(403);return
+    self.send_response(200);self.end_headers();self.wfile.flush()
+    try:
+     secured=tls.wrap_socket(self.connection,server_side=True)
+     Fixture(secured,self.client_address,self.server)
+    except (ssl.SSLError,ConnectionError,OSError):pass
+    finally:self.close_connection=True
+   def reply(self,status,body):
+    data=json.dumps(body).encode();self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(data)));self.send_header('Connection','close');self.end_headers();self.wfile.write(data);self.close_connection=True
+   def do_GET(self):
+    if self.path.startswith('/v1/models'):self.reply(200,{'data':[{'id':'claude-sonnet-4-6','type':'model','display_name':'Synthetic fixture'}],'has_more':False})
+    elif 'usage' in self.path:self.reply(200,{})
+    else:self.reply(404,{'error':'synthetic unsupported fixture path'})
+   def do_POST(self):
+    body=self.rfile.read(int(self.headers.get('Content-Length','0')))
+    if self.path=='/v1/oauth/token':
+     counts['refresh']+=1
+     if json.loads(body).get('refresh_token')!='synthetic-refresh-old':faults.append('wrong refresh identity')
+     if case=='revoked':self.reply(400,{'error':'invalid_grant'});return
+     if case=='refresh_transport':self.reply(503,{'error':'service unavailable'});return
+     self.reply(200,{'access_token':'synthetic-access-new','refresh_token':'synthetic-refresh-new','expires_in':3600,'scope':'user:inference'});return
+    if self.path.startswith('/v1/messages'):
+     counts['messages']+=1;n=counts['messages'];expected='synthetic-access-new' if n==2 else 'synthetic-access-old'
+     if self.headers.get('Authorization')!='Bearer '+expected:faults.append('wrong message identity')
+     if json.loads(body).get('model')!='claude-sonnet-4-6':faults.append('model substituted')
+     if case=='quota':self.reply(429,{'error':{'type':'insufficient_quota','message':'billing exhausted'}})
+     else:self.reply(401,{'error':{'type':'authentication_error','message':'token expired'}})
+     return
+    faults.append('unexpected POST');self.reply(400,{'error':'unexpected fixture path'})
+  fixture=http.server.ThreadingHTTPServer(('127.0.0.1',0),Fixture);fixture.daemon_threads=True
+  thread=threading.Thread(target=fixture.serve_forever,daemon=True);thread.start()
+  env={'PATH':'/usr/bin:/bin','LANG':'C.UTF-8','HOME':str(home),'JCODE_HOME':str(home),'JCODE_RUNTIME_DIR':str(runtime),'JCODE_INSTALL_DIR':str(home/'install'),'XDG_RUNTIME_DIR':str(runtime),'XDG_CONFIG_HOME':str(home/'config'),'XDG_DATA_HOME':str(home/'data'),'XDG_CACHE_HOME':str(home/'cache'),'JCODE_NO_TELEMETRY':'1','JCODE_MEMORY_ENABLED':'0','JCODE_MEMORY_SIDECAR_ENABLED':'0','JCODE_REQUEST_COMPRESSION':'off','SSL_CERT_FILE':str(ca),'HTTPS_PROXY':f'http://127.0.0.1:{fixture.server_port}','HTTP_PROXY':f'http://127.0.0.1:{fixture.server_port}','NO_COLOR':'1'}
+  process=None;client=None;reader=None
+  try:
+   with open(home/'daemon.log','wb') as log:
+    process=subprocess.Popen([str(binary),'--no-update','--no-selfdev','--provider','claude','--model','claude-sonnet-4-6','--socket',str(native),'serve','--temporary-server','--owner-pid',str(os.getpid()),'--temp-idle-timeout-secs','60'],cwd=home,env=env,stdin=subprocess.DEVNULL,stdout=log,stderr=log)
+   deadline=time.monotonic()+20
+   while not native.exists():
+    assert process.poll() is None,'daemon exited before readiness';assert time.monotonic()<deadline,'socket readiness deadline';select.select([],[],[],.01)
+   assert Path(f'/proc/{process.pid}/exe').resolve()==binary,'wrong serving executable'
+   client=socket.socket(socket.AF_UNIX);client.settimeout(20);client.connect(str(native));reader=client.makefile('rb')
+   def send(value):client.sendall((json.dumps(value)+'\n').encode())
+   def until(predicate):
+    deadline=time.monotonic()+20
+    while True:
+     assert time.monotonic()<deadline,'public frame deadline'
+     raw=reader.readline();assert raw,'public EOF';frame=json.loads(raw);frames.append(frame)
+     if predicate(frame):return frame
+   send({'type':'ping','id':1});identity=until(lambda f:f.get('type')=='pong')['server_runtime']
+   assert Path(identity['binary_path']).resolve()==binary and source.startswith(identity['git_hash']),'binary/source binding mismatch'
+   send({'type':'subscribe','id':2,'working_dir':str(home),'system_prompt':'Synthetic isolated auth test. No tools.'});until(lambda f:f.get('type')=='done' and f.get('id')==2)
+   send({'type':'message','id':3,'content':'Synthetic OAuth taxonomy acceptance.','plan_only':True})
+   terminal=until(lambda f:f.get('type') in ['error','done'] and f.get('id')==3)
+   errors='\n'.join(f.get('message','') for f in frames if f.get('type')=='error')
+   assert not faults,faults
+   expected=(2,1) if case=='refresh_once' else (1,0) if case=='quota' else (1,1)
+   assert (counts['messages'],counts['refresh'])==expected,(case,counts,terminal,errors)
+   expected_kind={'refresh_once':'AuthExpired:','revoked':'AuthRevoked:','quota':'QuotaExhausted:','refresh_transport':'Transient:'}[case]
+   assert expected_kind in errors,(case,terminal,errors)
+   if case=='revoked':assert 'jcode login --provider claude' in errors
+   if case=='refresh_transport':assert 'AuthRevoked:' not in errors and 'jcode login' not in errors
+   stored=json.loads(auth.read_text());assert stored['active_anthropic_account']=='claude-otter',stored
+   alternate=next(a for a in stored['anthropic_accounts'] if a['label']=='claude-fox');assert alternate==initial['anthropic_accounts'][1]
+   selected=next(a for a in stored['anthropic_accounts'] if a['label']=='claude-otter')
+   assert selected['refresh']==('synthetic-refresh-new' if case=='refresh_once' else 'synthetic-refresh-old')
+   print(json.dumps({'case':case,'source_head':source,'binary_sha256':sha(binary.read_bytes()),'server_runtime':identity,'requests':counts,'kind':expected_kind,'same_route':True,'same_identity':True,'isolated_network':True}),flush=True)
+  except BaseException:
+   print('synthetic owned daemon log:\n'+(home/'daemon.log').read_text(errors='replace'),file=sys.stderr);raise
+  finally:
+   if reader:reader.close()
+   if client:client.close()
+   if process:
+    process.terminate()
+    try:process.wait(timeout=5)
+    except subprocess.TimeoutExpired:process.kill();process.wait(timeout=5)
+   fixture.shutdown();fixture.server_close();thread.join(timeout=2)
+print('cleanup: owned daemons and fixtures reaped; private synthetic homes removed',flush=True)
+"###)
+        .arg(root)
+        .arg(env!("CARGO_BIN_EXE_jcode"))
+        .arg(namespace)
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .env("TMPDIR", root.join("scratch"))
+        .output().expect("launch isolated OAuth binary acceptance");
+    println!("{}", String::from_utf8_lossy(&output.stdout));
+    assert!(output.status.success(), "private OAuth acceptance failed: {}\n{}", output.status, String::from_utf8_lossy(&output.stderr));
+}

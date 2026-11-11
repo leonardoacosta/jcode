@@ -130,7 +130,7 @@ fn test_render_swarm_await_as_compact_rail_free_summary() {
 fn test_render_swarm_await_wake_message_as_compact_rail_free_summary() {
     crate::tui::markdown::set_center_code_blocks(false);
     let msg = DisplayMessage::background_task(
-        "🐝 **Swarm await finished**\n\nAll members done. All 1 members are done: sabertooth\n\nMember statuses:\n  ✓ sabertooth (completed)\n\nCompletion reports:\n\n--- sabertooth (completed) ---\nAwait UI demo complete."
+        "🐝 **Swarm await finished**\n\nAll members done. All 1 members are done: sabertooth\n\nMember statuses:\n  ✓ sabertooth (completed)\n\nRecent outputs:\n\n--- sabertooth (completed) ---\nAwait UI demo complete."
             .to_string(),
     );
 
@@ -188,7 +188,10 @@ fn test_render_file_activity_as_collapsible_compact_row() {
         .map(extract_line_text)
         .collect::<Vec<_>>();
 
-    assert_eq!(rendered, vec!["🦊 ✎ src/auth.rs · modified  ▸ diff"]);
+    assert_eq!(
+        rendered,
+        vec!["🦊 ✎ src/auth.rs · modified  11 tok  ▸ diff"]
+    );
     assert!(rendered.iter().all(|line| !line.contains('│')));
 }
 
@@ -737,4 +740,144 @@ fn test_configured_palette_recolors_a_real_rendered_frame() {
         render(),
         "the default palette must be a no-op on the rendered frame"
     );
+}
+
+#[test]
+fn no_color_real_frames_and_partial_animation() {
+    if std::env::var_os("JCODE_TEST_MONOCHROME_CHILD").is_none() {
+        for key in ["NO_COLOR", "JCODE_NO_COLOR"] {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "tui::ui::tests::rendering::no_color_real_frames_and_partial_animation",
+                    "--nocapture",
+                ])
+                .env_remove("NO_COLOR")
+                .env_remove("JCODE_NO_COLOR")
+                .env("JCODE_TEST_MONOCHROME_CHILD", "1")
+                .env(key, "1")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{key}: {} {}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return;
+    }
+    fn assert_monochrome(buffer: &ratatui::buffer::Buffer) {
+        for cell in &buffer.content {
+            assert_eq!(
+                (cell.fg, cell.bg, cell.underline_color),
+                (Color::Reset, Color::Reset, Color::Reset),
+                "symbol {:?}",
+                cell.symbol()
+            );
+        }
+    }
+    let state = TestState {
+        display_messages: vec![
+            DisplayMessage::user("question"),
+            DisplayMessage::assistant("response"),
+            DisplayMessage {
+                role: "error".into(),
+                content: "Error: failed request".into(),
+                ..DisplayMessage::assistant("")
+            },
+        ],
+        status_notice: Some("rate limited".into()),
+        input: "/hel".into(),
+        cursor_pos: 4,
+        suggestions: vec![("/help".into(), "show help".into())],
+        ..Default::default()
+    };
+    for width in [40, 100] {
+        let mut terminal =
+            ratatui::Terminal::new(ratatui::backend::TestBackend::new(width, 30)).unwrap();
+        terminal.draw(|frame| draw(frame, &state)).unwrap();
+        let buffer = terminal.backend().buffer().clone();
+        assert_monochrome(&buffer);
+        let text: String = buffer.content.iter().map(|cell| cell.symbol()).collect();
+        assert!(text.contains("failed request"), "{text}");
+        assert!(text.contains("rate limited"), "{text}");
+        let picker = TestState {
+            inline_interactive_state: Some(crate::tui::InlineInteractiveState {
+                kind: crate::tui::PickerKind::Model,
+                filtered: vec![0],
+                selected: 0,
+                column: 0,
+                filter: String::new(),
+                preview: false,
+                entries: vec![crate::tui::PickerEntry {
+                    name: "gpt-5.4".into(),
+                    options: vec![crate::tui::PickerOption {
+                        provider: "openai".into(),
+                        api_method: "oauth".into(),
+                        available: true,
+                        detail: String::new(),
+                        estimated_reference_cost_micros: None,
+                    }],
+                    action: crate::tui::PickerAction::Model,
+                    selected_option: 0,
+                    is_current: true,
+                    is_default: false,
+                    is_favorite: false,
+                    recommended: true,
+                    recommendation_rank: 0,
+                    usage_score: 0,
+                    old: false,
+                    created_date: None,
+                    effort: None,
+                }],
+            }),
+            ..state.clone()
+        };
+        terminal.draw(|frame| draw(frame, &picker)).unwrap();
+        assert_monochrome(terminal.backend().buffer());
+        let selected_text: String = terminal
+            .backend()
+            .buffer()
+            .content
+            .iter()
+            .map(|cell| cell.symbol())
+            .collect();
+        assert!(
+            selected_text.contains('▸') && selected_text.contains("GPT-5.4"),
+            "{selected_text}"
+        );
+        for (available, detail, marker) in
+            [(false, "unavailable", "×"), (true, "fallback: static model list", "⚠")]
+        {
+            let mut limited_picker = picker.clone();
+            let route = &mut limited_picker
+                .inline_interactive_state
+                .as_mut()
+                .unwrap()
+                .entries[0]
+                .options[0];
+            route.available = available;
+            route.detail = detail.into();
+            terminal.draw(|frame| draw(frame, &limited_picker)).unwrap();
+            let cells = &terminal.backend().buffer().content;
+            assert_monochrome(terminal.backend().buffer());
+            assert!(
+                cells
+                    .iter()
+                    .any(|cell| cell.symbol() == marker
+                        && cell.modifier.contains(Modifier::REVERSED)),
+                "selected {marker} needs non-color selection"
+            );
+        }
+        let mut partial = buffer.clone();
+        render_idle_animation_into(&mut partial, Rect::new(0, 0, width, 5), 1.0);
+        assert_monochrome(&partial);
+        let frozen = TestState {
+            hibernation_frame: Some(buffer.clone()),
+            ..state.clone()
+        };
+        terminal.draw(|frame| draw(frame, &frozen)).unwrap();
+        assert_monochrome(terminal.backend().buffer());
+    }
 }

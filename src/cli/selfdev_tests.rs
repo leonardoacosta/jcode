@@ -5,6 +5,77 @@ use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+#[cfg(unix)]
+#[tokio::test]
+async fn reload_identity_reads_actual_socket_and_rejects_mismatch() {
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    let temp = tempfile::tempdir().unwrap();
+    let socket = temp.path().join("reload-identity.sock");
+    let listener = tokio::net::UnixListener::bind(&socket).unwrap();
+    let peer = tokio::spawn(async move {
+        let (mut stream, _) = listener.accept().await.unwrap();
+        let mut reader = BufReader::new(&mut stream);
+        let mut line = String::new();
+        reader.read_line(&mut line).await.unwrap();
+        let request: serde_json::Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(request["type"], "ping");
+        let reply = serde_json::json!({"type":"pong","id":request["id"],"server_runtime":{"git_hash":"abcdef123","dirty":true,"cleanliness_verified":false,"binary_path":null}});
+        stream
+            .write_all(format!("{reply}\n").as_bytes())
+            .await
+            .unwrap();
+    });
+    let mut client = crate::server::Client::connect_with_path(socket)
+        .await
+        .unwrap();
+    let identity = client.runtime_identity().await.unwrap();
+    assert!(build::verify_reload_revision("abcdef123", identity.as_ref()).is_ok());
+    let error = build::verify_reload_revision("987654321", identity.as_ref())
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("987654321") && error.contains("abcdef123"));
+    peer.await.unwrap();
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn reload_identity_missing_wrong_reply_and_timeout_never_verify() {
+    use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+    for reply in [
+        Some("{\"type\":\"pong\",\"id\":1}\n"),
+        Some("{\"type\":\"pong\",\"id\":99}\n"),
+        None,
+    ] {
+        let temp = tempfile::tempdir().unwrap();
+        let socket = temp.path().join("identity.sock");
+        let listener = tokio::net::UnixListener::bind(&socket).unwrap();
+        let peer = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut line = String::new();
+            BufReader::new(&mut stream)
+                .read_line(&mut line)
+                .await
+                .unwrap();
+            if let Some(reply) = reply {
+                stream.write_all(reply.as_bytes()).await.unwrap();
+            } else {
+                std::future::pending::<()>().await;
+            }
+        });
+        let mut client = crate::server::Client::connect_with_path(socket)
+            .await
+            .unwrap();
+        let result = client.runtime_identity().await;
+        if reply == Some("{\"type\":\"pong\",\"id\":1}\n") {
+            assert!(result.unwrap().is_none());
+        } else {
+            assert!(result.is_err());
+        }
+        peer.abort();
+        let _ = peer.await;
+    }
+}
+
 fn lock_env() -> std::sync::MutexGuard<'static, ()> {
     storage::lock_test_env()
 }

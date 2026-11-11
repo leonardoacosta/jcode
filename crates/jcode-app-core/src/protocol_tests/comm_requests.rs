@@ -452,6 +452,7 @@ fn test_comm_spawn_roundtrip_with_optional_nonce() -> Result<()> {
         worker_role: Some("research".into()),
         id: 59,
         session_id: "sess_coord".to_string(),
+        lane_id: Some("lane:1:parser".to_string()),
         working_dir: Some("/tmp/project".to_string()),
         initial_message: Some("Start here".to_string()),
         request_nonce: Some("planner-fresh-123".to_string()),
@@ -462,6 +463,7 @@ fn test_comm_spawn_roundtrip_with_optional_nonce() -> Result<()> {
     };
     let json = serde_json::to_string(&req)?;
     assert!(json.contains("\"type\":\"comm_spawn\""));
+    assert!(json.contains("\"lane_id\":\"lane:1:parser\""));
     assert!(json.contains("\"request_nonce\":\"planner-fresh-123\""));
     assert!(json.contains("\"spawn_mode\":\"headless\""));
     assert!(json.contains("\"effort\":\"low\""));
@@ -473,6 +475,7 @@ fn test_comm_spawn_roundtrip_with_optional_nonce() -> Result<()> {
         session_id,
         council_id,
         worker_role,
+        lane_id,
         working_dir,
         initial_message,
         request_nonce,
@@ -488,6 +491,7 @@ fn test_comm_spawn_roundtrip_with_optional_nonce() -> Result<()> {
     assert_eq!(session_id, "sess_coord");
     assert_eq!(council_id.as_deref(), Some("council-wire-test"));
     assert_eq!(worker_role.as_deref(), Some("research"));
+    assert_eq!(lane_id.as_deref(), Some("lane:1:parser"));
     assert_eq!(working_dir.as_deref(), Some("/tmp/project"));
     assert_eq!(initial_message.as_deref(), Some("Start here"));
     assert_eq!(request_nonce.as_deref(), Some("planner-fresh-123"));

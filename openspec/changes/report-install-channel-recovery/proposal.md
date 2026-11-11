@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [make-worker-stop-durable]
 ---
 # Proposal
 
@@ -14,12 +14,14 @@ Install state is split across `~/.local/bin/jcode`, `builds/{stable,current,cana
 ## What Changes
 
 - `jcode version --channels` prints launcher target, each channel's resolved version and the shared-server target.
-- `jcode update --rollback` repoints the active channel to the previous immutable version in `builds/versions` and reports both versions.
+- `jcode update --rollback` repoints the active channel to the previous compatible immutable version in `builds/versions` and reports both versions. Check persisted session-control compatibility floor and composed-config support before any swap. Refuse unsupported downgrade without deleting state, flattening user config or weakening stop barriers.
 - A failed update leaves the prior channel target unchanged and says so.
 
 ## Non-scope
 
 New channels, Windows installer rewrite, release pipeline changes.
+
+Config-composition is a conditional compatibility boundary, not a hard prerequisite: single-file installs remain supported, but a composed install cannot silently downgrade to a loader that ignores fragments. Channel reporting is independent preparation; complete rollback acceptance consumes durable control's compatibility floor. No symlink activation occurs during proposal reconciliation.
 
 ## Capabilities
 

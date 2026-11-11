@@ -706,6 +706,7 @@ impl Provider for CursorCliProvider {
                     "Cursor model catalog refresh failed; keeping fallback list: {}",
                     err
                 ));
+                return Err(err);
             }
         }
 

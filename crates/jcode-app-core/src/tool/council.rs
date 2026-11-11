@@ -270,6 +270,7 @@ async fn spawn_seat(
             .as_nanos()
     );
     let request = Request::CommSpawn {
+        lane_id: None,
         id: REQUEST_ID,
         session_id: ctx.session_id.clone(),
         council_id: Some(council_id.to_string()),
@@ -378,10 +379,7 @@ async fn barrier(
                 replies[i] = Some(text);
             }
         }
-        let pending = replies
-            .iter()
-            .zip(&failed)
-            .any(|(r, f)| r.is_none() && !f);
+        let pending = replies.iter().zip(&failed).any(|(r, f)| r.is_none() && !f);
         if !pending || Instant::now() >= deadline {
             return replies;
         }
@@ -438,9 +436,10 @@ fn record_round(council: &mut Council, round: u32, replies: Vec<Option<String>>)
         .collect();
     council.converged = unanimous(&votes);
     if !late.is_empty() {
-        council
-            .notes
-            .push(format!("round {round}: late/errored seats: {}", late.join(", ")));
+        council.notes.push(format!(
+            "round {round}: late/errored seats: {}",
+            late.join(", ")
+        ));
     }
     late
 }
@@ -495,7 +494,7 @@ async fn open(ctx: &ToolContext, input: &CouncilInput) -> Result<Council> {
         .cloned()
         .collect();
     let (rounds, max_calls) = validate_caps(seats.len(), input.rounds, input.max_calls)?;
-    let id = format!("c{}", &uuid_like(ctx));
+    let id = format!("c{}", uuid_like(ctx));
     let provider_budget = ProviderCallBudget::create(provider_budget_dir(&id)?, max_calls)?;
     let timeout = round_timeout_secs(
         input.timeout_secs.unwrap_or(DEFAULT_TOTAL_TIMEOUT_SECS),
@@ -801,7 +800,11 @@ impl Tool for CouncilTool {
             "open" => {
                 let council = open(&ctx, &input).await?;
                 let mut guard = SeatGuard::for_council(&ctx, &council);
-                let out = format!("{}\n\n{}", summary(&council), format_transcript(&council.transcript));
+                let out = format!(
+                    "{}\n\n{}",
+                    summary(&council),
+                    format_transcript(&council.transcript)
+                );
                 put(council)?;
                 guard.ids.clear();
                 Ok(ToolOutput::new(out))
@@ -812,10 +815,18 @@ impl Tool for CouncilTool {
                 let ran = round(&ctx, &mut council).await;
                 let out = if ran {
                     let k = council.rounds_done;
-                    let turns: Vec<_> = council.transcript.iter().filter(|t| t.round == k).cloned().collect();
+                    let turns: Vec<_> = council
+                        .transcript
+                        .iter()
+                        .filter(|t| t.round == k)
+                        .cloned()
+                        .collect();
                     format!("{}\n\n{}", summary(&council), format_transcript(&turns))
                 } else {
-                    format!("round refused (rounds or call cap exhausted); call close.\n{}", summary(&council))
+                    format!(
+                        "round refused (rounds or call cap exhausted); call close.\n{}",
+                        summary(&council)
+                    )
                 };
                 put(council)?;
                 guard.ids.clear();
@@ -827,7 +838,10 @@ impl Tool for CouncilTool {
                 let msg = input.message.clone().unwrap_or_default();
                 let mut failed = Vec::new();
                 for seat in &council.seats {
-                    if send_to(&ctx, &seat.session_id, format!("Convener: {msg}")).await.is_err() {
+                    if send_to(&ctx, &seat.session_id, format!("Convener: {msg}"))
+                        .await
+                        .is_err()
+                    {
                         failed.push(seat.name.clone());
                     }
                 }
@@ -842,7 +856,9 @@ impl Tool for CouncilTool {
             "log" => {
                 let id = id()?;
                 let map = councils();
-                let council = map.get(&id).ok_or_else(|| anyhow!("unknown council_id '{id}'"))?;
+                let council = map
+                    .get(&id)
+                    .ok_or_else(|| anyhow!("unknown council_id '{id}'"))?;
                 Ok(ToolOutput::new(format!(
                     "{}\n\n{}",
                     summary(council),
@@ -975,7 +991,10 @@ mod tests {
         let junk = parse_verdict("I think it's fine", &fallback);
         assert_eq!(junk.status, "PARTIAL");
         assert_eq!(junk.tally, fallback);
-        assert_eq!(parse_verdict("VERDICT: PASS\nDISSENT: none", &fallback).status, "PASS");
+        assert_eq!(
+            parse_verdict("VERDICT: PASS\nDISSENT: none", &fallback).status,
+            "PASS"
+        );
     }
 
     #[test]
@@ -986,9 +1005,18 @@ mod tests {
             Some(SEAT_ALLOWED_TOOLS.iter().map(|s| s.to_string()).collect()),
             HashSet::new(),
         );
-        assert_eq!(crate::tool::session_tool_policy_allows_tool_for_test(id, "edit"), Some(false));
-        assert_eq!(crate::tool::session_tool_policy_allows_tool_for_test(id, "bash"), Some(false));
-        assert_eq!(crate::tool::session_tool_policy_allows_tool_for_test(id, "read"), Some(true));
+        assert_eq!(
+            crate::tool::session_tool_policy_allows_tool_for_test(id, "edit"),
+            Some(false)
+        );
+        assert_eq!(
+            crate::tool::session_tool_policy_allows_tool_for_test(id, "bash"),
+            Some(false)
+        );
+        assert_eq!(
+            crate::tool::session_tool_policy_allows_tool_for_test(id, "read"),
+            Some(true)
+        );
         crate::tool::clear_session_tool_policy_entry(id);
     }
 }

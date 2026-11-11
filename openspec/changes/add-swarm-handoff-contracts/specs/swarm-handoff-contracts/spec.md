@@ -12,7 +12,7 @@ The system SHALL record `base_rev`, `file_scope`, `acceptance_check` and optiona
 - **THEN** it SHALL be marked `blocked` with reason `budget` and SHALL NOT be auto-continued
 
 ### Requirement: Evidence-bearing report
-The system SHALL accept structured report fields for base/head revisions, changed files and acceptance results, and SHALL warn on missing or out-of-scope evidence.
+The system SHALL accept structured report fields for base/head revisions, changed files and acceptance results, and SHALL warn on missing or out-of-scope evidence. Reports SHALL carry the execution generation supplied by worker-session control; old reports SHALL NOT complete a newer assignment, and stop settlement SHALL NOT imply task success.
 
 #### Scenario: Complete report
 - **WHEN** a report includes revisions, in-scope files and a passing acceptance result

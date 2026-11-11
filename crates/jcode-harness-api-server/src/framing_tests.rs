@@ -3,6 +3,48 @@
 
 use super::*;
 
+#[cfg(unix)]
+#[tokio::test]
+async fn public_socket_rejects_malformed_and_unsupported_before_daemon_access() {
+    use tokio::io::AsyncWriteExt;
+    for (input, expected) in [
+        ("{broken\n".to_string(), "invalid_request"),
+        (
+            format!(
+                "{{\"id\":7,\"req\":\"hello\",\"min_version\":{},\"max_version\":{}}}\n",
+                API_VERSION_MAJOR + 1,
+                API_VERSION_MAJOR + 1
+            ),
+            "unsupported_version",
+        ),
+    ] {
+        let (mut client, server) = tokio::net::UnixStream::pair().unwrap();
+        let (read, write) = server.into_split();
+        let task = tokio::spawn(run_bridge_stream(
+            read,
+            write,
+            PathBuf::from("/nonexistent-contract-test/daemon.sock"),
+        ));
+        client.write_all(input.as_bytes()).await.unwrap();
+        let mut reader = BufReader::new(client);
+        let mut line = String::new();
+        tokio::time::timeout(
+            std::time::Duration::from_secs(2),
+            reader.read_line(&mut line),
+        )
+        .await
+        .unwrap()
+        .unwrap();
+        let frame: ServerFrame = serde_json::from_str(&line).unwrap();
+        let value = serde_json::to_value(frame).unwrap();
+        assert_eq!(value["ev"], "error");
+        assert_eq!(value["code"], expected);
+        line.clear();
+        assert_eq!(reader.read_line(&mut line).await.unwrap(), 0);
+        task.await.unwrap().unwrap();
+    }
+}
+
 async fn read_all(input: &'static str) -> Vec<std::io::Result<String>> {
     let mut reader = BufReader::new(input.as_bytes());
     let mut out = Vec::new();

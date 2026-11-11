@@ -112,6 +112,10 @@ impl FileClaims {
         path: &Path,
         mutation: impl FnOnce(&Path) -> std::io::Result<()> + Send + 'static,
     ) -> std::io::Result<()> {
+        let execution = crate::server::session_control::current_token()
+            .map(|token| token.reserve())
+            .transpose()
+            .map_err(std::io::Error::other)?;
         let path = path.to_path_buf();
         let mut operation = FileClaims::default();
         operation.session_id = self.session_id.clone();
@@ -126,6 +130,7 @@ impl FileClaims {
         // Tokio filesystem work continues after its awaiting future is dropped.
         // Keep the reservation with that work until its real outcome is known.
         let (result, mut operation) = tokio::task::spawn_blocking(move || {
+            let _execution = execution;
             let result = mutation(&path)
                 .and_then(|()| operation.commit(&path).map_err(std::io::Error::other));
             (result, operation)
@@ -147,17 +152,17 @@ impl FileClaims {
     }
 
     pub(crate) fn commit(&mut self, path: &Path) -> anyhow::Result<()> {
-        if let Some(key) = self.paths.get(path) {
-            if self.pending.remove(key) {
-                // A completed filesystem write must never roll back, even if
-                // persisting its completion fails. Its token remains protective.
-                FileClaimStore::load(self.persist_path.clone()).finish(
-                    &self.session_id,
-                    &HashSet::from([key.clone()]),
-                    &self.reservation_id,
-                    true,
-                )?;
-            }
+        if let Some(key) = self.paths.get(path)
+            && self.pending.remove(key)
+        {
+            // A completed filesystem write must never roll back, even if
+            // persisting its completion fails. Its token remains protective.
+            FileClaimStore::load(self.persist_path.clone()).finish(
+                &self.session_id,
+                &HashSet::from([key.clone()]),
+                &self.reservation_id,
+                true,
+            )?;
         }
         Ok(())
     }
@@ -229,23 +234,22 @@ impl FileClaimStore {
         mode: FileClaimMode,
         exempt: bool,
     ) -> ClaimOutcome {
-        if mode != FileClaimMode::Off {
-            if let Some(holder) = self
+        if mode != FileClaimMode::Off
+            && let Some(holder) = self
                 .claims
                 .get(key)
                 .map(FileClaim::holder)
                 .filter(|holder| *holder != session_id)
-            {
-                return if mode == FileClaimMode::Block && !exempt {
-                    ClaimOutcome::Blocked {
-                        holder: holder.into(),
-                    }
-                } else {
-                    ClaimOutcome::Warn {
-                        holder: holder.into(),
-                    }
-                };
-            }
+        {
+            return if mode == FileClaimMode::Block && !exempt {
+                ClaimOutcome::Blocked {
+                    holder: holder.into(),
+                }
+            } else {
+                ClaimOutcome::Warn {
+                    holder: holder.into(),
+                }
+            };
         }
         ClaimOutcome::Granted
     }
@@ -291,11 +295,10 @@ impl FileClaimStore {
                 holder,
                 reservations,
             } = claim
+                && holder == session_id
             {
-                if holder == session_id {
-                    reservations.insert(reservation.reservation_id.clone());
-                    reservation.pending.insert(key.clone());
-                }
+                reservations.insert(reservation.reservation_id.clone());
+                reservation.pending.insert(key.clone());
             }
         }
         if !reservation.pending.is_empty() {
@@ -318,15 +321,15 @@ impl FileClaimStore {
                 holder,
                 reservations,
             }) = self.claims.get_mut(key)
+                && holder == session_id
+                && reservations.remove(reservation_id)
             {
-                if holder == session_id && reservations.remove(reservation_id) {
-                    changed = true;
-                    if success {
-                        self.claims
-                            .insert(key.clone(), FileClaim::Committed(session_id.into()));
-                    } else if reservations.is_empty() {
-                        self.claims.remove(key);
-                    }
+                changed = true;
+                if success {
+                    self.claims
+                        .insert(key.clone(), FileClaim::Committed(session_id.into()));
+                } else if reservations.is_empty() {
+                    self.claims.remove(key);
                 }
             }
         }
@@ -414,10 +417,10 @@ pub(in crate::server) fn file_claims() -> &'static StdMutex<FileClaimStore> {
 }
 
 pub(in crate::server) fn release_file_claims_of(session_id: &str) {
-    if let Ok(mut store) = file_claims().lock() {
-        if let Err(error) = store.release_session(session_id) {
-            crate::logging::warn(&format!("Failed to release file claims: {error}"));
-        }
+    if let Ok(mut store) = file_claims().lock()
+        && let Err(error) = store.release_session(session_id)
+    {
+        crate::logging::warn(&format!("Failed to release file claims: {error}"));
     }
 }
 
@@ -512,6 +515,9 @@ mod claim_tests {
     #[tokio::test]
     async fn cancelled_caller_keeps_claim_with_inflight_mutation() {
         let dir = tempfile::tempdir().unwrap();
+        let control = crate::server::session_control::ControlStore::new(dir.path().join("control"));
+        control.register("worker", None).unwrap();
+        let token = control.admit("worker").unwrap();
         let persist = dir.path().join("claims.json");
         let file = dir.path().join("file");
         let mut store = FileClaimStore::load(Some(persist.clone()));
@@ -522,22 +528,34 @@ mod claim_tests {
         let (finish_tx, finish_rx) = std::sync::mpsc::channel();
         let (done_tx, done_rx) = tokio::sync::oneshot::channel();
         let path = file.clone();
-        let task = tokio::spawn(async move {
-            reservation
-                .mutate(&path, move |path| {
-                    let _ = started_tx.send(());
-                    finish_rx
-                        .recv_timeout(std::time::Duration::from_secs(10))
-                        .unwrap();
-                    let result = std::fs::write(path, "finished");
-                    let _ = done_tx.send(());
-                    result
-                })
-                .await
-        });
+        let task = tokio::spawn(crate::server::session_control::scope(
+            Some(token),
+            async move {
+                reservation
+                    .mutate(&path, move |path| {
+                        let _ = started_tx.send(());
+                        finish_rx
+                            .recv_timeout(std::time::Duration::from_secs(10))
+                            .unwrap();
+                        let result = std::fs::write(path, "finished");
+                        let _ = done_tx.send(());
+                        result
+                    })
+                    .await
+            },
+        ));
         started_rx.await.unwrap();
         task.abort();
         assert!(task.await.unwrap_err().is_cancelled());
+        let stopped = control
+            .request_stop("worker", "worker", false, "stop")
+            .unwrap();
+        assert_eq!(
+            control.work_observation("worker").unwrap().0,
+            1,
+            "blocking mutation lost generation ownership when its caller was cancelled"
+        );
+        assert!(control.settle("worker", stopped.revision).is_err());
         let mut observer = FileClaimStore::load(Some(persist));
         assert!(
             observer
@@ -546,6 +564,24 @@ mod claim_tests {
         );
         finish_tx.send(()).unwrap();
         done_rx.await.unwrap();
+        tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                let (_, changed) = control.work_observation("worker").unwrap();
+                let notified = changed.notified();
+                tokio::pin!(notified);
+                notified.as_mut().enable();
+                if control.work_observation("worker").unwrap().0 == 0 {
+                    break;
+                }
+                notified.await;
+            }
+        })
+        .await
+        .unwrap();
+        assert_eq!(
+            control.settle("worker", stopped.revision).unwrap().state,
+            crate::server::session_control::ControlState::Stopped
+        );
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "finished");
         assert_eq!(
             observer.active().unwrap(),

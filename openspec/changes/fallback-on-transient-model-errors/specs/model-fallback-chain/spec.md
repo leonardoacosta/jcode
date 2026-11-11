@@ -3,9 +3,11 @@
 ### Requirement: Ordered fallback on transient errors
 The agent SHALL, after retries are exhausted for a transient model error, retry the turn on the next model in the configured `model_fallback` chain for the current model.
 
+It SHALL consume shared provider failure classification and existing route/account authorization. Confirmed billing/quota exhaustion SHALL NOT be transient, and configured fallback SHALL NOT silently cross an endpoint/provider boundary forbidden by the selected route contract.
+
 #### Scenario: Rate limit triggers fallback
-- **WHEN** the primary model returns HTTP 429 after retries and `model_fallback` lists model B
-- **THEN** the turn is retried on model B
+- **WHEN** the primary model returns retryable rate-limit HTTP 429 after retries, not confirmed billing/quota exhaustion, and `model_fallback` lists model B on a permitted route
+- **THEN** the turn is retried on permitted model B without changing account/gateway identity
 
 #### Scenario: No chain configured
 - **WHEN** a transient error occurs and the current model has no `model_fallback` entry

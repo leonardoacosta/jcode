@@ -3,7 +3,7 @@
 - [ ] 1.1 Add per-run usage aggregator keyed by run id
 - [ ] 1.2 Attribute worker/resumed-session usage to the run
 - [ ] 1.3 Emit `usage_reconciled` and render with limit-bar
-- [ ] 1.4 Tests: aggregation across worker sessions; missing usage not zero
+- [ ] 1.4 Tests: generation-bound worker/resume usage, duplicate/replayed event suppression, cancelled/unresolved work, provider/account separation and missing usage not zero. Verify accounting never grants pre-send budget authority.
 
 ## 2. Verification
 

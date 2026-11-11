@@ -22,7 +22,14 @@ fi
 # Cargo back here when the caller has moved to a different checkout. Compare
 # physical paths so entering this checkout through a symlink still works.
 case "$(pwd -P)" in
-  "$repo_root"|"$repo_root"/*) cd "$repo_root" ;;
+  "$repo_root"|"$repo_root"/*)
+    # Scratch fixtures can contain independent workspaces inside this checkout.
+    workspace_manifest="$(cargo locate-project --workspace --message-format plain 2>/dev/null || true)"
+    if [[ -n "$workspace_manifest" && "$workspace_manifest" != "$repo_root/Cargo.toml" ]]; then
+      exec cargo "$@"
+    fi
+    cd "$repo_root"
+    ;;
   *) exec cargo "$@" ;;
 esac
 
@@ -527,6 +534,15 @@ select_build_jobs() {
 export_git_build_metadata() {
   # Never accept an inherited caller assertion as cleanliness provenance.
   unset JCODE_BUILD_SOURCE_FINGERPRINT JCODE_BUILD_SOURCE_VERIFIED
+  # Hosted snapshots have no Git history. Describe against the package's base
+  # tag so build.rs can recover exactly the same commit offset remotely.
+  if [[ -z "${JCODE_BUILD_GIT_TAG+x}" ]] && command -v git >/dev/null 2>&1; then
+    local base_version description
+    base_version="$(awk '/^\[package\]/{package=1; next} /^\[/{package=0} package && /^version *=/{gsub(/"/, "", $3); print $3; exit}' "$repo_root/Cargo.toml")"
+    if [[ -n "$base_version" ]] && description="$(git -C "$repo_root" describe --tags --long --match "v${base_version}" HEAD 2>/dev/null)"; then
+      export JCODE_BUILD_GIT_TAG="$description"
+    fi
+  fi
   # Hosted source snapshots do not include .git. Forward the history alongside
   # the identity metadata so /changelog is populated in hosted self-dev builds.
   # Preserve explicit caller overrides, including an intentionally empty one.
@@ -1076,6 +1092,18 @@ if [[ "${JCODE_IMMUTABLE_BUILD:-0}" == "1" ]]; then
   select_build_jobs
   python3 "$repo_root/scripts/immutable_build.py" "$repo_root" "${cargo_argv[@]}"
   exit $?
+fi
+
+# Self-dev builds compile the whole jcode binary, which saturates every core
+# for minutes and drains a laptop battery. When `cargo` is the justrust proxy
+# and the caller has not picked a route, force them onto hosted build
+# machines; justrust brings the optimized binary back into target/selfdev.
+# Opt out with JUSTRUST_REMOTE=off JUSTRUST_LOCAL_REASON=<why>.
+if [[ -z "${JUSTRUST_REMOTE:-}" && "${cargo_argv[0]:-}" == "build" ]] \
+  && [[ " ${cargo_argv[*]} " == *" --profile selfdev "* || " ${cargo_argv[*]} " == *" --profile=selfdev "* ]] \
+  && command -v justrust >/dev/null 2>&1; then
+  export JUSTRUST_REMOTE=force JUSTRUST_REMOTE_REQUIRED=1
+  log "selfdev build: routing to hosted justrust (JUSTRUST_REMOTE=force)"
 fi
 
 if [[ "${JCODE_REMOTE_CARGO:-0}" == "1" ]]; then

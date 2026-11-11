@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: [configure-task-and-worktree-policy]
+  depends_on: [configure-task-and-worktree-policy, admit-overnight-tasks-on-evidence, reattach-background-tasks-after-reload]
 ---
 Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/plans/PRODUCT_ROADMAP.md#p05-durable-overnight-scheduling-and-recovery)
 
@@ -16,7 +16,7 @@ The overnight supervisor is an in-process `tokio::spawn` (`overnight.rs:217-219`
 - Record the supervisor's server PID and a heartbeat timestamp in the manifest.
 - On server start, scan manifests with `Running`/`CancelRequested` whose supervisor is gone: `CancelRequested` → `Cancelled`; otherwise send the task through current configured admission/triage policy before resuming from its manifest with a `run_resumed` event. A historical overnight wake time alone neither grants nor denies task authorization.
 - Revalidate task scope, remaining budgets, dependencies, cancellation and live ownership against current configuration. A configuration change cannot expand the task's persisted authorization; ambiguous work remains interrupted with an actionable reason.
-- Never resume a run the user cancelled.
+- Never resume a run the user cancelled or whose predecessor/child settlement is unresolved. Consume the existing admission and background-ownership contracts instead of rebuilding them. Archive presence does not prove a live provider has authoritative monetary capability.
 
 ## Non-scope
 

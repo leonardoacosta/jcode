@@ -729,7 +729,7 @@ impl JevShadowEvaluator {
             "shadow state revision exceeds 64 bytes"
         );
         self.requests
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |count| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |count| {
                 (count < SHADOW_MAX_REQUESTS).then_some(count + 1)
             })
             .map_err(|_| anyhow!("Jev shadow request limit reached"))?;

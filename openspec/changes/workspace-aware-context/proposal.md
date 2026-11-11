@@ -17,7 +17,7 @@ Forensics (60d) show heavy switching between personal, Priceless, and Brown work
 - Inject a bounded per-workspace hint block (tracker, branch template, skills) into the system prompt.
 - Cached Git identity check: compare effective `user.email` with `expected_email`, cache per repo root + config mtimes, warn on mismatch. Never modifies Git config.
 
-- Per-workspace `hooks` (merged over global `[hooks]`), per-workspace `swarm_model` and role-slot model overrides, and propagation of the resolved workspace to spawned swarm workers. Depends on `add-lifecycle-hooks` and `add-role-model-slots`.
+- Per-workspace `hooks` (merged over global `[hooks]`), per-workspace `swarm_model` and role-slot model overrides, and propagation of coordinator context as provenance to workers, with mandatory actual-target repository/workspace verification before hooks, tracker hints or overrides apply. Same-repository worktrees may inherit verified identity; differing/unknown targets never silently inherit cross-workspace policy. Depends on `add-lifecycle-hooks` and `add-role-model-slots`.
 
 ## Capabilities
 

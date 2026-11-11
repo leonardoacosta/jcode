@@ -19,7 +19,7 @@ Injected memory cannot be traced back to its stored entry. `InjectedMemoryItem` 
 
 - New retrieval/ranking algorithms or a replacement memory service.
 - Workspace-scoped recall (owned by workspace-aware-context).
-- Retention/deletion policy (add-memory-retention-controls).
+- Retention/deletion policy (add-memory-retention-controls). Both reuse the same stored memory IDs, active/superseded state and safe save semantics; concurrent implementation edits must serialize, but provenance rendering is not a hard prerequisite for purge.
 
 ## Capabilities
 

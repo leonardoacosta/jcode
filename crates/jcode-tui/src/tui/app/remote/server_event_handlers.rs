@@ -7,9 +7,12 @@ pub(super) fn handle_tool_done(
     name: String,
     output: String,
     error: Option<String>,
-    required_check: Option<crate::todo::RequiredCheckOutcome>,
-    required_checks: Option<crate::todo::RequiredCheckBatch>,
+    checks: (
+        Option<crate::todo::RequiredCheckOutcome>,
+        Option<crate::todo::RequiredCheckBatch>,
+    ),
 ) -> bool {
+    let (required_check, required_checks) = checks;
     if crate::tool::resolve_tool_name(&name) == "bash"
         && let Some(outcome) = required_check
     {
@@ -20,6 +23,9 @@ pub(super) fn handle_tool_done(
     {
         app.required_checks.observe_batch(batch, error.is_some());
     }
+    // Read the raw output before client-side diff rendering replaces it.
+    let observed_duration = remote.take_tool_duration(&id);
+    let duration_secs = DisplayMessage::tool_duration_from_output(&output).or(observed_duration);
     let display_output = remote.handle_tool_done(&id, &name, &output);
     let display_output = if error.is_some()
         && !display_output.starts_with("Error:")
@@ -51,7 +57,7 @@ pub(super) fn handle_tool_done(
         role: "tool".to_string(),
         content: display_output,
         tool_calls: vec![],
-        duration_secs: None,
+        duration_secs,
         title: None,
         tool_data: Some(tool_call.clone()),
     });

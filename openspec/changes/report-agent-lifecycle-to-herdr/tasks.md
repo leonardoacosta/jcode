@@ -10,6 +10,6 @@
 
 ## 3. Verify
 
-- [ ] 3.1 Unit tests for state precedence and done-clears-on-focus
+- [ ] 3.1 Unit tests for shared projection/precedence, draining/unresolved/failed/cancelled labels and Herdr-only done-clears-on-focus; verify widget cursors and execution state are unchanged.
 - [ ] 3.2 Runtime check in a Herdr pane with a headless worker that blocks and finishes
 - [ ] 3.3 `openspec validate report-agent-lifecycle-to-herdr --strict`

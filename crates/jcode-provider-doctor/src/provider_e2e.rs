@@ -2410,8 +2410,155 @@ fn format_error_chain(error: &anyhow::Error) -> String {
     }
 }
 
+/// Summarize recorded failure-scenario evidence without running any provider probe.
+/// Generic chat/auth successes do not establish negative-scenario coverage.
+pub fn provider_failure_coverage(
+    events: &[live_tests::LiveVerificationEvent],
+) -> serde_json::Value {
+    const SCENARIOS: [&str; 4] = [
+        "expired_auth",
+        "rate_limit",
+        "unavailable_model",
+        "interrupted_stream",
+    ];
+    let mut providers = std::collections::BTreeSet::from([
+        "claude",
+        "antigravity",
+        "openai",
+        "gemini",
+        "cursor",
+        "copilot",
+        "bedrock",
+        "jcode",
+        "azure-openai",
+    ]);
+    providers.extend(
+        jcode_base::provider_catalog::openai_compatible_profiles()
+            .iter()
+            .map(|profile| profile.id),
+    );
+    let rows: Vec<_> = providers.into_iter().map(|provider| {
+        let scenarios: Vec<_> = SCENARIOS.iter().map(|scenario| {
+            let evidence = events.iter()
+                .filter(|event| event.provider_id == provider)
+                .filter_map(|event| event.stages.iter().find(|stage| stage.name == *scenario).map(|stage| (event, stage)))
+                .max_by_key(|(event, _)| event.recorded_at);
+            let (status, reason) = match evidence {
+                Some((_, stage)) if stage.status == LiveVerificationStageStatus::Skipped => (
+                    "skipped", stage.evidence.get("reason").and_then(serde_json::Value::as_str).unwrap_or("reason not recorded").to_string(),
+                ),
+                Some((event, stage)) => {
+                    let live = event.metadata.get("doctor_tier").and_then(serde_json::Value::as_str)
+                        .is_some_and(|tier| matches!(tier, "catalog" | "full"));
+                    match stage.status {
+                        LiveVerificationStageStatus::Passed if live => ("live-pass", String::new()),
+                        LiveVerificationStageStatus::Failed if live => ("live-fail", String::new()),
+                        LiveVerificationStageStatus::Passed => ("offline-only", String::new()),
+                        _ => ("not-covered", "no completed scenario check".to_string()),
+                    }
+                }
+                None => ("not-covered", "no recorded scenario check".to_string()),
+            };
+            serde_json::json!({"scenario": scenario, "status": status, "reason": jcode_base::message::redact_secrets(&reason)})
+        }).collect();
+        serde_json::json!({"provider_id": provider, "scenarios": scenarios})
+    }).collect();
+    serde_json::json!({"schema_version": 1, "providers": rows})
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn failure_coverage_empty_is_not_covered_for_every_provider() {
+        let report = super::provider_failure_coverage(&[]);
+        assert_eq!(report["schema_version"], 1);
+        let rows = report["providers"].as_array().unwrap();
+        assert!(rows.iter().any(|row| row["provider_id"] == "claude"));
+        for row in rows {
+            assert_eq!(row["scenarios"].as_array().unwrap().len(), 4);
+            for scenario in row["scenarios"].as_array().unwrap() {
+                assert_eq!(scenario["status"], "not-covered");
+            }
+        }
+    }
+
+    #[test]
+    fn failure_coverage_preserves_skip_reason_and_never_promotes_generic_chat() {
+        use jcode_base::live_tests::{
+            LiveVerificationAuth, LiveVerificationEvent, LiveVerificationResult,
+            LiveVerificationStage,
+        };
+        let event = LiveVerificationEvent::new(
+            "synthetic coverage test",
+            "openai",
+            "OpenAI",
+            LiveVerificationAuth::non_secret("fixture", None::<String>),
+            LiveVerificationResult::Passed,
+        )
+        .with_stage(LiveVerificationStage::passed(
+            "non_streaming_chat_completion",
+        ))
+        .with_stage(LiveVerificationStage::skipped(
+            "expired_auth",
+            "missing credentials",
+        ));
+        let report = super::provider_failure_coverage(&[event]);
+        let row = report["providers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["provider_id"] == "openai")
+            .unwrap();
+        let scenarios = row["scenarios"].as_array().unwrap();
+        assert_eq!(scenarios[0]["status"], "skipped");
+        assert_eq!(scenarios[0]["reason"], "missing credentials");
+        assert_eq!(scenarios[1]["status"], "not-covered");
+        assert_eq!(scenarios[2]["status"], "not-covered");
+        assert_eq!(scenarios[3]["status"], "not-covered");
+    }
+
+    #[test]
+    fn failure_coverage_distinguishes_live_and_offline_and_latest_results() {
+        use jcode_base::live_tests::{
+            LiveVerificationAuth, LiveVerificationEvent, LiveVerificationResult,
+            LiveVerificationStage,
+        };
+        let offline = LiveVerificationEvent::new(
+            "synthetic fixture",
+            "openai",
+            "OpenAI",
+            LiveVerificationAuth::non_secret("fixture", None::<String>),
+            LiveVerificationResult::Passed,
+        )
+        .with_stage(LiveVerificationStage::passed("expired_auth"));
+        let live = offline
+            .clone()
+            .with_stage(LiveVerificationStage::passed("rate_limit"))
+            .with_stage(LiveVerificationStage::failed(
+                "unavailable_model",
+                "fixture failure",
+            ))
+            .with_metadata("doctor_tier", serde_json::json!("full"));
+        let report = super::provider_failure_coverage(&[offline.clone(), live]);
+        let row = report["providers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["provider_id"] == "openai")
+            .unwrap();
+        assert_eq!(row["scenarios"][0]["status"], "live-pass");
+        assert_eq!(row["scenarios"][1]["status"], "live-pass");
+        assert_eq!(row["scenarios"][2]["status"], "live-fail");
+        let report = super::provider_failure_coverage(&[offline]);
+        let row = report["providers"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["provider_id"] == "openai")
+            .unwrap();
+        assert_eq!(row["scenarios"][0]["status"], "offline-only");
+    }
+
     use super::*;
 
     #[test]

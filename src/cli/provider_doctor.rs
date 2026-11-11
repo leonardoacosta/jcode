@@ -231,3 +231,156 @@ fn report_to_json(report: &DoctorReport) -> String {
     }))
     .unwrap_or_else(|_| "{}".to_string())
 }
+
+pub fn run_coverage_command(emit_json: bool) -> Result<()> {
+    use std::io::{BufRead, BufReader};
+    let path = crate::live_tests::LiveVerificationPaths::resolve()?.events;
+    let mut events = Vec::new();
+    match std::fs::File::open(&path) {
+        Ok(file) => {
+            for line in BufReader::new(file).lines() {
+                let line = line.context("read provider coverage event")?;
+                if !line.trim().is_empty() {
+                    events.push(
+                        serde_json::from_str(&line).context("parse provider coverage event")?,
+                    );
+                }
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => return Err(error).context("open provider coverage events"),
+    }
+    let report = jcode_provider_doctor::provider_e2e::provider_failure_coverage(&events);
+    if emit_json {
+        println!("{}", serde_json::to_string_pretty(&report)?);
+    } else {
+        let width = crossterm::terminal::size()
+            .map(|(w, _)| usize::from(w))
+            .unwrap_or(80);
+        print!("{}", format_coverage(&report, width));
+    }
+    Ok(())
+}
+
+fn format_coverage(report: &serde_json::Value, width: usize) -> String {
+    use unicode_width::UnicodeWidthChar;
+    let mut out = String::new();
+    if let Some(providers) = report["providers"].as_array() {
+        for provider in providers {
+            if let Some(scenarios) = provider["scenarios"].as_array() {
+                for scenario in scenarios {
+                    let status = scenario["status"].as_str().unwrap_or("not-covered");
+                    let reason = if status == "skipped" {
+                        format!(
+                            "({})",
+                            scenario["reason"].as_str().unwrap_or("reason not recorded")
+                        )
+                    } else {
+                        String::new()
+                    };
+                    let line = format!(
+                        "{} | {} | {status}{reason}",
+                        provider["provider_id"].as_str().unwrap_or("unknown"),
+                        scenario["scenario"].as_str().unwrap_or("unknown")
+                    );
+                    let line = crate::message::strip_ansi_escape_sequences(&line)
+                        .replace(char::is_control, " ");
+                    let mut used = 0;
+                    for ch in line.chars() {
+                        let cells = ch.width().unwrap_or(0);
+                        if used + cells > width.saturating_sub(1) {
+                            if width > 0 {
+                                out.push('…');
+                            }
+                            break;
+                        }
+                        out.push(ch);
+                        used += cells;
+                    }
+                    out.push('\n');
+                }
+            }
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod coverage_tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn coverage_command_needs_no_provider_and_existing_diagnosis_still_does() {
+        assert!(
+            crate::cli::args::Args::try_parse_from([
+                "jcode",
+                "provider-doctor",
+                "--coverage",
+                "--json"
+            ])
+            .is_ok()
+        );
+        assert!(crate::cli::args::Args::try_parse_from(["jcode", "provider-doctor"]).is_err());
+        assert!(
+            crate::cli::args::Args::try_parse_from([
+                "jcode",
+                "provider-doctor",
+                "openai",
+                "--tier",
+                "offline"
+            ])
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn coverage_table_is_cell_bounded_and_shows_unknown_evidence() {
+        let report = jcode_provider_doctor::provider_e2e::provider_failure_coverage(&[]);
+        assert!(format_coverage(&report, 80).contains("not-covered"));
+        for width in [0, 1, 8, 20, 80] {
+            let table = format_coverage(&report, width);
+            assert!(
+                table
+                    .lines()
+                    .all(|line| unicode_width::UnicodeWidthStr::width(line) <= width)
+            );
+        }
+    }
+
+    #[test]
+    fn coverage_table_strips_escape_sequences_and_controls() {
+        let report = serde_json::json!({"providers": [{"provider_id": "provider", "scenarios": [{
+            "scenario": "expired_auth", "status": "skipped",
+            "reason": "before\u{1b}[31mred\u{1b}[0m\u{9b}2J\u{1b}]0;hidden-title\u{7}after\u{8}\u{7}\u{0}\nnext"
+        }]}]});
+        for width in [0, 1, 12, 80, 200] {
+            let table = format_coverage(&report, width);
+            assert!(
+                table.chars().all(|ch| ch == '\n' || !ch.is_control()),
+                "{table:?}"
+            );
+            assert!(!table.contains("hidden-title"));
+            assert!(!table.contains("[31m"));
+            assert!(
+                table
+                    .lines()
+                    .all(|line| unicode_width::UnicodeWidthStr::width(line) <= width)
+            );
+        }
+        assert!(format_coverage(&report, 200).contains("beforeredafter    next"));
+    }
+
+    #[test]
+    fn coverage_table_preserves_skipped_reason_and_bounds_wide_text() {
+        let report = serde_json::json!({"providers": [{"provider_id": "提供者", "scenarios": [{"scenario": "expired_auth", "status": "skipped", "reason": "missing credentials"}]}]});
+        assert!(format_coverage(&report, 80).contains("skipped(missing credentials)"));
+        for width in [0, 1, 4, 12, 80] {
+            assert!(
+                format_coverage(&report, width)
+                    .lines()
+                    .all(|line| unicode_width::UnicodeWidthStr::width(line) <= width)
+            );
+        }
+    }
+}

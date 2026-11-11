@@ -121,6 +121,37 @@ tmux is the most common source of rendering issues in TUI apps because it interp
 - **TERM mismatch**: If the inner `TERM` doesn't match tmux's advertised capabilities (e.g., app sees `xterm-256color` but tmux only passes `screen-256color`), color/capability negotiation fails silently.
 - **Clipboard**: OSC 52 clipboard support works but must be explicitly enabled (`set -g set-clipboard on`).
 
+### Adaptive terminal theme
+
+With `display.theme = "auto"` (the default), jcode queries the terminal's
+background using OSC 11 at startup, every five seconds during the session, and
+when focus returns (rate limited). This also runs while waiting for a model,
+streaming output, and executing tools, so day/night terminal changes do not
+require restarting jcode or submitting another message. Background replies are
+consumed before shortcuts, pickers, and the composer see them. Full-frame
+repainting replaces cached animation frames when the theme changes.
+
+`JCODE_THEME=light|dark` or `display.theme = "light"|"dark"` disables live
+detection. Terminals that do not answer retain the current theme. Background
+queries need to be supported by the multiplexer as well as the outer terminal.
+
+Tmux normally answers OSC 11 from a cached background captured at attachment.
+For live changes in terminals that do not notify tmux about palette updates,
+set `set -g allow-passthrough on` in your tmux configuration before launching
+jcode. When that option is enabled, jcode refreshes the outer terminal color
+using a tmux DCS envelope, then reads tmux's updated cache on the next timer
+tick. The option is checked once at TUI
+startup with a bounded local tmux command. Without it, ordinary queries still
+work, but theme changes depend on tmux refreshing its cache (for example when
+reattaching, or receiving supported terminal theme notifications). Passthrough
+permits applications to send control sequences to the outer terminal, so enable
+it only for trusted applications. Clipboard forwarding remains plain OSC 52 and
+only needs `set-clipboard on`, independent of this theme-query option.
+
+This implementation uses OSC 11 replies and periodic probing, not the newer
+DEC mode 2031 color-scheme notification subscription, which the current
+crossterm input parser does not expose.
+
 ---
 
 ## Recommendations for TUI Developers
@@ -138,3 +169,24 @@ tmux is the most common source of rendering issues in TUI apps because it interp
 6. **Test under tmux**: If your users might run inside tmux, test there explicitly. Many rendering bugs only appear under a multiplexer.
 
 7. **Degrade gracefully for Terminal.app and screen**: These are the lowest-capability terminals still in common use. Detect them (via `TERM_PROGRAM` or `TERM`) and fall back to 256-color mode with ASCII-safe UI elements.
+
+## Explicit local fallbacks
+
+Defaults and terminal detection stay unchanged. Set these environment variables
+before starting jcode. They do not write config or change a shared daemon's environment.
+
+| Setting | Accepted values | Effect |
+| --- | --- | --- |
+| `JCODE_IMAGES=off` | `off`, `false`, `0`, `no` (case-insensitive, surrounding whitespace ignored) | Disable terminal image protocols, direct image output and TUI previews, including cached native/half-block rendering. Overrides Kitty, iTerm2 opt-in and Sixel detection. Unset, invalid or positive values retain normal detection. |
+| `JCODE_ASCII_SAFE=on` | `on`, `true`, `1`, `yes` (case-insensitive, surrounding whitespace ignored) | Use ASCII for shared rounded-box borders, shared truncation markers (`.`), right-rail vertical borders, primary activity spinner frames and onboarding pill caps. Unset, invalid or negative values retain existing Unicode chrome. |
+
+`JCODE_ASCII_SAFE` is a **bounded chrome fallback, not an ASCII-only terminal mode**.
+It does not rewrite user/chat/tool content, paths, URLs or supplied titles/labels.
+Normal width-based clipping still applies. Other generated Unicode remains, including
+Markdown decoration, header icons, usage bars, swarm-specific glyphs and custom widget
+borders. No final-buffer sanitizer runs for this setting. Unicode cell measurement
+still uses `unicode-width`, and actual terminal glyph support is not probed.
+
+`JCODE_GLYPH_SAFE_MODE` is separate: it quantizes colors to protect fragile glyph
+caches. It does not select ASCII glyphs. `jcode debug terminal` reports active
+image and bounded ASCII fallbacks without requiring a server connection.

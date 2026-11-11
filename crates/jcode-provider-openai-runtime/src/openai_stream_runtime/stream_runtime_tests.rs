@@ -158,6 +158,76 @@ async fn refresh_failure_leaves_in_memory_credentials_untouched() {
     assert_eq!(creds.refresh_token, "rt_old");
 }
 
+#[tokio::test]
+#[allow(clippy::await_holding_lock)] // Serialize process-global test environment.
+async fn cancelled_accepted_refresh_persists_commits_and_skips_transport() {
+    let _lock = jcode_base::storage::lock_test_env();
+    let home = tempfile::tempdir().unwrap();
+    struct RestoreHome(Option<std::ffi::OsString>);
+    impl Drop for RestoreHome {
+        fn drop(&mut self) {
+            match self.0.take() {
+                Some(value) => jcode_base::env::set_var("JCODE_HOME", value),
+                None => jcode_base::env::remove_var("JCODE_HOME"),
+            }
+        }
+    }
+    let _restore = RestoreHome(std::env::var_os("JCODE_HOME"));
+    jcode_base::env::set_var("JCODE_HOME", home.path());
+    let credentials = dummy_credentials();
+    let original = oauth::OAuthTokens {
+        access_token: "at_old".into(),
+        refresh_token: "rt_old".into(),
+        expires_at: 1,
+        id_token: None,
+        scopes: vec![],
+    };
+    oauth::save_openai_tokens_for_account(&original, "cancel-fixture").unwrap();
+    let label = jcode_base::auth::codex::list_accounts()
+        .unwrap()
+        .into_iter()
+        .next()
+        .unwrap()
+        .label;
+    let task_label = label.clone();
+    let (tx, rx) = mpsc::channel(1);
+    let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+    let (release_tx, release_rx) = tokio::sync::oneshot::channel();
+    let caller_credentials = Arc::clone(&credentials);
+    let caller = tokio::spawn(async move {
+        super::super::openai_stream_cancellation::after_authentication(
+            &tx,
+            refresh_and_commit_openai_tokens(&caller_credentials, async move {
+                started_tx.send(()).unwrap();
+                release_rx.await.unwrap();
+                let tokens = rotated_tokens();
+                oauth::save_openai_tokens_for_account(&tokens, &task_label)?;
+                Ok(tokens)
+            }),
+            |_| async { panic!("cancelled consumer must never start inference transport") },
+        )
+        .await
+    });
+    started_rx.await.unwrap();
+    drop(rx);
+    assert!(caller.await.unwrap().is_err());
+    release_tx.send(()).unwrap();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while credentials.read().await.refresh_token != "rt_new" {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    let stored = jcode_base::auth::codex::load_credentials_for_account(&label).unwrap();
+    assert_eq!(stored.access_token, "at_new");
+    assert_eq!(stored.refresh_token, "rt_new");
+    assert_eq!(
+        credentials.read().await.account_id.as_deref(),
+        Some("acct_dummy")
+    );
+}
+
 #[test]
 fn unauthorized_triggers_token_refresh() {
     assert!(should_refresh_token(StatusCode::UNAUTHORIZED, ""));
@@ -279,4 +349,60 @@ fn cache_affinity_https_matches_websocket_session_header() {
             assert_eq!(http.headers()["session-id"], "persisted-session");
         }
     }
+}
+
+#[test]
+fn taxonomy_blocks_quota_revocation_and_permanent_retries() {
+    for error in [
+        "429 too many requests: insufficient_quota",
+        "429 billing exhausted, retry after timeout",
+        "invalid_grant: refresh token revoked, connection reset",
+        "403 forbidden rate limit",
+    ] {
+        assert!(!is_retryable_error(error), "{error}");
+    }
+    assert!(!is_retryable_error(
+        "openai token refresh failed: 503 service unavailable"
+    ));
+    assert_eq!(
+        jcode_provider_core::classify_provider_failure(
+            "OpenAI token refresh failed: 503 service unavailable"
+        ),
+        jcode_provider_core::ProviderFailureKind::Transient
+    );
+    assert!(!should_refresh_token(
+        StatusCode::UNAUTHORIZED,
+        "invalid_grant"
+    ));
+    assert!(!should_refresh_token(
+        StatusCode::UNAUTHORIZED,
+        "insufficient_quota"
+    ));
+}
+
+#[test]
+fn auth_refresh_is_claimed_once_across_request_retries() {
+    let mut attempted = false;
+    assert!(!claim_auth_refresh(
+        StatusCode::SERVICE_UNAVAILABLE,
+        "timeout",
+        &mut attempted
+    ));
+    assert!(!attempted);
+    assert!(claim_auth_refresh(
+        StatusCode::UNAUTHORIZED,
+        "",
+        &mut attempted
+    ));
+    assert!(attempted);
+    assert!(!claim_auth_refresh(
+        StatusCode::UNAUTHORIZED,
+        "",
+        &mut attempted
+    ));
+    assert!(!claim_auth_refresh(
+        StatusCode::FORBIDDEN,
+        "token expired",
+        &mut attempted
+    ));
 }

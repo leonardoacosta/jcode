@@ -102,7 +102,9 @@ fn lozenge_pill_spans(label: &str, filled: bool) -> Vec<Span<'static>> {
     // elsewhere. Half blocks are part of the universally-supported block
     // elements range, so the capsule stays a solid, aligned shape in every
     // terminal font (the corners are square, but nothing floats or clips).
-    let (left_cap, right_cap) = if rounded_pill_caps_supported() {
+    let (left_cap, right_cap) = if jcode_tui_style::theme::ascii_safe() {
+        ("[", "]")
+    } else if rounded_pill_caps_supported() {
         ("\u{25D6}", "\u{25D7}")
     } else {
         ("\u{2590}", "\u{258C}")
@@ -762,4 +764,40 @@ pub(super) fn draw_onboarding_welcome(frame: &mut Frame, app: &dyn TuiState, are
         Paragraph::new(body).alignment(Alignment::Center),
         chunks[idx],
     );
+}
+
+#[cfg(test)]
+mod ascii_pill_tests {
+    use super::*;
+
+    #[test]
+    fn ascii_pill_caps_preserve_label() {
+        if std::env::var_os("JCODE_TEST_ASCII_PILL_CHILD").is_none() {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args([
+                    "--exact",
+                    "tui::ui::onboarding::ascii_pill_tests::ascii_pill_caps_preserve_label",
+                    "--nocapture",
+                ])
+                .env("JCODE_TEST_ASCII_PILL_CHILD", "1")
+                .env("JCODE_ASCII_SAFE", "on")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
+            return;
+        }
+        for filled in [false, true] {
+            let spans = lozenge_pill_spans("中文 ✓", filled);
+            assert_eq!(spans[0].content, "[");
+            assert_eq!(spans[1].content, " 中文 ✓ ");
+            assert_eq!(spans[2].content, "]");
+            assert_eq!(Line::from(spans).width(), 10);
+        }
+    }
 }

@@ -1,6 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Hook configuration
+Existing hook keys, environment overrides, input-transform and feedback semantics SHALL remain compatible through the existing runner. New event aliases SHALL NOT dispatch duplicate hooks. Commands SHALL preserve direct argv execution unless an explicitly configured command invokes a shell.
 The config SHALL accept a `[hooks]` table keyed by event (`SessionStart`, `PreToolUse`, `PostToolUse`, `SubagentStop`, `Stop`, `PreCompact`) where each entry has a `command`, optional `matcher` and `path`, a `timeout` defaulting to 10 seconds, and `fail_closed` defaulting to false.
 
 #### Scenario: Default timeout
@@ -26,7 +27,7 @@ Tool event hooks SHALL run only when `matcher` matches the tool name and, when `
 - **THEN** the hook does not run
 
 ### Requirement: PreToolUse blocking
-A `blocking` `PreToolUse` hook exiting with code 2 SHALL block the tool call and return the hook's stderr to the model as the tool result. Other failures and timeouts SHALL block only when `fail_closed` is true.
+A `blocking` `PreToolUse` hook exiting with code 2 SHALL block the tool call and return bounded safe stderr as its result. Other failures and timeouts SHALL block only when `fail_closed` is true, but fail-open SHALL resume normal admission rather than override cancellation, revocation, budgets or other policy denials.
 
 #### Scenario: Exit code 2 blocks
 - **WHEN** a `PreToolUse` hook exits 2 with stderr `protected path`
@@ -34,7 +35,7 @@ A `blocking` `PreToolUse` hook exiting with code 2 SHALL block the tool call and
 
 #### Scenario: Fail-open timeout
 - **WHEN** a `PreToolUse` hook without `fail_closed` times out
-- **THEN** the tool executes and a warning is logged
+- **THEN** the tool is rechecked against normal admission and executes only if still permitted, with a safe warning logged
 
 #### Scenario: Fail-closed error
 - **WHEN** a `PreToolUse` hook with `fail_closed = true` exits 1
@@ -63,15 +64,19 @@ Each hook entry SHALL accept `mode` of `blocking`, `observe`, or `async`. Defaul
 - **THEN** a config warning is shown and the hook runs as `observe`
 
 ### Requirement: JSON decision output
-A `blocking` hook exiting 0 with JSON stdout SHALL be honored: `decision: "block"` or `hookSpecificOutput.permissionDecision: "deny"` blocks with `reason` returned to the model; `permissionDecision: "ask"` routes to the normal permission prompt; `additionalContext` is appended to model context. For `Stop`, `decision: "block"` SHALL continue the turn with `reason` as the next instruction. Non-JSON stdout SHALL be treated as no decision.
+A `blocking` hook exiting 0 with JSON stdout SHALL be honored: `decision: "block"` or `hookSpecificOutput.permissionDecision: "deny"` blocks with `reason` returned to the model; `permissionDecision: "ask"` routes to the normal permission prompt; `additionalContext` is appended to model context. For natural-completion `Stop`, `decision: "block"` SHALL request at most one continuation per completion event with `reason` as the next instruction, subject to normal admission and budgets. Explicit cancellation, durable stop or revoked generation SHALL suppress continuation regardless of hook output. Non-JSON stdout SHALL be treated as no decision.
 
 #### Scenario: JSON deny
 - **WHEN** a `PreToolUse` hook exits 0 with `{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"no prod"}}`
 - **THEN** the tool is not executed and the model sees `no prod`
 
 #### Scenario: Stop continuation
-- **WHEN** a `Stop` hook exits 0 with `{"decision":"block","reason":"run tests"}`
+- **WHEN** a natural-completion `Stop` hook exits 0 with `{"decision":"block","reason":"run tests"}` and normal admission permits continuation
 - **THEN** the agent continues with `run tests`
+
+#### Scenario: Cancellation overrides hook
+- **WHEN** a hook requests continuation after explicit cancel or generation revocation
+- **THEN** no new turn or tool execution is admitted, and owned hook processes remain accounted until settled
 
 #### Scenario: Silent success
 - **WHEN** a blocking hook exits 0 with empty stdout

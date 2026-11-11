@@ -12,13 +12,13 @@ The user clarified that combo/model endpoints must select their predefined compr
 
 The bounded Jcode correction removes compression override headers, forced cache bypass, and requested-policy notices from both Chat and Responses requests, including forks and legacy header configuration. Route/model selection and complete review-output instructions remain unchanged. No live gateway setting, provider account, or credential change is included. Gateway per-combo assignment and applied-plan acceptance remain separate unfinished work.
 
-The user approved consistent role-based input compression across the existing Pi5 (`omnipi`) and local Omni (`omni`) routes on 2026-11-02. Model aliases select routing combos but do not prove which compression pipeline ran. Both gateways have no explicit compression-profile assignments and empty effective `compression.comboOverrides`; their global fallback policies differ.
+Historical 2026-11-02 approval concerned role profiles on existing Pi5/local gateways. The later explicit 2026-11-03 correction and inherited-default selection supersede client profile selection. Existing aliases and labels alone still do not prove an applied compression pipeline.
 
 ## What Changes
 
-- Select a request-scoped conservative, optimized-trial, or exact input policy from durable task identity, not model-family guesses or prompt text.
-- Root conversations, memory extraction, and unclassified chat use conservative session-dedup then lite. Explicit bounded coding workers use optimized-trial RTK aggressive then Caveman ultra with existing protected-content rules. Final independent review and Jev decisions use exact input.
-- Bind the two existing gateway routes to equivalent named profiles and a conservative fallback. Keep Pi5 primary and local Omni manually selected. Do not introduce automatic cross-gateway or direct-provider substitution.
+- Current contract: Jcode sends the selected combo/model without role-selected compression or forced cache-bypass overrides. Compression selection belongs to the endpoint's inherited defaults. Preserve Chat/Responses forks, route identity and complete review-output instructions.
+- Historical role/profile selection below is superseded by the 2026-11-03 correction and is not executable work. Do not restore root/coding/reviewer override headers from old checked tasks.
+- Both gateways retain their user-selected inherited defaults and conservative fallback. Differentiated per-combo mapping remains recommendation-only unless separately selected; local Omni stays manually selected and no automatic cross-gateway/direct-provider substitution is allowed.
 - Mark direct routes as lacking gateway compression, without claiming a profile ran. Preserve explicit direct-provider exceptions.
 - Verify the actual gateway resolver and receipts, including stored combo mode versus effective override behavior. Exact review must not force ultra-terse output styles.
 - Verify one real production TypeSafe Jev evaluation with synthetic nonsecret input and no cross-provider fallback. Missing credentials or failed transport are blockers, not passing evidence.
@@ -39,6 +39,6 @@ Jcode provider request transport and fork isolation, agent task classification, 
 
 ## Authorization and preflight
 
-The user approved the role/profile recommendation and requested DeepSeek workers. Synthetic TypeSafe Jev inference is explicitly authorized. Approval does not bypass repository build, review, deployment, archive, secret-handling, or publication gates. DeepSeek primary-combo workers failed before tool calls with gateway HTTP 503; a bounded attempt through the existing alternate DeepSeek Azure combo retains Pi5 routing. Coordinator continues independent work.
+Historical role/profile approval and worker-route attempts are retained in task evidence for attribution, not current authority to select client compression. Earlier synthetic-inference permission does not authorize a new disclosure or paid call during this reconciliation. No model/provider override was used for the failed reconciliation workers.
 
-Implementation may proceed after this change validates. Deployment requires fresh final-diff gates, exact target/image/config verification, scoped rollback, and applicable repository gates. Unknown runtime proof remains incomplete. Tasks in this change are the authoritative cross-repository acceptance ledger; repository-local deployment artifacts must link their scope without duplicating completion claims.
+Native artifact validation does not authorize implementation or deployment. A later selected execution request and fresh task-specific preflight remain required; deployment additionally needs fresh final-diff gates, exact target/image/config verification, scoped rollback, and applicable repository gates. Unknown runtime proof remains incomplete. Tasks in this change are the authoritative cross-repository acceptance ledger; repository-local deployment artifacts must link their scope without duplicating completion claims.

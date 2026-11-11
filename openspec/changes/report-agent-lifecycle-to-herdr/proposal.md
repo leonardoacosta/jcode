@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [surface-worker-stall-and-block-reasons]
 ---
 # Proposal
 
@@ -15,7 +15,7 @@ Herdr can show `idle`, `working`, `blocked` and `done`, but Jcode reports only t
 
 - Add `Blocked` (approval or ask-user prompt pending, or any owned worker blocked or stalled) and `Done` (turn or owned work finished and not yet seen) to `AgentState`.
 - The coordinator session reports an aggregate state that includes its headless workers and background tasks: blocked > working > done > idle.
-- `Done` clears to `idle` when the session's client takes input focus.
+- Herdr's own seen cursor clears `Done` when the client takes input focus; widget/agents cursors remain independent. Use the shared display projection, not another lifecycle enum. Draining or unresolved work never appears as successful done.
 - When a worker or background task completes or fails while the client is unfocused, also emit a terminal notification (OSC 9 or bell), off by default via config.
 
 ## Capabilities

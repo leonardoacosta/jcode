@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: []
+  depends_on: [make-worker-stop-durable, reconcile-usage-budget-accounting]
 ---
 Roadmap owner: [P05: Durable overnight, scheduling and recovery](../../../docs/plans/PRODUCT_ROADMAP.md#p05-durable-overnight-scheduling-and-recovery)
 
@@ -11,10 +11,11 @@ Cancellation is only checked between coordinator turns: `run_supervisor` reads `
 
 ## What Changes
 
-- Add a cancellation branch to `run_turn_monitored` that aborts the in-flight turn within one sample interval of `CancelRequested`, cancels child bg tasks and swarm workers started by the run, and records `run_cancelled` with what was stopped.
+- Observe cancellation within one sample interval and revoke further admission; request cancellation of the active turn and run-owned child work through durable control. Record cancellation requested/draining/unresolved separately from confirmed stopped. A timer or dropped future never proves child work settled.
 - Enforce `max_agents` as a hard cap: worker spawns beyond it from the run's coordinator are refused with a visible reason.
 - Add optional `max_turn_minutes` and `max_run_tokens`; exceeding either ends the turn/run with a recorded `limit_reached` event.
 - User stop takes precedence over any in-progress wrap-up prompt.
+- Aggregate token limits consume deduplicated ownership accounting, not only coordinator usage. Estimated usage is labeled and cannot establish exact token or currency enforcement. Existing task-policy authoritative monetary reservations remain required for chargeable unattended dispatch; unsupported providers remain denied.
 
 ## Non-scope
 

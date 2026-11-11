@@ -20,7 +20,26 @@ pub(in crate::server) async fn broadcast_swarm_status_now(
         return;
     }
 
-    let members_guard = swarm_members.read().await;
+    // Resolve recipients and publish under one guard. Besides avoiding a lock
+    // and full payload clone per session, this keeps an older snapshot from
+    // being queued after a concurrent newer snapshot on the same channel.
+    let mut members_guard = swarm_members.write().await;
+    let mut targets = Vec::new();
+    for sid in &session_ids {
+        let Some(member) = members_guard.get_mut(sid) else {
+            continue;
+        };
+        member.event_txs.retain(|_, tx| !tx.is_closed());
+        if let Some((_, tx)) = member.event_txs.iter().next() {
+            member.event_tx = tx.clone();
+            targets.extend(member.event_txs.values().cloned());
+        } else if !member.event_tx.is_closed() {
+            targets.push(member.event_tx.clone());
+        }
+    }
+    if targets.is_empty() {
+        return;
+    }
     let broadcast_terminal_retention = swarm_status_broadcast_terminal_retention();
     let members_list: Vec<crate::protocol::SwarmMemberStatus> = session_ids
         .iter()
@@ -30,16 +49,17 @@ pub(in crate::server) async fn broadcast_swarm_status_now(
                 .filter(|m| member_in_status_broadcast(m, broadcast_terminal_retention))
                 .map(|m| {
                     let tokens = crate::session_metrics::token_totals(&m.session_id);
+                    let wait = crate::wait_registry::current(&m.session_id);
                     let context_limit = m
                         .runtime
                         .model
                         .as_deref()
                         .and_then(crate::provider::models::context_limit_for_model)
                         .map(|limit| limit as u64);
-                    (m, tokens, context_limit)
+                    (m, tokens, context_limit, wait)
                 })
                 .map(
-                    |(m, tokens, context_limit)| crate::protocol::SwarmMemberStatus {
+                    |(m, tokens, context_limit, wait)| crate::protocol::SwarmMemberStatus {
                         session_id: m.session_id.clone(),
                         friendly_name: m.friendly_name.clone(),
                         status: m.status.clone(),
@@ -54,6 +74,20 @@ pub(in crate::server) async fn broadcast_swarm_status_now(
                         todo_progress: m.todo_progress,
                         todo_items: m.todo_items.clone(),
                         runtime: crate::protocol::SwarmMemberRuntime {
+                            live_status: crate::server::live_status::snapshot(&m.session_id),
+                            wait_reason: wait.as_ref().map(|(reason, _)| reason.clone()).or_else(
+                                || {
+                                    (!matches!(
+                                        m.status.as_str(),
+                                        "running" | "streaming" | "thinking"
+                                    ))
+                                    .then(|| m.runtime.todo_blocked_reason.clone())
+                                    .flatten()
+                                },
+                            ),
+                            wait_age_secs: wait.map(|(_, age)| age),
+                            todo_blocked_reason: m.runtime.todo_blocked_reason.clone(),
+                            todo_statuses: m.runtime.todo_statuses.clone(),
                             model: m.runtime.model.clone(),
                             provider: m.runtime.provider.clone(),
                             auth_method: m.runtime.auth_method.clone(),
@@ -78,12 +112,52 @@ pub(in crate::server) async fn broadcast_swarm_status_now(
         })
         .collect();
 
-    drop(members_guard);
     let event = ServerEvent::SwarmStatus {
         members: members_list,
     };
-    for sid in session_ids {
-        let _ = fanout_session_event(swarm_members, &sid, event.clone()).await;
+    // Unbounded queue sends never await. Do not route through the generic
+    // event projector: SwarmStatus itself cannot change a live projection.
+    crate::server::state::send_event_to_targets(&targets, event);
+}
+
+pub(in crate::server) async fn monitor_wait_status(
+    swarm_members: Arc<RwLock<HashMap<String, SwarmMember>>>,
+    swarms_by_id: Arc<RwLock<HashMap<String, HashSet<String>>>>,
+) {
+    let mut changes = crate::wait_registry::subscribe_changes();
+    let mut live_changes = crate::server::live_status::subscribe_changes();
+    // Transitions are pushed by the watch channels above. The tick only ages
+    // displayed wait/elapsed counters, and each tick fans a full swarm status
+    // out to every attached client, so keep it coarse to let clients sleep.
+    let mut interval = tokio::time::interval(Duration::from_secs(5));
+    interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    let mut previous = HashSet::<String>::new();
+    loop {
+        tokio::select! {
+            result = changes.changed() => if result.is_err() { return; },
+            result = live_changes.changed() => if result.is_err() { return; },
+            _ = interval.tick() => {},
+        }
+        let current: HashSet<_> = crate::wait_registry::session_ids().into_iter().collect();
+        let affected: HashSet<_> = {
+            let members = swarm_members.read().await;
+            previous
+                .union(&current)
+                .filter_map(|sid| members.get(sid).and_then(|member| member.swarm_id.clone()))
+                .chain(
+                    members
+                        .values()
+                        .filter(|member| {
+                            matches!(member.status.as_str(), "running" | "streaming" | "thinking")
+                        })
+                        .filter_map(|member| member.swarm_id.clone()),
+                )
+                .collect()
+        };
+        previous = current;
+        for swarm_id in affected {
+            broadcast_swarm_status(&swarm_id, &swarm_members, &swarms_by_id).await;
+        }
     }
 }
 

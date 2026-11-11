@@ -80,6 +80,31 @@ pub fn selection_bg_color() -> Color {
 // spinner-only renderer patches one status cell between full TUI redraws. This
 // sequence should read as a circular spin, not a grow/recede pulse.
 const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+const ASCII_SPINNER_FRAMES: &[&str] = &["|", "/", "-", "\\", "|", "/", "-", "\\", "|", "/"];
+
+/// Opt-in fallback for selected generated chrome, not a content sanitizer.
+/// Unset, invalid and explicit false values preserve the existing Unicode UI.
+pub fn ascii_safe() -> bool {
+    std::env::var("JCODE_ASCII_SAFE").is_ok_and(|value| {
+        matches!(
+            value.trim().to_ascii_lowercase().as_str(),
+            "1" | "true" | "yes" | "on"
+        )
+    })
+}
+
+/// Select only an application-owned symbol. Never pass user/content text here.
+pub fn chrome_symbol(unicode: &'static str, ascii: &'static str) -> &'static str {
+    if ascii_safe() { ascii } else { unicode }
+}
+
+fn spinner_frames() -> &'static [&'static str] {
+    if ascii_safe() {
+        ASCII_SPINNER_FRAMES
+    } else {
+        SPINNER_FRAMES
+    }
+}
 
 /// Frame rate for slow, full-line "liveness" indicators that can only be
 /// repainted by a full TUI redraw (e.g. the running-tool progress bar) when
@@ -103,7 +128,7 @@ pub fn spinner_frame_index(elapsed: f32, fps: f32) -> usize {
 }
 
 pub fn spinner_frame(elapsed: f32, fps: f32) -> &'static str {
-    SPINNER_FRAMES[spinner_frame_index(elapsed, fps)]
+    spinner_frames()[spinner_frame_index(elapsed, fps)]
 }
 
 /// Whether `symbol` is one of the cells owned by the primary activity spinner.
@@ -112,7 +137,7 @@ pub fn spinner_frame(elapsed: f32, fps: f32) -> &'static str {
 /// cell after a late overlay, such as the slash-command palette, has taken
 /// ownership of it.
 pub fn is_activity_indicator_frame(symbol: &str) -> bool {
-    SPINNER_FRAMES.contains(&symbol)
+    spinner_frames().contains(&symbol)
 }
 
 pub fn activity_indicator_frame_index(
@@ -135,7 +160,7 @@ pub fn activity_indicator(
     fps: f32,
     enable_decorative_animations: bool,
 ) -> &'static str {
-    SPINNER_FRAMES[activity_indicator_frame_index(elapsed, fps, enable_decorative_animations)]
+    spinner_frames()[activity_indicator_frame_index(elapsed, fps, enable_decorative_animations)]
 }
 
 /// Convert HSL to RGB (h in 0-360, s and l in 0-1)
@@ -244,8 +269,31 @@ pub fn animated_tool_color(elapsed: f32, enable_decorative_animations: bool) -> 
 mod tests {
     use super::*;
 
+    fn default_spinner_child(test: &str) -> bool {
+        if std::env::var("JCODE_TEST_DEFAULT_SPINNER_CHILD").as_deref() == Ok(test) {
+            return true;
+        }
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", &format!("theme::tests::{test}"), "--nocapture"])
+            .env_remove("JCODE_ASCII_SAFE")
+            .env("JCODE_TEST_DEFAULT_SPINNER_CHILD", test)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
+        false
+    }
+
     #[test]
     fn spinner_frames_are_circular_braille_sequence() {
+        if !default_spinner_child("spinner_frames_are_circular_braille_sequence") {
+            return;
+        }
         assert_eq!(
             SPINNER_FRAMES,
             &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
@@ -257,6 +305,9 @@ mod tests {
 
     #[test]
     fn spinner_frame_wraps_at_sequence_length() {
+        if !default_spinner_child("spinner_frame_wraps_at_sequence_length") {
+            return;
+        }
         let fps = 10.0;
         assert_eq!(spinner_frame(0.0, fps), "⠋");
         assert_eq!(spinner_frame(0.9, fps), "⠏");
@@ -265,6 +316,10 @@ mod tests {
 
     #[test]
     fn activity_indicator_still_advances_without_decorative_animations() {
+        if !default_spinner_child("activity_indicator_still_advances_without_decorative_animations")
+        {
+            return;
+        }
         // With decorative animations disabled the single-cell spinner must keep
         // ticking instead of freezing on one frame.
         let first = activity_indicator(0.0, 12.5, false);

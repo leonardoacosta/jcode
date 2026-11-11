@@ -19,6 +19,56 @@ use std::sync::{Arc, LazyLock, Mutex};
 static REFRESH_LOCKS: LazyLock<Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
+tokio::task_local! {
+    static CANCELLATION: tokio::sync::watch::Receiver<()>;
+}
+
+pub(crate) fn cancellation() -> Option<tokio::sync::watch::Receiver<()>> {
+    CANCELLATION.try_with(Clone::clone).ok()
+}
+
+pub(crate) async fn inherit_cancellation<T>(
+    cancellation: Option<tokio::sync::watch::Receiver<()>>,
+    operation: impl std::future::Future<Output = T>,
+) -> T {
+    let operation = Box::pin(operation);
+    match cancellation {
+        Some(cancelled) => CANCELLATION.scope(cancelled, operation).await,
+        None => operation.await,
+    }
+}
+
+/// Dropping this scope cancels queued refreshes, including on caller abort.
+/// An exchange already dispatched still finishes its transaction safely.
+pub async fn with_cancellation<T>(
+    cancelled: impl std::future::Future<Output = ()>,
+    operation: impl std::future::Future<Output = anyhow::Result<T>>,
+) -> anyhow::Result<T> {
+    let operation = Box::pin(operation);
+    if cancellation().is_some() {
+        return operation.await;
+    }
+    let (lifetime, receiver) = tokio::sync::watch::channel(());
+    let result = CANCELLATION
+        .scope(receiver, async {
+            tokio::select! {
+                biased;
+                _ = cancelled => anyhow::bail!("OAuth refresh cancelled before completion"),
+                result = operation => result,
+            }
+        })
+        .await;
+    drop(lifetime);
+    result
+}
+
+pub(crate) fn ensure_not_cancelled() -> anyhow::Result<()> {
+    if cancellation().is_some_and(|receiver| receiver.has_changed().is_err()) {
+        anyhow::bail!("OAuth refresh cancelled before exchange");
+    }
+    Ok(())
+}
+
 fn lock_for(key: &str) -> Arc<tokio::sync::Mutex<()>> {
     let mut map = REFRESH_LOCKS.lock().unwrap_or_else(|e| e.into_inner());
     map.entry(key.to_string())
@@ -55,14 +105,25 @@ where
     Fut: std::future::Future<Output = anyhow::Result<T>>,
 {
     let lock = lock_for(&key);
-    let _guard = lock.lock().await;
+    let _guard = if let Some(mut cancelled) = cancellation() {
+        tokio::select! {
+            biased;
+            _ = cancelled.changed() => anyhow::bail!("OAuth refresh cancelled before exchange"),
+            guard = lock.lock() => guard,
+        }
+    } else {
+        lock.lock().await
+    };
+    ensure_not_cancelled()?;
     let current = reload();
     if let Some(current) = current {
         if already_refreshed(&current) {
             return Ok(current);
         }
+        ensure_not_cancelled()?;
         return refresh(Some(current)).await;
     }
+    ensure_not_cancelled()?;
     refresh(None).await
 }
 
@@ -70,6 +131,139 @@ where
 mod tests {
     use super::*;
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[tokio::test]
+    async fn cancelled_lock_wait_never_dispatches_refresh() {
+        let key = "test:cancelled-lock-wait";
+        let lock = lock_for(key);
+        let guard = lock.lock().await;
+        let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
+        let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+        let calls = Arc::new(AtomicUsize::new(0));
+        let task_calls = Arc::clone(&calls);
+        let task = tokio::spawn(async move {
+            with_cancellation(
+                async {
+                    let _ = cancel_rx.await;
+                },
+                async move {
+                    started_tx.send(()).unwrap();
+                    crate::auth::oauth::run_refresh_transaction(async move {
+                        single_flight(
+                            key.into(),
+                            || None::<()>,
+                            |_| false,
+                            move |_| async move {
+                                task_calls.fetch_add(1, Ordering::SeqCst);
+                                Ok(())
+                            },
+                        )
+                        .await
+                    })
+                    .await
+                },
+            )
+            .await
+        });
+        started_rx.await.unwrap();
+        cancel_tx.send(()).unwrap();
+        assert!(task.await.unwrap().is_err());
+        drop(guard);
+        tokio::task::yield_now().await;
+        assert_eq!(calls.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    async fn cancelled_after_dispatch_finishes_refresh_transaction() {
+        let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel();
+        let (started_tx, started_rx) = tokio::sync::oneshot::channel();
+        let (release_tx, release_rx) = tokio::sync::oneshot::channel();
+        let (committed_tx, committed_rx) = tokio::sync::oneshot::channel();
+        let task = tokio::spawn(with_cancellation(
+            async {
+                let _ = cancel_rx.await;
+            },
+            async move {
+                crate::auth::oauth::run_refresh_transaction(async move {
+                    single_flight(
+                        "test:cancelled-after-dispatch".into(),
+                        || None::<()>,
+                        |_| false,
+                        move |_| async move {
+                            started_tx.send(()).unwrap();
+                            release_rx.await.unwrap();
+                            committed_tx.send(()).unwrap();
+                            Ok(())
+                        },
+                    )
+                    .await
+                })
+                .await
+            },
+        ));
+        started_rx.await.unwrap();
+        cancel_tx.send(()).unwrap();
+        assert!(task.await.unwrap().is_err());
+        release_tx.send(()).unwrap();
+        tokio::time::timeout(std::time::Duration::from_secs(1), committed_rx)
+            .await
+            .unwrap()
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn cancelled_ready_lock_never_polls_exchange() {
+        assert!(
+            with_cancellation(
+                std::future::ready(()),
+                single_flight(
+                    "test:cancel-ready".into(),
+                    || None::<()>,
+                    |_| false,
+                    |_| async { panic!("cancel-ready must win over ready lock") },
+                )
+            )
+            .await
+            .is_err()
+        );
+    }
+
+    #[tokio::test]
+    async fn aborted_nested_transaction_waiter_never_dispatches() {
+        let key = "test:aborted-nested-waiter";
+        let lock = lock_for(key);
+        let guard = lock.lock().await;
+        let (queued_tx, queued_rx) = tokio::sync::oneshot::channel();
+        let (finished_tx, finished_rx) = tokio::sync::oneshot::channel();
+        let task = tokio::spawn(with_cancellation(std::future::pending(), async move {
+            crate::auth::oauth::run_refresh_transaction(async move {
+                crate::auth::oauth::run_refresh_transaction(async move {
+                    queued_tx.send(()).unwrap();
+                    let result = single_flight(
+                        key.into(),
+                        || None::<()>,
+                        |_| false,
+                        |_| async { panic!("aborted waiter must not exchange") },
+                    )
+                    .await;
+                    finished_tx.send(result.is_err()).unwrap();
+                    result
+                })
+                .await
+            })
+            .await
+        }));
+        queued_rx.await.unwrap();
+        task.abort();
+        assert!(task.await.unwrap_err().is_cancelled());
+        drop(guard);
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_secs(1), finished_rx)
+                .await
+                .unwrap()
+                .unwrap()
+        );
+    }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn concurrent_refreshes_for_same_key_run_once() {

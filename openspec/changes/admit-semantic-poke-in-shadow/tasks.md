@@ -107,6 +107,9 @@ production semantic activation, or permission to spend/send private evidence.
 
 ## Required acceptance and terminal state still open
 
+- [ ] Complete the required semantic-quality replay through an explicitly authorized inference route and redacted corpus, recording model/input/protocol identities, missed checks and uncertainty. Prior loopback transport acceptance is not semantic quality; do not spend or disclose private evidence merely to tick this task.
+- [ ] Refresh final-diff gates and independent review after required acceptance, then perform scoped commit and native archive only when all terminal gates pass. Preserve the existing checked offline implementation history; its six checked boxes do not mean the whole selected outcome completed.
+
 ### Review repair SHADOW-R1: check-capacity loss
 
 Independent review found that eight retained passes could hide a ninth failed

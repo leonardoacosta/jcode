@@ -14,6 +14,10 @@ Actual private native acceptance2547700t6i passed exit0 after337s: independent r
 
 Final329160fv0j passed deferred8/spawn40/fullworkspaceClippy, named OpenSpec and diffcheck pass. Review APPROVE does not complete broader ratchet or original integrated roadmap wave. Required policies and evidence remain unchanged. Optional invalid-role null regression was a reviewer suggestion, not an actionable finding. Only this bounded reviewer recovery is ready for scoped local commit; other task checkboxes remain unchanged.
 
+## CI decision, 2026-11-10
+
+The user confirmed that existing GitHub Actions CI/workflow deletions are intentional. Preserve those deletions. Task 2.3 remains blocked because this checkout has no verified repository-owned CI target; this decision does not authorize replacement CI or waive CI acceptance. Local measurement, ratchet and ledger tasks remain independent. No workflow file was restored or included in implementation commits.
+
 ## 1. Measurement
 
 - [ ] 1.1 Expose per-section prompt assembly (system, instructions, skills) from `crates/jcode-app-core/src/agent/prompting.rs`

@@ -1,5 +1,6 @@
 #[path = "app/cache_fingerprints.rs"]
 mod cache_fingerprints;
+mod cache_request;
 use cache_fingerprints::*;
 
 use super::DisplayMessageRoleExt;
@@ -22,11 +23,11 @@ use crate::session::{Session, StoredMessage};
 use crate::skill::SkillRegistry;
 use crate::tool::selfdev::ReloadContext;
 use crate::tool::{Registry, ToolContext};
+use crate::tui::terminal_events::EventStream;
 use anyhow::Result;
 use auth::PendingLogin;
 use crossterm::event::{
-    Event, EventStream, KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEvent,
-    MouseEventKind,
+    Event, KeyCode, KeyEventKind, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
 };
 use debug::DebugTrace;
 use futures::StreamExt;
@@ -62,6 +63,7 @@ mod catchup;
 mod commands;
 mod commit_log;
 pub(crate) use commit_log::CommitLogOverlay;
+mod cloud_environment;
 mod commands_cloud;
 mod commands_colors;
 mod commands_desktop;
@@ -103,6 +105,7 @@ mod remote;
 mod remote_header_hint;
 mod remote_notifications;
 mod replay;
+mod response_output;
 pub(crate) mod run_shell;
 mod runtime_memory;
 mod shortcut_hints;
@@ -116,6 +119,9 @@ mod usage_reset;
 mod voice_input;
 pub use state_ui_input_helpers::{CommandCandidate, CommandCandidateKind};
 pub(crate) use state_ui_input_helpers::{registered_command_entries, registered_command_names};
+mod binary_watch;
+mod justrust_status;
+mod state_ui_history_marker;
 mod state_ui_maintenance;
 mod state_ui_messages;
 mod state_ui_runtime;
@@ -126,7 +132,9 @@ mod swarm_hint;
 mod terminal_liveness;
 mod terminal_setup_command;
 mod terminal_title;
+mod todo_completion;
 mod todos_view;
+mod wake_stats;
 pub(crate) use todos_view::pinned_todos_payload_for_session;
 mod tui_lifecycle;
 mod tui_lifecycle_runtime;
@@ -316,12 +324,7 @@ struct KvCacheMissSample {
 }
 
 struct PendingSessionPickerLoad {
-    receiver: mpsc::Receiver<
-        anyhow::Result<(
-            Vec<super::session_picker::ServerGroup>,
-            Vec<super::session_picker::SessionInfo>,
-        )>,
-    >,
+    receiver: mpsc::Receiver<super::session_picker::SessionListUpdate>,
 }
 
 /// Session id, display messages, and rendered images from the fast-start thread.
@@ -579,47 +582,8 @@ pub struct CopyBadgeFeedback {
     pub expires_at: Instant,
 }
 
-impl CopyBadgeUiState {
-    fn pulse_active(expires_at: Option<Instant>, now: Instant) -> bool {
-        expires_at.is_some_and(|expires_at| expires_at > now)
-    }
-
-    pub(crate) fn alt_is_active(&self, now: Instant) -> bool {
-        self.alt_active || Self::pulse_active(self.alt_pulse_until, now)
-    }
-
-    pub(crate) fn shift_is_active(&self, now: Instant) -> bool {
-        self.alt_is_active(now)
-            && (self.shift_active || Self::pulse_active(self.shift_pulse_until, now))
-    }
-
-    pub(crate) fn key_is_active(&self, key: char, now: Instant) -> bool {
-        self.shift_is_active(now)
-            && self
-                .key_active
-                .as_ref()
-                .map(|(active_key, expires_at)| {
-                    active_key.eq_ignore_ascii_case(&key) && *expires_at > now
-                })
-                .unwrap_or(false)
-    }
-
-    pub(crate) fn feedback_for_key(&self, key: char, now: Instant) -> Option<bool> {
-        self.copied_feedback.as_ref().and_then(|feedback| {
-            if feedback.key.eq_ignore_ascii_case(&key) && feedback.expires_at > now {
-                Some(feedback.success)
-            } else {
-                None
-            }
-        })
-    }
-
-    pub(crate) fn expand_feedback_is_active(&self, now: Instant) -> bool {
-        self.expand_feedback_until
-            .is_some_and(|expires_at| expires_at > now)
-    }
-}
-
+#[path = "app/copy_badge_state.rs"]
+mod copy_badge_state;
 /// Result from running the TUI
 #[derive(Debug, Default)]
 pub struct RunResult {
@@ -646,6 +610,12 @@ pub struct RunResult {
 pub enum CloudHandoff {
     /// Attach to the session on a cloud host over SSH.
     Remote {
+        session_id: String,
+        host: String,
+        working_dir: Option<String>,
+    },
+    /// Attach to an already cloud-owned session without submitting a continuation.
+    RemoteResume {
         session_id: String,
         host: String,
         working_dir: Option<String>,
@@ -890,6 +860,7 @@ enum ColdCacheWarningTrigger {
 #[derive(Clone, Debug, Default)]
 struct StreamingProgress {
     streaming_text: String,
+    response_output: response_output::ResponseOutput,
     // Live token usage (per turn)
     streaming_input_tokens: u64,
     streaming_output_tokens: u64,
@@ -979,6 +950,7 @@ pub struct App {
     display_edit_line_counts: (usize, usize),
     terminal_title: RefCell<terminal_title::TerminalTitleState>,
     compacted_history_lazy: CompactedHistoryLazyState,
+    recent_history_paging: state_ui_history_marker::RecentHistoryPagingState,
     /// When older compacted history has just been loaded, this anchors the
     /// viewport to the content the reader was looking at so the prepend does not
     /// visibly jump. Resolved into `scroll_offset` by the next render frame.
@@ -1057,6 +1029,9 @@ pub struct App {
     // tick replays it after the backlog drains and one final live frame renders,
     // preventing Done from force-flushing a whole provider burst at once.
     deferred_stream_done_id: Option<u64>,
+    deferred_stream_done_identity: Option<crate::protocol::TurnIdentity>,
+    remote_turn_fence: remote::turn_identity::TurnFence,
+    remote_queue_retry_not_before: Option<Instant>,
     // Server-reported processing snapshot captured from resume/history before live events arrive.
     remote_resume_activity: Option<RemoteResumeActivity>,
     // First tick at which a queued follow-up was observed sitting undispatched
@@ -1069,6 +1044,12 @@ pub struct App {
     remote_interrupt_ack_deadline: Option<Instant>,
     // Reload reconnect is waiting for server history before deciding whether to continue.
     pending_reload_reconnect_status: Option<PendingReloadReconnectStatus>,
+    // Keep recovery identities after dispatch so delayed History cannot requeue
+    // the same continuation. Reset only when a new server reload begins.
+    scheduled_reload_recoveries: HashSet<(String, String)>,
+    // A reload recovery continuation was queued. It must run as its own turn
+    // so user follow-ups queued before the reload still wait for that turn to end.
+    reload_recovery_dispatch_pending: bool,
     // Current status
     status: ProcessingStatus,
     // Subagent status (shown during Task tool execution)
@@ -1118,11 +1099,10 @@ pub struct App {
     /// Todo state at the final-response handoff. Unchanged finished work must
     /// not re-enter quality gates on later turn-end or timer callbacks.
     final_response_todo_fingerprint: Option<String>,
-    /// Exact continuation sent for the last incomplete todo state. An unchanged
-    /// list must not trigger another automatic turn: the agent may be parked on
-    /// a worker, wake, or human decision, and repeated pokes cannot help.
+    /// Last incomplete state and its bounded automatic continuation budget.
     last_auto_poke_fingerprint: Option<String>,
     required_checks: crate::todo::evidence::RequiredChecks,
+    auto_poke_attempts: u8,
     /// Set when the current turn ended with a provider guardrail/refusal stop
     /// (ServerEvent::ProviderGuardrail). Consumed by the Done handler to
     /// update `consecutive_guardrail_stops`.
@@ -1233,6 +1213,15 @@ pub struct App {
     // Running `/cloud` or `/local` job (wakes the machine, moves the session).
     cloud_job: Option<commands_cloud::CloudJob>,
     pending_cloud_handoff: Option<commands_cloud::PendingCloudHandoff>,
+    // Request id of a ready handoff that already interrupted the running turn.
+    cloud_interrupt_sent_for: Option<u64>,
+    // Remote mode: the daemon turn must be cancelled for a ready handoff.
+    cloud_remote_interrupt_pending: bool,
+    cloud_recovery_context: Option<(String, String)>,
+    cloud_recovery_auto_pending: bool,
+    // One autonomous diagnosis per command/session per client lifetime. A
+    // diagnosis must never become an endless failed-handoff/recovery loop.
+    cloud_recovery_auto_attempted: std::collections::HashSet<(String, String)>,
     // Pasted content storage (displayed as placeholders, expanded on submit)
     pasted_contents: Vec<String>,
     // Pending pasted images (media_type, base64_data) attached to next message
@@ -1317,6 +1306,8 @@ pub struct App {
     /// keep auto-scrolling on every tick (browser-style) until the drag leaves the
     /// edge or ends. Stores the pane and whether to scroll upward.
     copy_selection_edge_autoscroll: Option<(crate::tui::CopySelectionPane, bool)>,
+    /// Temporary composer viewport while dragging, independent of the caret.
+    input_selection_scroll: Option<usize>,
     // Debug socket broadcast channel (if enabled)
     debug_tx: Option<tokio::sync::broadcast::Sender<super::backend::DebugEvent>>,
     // Remote provider info (set when running in remote mode)
@@ -1419,6 +1410,8 @@ pub struct App {
     runtime_mode: AppRuntimeMode,
     // Remote rewind/undo request waiting for the server's replacement History payload.
     pending_remote_rewind_notice: Option<PendingRemoteRewindNotice>,
+    // Opaque server-owned SSH session navigation and child-creation state.
+    ssh_sessions: remote::ssh_sessions::State,
     // History-recovery watchdog for the "stuck on loading session…" bug. When a
     // remote (re)connect never receives the bootstrap `History` event, every
     // prompt path is gated behind `has_loaded_history()` and the session is
@@ -1447,6 +1440,7 @@ pub struct App {
     tool_output_scan_index: usize,
     // Current session ID (from server in remote mode)
     remote_session_id: Option<String>,
+    cloud_environment: cloud_environment::CloudEnvironment,
     // All sessions on the server (remote mode only)
     remote_sessions: Vec<String>,
     remote_side_pane_images: Vec<crate::session::RenderedImage>,
@@ -1458,6 +1452,9 @@ pub struct App {
     /// When `remote_swarm_members` last arrived, so worker stopwatches can
     /// tick locally between server snapshots.
     remote_swarm_members_received_at: Option<std::time::Instant>,
+    /// When each swarm agent last sent us a notification, keyed by sender, so
+    /// notifications can show time since that agent's previous message.
+    swarm_last_message_at: std::collections::HashMap<String, std::time::Instant>,
     // Latest swarm plan snapshot (local or remote server event stream)
     swarm_plan_items: Vec<crate::plan::PlanItem>,
     swarm_plan_version: Option<u64>,
@@ -1549,9 +1546,15 @@ pub struct App {
     todos_view_markdown: String,
     todos_view_updated_at_ms: u64,
     todos_view_rendered_hash: u64,
+    /// Remote todo snapshot paired with its owning session. Never read SSH
+    /// session IDs from laptop-local todo storage.
+    remote_todos_payload: Option<(String, String)>,
+    remote_todos_requested_at: Option<Instant>,
     /// Hash of the todo payload rendered into the inline chat todo card, used
     /// to keep the card live-updating while it stays in the transcript.
     todo_card_rendered_hash: u64,
+    /// Tracks the display-only full report for the current completed todo cycle.
+    todo_completion_report: todo_completion::TodoCompletionReportState,
     /// JSON payload for the pinned todo band (display.pin_todos). `None` when
     /// the feature is off or the session has no todos. Refreshed on tick.
     /// The renderer wiring for these three fields is landing separately, so
@@ -1569,6 +1572,8 @@ pub struct App {
     pinned_todos_expanded: bool,
     /// Running and terminal background tasks shown beneath the pinned todo band.
     background_task_rows: Vec<crate::tui::BackgroundTaskRow>,
+    /// Asynchronous, bounded queries of justrust's public live-status API.
+    justrust_status: crate::tui::justrust_status::Poller,
     last_side_panel_refresh: Option<Instant>,
     // Most recently persisted focus target for dictation routing.
     last_client_focus_recorded_at: Option<Instant>,
@@ -1649,6 +1654,8 @@ pub struct App {
     pending_startup_prompt_echo: Option<String>,
     // Pending account switch from inline picker (for remote mode async processing)
     pending_account_picker_action: Option<crate::tui::AccountPickerAction>,
+    /// Last sent account switch, used only as the cycle cursor until acknowledged.
+    pending_account_switch_target: Option<crate::tui::AccountPickerAction>,
     // Keybindings for model switching
     model_switch_keys: ModelSwitchKeys,
     // Keybindings for effort switching
@@ -1674,6 +1681,9 @@ pub struct App {
     voice_input: Option<voice_input::VoiceInput>,
     // Last voice key press, to tell a held key's auto-repeat from a new press
     voice_input_last_press: Option<Instant>,
+    // Push-to-talk captured outside this client (`jcode companion`), with the
+    // time it was last updated so a vanished sender cannot leave it stuck.
+    external_voice: Option<(crate::protocol::VoiceActivity, Instant)>,
     // Optional configured keybinding for accepting the post-error fallback offer
     fallback_switch_key: OptionalBinding,
     // Config reload generation the keybinding snapshot above was parsed at.
@@ -1738,6 +1748,11 @@ pub struct App {
     pending_soft_interrupts: Vec<String>,
     // Soft interrupts written to the socket but not yet acknowledged by the server.
     pending_soft_interrupt_requests: Vec<(u64, String)>,
+    // Every soft interrupt still shown as pending, by request id. Unlike the
+    // list above this survives the ack, so recovery can name them to the server.
+    sent_soft_interrupts: Vec<(u64, String)>,
+    // In-flight by-id cancel used to recover stranded soft interrupts.
+    soft_interrupt_recovery: Option<(u64, Instant)>,
     // Whether the current remote turn should trigger autoreview after completion.
     autoreview_after_current_turn: bool,
     // Whether the current remote turn should trigger autojudge after completion.
@@ -1866,6 +1881,8 @@ pub struct App {
     usage_overlay: Option<RefCell<super::usage_overlay::UsageOverlay>>,
     /// Whether a usage refresh request is currently in flight.
     usage_report_refreshing: bool,
+    /// Provider query from `/usage <provider>`; None shows every provider.
+    usage_provider_filter: Option<String>,
     usage_reset: usage_reset::ResetState,
     /// Whether a `/productivity` report generation is currently in flight.
     productivity_refreshing: bool,
@@ -1961,71 +1978,11 @@ impl App {
     }
     const KV_CACHE_MAX_MISS_SAMPLES: usize = 12;
 
-    pub(super) fn begin_kv_cache_request(
-        &mut self,
-        messages: &[Message],
-        tools: &[ToolDefinition],
-        system_static: &str,
-        system_dynamic: &str,
-    ) {
-        let turn_number = self
-            .display_messages
-            .iter()
-            .filter(|message| message.role == "user")
-            .count()
-            .max(1);
-        if self.kv_cache.kv_cache_turn_number == Some(turn_number) {
-            self.kv_cache.kv_cache_turn_call_index = self
-                .kv_cache
-                .kv_cache_turn_call_index
-                .saturating_add(1)
-                .max(1);
-        } else {
-            self.kv_cache.kv_cache_turn_number = Some(turn_number);
-            self.kv_cache.kv_cache_turn_call_index = 1;
-        }
-
-        let baseline = self.kv_cache_baseline_for_current_session();
-        let signature =
-            Self::kv_cache_request_signature(messages, tools, system_static, system_dynamic);
-        let baseline_messages_prefix_matches = baseline
-            .as_ref()
-            .and_then(|baseline| baseline.signature.as_ref())
-            .map(|previous| Self::kv_cache_signatures_prefix_match(&signature, previous));
-
-        self.maybe_push_cold_cache_warning(
-            turn_number,
-            self.kv_cache.kv_cache_turn_call_index,
-            baseline.as_ref(),
-        );
-        self.pause_streaming_tps(false);
-        self.kv_cache.current_api_usage_recorded = false;
-        self.mark_stream_usage_call_boundary();
-
-        self.kv_cache.pending_kv_cache_request = Some(PendingKvCacheRequest {
-            started_at: Some(Instant::now()),
-            utc_day: crate::kv_cache_monitor::utc_day_now(),
-            turn_number,
-            call_index: self.kv_cache.kv_cache_turn_call_index,
-            cache_ttl_secs: crate::tui::cache_ttl_for_provider_model(
-                &self.kv_cache_provider_name(),
-                Some(&self.kv_cache_provider_model()),
-            ),
-            provider: self.kv_cache_provider_name(),
-            model: self.kv_cache_provider_model(),
-            upstream_provider: self.upstream_provider.clone(),
-            account: self.kv_cache_account(),
-            signature: Some(signature),
-            baseline_messages_prefix_matches,
-            baseline,
-            cache_generation: self.kv_cache.cache_generation,
-        });
-    }
-
     pub(in crate::tui::app) fn begin_remote_kv_cache_request(
         &mut self,
         signature: KvCacheRequestSignature,
     ) {
+        self.streaming.response_output.reset();
         let turn_number = self
             .display_messages
             .iter()
@@ -2659,14 +2616,44 @@ impl App {
             return;
         }
 
+        let prefix_tag = if matches!(
+            reason,
+            KvCacheMissReason::LowRead | KvCacheMissReason::ZeroRead
+        ) && Self::kv_cache_checked_prefix_unchanged(request)
+        {
+            " [prefix unchanged]"
+        } else {
+            ""
+        };
         self.push_kv_cache_notice(format!(
-            "{} KV cache miss [{}] {}: ~{} tokens resent ({}). See KV_CACHE_USAGE in logs.",
+            "{} KV cache miss [{}]{} {}: ~{} tokens resent ({}). See KV_CACHE_USAGE in logs.",
             if harness_change { "⚠️" } else { "ℹ️" },
             reason.label(),
+            prefix_tag,
             usage,
             token_label,
             detail,
         ));
+    }
+
+    fn kv_cache_checked_prefix_unchanged(request: &PendingKvCacheRequest) -> bool {
+        let Some((previous, current)) = request
+            .baseline
+            .as_ref()
+            .and_then(|baseline| baseline.signature.as_ref())
+            .zip(request.signature.as_ref())
+        else {
+            return false;
+        };
+        previous.message_count > 0
+            && previous.system_static_hash != 0
+            && previous.tools_hash != 0
+            && previous.message_hashes.len() == previous.message_count
+            && current.message_hashes.len() == current.message_count
+            && current.system_static_hash == previous.system_static_hash
+            && current.tools_hash == previous.tools_hash
+            && current.tool_count == previous.tool_count
+            && Self::kv_cache_signatures_prefix_match(current, previous)
     }
 
     /// Specific, human-readable cause: what changed (from -> to) and the

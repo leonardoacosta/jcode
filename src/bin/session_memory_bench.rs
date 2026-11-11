@@ -58,6 +58,12 @@ enum BenchMode {
 
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
+    let executable = std::env::current_exe().ok();
+    let metadata = benchmark_metadata(
+        executable.as_deref(),
+        jcode_build_meta::VERSION,
+        jcode_build_meta::GIT_HASH,
+    );
 
     let process_before = process_memory::snapshot_with_source("bench:session-memory:before");
     let session = load_or_build_session(&args)?;
@@ -97,7 +103,8 @@ fn main() -> anyhow::Result<()> {
     let process_after_drop_transient =
         process_memory::snapshot_with_source("bench:session-memory:after-drop-transient");
 
-    let payload = serde_json::json!({
+    let mut payload = serde_json::json!({
+        "metadata": metadata,
         "scenario": match args.scenario {
             Scenario::Synthetic => "synthetic",
             Scenario::Saved => "saved",
@@ -129,8 +136,93 @@ fn main() -> anyhow::Result<()> {
         "client_memory": client_memory,
     });
 
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .ok();
+    redact_report(&mut payload, home.as_deref());
     println!("{}", serde_json::to_string_pretty(&payload)?);
     Ok(())
+}
+
+fn benchmark_metadata(
+    executable: Option<&std::path::Path>,
+    version: &str,
+    revision: &str,
+) -> serde_json::Value {
+    let identity = |value: &str| {
+        if value.trim().is_empty() {
+            "unknown".to_string()
+        } else {
+            value.to_string()
+        }
+    };
+    let binary_path = executable
+        .and_then(|path| path.to_str())
+        .map(identity)
+        .unwrap_or_else(|| "unknown".to_string());
+    let version = identity(version);
+    let revision = identity(revision);
+    let cpu = std::fs::read_to_string("/proc/cpuinfo")
+        .ok()
+        .and_then(|text| {
+            text.lines().find_map(|line| {
+                let (key, value) = line.split_once(':')?;
+                (key.trim() == "model name").then(|| identity(value.trim()))
+            })
+        })
+        .unwrap_or_else(|| "unknown".to_string());
+    let memory_bytes = std::fs::read_to_string("/proc/meminfo")
+        .ok()
+        .and_then(|text| {
+            text.lines().find_map(|line| {
+                let value = line.strip_prefix("MemTotal:")?;
+                value
+                    .split_whitespace()
+                    .next()?
+                    .parse::<u64>()
+                    .ok()?
+                    .checked_mul(1024)
+            })
+        });
+    serde_json::json!({
+        "comparable": ![&binary_path, &version, &revision, &cpu].iter().any(|value| value.as_str() == "unknown")
+            && memory_bytes.is_some(),
+        "binary_path": binary_path,
+        "version": version,
+        "revision": revision,
+        "git_dirty": jcode_build_meta::git_dirty(),
+        "source_fingerprint": jcode_build_meta::SOURCE_FINGERPRINT,
+        "cleanliness_verified": jcode_build_meta::cleanliness_verified(),
+        "hardware": {
+            "cpu": cpu,
+            "cpu_arch": std::env::consts::ARCH,
+            "os": std::env::consts::OS,
+            "memory_bytes": memory_bytes.map(serde_json::Value::from)
+                .unwrap_or_else(|| serde_json::json!("unknown")),
+        },
+    })
+}
+
+fn redact_report(value: &mut serde_json::Value, home: Option<&str>) {
+    match value {
+        serde_json::Value::String(text) => {
+            if let Some(home) = home.filter(|home| !home.is_empty() && *home != "/") {
+                *text = text.replace(home.trim_end_matches('/'), "~");
+            }
+            *text = jcode::message::redact_secrets(text);
+        }
+        serde_json::Value::Array(values) => {
+            for value in values {
+                redact_report(value, home);
+            }
+        }
+        serde_json::Value::Object(values) => {
+            for value in values.values_mut() {
+                redact_report(value, home);
+            }
+        }
+        _ => {}
+    }
 }
 
 fn load_or_build_session(args: &Args) -> anyhow::Result<Session> {
@@ -233,6 +325,47 @@ fn text_block(text: String) -> ContentBlock {
     ContentBlock::Text {
         text,
         cache_control: None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_binary_identity_is_unknown_and_non_comparable() {
+        let metadata = benchmark_metadata(None, "", "unknown");
+        assert_eq!(metadata["binary_path"], "unknown");
+        assert_eq!(metadata["version"], "unknown");
+        assert_eq!(metadata["revision"], "unknown");
+        assert_eq!(metadata["comparable"], false);
+    }
+
+    #[test]
+    fn metadata_records_identity_and_hardware() {
+        let metadata = benchmark_metadata(Some(std::path::Path::new("/bench")), "v1", "abc123");
+        assert_eq!(metadata["binary_path"], "/bench");
+        assert_eq!(metadata["version"], "v1");
+        assert_eq!(metadata["revision"], "abc123");
+        assert!(metadata["hardware"]["cpu_arch"].is_string());
+        assert!(metadata["hardware"].get("memory_bytes").is_some());
+    }
+
+    #[test]
+    fn report_redacts_home_and_secrets_without_changing_measurements() {
+        let secret = "sk-ant-oat01-ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let mut value = serde_json::json!({
+            "path": "/home/example/session.json",
+            "nested": [{"value": secret}],
+            "measurement": 42,
+        });
+        redact_report(&mut value, Some("/home/example"));
+        assert_eq!(value["path"], "~/session.json");
+        assert_eq!(value["measurement"], 42);
+        assert!(!value.to_string().contains(secret));
+        assert!(!value.to_string().contains("/home/example"));
+        redact_report(&mut value, Some(""));
+        assert_eq!(value["path"], "~/session.json");
     }
 }
 
