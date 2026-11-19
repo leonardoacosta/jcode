@@ -342,3 +342,118 @@ async fn failed_cold_restore_keeps_published_and_retiring_sources_unchanged() ->
     }
     Ok(())
 }
+
+#[test]
+fn poisoned_resume_marker_blocks_only_when_writer_is_dead() {
+    let dir = tempfile::tempdir().unwrap();
+    let marker = dir.path().join("session_x");
+    // No marker: fine.
+    assert!(refuse_poisoned_resume(Some(&marker), "session_x").is_ok());
+    // Live writer (ourselves): a concurrent restore, not poison.
+    std::fs::write(&marker, std::process::id().to_string()).unwrap();
+    assert!(refuse_poisoned_resume(Some(&marker), "session_x").is_ok());
+    // Garbage contents never block.
+    std::fs::write(&marker, "not-a-pid").unwrap();
+    assert!(refuse_poisoned_resume(Some(&marker), "session_x").is_ok());
+    // Dead writer: the previous restore took the server down.
+    // Above pid_max (4194304) on Linux, so never live.
+    std::fs::write(&marker, "4194305").unwrap();
+    let err = refuse_poisoned_resume(Some(&marker), "session_x")
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("died while restoring"), "{err}");
+    assert!(err.contains("session_x"));
+}
+
+#[test]
+fn resume_marker_is_keyed_per_session_and_sanitized() {
+    let _env_lock = crate::storage::lock_test_env();
+    let _home = TestHome::new();
+    let s = resume_marker_path("session/s").unwrap();
+    let t = resume_marker_path("session_t").unwrap();
+    assert_ne!(s, t);
+    assert_eq!(
+        s.parent().unwrap().file_name().unwrap(),
+        "resume-in-progress"
+    );
+    assert_eq!(s.file_name().unwrap(), "session_s");
+    // A dead-pid marker for S does not block T.
+    std::fs::write(&s, "4194305").unwrap();
+    assert!(refuse_poisoned_resume(Some(&t), "session_t").is_ok());
+    assert!(refuse_poisoned_resume(Some(&s), "session/s").is_err());
+}
+
+#[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
+async fn restore_new_removes_marker_after_failed_restore() -> Result<()> {
+    let _env_lock = crate::storage::lock_test_env();
+    let _home = TestHome::new();
+    let manager = SessionManager::new();
+    let candidate = Arc::try_unwrap(agent("candidate").await)
+        .ok()
+        .expect("owned candidate")
+        .into_inner();
+    let marker = resume_marker_path("missing-target").unwrap();
+    assert!(
+        manager
+            .reserve("missing-target")
+            .await
+            .restore_new(candidate, None, false)
+            .await
+            .is_err()
+    );
+    assert!(
+        !marker.exists(),
+        "marker must not outlive a returned restore"
+    );
+    Ok(())
+}
+
+#[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
+async fn restore_new_refuses_dead_marker_for_that_session_only() -> Result<()> {
+    let _env_lock = crate::storage::lock_test_env();
+    let _home = TestHome::new();
+    let manager = SessionManager::new();
+    let poisoned = resume_marker_path("poisoned").unwrap();
+    std::fs::write(&poisoned, "4194305").unwrap();
+    let mut errors = Vec::new();
+    for id in ["poisoned", "other"] {
+        let candidate = Arc::try_unwrap(agent("candidate").await)
+            .ok()
+            .expect("owned candidate")
+            .into_inner();
+        let err = manager
+            .reserve(id)
+            .await
+            .restore_new(candidate, None, false)
+            .await
+            .err()
+            .expect("neither session exists, so both fail");
+        errors.push(err.to_string());
+    }
+    assert!(errors[0].contains("died while restoring"), "{}", errors[0]);
+    assert!(errors[0].contains(poisoned.to_str().unwrap()));
+    assert!(
+        poisoned.exists(),
+        "refusal keeps the marker for the operator"
+    );
+    assert!(!errors[1].contains("died while restoring"), "{}", errors[1]);
+    Ok(())
+}
+
+#[test]
+fn unparseable_or_own_pid_marker_proceeds() {
+    let dir = tempfile::tempdir().unwrap();
+    let marker = dir.path().join("session_x");
+    for contents in ["", "  \n", "-5", "12abc", "99999999999999999999"] {
+        std::fs::write(&marker, contents).unwrap();
+        assert!(
+            refuse_poisoned_resume(Some(&marker), "session_x").is_ok(),
+            "{contents:?}"
+        );
+    }
+    std::fs::write(&marker, format!("{}\n", std::process::id())).unwrap();
+    assert!(refuse_poisoned_resume(Some(&marker), "session_x").is_ok());
+    assert!(refuse_poisoned_resume(None, "session_x").is_ok());
+}

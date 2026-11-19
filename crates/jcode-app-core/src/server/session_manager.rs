@@ -196,8 +196,17 @@ impl SessionReservation<'_> {
     )> {
         self.ensure_vacant()?;
         let lease = owner.claim_runtime_mutation()?;
+        let marker = resume_marker_path(&self.session_id);
         let previous = super::run_blocking_io(|| {
-            owner.restore_session_deferring_save(&self.session_id, working_dir)
+            refuse_poisoned_resume(marker.as_deref(), &self.session_id)?;
+            if let Some(marker) = &marker {
+                let _ = std::fs::write(marker, std::process::id().to_string());
+            }
+            let restored = owner.restore_session_deferring_save(&self.session_id, working_dir);
+            if let Some(marker) = &marker {
+                let _ = std::fs::remove_file(marker);
+            }
+            restored
         })?;
         if selfdev {
             owner.set_canary("self-dev");
@@ -312,4 +321,34 @@ impl SessionReservation<'_> {
         agents.insert(self.session_id.clone(), agent);
         Ok(())
     }
+}
+
+/// Marker that a server is restoring this session. Written before the restore
+/// and removed after it; a left-over marker from a dead pid means the restore
+/// itself took the previous server down (the 2026-11-19 stack overflow looped
+/// 39 times because every reconnecting client re-requested the same resume).
+fn resume_marker_path(session_id: &str) -> Option<std::path::PathBuf> {
+    let dir = crate::storage::jcode_dir().ok()?.join("resume-in-progress");
+    std::fs::create_dir_all(&dir).ok()?;
+    Some(dir.join(super::durable_state::sanitize_session_id(session_id)))
+}
+
+fn refuse_poisoned_resume(marker: Option<&std::path::Path>, session_id: &str) -> Result<()> {
+    let Some(marker) = marker else {
+        return Ok(());
+    };
+    let Ok(contents) = std::fs::read_to_string(marker) else {
+        return Ok(());
+    };
+    let Ok(pid) = contents.trim().parse::<u32>() else {
+        return Ok(());
+    };
+    // Our own pid, or a live sibling restoring concurrently: not poison.
+    if pid == std::process::id() || super::lifecycle::process_alive(pid) {
+        return Ok(());
+    }
+    bail!(
+        "Refusing to resume session {session_id}: server pid {pid} died while restoring it. Inspect the session or `rm {}` to retry.",
+        marker.display()
+    )
 }
