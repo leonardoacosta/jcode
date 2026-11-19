@@ -806,6 +806,7 @@ pub(super) async fn handle_lightweight_control_request(
             validation,
             follow_up,
             tldr,
+            generation,
         } => {
             let status = status.unwrap_or_else(|| "ready".to_string());
             let report = format_structured_completion_report(
@@ -814,17 +815,20 @@ pub(super) async fn handle_lightweight_control_request(
                 follow_up.as_deref(),
             );
             let detail = Some(truncate_detail(&message, 160));
-            update_member_status_with_report_tldr(
-                &req_session_id,
-                &status,
-                detail,
-                Some(report.clone()),
-                tldr,
-                swarm_members,
-                swarms_by_id,
-                Some(event_history),
-                Some(event_counter),
-                Some(swarm_event_tx),
+            super::session_control::with_reported_generation(
+                generation,
+                update_member_status_with_report_tldr(
+                    &req_session_id,
+                    &status,
+                    detail,
+                    Some(report.clone()),
+                    tldr,
+                    swarm_members,
+                    swarms_by_id,
+                    Some(event_history),
+                    Some(event_counter),
+                    Some(swarm_event_tx),
+                ),
             )
             .await;
             super::comm_control::close_reporter_task_on_terminal_report(
@@ -1154,6 +1158,32 @@ mod lightweight_swarm_member_tests {
         ensure_lightweight_swarm_member("no-such-session", &sessions, &members, &swarms).await;
         assert!(members.read().await.is_empty());
         assert!(swarms.read().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn corrupt_control_record_fails_closed_and_registers_no_member() {
+        let _home = isolated_home();
+        let id = "session_corrupt_control";
+        let mut session =
+            crate::session::Session::create_with_id(id.into(), Some("parent".into()), None);
+        session.save_prepared().unwrap();
+        let path = crate::storage::durable_state_dir()
+            .join("session-control")
+            .join(format!("{id}.json"));
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, b"{not json").unwrap();
+        let (sessions, members, swarms) = empty_state();
+        ensure_lightweight_swarm_member(id, &sessions, &members, &swarms).await;
+        assert!(
+            members.read().await.is_empty(),
+            "corrupt record became a runnable member"
+        );
+        assert!(swarms.read().await.is_empty());
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            b"{not json",
+            "corrupt bytes were overwritten"
+        );
     }
 
     #[tokio::test]

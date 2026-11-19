@@ -753,6 +753,29 @@ async fn notify_session_runs_scheduled_task_immediately_for_idle_live_session() 
 
 #[tokio::test]
 async fn notify_session_queues_soft_interrupt_when_live_session_is_busy() {
+    busy_live_session_queues_notification(
+        "[Scheduled task]\nTask: Follow up while busy",
+        "Task: Follow up while busy",
+    )
+    .await;
+}
+
+/// An MCP wake aimed at a busy live session is not lost: it rides the same
+/// soft-interrupt queue as any scheduled task, with identifiers only.
+#[tokio::test]
+async fn mcp_wake_for_busy_live_session_queues_soft_interrupt() {
+    let item = crate::ambient::runner::runner_mcp_wake::build_item(
+        &crate::mcp::notifications::WakeRequest {
+            server: "docs".into(),
+            class: crate::mcp::notifications::NotificationClass::ToolsListChanged,
+            session: Some("target".into()),
+        },
+    );
+    let message = crate::ambient::format_scheduled_session_message(&item);
+    busy_live_session_queues_notification(&message, "tools_list_changed").await;
+}
+
+async fn busy_live_session_queues_notification(message: &str, expected: &str) {
     let provider: Arc<dyn Provider> = Arc::new(MockProvider);
     let registry = Registry::new(provider.clone()).await;
     let agent = Arc::new(Mutex::new(Agent::new(provider, registry)));
@@ -815,7 +838,7 @@ async fn notify_session_queues_soft_interrupt_when_live_session_is_busy() {
     handle_notify_session(
         88,
         session_id.clone(),
-        "[Scheduled task]\nTask: Follow up while busy".to_string(),
+        message.to_string(),
         NotifySessionContext {
             sessions: &sessions,
             soft_interrupt_queues: &soft_interrupt_queues,
@@ -843,7 +866,7 @@ async fn notify_session_queues_soft_interrupt_when_live_session_is_busy() {
         } => {
             assert_eq!(from_session, "schedule");
             assert_eq!(from_name.as_deref(), Some("scheduled task"));
-            assert!(message.contains("Task: Follow up while busy"));
+            assert!(message.contains(expected));
         }
         other => panic!("expected notification event, got {other:?}"),
     }
@@ -854,7 +877,7 @@ async fn notify_session_queues_soft_interrupt_when_live_session_is_busy() {
         1,
         "scheduled task should queue as soft interrupt"
     );
-    assert!(queued[0].content.contains("Task: Follow up while busy"));
+    assert!(queued[0].content.contains(expected));
     drop(queued);
 
     let client_events: Vec<_> = std::iter::from_fn(|| client_event_rx.try_recv().ok())
@@ -1122,4 +1145,211 @@ async fn daemon_saved_flag_survives_later_session_writes() {
     } else {
         crate::env::remove_var("JCODE_HOME");
     }
+}
+
+#[tokio::test]
+async fn notify_session_never_runs_scheduled_task_on_stopped_live_session() {
+    let _guard = crate::storage::lock_test_env();
+    let runtime = tempfile::TempDir::new().unwrap();
+    let previous = std::env::var_os("JCODE_RUNTIME_DIR");
+    crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+    let provider = Arc::new(StreamingMockProvider::default());
+    provider.queue_response(vec![
+        StreamEvent::TextDelta("must not run".to_string()),
+        StreamEvent::MessageEnd { stop_reason: None },
+    ]);
+    let provider_dyn: Arc<dyn Provider> = provider.clone();
+    let registry = Registry::new(provider_dyn.clone()).await;
+    let agent = Arc::new(Mutex::new(Agent::new(provider_dyn, registry)));
+    let session_id = agent.lock().await.session_id().to_string();
+    let control = crate::server::session_control::store();
+    control.register(&session_id, None).unwrap();
+    control
+        .request_stop(&session_id, &session_id, false, "scheduled-stop")
+        .unwrap();
+    let sessions = Arc::new(crate::server::session_manager::SessionManager::from_agents(
+        HashMap::<String, Arc<Mutex<Agent>>>::from([(session_id.clone(), agent.clone())]),
+    ));
+    let soft_interrupt_queues = Arc::new(RwLock::new(HashMap::new()));
+    let client_connections = Arc::new(RwLock::new(HashMap::from([(
+        "client-1".to_string(),
+        ClientConnectionInfo {
+            client_id: "client-1".to_string(),
+            session_id: session_id.clone(),
+            client_instance_id: None,
+            debug_client_id: Some("debug-1".to_string()),
+            connected_at: Instant::now(),
+            last_seen: Instant::now(),
+            is_processing: false,
+            current_tool_name: None,
+            terminal_env: Vec::new(),
+            disconnect_tx: mpsc::unbounded_channel().0,
+        },
+    )])));
+    let (member_event_tx, mut member_event_rx) = mpsc::unbounded_channel();
+    let swarm_members = Arc::new(RwLock::new(HashMap::from([(
+        session_id.clone(),
+        SwarmMember {
+            session_id: session_id.clone(),
+            event_tx: member_event_tx,
+            event_txs: HashMap::new(),
+            working_dir: None,
+            swarm_id: None,
+            swarm_enabled: false,
+            status: "stopped".to_string(),
+            detail: None,
+            task_label: None,
+            friendly_name: Some("otter".to_string()),
+            report_back_to_session_id: None,
+            latest_completion_report: None,
+            role: "agent".to_string(),
+            joined_at: Instant::now(),
+            last_status_change: Instant::now(),
+            is_headless: false,
+            output_tail: None,
+            todo_progress: None,
+            todo_items: Vec::new(),
+            runtime: crate::protocol::SwarmMemberRuntime::default(),
+        },
+    )])));
+    let (client_event_tx, _client_event_rx) = mpsc::unbounded_channel();
+    let (swarms_by_id, event_history, event_counter, swarm_event_tx) = empty_swarm_status_state();
+
+    handle_notify_session(
+        78,
+        session_id.clone(),
+        "[Scheduled task]\nTask: Follow up".to_string(),
+        NotifySessionContext {
+            sessions: &sessions,
+            soft_interrupt_queues: &soft_interrupt_queues,
+            client_connections: &client_connections,
+            swarm_members: &swarm_members,
+            swarms_by_id: &swarms_by_id,
+            event_history: &event_history,
+            event_counter: &event_counter,
+            swarm_event_tx: &swarm_event_tx,
+            client_event_tx: &client_event_tx,
+        },
+    )
+    .await;
+    tokio::time::sleep(Duration::from_millis(300)).await;
+
+    let mut streamed = Vec::new();
+    while let Ok(event) = member_event_rx.try_recv() {
+        streamed.push(unwrap_test_turn_event(event));
+    }
+    let remaining_responses = provider.responses.lock().unwrap().len();
+    let ran_assistant_turn = agent
+        .lock()
+        .await
+        .messages()
+        .iter()
+        .any(|message| message.role == Role::Assistant);
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+        None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+    }
+    assert_eq!(
+        remaining_responses, 1,
+        "provider was called for a stopped session"
+    );
+    assert!(
+        !ran_assistant_turn,
+        "scheduled task ran on a stopped session"
+    );
+    assert!(
+        !streamed
+            .iter()
+            .any(|event| matches!(event, ServerEvent::TextDelta { .. })),
+        "{streamed:?}"
+    );
+}
+
+struct ManualSubagentTool;
+
+#[async_trait]
+impl crate::tool::Tool for ManualSubagentTool {
+    fn name(&self) -> &str {
+        "subagent"
+    }
+
+    fn description(&self) -> &str {
+        "test subagent"
+    }
+
+    fn parameters_schema(&self) -> serde_json::Value {
+        serde_json::json!({"type": "object"})
+    }
+
+    async fn execute(
+        &self,
+        _input: serde_json::Value,
+        _ctx: crate::tool::ToolContext,
+    ) -> Result<crate::tool::ToolOutput> {
+        Ok(crate::tool::ToolOutput::new("subagent ran"))
+    }
+}
+
+/// `/subagent` runs on a spawned task with no turn scope. For a controlled
+/// session it must be admitted under the session's own generation, and a
+/// stopped session must still be refused.
+#[tokio::test]
+async fn manual_subagent_runs_under_controlled_session_generation() {
+    let _lock = crate::storage::lock_test_env();
+    let _home = SplitTestHome::new();
+    struct Restore(Option<std::ffi::OsString>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            match self.0.take() {
+                Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+                None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+            }
+        }
+    }
+    let runtime = tempfile::tempdir().unwrap();
+    let _restore = Restore(std::env::var_os("JCODE_RUNTIME_DIR"));
+    crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+
+    let provider: Arc<dyn Provider> = Arc::new(MockProvider);
+    let registry = Registry::new(provider.clone()).await;
+    registry
+        .register("subagent".into(), Arc::new(ManualSubagentTool))
+        .await;
+    let agent = Arc::new(Mutex::new(Agent::new(provider, registry)));
+    let session_id = agent.lock().await.session_id().to_string();
+    let store = crate::server::session_control::store();
+    store.register(&session_id, None).unwrap();
+
+    let run = |agent: Arc<Mutex<Agent>>| async move {
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        super::handle_run_subagent(7, "do it".into(), "general".into(), None, None, &agent, &tx);
+        let mut events = Vec::new();
+        while let Ok(Some(event)) = timeout(Duration::from_secs(5), rx.recv()).await {
+            let terminal = matches!(event, ServerEvent::Done { .. } | ServerEvent::Error { .. });
+            events.push(event);
+            if terminal {
+                break;
+            }
+        }
+        events
+    };
+
+    let events = run(Arc::clone(&agent)).await;
+    assert!(
+        events
+            .iter()
+            .any(|event| matches!(event, ServerEvent::ToolDone { error: None, .. })),
+        "controlled /subagent must succeed: {events:?}"
+    );
+
+    store
+        .request_stop(&session_id, &session_id, false, "stop")
+        .unwrap();
+    let events = run(agent).await;
+    assert!(
+        !events
+            .iter()
+            .any(|event| matches!(event, ServerEvent::ToolDone { error: None, .. })),
+        "stopped session must not run /subagent: {events:?}"
+    );
 }

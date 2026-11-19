@@ -1325,6 +1325,87 @@ async fn salvage_requeues_dead_members_tasks_and_notifies_coordinator() {
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)]
+async fn salvage_and_stranded_reclaim_wait_for_unsettled_predecessor() {
+    let _env = crate::storage::lock_test_env();
+    let runtime = tempfile::TempDir::new().unwrap();
+    let previous = std::env::var_os("JCODE_RUNTIME_DIR");
+    crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+    let control = crate::server::session_control::store();
+    control
+        .register("unsettled-predecessor-worker", None)
+        .unwrap();
+    let token = control.admit("unsettled-predecessor-worker").unwrap();
+    let work = token.reserve().unwrap();
+    let stop = control
+        .request_stop(
+            "unsettled-predecessor-worker",
+            "unsettled-predecessor-worker",
+            false,
+            "stop",
+        )
+        .unwrap();
+
+    let swarm_members = Arc::new(RwLock::new(HashMap::new()));
+    let swarms_by_id = Arc::new(RwLock::new(HashMap::from([(
+        "swarm-1".to_string(),
+        HashSet::from(["unsettled-predecessor-worker".to_string()]),
+    )])));
+    let swarm_coordinators = Arc::new(RwLock::new(HashMap::new()));
+    let swarm_plans = running_plan_assigned_to("unsettled-predecessor-worker", None);
+
+    let blocked = salvage_assignments_of_dead_member(
+        "unsettled-predecessor-worker",
+        "swarm-1",
+        &swarm_members,
+        &swarms_by_id,
+        &swarm_plans,
+        &swarm_coordinators,
+    )
+    .await;
+    let auto = crate::server::comm_control::next_runnable_task_id_reclaiming_stranded_for_test(
+        "swarm-1",
+        &swarm_plans,
+        &swarm_members,
+    )
+    .await;
+    let still_assigned = {
+        let plans = swarm_plans.read().await;
+        let item = &plans.get("swarm-1").unwrap().items[0];
+        (item.status.clone(), item.assigned_to.clone())
+    };
+
+    drop(work);
+    control
+        .settle("unsettled-predecessor-worker", stop.revision)
+        .unwrap();
+    let released = salvage_assignments_of_dead_member(
+        "unsettled-predecessor-worker",
+        "swarm-1",
+        &swarm_members,
+        &swarms_by_id,
+        &swarm_plans,
+        &swarm_coordinators,
+    )
+    .await;
+
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+        None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+    }
+    assert!(blocked.is_empty(), "salvaged while predecessor unsettled");
+    assert_eq!(auto, None, "auto reassignment reclaimed unsettled work");
+    assert_eq!(
+        still_assigned,
+        (
+            "running".to_string(),
+            Some("unsettled-predecessor-worker".to_string())
+        )
+    );
+    assert_eq!(released.requeued_task_ids, vec!["task-1".to_string()]);
+}
+
+#[tokio::test]
 async fn salvage_fails_task_once_reclaim_cap_is_reached() {
     let swarm_members = Arc::new(RwLock::new(HashMap::new()));
     let swarms_by_id = Arc::new(RwLock::new(HashMap::from([(

@@ -333,6 +333,8 @@ fn to_persisted_member(member: &SwarmMember, snapshot_unix_ms: u64) -> Persisted
 /// Status given to a worker whose session could not be restored after reload.
 /// `swarm retry` respawns it from its persisted [`WorkerSpawnSpec`].
 pub(crate) const ORPHANED_STATUS: &str = "orphaned";
+/// Restored member whose durable stop never settled. Not terminal, not runnable.
+pub(crate) const STOP_UNRESOLVED_STATUS: &str = "stop_unresolved";
 
 /// What is needed to respawn a worker in one step: its lane (spawn label),
 /// initial prompt and model. Stored beside the swarm state, keyed by session,
@@ -520,7 +522,29 @@ pub(super) fn from_persisted_member(
     let original_status = record.status.as_str();
     let was_terminal_before_recovery =
         super::swarm::member_status_is_terminal(original_status.as_ref());
-    let spec = (!was_terminal_before_recovery)
+    // The durable control record outranks the swarm snapshot. A session whose
+    // admission was revoked is never restored as runnable, retryable or
+    // orphaned. Settled stops stay stopped. A pending, unresolved, corrupt or
+    // unreadable record stays unresolved rather than looking successful.
+    let control_status = match super::session_control::store().inspect(&record.session_id) {
+        Ok(None) => None,
+        Ok(Some(control)) => match control.state {
+            super::session_control::ControlState::Runnable => None,
+            super::session_control::ControlState::Stopped => Some((
+                SwarmLifecycleStatus::Stopped,
+                "stop settled before reload; not restored as runnable",
+            )),
+            _ => Some((
+                SwarmLifecycleStatus::Other(STOP_UNRESOLVED_STATUS.to_string()),
+                "stop not settled before reload; work state unresolved",
+            )),
+        },
+        Err(_) => Some((
+            SwarmLifecycleStatus::Other(STOP_UNRESOLVED_STATUS.to_string()),
+            "session control unreadable; failing closed",
+        )),
+    };
+    let spec = (!was_terminal_before_recovery && control_status.is_none())
         .then(|| load_worker_spawn_spec(&record.session_id))
         .flatten();
     let (status, detail) = match spec {
@@ -537,7 +561,10 @@ pub(super) fn from_persisted_member(
                 ),
             )
         }
-        _ => recover_member_status(record.status, record.detail, record.is_headless),
+        _ => match control_status {
+            Some((status, note)) => (status, append_recovery_detail(record.detail, note)),
+            None => recover_member_status(record.status, record.detail, record.is_headless),
+        },
     };
     let status_text = status.as_str();
     let terminal_since_unix_ms = super::swarm::member_status_is_terminal(status_text.as_ref())
@@ -594,6 +621,15 @@ fn hydrate_member_todos(member: &mut SwarmMember) {
 
 pub(super) fn load_runtime_state() -> LoadedSwarmRuntimeState {
     migrate_legacy_state();
+    // Control records this build cannot serve stay untouched and fail closed on
+    // every admission. Say so once at startup/reload so the cause is visible.
+    for (session_id, reason) in super::session_control::store().incompatible_records() {
+        crate::logging::error(&format!(
+            "Session control for '{session_id}' refused: {reason}. The session stays revoked; \
+             run a jcode build at or above control reader version {} or remove the control file.",
+            jcode_swarm_core::control::CONTROL_MIN_READER_VERSION
+        ));
+    }
     let dir = state_dir();
     let Ok(entries) = std::fs::read_dir(&dir) else {
         return LoadedSwarmRuntimeState {

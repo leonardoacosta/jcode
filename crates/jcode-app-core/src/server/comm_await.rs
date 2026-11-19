@@ -1,6 +1,6 @@
 use super::await_members_state::{
     PersistedAwaitMembersState, all_pending_await_members_including_expired, ensure_pending_state,
-    load_state, persist_final_response, request_key, save_state,
+    generation_bound_key, load_state, persist_final_response, request_key, save_state,
 };
 use super::{AwaitMembersRuntime, SwarmEvent, SwarmMember};
 use crate::bus::{Bus, BusEvent, SwarmAwaitCompleted, UiActivity};
@@ -15,6 +15,7 @@ pub(super) async fn awaited_member_statuses(
     swarm_id: &str,
     requested_ids: &[String],
     target_status: &[String],
+    bound_generations: &HashMap<String, u64>,
     swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
     swarms_by_id: &Arc<RwLock<HashMap<String, HashSet<String>>>>,
 ) -> Vec<AwaitedMemberStatus> {
@@ -52,12 +53,30 @@ pub(super) async fn awaited_member_statuses(
                     )
                 })
                 .unwrap_or((None, "unknown".to_string(), None));
+            // A wait bound to generation G only accepts a report produced by G,
+            // and never completes from newer work after the member resumed.
+            let mut completion_report = completion_report;
+            let mut report_generation = None;
+            let mut superseded = false;
+            if let Some(bound) = bound_generations.get(session_id)
+                && let Ok(Some(record)) = super::session_control::store().inspect(session_id)
+            {
+                let matched = record.report_generation == Some(*bound);
+                if completion_report.is_some() && !matched {
+                    completion_report = None;
+                }
+                superseded = record.last_allocated_generation > *bound && !matched;
+                if matched {
+                    report_generation = record.report_generation;
+                }
+            }
             let has_report = completion_report
                 .as_deref()
                 .is_some_and(|report| !report.trim().is_empty());
             // `ready` only counts once the member submitted a report; a member
             // that reported and then stopped/completed stays done.
             let done = status != "unknown"
+                && !superseded
                 && ((target_status.contains(&status) && (status != "ready" || has_report))
                     || (has_report && matches!(status.as_str(), "stopped" | "completed")));
             AwaitedMemberStatus {
@@ -66,6 +85,7 @@ pub(super) async fn awaited_member_statuses(
                 status,
                 done,
                 completion_report,
+                generation: report_generation,
             }
         })
         .collect()
@@ -288,6 +308,7 @@ pub(super) async fn spawn_or_resume_await_members(
                 &swarm_id,
                 &requested_ids,
                 &target_status,
+                &state.bound_generations,
                 &swarm_members,
                 &swarms_by_id,
             )
@@ -387,24 +408,33 @@ pub(super) async fn handle_comm_await_members(
     };
 
     if let Some(swarm_id) = swarm_id {
-        let key = request_key(
-            &req_session_id,
-            &swarm_id,
-            &requested_ids,
-            &target_status,
-            mode.as_deref(),
-        );
-        let mut persisted = load_state(&key);
-
         let initial_statuses = awaited_member_statuses(
             &req_session_id,
             &swarm_id,
             &requested_ids,
             &target_status,
+            &HashMap::new(),
             ctx.swarm_members,
             ctx.swarms_by_id,
         )
         .await;
+        // Generation vector is part of the cache identity: old finals never
+        // satisfy a wait on newer work.
+        let watched: Vec<String> = initial_statuses
+            .iter()
+            .map(|member| member.session_id.clone())
+            .collect();
+        let key = generation_bound_key(
+            &request_key(
+                &req_session_id,
+                &swarm_id,
+                &requested_ids,
+                &target_status,
+                mode.as_deref(),
+            ),
+            &watched,
+        );
+        let mut persisted = load_state(&key);
 
         if let Some(final_response) = persisted
             .as_ref()
@@ -464,7 +494,7 @@ pub(super) async fn handle_comm_await_members(
             .as_millis() as u64
             + Duration::from_secs(timeout_secs.unwrap_or(3600)).as_millis() as u64;
         let mut state = persisted.unwrap_or_else(|| {
-            ensure_pending_state(
+            let mut created = ensure_pending_state(
                 &key,
                 &req_session_id,
                 &swarm_id,
@@ -475,7 +505,20 @@ pub(super) async fn handle_comm_await_members(
                 background,
                 notify,
                 wake,
-            )
+            );
+            if created.bound_generations.is_empty() {
+                let control = super::session_control::store();
+                created.bound_generations = watched
+                    .iter()
+                    .filter_map(|id| {
+                        control
+                            .awaited_generation(id)
+                            .map(|generation| (id.clone(), generation))
+                    })
+                    .collect();
+                save_state(&created);
+            }
+            created
         });
 
         // When reusing a persisted pending state (e.g. a resumed call after
@@ -702,6 +745,7 @@ pub(super) async fn resume_background_awaits(
                 &state.swarm_id,
                 &state.requested_ids,
                 &state.target_status,
+                &state.bound_generations,
                 swarm_members,
                 swarms_by_id,
             )

@@ -11,6 +11,7 @@ async fn resume_background_awaits_finalizes_states_expired_while_down() {
         &["completed".to_string()],
         None,
     );
+    let key = crate::server::await_members_state::generation_bound_key(&key, &["peer-1".to_string()]);
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -29,6 +30,7 @@ async fn resume_background_awaits_finalizes_states_expired_while_down() {
             background: true,
             notify: true,
             wake: true,
+            bound_generations: Default::default(),
             final_response: None,
         },
     );

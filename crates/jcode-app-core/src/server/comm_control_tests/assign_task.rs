@@ -195,3 +195,179 @@ async fn assign_task_marks_completed_worker_queued_before_returning() {
         "queued member should include the assigned task in its detail"
     );
 }
+
+#[tokio::test]
+async fn assign_task_refuses_stopped_worker_and_leaves_plan_unmutated() {
+    let (_env, _runtime) = RuntimeEnvGuard::new();
+    let swarm_id = "swarm-assign-stopped";
+    let requester = "coord";
+    let worker = "worker-stopped";
+    let control = crate::server::session_control::store();
+    control.register(worker, Some(requester)).unwrap();
+    control.request_stop(requester, worker, false, "coord:stop").unwrap();
+
+    let (client_tx, mut client_rx) = mpsc::unbounded_channel();
+    let sessions = Arc::new(crate::server::session_manager::SessionManager::from_agents(
+        HashMap::new(),
+    ));
+    let soft_interrupt_queues = Arc::new(RwLock::new(HashMap::new()));
+    let client_connections = Arc::new(RwLock::new(HashMap::new()));
+    let swarm_members = Arc::new(RwLock::new(HashMap::from([
+        (requester.to_string(), {
+            let mut member = member(requester, swarm_id, "ready");
+            member.role = "coordinator".to_string();
+            member
+        }),
+        (worker.to_string(), member(worker, swarm_id, "ready")),
+    ])));
+    let swarms_by_id = Arc::new(RwLock::new(HashMap::from([(
+        swarm_id.to_string(),
+        HashSet::from([requester.to_string(), worker.to_string()]),
+    )])));
+    let swarm_plans = Arc::new(RwLock::new(HashMap::from([(
+        swarm_id.to_string(),
+        VersionedPlan {
+            items: vec![plan_item("t1", "queued", "high", &[])],
+            version: 1,
+            participants: HashSet::from([requester.to_string(), worker.to_string()]),
+            task_progress: HashMap::new(),
+        },
+    )])));
+    let swarm_coordinators = Arc::new(RwLock::new(HashMap::from([(
+        swarm_id.to_string(),
+        requester.to_string(),
+    )])));
+    let event_history = Arc::new(RwLock::new(VecDeque::new()));
+    let event_counter = Arc::new(AtomicU64::new(1));
+    let (swarm_event_tx, _swarm_event_rx) = broadcast::channel(32);
+    let mutation_runtime = SwarmMutationRuntime::default();
+
+    for (request_id, target) in [(1u64, Some(worker.to_string())), (2, None)] {
+        handle_comm_assign_task(
+            request_id,
+            requester.to_string(),
+            target,
+            Some("t1".to_string()),
+            None,
+            &client_tx,
+            &sessions,
+            &soft_interrupt_queues,
+            &client_connections,
+            &swarm_members,
+            &swarms_by_id,
+            &swarm_plans,
+            &swarm_coordinators,
+            &event_history,
+            &event_counter,
+            &swarm_event_tx,
+            &mutation_runtime,
+        )
+        .await;
+        match client_rx.recv().await.expect("response") {
+            ServerEvent::Error { message, .. } => assert!(
+                message.contains("cannot receive work") || message.contains("No ready or completed swarm agents"),
+                "{message}"
+            ),
+            other => panic!("stopped worker received an assignment: {other:?}"),
+        }
+    }
+
+    let plans = swarm_plans.read().await;
+    let item = &plans[swarm_id].items[0];
+    assert!(item.assigned_to.is_none(), "plan was mutated for revoked worker");
+    assert_eq!(item.status, "queued");
+    assert_eq!(swarm_members.read().await[worker].status, "ready");
+}
+
+#[tokio::test]
+async fn explicit_assign_refuses_task_of_unsettled_predecessor_and_leaves_plan_unmutated() {
+    let (_env, _runtime) = RuntimeEnvGuard::new();
+    let swarm_id = "swarm-assign-unsettled";
+    let requester = "coord-unsettled";
+    let predecessor = "worker-unsettled-old";
+    let successor = "worker-unsettled-new";
+    let control = crate::server::session_control::store();
+    control.register(predecessor, Some(requester)).unwrap();
+    control.register(successor, Some(requester)).unwrap();
+    let token = control.admit(predecessor).unwrap();
+    let _work = token.reserve().unwrap();
+    control
+        .request_stop(requester, predecessor, false, "coord:stop")
+        .unwrap();
+    assert!(control.predecessor_unsettled(predecessor));
+
+    let (client_tx, mut client_rx) = mpsc::unbounded_channel();
+    let sessions = Arc::new(crate::server::session_manager::SessionManager::from_agents(
+        HashMap::new(),
+    ));
+    let soft_interrupt_queues = Arc::new(RwLock::new(HashMap::new()));
+    let client_connections = Arc::new(RwLock::new(HashMap::new()));
+    let swarm_members = Arc::new(RwLock::new(HashMap::from([
+        (requester.to_string(), {
+            let mut member = member(requester, swarm_id, "ready");
+            member.role = "coordinator".to_string();
+            member
+        }),
+        (predecessor.to_string(), member(predecessor, swarm_id, "ready")),
+        (successor.to_string(), member(successor, swarm_id, "ready")),
+    ])));
+    let swarms_by_id = Arc::new(RwLock::new(HashMap::from([(
+        swarm_id.to_string(),
+        HashSet::from([
+            requester.to_string(),
+            predecessor.to_string(),
+            successor.to_string(),
+        ]),
+    )])));
+    let mut item = plan_item("t1", "running", "high", &[]);
+    item.assigned_to = Some(predecessor.to_string());
+    let swarm_plans = Arc::new(RwLock::new(HashMap::from([(
+        swarm_id.to_string(),
+        VersionedPlan {
+            items: vec![item],
+            version: 1,
+            participants: HashSet::from([requester.to_string(), predecessor.to_string()]),
+            task_progress: HashMap::new(),
+        },
+    )])));
+    let swarm_coordinators = Arc::new(RwLock::new(HashMap::from([(
+        swarm_id.to_string(),
+        requester.to_string(),
+    )])));
+    let event_history = Arc::new(RwLock::new(VecDeque::new()));
+    let event_counter = Arc::new(AtomicU64::new(1));
+    let (swarm_event_tx, _swarm_event_rx) = broadcast::channel(32);
+    let mutation_runtime = SwarmMutationRuntime::default();
+
+    handle_comm_assign_task(
+        1,
+        requester.to_string(),
+        Some(successor.to_string()),
+        Some("t1".to_string()),
+        None,
+        &client_tx,
+        &sessions,
+        &soft_interrupt_queues,
+        &client_connections,
+        &swarm_members,
+        &swarms_by_id,
+        &swarm_plans,
+        &swarm_coordinators,
+        &event_history,
+        &event_counter,
+        &swarm_event_tx,
+        &mutation_runtime,
+    )
+    .await;
+    match client_rx.recv().await.expect("response") {
+        ServerEvent::Error { message, .. } => {
+            assert!(message.contains("stop has not settled"), "{message}")
+        }
+        other => panic!("unsettled predecessor's task was reassigned: {other:?}"),
+    }
+    let plans = swarm_plans.read().await;
+    let item = &plans[swarm_id].items[0];
+    assert_eq!(item.assigned_to.as_deref(), Some(predecessor));
+    assert_eq!(item.status, "running");
+    assert_eq!(plans[swarm_id].version, 1);
+}

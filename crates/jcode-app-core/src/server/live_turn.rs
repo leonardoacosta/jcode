@@ -70,7 +70,10 @@ pub(super) async fn idle_live_agent(
     sessions: &SessionAgents,
     swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
 ) -> Option<OwnedMutexGuard<Agent>> {
-    if super::session_control::store().runnable(session_id).is_err() {
+    if super::session_control::store()
+        .runnable(session_id)
+        .is_err()
+    {
         return None;
     }
     let agent =

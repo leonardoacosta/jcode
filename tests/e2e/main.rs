@@ -17,6 +17,6 @@ mod safety;
 mod session_flow;
 mod text_framing;
 mod transport;
-mod worker_stop;
 #[cfg(windows)]
 mod windows_lifecycle;
+mod worker_stop;

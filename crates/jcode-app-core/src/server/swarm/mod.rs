@@ -87,7 +87,9 @@ pub(in crate::server) use tree::cancel_spawned_descendant_turns;
 #[path = "../swarm_event_history.rs"]
 mod swarm_event_history;
 use swarm_event_history::log_swarm_lifecycle;
-pub(in crate::server) use swarm_event_history::{record_swarm_event, record_swarm_event_for_session};
+pub(in crate::server) use swarm_event_history::{
+    record_swarm_event, record_swarm_event_for_session,
+};
 
 mod tree;
 #[allow(unused_imports)]

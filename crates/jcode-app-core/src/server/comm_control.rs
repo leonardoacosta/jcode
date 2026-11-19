@@ -187,6 +187,25 @@ async fn active_swarm_member(
     members.get(session_id).cloned()
 }
 
+/// Refuse to hand work to a session whose durable control record revoked
+/// admission. Checked before any plan or member state is mutated.
+fn ensure_assignable(session_id: &str) -> Result<(), String> {
+    super::session_control::store()
+        .runnable(session_id)
+        .map_err(|error| format!("Session '{session_id}' cannot receive work: {error:#}"))
+}
+
+/// Explicit, authorized new-work admission (assign, wake, resume, retry,
+/// reassign). After a settled stop this allocates a fresh generation; an
+/// unsettled stop or an unauthorized requester is refused before any plan or
+/// member state is mutated. Automatic selection never calls this.
+fn admit_explicit_work(requester: &str, target: &str) -> Result<(), String> {
+    super::session_control::store()
+        .admit_new_work(requester, target, false)
+        .map(|_| ())
+        .map_err(|error| format!("Session '{target}' cannot receive work: {error:#}"))
+}
+
 /// Live agent for `session_id`, restoring a headless worker from disk when its
 /// agent is not loaded (for example a worker that failed before a reload).
 async fn task_agent_session(
@@ -219,6 +238,7 @@ async fn resolve_assignment_target_session(
                 target, swarm_id
             ));
         }
+        admit_explicit_work(req_session_id, target)?;
         return Ok(target.to_string());
     }
 
@@ -231,6 +251,7 @@ async fn resolve_assignment_target_session(
     };
 
     let mut candidates = filter_swarm_agent_candidates(&members, req_session_id, swarm_id);
+    candidates.retain(|candidate| ensure_assignable(&candidate.session_id).is_ok());
 
     candidates.sort_by(|left, right| {
         let left_load = assignment_counts
@@ -287,6 +308,15 @@ async fn next_unassigned_runnable_task_id(
 /// per-node by [`crate::plan::MAX_DEAD_ASSIGNEE_RECLAIMS`] to respect the
 /// repeat-failure policy: beyond the cap only explicit `retry`/`assign_task`
 /// move the node.
+#[cfg(test)]
+pub(crate) async fn next_runnable_task_id_reclaiming_stranded_for_test(
+    swarm_id: &str,
+    swarm_plans: &Arc<RwLock<HashMap<String, VersionedPlan>>>,
+    swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
+) -> Option<String> {
+    next_runnable_task_id_reclaiming_stranded(swarm_id, swarm_plans, swarm_members).await
+}
+
 async fn next_runnable_task_id_reclaiming_stranded(
     swarm_id: &str,
     swarm_plans: &Arc<RwLock<HashMap<String, VersionedPlan>>>,
@@ -307,7 +337,12 @@ async fn next_runnable_task_id_reclaiming_stranded(
             .map(|member| (member.session_id.clone(), member.status.clone()))
             .collect()
     };
+    let control = super::session_control::store();
     let assignee_is_dead = move |session_id: &str| -> bool {
+        // An unsettled predecessor may still be running native operations.
+        if control.predecessor_unsettled(session_id) {
+            return false;
+        }
         match member_statuses.get(session_id) {
             Some(status) => matches!(status.as_str(), "failed" | "stopped" | "crashed"),
             // Not a member of this swarm anymore: nothing can drive it.
@@ -358,6 +393,7 @@ async fn resolve_assignment_target_for_task(
 
     let members = swarm_members.read().await;
     let mut candidates = filter_swarm_agent_candidates(&members, req_session_id, swarm_id);
+    candidates.retain(|candidate| ensure_assignable(&candidate.session_id).is_ok());
 
     candidates.sort_by(|left, right| {
         let left_carry = affinities
@@ -418,6 +454,12 @@ fn spawn_assigned_task_run(
     swarm_event_tx: broadcast::Sender<SwarmEvent>,
 ) {
     crate::runtime_activity::spawn(async move {
+        // Assignment and execution are separated in time. Re-check durable
+        // admission so a stop that won in between cannot be run as fresh work.
+        if let Err(message) = ensure_assignable(&target_session) {
+            crate::logging::warn(&format!("Assigned task {task_id} not started: {message}"));
+            return;
+        }
         let mut agent = agent_arc.lock().await;
         let turn_lease = match agent.claim_server_turn() {
             Ok(lease) => lease,
@@ -1233,7 +1275,25 @@ async fn handle_comm_assign_task_with_mode(
         } else {
             None
         };
-        let blocked_reason = conflict_reason.or_else(|| {
+        // A stop that has not settled may still have work running for the
+        // predecessor, so its task cannot move to another worker yet.
+        let predecessor_reason = requested_task_id.as_deref().and_then(|task_id| {
+            plan.items
+                .iter()
+                .find(|item| item.id == task_id)
+                .and_then(|item| item.assigned_to.as_deref())
+                .filter(|assignee| {
+                    *assignee != target_session
+                        && super::session_control::store().predecessor_unsettled(assignee)
+                })
+                .map(|assignee| {
+                    format!(
+                        "Task '{task_id}' belongs to '{assignee}', whose stop has not settled; \
+                         refusing to reassign until the stop settles."
+                    )
+                })
+        });
+        let blocked_reason = conflict_reason.or(predecessor_reason).or_else(|| {
             requested_task_id
                 .as_deref()
                 .and_then(|task_id| explicit_task_blocked_reason(plan, task_id))
@@ -1897,6 +1957,14 @@ pub(super) async fn handle_comm_task_control(
             // first and only then discover the agent was missing or busy,
             // leaving a live task falsely queued with its run history mangled
             // even though the request was rejected.
+            if let Err(message) = admit_explicit_work(&req_session_id, &assignee) {
+                let _ = client_event_tx.send(ServerEvent::Error {
+                    id,
+                    message,
+                    retry_after_secs: None,
+                });
+                return;
+            }
             let Some(agent_arc) = task_agent_session(&assignee, sessions, swarm_members).await
             else {
                 let _ = client_event_tx.send(ServerEvent::Error {
@@ -2401,6 +2469,14 @@ async fn wake_session_without_plan(
         let _ = client_event_tx.send(ServerEvent::Error {
             id,
             message: "Coordinator cannot wake itself.".to_string(),
+            retry_after_secs: None,
+        });
+        return;
+    }
+    if let Err(message) = admit_explicit_work(req_session_id, &session_id) {
+        let _ = client_event_tx.send(ServerEvent::Error {
+            id,
+            message,
             retry_after_secs: None,
         });
         return;

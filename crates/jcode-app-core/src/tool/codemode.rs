@@ -51,6 +51,9 @@ struct RegistryHost {
     registry: Registry,
     ctx: ToolContext,
     counter: AtomicUsize,
+    /// Generation of the calling turn. Scripts run on their own thread, so
+    /// sub-calls would otherwise lose the task-local and be refused.
+    execution: Option<crate::server::session_control::GenerationToken>,
 }
 
 impl Host for RegistryHost {
@@ -58,16 +61,19 @@ impl Host for RegistryHost {
         let n = self.counter.fetch_add(1, Ordering::SeqCst) + 1;
         let registry = self.registry.clone();
         let sub_ctx = self.ctx.for_subcall(format!("codemode-{n}-{name}"));
-        Box::pin(async move {
-            let args = match args {
-                Value::Object(map) => Value::Object(map),
-                other => return Err(format!("arguments must be an object, got {other}")),
-            };
-            match registry.execute(&name, args, sub_ctx).await {
-                Ok(output) => Ok(jcode_codemode::decode_tool_output(&output.output)),
-                Err(err) => Err(crate::util::format_error_chain(&err)),
-            }
-        })
+        Box::pin(crate::server::session_control::scope(
+            self.execution.clone(),
+            async move {
+                let args = match args {
+                    Value::Object(map) => Value::Object(map),
+                    other => return Err(format!("arguments must be an object, got {other}")),
+                };
+                match registry.execute(&name, args, sub_ctx).await {
+                    Ok(output) => Ok(jcode_codemode::decode_tool_output(&output.output)),
+                    Err(err) => Err(crate::util::format_error_chain(&err)),
+                }
+            },
+        ))
     }
 }
 
@@ -225,6 +231,7 @@ impl Tool for CodemodeTool {
             registry,
             ctx: ctx.clone(),
             counter: AtomicUsize::new(0),
+            execution: crate::server::session_control::current_token(),
         });
         let store = load_store(&ctx.session_id);
         let limits = Limits {

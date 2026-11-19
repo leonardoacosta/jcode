@@ -43,6 +43,11 @@ pub struct PersistedAwaitMembersState {
     /// Wake an idle requesting agent on completion (or soft-interrupt if busy).
     #[serde(default = "default_true")]
     pub wake: bool,
+    /// Execution generation each watched member was being awaited at when the
+    /// wait began. A report from a different generation never satisfies the wait
+    /// and a member resumed past its bound supersedes it. Legacy states are empty.
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub bound_generations: HashMap<String, u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub final_response: Option<PersistedAwaitMembersResult>,
 }
@@ -166,6 +171,24 @@ pub(super) fn request_key(
     )
 }
 
+/// Bind a wait's cache identity to the watched members' execution generations,
+/// so a cached final response cannot satisfy newer work. Unreadable control
+/// state is part of the identity and therefore never replays an old final.
+pub(super) fn generation_bound_key(base: &str, watched: &[String]) -> String {
+    let control = super::session_control::store();
+    let mut ids = watched.to_vec();
+    ids.sort();
+    let vector: Vec<String> = ids
+        .iter()
+        .map(|id| match control.inspect(id) {
+            Ok(Some(record)) => format!("{id}@{}", record.last_allocated_generation),
+            Ok(None) => format!("{id}@-"),
+            Err(_) => format!("{id}@unreadable"),
+        })
+        .collect();
+    hashed_request_key(base, "await_generations", &[vector.join("\u{1f}")])
+}
+
 pub(super) fn load_state(key: &str) -> Option<PersistedAwaitMembersState> {
     load_json_state(AWAIT_MEMBERS_DIR, key, is_stale)
 }
@@ -274,6 +297,7 @@ pub(super) fn ensure_pending_state(
         background,
         notify,
         wake,
+        bound_generations: HashMap::new(),
         final_response: None,
     };
     save_state_unlocked(&state);

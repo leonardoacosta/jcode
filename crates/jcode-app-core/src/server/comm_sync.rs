@@ -247,6 +247,38 @@ pub(super) async fn handle_comm_summary(
     }
 }
 
+/// Durable control state for a session, or `None` when no record exists or it is
+/// unreadable. Unreadable state is reported as `unresolved`, never as runnable.
+pub(super) fn control_snapshot(session_id: &str) -> Option<crate::protocol::ControlStatusSnapshot> {
+    use crate::protocol::ControlStatusSnapshot;
+    match super::session_control::store().inspect(session_id) {
+        Ok(None) => None,
+        Ok(Some(record)) => {
+            let mut unresolved_categories: Vec<String> =
+                record.unresolved_categories.iter().cloned().collect();
+            unresolved_categories.sort();
+            Some(ControlStatusSnapshot {
+                state: record.state.as_str().to_string(),
+                generation: record.last_allocated_generation,
+                admitted_generation: record.admitted_generation,
+                revoked_through: record.revoked_through,
+                revision: record.revision,
+                stop_request: record.latest_stop_request,
+                unresolved_categories,
+            })
+        }
+        Err(_) => Some(ControlStatusSnapshot {
+            state: "unresolved".to_string(),
+            generation: 0,
+            admitted_generation: None,
+            revoked_through: 0,
+            revision: 0,
+            stop_request: None,
+            unresolved_categories: vec!["control_unreadable".to_string()],
+        }),
+    }
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "status snapshots combine live connection state, session metadata, files touched, and optional provider/model hints"
@@ -261,6 +293,37 @@ pub(super) async fn handle_comm_status(
     file_touch: &FileTouchService,
     client_event_tx: &mpsc::UnboundedSender<ServerEvent>,
 ) {
+    // Exact IDs resolve through the retained control record when the member
+    // projection is gone. Authorization uses retained owner ancestry only.
+    if !swarm_members.read().await.contains_key(&target_session)
+        && let Ok(Some(_)) = super::session_control::store().inspect(&target_session)
+    {
+        let allowed = super::session_control::store()
+            .authorized(&req_session_id, &target_session, false)
+            .is_ok();
+        let event = if allowed {
+            ServerEvent::CommStatusResponse {
+                id,
+                snapshot: AgentStatusSnapshot {
+                    session_id: target_session.clone(),
+                    status: Some("removed".to_string()),
+                    control: control_snapshot(&target_session),
+                    ..Default::default()
+                },
+            }
+        } else {
+            ServerEvent::Error {
+                id,
+                message: format!(
+                    "Refusing to inspect session '{target_session}' because it is not owned by this requester."
+                ),
+                retry_after_secs: None,
+            }
+        };
+        let _ = client_event_tx.send(event);
+        return;
+    }
+
     if !ensure_same_swarm_access(
         id,
         &req_session_id,
@@ -327,6 +390,7 @@ pub(super) async fn handle_comm_status(
             activity,
             provider_name,
             provider_model,
+            control: control_snapshot(&target_session),
         }
     };
 

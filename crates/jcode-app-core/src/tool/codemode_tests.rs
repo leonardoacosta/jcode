@@ -247,3 +247,59 @@ fn report_renders_strings_raw_and_lists_store_keys() {
     assert!(report.contains("[1 tool call, "), "{report}");
     assert!(report.contains("stored: k]"), "{report}");
 }
+
+struct RuntimeDirRestore(Option<std::ffi::OsString>);
+
+impl Drop for RuntimeDirRestore {
+    fn drop(&mut self) {
+        match self.0.take() {
+            Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+            None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+        }
+    }
+}
+
+/// Script sub-calls run on a spawned task, so the controlled session's
+/// generation must travel with them; a stopped generation must still be refused.
+#[allow(clippy::await_holding_lock)]
+#[tokio::test(flavor = "multi_thread")]
+async fn controlled_session_subcalls_keep_generation_across_spawn() {
+    let _lock = crate::storage::lock_test_env();
+    let root = tempfile::tempdir().unwrap();
+    let _restore = RuntimeDirRestore(std::env::var_os("JCODE_RUNTIME_DIR"));
+    crate::env::set_var("JCODE_RUNTIME_DIR", root.path());
+    let session = "codemode-controlled";
+    let store = crate::server::session_control::store();
+    store.register(session, None).unwrap();
+    let token = store.admit(session).unwrap();
+    let registry = registry().await;
+    let script = json!({"code": "return await tools.lookup({ id: 3 });"});
+
+    let out = crate::server::session_control::scope(
+        Some(token.clone()),
+        registry.execute("codemode", script.clone(), ctx(session)),
+    )
+    .await
+    .expect("controlled codemode runs");
+    assert!(out.output.contains("\"square\": 9"), "{}", out.output);
+    assert!(!out.output.contains("Missing execution generation"));
+
+    // Without a token the controlled session gets no authority at all.
+    assert!(
+        registry
+            .execute("codemode", script.clone(), ctx(session))
+            .await
+            .is_err()
+    );
+
+    store.request_stop(session, session, false, "stop").unwrap();
+    assert!(
+        crate::server::session_control::scope(
+            Some(token),
+            registry.execute("codemode", script, ctx(session)),
+        )
+        .await
+        .is_err(),
+        "a revoked generation must not run sub-calls"
+    );
+}

@@ -396,12 +396,7 @@ pub(super) async fn handle_comm_message(
                 };
                 let mut delivery_mode = resolve_comm_delivery_mode(scope, delivery, wake);
                 let feedback = if scope == "dm" {
-                    match judge_feedback::admit(
-                        session_id,
-                        &from_session,
-                        &message,
-                        3,
-                    ) {
+                    match judge_feedback::admit(session_id, &from_session, &message, 3) {
                         Ok(admission) => admission,
                         Err(error) => Some(FeedbackAdmission::Note(format!(
                             "judge feedback unavailable (display only): {error}\n{message}"

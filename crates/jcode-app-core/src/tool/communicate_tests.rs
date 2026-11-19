@@ -257,6 +257,7 @@ fn format_awaited_members_includes_recent_outputs() {
         status: "ready".to_string(),
         done: true,
         completion_report: Some("Structured report wins.".to_string()),
+        generation: None,
     }];
     let reports = HashMap::from([(
         "session_worker".to_string(),
@@ -649,6 +650,7 @@ fn mutating_swarm_requests_get_extended_deadline() {
         "comm_task_control",
         "comm_assign_task",
         "comm_assign_next",
+        "comm_stop",
     ] {
         assert_eq!(default_deadline(t), Duration::from_secs(120), "{t}");
     }
@@ -814,6 +816,7 @@ fn ready_without_report_is_incomplete_and_reported_stays_done() {
         status: status.to_string(),
         done: true,
         completion_report: report.map(str::to_string),
+        generation: None,
     };
     let mut members = vec![
         mk("a", "ready", None),
@@ -863,4 +866,46 @@ fn role_slot_resolution_precedence_and_source() {
     );
     let list = format_swarm_model_list(Some("opus"), None, &[], &agents);
     assert!(list.contains("research=cheap, edit=e1"), "{list}");
+}
+
+#[test]
+fn stop_never_reports_stopped_for_a_nonterminal_outcome() {
+    use super::format_stop_outcome;
+    use super::transport::SwarmRequestError;
+    let done = format_stop_outcome("w1", Ok(ServerEvent::Done { id: 1 })).unwrap();
+    assert_eq!(done.output, "Stopped agent: w1");
+    for response in [
+        Err(anyhow::Error::from(SwarmRequestError::Timeout {
+            mutating: true,
+        })),
+        Err(anyhow::Error::from(SwarmRequestError::Closed {
+            mutating: true,
+        })),
+        Ok(ServerEvent::Draining {
+            request_id: 1,
+            session_id: "w1".into(),
+            generation: 1,
+            revision: 2,
+            terminal: false,
+        }),
+    ] {
+        let text = format_stop_outcome("w1", response).unwrap_err().to_string();
+        assert!(!text.contains("Stopped agent"), "{text}");
+        assert!(text.contains("Stop pending"), "{text}");
+        assert!(
+            text.contains("communicate action=status target_session=w1"),
+            "{text}"
+        );
+    }
+    let server = format_stop_outcome(
+        "w1",
+        Ok(ServerEvent::Error {
+            id: 1,
+            message: "unresolved session=w1 settlement not confirmed".into(),
+            retry_after_secs: None,
+        }),
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(server.contains("unresolved session=w1"), "{server}");
 }

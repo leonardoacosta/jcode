@@ -504,3 +504,139 @@ async fn task_control_reassign_tells_displaced_worker_to_stand_down() {
     }
     assert!(saw_dm, "displaced worker must receive a stand-down DM");
 }
+
+#[tokio::test]
+async fn task_control_reassign_waits_for_unsettled_predecessor_then_hands_off() {
+    let (_env, _runtime) = RuntimeEnvGuard::new();
+    let swarm_id = "swarm-reassign-unsettled";
+    let (requester, holder, intruder) = ("coord", "snail", "penguin");
+    let mut contested = plan_item("contested", "running_stale", "high", &[]);
+    contested.assigned_to = Some(holder.to_string());
+    let (sessions, swarm_members, swarms_by_id, swarm_plans, swarm_coordinators) =
+        double_assign_fixture(
+            swarm_id,
+            requester,
+            holder,
+            intruder,
+            contested,
+            crate::server::SwarmTaskProgress {
+                assigned_session_id: Some(holder.to_string()),
+                last_heartbeat_unix_ms: Some(unix_now_ms().saturating_sub(3_600_000)),
+                ..Default::default()
+            },
+        );
+    // Capture the displaced worker's server-event stream to observe the DM.
+    let (holder_tx, _holder_rx) = mpsc::unbounded_channel();
+    swarm_members
+        .write()
+        .await
+        .get_mut(holder)
+        .expect("holder member")
+        .event_tx = holder_tx;
+    sessions
+        .register_new(
+            holder.to_string(),
+            named_assignment_test_agent(holder).await,
+        )
+        .await
+        .unwrap();
+    sessions
+        .register_new(
+            intruder.to_string(),
+            named_assignment_test_agent(intruder).await,
+        )
+        .await
+        .unwrap();
+    let control = crate::server::session_control::store();
+    control.register(holder, None).unwrap();
+    let held = control.admit(holder).unwrap();
+    let work = held.reserve().unwrap();
+    let stop = control
+        .request_stop(holder, holder, false, "stop")
+        .unwrap();
+    let (client_tx, mut client_rx) = mpsc::unbounded_channel();
+    let soft_interrupt_queues = Arc::new(RwLock::new(HashMap::new()));
+    let client_connections = Arc::new(RwLock::new(HashMap::new()));
+    let event_history = Arc::new(RwLock::new(VecDeque::new()));
+    let event_counter = Arc::new(AtomicU64::new(1));
+    let (swarm_event_tx, _swarm_event_rx) = broadcast::channel(32);
+    let mutation_runtime = SwarmMutationRuntime::default();
+
+    handle_comm_task_control(
+        93,
+        requester.to_string(),
+        "reassign".to_string(),
+        "contested".to_string(),
+        Some(intruder.to_string()),
+        None,
+        &client_tx,
+        &sessions,
+        &soft_interrupt_queues,
+        &client_connections,
+        &swarm_members,
+        &swarms_by_id,
+        &swarm_plans,
+        &swarm_coordinators,
+        &event_history,
+        &event_counter,
+        &swarm_event_tx,
+        &mutation_runtime,
+    )
+    .await;
+    let assignee = || {
+        let swarm_plans = swarm_plans.clone();
+        async move {
+            let plans = swarm_plans.read().await;
+            plans[swarm_id]
+                .items
+                .iter()
+                .find(|item| item.id == "contested")
+                .and_then(|item| item.assigned_to.clone())
+        }
+    };
+    match client_rx.recv().await.expect("response") {
+        ServerEvent::Error { message, .. } => assert!(
+            message.contains("stop has not settled"),
+            "unexpected refusal: {message}"
+        ),
+        other => panic!("reassign from an unsettled predecessor must be refused, got {other:?}"),
+    }
+    assert_eq!(assignee().await.as_deref(), Some(holder));
+    assert!(
+        soft_interrupt_queues.read().await.get(intruder).is_none(),
+        "refused reassign queued work for the new owner"
+    );
+
+    // Once the predecessor settles, the same explicit reassign hands the task off.
+    drop(work);
+    control.settle(holder, stop.revision).unwrap();
+    handle_comm_task_control(
+        93,
+        requester.to_string(),
+        "reassign".to_string(),
+        "contested".to_string(),
+        Some(intruder.to_string()),
+        None,
+        &client_tx,
+        &sessions,
+        &soft_interrupt_queues,
+        &client_connections,
+        &swarm_members,
+        &swarms_by_id,
+        &swarm_plans,
+        &swarm_coordinators,
+        &event_history,
+        &event_counter,
+        &swarm_event_tx,
+        &mutation_runtime,
+    )
+    .await;
+
+    match client_rx.recv().await.expect("response") {
+        ServerEvent::CommAssignTaskResponse { target_session, .. } => {
+            assert_eq!(target_session, intruder)
+        }
+        other => panic!("settled predecessor must allow reassign, got {other:?}"),
+    }
+    assert_eq!(assignee().await.as_deref(), Some(intruder));
+}

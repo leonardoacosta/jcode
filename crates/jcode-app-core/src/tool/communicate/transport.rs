@@ -77,7 +77,7 @@ const MUTATING_DEADLINE: std::time::Duration = std::time::Duration::from_secs(12
 pub(super) fn is_mutating_request_type(request_type: &str) -> bool {
     matches!(
         request_type,
-        "comm_spawn" | "comm_task_control" | "comm_assign_task" | "comm_assign_next"
+        "comm_spawn" | "comm_task_control" | "comm_assign_task" | "comm_assign_next" | "comm_stop"
     )
 }
 
@@ -211,6 +211,8 @@ pub(super) async fn send_request_with_timeout(
             | "available_models_updated"
             | "side_panel_state"
             | "transcript"
+            | "stop_requested"
+            | "draining"
             | "interrupted" => continue,
             // Terminal responses and typed request responses with matching ids.
             _ => return Ok(serde_json::from_value(value)?),

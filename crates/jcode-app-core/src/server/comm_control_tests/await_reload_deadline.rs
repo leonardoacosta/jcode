@@ -11,6 +11,7 @@ async fn await_members_reuses_persisted_deadline_after_reload_retry() {
         &["completed".to_string()],
         None,
     );
+    let key = crate::server::await_members_state::generation_bound_key(&key, &["peer-1".to_string()]);
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -28,6 +29,7 @@ async fn await_members_reuses_persisted_deadline_after_reload_retry() {
             background: false,
             notify: false,
             wake: false,
+            bound_generations: Default::default(),
             final_response: None,
         },
     );

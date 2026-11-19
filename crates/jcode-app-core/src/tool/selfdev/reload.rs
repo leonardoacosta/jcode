@@ -529,6 +529,7 @@ mod finished_member_tests {
                 background: false,
                 notify: true,
                 wake: true,
+                bound_generations: Default::default(),
                 final_response: None,
             });
         };

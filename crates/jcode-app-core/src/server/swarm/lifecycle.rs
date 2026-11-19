@@ -133,6 +133,11 @@ pub(in crate::server) async fn salvage_assignments_of_dead_member(
     swarm_plans: &Arc<RwLock<HashMap<String, VersionedPlan>>>,
     swarm_coordinators: &Arc<RwLock<HashMap<String, String>>>,
 ) -> DeadMemberSalvage {
+    // Do not reassign work whose predecessor has not settled. The periodic
+    // salvage retries once the durable stop reaches `stopped`.
+    if super::super::session_control::store().predecessor_unsettled(session_id) {
+        return DeadMemberSalvage::default();
+    }
     let outcome = {
         let mut plans = swarm_plans.write().await;
         match plans.get_mut(swarm_id) {
@@ -262,15 +267,11 @@ pub(in crate::server) async fn remove_session_from_swarm(
     .await;
     remove_plan_participant(swarm_id, session_id, swarm_plans).await;
     crate::server::live_status::forget(session_id);
-    // Membership loss is not execution settlement. Controlled generations keep
-    // claims until the durable stop path proves their actual owned work ended.
-    let control = super::super::session_control::store();
-    let release = match control.inspect(session_id) {
-        Ok(None) => true,
-        Ok(Some(record)) => record.state == super::super::session_control::ControlState::Stopped,
-        Err(_) => false,
-    };
-    if release {
+    // Membership loss is not execution settlement while a stop is unsettled:
+    // those claims stay until the durable stop path proves the owned work
+    // ended. A runnable, stopped or untracked session has no such barrier, so
+    // its claims release as before (otherwise they would leak forever).
+    if !super::super::session_control::store().predecessor_unsettled(session_id) {
         unregister_claim_worker(session_id);
     }
 
@@ -724,85 +725,95 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
         report_back_to_session_id,
     ) = {
         let mut members = swarm_members.write().await;
-        let projected = crate::server::session_control::store().project(session_id, status, || {
-            if matches!(
-                status,
-                "completed" | "done" | "stopped" | "failed" | "crashed" | "orphaned"
-            ) || (status == "ready" && completion_report.is_some())
-            {
-                release_file_claims_of(session_id);
-            }
-            if let Some(member) = members.get_mut(session_id) {
-                let previous_status = member.status.clone();
-                let status_changed = member.status != status;
-                let detail_changed = member.detail != detail;
-                if status_changed
-                    || detail_changed
-                    || crate::server::live_status::snapshot(session_id).is_none()
-                {
-                    if matches!(status, "running" | "streaming" | "thinking") {
-                        if !matches!(
-                            previous_status.as_str(),
-                            "running" | "streaming" | "thinking"
-                        ) || crate::server::live_status::snapshot(session_id).is_none()
-                        {
-                            crate::server::live_status::begin(session_id);
-                        }
-                    } else {
-                        crate::server::live_status::finish(session_id, status, detail.as_deref());
-                    }
-                }
-                let report_changed = completion_report.is_some()
-                    && member.latest_completion_report != completion_report;
-                let member_changed = status_changed || detail_changed || report_changed;
-                if status_changed {
-                    member.last_status_change = Instant::now();
-                    if matches!(status, "running" | "streaming" | "thinking") {
-                        member.runtime.elapsed_secs = None;
-                    } else if matches!(
-                        previous_status.as_str(),
-                        "running" | "streaming" | "thinking"
-                    ) {
-                        member.runtime.elapsed_secs = Some(member.joined_at.elapsed().as_secs());
-                    }
-                }
-                let name = member.friendly_name.clone();
-                let is_headless = member.is_headless;
-                let report_back_to_session_id = member.report_back_to_session_id.clone();
-                member.status = status.to_string();
-                member.detail = detail;
-                // Clear any live output tail when the worker reaches a terminal or
-                // idle state so the inline gallery viewport doesn't keep showing
-                // stale in-progress text after the turn finishes.
+        let projected = crate::server::session_control::store().project_report(
+            session_id,
+            status,
+            completion_report.is_some(),
+            || {
                 if matches!(
                     status,
-                    "ready" | "completed" | "done" | "failed" | "crashed" | "stopped"
-                ) {
-                    member.output_tail = None;
+                    "completed" | "done" | "stopped" | "failed" | "crashed" | "orphaned"
+                ) || (status == "ready" && completion_report.is_some())
+                {
+                    release_file_claims_of(session_id);
                 }
-                if completion_report.is_some() {
-                    member.latest_completion_report = completion_report.clone();
-                } else if status_changed
-                    && matches!(
+                if let Some(member) = members.get_mut(session_id) {
+                    let previous_status = member.status.clone();
+                    let status_changed = member.status != status;
+                    let detail_changed = member.detail != detail;
+                    if status_changed
+                        || detail_changed
+                        || crate::server::live_status::snapshot(session_id).is_none()
+                    {
+                        if matches!(status, "running" | "streaming" | "thinking") {
+                            if !matches!(
+                                previous_status.as_str(),
+                                "running" | "streaming" | "thinking"
+                            ) || crate::server::live_status::snapshot(session_id).is_none()
+                            {
+                                crate::server::live_status::begin(session_id);
+                            }
+                        } else {
+                            crate::server::live_status::finish(
+                                session_id,
+                                status,
+                                detail.as_deref(),
+                            );
+                        }
+                    }
+                    let report_changed = completion_report.is_some()
+                        && member.latest_completion_report != completion_report;
+                    let member_changed = status_changed || detail_changed || report_changed;
+                    if status_changed {
+                        member.last_status_change = Instant::now();
+                        if matches!(status, "running" | "streaming" | "thinking") {
+                            member.runtime.elapsed_secs = None;
+                        } else if matches!(
+                            previous_status.as_str(),
+                            "running" | "streaming" | "thinking"
+                        ) {
+                            member.runtime.elapsed_secs =
+                                Some(member.joined_at.elapsed().as_secs());
+                        }
+                    }
+                    let name = member.friendly_name.clone();
+                    let is_headless = member.is_headless;
+                    let report_back_to_session_id = member.report_back_to_session_id.clone();
+                    member.status = status.to_string();
+                    member.detail = detail;
+                    // Clear any live output tail when the worker reaches a terminal or
+                    // idle state so the inline gallery viewport doesn't keep showing
+                    // stale in-progress text after the turn finishes.
+                    if matches!(
                         status,
                         "ready" | "completed" | "done" | "failed" | "crashed" | "stopped"
+                    ) {
+                        member.output_tail = None;
+                    }
+                    if completion_report.is_some() {
+                        member.latest_completion_report = completion_report.clone();
+                    } else if status_changed
+                        && matches!(
+                            status,
+                            "ready" | "completed" | "done" | "failed" | "crashed" | "stopped"
+                        )
+                    {
+                        member.latest_completion_report = None;
+                    }
+                    (
+                        member.swarm_id.clone(),
+                        name,
+                        member_changed,
+                        status_changed,
+                        previous_status,
+                        is_headless,
+                        report_back_to_session_id,
                     )
-                {
-                    member.latest_completion_report = None;
+                } else {
+                    (None, None, false, false, String::new(), false, None)
                 }
-                (
-                    member.swarm_id.clone(),
-                    name,
-                    member_changed,
-                    status_changed,
-                    previous_status,
-                    is_headless,
-                    report_back_to_session_id,
-                )
-            } else {
-                (None, None, false, false, String::new(), false, None)
-            }
-        });
+            },
+        );
         match projected {
             Ok(projected) => projected,
             Err(error) => {

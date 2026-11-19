@@ -891,6 +891,11 @@ pub(super) async fn handle_comm_list_models(
     });
 }
 
+#[cfg(not(test))]
+const STOP_DRAIN_DEADLINE: std::time::Duration = std::time::Duration::from_secs(25);
+#[cfg(test)]
+const STOP_DRAIN_DEADLINE: std::time::Duration = std::time::Duration::from_millis(300);
+
 #[allow(clippy::too_many_arguments)]
 pub(super) async fn handle_comm_stop(
     id: u64,
@@ -908,7 +913,7 @@ pub(super) async fn handle_comm_stop(
     event_history: &Arc<RwLock<std::collections::VecDeque<SwarmEvent>>>,
     event_counter: &Arc<std::sync::atomic::AtomicU64>,
     swarm_event_tx: &broadcast::Sender<SwarmEvent>,
-    _soft_interrupt_queues: &SessionInterruptQueues,
+    soft_interrupt_queues: &SessionInterruptQueues,
     _swarm_mutation_runtime: &SwarmMutationRuntime,
 ) {
     let result = async {
@@ -937,27 +942,53 @@ pub(super) async fn handle_comm_stop(
             .and_then(|member| member.report_back_to_session_id.clone());
         let stop_allowed = {
             let members = swarm_members.read().await;
-            members.get(&target).is_some_and(|member| {
-                swarm_stop_allowed_by_owner(&req_session_id, member, force)
-                    || (!force
-                        && super::swarm_is_self_or_ancestor(&members, &req_session_id, &target))
-            })
+            match members.get(&target) {
+                Some(member) => {
+                    swarm_stop_allowed_by_owner(&req_session_id, member, force)
+                        || (!force
+                            && super::swarm_is_self_or_ancestor(&members, &req_session_id, &target))
+                }
+                // Member projection is gone (removed, GC'd or not yet restored):
+                // authorize from the retained owner ancestry in the control record.
+                None => {
+                    drop(members);
+                    store
+                        .inspect(&target)?
+                        .is_some_and(|_| store.authorized(&req_session_id, &target, force).is_ok())
+                }
+            }
         };
         anyhow::ensure!(
             stop_allowed,
             "Refusing to stop session '{target}' because it was not spawned by this coordinator. Pass force=true to stop a non-owned/user-created swarm session explicitly."
         );
         super::session_control::import_identity(&target, owner_hint.as_deref())?;
-        store.request_stop(
+        let requested = store.request_stop(
             &req_session_id,
             &target,
             force,
             &format!("{req_session_id}:{id}"),
         )?;
+        let _ = client_event_tx.send(ServerEvent::StopRequested {
+            request_id: id,
+            session_id: target.clone(),
+            generation: requested.revoked_through,
+            revision: requested.revision,
+            terminal: false,
+        });
+        if requested.state != super::session_control::ControlState::Stopped {
+            let _ = client_event_tx.send(ServerEvent::Draining {
+                request_id: id,
+                session_id: target.clone(),
+                generation: requested.revoked_through,
+                revision: requested.revision,
+                terminal: false,
+            });
+        }
         // Stop's existing public action deadline is 30s. Reserve 5s for the
         // legacy response transport instead of timing out without diagnostics.
         let record = store
-            .drain(&target, std::time::Duration::from_secs(25))
+            .drain(&target, STOP_DRAIN_DEADLINE)
             .await?;
         Ok::<_, anyhow::Error>((target, record))
     }
@@ -965,6 +996,7 @@ pub(super) async fn handle_comm_stop(
     let message = match result {
         Ok((target, record)) if record.state == super::session_control::ControlState::Stopped => {
             super::swarm::release_file_claims_of(&target);
+            discard_pre_stop_soft_interrupts(&target, sessions, soft_interrupt_queues).await;
             update_member_status(
                 &target,
                 "stopped",
@@ -983,7 +1015,7 @@ pub(super) async fn handle_comm_stop(
             return;
         }
         Ok((target, record)) => format!(
-            "unresolved session={target} request={} generation={} revision={} categories={:?}; settlement not confirmed",
+            "unresolved session={target} request={} generation={} revision={} categories={:?}; settlement not confirmed; inspect with `communicate action=status target_session={target}`",
             record.latest_stop_request.as_deref().unwrap_or("unknown"),
             record.revoked_through,
             record.revision,
@@ -996,6 +1028,34 @@ pub(super) async fn handle_comm_stop(
         message,
         retry_after_secs: None,
     });
+}
+
+/// Work queued as a soft interrupt before the stop settled belongs to the
+/// revoked generation. Drop it (live and persisted) so it cannot run as the
+/// post-stop generation when the session is explicitly resumed.
+pub(super) async fn discard_pre_stop_soft_interrupts(
+    session_id: &str,
+    sessions: &SessionAgents,
+    queues: &SessionInterruptQueues,
+) {
+    let registered = queues.read().await.get(session_id).cloned();
+    let live = match registered {
+        Some(queue) => Some(queue),
+        None => sessions.read().await.get(session_id).and_then(|agent| {
+            agent
+                .try_lock()
+                .ok()
+                .map(|agent| agent.soft_interrupt_queue())
+        }),
+    };
+    if let Some(queue) = live {
+        queue.lock().unwrap_or_else(|e| e.into_inner()).clear();
+    }
+    if let Err(error) = crate::soft_interrupt_store::clear(session_id) {
+        crate::logging::warn(&format!(
+            "Failed to clear persisted soft interrupts for stopped session {session_id}: {error}"
+        ));
+    }
 }
 
 fn swarm_member_status_is_stale_for_coordination(status: &str) -> bool {

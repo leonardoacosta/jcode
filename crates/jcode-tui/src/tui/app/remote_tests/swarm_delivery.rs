@@ -89,6 +89,8 @@ fn confirmed_memory_delivery_is_visible_with_local_memory_disabled() {
             display_prompt: None,
             prompt_chars: 22,
             computed_age_ms: 0,
+            items: Vec::new(),
+            dropped: 0,
         },
         &mut remote,
     );

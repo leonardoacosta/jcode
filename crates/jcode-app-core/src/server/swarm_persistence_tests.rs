@@ -1229,3 +1229,77 @@ fn reload_orphans_lost_worker_and_resumes_restorable_one() {
         None => crate::env::remove_var("JCODE_HOME"),
     }
 }
+
+#[test]
+fn restore_reconciles_durable_control_before_membership_or_runnable_work() {
+    let dir = tempfile::TempDir::new().expect("tempdir");
+    let _env = test_env(&dir);
+    let prev_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", dir.path());
+    let store = crate::server::session_control::store();
+    let now = now_unix_ms();
+    let restore = |id: &str| {
+        from_persisted_member(
+            to_persisted_member(&running_worker(id), now),
+            now,
+            now,
+            Duration::from_secs(3600),
+        )
+        .expect("member restored")
+    };
+
+    // Pending stop: never reads as success or runnable.
+    store.register("ctl-pending", None).unwrap();
+    store.admit("ctl-pending").unwrap();
+    store
+        .request_stop("ctl-pending", "ctl-pending", false, "r1")
+        .unwrap();
+    let pending = restore("ctl-pending");
+    assert_eq!(pending.status, STOP_UNRESOLVED_STATUS);
+
+    // Settled stop stays stopped even for a worker with a respawnable spec.
+    store.register("ctl-settled", None).unwrap();
+    store.admit("ctl-settled").unwrap();
+    let requested = store
+        .request_stop("ctl-settled", "ctl-settled", false, "r2")
+        .unwrap();
+    store.settle("ctl-settled", requested.revision).unwrap();
+    record_worker_spawn_spec(
+        "ctl-settled",
+        &WorkerSpawnSpec {
+            lane: "l".into(),
+            prompt: Some("p".into()),
+            model: None,
+            working_dir: None,
+            last_status: None,
+        },
+    );
+    let settled = restore("ctl-settled");
+    assert_eq!(settled.status, "stopped");
+    assert!(
+        load_worker_spawn_spec("ctl-settled")
+            .unwrap()
+            .last_status
+            .is_none(),
+        "revoked session must not be marked orphaned/retryable"
+    );
+
+    // Corrupt record fails closed and its bytes are preserved.
+    let corrupt = dir.path().join("session-control");
+    std::fs::create_dir_all(&corrupt).ok();
+    let path = crate::storage::durable_state_dir()
+        .join("session-control")
+        .join("ctl-corrupt.json");
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    std::fs::write(&path, b"{not json").unwrap();
+    assert_eq!(restore("ctl-corrupt").status, STOP_UNRESOLVED_STATUS);
+    assert_eq!(std::fs::read(&path).unwrap(), b"{not json");
+
+    // No control record: legacy recovery unchanged.
+    assert_eq!(restore("ctl-legacy").status, "crashed");
+
+    match prev_home {
+        Some(v) => crate::env::set_var("JCODE_HOME", v),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+}

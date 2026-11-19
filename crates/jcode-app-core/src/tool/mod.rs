@@ -2027,8 +2027,10 @@ mod mcp_allow_list_tests;
 mod mcp_notification_tests;
 
 fn external_effect_category(tool: &str, action: &str, custom_or_mcp: bool) -> Option<&'static str> {
+    // `bash` records each spawned child itself (`own_shell_child`), so the
+    // category clears only when that child is proven gone.
     if tool == "bash" {
-        return Some("shell_children");
+        return None;
     }
     if custom_or_mcp {
         return Some("external_effects");
@@ -2113,10 +2115,7 @@ mod stop_effect_tests {
                 );
             }
         }
-        assert_eq!(
-            external_effect_category("bash", "", false),
-            Some("shell_children")
-        );
+        assert_eq!(external_effect_category("bash", "", false), None);
         for (tool, action) in [
             ("mcp", "call"),
             ("schedule", "create"),

@@ -233,6 +233,7 @@ fn test_comm_status_response_roundtrip() -> Result<()> {
             }),
             provider_name: None,
             provider_model: None,
+            control: None,
         },
     };
 
@@ -252,4 +253,63 @@ fn test_comm_status_response_roundtrip() -> Result<()> {
         Some("bash".to_string())
     );
     Ok(())
+}
+
+#[test]
+fn status_snapshot_without_control_decodes_and_never_implies_runnable() {
+    let legacy = r#"{"type":"comm_status_response","id":9,"snapshot":{"session_id":"old"}}"#;
+    let event: ServerEvent = serde_json::from_str(legacy).expect("legacy status decodes");
+    let ServerEvent::CommStatusResponse { snapshot, .. } = event else {
+        panic!("expected status response");
+    };
+    assert!(snapshot.control.is_none());
+    assert!(!encode_event(&ServerEvent::CommStatusResponse { id: 9, snapshot }).contains("control"));
+}
+
+#[test]
+fn status_snapshot_control_roundtrips_and_formats_pending_stop() {
+    let snapshot = AgentStatusSnapshot {
+        session_id: "worker".to_string(),
+        status: Some("running".to_string()),
+        control: Some(ControlStatusSnapshot {
+            state: "draining".to_string(),
+            generation: 3,
+            admitted_generation: None,
+            revoked_through: 3,
+            revision: 5,
+            stop_request: Some("coord:7".to_string()),
+            unresolved_categories: vec!["shell_children".to_string()],
+        }),
+        ..Default::default()
+    };
+    let json = serde_json::to_string(&snapshot).unwrap();
+    let back: AgentStatusSnapshot = serde_json::from_str(&json).unwrap();
+    assert_eq!(back.control, snapshot.control);
+    let text = format_comm_status_snapshot(&snapshot);
+    assert!(text.contains("Control: draining (generation 3, revoked through 3, revision 5)"));
+    assert!(text.contains("stop request coord:7"));
+    assert!(text.contains("unresolved: shell_children"));
+}
+
+#[test]
+fn stop_requested_and_draining_are_nonterminal_additive_events() {
+    let requested = ServerEvent::StopRequested {
+        request_id: 9,
+        session_id: "worker".into(),
+        generation: 3,
+        revision: 5,
+        terminal: false,
+    };
+    let json = serde_json::to_value(&requested).unwrap();
+    assert_eq!(json["type"], "stop_requested");
+    // Correlated by request_id so id-matching legacy readers never see a response.
+    assert!(json.get("id").is_none());
+    let draining: ServerEvent = serde_json::from_str(
+        r#"{"type":"draining","request_id":9,"session_id":"worker","generation":3}"#,
+    )
+    .unwrap();
+    assert!(matches!(
+        draining,
+        ServerEvent::Draining { request_id: 9, revision: 0, terminal: false, .. }
+    ));
 }

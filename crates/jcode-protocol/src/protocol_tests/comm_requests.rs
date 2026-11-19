@@ -188,6 +188,7 @@ fn test_comm_report_roundtrip() -> Result<()> {
         validation: Some("Focused tests passed.".to_string()),
         follow_up: Some("None.".to_string()),
         tldr: None,
+        generation: Some(2),
     };
     let json = serde_json::to_string(&req)?;
     assert!(json.contains("\"type\":\"comm_report\""));
@@ -248,6 +249,7 @@ fn test_comm_await_members_response_roundtrip() -> Result<()> {
                 status: "completed".to_string(),
                 done: true,
                 completion_report: None,
+                generation: None,
             },
             AwaitedMemberStatus {
                 session_id: "sess_b".to_string(),
@@ -255,6 +257,7 @@ fn test_comm_await_members_response_roundtrip() -> Result<()> {
                 status: "stopped".to_string(),
                 done: true,
                 completion_report: None,
+                generation: None,
             },
         ],
         summary: "All 2 members are done: fox, wolf".to_string(),

@@ -1051,6 +1051,35 @@ pub enum ServerEvent {
         target_session: String,
     },
 
+    /// A stop was durably recorded and admission is revoked. Nonterminal: the
+    /// request's `done`/`error` still follows. Correlated by `request_id`, not
+    /// `id`, so older clients that match frames on `id` skip it.
+    #[serde(rename = "stop_requested")]
+    StopRequested {
+        request_id: u64,
+        session_id: String,
+        /// Highest generation revoked by this stop.
+        generation: u64,
+        #[serde(default)]
+        revision: u64,
+        /// Always false: this frame never settles the request.
+        #[serde(default)]
+        terminal: bool,
+    },
+    /// Active work of the stopped generation is being cancelled and waited for.
+    /// Nonterminal, correlated by `request_id` like `stop_requested`.
+    #[serde(rename = "draining")]
+    Draining {
+        request_id: u64,
+        session_id: String,
+        generation: u64,
+        #[serde(default)]
+        revision: u64,
+        /// Always false: only `done` after `stopped` settles the request.
+        #[serde(default)]
+        terminal: bool,
+    },
+
     /// Response to comm_task_control request
     #[serde(rename = "comm_task_control_response")]
     CommTaskControlResponse {

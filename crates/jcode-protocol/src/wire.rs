@@ -865,6 +865,10 @@ pub enum Request {
         /// report bodies collapsed to this with an expand control.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         tldr: Option<String>,
+        /// Execution generation that produced this report. Reports without
+        /// one (older clients) are recorded but never bound to a generation.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        generation: Option<u64>,
     },
 
     /// Read another agent's full conversation context

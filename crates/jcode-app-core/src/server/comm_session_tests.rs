@@ -1436,3 +1436,391 @@ async fn spawn_admission_lock_serializes_per_swarm_only() {
 
 #[path = "comm_session_effort_tests.rs"]
 mod effort;
+
+fn is_nonterminal_stop_frame(event: &ServerEvent) -> bool {
+    matches!(
+        event,
+        ServerEvent::StopRequested { .. } | ServerEvent::Draining { .. }
+    )
+}
+
+/// Terminal frames only: the additive `stop_requested`/`draining` frames are
+/// asserted explicitly by `stop_emits_nonterminal_frames_before_the_terminal_reply`.
+async fn stop_after_member_removal(requester: &str, target: &str, force: bool) -> Vec<ServerEvent> {
+    stop_frames_after_member_removal(requester, target, force)
+        .await
+        .into_iter()
+        .filter(|event| !is_nonterminal_stop_frame(event))
+        .collect()
+}
+
+async fn stop_frames_after_member_removal(
+    requester: &str,
+    target: &str,
+    force: bool,
+) -> Vec<ServerEvent> {
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    let swarm_members = Arc::new(RwLock::new(HashMap::new()));
+    let swarms_by_id = Arc::new(RwLock::new(HashMap::new()));
+    let coordinators = Arc::new(RwLock::new(HashMap::new()));
+    let plans = Arc::new(RwLock::new(HashMap::new()));
+    let channels = Arc::new(RwLock::new(HashMap::new()));
+    let history = Arc::new(RwLock::new(VecDeque::new()));
+    let counter = Arc::new(AtomicU64::new(0));
+    let (swarm_event_tx, _swarm_event_rx) = broadcast::channel(8);
+    let queues = Arc::new(RwLock::new(HashMap::new()));
+    super::handle_comm_stop(
+        7,
+        requester.to_string(),
+        target.to_string(),
+        force,
+        &tx,
+        &Arc::new(crate::server::session_manager::SessionManager::new()),
+        &swarm_members,
+        &swarms_by_id,
+        &coordinators,
+        &plans,
+        &channels,
+        &channels,
+        &history,
+        &counter,
+        &swarm_event_tx,
+        &queues,
+        &crate::server::SwarmMutationRuntime::default(),
+    )
+    .await;
+    drop(tx);
+    let mut events = Vec::new();
+    while let Some(event) = rx.recv().await {
+        events.push(event);
+    }
+    events
+}
+
+async fn next_terminal_stop_frame(rx: &mut mpsc::UnboundedReceiver<ServerEvent>) -> ServerEvent {
+    loop {
+        let event = rx.recv().await.expect("stop result");
+        if !is_nonterminal_stop_frame(&event) {
+            return event;
+        }
+    }
+}
+
+#[tokio::test]
+async fn stop_emits_nonterminal_frames_before_the_terminal_reply() {
+    let _env = crate::storage::lock_test_env();
+    let runtime = tempfile::TempDir::new().expect("runtime dir");
+    let previous = std::env::var_os("JCODE_RUNTIME_DIR");
+    crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+    let control = crate::server::session_control::store();
+    control.register("frame-worker", Some("coord")).unwrap();
+    let token = control.admit("frame-worker").unwrap();
+    let work = token.reserve().unwrap();
+    let frames = stop_frames_after_member_removal("coord", "frame-worker", false).await;
+    drop(work);
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+        None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+    }
+    match frames.as_slice() {
+        [
+            ServerEvent::StopRequested {
+                request_id: 7,
+                generation,
+                terminal: false,
+                ..
+            },
+            ServerEvent::Draining {
+                request_id: 7,
+                terminal: false,
+                ..
+            },
+            ServerEvent::Error { id: 7, .. },
+        ] => assert_eq!(*generation, token.generation),
+        other => panic!("expected stop_requested, draining, then terminal: {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn stop_authorizes_removed_member_from_retained_owner_record() {
+    let _env = crate::storage::lock_test_env();
+    let runtime = tempfile::TempDir::new().expect("runtime dir");
+    let previous = std::env::var_os("JCODE_RUNTIME_DIR");
+    crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+    let control = crate::server::session_control::store();
+    for id in ["orphan-owner", "orphan-other", "orphan-force"] {
+        control.register(id, Some("coord")).expect("register");
+    }
+
+    let owner = stop_after_member_removal("coord", "orphan-owner", false).await;
+    let unrelated = stop_after_member_removal("stranger", "orphan-other", false).await;
+    let forced = stop_after_member_removal("stranger", "orphan-force", true).await;
+
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+        None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+    }
+    assert!(
+        matches!(owner.as_slice(), [ServerEvent::Done { id: 7 }]),
+        "{owner:?}"
+    );
+    assert!(
+        matches!(unrelated.as_slice(), [ServerEvent::Error { message, .. }] if message.contains("Refusing to stop")),
+        "{unrelated:?}"
+    );
+    assert!(
+        matches!(forced.as_slice(), [ServerEvent::Done { id: 7 }]),
+        "{forced:?}"
+    );
+    let states: Vec<_> = ["orphan-owner", "orphan-other", "orphan-force"]
+        .iter()
+        .map(|id| {
+            crate::server::session_control::ControlStore::new(
+                runtime.path().join("durable-state").join("session-control"),
+            )
+            .inspect(id)
+            .unwrap()
+            .unwrap()
+            .state
+        })
+        .collect();
+    use crate::server::session_control::ControlState::{Runnable, Stopped};
+    assert_eq!(states, vec![Stopped, Runnable, Stopped]);
+}
+
+#[tokio::test]
+async fn aliases_stay_swarm_local_while_exact_id_survives_owner_reconnect() {
+    let _env = crate::storage::lock_test_env();
+    let runtime = tempfile::TempDir::new().expect("runtime dir");
+    let previous = std::env::var_os("JCODE_RUNTIME_DIR");
+    crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+    let control = crate::server::session_control::store();
+    control.register("alias-owner", None).unwrap();
+    control
+        .register("session_otter_alias_1", Some("alias-owner"))
+        .unwrap();
+
+    // The owner reconnected into a different swarm than the worker's.
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    let swarm_members = Arc::new(RwLock::new(HashMap::new()));
+    let (mut owner, _owner_rx) = member("alias-owner", Some("swarm-new"), "coordinator");
+    owner.friendly_name = Some("boss".to_string());
+    let (mut worker, _worker_rx) = member("session_otter_alias_1", Some("swarm-old"), "agent");
+    worker.friendly_name = Some("otter".to_string());
+    worker.report_back_to_session_id = Some("alias-owner".to_string());
+    {
+        let mut members = swarm_members.write().await;
+        members.insert(owner.session_id.clone(), owner);
+        members.insert(worker.session_id.clone(), worker);
+    }
+    let resolved_other_swarm =
+        resolve_stop_target_session("swarm-new", "otter", &swarm_members).await;
+
+    let run = |target: &'static str| {
+        let tx = tx.clone();
+        let swarm_members = Arc::clone(&swarm_members);
+        async move {
+            super::handle_comm_stop(
+                9,
+                "alias-owner".to_string(),
+                target.to_string(),
+                false,
+                &tx,
+                &Arc::new(crate::server::session_manager::SessionManager::new()),
+                &swarm_members,
+                &Arc::new(RwLock::new(HashMap::new())),
+                &Arc::new(RwLock::new(HashMap::new())),
+                &Arc::new(RwLock::new(HashMap::new())),
+                &Arc::new(RwLock::new(HashMap::new())),
+                &Arc::new(RwLock::new(HashMap::new())),
+                &Arc::new(RwLock::new(VecDeque::new())),
+                &Arc::new(AtomicU64::new(0)),
+                &broadcast::channel(8).0,
+                &Arc::new(RwLock::new(HashMap::new())),
+                &crate::server::SwarmMutationRuntime::default(),
+            )
+            .await
+        }
+    };
+    run("otter").await;
+    let alias_event = next_terminal_stop_frame(&mut rx).await;
+    let after_alias = control
+        .inspect("session_otter_alias_1")
+        .unwrap()
+        .unwrap()
+        .state;
+    run("session_otter_alias_1").await;
+    let exact_event = next_terminal_stop_frame(&mut rx).await;
+    let after_exact = control
+        .inspect("session_otter_alias_1")
+        .unwrap()
+        .unwrap()
+        .state;
+
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+        None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+    }
+    assert!(
+        resolved_other_swarm.is_err(),
+        "alias crossed swarm boundary"
+    );
+    assert!(
+        matches!(&alias_event, ServerEvent::Error { message, .. } if !message.contains("settled")),
+        "{alias_event:?}"
+    );
+    use crate::server::session_control::ControlState::{Runnable, Stopped};
+    assert_eq!(after_alias, Runnable, "cross-swarm alias stopped a worker");
+    assert!(
+        matches!(exact_event, ServerEvent::Done { id: 9 }),
+        "{exact_event:?}"
+    );
+    assert_eq!(after_exact, Stopped);
+}
+
+async fn status_after_member_removal(requester: &str, target: &str) -> ServerEvent {
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    crate::server::comm_sync::handle_comm_status(
+        11,
+        requester.to_string(),
+        target.to_string(),
+        &Arc::new(crate::server::session_manager::SessionManager::new()),
+        &Arc::new(RwLock::new(HashMap::new())),
+        &Arc::new(RwLock::new(HashMap::new())),
+        &crate::server::FileTouchService::new(),
+        &tx,
+    )
+    .await;
+    drop(tx);
+    rx.recv().await.expect("status event")
+}
+
+#[tokio::test]
+async fn status_resolves_removed_member_by_exact_id_for_owner_only() {
+    let _env = crate::storage::lock_test_env();
+    let runtime = tempfile::TempDir::new().expect("runtime dir");
+    let previous = std::env::var_os("JCODE_RUNTIME_DIR");
+    crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+    let control = crate::server::session_control::store();
+    control.register("left-worker", Some("coord")).unwrap();
+    control.admit("left-worker").unwrap();
+    control
+        .request_stop("coord", "left-worker", false, "coord:1")
+        .unwrap();
+
+    let owner = status_after_member_removal("coord", "left-worker").await;
+    let stranger = status_after_member_removal("stranger", "left-worker").await;
+    let unknown = status_after_member_removal("coord", "never-existed").await;
+
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+        None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+    }
+    let ServerEvent::CommStatusResponse { snapshot, .. } = owner else {
+        panic!("owner should receive control state, got {owner:?}");
+    };
+    let control = snapshot.control.expect("control state present");
+    assert_eq!(control.state, "stop_requested");
+    assert_eq!(control.revoked_through, 1);
+    assert_eq!(control.stop_request.as_deref(), Some("coord:1"));
+    assert!(
+        matches!(&stranger, ServerEvent::Error { message, .. } if message.contains("Refusing")),
+        "{stranger:?}"
+    );
+    assert!(
+        matches!(&unknown, ServerEvent::Error { message, .. } if message.contains("not in the same swarm")),
+        "{unknown:?}"
+    );
+}
+
+#[tokio::test]
+async fn stop_with_unsettled_work_reports_unresolved_then_retry_settles() {
+    let _env = crate::storage::lock_test_env();
+    let runtime = tempfile::TempDir::new().expect("runtime dir");
+    let previous = std::env::var_os("JCODE_RUNTIME_DIR");
+    crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+    let control = crate::server::session_control::store();
+    control.register("busy-worker", Some("coord")).unwrap();
+    let token = control.admit("busy-worker").unwrap();
+    let work = token.reserve().unwrap();
+
+    let first = stop_after_member_removal("coord", "busy-worker", false).await;
+    let mid = control.inspect("busy-worker").unwrap().unwrap();
+    let repeat_while_busy = stop_after_member_removal("coord", "busy-worker", false).await;
+    drop(work);
+    let retry = stop_after_member_removal("coord", "busy-worker", false).await;
+    let settled = control.inspect("busy-worker").unwrap().unwrap();
+
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+        None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+    }
+    for events in [&first, &repeat_while_busy] {
+        match events.as_slice() {
+            [ServerEvent::Error { message, .. }] => {
+                assert!(
+                    message.contains("unresolved session=busy-worker"),
+                    "{message}"
+                );
+                assert!(message.contains("request=coord:7"), "{message}");
+                assert!(
+                    message.contains(&format!("generation={}", token.generation)),
+                    "{message}"
+                );
+                assert!(message.contains("settlement not confirmed"), "{message}");
+                assert!(
+                    message.contains("communicate action=status target_session=busy-worker"),
+                    "{message}"
+                );
+            }
+            other => panic!("unsettled stop must not look successful: {other:?}"),
+        }
+    }
+    use crate::server::session_control::ControlState::{Stopped, Unresolved};
+    assert_eq!(mid.state, Unresolved);
+    assert!(control.admit("busy-worker").is_err());
+    assert!(
+        matches!(retry.as_slice(), [ServerEvent::Done { id: 7 }]),
+        "{retry:?}"
+    );
+    assert_eq!(settled.state, Stopped);
+    assert!(settled.revision > mid.revision);
+}
+
+#[tokio::test]
+async fn stop_persistence_failure_reports_error_and_keeps_worker_revoked() {
+    let _env = crate::storage::lock_test_env();
+    let runtime = tempfile::TempDir::new().expect("runtime dir");
+    let previous = std::env::var_os("JCODE_RUNTIME_DIR");
+    crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+    let control = crate::server::session_control::store();
+    control
+        .register("persist-fail-worker", Some("coord"))
+        .unwrap();
+    let token = control.admit("persist-fail-worker").unwrap();
+    let path = control.path("persist-fail-worker").unwrap();
+    std::fs::remove_file(&path).unwrap();
+    std::fs::create_dir(&path).unwrap();
+
+    let events = stop_after_member_removal("coord", "persist-fail-worker", false).await;
+    let reserve_after = control.reserve(&token).is_err();
+    let admit_after = control.admit("persist-fail-worker").is_err();
+
+    std::fs::remove_dir(&path).unwrap();
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+        None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+    }
+    assert!(
+        matches!(events.as_slice(), [ServerEvent::Error { .. }]),
+        "failed durable stop must not report success: {events:?}"
+    );
+    assert!(
+        reserve_after,
+        "work was admitted after a failed durable stop"
+    );
+    assert!(
+        admit_after,
+        "new generation admitted after a failed durable stop"
+    );
+}

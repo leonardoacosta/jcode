@@ -357,11 +357,12 @@ pub(super) fn handle_run_subagent(
             name: tool_name.clone(),
         });
 
-        let (registry, session_id, working_dir) = {
+        let (registry, session_id, owner, working_dir) = {
             let agent_guard = agent.lock().await;
             (
                 agent_guard.registry(),
                 agent_guard.session_id().to_string(),
+                agent_guard.session_for_split().parent_id.clone(),
                 agent_guard.working_dir().map(std::path::PathBuf::from),
             )
         };
@@ -380,7 +381,15 @@ pub(super) fn handle_run_subagent(
         let tool_name_for_exec = tool_name.clone();
         let check_input = tool_input.clone();
         let result = match crate::runtime_activity::spawn(async move {
-            registry.execute(&tool_name_for_exec, tool_input, ctx).await
+            // A manual tool call is new work: admit it under the session's own
+            // generation instead of running it with no authority token.
+            let session_id = ctx.session_id.clone();
+            crate::server::session_control::run(
+                &session_id,
+                owner.as_deref(),
+                registry.execute(&tool_name_for_exec, tool_input, ctx),
+            )
+            .await?
         }) {
             Some(handle) => match handle.await {
                 Ok(result) => result,

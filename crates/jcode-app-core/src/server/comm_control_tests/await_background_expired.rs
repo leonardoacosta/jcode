@@ -11,6 +11,7 @@ async fn await_members_background_already_expired_answers_tool_call() {
         &["completed".to_string()],
         None,
     );
+    let key = crate::server::await_members_state::generation_bound_key(&key, &["peer-1".to_string()]);
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -31,6 +32,7 @@ async fn await_members_background_already_expired_answers_tool_call() {
             background: true,
             notify: false,
             wake: false,
+            bound_generations: Default::default(),
             final_response: None,
         },
     );

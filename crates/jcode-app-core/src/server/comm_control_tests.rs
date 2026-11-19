@@ -5,7 +5,8 @@ use crate::plan::PlanItem;
 use crate::protocol::ServerEvent;
 use crate::provider::{EventStream, Provider};
 use crate::server::comm_await::{
-    CommAwaitMembersContext, awaited_member_statuses, handle_comm_await_members, mode_satisfied, timeout_summary,
+    CommAwaitMembersContext, awaited_member_statuses, handle_comm_await_members, mode_satisfied,
+    timeout_summary,
 };
 use crate::server::{
     AwaitMembersRuntime, SwarmEvent, SwarmEventType, SwarmMember, SwarmMutationRuntime,

@@ -98,6 +98,93 @@ concurrently would make the shared plan incoherent.
 - stopped: intentionally shut down by coordinator.
 - crashed: unexpected exit (no clean shutdown).
 
+### Durable stop control
+
+Stop authority lives in a per-session control record (`server/session_control.rs`),
+not in the swarm member map. The record survives member removal, terminal-member
+GC and stale swarm snapshots. Every accepted unit of work holds a generation
+token. Stop revokes every generation up to `revoked_through`, so a token from
+generation G never gains G+1 authority.
+
+| State | Entered by | Admits new work | Leaves when |
+|---|---|---|---|
+| `runnable` | registration | yes | `request_stop` |
+| `stop_requested` | `request_stop` (revokes admission, records request id) | no | drain starts |
+| `draining` | `drain` (cancels active turns, waits for work guards) | no | all guards released, or deadline |
+| `stopped` | `settle` (no outstanding guards, no unknown effects, revision matches) | no | explicit authorized new work (`admit_new_work`) allocates generation G+1 |
+| `unresolved` | drain deadline, or an unknown external effect was marked | no | later `drain`/`settle` once accounted for |
+
+Rules:
+
+- Stop is idempotent. A repeat request on a non-runnable record returns the existing record.
+- Only `stopped` reports success (`Done`). `stop_requested`, `draining` and `unresolved` return an error with request id, generation, revision and unresolved categories, never `Stopped agent`.
+- A persistence failure closes the barrier (`fail_closed`) and rejects admission until it is resolved.
+- File claims release at settlement, not at request time.
+- `drain` waits on a per-session notifier, not under global locks. The public stop deadline is 30s, of which 25s is the drain.
+- Await cache keys include the watched members' control generations, so an old final response cannot satisfy new work.
+- Known limits: MCP, custom-tool, remote and hook effects mark an `unresolved` category that nothing clears. Jcode does not kill unrelated processes.
+- Shell children are accounted per process. `bash` records each spawned child (pid plus Linux start time) in `owned_children` and holds `shell_children` in `unresolved_categories` until the child and every member of its process group is proven gone: reaped, zombie, or pid reused (start time mismatch). Drain re-checks every 250 ms while children are listed. A backgrounded grandchild that outlives the leader, a detached command promoted to a background task and a child whose pid is no longer verifiable keep the stop `unresolved` with `shell_children` in the diagnostics. Off Linux, a missing start time falls back to a process-group `kill(pgid, 0)` probe. Non-Unix targets never prove exit.
+- Wire events: `stop_requested` and `draining` are additive, nonterminal frames correlated by `request_id` (no `id`, so legacy id-matching readers skip them) and carry `terminal: false`. Only `done` after `stopped` settles a stop request. Older daemons never send them. Clients that cannot decode a new frame must skip it, as `jcode-harness-api` already does.
+- Multi-attachment stop is per session, not per connection: drain fires every registered turn signal of the session and settles only when every work guard of the generation is released.
+- A projection (`project`) made from inside a generation scope is rejected when a newer generation is admitted, so a late `completed`/`stopped` report from G cannot act on G+1.
+
+### Resume (new-work admission)
+
+"Resume" means any explicit, authorized request that admits new work after a stop: `resume`, `wake`, `retry`, `reassign` or `assign`. `ControlStore::admit_new_work` is the only production path.
+
+- A `stopped` record becomes `runnable` with a new monotonic generation G+1, even when the work only queues. It requires an authorized requester (owner, ancestor or `force`) and no outstanding work from G.
+- Exactly one concurrent caller observes `Resumed`. Others see `AlreadyRunnable`.
+- `stop_requested`, `draining`, `unresolved` and untrusted records refuse. Nothing is written on refusal.
+- There is no implicit resume. Restart, recovery, queued wakes and automatic salvage never call it. Tokens of G never gain G+1 authority.
+
+### Generation-bound reports and waits
+
+A completion report belongs to the execution generation that produced it.
+
+- `ControlRecord.report_generation` stores that generation. `ControlStore::project_report` stamps it under the same lock and checks as `project`, so a revoked or older generation never stamps a report onto newer work. Legacy records have no stamp and never satisfy a generation-bound wait.
+- A wait binds each watched member to a generation when it starts (`ControlStore::awaited_generation`). A member with outstanding work is awaited at its current generation. An idle member is awaited at the next one. `running` is published before the generation exists, so status alone never decides this.
+- `PersistedAwaitMembersState.bound_generations` stores the bindings, so a restart or reload resumes the same binding. A report from another generation is shown as absent and cannot complete the wait. A member that resumed past its bound without a matching report supersedes the wait and is not done. Legacy states have no bindings and behave as before.
+- `AwaitedMemberStatus.generation` (optional, serde default) names the generation of the report shown. Old readers ignore it.
+- A settled stop discards soft interrupts queued before the stop (live queue and persisted store), so work accepted for the revoked generation cannot run as the next one.
+- Out of scope: report revision, changed-file and check enrichment. `add-swarm-handoff-contracts` consumes this generation identity and owns that enrichment. A stopped wait is never task success.
+
+### Compatibility floor and rollback
+
+Control records carry `schema_version` (currently 2) and `min_reader_version` (2). Version 1 records have no floor and read as floor 1. The daemon enforces the floor itself, with no launcher or updater change:
+
+- A reader older than a record's `min_reader_version`, or any reader seeing a newer `schema_version`, treats the record as unreadable. It fails closed, preserves the bytes and never migrates or deletes them. Startup and reload log each incompatible record.
+- Reads never rewrite a record. The next successful write stamps the current schema and floor.
+- Rollback below the floor therefore needs a build at or above it, or manual removal of the affected control files. Nothing deletes them automatically.
+
+Admission entry points (each refuses a session whose record is not `runnable`):
+
+| Entry point | Check |
+| --- | --- |
+| `run_once`, `run_once_capture`, `run_once_streaming_mpsc`, `execute_tool` | `session_control::run` allocates a generation or fails |
+| Native tool dispatch (`ToolRegistry::execute`) | `reserve_current` ties work to the admitted generation |
+| Native file mutation (`FileClaims::mutate`) | reserves the generation for the blocking IO |
+| Wake, idle live agent (`live_turn::idle_live_agent`) | `runnable` |
+| Lightweight registration (`client_lightweight_control`) | `runnable` |
+| Plan assign, auto-assign, replace/salvage (`comm_control::ensure_assignable`) | `runnable` before plan or member mutation and again before the spawned run starts |
+| Explicit target, resume/wake/retry/reassign (`comm_control::admit_explicit_work`) | `admit_new_work`: resumes a settled stop as G+1, refuses an unsettled one |
+
+Restart recovery (`swarm_persistence::from_persisted_member`) reads the control record before the swarm snapshot:
+
+| Record | Restored member |
+| --- | --- |
+| none or `runnable` | legacy recovery |
+| `stopped` | `stopped`, never orphaned or retryable |
+| `stop_requested`, `unresolved`, corrupt or unreadable | `stop_unresolved` (non-terminal, not runnable) |
+
+Corrupt control bytes are preserved, never overwritten.
+
+Stop target resolution and authorization (`swarm stop`, `comm_stop`):
+
+- An exact session ID resolves daemon-wide, even after the member left the swarm, was garbage collected, or the owner reconnected in a different swarm. It resolves from the retained control record.
+- Friendly names and ID prefixes or suffixes (aliases) resolve only inside the requester's own swarm. An alias that matches several members is rejected as ambiguous. An alias never reaches a session in another swarm.
+- Authorization is unchanged: the requester must be the retained owner or an ancestor of the owner, or pass `force=true`. An unrelated session is refused with `Refusing to stop session ...` and the target stays `runnable`. `force=true` remains the only override.
+- `status` follows the same rule for exact IDs: the owner sees a snapshot with a `Control:` line, a stranger is refused, an unknown ID returns the old "not in the same swarm" error.
+
 ## Agent Lifecycle Notifications
 
 - Each agent emits a completion event when its assigned scope is done.

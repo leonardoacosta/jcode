@@ -251,3 +251,38 @@ async fn fresh_session_has_valid_lease_and_is_not_stale() {
     agent.ensure_session_lease().unwrap();
     assert!(!agent.session_copy_is_stale());
 }
+
+#[tokio::test]
+async fn every_agent_entry_point_refuses_stopped_session_without_new_generation() {
+    let _home = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+    let (mut agent, calls) = mock_agent().await;
+    let id = agent.session_id().to_string();
+    let store = crate::server::session_control::store();
+    store.register(&id, None).unwrap();
+    let before = store.request_stop(&id, &id, false, "stop-1").unwrap();
+
+    assert!(agent.run_once_capture("after stop").await.is_err());
+    assert!(agent.run_once("after stop").await.is_err());
+    let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+    assert!(
+        agent
+            .run_once_streaming_mpsc("after stop", vec![], None, tx)
+            .await
+            .is_err()
+    );
+    assert!(
+        agent
+            .execute_tool("read", serde_json::json!({"file_path": "/etc/hostname"}))
+            .await
+            .is_err()
+    );
+
+    assert_eq!(calls.load(Ordering::SeqCst), 0, "provider ran after stop");
+    let after = store.inspect(&id).unwrap().unwrap();
+    assert_eq!(
+        after.last_allocated_generation,
+        before.last_allocated_generation
+    );
+    assert_eq!(after.admitted_generation, None);
+    assert_eq!(after.revision, before.revision);
+}

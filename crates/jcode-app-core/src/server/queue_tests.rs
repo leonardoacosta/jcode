@@ -261,3 +261,48 @@ async fn file_activity_notices_fold_into_the_pending_one_until_delivered() {
     .await;
     assert!(pending.is_empty(), "stale pending notices are pruned");
 }
+
+#[tokio::test]
+async fn settled_stop_discards_queued_soft_interrupts_live_and_persisted() {
+    let agent = test_agent().await;
+    let session_id = agent.lock().await.session_id().to_string();
+    let queue = agent.lock().await.soft_interrupt_queue();
+    let queues: SessionInterruptQueues = Arc::new(RwLock::new(HashMap::new()));
+    register_session_interrupt_queue(&queues, &session_id, queue.clone()).await;
+    let sessions = Arc::new(crate::server::session_manager::SessionManager::from_agents(
+        HashMap::from([(session_id.clone(), agent.clone())]),
+    ));
+    assert!(
+        queue_soft_interrupt_for_session(
+            &session_id,
+            "assigned before stop".to_string(),
+            false,
+            SoftInterruptSource::System,
+            &queues,
+            &sessions,
+        )
+        .await
+    );
+    crate::soft_interrupt_store::append(
+        &session_id,
+        jcode_agent_runtime::SoftInterruptMessage {
+            content: "persisted before stop".to_string(),
+            images: Vec::new(),
+            urgent: false,
+            source: SoftInterruptSource::System,
+            client_id: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(queue.lock().unwrap().len(), 1);
+
+    crate::server::comm_session::discard_pre_stop_soft_interrupts(&session_id, &sessions, &queues)
+        .await;
+
+    assert!(queue.lock().unwrap().is_empty());
+    assert!(
+        crate::soft_interrupt_store::load(&session_id)
+            .unwrap()
+            .is_empty()
+    );
+}

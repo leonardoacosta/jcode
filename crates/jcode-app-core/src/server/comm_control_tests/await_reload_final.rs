@@ -10,6 +10,7 @@ async fn await_members_returns_persisted_final_response_after_reload_retry() {
         &["completed".to_string()],
         None,
     );
+    let key = crate::server::await_members_state::generation_bound_key(&key, &[]);
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -27,6 +28,7 @@ async fn await_members_returns_persisted_final_response_after_reload_retry() {
             background: false,
             notify: false,
             wake: false,
+            bound_generations: Default::default(),
             final_response: Some(
                 crate::server::await_members_state::PersistedAwaitMembersResult {
                     completed: true,
@@ -36,6 +38,7 @@ async fn await_members_returns_persisted_final_response_after_reload_retry() {
                         status: "completed".to_string(),
                         done: true,
                         completion_report: None,
+                        generation: None,
                     }],
                     summary: "All 1 members are done: peer-1".to_string(),
                     resolved_at_unix_ms: now_ms,
@@ -107,6 +110,7 @@ async fn await_members_ignores_persisted_final_when_requested_member_is_queued_a
         &target_status,
         None,
     );
+    let key = crate::server::await_members_state::generation_bound_key(&key, &["peer-1".to_string()]);
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -124,6 +128,7 @@ async fn await_members_ignores_persisted_final_when_requested_member_is_queued_a
             background: false,
             notify: false,
             wake: false,
+            bound_generations: Default::default(),
             final_response: Some(
                 crate::server::await_members_state::PersistedAwaitMembersResult {
                     completed: true,
@@ -133,6 +138,7 @@ async fn await_members_ignores_persisted_final_when_requested_member_is_queued_a
                         status: "completed".to_string(),
                         done: true,
                         completion_report: None,
+                        generation: None,
                     }],
                     summary: "All 1 members are done: peer-1".to_string(),
                     resolved_at_unix_ms: now_ms,
@@ -207,4 +213,22 @@ async fn await_members_ignores_persisted_final_when_requested_member_is_queued_a
         }
         other => panic!("expected CommAwaitMembersResponse, got {other:?}"),
     }
+}
+
+#[test]
+fn await_key_changes_when_watched_member_generation_advances() {
+    let (_env, _runtime_dir) = RuntimeEnvGuard::new();
+    let peer = "gen-peer".to_string();
+    let base = "base-key";
+    let before = crate::server::await_members_state::generation_bound_key(base, std::slice::from_ref(&peer));
+    let control = crate::server::session_control::store();
+    control.register(&peer, None).expect("register");
+    control.admit(&peer).expect("admit new generation");
+    let after = crate::server::await_members_state::generation_bound_key(base, std::slice::from_ref(&peer));
+    assert_ne!(before, after, "new work must not reuse an old final response");
+    assert_eq!(
+        after,
+        crate::server::await_members_state::generation_bound_key(base, &[peer]),
+        "key is stable while the generation is unchanged"
+    );
 }

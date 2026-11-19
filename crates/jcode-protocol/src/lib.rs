@@ -529,7 +529,7 @@ pub struct AgentInfo {
 }
 
 /// Lightweight status snapshot for a swarm member.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AgentStatusSnapshot {
     pub session_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -568,6 +568,33 @@ pub struct AgentStatusSnapshot {
     pub provider_name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub provider_model: Option<String>,
+    /// Durable stop/admission state. Absent from older daemons and for
+    /// sessions with no control record; readers must not infer "runnable".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub control: Option<ControlStatusSnapshot>,
+}
+
+/// Durable execution-control state of one session, separate from task status.
+///
+/// `state` is one of `runnable`, `stop_requested`, `draining`, `stopped` or
+/// `unresolved`. Only `stopped` means every admitted execution settled.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ControlStatusSnapshot {
+    pub state: String,
+    /// Highest execution generation allocated so far.
+    pub generation: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admitted_generation: Option<u64>,
+    /// Every generation up to and including this one is revoked.
+    #[serde(default)]
+    pub revoked_through: u64,
+    #[serde(default)]
+    pub revision: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stop_request: Option<String>,
+    /// Outstanding work categories that keep the stop unresolved.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unresolved_categories: Vec<String>,
 }
 
 /// Lightweight swarm plan graph summary for planner-friendly reads.
@@ -846,6 +873,10 @@ pub struct AwaitedMemberStatus {
     /// Latest structured completion report submitted by this member, if any.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub completion_report: Option<String>,
+    /// Execution generation that produced `completion_report` (absent for legacy
+    /// members or when unknown). Old readers ignore the field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generation: Option<u64>,
 }
 
 impl Request {

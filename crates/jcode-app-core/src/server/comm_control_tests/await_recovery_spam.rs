@@ -21,6 +21,7 @@ async fn resume_background_awaits_coalesces_missing_workers_without_false_succes
             background: true,
             notify: true,
             wake: true,
+            bound_generations: Default::default(),
             final_response: None,
         };
         save_state(&state);
@@ -97,6 +98,7 @@ async fn resume_background_awaits_empty_registry_is_timeout_not_vacuous_success(
         background: true,
         notify: true,
         wake: true,
+        bound_generations: Default::default(),
         final_response: None,
     };
     save_state(&state);
@@ -179,6 +181,7 @@ async fn awaited_member_unknown_never_satisfies_terminal_targets() {
         "swarm",
         &["missing".into()],
         &["completed".into(), "stopped".into(), "unknown".into()],
+        &Default::default(),
         &members,
         &swarms,
     )

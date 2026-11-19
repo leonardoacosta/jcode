@@ -589,6 +589,134 @@ mod claim_tests {
         );
     }
 
+    #[tokio::test]
+    async fn revoked_generation_cannot_mutate_in_any_claim_mode() {
+        for mode in [
+            FileClaimMode::Off,
+            FileClaimMode::Warn,
+            FileClaimMode::Block,
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            let control =
+                crate::server::session_control::ControlStore::new(dir.path().join("control"));
+            control.register("worker", None).unwrap();
+            let token = control.admit("worker").unwrap();
+            let file = dir.path().join("file");
+            std::fs::write(&file, "original").unwrap();
+            let mut store = FileClaimStore::load(Some(dir.path().join("claims.json")));
+            let mut reservation = store
+                .reserve("worker", [file.clone()], mode, false)
+                .unwrap();
+            control
+                .request_stop("worker", "worker", false, "stop")
+                .unwrap();
+            let path = file.clone();
+            let result = crate::server::session_control::scope(Some(token), async move {
+                let write = reservation.write(&path, b"revoked write").await;
+                let remove = reservation.remove_file(&path).await;
+                (write, remove)
+            })
+            .await;
+            assert!(result.0.is_err(), "revoked write succeeded in {mode:?}");
+            assert!(result.1.is_err(), "revoked remove succeeded in {mode:?}");
+            assert_eq!(
+                std::fs::read_to_string(&file).unwrap(),
+                "original",
+                "revoked write changed bytes in {mode:?}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn new_owner_may_claim_only_after_predecessor_settles() {
+        let dir = tempfile::tempdir().unwrap();
+        let control = crate::server::session_control::ControlStore::new(dir.path().join("control"));
+        control.register("worker", None).unwrap();
+        let token = control.admit("worker").unwrap();
+        let persist = dir.path().join("claims.json");
+        let file = dir.path().join("file");
+        let mut store = FileClaimStore::load(Some(persist.clone()));
+        let mut reservation = store
+            .reserve("worker", [file.clone()], FileClaimMode::Block, false)
+            .unwrap();
+        reservation.write(&file, b"v1").await.unwrap();
+        let stopped = control
+            .request_stop("worker", "worker", false, "stop")
+            .unwrap();
+        drop(token);
+        let mut contender = FileClaimStore::load(Some(persist.clone()));
+        assert!(
+            contender
+                .reserve("next", [file.clone()], FileClaimMode::Block, false)
+                .is_err(),
+            "claim was released before settlement"
+        );
+        control.settle("worker", stopped.revision).unwrap();
+        store.release_session("worker").unwrap();
+        let mut contender = FileClaimStore::load(Some(persist));
+        assert!(
+            contender
+                .reserve("next", [file], FileClaimMode::Block, false)
+                .is_ok(),
+            "settled predecessor still blocks a new owner"
+        );
+    }
+
+    /// Removing a runnable (or unsettled) member must not strand its claims: a
+    /// runnable record has no stop barrier, an unsettled stop keeps the worker
+    /// registered until the stop path releases it.
+    #[allow(clippy::await_holding_lock)]
+    #[tokio::test]
+    async fn member_removal_releases_runnable_worker_but_keeps_unsettled_stop() {
+        let _lock = crate::storage::lock_test_env();
+        let runtime = tempfile::tempdir().unwrap();
+        struct Restore(Option<std::ffi::OsString>);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                match self.0.take() {
+                    Some(value) => crate::env::set_var("JCODE_RUNTIME_DIR", value),
+                    None => crate::env::remove_var("JCODE_RUNTIME_DIR"),
+                }
+            }
+        }
+        let _restore = Restore(std::env::var_os("JCODE_RUNTIME_DIR"));
+        crate::env::set_var("JCODE_RUNTIME_DIR", runtime.path());
+        let control = crate::server::session_control::store();
+        for id in ["removal-runnable", "removal-unsettled"] {
+            control.register(id, None).unwrap();
+            control.admit(id).unwrap();
+            register_claim_worker(id);
+            let (member, _rx) = super::super::tests::swarm_member(id, "agent", true);
+            let members = Arc::new(tokio::sync::RwLock::new(HashMap::from([(
+                id.to_string(),
+                member,
+            )])));
+            let swarms = Arc::new(tokio::sync::RwLock::new(HashMap::from([(
+                "swarm-removal".to_string(),
+                HashSet::from([id.to_string()]),
+            )])));
+            if id == "removal-unsettled" {
+                control.request_stop(id, id, false, "stop").unwrap();
+            }
+            super::super::remove_session_from_swarm(
+                id,
+                "swarm-removal",
+                &members,
+                &swarms,
+                &Arc::default(),
+                &Arc::default(),
+            )
+            .await;
+            let still_registered = claim_workers().lock().unwrap().contains(id);
+            assert_eq!(
+                still_registered,
+                id == "removal-unsettled",
+                "{id}: worker registration after removal"
+            );
+        }
+        unregister_claim_worker("removal-unsettled");
+    }
+
     #[cfg(unix)]
     #[test]
     fn dangling_relative_chains_resolve_and_cycles_fail() {

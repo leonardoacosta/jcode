@@ -1,3 +1,4 @@
+pub mod control;
 use jcode_plan::PlanItem;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::borrow::Cow;

@@ -5,6 +5,7 @@ fn awaited_member(session_id: &str, done: bool) -> AwaitedMemberStatus {
         status: if done { "completed" } else { "running" }.to_string(),
         done,
         completion_report: None,
+        generation: None,
     }
 }
 

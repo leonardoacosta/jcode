@@ -40,6 +40,28 @@ fn check_error(response: &ServerEvent) -> Option<&str> {
     }
 }
 
+/// Command that reports a stop's current state by exact session ID.
+fn stop_inspect_command(target: &str) -> String {
+    format!("communicate action=status target_session={target}")
+}
+
+/// Only a terminal `Done` means the stop settled. A timeout, a closed
+/// connection, or any other reply is reported as pending, never as stopped.
+fn format_stop_outcome(target: &str, response: Result<ServerEvent>) -> Result<ToolOutput> {
+    match response {
+        Ok(ServerEvent::Done { .. }) => Ok(ToolOutput::new(format!("Stopped agent: {target}"))),
+        Ok(ServerEvent::Error { message, .. }) => Err(anyhow::anyhow!(message)),
+        Ok(_) => Err(anyhow::anyhow!(
+            "Stop pending: no terminal settlement received for session={target}; inspect with `{}`",
+            stop_inspect_command(target)
+        )),
+        Err(error) => Err(anyhow::anyhow!(
+            "Stop pending: {error}. The stop may still be draining; settlement not confirmed for session={target}; inspect with `{}`",
+            stop_inspect_command(target)
+        )),
+    }
+}
+
 fn ensure_success(response: &ServerEvent) -> Result<()> {
     if let Some(message) = check_error(response) {
         Err(anyhow::anyhow!(message.to_string()))
@@ -1588,13 +1610,7 @@ impl Tool for CommunicateTool {
                     force: params.force,
                 };
 
-                match send_request(request).await {
-                    Ok(response) => {
-                        ensure_success(&response)?;
-                        Ok(ToolOutput::new(format!("Stopped agent: {}", target)))
-                    }
-                    Err(e) => Err(anyhow::anyhow!("Failed to stop agent: {}", e)),
-                }
+                format_stop_outcome(&target, send_request(request).await)
             }
 
             "cleanup" => cleanup_swarm_workers(&ctx, &params)
@@ -1673,6 +1689,7 @@ impl Tool for CommunicateTool {
                     validation: params.validation,
                     follow_up: params.follow_up,
                     tldr,
+                    generation: crate::server::session_control::current_generation(&ctx.session_id),
                 };
                 match send_request(request).await {
                     Ok(ServerEvent::CommReportResponse {

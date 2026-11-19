@@ -388,6 +388,22 @@ pub fn format_comm_status_snapshot(snapshot: &AgentStatusSnapshot) -> String {
         .unwrap_or_else(|| "idle".to_string());
     output.push_str(&format!("  Activity: {}\n", activity));
 
+    if let Some(control) = snapshot.control.as_ref() {
+        output.push_str(&format!(
+            "  Control: {} (generation {}, revoked through {}, revision {})",
+            control.state, control.generation, control.revoked_through, control.revision
+        ));
+        if let Some(request) = control.stop_request.as_deref() {
+            output.push_str(&format!(", stop request {request}"));
+        }
+        if !control.unresolved_categories.is_empty() {
+            output.push_str(&format!(
+                ", unresolved: {}",
+                control.unresolved_categories.join(", ")
+            ));
+        }
+        output.push('\n');
+    }
     if let Some(role) = snapshot.role.as_deref() {
         output.push_str(&format!("  Role: {}\n", role));
     }
@@ -674,6 +690,7 @@ mod truncation_tests {
                 status: "completed".to_string(),
                 done: true,
                 completion_report: Some("Tests passed.".to_string()),
+                generation: None,
             }],
             &HashMap::new(),
         );
