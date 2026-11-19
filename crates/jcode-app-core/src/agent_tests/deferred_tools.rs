@@ -221,6 +221,36 @@ async fn late_mcp_tools_are_announced_once_in_the_transcript() {
 }
 
 #[tokio::test]
+async fn large_late_mcp_batch_is_announced_compactly() {
+    let _guard = crate::storage::lock_test_env();
+    let provider: Arc<dyn Provider> = Arc::new(NativeAutoCompactionProvider);
+    let registry = Registry::new(provider.clone()).await;
+    register_fake_deferred_mcp_surface(&registry).await;
+    let mut agent = Agent::new(provider, registry);
+    agent.mcp_tools_mode = crate::config::McpToolsMode::Auto;
+    agent.tool_definitions().await;
+    for i in 0..40 {
+        agent
+            .registry
+            .register(
+                format!("mcp__bulk__tool{i}"),
+                Arc::new(FakeMcpTool {
+                    name: format!("tool{i}"),
+                }) as Arc<dyn crate::tool::Tool>,
+            )
+            .await;
+    }
+    agent.announce_late_mcp_tools().await;
+    let texts = transcript_texts(&agent);
+    let text = texts
+        .iter()
+        .find(|t| t.contains("New MCP tools are available."))
+        .expect("announcement");
+    assert!(text.contains("40 tools can be discovered"), "{text}");
+    assert!(!text.contains("input_schema: {"), "{text}");
+}
+
+#[tokio::test]
 async fn reviewer_late_mcp_discovery_is_compact_and_preserves_tools() {
     let _guard = crate::storage::lock_test_env();
     for (parent, role, compact) in [

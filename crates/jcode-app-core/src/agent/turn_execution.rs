@@ -952,8 +952,9 @@ impl Agent {
             "<system-reminder>\nNew MCP tools are available. They are not in your tool list; \
              call them with mcp action=call (server, tool, arguments matching input_schema).\n",
         );
-        let compact_review = self.session.parent_id.is_some()
-            && self.session.worker_role.as_deref() == Some("reviewer");
+        let compact_review = (self.session.parent_id.is_some()
+            && self.session.worker_role.as_deref() == Some("reviewer"))
+            || fresh.len() > MAX_ANNOUNCED_MCP_TOOLS;
         if compact_review {
             text = format!(
                 "<system-reminder>\nNew MCP tools are available. {} tools can be discovered with \
@@ -978,12 +979,6 @@ impl Agent {
                 tool.name,
                 tool.description.trim(),
                 serde_json::to_string(&tool.input_schema).unwrap_or_else(|_| "{}".to_string()),
-            ));
-        }
-        if !compact_review && fresh.len() > MAX_ANNOUNCED_MCP_TOOLS {
-            text.push_str(&format!(
-                "... and {} more; use mcp action=search to find them.\n",
-                fresh.len() - MAX_ANNOUNCED_MCP_TOOLS
             ));
         }
         text.push_str("</system-reminder>");
