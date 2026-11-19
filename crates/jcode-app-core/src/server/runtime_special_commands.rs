@@ -407,7 +407,10 @@ async fn overnight(agent: &mut Agent, args: &[String]) -> Result<(Value, String)
         OvernightCommand::Cancel => {
             if !matches!(
                 manifest.status,
-                OvernightRunStatus::Completed | OvernightRunStatus::Failed
+                OvernightRunStatus::Completed
+                    | OvernightRunStatus::Failed
+                    | OvernightRunStatus::Blocked
+                    | OvernightRunStatus::Unknown
             ) {
                 manifest.status = OvernightRunStatus::CancelRequested;
                 manifest.cancel_requested_at = Some(chrono::Utc::now());

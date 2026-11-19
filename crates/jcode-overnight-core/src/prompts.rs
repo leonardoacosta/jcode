@@ -8,6 +8,8 @@ pub(crate) fn overnight_phase(manifest: &OvernightManifest, now: DateTime<Utc>) 
     match manifest.status {
         OvernightRunStatus::Completed => "completed",
         OvernightRunStatus::Failed => "failed",
+        OvernightRunStatus::Blocked => "blocked",
+        OvernightRunStatus::Unknown => "unknown",
         OvernightRunStatus::CancelRequested => "cancelling",
         OvernightRunStatus::Running => {
             if now < manifest.handoff_ready_at {

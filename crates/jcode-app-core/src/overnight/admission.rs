@@ -738,8 +738,9 @@ mod tests {
         let backup = std::fs::read(trusted.with_extension("bak")).unwrap();
         std::fs::write(&trusted, corrupt).unwrap();
         assert!(super::super::load_manifest("atomic").is_err());
-        assert!(super::super::latest_manifest().is_err());
-        assert!(super::super::cancel_latest_run().is_err());
+        assert!(super::super::latest_manifest().unwrap().is_none());
+        let err = super::super::cancel_latest_run().unwrap_err();
+        assert!(err.to_string().contains("No overnight runs found"));
         assert_eq!(std::fs::read(&trusted).unwrap(), corrupt);
         assert_eq!(
             std::fs::read(trusted.with_extension("bak")).unwrap(),

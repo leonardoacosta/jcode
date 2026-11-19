@@ -22,10 +22,10 @@ pub use jcode_overnight_core::{
     build_final_wrapup_prompt, build_handoff_ready_prompt, build_morning_report_prompt,
     build_post_wake_continuation_prompt, build_progress_card_from_parts, build_review_html,
     build_visible_current_session_prompt, event_class, format_log_markdown_from_events,
-    format_minutes, format_status_markdown_from_summary, git_summary, html_escape, overnight_usage,
-    parse_duration, parse_overnight_command, preflight_summary, prompt_event_summary,
-    render_task_cards_html, resource_summary, summarize_task_cards_slice, task_card_title,
-    task_card_validated, task_status_bucket,
+    format_minutes, format_status_markdown_from_summary, format_status_markdown_with_stale,
+    git_summary, html_escape, overnight_usage, parse_duration, parse_overnight_command,
+    preflight_summary, prompt_event_summary, render_task_cards_html, resource_summary,
+    summarize_task_cards_slice, task_card_title, task_card_validated, task_status_bucket,
 };
 
 const RESOURCE_SAMPLE_INTERVAL: Duration = Duration::from_secs(5 * 60);
@@ -818,18 +818,65 @@ pub fn latest_manifest() -> Result<Option<OvernightManifest>> {
         }
         let path = entry.path().join("manifest.json");
         if path.exists() {
-            manifests.push(admission::read_manifest_at(&path)?);
+            match admission::read_manifest_at(&path) {
+                Ok(manifest) => manifests.push(manifest),
+                Err(error) => crate::logging::warn(&format!(
+                    "Skipping unreadable overnight manifest {}: {error}",
+                    path.display()
+                )),
+            }
         }
     }
     manifests.sort_by_key(|manifest| manifest.started_at);
     Ok(manifests.pop())
 }
 
+/// Whether the process that supervises this run still exists.
+pub fn supervisor_is_alive(manifest: &OvernightManifest) -> bool {
+    process_is_alive(manifest.process_id)
+}
+
+#[cfg(unix)]
+fn process_is_alive(pid: u32) -> bool {
+    // pid 0 and pids that wrap to negative `pid_t` (-1 means "every process")
+    // would signal process groups, not a single supervisor.
+    let Ok(pid) = libc::pid_t::try_from(pid) else {
+        return false;
+    };
+    if pid == 0 {
+        return false;
+    }
+    let result = unsafe { libc::kill(pid, 0) };
+    result == 0 || std::io::Error::last_os_error().raw_os_error() == Some(libc::EPERM)
+}
+
+#[cfg(not(unix))]
+fn process_is_alive(pid: u32) -> bool {
+    pid != 0
+}
+
+/// An active (`Running`/`CancelRequested`) run whose supervisor is gone.
+pub fn is_stale(manifest: &OvernightManifest) -> bool {
+    stale_pid(manifest).is_some()
+}
+
+/// The dead supervisor pid of a stale run, if any.
+pub fn stale_pid(manifest: &OvernightManifest) -> Option<u32> {
+    (matches!(
+        manifest.status,
+        OvernightRunStatus::Running | OvernightRunStatus::CancelRequested
+    ) && !supervisor_is_alive(manifest))
+    .then_some(manifest.process_id)
+}
+
 pub fn cancel_latest_run() -> Result<OvernightManifest> {
     let mut manifest = latest_manifest()?.context("No overnight runs found")?;
     if matches!(
         manifest.status,
-        OvernightRunStatus::Completed | OvernightRunStatus::Failed
+        OvernightRunStatus::Completed
+            | OvernightRunStatus::Failed
+            | OvernightRunStatus::Blocked
+            | OvernightRunStatus::Unknown
     ) {
         return Ok(manifest);
     }
@@ -923,13 +970,15 @@ pub fn build_progress_card(manifest: &OvernightManifest) -> OvernightProgressCar
     let events = read_events(manifest).unwrap_or_default();
     let preflight = read_preflight(manifest);
     let task_cards = read_task_cards(manifest).unwrap_or_default();
-    build_progress_card_from_parts(
+    let mut card = build_progress_card_from_parts(
         manifest,
         &events,
         preflight.as_ref(),
         &task_cards,
         Utc::now(),
-    )
+    );
+    card.stale_pid = stale_pid(manifest);
+    card
 }
 
 fn read_preflight(manifest: &OvernightManifest) -> Option<OvernightPreflight> {
@@ -1012,7 +1061,7 @@ fn mark_completed(
 
 pub fn format_status_markdown(manifest: &OvernightManifest) -> String {
     let task_summary = summarize_task_cards(manifest);
-    format_status_markdown_from_summary(manifest, &task_summary, Utc::now())
+    format_status_markdown_with_stale(manifest, &task_summary, Utc::now(), stale_pid(manifest))
 }
 
 pub fn format_log_markdown(manifest: &OvernightManifest, max_lines: usize) -> String {
@@ -1380,6 +1429,132 @@ mod tests {
             card.active_task_title.as_deref(),
             Some("Verify reload race")
         );
+    }
+
+    fn write_run(
+        home: &Path,
+        run_id: &str,
+        started_offset_min: i64,
+        status: OvernightRunStatus,
+    ) -> PathBuf {
+        let mut manifest = test_manifest(home, run_id);
+        manifest.started_at = Utc::now() + ChronoDuration::minutes(started_offset_min);
+        manifest.status = status;
+        let dir = home.join("overnight/runs").join(run_id);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("manifest.json");
+        std::fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        path
+    }
+
+    fn with_home<T>(home: &Path, f: impl FnOnce() -> T) -> T {
+        let _env = storage::lock_test_env();
+        let original = std::env::var_os("JCODE_HOME");
+        crate::env::set_var("JCODE_HOME", home);
+        let out = f();
+        match original {
+            Some(value) => crate::env::set_var("JCODE_HOME", value),
+            None => crate::env::remove_var("JCODE_HOME"),
+        }
+        out
+    }
+
+    #[test]
+    fn latest_manifest_skips_corrupt_entries() {
+        let temp = tempfile::tempdir().unwrap();
+        write_run(temp.path(), "old", -30, OvernightRunStatus::Completed);
+        let corrupt_dir = temp.path().join("overnight/runs/corrupt");
+        std::fs::create_dir_all(&corrupt_dir).unwrap();
+        std::fs::write(corrupt_dir.join("manifest.json"), b"{not json").unwrap();
+        write_run(temp.path(), "newest", -10, OvernightRunStatus::Blocked);
+        with_home(temp.path(), || {
+            let latest = latest_manifest().unwrap().unwrap();
+            assert_eq!(latest.run_id, "newest");
+            assert!(load_manifest("corrupt").is_err());
+        });
+    }
+
+    #[test]
+    fn unknown_status_manifest_is_terminal_for_cancel() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = write_run(temp.path(), "legacy", -10, OvernightRunStatus::Running);
+        let text = std::fs::read_to_string(&path)
+            .unwrap()
+            .replace("\"status\":\"running\"", "\"status\":\"mystery\"");
+        std::fs::write(&path, &text).unwrap();
+        with_home(temp.path(), || {
+            let cancelled = cancel_latest_run().unwrap();
+            assert_eq!(cancelled.status, OvernightRunStatus::Unknown);
+            assert!(cancelled.cancel_requested_at.is_none());
+            assert_eq!(std::fs::read_to_string(&path).unwrap(), text);
+        });
+    }
+
+    #[test]
+    fn blocked_and_unknown_fail_admission_revalidation() {
+        let temp = tempfile::tempdir().unwrap();
+        for status in [OvernightRunStatus::Blocked, OvernightRunStatus::Unknown] {
+            let mut manifest = test_manifest(temp.path(), "blocked");
+            manifest.status = status;
+            manifest.task_admission = Some(Default::default());
+            let policy = crate::config::TasksConfig {
+                unattended: true,
+                ..Default::default()
+            };
+            let decision = revalidate_task_admission(&manifest, &policy).unwrap();
+            assert_eq!(decision.state, crate::config::AdmissionState::Blocked);
+            assert!(
+                decision
+                    .reasons
+                    .iter()
+                    .any(|reason| reason.contains("cancelled")),
+                "{:?}",
+                decision.reasons
+            );
+        }
+    }
+
+    #[test]
+    fn stale_detection_uses_process_liveness_and_status() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut manifest = test_manifest(temp.path(), "liveness");
+        manifest.process_id = u32::MAX;
+        assert!(!supervisor_is_alive(&manifest));
+        assert!(is_stale(&manifest));
+        assert_eq!(stale_pid(&manifest), Some(u32::MAX));
+        manifest.status = OvernightRunStatus::CancelRequested;
+        assert!(is_stale(&manifest));
+        manifest.status = OvernightRunStatus::Failed;
+        assert!(!is_stale(&manifest));
+        manifest.status = OvernightRunStatus::Running;
+        manifest.process_id = std::process::id();
+        assert!(supervisor_is_alive(&manifest));
+        assert!(!is_stale(&manifest));
+        manifest.process_id = 0;
+        assert!(is_stale(&manifest));
+    }
+
+    #[test]
+    fn status_markdown_labels_stale_without_rewriting_manifest() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = write_run(temp.path(), "dead_pid_md", -10, OvernightRunStatus::Running);
+        let mut manifest: OvernightManifest =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        manifest.process_id = u32::MAX;
+        std::fs::write(&path, serde_json::to_vec(&manifest).unwrap()).unwrap();
+        let before = std::fs::read(&path).unwrap();
+        let text = format_status_markdown(&manifest);
+        assert!(
+            text.contains("running (stale, supervisor pid 4294967295 gone)"),
+            "{text}"
+        );
+        assert_eq!(build_progress_card(&manifest).stale_pid, Some(u32::MAX));
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+
+        manifest.process_id = std::process::id();
+        let live = format_status_markdown(&manifest);
+        assert!(!live.contains("stale"), "{live}");
+        assert_eq!(build_progress_card(&manifest).stale_pid, None);
     }
 
     #[test]

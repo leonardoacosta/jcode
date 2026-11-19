@@ -30,6 +30,11 @@ pub enum OvernightRunStatus {
     CancelRequested,
     Completed,
     Failed,
+    /// Legacy manifests may carry this status; it is terminal.
+    Blocked,
+    /// Any status string this build does not recognise. Terminal.
+    #[serde(other)]
+    Unknown,
 }
 
 impl OvernightRunStatus {
@@ -39,6 +44,8 @@ impl OvernightRunStatus {
             Self::CancelRequested => "cancel requested",
             Self::Completed => "completed",
             Self::Failed => "failed",
+            Self::Blocked => "blocked",
+            Self::Unknown => "unknown",
         }
     }
 }
@@ -300,6 +307,9 @@ pub struct OvernightProgressCard {
     pub run_dir: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<String>,
+    /// Set when the run is active but its supervisor process is gone.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stale_pid: Option<u32>,
 }
 
 pub fn parse_overnight_command(trimmed: &str) -> Option<Result<OvernightCommand, String>> {
@@ -871,6 +881,7 @@ pub fn build_progress_card_from_parts(
         log_path: manifest.human_log_path.display().to_string(),
         run_dir: manifest.run_dir.display().to_string(),
         completed_at: manifest.completed_at.map(|at| at.to_rfc3339()),
+        stale_pid: None,
     }
 }
 
@@ -879,6 +890,24 @@ pub fn format_status_markdown_from_summary(
     task_summary: &OvernightTaskCardSummary,
     now: DateTime<Utc>,
 ) -> String {
+    format_status_markdown_with_stale(manifest, task_summary, now, None)
+}
+
+/// Like [`format_status_markdown_from_summary`], labelling the status stale
+/// when `stale_pid` names a supervisor process that is no longer alive.
+pub fn format_status_markdown_with_stale(
+    manifest: &OvernightManifest,
+    task_summary: &OvernightTaskCardSummary,
+    now: DateTime<Utc>,
+    stale_pid: Option<u32>,
+) -> String {
+    let status_label = match stale_pid {
+        Some(pid) => format!(
+            "{} (stale, supervisor pid {pid} gone)",
+            manifest.status.label()
+        ),
+        None => manifest.status.label().to_string(),
+    };
     let remaining = manifest
         .target_wake_at
         .signed_duration_since(now)
@@ -894,7 +923,7 @@ pub fn format_status_markdown_from_summary(
     format!(
         "🌙 **Overnight run `{}`**\n\nStatus: **{}**\nCoordinator: `{}` ({})\n{}\nTask cards: **{} complete**, **{} active**, **{} blocked**, **{} deferred** ({} total, {} validated)\nPost-wake soft grace until: `{}`\nLast meaningful activity: {}\nReview: `{}`\nLog: `{}`",
         manifest.run_id,
-        manifest.status.label(),
+        status_label,
         manifest.coordinator_session_id,
         manifest.coordinator_session_name,
         remaining_line,
@@ -964,3 +993,27 @@ pub fn preflight_summary(preflight: &OvernightPreflight) -> String {
 
 #[cfg(test)]
 mod helper_tests;
+
+#[cfg(test)]
+mod status_tests {
+    use super::OvernightRunStatus;
+
+    fn parse(status: &str) -> OvernightRunStatus {
+        #[derive(serde::Deserialize)]
+        struct Fragment {
+            status: OvernightRunStatus,
+        }
+        serde_json::from_str::<Fragment>(&format!(r#"{{"status":"{status}"}}"#))
+            .unwrap()
+            .status
+    }
+
+    #[test]
+    fn legacy_and_unknown_status_deserialize() {
+        assert_eq!(parse("blocked"), OvernightRunStatus::Blocked);
+        assert_eq!(parse("whatever"), OvernightRunStatus::Unknown);
+        assert_eq!(parse("running"), OvernightRunStatus::Running);
+        assert_eq!(OvernightRunStatus::Blocked.label(), "blocked");
+        assert_eq!(OvernightRunStatus::Unknown.label(), "unknown");
+    }
+}
