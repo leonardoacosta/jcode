@@ -174,7 +174,18 @@ pub(crate) async fn run_main(mut args: Args) -> Result<()> {
                     crate::session::exit_record::ExitCause::Clean,
                 );
             }
-            result?;
+            result.map_err(|error| {
+                // A second daemon racing for the shared socket is a deployment
+                // condition, not a crash. Exit EX_CONFIG so `Restart=always`
+                // units listing 78 in RestartPreventExitStatus= stop instead of
+                // looping every RestartSec (744 restarts on 2026-10-31).
+                #[cfg(unix)]
+                if server::server_start_matches_existing_server(&error.to_string()) {
+                    eprintln!("Error: {error}");
+                    std::process::exit(78);
+                }
+                error
+            })?;
         }
         Some(Command::Acp) => {
             acp::run_acp_command(

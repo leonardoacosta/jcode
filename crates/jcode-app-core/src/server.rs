@@ -522,6 +522,8 @@ use self::reload_state::{clear_reload_marker_if_stale_for_pid, publish_reload_so
 
 pub use self::lifecycle::configure_temporary_server;
 #[cfg(unix)]
+pub use self::socket::server_start_matches_existing_server;
+#[cfg(unix)]
 pub use self::socket::spawn_server_notify;
 #[cfg(unix)]
 use self::socket::{acquire_daemon_lock_for, mark_close_on_exec};

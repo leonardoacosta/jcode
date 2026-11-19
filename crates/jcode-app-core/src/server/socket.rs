@@ -281,6 +281,9 @@ impl Drop for DaemonLockGuard {
 }
 
 #[cfg(unix)]
+const SUPERVISED_LOCK_WAIT: Duration = Duration::from_secs(10);
+
+#[cfg(unix)]
 pub(super) fn try_acquire_daemon_lock(path: &std::path::Path) -> Result<Option<DaemonLockGuard>> {
     use std::fs::OpenOptions;
     use std::os::fd::AsRawFd;
@@ -309,7 +312,18 @@ pub(super) fn try_acquire_daemon_lock(path: &std::path::Path) -> Result<Option<D
 #[cfg(unix)]
 pub(super) fn acquire_daemon_lock_for(socket: &std::path::Path) -> Result<DaemonLockGuard> {
     let path = daemon_lock_path_for(socket);
-    let guard = try_acquire_daemon_lock(&path)?.ok_or_else(|| {
+    let mut guard = try_acquire_daemon_lock(&path)?;
+    // Under a service manager the previous image may still be releasing the
+    // lock (stop/start overlap, exec reload). Wait briefly instead of failing
+    // into `Restart=` churn: on 2026-10-31 the unit looped 744 times on this.
+    if guard.is_none() && super::util::supervised_by_service_manager() {
+        let deadline = Instant::now() + SUPERVISED_LOCK_WAIT;
+        while guard.is_none() && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(250));
+            guard = try_acquire_daemon_lock(&path)?;
+        }
+    }
+    let guard = guard.ok_or_else(|| {
         anyhow::anyhow!(
             "Another jcode server process is already running on socket {}",
             socket.display()
@@ -486,7 +500,7 @@ pub(super) fn take_server_start_stderr(child: &mut std::process::Child) -> Strin
 }
 
 #[cfg(unix)]
-pub(super) fn server_start_matches_existing_server(stderr_output: &str) -> bool {
+pub fn server_start_matches_existing_server(stderr_output: &str) -> bool {
     stderr_output.contains("Another jcode server process is already running")
         || stderr_output.contains("Refusing to replace active server socket")
 }
