@@ -32,6 +32,8 @@ pub(super) fn send_stream_keepalive_mpsc(event_tx: &mpsc::UnboundedSender<Server
 type StreamUsageSink = fn(&str, &str, &str, Option<&str>, [Option<u64>; 4]);
 
 struct ObservedStreamUsage {
+    /// One id per upstream response; cumulative snapshots of it share the id.
+    event_id: String,
     provider: String,
     model: String,
     counters: [Option<u64>; 4],
@@ -65,7 +67,13 @@ impl StreamUsageRecorder {
 impl<F: FnMut(&str, &str, &str, Option<&str>, [Option<u64>; 4])> StreamUsageRecorder<F> {
     pub(super) fn observe(&mut self, provider: &str, model: &str, counters: [Option<u64>; 4]) {
         if counters.iter().any(Option::is_some) {
+            let event_id = self
+                .observed
+                .take()
+                .map(|previous| previous.event_id)
+                .unwrap_or_else(|| crate::id::new_id("usage"));
             self.observed = Some(ObservedStreamUsage {
+                event_id,
                 provider: provider.to_string(),
                 model: model.to_string(),
                 counters,
@@ -85,6 +93,13 @@ impl<F: FnMut(&str, &str, &str, Option<&str>, [Option<u64>; 4])> StreamUsageReco
     pub(super) fn finish(&mut self) {
         let resolved_model = self.resolved_model.take();
         if let Some(usage) = self.observed.take() {
+            crate::overnight::observe_stream_usage(
+                &usage.event_id,
+                &self.session_id,
+                &usage.provider,
+                &usage.model,
+                usage.counters,
+            );
             (self.emit)(
                 &self.session_id,
                 &usage.provider,
@@ -171,6 +186,24 @@ mod usage_capture_tests {
         assert_eq!(reports[2].0, "coder");
         assert_eq!(reports[2].1.as_deref(), Some("actual-coder"));
         assert_eq!(reports[2].2, [Some(40), Some(4), None, None]);
+    }
+
+    #[test]
+    fn cumulative_snapshots_of_one_response_share_an_event_id_and_retries_get_new_ones() {
+        let _lock = crate::storage::lock_test_env();
+        let mut recorder = StreamUsageRecorder {
+            session_id: "worker-session".to_string(),
+            observed: None,
+            resolved_model: None,
+            emit: |_: &str, _: &str, _: &str, _: Option<&str>, _| {},
+        };
+        recorder.observe("openai", "m", [Some(1), None, None, None]);
+        let first = recorder.observed.as_ref().unwrap().event_id.clone();
+        recorder.observe("openai", "m", [Some(1), Some(2), None, None]);
+        assert_eq!(recorder.observed.as_ref().unwrap().event_id, first);
+        recorder.finish();
+        recorder.observe("openai", "m", [Some(5), Some(2), None, None]);
+        assert_ne!(recorder.observed.as_ref().unwrap().event_id, first);
     }
 
     #[test]

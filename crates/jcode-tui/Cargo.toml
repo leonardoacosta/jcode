@@ -92,6 +92,7 @@ terminal-colorsaurus = "1.0"
 jcode-tui-permissions = { path = "../jcode-tui-permissions" }
 jcode-tui-tool-display = { path = "../jcode-tui-tool-display" }
 jcode-tui-usage-overlay = { path = "../jcode-tui-usage-overlay" }
+jcode-usage-types = { path = "../jcode-usage-types" }
 jcode-terminal-image = { path = "../jcode-terminal-image", features = ["display"] }
 jcode-terminal-prompt = { path = "../jcode-terminal-prompt" }
 jcode-voice = { path = "../jcode-voice" }

@@ -32,6 +32,9 @@ const RESOURCE_SAMPLE_INTERVAL: Duration = Duration::from_secs(5 * 60);
 const LONG_TURN_NOTICE_INTERVAL: Duration = Duration::from_secs(30 * 60);
 
 mod admission;
+mod usage;
+pub use usage::{read_usage_reconciled, reconciled_path};
+pub(crate) use usage::{note_session_account, observe_stream_usage};
 pub use admission::{
     TaskAttemptClaim, restart_task_attempt, restart_task_attempt_with_provider, start_task_attempt,
     start_task_attempt_with_provider, task_monetary_account,
@@ -260,6 +263,7 @@ fn spawn_supervisor(
                 json!({ "error": crate::util::format_error_chain(&err) }),
                 true,
             );
+            usage::finalize(&updated).await;
             let _ = render_review_html(&updated);
         }
     };
@@ -309,6 +313,7 @@ async fn run_supervisor(
         registry.register_selfdev_tools().await;
     }
 
+    let _usage_run = usage::register_run(&manifest);
     let mut agent = Agent::new_with_session(provider, registry, child, None);
     let mut next_prompt = build_coordinator_prompt(&manifest, &preflight);
     let mut handoff_notice_sent = false;
@@ -343,7 +348,8 @@ async fn run_supervisor(
                 &current,
                 OvernightRunStatus::Completed,
                 "Cancelled before next turn",
-            )?;
+            )
+            .await?;
             break;
         }
 
@@ -386,7 +392,8 @@ async fn run_supervisor(
                 &after_turn,
                 OvernightRunStatus::Completed,
                 "Cancelled after coordinator turn",
-            )?;
+            )
+            .await?;
             break;
         }
 
@@ -437,7 +444,8 @@ async fn run_supervisor(
                 &after_turn,
                 OvernightRunStatus::Completed,
                 "Morning report turn completed",
-            )?;
+            )
+            .await?;
             break;
         }
 
@@ -1069,7 +1077,7 @@ pub fn record_event(
     Ok(())
 }
 
-fn mark_completed(
+async fn mark_completed(
     manifest: &OvernightManifest,
     status: OvernightRunStatus,
     summary: &str,
@@ -1086,6 +1094,7 @@ fn mark_completed(
         json!({ "status": updated.status.label() }),
         true,
     )?;
+    usage::finalize(&updated).await;
     render_review_html(&updated)?;
     Ok(())
 }
@@ -1177,7 +1186,15 @@ Coordinator has not written notes yet."
         String::new()
     };
     let task_cards = read_task_cards(manifest).unwrap_or_default();
-    let html = build_review_html(manifest, &events, &notes, &preflight, &task_cards);
+    let usage = read_usage_reconciled(manifest);
+    let html = jcode_overnight_core::build_review_html_with_usage(
+        manifest,
+        &events,
+        &notes,
+        &preflight,
+        &task_cards,
+        usage.as_ref(),
+    );
     write_text_file(&manifest.review_path, &html)
 }
 
@@ -1193,7 +1210,7 @@ fn write_text_file(path: &Path, content: &str) -> Result<()> {
 mod tests {
     use super::*;
 
-    pub(super) fn test_manifest(root: &Path, run_id: &str) -> OvernightManifest {
+    pub(in crate::overnight) fn test_manifest(root: &Path, run_id: &str) -> OvernightManifest {
         let run_dir = root.join("run");
         let now = Utc::now();
         OvernightManifest {

@@ -65,6 +65,11 @@ impl Agent {
     }
 
     pub(super) fn sync_bound_account_route(&mut self) {
+        // Per-run usage attribution reads the account actually serving this session.
+        crate::overnight::note_session_account(
+            &self.session.id,
+            self.provider.serving_oauth_account_label().as_deref(),
+        );
         let Some(label) = self.provider.oauth_account_label() else {
             return;
         };

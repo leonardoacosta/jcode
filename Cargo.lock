@@ -4058,6 +4058,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "jcode-config-types",
+ "jcode-usage-types",
  "serde",
  "serde_json",
 ]
@@ -4725,6 +4726,7 @@ dependencies = [
  "jcode-tui-usage-overlay",
  "jcode-tui-visual-debug",
  "jcode-tui-workspace",
+ "jcode-usage-types",
  "jcode-voice",
  "libc",
  "open",

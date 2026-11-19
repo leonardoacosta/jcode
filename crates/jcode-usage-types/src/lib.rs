@@ -1158,3 +1158,44 @@ mod model_usage_tests {
         assert_eq!(usage.tracking_started_unix_secs, None);
     }
 }
+
+/// Glyphs, colors and cell math of the info widget's limit bar, shared so
+/// non-terminal surfaces (HTML reports) never drift from the widget.
+pub mod limit_bar {
+    pub const FILLED: char = '▰';
+    pub const EMPTY: char = '▱';
+    /// Widget bars never grow past this many cells.
+    pub const MAX_CELLS: usize = 12;
+
+    /// Color for a limit with `left_pct` remaining.
+    pub fn color_rgb(left_pct: u8) -> (u8, u8, u8) {
+        if left_pct <= 20 {
+            (255, 100, 100)
+        } else if left_pct <= 50 {
+            (255, 200, 100)
+        } else {
+            (100, 200, 100)
+        }
+    }
+
+    /// `(filled, empty)` cells for `used_pct` over `cells` cells.
+    pub fn cells(used_pct: u8, cells: usize) -> (usize, usize) {
+        let filled = (((used_pct as f32 / 100.0) * cells as f32).round() as usize).min(cells);
+        (filled, cells - filled)
+    }
+}
+
+#[cfg(test)]
+mod limit_bar_tests {
+    use super::limit_bar::*;
+
+    #[test]
+    fn cells_and_colors_follow_the_widget_convention() {
+        assert_eq!(cells(0, 12), (0, 12));
+        assert_eq!(cells(50, 12), (6, 6));
+        assert_eq!(cells(100, 12), (12, 0));
+        assert_eq!(color_rgb(100), (100, 200, 100));
+        assert_eq!(color_rgb(50), (255, 200, 100));
+        assert_eq!(color_rgb(20), (255, 100, 100));
+    }
+}

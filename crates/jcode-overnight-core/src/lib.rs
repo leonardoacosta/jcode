@@ -5,6 +5,14 @@ use std::path::PathBuf;
 
 pub const OVERNIGHT_VERSION: u32 = 1;
 
+mod usage_reconcile;
+pub use usage_reconcile::{
+    GenerationUsage, LimitReconciliation, ProjectedUsage, ProviderUsageReconciliation,
+    ReconcileInput, RunSessionState, SessionUsage, TokenTotals, USAGE_BASIS,
+    USAGE_RECONCILED_VERSION, UsageObservation, UsageReconciled, UsageSource, dedup_observations,
+    reconcile_usage, render_usage_reconciled_html, usage_reconciled_summary,
+};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct OvernightDuration {
     pub minutes: u32,
@@ -598,6 +606,18 @@ pub fn build_review_html(
     preflight: &str,
     task_cards: &[OvernightTaskCard],
 ) -> String {
+    build_review_html_with_usage(manifest, events, notes, preflight, task_cards, None)
+}
+
+pub fn build_review_html_with_usage(
+    manifest: &OvernightManifest,
+    events: &[OvernightEvent],
+    notes: &str,
+    preflight: &str,
+    task_cards: &[OvernightTaskCard],
+    usage: Option<&UsageReconciled>,
+) -> String {
+    let usage_reconciled = render_usage_reconciled_html(usage);
     let task_summary = summarize_task_cards_slice(task_cards);
     let task_cards_html = render_task_cards_html(task_cards);
     let timeline = render_timeline_html(events, 200);
@@ -678,6 +698,10 @@ pre {{ white-space: pre-wrap; word-break: break-word; background: #0b0d12; color
   <pre>{preflight}</pre>
 </section>
 <section>
+  <h2>Usage: projected versus observed</h2>
+  {usage_reconciled}
+</section>
+<section>
   <h2>Artifacts</h2>
   <ul>
     <li>Human log: <span class="path">{human_log}</span></li>
@@ -715,6 +739,7 @@ pre {{ white-space: pre-wrap; word-break: break-word; background: #0b0d12; color
         notes = html_escape(notes),
         timeline = timeline,
         preflight = html_escape(preflight),
+        usage_reconciled = usage_reconciled,
         human_log = html_escape(&manifest.human_log_path.display().to_string()),
         events_path = html_escape(&manifest.events_path.display().to_string()),
         task_cards = html_escape(&manifest.task_cards_dir.display().to_string()),

@@ -246,6 +246,38 @@ impl ControlStore {
     pub(crate) fn incompatible_records(&self) -> Vec<(String, String)> {
         let Ok(entries) = std::fs::read_dir(&self.root) else {
             return Vec::new();
+    /// Records whose owner chain reaches `root` (excluding `root`). Unreadable
+    /// records are skipped: they cannot prove ownership, and `incompatible_records`
+    /// already surfaces them.
+    pub(crate) fn owned_records(&self, root: &str) -> Vec<ControlRecord> {
+        let Ok(entries) = std::fs::read_dir(&self.root) else {
+            return Vec::new();
+        };
+        let all: HashMap<String, ControlRecord> = entries
+            .flatten()
+            .filter_map(|entry| {
+                let name = entry.file_name().to_string_lossy().into_owned();
+                let id = name.strip_suffix(".json")?.to_string();
+                Some((id.clone(), self.inspect(&id).ok().flatten()?))
+            })
+            .collect();
+        let reaches_root = |record: &ControlRecord| {
+            let mut owner = record.owner_session_id.as_deref();
+            for _ in 0..16 {
+                match owner {
+                    Some(id) if id == root => return true,
+                    Some(id) => owner = all.get(id).and_then(|r| r.owner_session_id.as_deref()),
+                    None => return false,
+                }
+            }
+            false
+        };
+        let mut owned: Vec<ControlRecord> =
+            all.values().filter(|r| reaches_root(r)).cloned().collect();
+        owned.sort_by(|a, b| a.session_id.cmp(&b.session_id));
+        owned
+    }
+
         };
         let mut found: Vec<(String, String)> = entries
             .flatten()

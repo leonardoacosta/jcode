@@ -335,13 +335,8 @@ pub(crate) fn render_labeled_bar(
 
 /// Color for a limit with `left_pct` remaining, shared by every usage bar.
 pub(crate) fn limit_color(left_pct: u8) -> Color {
-    if left_pct <= 20 {
-        rgb(255, 100, 100)
-    } else if left_pct <= 50 {
-        rgb(255, 200, 100)
-    } else {
-        rgb(100, 200, 100)
-    }
+    let (r, g, b) = jcode_usage_types::limit_bar::color_rgb(left_pct);
+    rgb(r, g, b)
 }
 
 /// One usage limit bar. Every usage indicator renders through this so the
@@ -451,9 +446,7 @@ fn bar_line(
     color: Color,
     suffix: Vec<Span<'static>>,
 ) -> Line<'static> {
-    let filled = ((used_pct as f32 / 100.0) * bar_width as f32).round() as usize;
-    let filled = filled.min(bar_width);
-    let empty = bar_width.saturating_sub(filled);
+    let (filled, empty) = jcode_usage_types::limit_bar::cells(used_pct, bar_width);
 
     let mut visible_label = String::new();
     let mut visible_cells = 0;
@@ -472,8 +465,18 @@ fn bar_line(
 
     let mut spans = vec![
         Span::styled(padded_label, Style::default().fg(rgb(140, 140, 150))),
-        Span::styled("▰".repeat(filled), Style::default().fg(color)),
-        Span::styled("▱".repeat(empty), Style::default().fg(rgb(50, 50, 60))),
+        Span::styled(
+            jcode_usage_types::limit_bar::FILLED
+                .to_string()
+                .repeat(filled),
+            Style::default().fg(color),
+        ),
+        Span::styled(
+            jcode_usage_types::limit_bar::EMPTY
+                .to_string()
+                .repeat(empty),
+            Style::default().fg(rgb(50, 50, 60)),
+        ),
     ];
     spans.extend(suffix.into_iter().filter(|span| !span.content.is_empty()));
     Line::from(spans)
