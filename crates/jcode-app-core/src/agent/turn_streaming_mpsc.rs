@@ -135,10 +135,12 @@ impl Agent {
             if let Some(memory) = memory_pending.as_ref() {
                 let memory_count = memory.count.max(1);
                 let computed_age_ms = memory.computed_at.elapsed().as_millis() as u64;
-                crate::memory::record_injected_prompt(
+                crate::memory::record_injected(
                     &memory.prompt,
                     memory_count,
                     computed_age_ms,
+                    memory.items.clone(),
+                    memory.dropped,
                 );
                 self.record_memory_injection_in_session(memory);
                 let _ = event_tx.send(ServerEvent::MemoryInjected {
@@ -147,6 +149,8 @@ impl Agent {
                     display_prompt: memory.display_prompt.clone(),
                     prompt_chars: memory.prompt.chars().count(),
                     computed_age_ms,
+                    items: memory.items.clone(),
+                    dropped: memory.dropped,
                 });
                 let (memory_msg, persisted) = self.prepare_memory_injection_message(memory);
                 if !persisted {

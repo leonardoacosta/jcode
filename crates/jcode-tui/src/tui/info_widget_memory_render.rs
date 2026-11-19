@@ -147,6 +147,7 @@ mod substantive_footer_tests {
                             age_ms: 44,
                             preview: "prefers terse answers".into(),
                             items: Vec::new(),
+                            dropped: 0,
                         },
                         timestamp: now,
                         detail: None,

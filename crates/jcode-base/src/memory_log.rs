@@ -1,7 +1,7 @@
 //! Persistent memory event log for post-session analysis.
 //!
 //! Writes structured JSONL (one JSON object per line) to:
-//!   `~/.jcode/logs/memory-events-YYYY-MM-DD.jsonl`
+//!   `~/.jcode/logs/memory-events-YYYY-MM-DD.jsonl` (under `JCODE_HOME` when set)
 //!
 //! Every memory pipeline event - embedding search, sidecar verification,
 //! injection, extraction, maintenance, tool actions - is captured with
@@ -22,6 +22,7 @@ static MEMORY_LOGGER: Mutex<Option<MemoryLogger>> = Mutex::new(None);
 struct MemoryLogger {
     file: File,
     current_date: String,
+    dir: PathBuf,
 }
 
 impl MemoryLogger {
@@ -37,6 +38,7 @@ impl MemoryLogger {
         Some(Self {
             file,
             current_date: date.to_string(),
+            dir,
         })
     }
 
@@ -49,13 +51,15 @@ impl MemoryLogger {
 }
 
 fn log_dir() -> Option<PathBuf> {
-    dirs::home_dir().map(|h| h.join(".jcode").join("logs"))
+    jcode_storage::logs_dir().ok()
 }
 
 fn ensure_logger(date: &str) -> bool {
     if let Ok(mut guard) = MEMORY_LOGGER.lock() {
+        // Re-open when `JCODE_HOME` moves, not just on date rollover.
         if let Some(ref logger) = *guard
             && logger.current_date == date
+            && Some(&logger.dir) == log_dir().as_ref()
         {
             return true;
         }
@@ -99,6 +103,24 @@ fn write_log(event: &str, detail: Option<serde_json::Value>) {
     {
         logger.write_entry(&entry);
     }
+}
+
+fn injected_detail(
+    count: usize,
+    prompt_chars: usize,
+    age_ms: u64,
+    preview: &str,
+    items: &[crate::memory_types::InjectedMemoryItem],
+    dropped: usize,
+) -> serde_json::Value {
+    serde_json::json!({
+        "count": count,
+        "prompt_chars": prompt_chars,
+        "age_ms": age_ms,
+        "preview": preview,
+        "dropped": dropped,
+        "items": items,
+    })
 }
 
 /// Log a memory event from the in-memory event system.
@@ -145,18 +167,17 @@ pub fn log_event(kind: &MemoryEventKind) {
             age_ms,
             preview,
             items,
+            dropped,
         } => (
             "memory_injected",
-            Some(serde_json::json!({
-                "count": count,
-                "prompt_chars": prompt_chars,
-                "age_ms": age_ms,
-                "preview": preview,
-                "items": items.iter().map(|i| serde_json::json!({
-                    "section": i.section,
-                    "content": i.content,
-                })).collect::<Vec<_>>(),
-            })),
+            Some(injected_detail(
+                *count,
+                *prompt_chars,
+                *age_ms,
+                preview,
+                items,
+                *dropped,
+            )),
         ),
 
         MemoryEventKind::MaintenanceStarted { verified, rejected } => (
@@ -439,6 +460,45 @@ fn cleanup_old_memory_logs_in(dir: &std::path::Path, now: chrono::DateTime<Local
 mod tests {
     use super::*;
     use std::time::{Duration, SystemTime};
+
+    /// A whole `memory_injected` line as written before attribution existed
+    /// (items had only section/content, no `dropped`) must still parse, and a
+    /// current line must round-trip every provenance field.
+    #[test]
+    fn memory_injected_old_and_new_log_lines_parse() {
+        let old = r#"{"timestamp":"2026-11-01T10:00:00.000+0000","session_id":"s","event":"memory_injected","detail":{"count":1,"prompt_chars":40,"age_ms":3,"preview":"uses tabs","items":[{"section":"Facts","content":"uses tabs"}]}}"#;
+        let line: serde_json::Value = serde_json::from_str(old).unwrap();
+        assert_eq!(line["event"], "memory_injected");
+        let items: Vec<crate::memory_types::InjectedMemoryItem> =
+            serde_json::from_value(line["detail"]["items"].clone()).unwrap();
+        assert_eq!(items.len(), 1);
+        assert!(items[0].id.is_none() && items[0].source.is_none());
+        assert!(items[0].trust.is_none() && items[0].updated_at.is_none());
+        assert_eq!(line["detail"]["dropped"].as_u64().unwrap_or(0), 0);
+
+        let entry = crate::memory_types::MemoryEntry::new(
+            crate::memory_types::MemoryCategory::Fact,
+            "uses tabs",
+        )
+        .with_source("user");
+        let new_items = vec![crate::memory_types::InjectedMemoryItem {
+            section: "Facts".into(),
+            content: "uses tabs".into(),
+            id: Some(entry.id.clone()),
+            source: entry.source.clone(),
+            trust: Some(entry.trust),
+            updated_at: Some(entry.updated_at),
+        }];
+        let detail = injected_detail(1, 40, 3, "uses tabs", &new_items, 5);
+        let text = serde_json::to_string(&detail).unwrap();
+        let back: serde_json::Value = serde_json::from_str(&text).unwrap();
+        assert_eq!(back["dropped"], 5);
+        let items: Vec<crate::memory_types::InjectedMemoryItem> =
+            serde_json::from_value(back["items"].clone()).unwrap();
+        assert_eq!(items[0].id.as_deref(), Some(entry.id.as_str()));
+        assert_eq!(items[0].source.as_deref(), Some("user"));
+        assert_eq!(items[0].updated_at, Some(entry.updated_at));
+    }
 
     #[test]
     fn memory_log_cleanup_respects_14_day_window() {

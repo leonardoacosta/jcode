@@ -87,6 +87,11 @@ pub struct PendingMemory {
     pub count: usize,
     /// IDs of memories included in this prompt (for dedup tracking).
     pub memory_ids: Vec<String>,
+    /// Structured items (id/source/trust/updated_at) exactly as rendered into
+    /// `prompt`. Empty for unscoped publishers that only have prompt text.
+    pub items: Vec<super::InjectedMemoryItem>,
+    /// Eligible memories left out of `prompt` by the injection caps.
+    pub dropped: usize,
 }
 
 impl PendingMemory {
@@ -343,7 +348,15 @@ pub fn set_pending_memory_with_ids_and_display(
     memory_ids: Vec<String>,
     display_prompt: Option<String>,
 ) {
-    store_pending_memory(session_id, prompt, count, memory_ids, display_prompt, None);
+    store_pending_memory(
+        session_id,
+        prompt,
+        count,
+        memory_ids,
+        display_prompt,
+        None,
+        StructuredItems::default(),
+    );
 }
 
 /// Publish a result bound to the selected project and its current memory
@@ -441,6 +454,14 @@ fn publish_scoped_memory(
         );
         return;
     }
+    // The validated entries are what the prompt was rendered from, so carry
+    // their provenance with the payload itself.
+    let structured = super::format_relevant_prompt_with_items(&entries, entries.len())
+        .map(|f| StructuredItems {
+            items: f.items,
+            dropped: f.dropped,
+        })
+        .unwrap_or_default();
     store_pending_memory(
         session_id,
         prompt,
@@ -451,7 +472,14 @@ fn publish_scoped_memory(
             project_dir: project_dir.map(str::to_owned),
             snapshots,
         }),
+        structured,
     );
+}
+
+#[derive(Default)]
+struct StructuredItems {
+    items: Vec<super::InjectedMemoryItem>,
+    dropped: usize,
 }
 
 fn store_pending_memory(
@@ -461,6 +489,7 @@ fn store_pending_memory(
     memory_ids: Vec<String>,
     display_prompt: Option<String>,
     binding: Option<PendingBinding>,
+    structured: StructuredItems,
 ) {
     crate::memory_log::log_pending_prepared(session_id, &prompt, count, &memory_ids);
 
@@ -494,6 +523,8 @@ fn store_pending_memory(
                     computed_at: Instant::now(),
                     count,
                     memory_ids,
+                    items: structured.items,
+                    dropped: structured.dropped,
                 },
                 binding,
             },

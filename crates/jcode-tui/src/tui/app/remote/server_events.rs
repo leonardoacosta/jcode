@@ -3072,6 +3072,8 @@ fn handle_server_event_inner(
             display_prompt,
             prompt_chars: _,
             computed_age_ms,
+            items,
+            dropped,
         } => {
             // The server confirms actual context injection. A stale local
             // toggle must not hide what the model received.
@@ -3083,7 +3085,7 @@ fn handle_server_event_inner(
             } else {
                 prompt.clone()
             };
-            crate::memory::record_injected_prompt(&prompt, count, computed_age_ms);
+            crate::memory::record_injected(&prompt, count, computed_age_ms, items, dropped);
             let summary = if count == 1 {
                 "🧠 auto-recalled 1 memory".to_string()
             } else {

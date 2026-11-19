@@ -2006,6 +2006,8 @@ async fn memory_injection_message_defaults_to_ephemeral_history() {
         computed_at: Instant::now(),
         count: 1,
         memory_ids: vec!["mem-ephemeral".to_string()],
+        items: Vec::new(),
+        dropped: 0,
     };
 
     let (message, persisted) = agent.prepare_memory_injection_message(&memory);
@@ -2039,6 +2041,8 @@ async fn memory_injection_message_can_persist_to_history() {
         computed_at: Instant::now(),
         count: 1,
         memory_ids: vec!["mem-persisted".to_string()],
+        items: Vec::new(),
+        dropped: 0,
     };
 
     let (message, persisted) = agent.prepare_memory_injection_message(&memory);
@@ -3608,7 +3612,7 @@ async fn council_provider_budget_covers_allowed_tool_followups_and_judge() {
         std::fs::read_to_string(evidence).unwrap(),
         "read-only evidence"
     );
-
 }
+
 #[path = "agent_tests_additional_tests.rs"]
 mod additional_working_directory_moves_preserve_first_active_session_origin;

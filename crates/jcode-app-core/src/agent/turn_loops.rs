@@ -137,7 +137,13 @@ impl Agent {
             if let Some(memory) = memory_pending.as_ref() {
                 let memory_count = memory.count.max(1);
                 let age_ms = memory.computed_at.elapsed().as_millis() as u64;
-                crate::memory::record_injected_prompt(&memory.prompt, memory_count, age_ms);
+                crate::memory::record_injected(
+                    &memory.prompt,
+                    memory_count,
+                    age_ms,
+                    memory.items.clone(),
+                    memory.dropped,
+                );
                 self.record_memory_injection_in_session(memory);
                 logging::info(&format!(
                     "Memory injected as message ({} chars)",

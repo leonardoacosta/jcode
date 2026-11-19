@@ -16,7 +16,12 @@ fn prompt_memory_manager_filters_superseded_before_limit() {
         store.add(stale);
         store.add(MemoryEntry::new(MemoryCategory::Fact, "current value"));
         manager.save_global(&store).unwrap();
-        assert!(manager.get_prompt_memories(1).unwrap().contains("current value"));
+        assert!(
+            manager
+                .get_prompt_memories(1)
+                .unwrap()
+                .contains("current value")
+        );
     });
 }
 
@@ -200,6 +205,8 @@ fn pending_memory_freshness_and_clear() {
             computed_at: Instant::now() - Duration::from_secs(121),
             count: 1,
             memory_ids: Vec::new(),
+            items: Vec::new(),
+            dropped: 0,
         },
     );
     assert!(take_pending_memory(sid).is_none());
@@ -1123,4 +1130,110 @@ fn jev_recall_prefilter_leaves_small_stores_untouched() {
         prefilter_for_jev(entries, "completely different words").len(),
         10
     );
+}
+
+#[test]
+fn forget_accepts_short_id_from_injected_block() {
+    with_temp_home(|_| {
+        let manager = MemoryManager::new();
+        let id = manager
+            .remember_global(MemoryEntry::new(
+                MemoryCategory::Fact,
+                "forget me by short id",
+            ))
+            .unwrap();
+        let short = crate::memory_types::short_memory_id(&id).to_string();
+        assert!(manager.forget(&short).unwrap());
+        assert!(!manager.forget(&id).unwrap());
+    });
+}
+
+#[test]
+fn forget_by_colliding_short_id_is_ambiguous_and_removes_nothing() {
+    with_temp_home(|_| {
+        let manager = MemoryManager::new();
+        let mut a = MemoryEntry::new(MemoryCategory::Fact, "first colliding memory");
+        a.id = "mem_1000_424242".to_string();
+        let mut b = MemoryEntry::new(MemoryCategory::Fact, "second colliding memory");
+        b.id = "mem_2000_424242".to_string();
+        manager.remember_global(a).unwrap();
+        manager.remember_global(b).unwrap();
+        let short = crate::memory_types::short_memory_id("mem_1000_424242");
+        assert_eq!(
+            short,
+            crate::memory_types::short_memory_id("mem_2000_424242")
+        );
+
+        let err = manager.forget(short).unwrap_err().to_string();
+        assert!(err.contains("ambiguous"), "{err}");
+        assert!(
+            err.contains("mem_1000_424242") && err.contains("mem_2000_424242"),
+            "{err}"
+        );
+        assert_eq!(
+            manager.list_all().unwrap().len(),
+            2,
+            "nothing may be forgotten"
+        );
+
+        // A full id still resolves exactly one of them.
+        assert!(manager.forget("mem_1000_424242").unwrap());
+        assert_eq!(manager.list_all().unwrap().len(), 1);
+        // Now the short id is unique again.
+        assert!(manager.forget(short).unwrap());
+    });
+}
+
+#[test]
+fn pending_memory_carries_provenance_past_any_process_wide_table_limit() {
+    // Lock order must match pending.rs fixtures: env lock (inside with_temp_home) first.
+    with_temp_home(|_| {
+        let _guard = PENDING_MEMORY_TEST_LOCK
+            .lock()
+            .expect("pending memory test lock poisoned");
+        clear_all_pending_memory();
+        let manager = MemoryManager::new();
+        // More entries than the old 256-entry side table could hold, published
+        // for two sessions: neither may lose or overwrite the other's provenance.
+        let mut sessions = Vec::new();
+        for (name, tag) in [("prov-session-a", "alpha"), ("prov-session-b", "beta")] {
+            let entries: Vec<MemoryEntry> = (0..300)
+                .map(|i| {
+                    MemoryEntry::new(MemoryCategory::Fact, format!("{tag} fact {i}"))
+                        .with_source(tag)
+                        .with_trust(TrustLevel::High)
+                })
+                .collect();
+            for entry in &entries {
+                manager.remember_global(entry.clone()).unwrap();
+            }
+            let prompt = format_relevant_prompt(&entries, entries.len()).unwrap();
+            set_pending_memory_for_project(
+                name,
+                prompt,
+                entries.len(),
+                entries.iter().map(|e| e.id.clone()).collect(),
+                None,
+                None,
+            );
+            sessions.push((name, tag, entries));
+        }
+        for (name, tag, entries) in sessions {
+            let pending = take_pending_memory_for_project(name, None).expect("pending memory");
+            assert_eq!(pending.items.len(), crate::memory_types::MAX_INJECTED_ITEMS);
+            assert_eq!(
+                pending.dropped,
+                300 - crate::memory_types::MAX_INJECTED_ITEMS
+            );
+            for item in &pending.items {
+                let entry = entries
+                    .iter()
+                    .find(|e| Some(&e.id) == item.id.as_ref())
+                    .expect("item id belongs to this session's entries");
+                assert_eq!(item.source.as_deref(), Some(tag));
+                assert_eq!(item.trust, Some(TrustLevel::High));
+                assert_eq!(item.updated_at, Some(entry.updated_at));
+            }
+        }
+    });
 }

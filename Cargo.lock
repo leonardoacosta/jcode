@@ -4100,6 +4100,7 @@ dependencies = [
  "jcode-applet-types",
  "jcode-batch-types",
  "jcode-config-types",
+ "jcode-memory-types",
  "jcode-message-types",
  "jcode-plan",
  "jcode-provider-core",

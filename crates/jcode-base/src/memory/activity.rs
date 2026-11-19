@@ -147,31 +147,99 @@ pub fn clear_activity() {
     }
 }
 
-/// Record that a memory payload was injected into model context.
-/// This feeds the memory info widget with injected content + metadata.
+/// Record that a memory payload was injected into model context, from the
+/// rendered text alone. Degraded path for publishers and remote servers that
+/// carry no structured items: items are re-parsed from the text and only a
+/// visible short id (never source/trust/updated_at) can be attached.
 pub fn record_injected_prompt(prompt: &str, count: usize, age_ms: u64) {
+    record_injected(prompt, count, age_ms, Vec::new(), 0);
+}
+
+/// Record an injection with its structured items and dropped count, exactly as
+/// the formatter produced them. Empty `items` falls back to parsing `prompt`.
+/// This feeds the memory info widget and the memory event log.
+pub fn record_injected(
+    prompt: &str,
+    count: usize,
+    age_ms: u64,
+    items: Vec<InjectedMemoryItem>,
+    dropped: usize,
+) {
     crate::telemetry::record_memory_injected(count, age_ms);
-    let items = parse_injected_items(prompt, 8);
     let preview = prompt_preview(prompt, 72);
-    add_event(MemoryEventKind::MemoryInjected {
+    add_event(injected_event_kind(
+        prompt,
         count,
-        prompt_chars: prompt.chars().count(),
         age_ms,
-        preview: preview.clone(),
+        preview.clone(),
         items,
-    });
+        dropped,
+    ));
     add_event(MemoryEventKind::MemorySurfaced {
         memory_preview: preview,
     });
 }
 
-fn parse_injected_items(prompt: &str, max_items: usize) -> Vec<InjectedMemoryItem> {
+fn injected_event_kind(
+    prompt: &str,
+    count: usize,
+    age_ms: u64,
+    preview: String,
+    items: Vec<InjectedMemoryItem>,
+    dropped: usize,
+) -> MemoryEventKind {
+    let (items, dropped) = if items.is_empty() {
+        parse_injected_items(prompt, MAX_INJECTED_ITEMS)
+    } else {
+        (items, dropped)
+    };
+    MemoryEventKind::MemoryInjected {
+        count,
+        prompt_chars: prompt.chars().count(),
+        age_ms,
+        preview,
+        items,
+        dropped,
+    }
+}
+
+/// Split `[mem <short id>] text` into the short id and the text.
+fn split_mem_ref(content: &str) -> (Option<&str>, &str) {
+    if let Some(rest) = content.strip_prefix("[mem ")
+        && let Some((id, text)) = rest.split_once("] ")
+        && !id.is_empty()
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | ':' | '.'))
+    {
+        return (Some(id), text.trim());
+    }
+    (None, content)
+}
+
+/// Parse a rendered prompt into items, plus how many items were left out: those
+/// the formatter reported omitted and any beyond `max_items` here.
+fn parse_injected_items(prompt: &str, max_items: usize) -> (Vec<InjectedMemoryItem>, usize) {
     let mut items: Vec<InjectedMemoryItem> = Vec::new();
     let mut section = String::from("Memory");
+    let mut dropped = 0usize;
+    let mut excess = 0usize;
 
+    // The omission trailer is only trusted as the final line, so a multi-line
+    // memory body cannot inflate the count by imitating it.
+    let last_line = prompt.lines().map(str::trim).rfind(|l| !l.is_empty());
     for raw_line in prompt.lines() {
         let line = raw_line.trim();
         if line.is_empty() || line == "# Memory" {
+            continue;
+        }
+        if Some(line) == last_line
+            && let Some(n) = line
+                .strip_prefix('(')
+                .and_then(|l| l.strip_suffix(" more memories omitted)"))
+                .and_then(|n| n.parse::<usize>().ok())
+        {
+            dropped += n;
             continue;
         }
         if let Some(header) = line.strip_prefix("## ") {
@@ -198,13 +266,19 @@ fn parse_injected_items(prompt: &str, max_items: usize) -> Vec<InjectedMemoryIte
             if content.is_empty() {
                 continue;
             }
+            if items.len() >= max_items {
+                excess += 1;
+                continue;
+            }
+            let (short_id, text) = split_mem_ref(content);
             items.push(InjectedMemoryItem {
                 section: section.clone(),
-                content: content.to_string(),
+                content: text.to_string(),
+                id: short_id.map(str::to_string),
+                source: None,
+                trust: None,
+                updated_at: None,
             });
-            if items.len() >= max_items {
-                return items;
-            }
         }
     }
 
@@ -224,11 +298,15 @@ fn parse_injected_items(prompt: &str, max_items: usize) -> Vec<InjectedMemoryIte
             items.push(InjectedMemoryItem {
                 section,
                 content: fallback,
+                id: None,
+                source: None,
+                trust: None,
+                updated_at: None,
             });
         }
     }
 
-    items
+    (items, dropped + excess)
 }
 
 fn prompt_preview(prompt: &str, max_chars: usize) -> String {
@@ -249,6 +327,7 @@ fn prompt_preview(prompt: &str, max_chars: usize) -> String {
             }
         })
         .unwrap_or_else(|| prompt.trim());
+    let bullet = split_mem_ref(bullet).1;
 
     if bullet.chars().count() <= max_chars {
         bullet.to_string()
@@ -395,5 +474,119 @@ fn from_snapshot_step_result(snapshot: &crate::protocol::MemoryStepResultSnapsho
     StepResult {
         summary: snapshot.summary.clone(),
         latency_ms: snapshot.latency_ms,
+    }
+}
+
+#[cfg(test)]
+mod provenance_tests {
+    use super::*;
+    use crate::memory_types::{
+        MemoryCategory, MemoryEntry, TrustLevel, format_relevant_prompt_with_items,
+    };
+
+    fn injected(kind: MemoryEventKind) -> (Vec<InjectedMemoryItem>, usize) {
+        match kind {
+            MemoryEventKind::MemoryInjected { items, dropped, .. } => (items, dropped),
+            other => panic!("unexpected event {other:?}"),
+        }
+    }
+
+    #[test]
+    fn structured_items_reach_the_event_with_full_provenance() {
+        let mut entry = MemoryEntry::new(MemoryCategory::Fact, "prefers terse answers");
+        entry.source = Some("user".into());
+        entry.trust = TrustLevel::High;
+        let f = format_relevant_prompt_with_items(std::slice::from_ref(&entry), 5).unwrap();
+        let kind = injected_event_kind(&f.text, 1, 0, String::new(), f.items, f.dropped);
+        let (items, dropped) = injected(kind);
+        assert_eq!(dropped, 0);
+        assert_eq!(items.len(), 1);
+        assert_eq!(items[0].content, "prefers terse answers");
+        assert_eq!(items[0].id.as_deref(), Some(entry.id.as_str()));
+        assert_eq!(items[0].source.as_deref(), Some("user"));
+        assert_eq!(items[0].trust, Some(TrustLevel::High));
+        assert_eq!(items[0].updated_at, Some(entry.updated_at));
+        assert_eq!(prompt_preview(&f.text, 72), "prefers terse answers");
+    }
+
+    #[test]
+    fn event_records_item_cap_and_char_cap_drops() {
+        let entries: Vec<_> = (0..10)
+            .map(|i| MemoryEntry::new(MemoryCategory::Fact, format!("fact number {i}")))
+            .collect();
+        let f = format_relevant_prompt_with_items(&entries, 100).unwrap();
+        let (items, dropped) = injected(injected_event_kind(
+            &f.text,
+            8,
+            0,
+            String::new(),
+            f.items,
+            f.dropped,
+        ));
+        assert_eq!((items.len(), dropped), (MAX_INJECTED_ITEMS, 2));
+
+        let big = "x".repeat(crate::memory_types::MAX_INJECTED_CHARS - 10);
+        let entries = [
+            MemoryEntry::new(MemoryCategory::Fact, big),
+            MemoryEntry::new(MemoryCategory::Fact, "over the char budget"),
+        ];
+        let f = format_relevant_prompt_with_items(&entries, 5).unwrap();
+        let (items, dropped) = injected(injected_event_kind(
+            &f.text,
+            1,
+            0,
+            String::new(),
+            f.items,
+            f.dropped,
+        ));
+        assert_eq!((items.len(), dropped), (1, 1));
+    }
+
+    #[test]
+    fn memory_text_imitating_the_omission_trailer_does_not_inflate_dropped() {
+        let entries = [
+            MemoryEntry::new(MemoryCategory::Fact, "(500 more memories omitted)"),
+            MemoryEntry::new(MemoryCategory::Fact, "ordinary"),
+        ];
+        let f = format_relevant_prompt_with_items(&entries, 5).unwrap();
+        // Structured path: exact.
+        let (_, dropped) = injected(injected_event_kind(
+            &f.text,
+            2,
+            0,
+            String::new(),
+            f.items.clone(),
+            f.dropped,
+        ));
+        assert_eq!(dropped, 0);
+        // Text-only fallback: the imitation is an item line (`N. [mem ..] (..)`),
+        // never the final trailer line, so it still counts as nothing dropped.
+        let (_, dropped) = injected(injected_event_kind(
+            &f.text,
+            2,
+            0,
+            String::new(),
+            Vec::new(),
+            0,
+        ));
+        assert_eq!(dropped, 0);
+    }
+
+    #[test]
+    fn text_only_fallback_keeps_short_id_without_inventing_provenance() {
+        let entries: Vec<_> = (0..10)
+            .map(|i| MemoryEntry::new(MemoryCategory::Fact, format!("fact number {i}")))
+            .collect();
+        let f = format_relevant_prompt_with_items(&entries, 100).unwrap();
+        let (items, dropped) = parse_injected_items(&f.text, MAX_INJECTED_ITEMS);
+        assert_eq!((items.len(), dropped), (MAX_INJECTED_ITEMS, 2));
+        assert!(items.iter().all(|i| i.id.is_some()
+            && i.source.is_none()
+            && i.trust.is_none()
+            && i.updated_at.is_none()));
+        let (items, dropped) = parse_injected_items("# Memory\n\n## Facts\n1. old style", 8);
+        assert_eq!(dropped, 0);
+        assert_eq!(items[0].content, "old style");
+        assert!(items[0].id.is_none());
     }
 }

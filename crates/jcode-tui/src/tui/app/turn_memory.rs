@@ -37,6 +37,7 @@ impl App {
         split
     }
 
+    #[expect(clippy::too_many_arguments)]
     pub(in crate::tui::app) fn show_injected_memory_context(
         &mut self,
         prompt: &str,
@@ -44,6 +45,8 @@ impl App {
         count: usize,
         age_ms: u64,
         memory_ids: Vec<String>,
+        items: Vec<crate::memory::InjectedMemoryItem>,
+        dropped: usize,
     ) {
         let count = count.max(1);
         let plural = if count == 1 { "memory" } else { "memories" };
@@ -57,7 +60,7 @@ impl App {
         if !self.should_inject_memory_context(prompt) {
             return;
         }
-        crate::memory::record_injected_prompt(prompt, count, age_ms);
+        crate::memory::record_injected(prompt, count, age_ms, items, dropped);
         let summary = if count == 1 {
             "🧠 auto-recalled 1 memory".to_string()
         } else {

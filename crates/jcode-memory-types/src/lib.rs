@@ -134,10 +134,21 @@ pub struct MemoryEvent {
     pub detail: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+/// One memory injected into model context. Provenance fields default to
+/// `None` so event logs written before attribution existed still parse.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InjectedMemoryItem {
     pub section: String,
     pub content: String,
+    /// Stored memory id (full id when known, else the short id shown to the model).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trust: Option<TrustLevel>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone)]
@@ -163,6 +174,8 @@ pub enum MemoryEventKind {
         age_ms: u64,
         preview: String,
         items: Vec<InjectedMemoryItem>,
+        /// Eligible memories left out by the item/char caps.
+        dropped: usize,
     },
     /// Background maintenance started.
     MaintenanceStarted { verified: usize, rejected: usize },
@@ -624,18 +637,51 @@ pub fn memory_score(entry: &MemoryEntry) -> f64 {
     score
 }
 
-fn selected_entries_for_prompt(entries: &[MemoryEntry], limit: usize) -> Vec<&MemoryEntry> {
+/// Hard cap on memories injected into one prompt, whatever `limit` callers pass.
+pub const MAX_INJECTED_ITEMS: usize = 8;
+/// Hard cap on total memory content characters injected into one prompt.
+pub const MAX_INJECTED_CHARS: usize = 4_000;
+
+/// Short opaque reference shown to the model: the random tail of
+/// `mem_<ts>_<rand>` (a full `u64`, so collisions are negligible). Ids of any
+/// other shape (imported or goal ids) are shown whole. Carries no memory content.
+pub fn short_memory_id(id: &str) -> &str {
+    match id
+        .strip_prefix("mem_")
+        .and_then(|rest| rest.rsplit_once('_'))
+    {
+        Some((_, tail)) if !tail.is_empty() && tail.bytes().all(|b| b.is_ascii_digit()) => tail,
+        _ => id,
+    }
+}
+
+/// Select current entries. `injected` applies the model-context caps
+/// (`MAX_INJECTED_ITEMS`, `MAX_INJECTED_CHARS`) and counts what they drop;
+/// other callers (the `memory recall` tool) only honour `limit`.
+fn selected_entries_for_prompt(
+    entries: &[MemoryEntry],
+    limit: usize,
+    injected: bool,
+) -> (Vec<&MemoryEntry>, usize) {
+    let item_cap = if injected {
+        limit.min(MAX_INJECTED_ITEMS)
+    } else {
+        limit
+    };
+    let char_cap = if injected {
+        MAX_INJECTED_CHARS
+    } else {
+        usize::MAX
+    };
     let mut selected = Vec::new();
     let mut seen_content = HashSet::new();
+    let mut chars = 0usize;
+    let mut dropped = 0usize;
 
     for entry in entries
         .iter()
         .filter(|entry| entry.active && entry.superseded_by.is_none())
     {
-        if selected.len() >= limit {
-            break;
-        }
-
         let dedupe_key = entry
             .content
             .split_whitespace()
@@ -645,23 +691,57 @@ fn selected_entries_for_prompt(entries: &[MemoryEntry], limit: usize) -> Vec<&Me
         if dedupe_key.is_empty() || !seen_content.insert(dedupe_key) {
             continue;
         }
-
+        let entry_chars = entry.content.trim().chars().count();
+        if selected.len() >= item_cap || chars.saturating_add(entry_chars) > char_cap {
+            if injected {
+                dropped += 1;
+            }
+            continue;
+        }
+        chars += entry_chars;
         selected.push(entry);
     }
 
-    selected
+    // `limit == 0` asks for nothing; that is not truncation.
+    if item_cap == 0 {
+        dropped = 0;
+    }
+    (selected, dropped)
 }
 
+/// Plain list for tool output (`memory recall`): honours `limit` only, with no
+/// injection caps, ids, or omission trailer.
 pub fn format_entries_for_prompt(entries: &[MemoryEntry], limit: usize) -> Option<String> {
-    format_entries_for_prompt_with_header(entries, limit, false, false)
+    format_entries_for_prompt_with_header(entries, limit, false, false, false).map(|f| f.text)
 }
 
+/// Block injected into model context: current entries only, capped, with a
+/// short id per item and an omission count.
 pub fn format_relevant_prompt(entries: &[MemoryEntry], limit: usize) -> Option<String> {
-    format_entries_for_prompt(entries, limit).map(|formatted| format!("# Memory\n\n{formatted}"))
+    format_relevant_prompt_with_items(entries, limit).map(|f| f.text)
 }
 
 pub fn format_relevant_display_prompt(entries: &[MemoryEntry], limit: usize) -> Option<String> {
-    format_entries_for_prompt_with_header(entries, limit, true, true)
+    format_entries_for_prompt_with_header(entries, limit, true, true, true).map(|f| f.text)
+}
+
+/// An injected block together with the structured items it was rendered from.
+#[derive(Debug, Clone)]
+pub struct FormattedInjection {
+    pub text: String,
+    /// One item per rendered entry, in rendered order, with full provenance.
+    pub items: Vec<InjectedMemoryItem>,
+    /// Eligible entries left out by the item/char caps.
+    pub dropped: usize,
+}
+
+/// Same block as [`format_relevant_prompt`] plus the structured items, so event
+/// consumers never have to parse the rendered text back.
+pub fn format_relevant_prompt_with_items(
+    entries: &[MemoryEntry],
+    limit: usize,
+) -> Option<FormattedInjection> {
+    format_entries_for_prompt_with_header(entries, limit, true, false, true)
 }
 
 fn format_entries_for_prompt_with_header(
@@ -669,10 +749,12 @@ fn format_entries_for_prompt_with_header(
     limit: usize,
     include_header: bool,
     include_updated_at_comments: bool,
-) -> Option<String> {
+    injected: bool,
+) -> Option<FormattedInjection> {
     let mut sections: HashMap<MemoryCategory, Vec<&MemoryEntry>> = HashMap::new();
 
-    for entry in selected_entries_for_prompt(entries, limit) {
+    let (selected, dropped) = selected_entries_for_prompt(entries, limit, injected);
+    for entry in selected {
         sections
             .entry(entry.category.clone())
             .or_default()
@@ -691,13 +773,31 @@ fn format_entries_for_prompt_with_header(
         MemoryCategory::Entity,
     ];
 
+    let mut injected_items = Vec::new();
     let mut write_section = |title: &str, items: Vec<&MemoryEntry>| {
         if !output.is_empty() {
             output.push('\n');
         }
         output.push_str(&format!("## {title}\n"));
         for (idx, item) in items.into_iter().enumerate() {
-            output.push_str(&format!("{}. {}\n", idx + 1, item.content.trim()));
+            if injected {
+                output.push_str(&format!(
+                    "{}. [mem {}] {}\n",
+                    idx + 1,
+                    short_memory_id(&item.id),
+                    item.content.trim()
+                ));
+            } else {
+                output.push_str(&format!("{}. {}\n", idx + 1, item.content.trim()));
+            }
+            injected_items.push(InjectedMemoryItem {
+                section: title.to_string(),
+                content: item.content.trim().to_string(),
+                id: Some(item.id.clone()),
+                source: item.source.clone(),
+                trust: Some(item.trust),
+                updated_at: Some(item.updated_at),
+            });
             if include_updated_at_comments {
                 output.push_str(&format!(
                     "<!-- updated_at: {} -->\n",
@@ -736,12 +836,21 @@ fn format_entries_for_prompt_with_header(
     }
 
     if output.is_empty() {
-        None
-    } else if include_header {
-        Some(format!("# Memory\n\n{}", output.trim()))
-    } else {
-        Some(output.trim().to_string())
+        return None;
     }
+    if dropped > 0 {
+        output.push_str(&format!("\n({dropped} more memories omitted)\n"));
+    }
+    let text = if include_header {
+        format!("# Memory\n\n{}", output.trim())
+    } else {
+        output.trim().to_string()
+    };
+    Some(FormattedInjection {
+        text,
+        items: injected_items,
+        dropped,
+    })
 }
 
 pub fn normalize_search_text(text: &str) -> String {

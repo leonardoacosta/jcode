@@ -118,6 +118,8 @@ impl App {
                     pending.count,
                     age_ms,
                     pending.memory_ids.clone(),
+                    pending.items.clone(),
+                    pending.dropped,
                 );
             }
 

@@ -9,7 +9,7 @@
 
 use crate::memory_graph::{GRAPH_VERSION, MemoryGraph};
 use crate::memory_types::{
-    InjectedMemoryItem, MemoryActivity, MemoryEvent, MemoryEventKind, MemoryState, StepResult,
+    MAX_INJECTED_ITEMS, MemoryActivity, MemoryEvent, MemoryEventKind, MemoryState, StepResult,
     StepStatus,
     ranking::{top_k_by_ord, top_k_by_score},
 };
@@ -31,16 +31,18 @@ mod pending;
 mod prompt_support;
 
 pub use crate::memory_types::{
-    MemoryCategory, MemoryEntry, MemoryScope, MemoryStore, Reinforcement, TrustLevel,
-    format_relevant_display_prompt, format_relevant_prompt,
+    FormattedInjection, InjectedMemoryItem, MemoryCategory, MemoryEntry, MemoryScope, MemoryStore,
+    Reinforcement, TrustLevel, format_relevant_display_prompt, format_relevant_prompt,
+    format_relevant_prompt_with_items,
 };
 use crate::memory_types::{
     collect_skill_query_terms, format_entries_for_prompt, memory_matches_search,
-    normalize_memory_search_text, normalize_search_text, skill_retrieval_bonus,
+    normalize_memory_search_text, normalize_search_text, short_memory_id, skill_retrieval_bonus,
 };
 pub use activity::{
     activity_snapshot, add_event, apply_remote_activity_snapshot, check_staleness, clear_activity,
-    get_activity, pipeline_start, pipeline_update, record_injected_prompt, set_state,
+    get_activity, pipeline_start, pipeline_update, record_injected, record_injected_prompt,
+    set_state,
 };
 use cache::{cache_graph, cached_graph};
 pub(crate) use pending::set_pending_memory_for_project_with_selection;
@@ -962,15 +964,42 @@ impl MemoryManager {
         Ok(all)
     }
 
+    /// Forget by full id, or by the short id shown in injected memory blocks.
+    /// A short id matching several stored memories is an error that lists them.
     pub fn forget(&self, id: &str) -> Result<bool> {
         // Try graph-based removal first (new format)
         let mut project_graph = self.load_project_graph()?;
+        let mut global_graph = self.load_global_graph()?;
+        let resolved = if project_graph.get_memory(id).is_some()
+            || global_graph.get_memory(id).is_some()
+        {
+            id.to_string()
+        } else {
+            let mut matches: Vec<String> = project_graph
+                .all_memories()
+                .chain(global_graph.all_memories())
+                .filter(|entry| short_memory_id(&entry.id) == id)
+                .map(|entry| entry.id.clone())
+                .collect();
+            match matches.len() {
+                0 => id.to_string(),
+                1 => matches.remove(0),
+                _ => {
+                    matches.sort();
+                    anyhow::bail!(
+                        "short id `{id}` is ambiguous; nothing was forgotten. Use a full id: {}",
+                        matches.join(", ")
+                    );
+                }
+            }
+        };
+        let id = resolved.as_str();
+
         if project_graph.remove_memory(id).is_some() {
             self.save_project_graph(&project_graph)?;
             return Ok(true);
         }
 
-        let mut global_graph = self.load_global_graph()?;
         if global_graph.remove_memory(id).is_some() {
             self.save_global_graph(&global_graph)?;
             return Ok(true);

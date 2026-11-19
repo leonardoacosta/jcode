@@ -592,6 +592,36 @@ mod tests {
         );
     }
 
+    /// The 8-item cap applies to the injected prompt block only. `recall
+    /// mode=recent` (default limit 10) must still return 10 entries, and its
+    /// output must carry no injection-only markers.
+    #[tokio::test]
+    async fn recent_recall_is_not_lowered_by_the_injection_cap() {
+        let _guard = crate::storage::lock_test_env();
+        let home = tempfile::tempdir().unwrap();
+        let _env = OfflineEnv::new(home.path());
+        let project = tempfile::tempdir().unwrap();
+        let tool = MemoryTool::new();
+        let ctx = || test_ctx(Some(project.path().to_path_buf()));
+        for i in 0..12 {
+            tool.execute(
+                json!({"action":"remember", "content":format!("recent-cap-probe {i}"), "scope":"global"}),
+                ctx(),
+            )
+            .await
+            .unwrap();
+        }
+        for input in [
+            json!({"action":"recall", "mode":"recent", "scope":"global"}),
+            json!({"action":"recall", "mode":"recent", "scope":"global", "limit":10}),
+        ] {
+            let output = tool.execute(input, ctx()).await.unwrap().output;
+            assert_eq!(output.matches("recent-cap-probe").count(), 10, "{output}");
+            assert!(!output.contains("[mem "), "{output}");
+            assert!(!output.contains("omitted"), "{output}");
+        }
+    }
+
     #[tokio::test]
     async fn queried_recall_uses_jev_for_default_and_legacy_aliases() {
         let _guard = crate::storage::lock_test_env();

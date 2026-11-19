@@ -184,6 +184,7 @@ fn public_memory_footer_drops_stale_trace_and_keeps_scope() {
                         age_ms: 44,
                         preview: "prefers terse answers".into(),
                         items: Vec::new(),
+                        dropped: 0,
                     },
                     timestamp: now,
                     detail: None,

@@ -544,6 +544,14 @@ pub enum ServerEvent {
         /// Age of the precomputed memory payload at injection time
         #[serde(default)]
         computed_age_ms: u64,
+        /// Structured items (id/source/trust/updated_at) behind `prompt`, so
+        /// remote clients log provenance without parsing the text. Absent from
+        /// older servers; clients then degrade to the visible short id only.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        items: Vec<jcode_memory_types::InjectedMemoryItem>,
+        /// Eligible memories left out of `prompt` by the injection caps.
+        #[serde(default)]
+        dropped: usize,
     },
 
     /// Memory activity state update for remote clients.

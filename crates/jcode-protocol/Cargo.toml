@@ -8,6 +8,7 @@ publish = false
 jcode-task-types = { path = "../jcode-task-types" }
 jcode-batch-types = { path = "../jcode-batch-types" }
 jcode-config-types = { path = "../jcode-config-types" }
+jcode-memory-types = { path = "../jcode-memory-types" }
 jcode-message-types = { path = "../jcode-message-types" }
 jcode-plan = { path = "../jcode-plan" }
 jcode-provider-core = { path = "../jcode-provider-core" }
