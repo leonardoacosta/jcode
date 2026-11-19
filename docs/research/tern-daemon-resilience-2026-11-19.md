@@ -56,7 +56,7 @@ Observed numbers:
 
 Tern techniques that Jcode does **not** need to borrow: Tern's 2 MiB default stacks and its lack of a recursion guard. Jcode's 8 MiB stack and boxed future already go beyond Tern here.
 
-## Deferred decision (user-owned, non-blocking)
+## Decision (resolved 2026-11-19: keep `control-group`)
 
 **1. Should the homelab unit drop-in set `KillMode=process`?**
 
