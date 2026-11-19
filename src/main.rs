@@ -141,7 +141,14 @@ fn run_main() -> Result<()> {
     // image left running, before this image spawns anything of its own.
     jcode::inherited_children::start();
 
+    // Server client handlers are large async state machines (handle_client's
+    // resume path alone is ~2 MB at opt-level=0 in selfdev builds). Tokio's
+    // default 2 MiB worker stack overflowed on session resume in build
+    // 8a2141d07 and crash-looped jcode.service. Give workers the same reserve
+    // the Windows main thread already uses.
+    const WORKER_STACK_SIZE: usize = 8 * 1024 * 1024;
     let runtime = tokio::runtime::Builder::new_multi_thread()
+        .thread_stack_size(WORKER_STACK_SIZE)
         .enable_all()
         .build()?;
 

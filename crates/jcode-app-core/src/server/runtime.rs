@@ -372,7 +372,9 @@ impl ServerRuntime {
                 )
                 .await
             };
-            tokio::pin!(client);
+            // Box it: this future is the largest state machine in the daemon
+            // (~2 MB at opt-level=0) and must not live on the worker stack.
+            let mut client = Box::pin(client);
             tokio::select! {
                 result = &mut client => Some(result),
                 _ = cancellation.cancelled() => None,
