@@ -854,6 +854,11 @@ impl App {
         self.connection_type = connection_type.map(str::to_string);
     }
 
+    #[cfg(test)]
+    pub(crate) fn set_working_dir_for_tests(&mut self, dir: &str) {
+        self.session.working_dir = Some(dir.to_string());
+    }
+
     fn prewarm_focused_side_panel(&self) {
         if self.idle_hibernation.frame.is_some() {
             return;

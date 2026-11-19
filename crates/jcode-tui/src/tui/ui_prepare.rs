@@ -992,7 +992,7 @@ pub(crate) fn invalidate_header_prep_cache() {
 
 /// Hash of the header inputs that are cheap to read every frame. Anything
 /// expensive (disk probes) is intentionally excluded and covered by the TTL.
-fn header_prep_signature(app: &dyn TuiState, width: u16) -> u64 {
+pub(in crate::tui) fn header_prep_signature(app: &dyn TuiState, width: u16) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     width.hash(&mut hasher);
@@ -1013,6 +1013,7 @@ fn header_prep_signature(app: &dyn TuiState, width: u16) -> u64 {
     app.connected_clients().hash(&mut hasher);
     app.server_sessions().len().hash(&mut hasher);
     app.working_dir().hash(&mut hasher);
+    header::workspace_badge(app).hash(&mut hasher);
     // The directory row renders `(branch)`. The branch arrives from the async
     // git probe, so without this the header kept the branch-less row until an
     // unrelated field changed (or the 30s TTL lapsed), and a `git switch` did

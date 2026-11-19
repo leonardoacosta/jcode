@@ -173,3 +173,37 @@ settings in one file produce identical typed results.
 Downgrade by pasting the fragment contents back into `config.toml` and deleting
 `include`. Older jcode versions ignore an `include` key and so would not read the
 fragments, which is why composition never happens implicitly.
+
+## Workspace rules
+
+`[[workspaces.rules]]` maps a git `origin` to a named workspace. Rules are read
+only from the global config (the root file and its includes). A project
+checkout can never add or change one.
+
+```toml
+[[workspaces.rules]]
+name = "brown"                       # header badge: ws:brown
+origin = "dev.azure.com/brown/**"    # glob over host/path, case-insensitive
+tracker = "ado"                      # linear | ado | none
+branch_template = "feat/<id>-<slug>"
+skills = ["triage-ado"]
+expected_email = "me@brown.example"  # checked, never written to git config
+swarm_model = "claude-sonnet-5.5"    # worker model, or "inherit"
+[workspaces.rules.roles]
+research = "claude-haiku-5.5"
+[[workspaces.rules.hooks.PreToolUse]]  # runs after global [hooks]
+command = "~/bin/brown-gate"
+```
+
+- `origin` is matched against the credential-free `host/path` of `origin`
+  (`user:token@`, port, `.git` and trailing `/` removed). `*` and `?` stay in
+  one path segment, `**` crosses segments. The first matching rule wins. Write
+  the glob as `host/path`, not as a URL.
+- A rule applies to the directory a session or worker actually runs in. A
+  spawned worker never inherits another workspace's hooks, hints, identity
+  check or model from its coordinator.
+- Spawn model precedence: explicit `model` > workspace role slot > workspace
+  `swarm_model` > `agents.roles` > `agents.swarm_model` > inherit.
+- Workspace hooks use lifecycle tables only and append to the global hooks for
+  the same event (an entry with the same `command` replaces the global one).
+- Invalid values are reported as `Workspace config warning:` log lines at load.

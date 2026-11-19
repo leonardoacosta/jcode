@@ -723,3 +723,105 @@ fn format_model_name_labels_slashed_models_with_active_provider() {
         "Claude Opus"
     );
 }
+
+fn git_in(dir: &std::path::Path, args: &[&str]) {
+    let ok = std::process::Command::new("git")
+        .arg("-C")
+        .arg(dir)
+        .args(args)
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .expect("git")
+        .success();
+    assert!(ok, "git {args:?}");
+}
+
+#[test]
+fn workspace_badge_renders_on_one_row_without_wrapping_at_narrow_widths() {
+    let _env = crate::storage::lock_test_env();
+    let home = tempfile::TempDir::new().unwrap();
+    let previous = [
+        ("JCODE_HOME", std::env::var_os("JCODE_HOME")),
+        ("GIT_CONFIG_GLOBAL", std::env::var_os("GIT_CONFIG_GLOBAL")),
+    ];
+    crate::env::set_var("JCODE_HOME", home.path());
+    std::fs::write(home.path().join("gitconfig"), "").unwrap();
+    crate::env::set_var("GIT_CONFIG_GLOBAL", home.path().join("gitconfig"));
+    std::fs::write(
+        home.path().join("config.toml"),
+        "[[workspaces.rules]]\nname = \"brown\"\norigin = \"dev.azure.com/brown/**\"\nexpected_email = \"me@brown.example\"\n",
+    )
+    .unwrap();
+    crate::config::Config::invalidate_cache();
+    let repo = home.path().join("repo");
+    std::fs::create_dir_all(&repo).unwrap();
+    git_in(&repo, &["init", "-q"]);
+    git_in(
+        &repo,
+        &[
+            "remote",
+            "add",
+            "origin",
+            "https://tok@dev.azure.com/brown/p/_git/r",
+        ],
+    );
+
+    let mut app = create_test_app();
+    app.set_centered(false);
+    app.set_working_dir_for_tests(&repo.display().to_string());
+
+    // The first frames never block on git; the probe lands asynchronously.
+    let mut rows = rendered_header_lines(&app, 80);
+    for _ in 0..200 {
+        if rows.iter().any(|row| row.contains("ws:brown")) {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+        rows = rendered_header_lines(&app, 80);
+    }
+    assert!(
+        rows[0].contains("ws:brown ?id"),
+        "unset email is flagged: {rows:?}"
+    );
+    assert!(!rows.iter().any(|row| row.contains("tok")), "{rows:?}");
+
+    // One logical row stays one visual row at every width, truncated by cells.
+    let baseline = rendered_header_lines(&app, 80).len();
+    for width in [80u16, 40, 24, 16, 10, 6, 3] {
+        let lines = build_persistent_header(&app, width);
+        assert_eq!(lines.len(), baseline, "row count at width {width}");
+        for line in &lines {
+            assert!(line.width() <= usize::from(width), "{width}: {line:?}");
+        }
+    }
+    assert!(
+        unicode_width::UnicodeWidthStr::width(rendered_header_lines(&app, 12)[0].as_str()) <= 12
+    );
+
+    // A badge change invalidates the prepared-header cache signature.
+    let before = crate::tui::ui::prepare::header_prep_signature(&app, 80);
+    git_in(&repo, &["config", "user.email", "me@brown.example"]);
+    for _ in 0..200 {
+        if workspace_badge(&app).as_deref() == Some("ws:brown") {
+            break;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    assert_eq!(workspace_badge(&app).as_deref(), Some("ws:brown"));
+    assert_ne!(
+        before,
+        crate::tui::ui::prepare::header_prep_signature(&app, 80),
+        "identity change must feed the header signature"
+    );
+    assert!(!rendered_header_lines(&app, 80)[0].contains("?id"));
+
+    for (key, value) in previous {
+        match value {
+            Some(value) => crate::env::set_var(key, value),
+            None => crate::env::remove_var(key),
+        }
+    }
+    crate::config::Config::invalidate_cache();
+}

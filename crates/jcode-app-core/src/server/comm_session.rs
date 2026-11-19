@@ -438,8 +438,16 @@ pub(super) async fn spawn_swarm_agent(
     agents_config
         .validate_swarm_model_request(requested_model.as_deref())
         .map_err(anyhow::Error::msg)?;
+    let coordinator_dir =
+        resolve_spawn_working_dir(None, req_session_id, sessions, swarm_members).await;
     let resolved_working_dir =
         resolve_spawn_working_dir(working_dir, req_session_id, sessions, swarm_members).await;
+    let requested_model = super::workspace_spawn::resolve_requested_model(
+        requested_model,
+        resolved_working_dir.as_deref(),
+        worker_role.as_deref(),
+    )
+    .await;
     let coordinator = resolve_coordinator_spawn_identity(req_session_id, sessions).await;
     let coordinator_is_canary = coordinator.is_canary;
     // Capture the requesting client's terminal env so spawn hooks place the new
@@ -594,6 +602,7 @@ pub(super) async fn spawn_swarm_agent(
         ));
     }
     super::session_control::import_identity(&new_session_id, Some(req_session_id))?;
+    super::workspace_spawn::record_provenance(&new_session_id, coordinator_dir).await;
     {
         let mut plans = swarm_plans.write().await;
         if let Some(plan) = plans.get_mut(swarm_id)

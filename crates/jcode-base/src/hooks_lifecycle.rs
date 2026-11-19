@@ -294,6 +294,9 @@ pub fn lifecycle_configured(event: LifecycleEvent) -> bool {
         return false;
     }
     strict_hooks_config().is_some_and(|hooks| !hooks.lifecycle_entries(event.name()).is_empty())
+        // A workspace rule may add entries for sessions whose cwd it matches.
+        || crate::config::config_strict()
+            .is_ok_and(|config| config.workspaces.has_lifecycle_entries(event.name()))
 }
 
 /// Drop legacy commands that a lifecycle entry already runs for the same
@@ -585,13 +588,30 @@ pub async fn run_lifecycle(call: LifecycleCall) -> LifecycleOutcome {
     let Some(hooks) = strict_hooks_config() else {
         return LifecycleOutcome::default();
     };
+    // Per-workspace entries append after the global ones, only for a cwd that
+    // resolves to that workspace by its own git origin.
+    // Skip the blocking hop entirely when no rule could add an entry.
+    let event = call.event.name();
+    if crate::config::config_strict().is_ok_and(|c| c.workspaces.has_lifecycle_entries(event)) {
+        let cwd = call.cwd.clone();
+        let merged = tokio::task::spawn_blocking(move || {
+            crate::workspace::lifecycle_hooks_for(cwd.as_deref(), event)
+        })
+        .await
+        .ok()
+        .flatten();
+        if let Some(merged) = merged {
+            return run_lifecycle_with(&merged, call).await;
+        }
+    }
     run_lifecycle_with(hooks, call).await
 }
 
 /// [`run_lifecycle`] against an explicit config.
 pub async fn run_lifecycle_with(hooks: &HooksConfig, mut call: LifecycleCall) -> LifecycleOutcome {
     let mut outcome = LifecycleOutcome::default();
-    // Invalid entries were already reported when the config loaded.
+    // Invalid entries (global and workspace) were already reported when the
+    // config loaded.
     let (entries, _warnings) = resolve_entries(hooks, call.event);
     for hook in entries {
         if !hook.applies(call.subject.as_deref(), &call.paths, call.cwd.as_deref()) {

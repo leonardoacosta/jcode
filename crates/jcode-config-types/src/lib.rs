@@ -9,6 +9,8 @@ mod session;
 pub use session::{HibernationMode, SessionConfig, SessionRetentionConfig, SessionsConfig};
 mod task_policy;
 pub use task_policy::*;
+mod workspaces;
+pub use workspaces::*;
 pub use {
     display::{DisplayConfig, ResumeOpenElsewhere, ResumeTimeMode},
     menubar::MenubarConfig,

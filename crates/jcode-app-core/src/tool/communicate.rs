@@ -394,6 +394,7 @@ fn role_slot_source(role: &str) -> Option<&'static str> {
         "compaction" => "slot:compaction",
         "websearch" => "slot:websearch",
         "council" => "slot:council",
+        "workspace" => "workspace",
         _ => return None,
     })
 }
@@ -1492,11 +1493,8 @@ impl Tool for CommunicateTool {
                     initial_message: params.spawn_initial_message(),
                     request_nonce: None,
                     spawn_mode: params.spawn_mode.clone(),
-                    // Explicit model wins; otherwise a configured role slot.
-                    model: params.model.clone().or_else(|| {
-                        spawn_role_slot(params.role.as_deref(), &crate::config::config().agents)
-                            .map(|(_, model)| model.to_string())
-                    }),
+                    // The server resolves explicit > workspace > global role slot.
+                    model: params.model.clone(),
                     // Worker effort is not agent-controlled: the server applies
                     // `agents.swarm_effort` (default "low").
                     effort: None,
@@ -1540,9 +1538,20 @@ impl Tool for CommunicateTool {
                         let global = crate::config::config().agents.swarm_model.clone();
                         let env = std::env::var("JCODE_SWARM_MODEL").ok();
                         let agents = crate::config::config().agents.clone();
+                        let target = params.working_dir.as_deref().map(std::path::PathBuf::from);
+                        let workspace = crate::server::run_blocking_io(|| {
+                            crate::workspace::spawn_model_override(
+                                target.as_deref().or(ctx.working_dir.as_deref()),
+                                params.role.as_deref(),
+                            )
+                        })
+                        .filter(|_| params.model.as_deref().is_none_or(|m| m.trim().is_empty()));
                         let (model, source) = resolve_worker_model_source(
                             params.model.as_deref(),
-                            spawn_role_slot(params.role.as_deref(), &agents),
+                            workspace
+                                .as_ref()
+                                .map(|over| ("workspace", over.model.as_str()))
+                                .or_else(|| spawn_role_slot(params.role.as_deref(), &agents)),
                             effective.as_deref(),
                             global.as_deref(),
                             env.as_deref(),

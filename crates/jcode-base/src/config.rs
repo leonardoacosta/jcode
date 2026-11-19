@@ -14,7 +14,8 @@ pub use jcode_config_types::{
     PowerConfig, ProviderConfig, ReasoningDisplayMode, ResumeOpenElsewhere, ResumeTimeMode,
     SafetyConfig, SessionConfig, SessionPickerResumeAction, SessionRetentionConfig, SessionsConfig,
     SponsorsConfig, SwarmConfig, SwarmSpawnMode, TaskAdmissionSnapshot, TaskAuthorization,
-    TasksConfig, TerminalConfig, UpdateChannel, WebSearchConfig, WebSearchEngine, WorktreesConfig,
+    TasksConfig, TerminalConfig, UpdateChannel, WebSearchConfig, WebSearchEngine, WorkspaceRule,
+    WorkspacesConfig, WorktreesConfig,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -380,6 +381,9 @@ fn load_for_cache() -> (Config, Option<String>) {
         Ok(config) => {
             for warning in crate::hooks::lifecycle_config_warnings(&config.hooks) {
                 crate::logging::warn(&format!("Hook config warning: {warning}"));
+            }
+            for warning in crate::workspace::config_warnings(&config.workspaces) {
+                crate::logging::warn(&format!("Workspace config warning: {warning}"));
             }
             (config, None)
         }
@@ -773,6 +777,10 @@ pub struct Config {
 
     /// Lifecycle hooks (external commands at turn/session/tool boundaries)
     pub hooks: HooksConfig,
+
+    /// Origin-matched workspace rules (`[[workspaces.rules]]`): hints, hooks and
+    /// swarm model overrides. Global config only; project files never add rules.
+    pub workspaces: WorkspacesConfig,
 
     /// Ambient mode configuration
     pub ambient: AmbientConfig,

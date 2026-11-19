@@ -115,6 +115,7 @@ pub mod transport;
 pub mod usage;
 pub mod util;
 pub mod voice_intent;
+pub mod workspace;
 #[cfg(not(feature = "embeddings"))]
 pub use embedding_stub as embedding;
 pub use jcode_core::{terminal_eprint, terminal_eprintln, terminal_print, terminal_println};

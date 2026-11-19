@@ -1927,3 +1927,140 @@ async fn overnight_max_agents_cap_admits_exactly_one_of_two_concurrent_spawns() 
     let error = spawn().await.unwrap_err();
     assert!(error.to_string().contains("being cancelled"), "{error}");
 }
+
+/// Wiring for workspace-aware spawn: the real `spawn_swarm_agent` must apply
+/// the workspace model for the worker's *target* dir (explicit still wins) and
+/// record the coordinator's workspace as provenance.
+#[tokio::test]
+async fn spawn_applies_workspace_model_for_target_dir_and_records_provenance() {
+    fn git(dir: &std::path::Path, args: &[&str]) {
+        let ok = std::process::Command::new("git")
+            .arg("-C")
+            .arg(dir)
+            .args(args)
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .expect("git")
+            .success();
+        assert!(ok, "git {args:?}");
+    }
+    let _env = crate::storage::lock_test_env();
+    let home = tempfile::TempDir::new().unwrap();
+    let previous = [
+        ("JCODE_HOME", std::env::var_os("JCODE_HOME")),
+        ("GIT_CONFIG_GLOBAL", std::env::var_os("GIT_CONFIG_GLOBAL")),
+    ];
+    crate::env::set_var("JCODE_HOME", home.path());
+    std::fs::write(home.path().join("gitconfig"), "").unwrap();
+    crate::env::set_var("GIT_CONFIG_GLOBAL", home.path().join("gitconfig"));
+    std::fs::write(
+        home.path().join("config.toml"),
+        "[agents]\nswarm_model_selection = true\nswarm_model_allowlist = [\"openai-api:gpt-5.4\"]\n\n[[workspaces.rules]]\nname = \"priceless\"\norigin = \"github.com/priceless/**\"\nswarm_model = \"openai-api:gpt-5.5\"\n\n\
+         [[workspaces.rules]]\nname = \"brown\"\norigin = \"dev.azure.com/brown/**\"\n",
+    )
+    .unwrap();
+    crate::config::Config::invalidate_cache();
+    let repo = |name: &str, origin: &str| {
+        let dir = home.path().join(name);
+        std::fs::create_dir_all(&dir).unwrap();
+        git(&dir, &["init", "-q"]);
+        git(&dir, &["remote", "add", "origin", origin]);
+        dir.display().to_string()
+    };
+    let priceless = repo("priceless", "https://github.com/priceless/app");
+    let brown = repo("brown", "https://dev.azure.com/brown/p/_git/r");
+    let sessions = Arc::new(crate::server::session_manager::SessionManager::from_agents(
+        HashMap::new(),
+    ));
+    sessions
+        .register_new(
+            "ws_coord".to_string(),
+            test_agent_with_working_dir("ws_coord", &brown).await,
+        )
+        .await
+        .unwrap();
+    let provider: Arc<dyn Provider> = Arc::new(RoutingProvider(std::sync::Mutex::new(
+        "initial-model".into(),
+    )));
+    let state = crate::server::SwarmState::new(
+        HashMap::new(),
+        HashMap::new(),
+        HashMap::new(),
+        HashMap::new(),
+    );
+    let mcp = Arc::new(crate::mcp::SharedMcpPool::new(
+        crate::mcp::McpConfig::default(),
+    ));
+    let spawn = |dir: String, model: Option<&str>| {
+        let model = model.map(str::to_string);
+        let (sessions, provider, state, mcp) = (&sessions, &provider, &state, &mcp);
+        async move {
+            tokio::time::timeout(
+                std::time::Duration::from_secs(20),
+                super::spawn_swarm_agent(
+                    "ws_coord",
+                    "ws-swarm",
+                    None,
+                    Some(dir),
+                    None,
+                    Some(crate::config::SwarmSpawnMode::Headless),
+                    model,
+                    None,
+                    Some("workspace wiring".into()),
+                    None,
+                    None,
+                    sessions,
+                    &Arc::new(RwLock::new(String::new())),
+                    provider,
+                    &state.members,
+                    &state.swarms_by_id,
+                    &state.coordinators,
+                    &state.plans,
+                    &Arc::new(RwLock::new(VecDeque::new())),
+                    &Arc::new(AtomicU64::new(0)),
+                    &broadcast::channel(16).0,
+                    mcp,
+                    &Arc::new(RwLock::new(HashMap::new())),
+                    &Arc::new(RwLock::new(HashMap::new())),
+                ),
+            )
+            .await
+            .expect("spawn finishes")
+            .unwrap()
+        }
+    };
+    let model_of = |id: String| {
+        let sessions = &sessions;
+        async move {
+            let agent = sessions.read().await.get(&id).cloned().unwrap();
+            agent.lock().await.provider_model()
+        }
+    };
+
+    // Target in the workspace that sets a model: the worker gets it, even though
+    // the coordinator sits in a workspace that sets none.
+    let ws_worker = spawn(priceless.clone(), None).await;
+    assert_eq!(model_of(ws_worker.clone()).await, "gpt-5.5");
+    // Provenance names the coordinator's workspace, not the target's.
+    let prov = crate::workspace::provenance(&ws_worker).expect("provenance");
+    assert_eq!(prov.workspace, "brown");
+
+    // Explicit model wins over the workspace model.
+    let explicit = spawn(priceless, Some("openai-api:gpt-5.4")).await;
+    assert_eq!(model_of(explicit).await, "gpt-5.4");
+
+    // Target in a workspace without an override: the priceless model never
+    // leaks in via the shared coordinator.
+    let plain = spawn(brown, None).await;
+    assert_ne!(model_of(plain).await, "gpt-5.5");
+
+    for (key, value) in previous {
+        match value {
+            Some(value) => crate::env::set_var(key, value),
+            None => crate::env::remove_var(key),
+        }
+    }
+    crate::config::Config::invalidate_cache();
+}

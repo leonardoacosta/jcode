@@ -173,6 +173,24 @@ impl Agent {
             );
         }
 
+        // Bounded workspace hints for the cwd's own git origin. Dynamic, not
+        // cached: the identity note follows `user.email` edits.
+        // A cache miss runs `git` (bounded by a timeout); keep that off the
+        // async worker's other tasks.
+        if let Some(block) = working_dir.as_deref().and_then(|dir| {
+            crate::server::run_blocking_io(|| {
+                crate::workspace::prompt_block(
+                    dir,
+                    crate::workspace::provenance(self.session_id()).as_ref(),
+                )
+            })
+        }) {
+            if !split.dynamic_part.is_empty() {
+                split.dynamic_part.push_str("\n\n");
+            }
+            split.dynamic_part.push_str(&block);
+        }
+
         split.static_part = self.append_session_system_prompt(split.static_part);
         split
             .dynamic_part
@@ -202,3 +220,7 @@ impl Agent {
         self.build_memory_prompt_nonblocking_shared(messages.to_vec().into(), _memory_event_tx)
     }
 }
+
+#[cfg(test)]
+#[path = "prompting_workspace_tests.rs"]
+mod workspace_tests;

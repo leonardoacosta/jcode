@@ -869,6 +869,21 @@ fn role_slot_resolution_precedence_and_source() {
 }
 
 #[test]
+fn workspace_slot_reports_workspace_source_between_explicit_and_default() {
+    let r = |req, slot| {
+        resolve_worker_model_source(req, slot, Some("ds"), Some("ds"), None, Some("opus"))
+    };
+    let ws = Some(("workspace", "ws-model"));
+    assert_eq!(r(None, ws), (Some("ws-model".into()), "workspace"));
+    assert_eq!(r(Some("gpt"), ws), (Some("gpt".into()), "explicit"));
+    // The workspace `inherit` sentinel falls through instead of pinning a model.
+    assert_eq!(
+        r(None, Some(("workspace", "inherit"))),
+        (Some("ds".into()), "config")
+    );
+}
+
+#[test]
 fn stop_never_reports_stopped_for_a_nonterminal_outcome() {
     use super::format_stop_outcome;
     use super::transport::SwarmRequestError;

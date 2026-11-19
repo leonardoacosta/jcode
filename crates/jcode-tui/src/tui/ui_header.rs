@@ -36,6 +36,15 @@ fn fit_header_lines(lines: Vec<Line<'static>>, width: u16) -> Vec<Line<'static>>
         .collect()
 }
 
+/// `ws:<name>` (+ ` !id` / ` ?id`) for the session's working directory. Runs
+/// every frame, so it reads a short-TTL cache and never runs git on the render
+/// thread: the first frame has no badge and a later one (via the header
+/// signature) picks up the background probe.
+pub(super) fn workspace_badge(app: &dyn TuiState) -> Option<String> {
+    let dir = app.working_dir()?;
+    crate::workspace::badge_cached(std::path::Path::new(&dir))
+}
+
 fn product_header_line(is_canary: bool, status_items: &[&str]) -> Line<'static> {
     let mut spans = vec![Span::styled(
         "jcode",
@@ -740,6 +749,10 @@ fn build_persistent_header_with_auth(
     }
     if let Some(badge) = crate::perf::profile().tier.badge() {
         status_items.push(badge);
+    }
+    let workspace = workspace_badge(app);
+    if let Some(workspace) = workspace.as_deref() {
+        status_items.push(workspace);
     }
 
     // Labeled versions for the `server:` / `client:` lines. Lots of users run

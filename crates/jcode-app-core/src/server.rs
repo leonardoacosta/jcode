@@ -77,6 +77,7 @@ mod swarm_watchdog;
 mod turn_failover;
 mod util;
 mod worker_revive;
+mod workspace_spawn;
 
 pub(super) use self::await_members_state::AwaitMembersRuntime;
 use self::background_tasks::{
