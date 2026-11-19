@@ -23,7 +23,11 @@ pub(super) fn handle_overnight_command(app: &mut App, trimmed: &str) -> bool {
         Ok(OvernightCommand::Log) => show_overnight_log(app),
         Ok(OvernightCommand::Review) => open_overnight_review(app),
         Ok(OvernightCommand::Cancel) => cancel_overnight(app),
-        Ok(OvernightCommand::Start { duration, mission }) => {
+        Ok(OvernightCommand::Start {
+            duration,
+            mission,
+            limits,
+        }) => {
             let working_dir = app
                 .session
                 .working_dir
@@ -44,6 +48,7 @@ pub(super) fn handle_overnight_command(app: &mut App, trimmed: &str) -> bool {
                 registry: app.registry.clone(),
                 working_dir,
                 use_current_session: true,
+                limits,
             };
             match crate::overnight::start_overnight_run(options) {
                 Ok(launch) => {
@@ -152,7 +157,7 @@ fn start_visible_overnight_turn(app: &mut App, content: String) {
 
 fn show_overnight_help(app: &mut App) {
     app.push_display_message(DisplayMessage::system(
-        "/overnight <hours>[h|m] [mission]\n  Start one visible overnight coordinator with guarded auto-poke follow-ups until the target wake/wrap time. The coordinator prioritizes verifiable, low-risk work, maintains logs, and updates a review HTML page.\n\n/overnight status\n  Show the latest overnight run status.\n\n/overnight log\n  Show recent overnight events.\n\n/overnight review\n  Open the generated review page.\n\n/overnight cancel\n  Request cancellation after the current coordinator turn and stop overnight auto-poke.".to_string(),
+        "/overnight <hours>[h|m] [--max-agents N] [--max-turn-minutes N] [--max-tokens N] [mission]\n  Start one visible overnight coordinator with guarded auto-poke follow-ups until the target wake/wrap time. The coordinator prioritizes verifiable, low-risk work, maintains logs, and updates a review HTML page. --max-agents caps live workers; --max-turn-minutes and --max-tokens need a supervised run (server /overnight) and are rejected here.\n\n/overnight status\n  Show the latest overnight run status.\n\n/overnight log\n  Show recent overnight events.\n\n/overnight review\n  Open the generated review page.\n\n/overnight cancel\n  Stop overnight auto-poke. A supervised run also refuses new workers, interrupts its running turn and drains owned work, and is marked cancelled only once that is confirmed. A visible run drains nothing and stays 'cancel requested'. A finished run is left unchanged.".to_string(),
     ));
 }
 
@@ -260,13 +265,16 @@ fn open_overnight_review(app: &mut App) {
 
 fn cancel_overnight(app: &mut App) {
     match crate::overnight::cancel_latest_run() {
-        Ok(manifest) => {
+        Ok(crate::overnight::CancelOutcome::Rejected(manifest)) => {
+            app.push_display_message(DisplayMessage::system(
+                crate::overnight::CancelOutcome::rejection_message(&manifest),
+            ));
+            app.set_status_notice("Overnight run already finished");
+        }
+        Ok(crate::overnight::CancelOutcome::Requested(manifest)) => {
             app.finalize_cancelled_overnight_auto_poke(&manifest.run_id);
             if !app.upsert_overnight_display_card(&manifest) {
-                app.push_display_message(DisplayMessage::system(format!(
-                    "Cancellation requested for overnight run {}. The coordinator will stop after the current turn reaches a safe boundary.",
-                    manifest.run_id,
-                )));
+                app.push_display_message(DisplayMessage::system(cancel_requested_text(&manifest)));
             }
             app.set_status_notice("Overnight cancel requested");
         }
@@ -274,6 +282,22 @@ fn cancel_overnight(app: &mut App) {
             "Failed to cancel overnight run: {}",
             crate::util::format_error_chain(&error)
         ))),
+    }
+}
+
+/// Honest cancel wording: only a supervised run interrupts its turn and drains
+/// owned work. A visible current-session run has no supervisor.
+fn cancel_requested_text(manifest: &crate::overnight::OvernightManifest) -> String {
+    if crate::overnight::is_supervised(manifest) {
+        format!(
+            "Cancellation requested for overnight run {}. The running turn is being interrupted and owned work drained; the run is marked cancelled only once that is confirmed.",
+            manifest.run_id
+        )
+    } else {
+        format!(
+            "Cancellation requested for visible overnight run {}. Auto-poke follow-ups stop, but this session has no supervisor: nothing is interrupted or drained, so interrupt the current turn and stop workers yourself. The run stays 'cancel requested' (not marked cancelled) and its worker cap no longer applies.",
+            manifest.run_id
+        )
     }
 }
 
@@ -296,13 +320,24 @@ impl App {
         }
 
         match crate::overnight::cancel_latest_run() {
-            Ok(manifest) => {
+            Ok(crate::overnight::CancelOutcome::Requested(manifest)) => {
                 self.finalize_cancelled_overnight_auto_poke(&manifest.run_id);
                 let _ = self.upsert_overnight_display_card(&manifest);
+                let note = if crate::overnight::is_supervised(&manifest) {
+                    "owned work is draining"
+                } else {
+                    "visible run: no supervisor, nothing drained, not marked cancelled"
+                };
                 self.push_display_message(DisplayMessage::system(format!(
-                    "🌙 Overnight run {} cancelled by interrupt.",
+                    "🌙 Overnight run {} cancel requested by interrupt; {note}.",
                     manifest.run_id
                 )));
+            }
+            Ok(crate::overnight::CancelOutcome::Rejected(manifest)) => {
+                self.finalize_cancelled_overnight_auto_poke(&manifest.run_id);
+                self.push_display_message(DisplayMessage::system(
+                    crate::overnight::CancelOutcome::rejection_message(&manifest),
+                ));
             }
             Err(error) => {
                 self.push_display_message(DisplayMessage::error(format!(
@@ -631,6 +666,7 @@ fn overnight_status_label(status: &OvernightRunStatus) -> &'static str {
     match status {
         OvernightRunStatus::Running => "running",
         OvernightRunStatus::CancelRequested => "cancel requested",
+        OvernightRunStatus::Cancelled => "cancelled",
         OvernightRunStatus::Completed => "completed",
         OvernightRunStatus::Failed => "failed",
         OvernightRunStatus::Blocked => "blocked",
@@ -760,6 +796,9 @@ mod tests {
             provider_name: "mock".to_string(),
             model: "mock-model".to_string(),
             max_agents_guidance: 2,
+            limits: Default::default(),
+            stop_settlement: None,
+            limit_breach: None,
             process_id: 1,
             run_dir: PathBuf::from("/tmp/overnight_test"),
             events_path: PathBuf::from("/tmp/overnight_test/events.jsonl"),

@@ -7,6 +7,7 @@ use super::{
 pub(crate) fn overnight_phase(manifest: &OvernightManifest, now: DateTime<Utc>) -> &'static str {
     match manifest.status {
         OvernightRunStatus::Completed => "completed",
+        OvernightRunStatus::Cancelled => "cancelled",
         OvernightRunStatus::Failed => "failed",
         OvernightRunStatus::Blocked => "blocked",
         OvernightRunStatus::Unknown => "unknown",
@@ -110,7 +111,7 @@ Operating contract:
 - Avoid taste-based work, vague product decisions, broad rewrites, risky migrations, payments, sending email, pushing to remotes, deleting data, or other external side effects unless explicitly allowed by the user.
 - If a bug is found, reproduce/prove it before fixing it.
 - Only fix issues that are important, bounded, and verifiable. Otherwise draft a high-quality issue in `{issue_drafts}`.
-- You own the run. Spawn swarm/helper agents only if the expected value exceeds usage/resource cost. Default to one coordinator plus at most one helper. Helpers should implement scoped, verifiable changes with clear file ownership. Do not spawn reviewer, auditor, or verifier agents. Verify helper work yourself.
+- You own the run. Spawn swarm/helper agents only if the expected value exceeds usage/resource cost. The server enforces these run limits and refuses or stops work beyond them: {limits}. Helpers should implement scoped, verifiable changes with clear file ownership. Do not spawn reviewer, auditor, or verifier agents. Verify helper work yourself.
 - Be aware of RAM/load/battery, especially around compiles, browser automation, indexing, and full test suites. Do not run multiple heavy activities at once unless resources are clearly healthy.
 - Do not wait for the user. If you need user judgment/credentials/taste, record it and switch to another useful task.
 - Continue finding useful verified work until the target wake/report time unless usage/resources make that unreasonable.
@@ -133,6 +134,7 @@ Initial steps:
 5. Validate and update review notes.
 6. If done early, repeat discovery and continue.
 "#,
+        limits = manifest.limits.summary(),
         run_id = manifest.run_id,
         target_wake_at = manifest.target_wake_at.to_rfc3339(),
         post_wake_grace_until = manifest.post_wake_grace_until.to_rfc3339(),

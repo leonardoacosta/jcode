@@ -45,7 +45,8 @@ fn test_overnight_help_command_is_handled() {
         .last()
         .expect("missing overnight help response");
     assert_eq!(msg.role, "system");
-    assert!(msg.content.contains("/overnight <hours>[h|m] [mission]"));
+    assert!(msg.content.contains("/overnight <hours>[h|m]"));
+    assert!(msg.content.contains("--max-tokens N"));
     assert!(msg.content.contains("/overnight review"));
 }
 

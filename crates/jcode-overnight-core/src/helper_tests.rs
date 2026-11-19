@@ -33,6 +33,9 @@ fn test_manifest(now: DateTime<Utc>) -> OvernightManifest {
         provider_name: "provider".to_string(),
         model: "model".to_string(),
         max_agents_guidance: 1,
+        limits: OvernightLimits::default(),
+        stop_settlement: None,
+        limit_breach: None,
         process_id: 123,
         run_dir: run_dir.clone(),
         events_path: run_dir.join("events.jsonl"),
@@ -79,6 +82,7 @@ fn escape_and_event_class_helpers_are_stable() {
     );
     assert_eq!(event_class("task_failed"), "bad");
     assert_eq!(event_class("handoff_requested"), "warn");
+    assert_eq!(event_class("limit_reached"), "warn");
     assert_eq!(event_class("run_completed"), "ok");
 }
 
@@ -223,6 +227,9 @@ fn review_html_builder_includes_core_sections() {
         provider_name: "provider".to_string(),
         model: "model".to_string(),
         max_agents_guidance: 1,
+        limits: OvernightLimits::default(),
+        stop_settlement: None,
+        limit_breach: None,
         process_id: 123,
         run_dir: run_dir.clone(),
         events_path: run_dir.join("events.jsonl"),

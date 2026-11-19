@@ -14,31 +14,39 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub use jcode_overnight_core::{
-    GitSnapshot, OVERNIGHT_VERSION, OvernightCommand, OvernightDuration, OvernightEvent,
-    OvernightManifest, OvernightPreflight, OvernightProgressCard, OvernightRunStatus,
-    OvernightTaskCard, OvernightTaskCardAfter, OvernightTaskCardBefore, OvernightTaskCardSummary,
-    OvernightTaskCardValidation, OvernightTaskStatusCounts, ResourceSnapshot, UsageLimitSnapshot,
-    UsageProjection, UsageProviderSnapshot, build_continuation_prompt, build_coordinator_prompt,
-    build_final_wrapup_prompt, build_handoff_ready_prompt, build_morning_report_prompt,
-    build_post_wake_continuation_prompt, build_progress_card_from_parts, build_review_html,
-    build_visible_current_session_prompt, event_class, format_log_markdown_from_events,
-    format_minutes, format_status_markdown_from_summary, format_status_markdown_with_stale,
-    git_summary, html_escape, overnight_usage, parse_duration, parse_overnight_command,
-    preflight_summary, prompt_event_summary, render_task_cards_html, resource_summary,
-    summarize_task_cards_slice, task_card_title, task_card_validated, task_status_bucket,
+    GitSnapshot, LimitBreach, LimitKind, OVERNIGHT_VERSION, OvernightCommand, OvernightDuration,
+    OvernightEvent, OvernightLimits, OvernightManifest, OvernightPreflight, OvernightProgressCard,
+    OvernightRunStatus, OvernightTaskCard, OvernightTaskCardAfter, OvernightTaskCardBefore,
+    OvernightTaskCardSummary, OvernightTaskCardValidation, OvernightTaskStatusCounts,
+    ResourceSnapshot, StopSettlement, UsageLimitSnapshot, UsageProjection, UsageProviderSnapshot,
+    build_continuation_prompt, build_coordinator_prompt, build_final_wrapup_prompt,
+    build_handoff_ready_prompt, build_morning_report_prompt, build_post_wake_continuation_prompt,
+    build_progress_card_from_parts, build_review_html, build_visible_current_session_prompt,
+    event_class, format_log_markdown_from_events, format_minutes,
+    format_status_markdown_from_summary, format_status_markdown_with_stale, git_summary,
+    html_escape, overnight_usage, parse_duration, parse_overnight_command, preflight_summary,
+    prompt_event_summary, render_task_cards_html, resource_summary, summarize_task_cards_slice,
+    task_card_title, task_card_validated, task_status_bucket,
 };
 
 const RESOURCE_SAMPLE_INTERVAL: Duration = Duration::from_secs(5 * 60);
 const LONG_TURN_NOTICE_INTERVAL: Duration = Duration::from_secs(30 * 60);
 
 mod admission;
+mod enforce;
 mod usage;
-pub use usage::{read_usage_reconciled, reconciled_path};
-pub(crate) use usage::{note_session_account, observe_stream_usage};
 pub use admission::{
     TaskAttemptClaim, restart_task_attempt, restart_task_attempt_with_provider, start_task_attempt,
     start_task_attempt_with_provider, task_monetary_account,
 };
+#[cfg(test)]
+pub(crate) use enforce::tests::run_manifest as test_run_manifest;
+pub use enforce::{
+    ensure_worker_spawn_allowed, is_supervised, resettle_in_background,
+    visible_mode_limit_rejection, worker_spawn_gate,
+};
+pub(crate) use usage::{note_session_account, observe_stream_usage};
+pub use usage::{read_usage_reconciled, reconciled_path};
 
 #[derive(Debug, Clone)]
 pub struct OvernightLaunch {
@@ -59,6 +67,8 @@ pub struct OvernightStartOptions {
     /// When true, run the overnight coordinator in the session that launched
     /// `/overnight` instead of forking an invisible child transcript.
     pub use_current_session: bool,
+    /// Enforced run bounds. `OvernightLimits::standard()` for the default.
+    pub limits: OvernightLimits,
 }
 
 /// Revalidate the original persisted task bounds against current user policy.
@@ -103,6 +113,11 @@ pub fn ensure_task_dispatch(
 }
 
 pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLaunch> {
+    if options.use_current_session
+        && let Some(reason) = visible_mode_limit_rejection(&options.limits)
+    {
+        anyhow::bail!(reason);
+    }
     let run_id = crate::id::new_id("overnight");
     let started_at = Utc::now();
     let duration = ChronoDuration::minutes(options.duration.minutes as i64);
@@ -165,7 +180,14 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
         working_dir: child.working_dir.clone(),
         provider_name: options.provider.name().to_string(),
         model: options.provider.model(),
-        max_agents_guidance: 2,
+        // Coordinator plus allowed helpers; drives the burn-rate projection.
+        max_agents_guidance: options
+            .limits
+            .max_agents
+            .map_or(2, |n| n.saturating_add(1).min(u32::from(u8::MAX)) as u8),
+        limits: options.limits,
+        stop_settlement: None,
+        limit_breach: None,
         process_id: std::process::id(),
         run_dir,
         events_path,
@@ -241,6 +263,43 @@ fn create_coordinator_session(parent: &Session, mission: &Option<String>) -> Res
     Ok(child)
 }
 
+/// Record a supervisor error. The run is closed as `Failed` only when no owned
+/// work is unresolved: a recorded unresolved stop settlement means workers may
+/// still be running, so the run stays non-terminal and can be cancelled again.
+async fn record_supervisor_failure(manifest: &OvernightManifest, err: &anyhow::Error) {
+    let mut updated = load_manifest(&manifest.run_id).unwrap_or(manifest.clone());
+    let unresolved = matches!(
+        updated.stop_settlement,
+        Some(jcode_overnight_core::StopSettlement::Unresolved { .. })
+    );
+    if !unresolved {
+        updated.status = OvernightRunStatus::Failed;
+        updated.completed_at = Some(Utc::now());
+        let _ = save_manifest(&updated);
+    }
+    let _ = record_event(
+        &updated,
+        if unresolved {
+            "run_failed_unresolved"
+        } else {
+            "run_failed"
+        },
+        if unresolved {
+            format!(
+                "Overnight supervisor failed while owned work is not confirmed stopped; run left non-terminal: {err}"
+            )
+        } else {
+            format!("Overnight supervisor failed: {err}")
+        },
+        json!({ "error": crate::util::format_error_chain(err) }),
+        true,
+    );
+    if !unresolved {
+        usage::finalize(&updated).await;
+    }
+    let _ = render_review_html(&updated);
+}
+
 fn spawn_supervisor(
     manifest: OvernightManifest,
     child: Session,
@@ -252,19 +311,7 @@ fn spawn_supervisor(
         if let Err(err) =
             run_supervisor(manifest.clone(), child, provider, registry, child_is_canary).await
         {
-            let mut updated = load_manifest(&manifest.run_id).unwrap_or(manifest.clone());
-            updated.status = OvernightRunStatus::Failed;
-            updated.completed_at = Some(Utc::now());
-            let _ = save_manifest(&updated);
-            let _ = record_event(
-                &updated,
-                "run_failed",
-                format!("Overnight supervisor failed: {}", err),
-                json!({ "error": crate::util::format_error_chain(&err) }),
-                true,
-            );
-            usage::finalize(&updated).await;
-            let _ = render_review_html(&updated);
+            record_supervisor_failure(&manifest, &err).await;
         }
     };
 
@@ -322,9 +369,16 @@ async fn run_supervisor(
 
     loop {
         let current = load_manifest(&manifest.run_id)?;
+        // Cancellation and limits win over everything else, including task
+        // admission, so a stop is never turned into a failure by a denial.
+        if let Some(cause) = enforce::pending_stop(&current, None) {
+            enforce::stop_until_settled(&current, cause).await?;
+            break;
+        }
         if current.task_admission.is_some() {
             // A file/snapshot is not an attempt reservation or a spend enforcer.
             // Keep this path closed until the evidence-aware executor owns both.
+            // Token/time limits below only stop a run; they never authorize it.
             let policy = crate::config::Config::load_strict()?.tasks;
             let decision = revalidate_task_admission(&current, &policy).expect("snapshot checked");
             record_event(
@@ -335,22 +389,6 @@ async fn run_supervisor(
                 true,
             )?;
             ensure_task_dispatch(&current, &policy)?;
-        }
-        if matches!(current.status, OvernightRunStatus::CancelRequested) {
-            record_event(
-                &current,
-                "run_cancel_acknowledged",
-                "Cancellation requested; stopping before next coordinator turn".to_string(),
-                json!({}),
-                true,
-            )?;
-            mark_completed(
-                &current,
-                OvernightRunStatus::Completed,
-                "Cancelled before next turn",
-            )
-            .await?;
-            break;
         }
 
         let now = Utc::now();
@@ -375,7 +413,13 @@ async fn run_supervisor(
         )?;
         render_review_html(&current)?;
 
-        let output = run_turn_monitored(&mut agent, &current, &next_prompt).await?;
+        let output = match enforce::run_turn_monitored(&mut agent, &current, &next_prompt).await? {
+            enforce::TurnOutcome::Finished(output) => output,
+            enforce::TurnOutcome::Stopped(cause) => {
+                enforce::stop_until_settled(&load_manifest(&manifest.run_id)?, cause).await?;
+                break;
+            }
+        };
         let after_turn = load_manifest(&manifest.run_id)?;
         record_event(
             &after_turn,
@@ -387,13 +431,8 @@ async fn run_supervisor(
         render_review_html(&after_turn)?;
 
         let after_turn = load_manifest(&manifest.run_id)?;
-        if matches!(after_turn.status, OvernightRunStatus::CancelRequested) {
-            mark_completed(
-                &after_turn,
-                OvernightRunStatus::Completed,
-                "Cancelled after coordinator turn",
-            )
-            .await?;
+        if let Some(cause) = enforce::pending_stop(&after_turn, None) {
+            enforce::stop_until_settled(&after_turn, cause).await?;
             break;
         }
 
@@ -453,55 +492,6 @@ async fn run_supervisor(
     }
 
     Ok(())
-}
-
-async fn run_turn_monitored(
-    agent: &mut Agent,
-    manifest: &OvernightManifest,
-    prompt: &str,
-) -> Result<String> {
-    let started = Utc::now();
-    let mut sample_interval = tokio::time::interval_at(
-        tokio::time::Instant::now() + RESOURCE_SAMPLE_INTERVAL,
-        RESOURCE_SAMPLE_INTERVAL,
-    );
-    sample_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-    let mut long_notice_interval = tokio::time::interval_at(
-        tokio::time::Instant::now() + LONG_TURN_NOTICE_INTERVAL,
-        LONG_TURN_NOTICE_INTERVAL,
-    );
-    long_notice_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-
-    let run_future = agent.run_once_capture(prompt);
-    tokio::pin!(run_future);
-
-    loop {
-        tokio::select! {
-            result = &mut run_future => return result,
-            _ = sample_interval.tick() => {
-                let snapshot = gather_resource_snapshot(manifest.working_dir.as_deref().map(Path::new));
-                let _ = record_event(
-                    manifest,
-                    "resource_sample",
-                    resource_summary(&snapshot),
-                    serde_json::to_value(&snapshot).unwrap_or_else(|_| json!({})),
-                    false,
-                );
-                let _ = render_review_html(manifest);
-            }
-            _ = long_notice_interval.tick() => {
-                let elapsed = Utc::now().signed_duration_since(started).num_minutes().max(0);
-                let _ = record_event(
-                    manifest,
-                    "coordinator_turn_still_running",
-                    format!("Coordinator turn still running after {}m", elapsed),
-                    json!({ "elapsed_minutes": elapsed }),
-                    true,
-                );
-                let _ = render_review_html(manifest);
-            }
-        }
-    }
 }
 
 async fn gather_preflight(manifest: &OvernightManifest) -> OvernightPreflight {
@@ -908,16 +898,35 @@ pub fn stale_pid(manifest: &OvernightManifest) -> Option<u32> {
     .then_some(manifest.process_id)
 }
 
-pub fn cancel_latest_run() -> Result<OvernightManifest> {
-    let mut manifest = latest_manifest()?.context("No overnight runs found")?;
-    if matches!(
-        manifest.status,
-        OvernightRunStatus::Completed
-            | OvernightRunStatus::Failed
-            | OvernightRunStatus::Blocked
-            | OvernightRunStatus::Unknown
-    ) {
-        return Ok(manifest);
+/// Result of a cancel request. A run that already reached a terminal status
+/// is rejected and left byte-for-byte unchanged.
+#[derive(Debug, Clone)]
+pub enum CancelOutcome {
+    Requested(OvernightManifest),
+    Rejected(OvernightManifest),
+}
+
+impl CancelOutcome {
+    pub fn manifest(&self) -> &OvernightManifest {
+        match self {
+            Self::Requested(manifest) | Self::Rejected(manifest) => manifest,
+        }
+    }
+
+    pub fn rejection_message(manifest: &OvernightManifest) -> String {
+        format!(
+            "Overnight run {} is already {}; unchanged.",
+            manifest.run_id,
+            manifest.status.label()
+        )
+    }
+}
+
+/// Record a cancel request, or reject it when the run is already terminal.
+/// A repeated cancel of an unresolved supervised run re-runs settlement.
+pub fn request_cancel(mut manifest: OvernightManifest) -> Result<CancelOutcome> {
+    if manifest.status.is_terminal() {
+        return Ok(CancelOutcome::Rejected(manifest));
     }
     manifest.status = OvernightRunStatus::CancelRequested;
     manifest.cancel_requested_at = Some(Utc::now());
@@ -930,7 +939,12 @@ pub fn cancel_latest_run() -> Result<OvernightManifest> {
         true,
     )?;
     render_review_html(&manifest)?;
-    Ok(manifest)
+    resettle_in_background(&manifest);
+    Ok(CancelOutcome::Requested(manifest))
+}
+
+pub fn cancel_latest_run() -> Result<CancelOutcome> {
+    request_cancel(latest_manifest()?.context("No overnight runs found")?)
 }
 
 pub fn read_events(manifest: &OvernightManifest) -> Result<Vec<OvernightEvent>> {
@@ -1234,6 +1248,9 @@ mod tests {
             provider_name: "test-provider".to_string(),
             model: "test-model".to_string(),
             max_agents_guidance: 2,
+            limits: OvernightLimits::default(),
+            stop_settlement: None,
+            limit_breach: None,
             process_id: 123,
             run_dir: run_dir.clone(),
             events_path: run_dir.join("events.jsonl"),
@@ -1334,7 +1351,9 @@ mod tests {
             .unwrap()
             .unwrap();
         match parsed {
-            OvernightCommand::Start { duration, mission } => {
+            OvernightCommand::Start {
+                duration, mission, ..
+            } => {
                 assert_eq!(duration.minutes, 420);
                 assert_eq!(mission.as_deref(), Some("fix verified bugs"));
             }
@@ -1531,11 +1550,70 @@ mod tests {
             .replace("\"status\":\"running\"", "\"status\":\"mystery\"");
         std::fs::write(&path, &text).unwrap();
         with_home(temp.path(), || {
-            let cancelled = cancel_latest_run().unwrap();
+            let outcome = cancel_latest_run().unwrap();
+            assert!(matches!(outcome, CancelOutcome::Rejected(_)));
+            let cancelled = outcome.manifest();
             assert_eq!(cancelled.status, OvernightRunStatus::Unknown);
             assert!(cancelled.cancel_requested_at.is_none());
             assert_eq!(std::fs::read_to_string(&path).unwrap(), text);
         });
+    }
+
+    #[test]
+    fn cancelling_a_finished_run_is_rejected_and_leaves_the_manifest_unchanged() {
+        for status in [
+            OvernightRunStatus::Completed,
+            OvernightRunStatus::Failed,
+            OvernightRunStatus::Cancelled,
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            let path = write_run(temp.path(), "finished", -10, status.clone());
+            let before = std::fs::read(&path).unwrap();
+            with_home(temp.path(), || {
+                let outcome = cancel_latest_run().unwrap();
+                let CancelOutcome::Rejected(manifest) = outcome else {
+                    panic!("{status:?} must reject cancel");
+                };
+                assert_eq!(manifest.status, status);
+                assert!(
+                    CancelOutcome::rejection_message(&manifest)
+                        .contains(&format!("already {}; unchanged", status.label()))
+                );
+            });
+            assert_eq!(std::fs::read(&path).unwrap(), before, "{status:?}");
+            assert!(
+                !path.with_file_name("events.jsonl").exists(),
+                "no cancel event for {status:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn old_manifest_without_limit_fields_loads_with_no_limits() {
+        let temp = tempfile::tempdir().unwrap();
+        let manifest = test_manifest(temp.path(), "old");
+        let mut value = serde_json::to_value(&manifest).unwrap();
+        let object = value.as_object_mut().unwrap();
+        for key in ["limits", "stop_settlement", "limit_breach"] {
+            object.remove(key);
+        }
+        let old: OvernightManifest = serde_json::from_value(value).unwrap();
+        assert!(old.limits.is_unset());
+        assert!(old.stop_settlement.is_none() && old.limit_breach.is_none());
+    }
+
+    #[test]
+    fn cancelled_manifest_round_trips() {
+        let temp = tempfile::tempdir().unwrap();
+        let mut manifest = test_manifest(temp.path(), "cancelled-rt");
+        manifest.status = OvernightRunStatus::Cancelled;
+        manifest.stop_settlement = Some(StopSettlement::Settled { at: Utc::now() });
+        let json = serde_json::to_string(&manifest).unwrap();
+        assert!(json.contains("\"status\":\"cancelled\""), "{json}");
+        let back: OvernightManifest = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.status, OvernightRunStatus::Cancelled);
+        assert!(back.status.is_terminal());
+        assert!(back.stop_settlement.unwrap().is_settled());
     }
 
     #[test]

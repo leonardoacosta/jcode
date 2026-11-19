@@ -291,14 +291,18 @@ pub(super) fn save_manifest_at(path: &Path, proposed: &OvernightManifest) -> Res
                 merged.cancel_requested_at = current.cancel_requested_at;
                 if !matches!(
                     merged.status,
-                    OvernightRunStatus::Completed | OvernightRunStatus::Failed
+                    OvernightRunStatus::Completed
+                        | OvernightRunStatus::Failed
+                        | OvernightRunStatus::Cancelled
                 ) {
                     merged.status = current.status.clone();
                 }
             }
             if matches!(
                 current.status,
-                OvernightRunStatus::Completed | OvernightRunStatus::Failed
+                OvernightRunStatus::Completed
+                    | OvernightRunStatus::Failed
+                    | OvernightRunStatus::Cancelled
             ) {
                 merged.status = current.status.clone();
                 merged.completed_at = current.completed_at;

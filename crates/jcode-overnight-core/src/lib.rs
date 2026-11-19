@@ -5,6 +5,12 @@ use std::path::PathBuf;
 
 pub const OVERNIGHT_VERSION: u32 = 1;
 
+mod limits;
+pub use limits::{
+    DEFAULT_MAX_AGENTS, LimitBreach, LimitKind, OvernightLimits, RunTokenUsage, StopSettlement,
+    aggregate_run_tokens, check_agent_spawn, check_run_tokens, check_turn_time, parse_limit_flags,
+};
+
 mod usage_reconcile;
 pub use usage_reconcile::{
     GenerationUsage, LimitReconciliation, ProjectedUsage, ProviderUsageReconciliation,
@@ -23,6 +29,7 @@ pub enum OvernightCommand {
     Start {
         duration: OvernightDuration,
         mission: Option<String>,
+        limits: OvernightLimits,
     },
     Status,
     Log,
@@ -36,6 +43,8 @@ pub enum OvernightCommand {
 pub enum OvernightRunStatus {
     Running,
     CancelRequested,
+    /// Cancellation finished and every owned session was confirmed stopped.
+    Cancelled,
     Completed,
     Failed,
     /// Legacy manifests may carry this status; it is terminal.
@@ -46,10 +55,16 @@ pub enum OvernightRunStatus {
 }
 
 impl OvernightRunStatus {
+    /// No further turns or transitions are expected from this status.
+    pub fn is_terminal(&self) -> bool {
+        !matches!(self, Self::Running | Self::CancelRequested)
+    }
+
     pub fn label(&self) -> &'static str {
         match self {
             Self::Running => "running",
             Self::CancelRequested => "cancel requested",
+            Self::Cancelled => "cancelled",
             Self::Completed => "completed",
             Self::Failed => "failed",
             Self::Blocked => "blocked",
@@ -98,6 +113,16 @@ pub struct OvernightManifest {
     pub provider_name: String,
     pub model: String,
     pub max_agents_guidance: u8,
+    /// Enforced bounds. Manifests that predate limits load as unbounded.
+    #[serde(default, skip_serializing_if = "OvernightLimits::is_unset")]
+    pub limits: OvernightLimits,
+    /// Whether run-owned work was confirmed stopped through durable session
+    /// control. Absent until a cancellation or limit stop is observed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stop_settlement: Option<StopSettlement>,
+    /// Set when the run was stopped by one of its limits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub limit_breach: Option<LimitBreach>,
     pub process_id: u32,
     pub run_dir: PathBuf,
     pub events_path: PathBuf,
@@ -354,12 +379,20 @@ pub fn parse_overnight_command(trimmed: &str) -> Option<Result<OvernightCommand,
         Ok(duration) => duration,
         Err(error) => return Some(Err(error)),
     };
+    let (limits, mission) = match parse_limit_flags(mission.as_deref().unwrap_or_default()) {
+        Ok(parsed) => parsed,
+        Err(error) => return Some(Err(error)),
+    };
 
-    Some(Ok(OvernightCommand::Start { duration, mission }))
+    Some(Ok(OvernightCommand::Start {
+        duration,
+        mission,
+        limits,
+    }))
 }
 
 pub fn overnight_usage() -> &'static str {
-    "Usage: `/overnight <hours>[h|m] [mission]`, `/overnight status`, `/overnight log`, `/overnight review`, or `/overnight cancel`"
+    "Usage: `/overnight <hours>[h|m] [--max-agents N] [--max-turn-minutes N] [--max-tokens N] [mission]`, `/overnight status`, `/overnight log`, `/overnight review`, or `/overnight cancel`"
 }
 
 pub fn parse_duration(input: &str) -> std::result::Result<OvernightDuration, String> {
@@ -473,7 +506,11 @@ pub fn task_card_validated(card: &OvernightTaskCard) -> bool {
 pub fn event_class(kind: &str) -> &'static str {
     if kind.contains("failed") || kind.contains("cancel") {
         "bad"
-    } else if kind.contains("warning") || kind.contains("requested") || kind.contains("handoff") {
+    } else if kind.contains("warning")
+        || kind.contains("limit")
+        || kind.contains("requested")
+        || kind.contains("handoff")
+    {
         "warn"
     } else if kind.contains("completed") || kind.contains("started") {
         "ok"

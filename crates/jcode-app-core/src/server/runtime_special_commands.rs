@@ -321,7 +321,12 @@ async fn overnight(agent: &mut Agent, args: &[String]) -> Result<(Value, String)
         ));
     }
     let session_id = agent.session_id().to_owned();
-    if let OvernightCommand::Start { duration, mission } = command {
+    if let OvernightCommand::Start {
+        duration,
+        mission,
+        limits,
+    } = command
+    {
         if let Some(existing) = session_manifest(&session_id)?
             && matches!(
                 existing.status,
@@ -341,6 +346,7 @@ async fn overnight(agent: &mut Agent, args: &[String]) -> Result<(Value, String)
             registry: agent.registry(),
             working_dir: agent.working_dir().map(std::path::PathBuf::from),
             use_current_session: false,
+            limits,
         })?;
         let message = format!(
             "Started supervised overnight coordinator `{}` in session `{}`. Target wake: {}. Use `/overnight status`, `/overnight log`, `/overnight review`, or `/overnight cancel`.",
@@ -350,7 +356,7 @@ async fn overnight(agent: &mut Agent, args: &[String]) -> Result<(Value, String)
         );
         return Ok((serde_json::to_value(launch.manifest)?, message));
     }
-    let Some(mut manifest) = session_manifest(&session_id)? else {
+    let Some(manifest) = session_manifest(&session_id)? else {
         return Ok((
             json!({"run": null}),
             "No overnight runs belong to this session.".into(),
@@ -405,26 +411,17 @@ async fn overnight(agent: &mut Agent, args: &[String]) -> Result<(Value, String)
             ))
         }
         OvernightCommand::Cancel => {
-            if !matches!(
-                manifest.status,
-                OvernightRunStatus::Completed
-                    | OvernightRunStatus::Failed
-                    | OvernightRunStatus::Blocked
-                    | OvernightRunStatus::Unknown
-            ) {
-                manifest.status = OvernightRunStatus::CancelRequested;
-                manifest.cancel_requested_at = Some(chrono::Utc::now());
-                overnight::save_manifest(&manifest)?;
-                overnight::record_event(
-                    &manifest,
-                    "cancel_requested",
-                    "User requested overnight cancellation".into(),
-                    json!({}),
-                    true,
-                )?;
-                overnight::render_review_html(&manifest)?;
+            let (manifest, rejected) = match overnight::request_cancel(manifest)? {
+                overnight::CancelOutcome::Requested(manifest) => (manifest, false),
+                overnight::CancelOutcome::Rejected(manifest) => (manifest, true),
+            };
+            let mut message = overnight::format_status_markdown(&manifest);
+            if rejected {
+                message = format!(
+                    "{}\n\n{message}",
+                    overnight::CancelOutcome::rejection_message(&manifest)
+                );
             }
-            let message = overnight::format_status_markdown(&manifest);
             Ok((serde_json::to_value(manifest)?, message))
         }
         OvernightCommand::Start { .. } | OvernightCommand::Help => unreachable!(),

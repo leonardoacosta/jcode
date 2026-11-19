@@ -24,6 +24,7 @@ const MAX_OWNER_HOPS: usize = 16;
 struct ActiveRun {
     run_id: String,
     run_dir: PathBuf,
+    limits: jcode_overnight_core::OvernightLimits,
 }
 
 /// Coordinator session id to its run, for supervisors alive in this process.
@@ -53,6 +54,7 @@ pub(super) fn register_run(manifest: &OvernightManifest) -> ActiveRunGuard {
         ActiveRun {
             run_id: manifest.run_id.clone(),
             run_dir: manifest.run_dir.clone(),
+            limits: manifest.limits,
         },
     );
     ActiveRunGuard(manifest.coordinator_session_id.clone())
@@ -68,6 +70,15 @@ pub(crate) fn note_session_account(session_id: &str, label: Option<&str>) {
         Some(label) => accounts.insert(session_id.to_string(), label.to_string()),
         None => accounts.remove(session_id),
     };
+}
+
+/// Run id and limits of the run `session_id` coordinates in this process.
+pub(super) fn active_run_limits(
+    session_id: &str,
+) -> Option<(String, jcode_overnight_core::OvernightLimits)> {
+    lock(&ACTIVE)
+        .get(session_id)
+        .map(|run| (run.run_id.clone(), run.limits))
 }
 
 fn owning_run(session_id: &str) -> Option<ActiveRun> {
@@ -142,7 +153,7 @@ fn append_observation(run_dir: &Path, observation: &UsageObservation) -> Result<
 }
 
 /// Parsed observations plus the count of non-empty lines that could not be read.
-fn read_ledger(run_dir: &Path) -> (Vec<UsageObservation>, usize) {
+pub(super) fn read_ledger(run_dir: &Path) -> (Vec<UsageObservation>, usize) {
     let text = std::fs::read_to_string(run_dir.join(LEDGER_FILE)).unwrap_or_default();
     let mut skipped = 0;
     let mut observations = Vec::new();

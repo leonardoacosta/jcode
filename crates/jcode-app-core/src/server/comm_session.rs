@@ -420,6 +420,20 @@ pub(super) async fn spawn_swarm_agent(
     soft_interrupt_queues: &SessionInterruptQueues,
     client_connections: &ClientConnections,
 ) -> anyhow::Result<String> {
+    // An overnight run's `max_agents` cap (and its cancellation) governs spawns.
+    let _overnight_spawn_gate = crate::overnight::worker_spawn_gate(req_session_id).await;
+    if _overnight_spawn_gate.is_some() {
+        let live = swarm_members
+            .read()
+            .await
+            .values()
+            .filter(|member| {
+                member.report_back_to_session_id.as_deref() == Some(req_session_id)
+                    && super::member_consumes_swarm_capacity(member)
+            })
+            .count();
+        crate::overnight::ensure_worker_spawn_allowed(req_session_id, live)?;
+    }
     let agents_config = &crate::config::config().agents;
     agents_config
         .validate_swarm_model_request(requested_model.as_deref())

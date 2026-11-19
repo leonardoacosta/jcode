@@ -1824,3 +1824,106 @@ async fn stop_persistence_failure_reports_error_and_keeps_worker_revoked() {
         "new generation admitted after a failed durable stop"
     );
 }
+
+/// Drives the real `spawn_swarm_agent` against an overnight run capped at one
+/// worker. Two concurrent spawns must admit exactly one, and a refused spawn
+/// surfaces a visible reason and a `worker_spawn_refused` event.
+#[tokio::test]
+async fn overnight_max_agents_cap_admits_exactly_one_of_two_concurrent_spawns() {
+    let _sandbox = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+    let temp = tempfile::TempDir::new().unwrap();
+    let manifest = crate::overnight::test_run_manifest(
+        "spawn-cap-real",
+        "cap_req",
+        crate::overnight::OvernightLimits {
+            max_agents: Some(1),
+            ..Default::default()
+        },
+    );
+    let sessions = Arc::new(crate::server::session_manager::SessionManager::from_agents(
+        HashMap::new(),
+    ));
+    sessions
+        .register_new(
+            "cap_req".to_string(),
+            test_agent_with_working_dir("cap_req", &temp.path().to_string_lossy()).await,
+        )
+        .await
+        .unwrap();
+    let provider: Arc<dyn Provider> = Arc::new(MockProvider);
+    let state = crate::server::SwarmState::new(
+        HashMap::new(),
+        HashMap::new(),
+        HashMap::new(),
+        HashMap::new(),
+    );
+    let mcp = Arc::new(crate::mcp::SharedMcpPool::new(
+        crate::mcp::McpConfig::default(),
+    ));
+    let global_session_id = Arc::new(RwLock::new(String::new()));
+    let event_history = Arc::new(RwLock::new(VecDeque::new()));
+    let event_counter = Arc::new(AtomicU64::new(0));
+    let swarm_event_tx = broadcast::channel(16).0;
+    let interrupts = Arc::new(RwLock::new(HashMap::new()));
+    let connections = Arc::new(RwLock::new(HashMap::new()));
+    let spawn = || {
+        super::spawn_swarm_agent(
+            "cap_req",
+            "cap-swarm",
+            None,
+            Some(temp.path().to_string_lossy().into_owned()),
+            None,
+            Some(crate::config::SwarmSpawnMode::Headless),
+            None,
+            None,
+            Some("cap test".into()),
+            None,
+            None,
+            &sessions,
+            &global_session_id,
+            &provider,
+            &state.members,
+            &state.swarms_by_id,
+            &state.coordinators,
+            &state.plans,
+            &event_history,
+            &event_counter,
+            &swarm_event_tx,
+            &mcp,
+            &interrupts,
+            &connections,
+        )
+    };
+    let (first, second) = tokio::time::timeout(
+        std::time::Duration::from_secs(20),
+        async { tokio::join!(spawn(), spawn()) },
+    )
+    .await
+    .expect("spawns finish");
+    let results = [first, second];
+    assert_eq!(
+        results.iter().filter(|result| result.is_ok()).count(),
+        1,
+        "exactly one concurrent spawn fits under max_agents=1: {results:?}"
+    );
+    let error = results.iter().find_map(|r| r.as_ref().err()).unwrap();
+    assert!(error.to_string().contains("max 1"), "{error}");
+    let live = state
+        .members
+        .read()
+        .await
+        .values()
+        .filter(|member| member.report_back_to_session_id.as_deref() == Some("cap_req"))
+        .count();
+    assert_eq!(live, 1);
+    let events = crate::overnight::read_events(&manifest).unwrap();
+    assert!(events.iter().any(|event| event.kind == "worker_spawn_refused"));
+
+    // A third spawn after cancellation is refused even if capacity were free.
+    let mut cancelling = crate::overnight::load_manifest("spawn-cap-real").unwrap();
+    cancelling.status = crate::overnight::OvernightRunStatus::CancelRequested;
+    cancelling.cancel_requested_at = Some(chrono::Utc::now());
+    crate::overnight::save_manifest(&cancelling).unwrap();
+    let error = spawn().await.unwrap_err();
+    assert!(error.to_string().contains("being cancelled"), "{error}");
+}
