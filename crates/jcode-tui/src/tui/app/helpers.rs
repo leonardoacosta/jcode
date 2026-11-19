@@ -1240,6 +1240,11 @@ pub(super) fn copy_image_to_clipboard(media_type: &str, base64_data: &str) -> bo
     use std::io::Write;
     use std::process::Stdio;
 
+    // Remote sessions have no OSC 52 image path; never write the server-side
+    // clipboard unless the user opts in with `JCODE_CLIPBOARD=native`.
+    if is_remote_clipboard_session(|key| std::env::var(key).ok()) {
+        return false;
+    }
     let Ok(bytes) = base64::engine::general_purpose::STANDARD.decode(base64_data) else {
         return false;
     };
