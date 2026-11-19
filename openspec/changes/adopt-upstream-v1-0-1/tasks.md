@@ -1,0 +1,24 @@
+# Tasks
+
+## 1. Bind and preserve the merge target
+
+- [ ] 1.1 Verify `main` is still at `dc00085917c130dccce7fd423c1495a44231f4cb` or record the authorized local commits since it; verify upstream `10114429c8133994861d6c915a2483d397c0f7c2` exists and is the intended v1.0.1 target. Record `git merge-base`, ancestry, exact refs, dirty paths, and ownership before merge. Do not switch checkout or modify unrelated files.
+- [ ] 1.2 Record a file/slice reconciliation matrix from fork and upstream diffs plus tests. Classify each behavior as adopt, retire, preserve, or unresolved. Cover agent/session binding, HTTP compression, swarm page/coalescing, inline strip, fallback, Jev compression/cache overrides, affinity, Retry-After, reports, orphan retry, stop/owner safety, custom council/file claims/role slots, and remote routing/clipboard/links/mouse. No source deletion is authorized solely by the matrix label; confirm exact current callers and tests during implementation.
+
+## 2. Merge and reconcile in place
+
+- [ ] 2.1 Merge the full upstream history into existing `main` with a normal merge preserving both parents. Verify `git rev-list --parents -n 1 HEAD` contains the expected pre-merge fork and upstream ancestry. Do not squash, rebase, reset, force, or rewrite history.
+- [ ] 2.2 Integrate upstream agent/session binding, HTTP compression transport, dedicated swarm page, and report coalescing. Preserve full reports and report-completion semantics. Run focused tests for session binding, compression transport, swarm lifecycle/page rendering, and coalescing; record exact commands and results.
+- [ ] 2.3 Retire custom automatic `model_fallback` behavior explicitly, including config surface, chain execution, cooling/cycle behavior, and tests that promise automatic model substitution. Keep provider-auth/quota classification, manual recovery where still supported, and endpoint/account no-substitution safeguards. Verify confirmed quota/billing errors never trigger automatic provider or model substitution. Update related active OpenSpec dependency assumptions; do not use a disposition marker or skip-specs archive shortcut.
+- [ ] 2.4 Remove only Jev-specific compression/cache overrides superseded by upstream HTTP transport. Preserve complete reports and review-output semantics. Keep actual external gateway acceptance open unless separately completed with its native acceptance evidence.
+- [ ] 2.5 Preserve thin named-provider session affinity, long but bounded gateway `Retry-After`, orphan explicit retry, existing stop/owner safety, and nonconflicting custom council/file-claim/role-slot features. Run each surviving feature's focused regression tests. Do not expand or mark `make-worker-stop-durable` complete.
+- [ ] 2.6 Preserve remote routing, `/links`, and `/mouse`. Remote clipboard must use OSC 52 only when remote, except explicit `JCODE_CLIPBOARD=native`. Run automated route tests for SSH, mosh/Herdr, forced OSC52, explicit native override, local defaults, link copy/open, and mouse toggle. Keep physical-device acceptance separately open.
+
+## 3. Build, test, review, and promotion
+
+- [ ] 3.1 Run merge-adjacent focused tests, then repository-required full checks and strict validation for this change and selected active dependency closure. Include `git diff --check`; investigate every failure and record exact results.
+- [ ] 3.2 Build one immutable RC from the verified merge. Record source commit, build command, artifact path, version, and SHA-256. Make the artifact read-only or store it in an immutable versioned location; never replace bytes at that RC identity.
+- [ ] 3.3 Run the required test suite and isolated runtime checks against that exact RC using a private config/home/socket and synthetic or otherwise approved non-destructive fixtures. Assert the running process resolves to the recorded artifact hash/version. Do not alter the shared daemon. Any repair requires a new commit and new RC identity with affected checks rerun.
+- [ ] 3.4 After fresh gates, obtain independent review of the complete final diff from the fork base, the merge ancestry, reconciliation decisions, and acceptance evidence. Repair actionable findings; repeat affected checks, build a new immutable RC, and re-review the final candidate.
+- [ ] 3.5 Promote only the exact reviewed RC when every required promotion gate is green. Record before/after artifact identity and rollback target; preserve the prior active binary. If any gate fails or is unavailable, do not promote. External gateway acceptance and physical-device remote-client acceptance remain separate, open gates and must not be conflated with isolated RC checks.
+- [ ] 3.6 Commit verified scoped changes locally on `main` using configured identity. Do not push, publish, deploy, archive, or sync canonical specs in this lane. Final canonical spec sync and any archive remain coordinator closeout work after acceptance.
