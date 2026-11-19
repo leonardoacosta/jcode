@@ -1203,6 +1203,19 @@ fn render_overnight_message_uses_rounded_progress_card() {
     assert!(plain.contains("Verify provider reload"));
     assert!(plain.contains("medium risk"));
     assert!(plain.contains("review.html"));
+    assert!(!plain.contains("stale"));
+
+    let stale = crate::overnight::OvernightProgressCard {
+        stale_pid: Some(4242),
+        ..card
+    };
+    let msg = DisplayMessage::overnight(serde_json::to_string(&stale).unwrap());
+    let plain = render_overnight_message(&msg, 100, crate::config::DiffDisplayMode::Off)
+        .iter()
+        .map(extract_line_text)
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(plain.contains("stale, supervisor pid 4242 gone"), "{plain}");
 }
 
 #[test]
