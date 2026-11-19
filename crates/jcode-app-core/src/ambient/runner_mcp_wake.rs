@@ -79,6 +79,7 @@ pub(crate) fn build_item(request: &WakeRequest) -> ScheduledItem {
         relevant_files: Vec::new(),
         git_branch: None,
         additional_context: None,
+        delivery: Default::default(),
     }
 }
 
@@ -120,7 +121,11 @@ impl McpWakeRouter {
 /// Queue the item unless an identical wake is already pending (coalescing).
 fn push_unique(mut queue: ScheduledQueue, item: ScheduledItem) -> anyhow::Result<bool> {
     queue.transact(|items| {
-        if items.iter().any(|existing| existing.id == item.id) {
+        // Only a still-pending wake coalesces; delivered history must not
+        // swallow later wakes that share the identifier.
+        if items.iter().any(|existing| {
+            existing.id == item.id && existing.delivery.state == crate::ambient::ItemState::Pending
+        }) {
             return Ok(false);
         }
         items.push(item);

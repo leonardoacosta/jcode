@@ -15,7 +15,7 @@ pub use directives::{
     UserDirective, add_directive, has_pending_directives, load_directives, take_pending_directives,
 };
 pub use manager::AmbientManager;
-pub use persistence::{AmbientLock, ScheduledQueue};
+pub use persistence::{AmbientLock, RecoveryReport, ScheduledQueue, Settlement};
 #[cfg(test)]
 pub(crate) use prompt::format_duration_rough;
 pub use prompt::{
@@ -130,6 +130,95 @@ pub struct ScheduledItem {
     pub git_branch: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub additional_context: Option<String>,
+    /// Delivery ledger. Untouched pending items serialize exactly as before.
+    #[serde(default, skip_serializing_if = "DeliveryRecord::is_untouched")]
+    pub delivery: DeliveryRecord,
+}
+
+/// Where a scheduled item is in its delivery lifecycle.
+///
+/// Every state is stored in the one queue file. `Pending` and `Dispatched`
+/// items are live; the rest are terminal history, pruned to a bound (never
+/// `Uncertain`). An older binary that predates this field would treat terminal
+/// items as ready, so do not downgrade with unresolved history in the queue.
+/// `Delivered` means the intended target accepted the message. It is not
+/// evidence that the work ran or succeeded.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum ItemState {
+    #[default]
+    Pending,
+    /// Claimed for delivery, no acknowledgement yet.
+    Dispatched,
+    Delivered,
+    /// Overdue beyond the grace window at startup. Never auto-delivered.
+    Missed,
+    /// Dispatched but never acknowledged. May have run. Needs manual retry.
+    Uncertain,
+    Cancelled,
+}
+
+impl ItemState {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Pending => "pending",
+            Self::Dispatched => "dispatched",
+            Self::Delivered => "delivered",
+            Self::Missed => "missed",
+            Self::Uncertain => "uncertain",
+            Self::Cancelled => "cancelled",
+        }
+    }
+}
+
+/// One delivery attempt. Attempts are append-only: a manual retry adds a new
+/// one and never rewrites an earlier attempt.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct DeliveryAttempt {
+    pub number: u32,
+    pub dispatched_at: DateTime<Utc>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub manual_retry: bool,
+    /// Set only when the target accepted the message.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub acked_at: Option<DateTime<Utc>>,
+    /// Session that accepted the message (the child session for spawns).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub acked_target: Option<String>,
+    /// Execution generation of the accepting session when the ack was recorded.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub generation: Option<u64>,
+    /// `pid:nonce` of the process that claimed the attempt. Startup recovery
+    /// leaves attempts of live processes alone; the nonce defeats pid reuse.
+    #[serde(default)]
+    pub owner: String,
+    /// Why the attempt ended without an acknowledgement.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct DeliveryRecord {
+    pub state: ItemState,
+    pub attempts: Vec<DeliveryAttempt>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resolved_at: Option<DateTime<Utc>>,
+    /// How late the item was when it was marked `missed`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub missed_delay_secs: Option<i64>,
+    /// A manual retry was requested; the next claim records it as such.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub retry_pending: bool,
+    /// Execution generation of the creating session. A stop that revoked it
+    /// before delivery suppresses the wake.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub origin_generation: Option<u64>,
+}
+
+impl DeliveryRecord {
+    fn is_untouched(&self) -> bool {
+        *self == Self::default()
+    }
 }
 
 /// Persistent ambient state

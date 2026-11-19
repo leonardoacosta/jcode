@@ -1,7 +1,7 @@
 use super::{Tool, ToolContext, ToolOutput};
 use crate::ambient::{
-    AmbientCycleResult, AmbientManager, AmbientState, CycleStatus, Priority, ScheduleRequest,
-    ScheduleTarget, ScheduledItem,
+    AmbientCycleResult, AmbientManager, AmbientState, CycleStatus, ItemState, Priority,
+    ScheduleRequest, ScheduleTarget, ScheduledItem,
 };
 use crate::ambient_runner::AmbientRunnerHandle;
 use crate::safety::{self, PermissionRequest, PermissionResult, SafetySystem, Urgency};
@@ -769,12 +769,12 @@ impl Tool for ScheduleTool {
                 "intent": super::intent_schema_property(),
                 "action": {
                     "type": "string",
-                    "enum": ["create", "list", "cancel"],
-                    "description": "Action to perform. Defaults to create for backwards compatibility."
+                    "enum": ["create", "list", "cancel", "retry"],
+                    "description": "Defaults to create. retry re-queues an uncertain or missed task; it may already have run."
                 },
                 "schedule_id": {
                     "type": "string",
-                    "description": "Scheduled task ID. Required for action=cancel."
+                    "description": "Scheduled task ID. Required for action=cancel and action=retry."
                 },
                 "task": {
                     "type": "string",
@@ -811,8 +811,9 @@ impl Tool for ScheduleTool {
             "create" => self.execute_create(params, ctx).await,
             "list" => self.execute_list().await,
             "cancel" => self.execute_cancel(params).await,
+            "retry" => self.execute_retry(params).await,
             other => anyhow::bail!(
-                "Invalid action '{}'. Expected one of: create, list, cancel",
+                "Invalid action '{}'. Expected one of: create, list, cancel, retry",
                 other
             ),
         }
@@ -924,20 +925,71 @@ impl ScheduleTool {
 
     async fn execute_list(&self) -> Result<ToolOutput> {
         let manager = AmbientManager::new()?;
-        let mut items: Vec<&ScheduledItem> = manager.queue().items().iter().collect();
+        let queue = manager.queue();
+        let mut items: Vec<&ScheduledItem> =
+            queue.items().iter().chain(queue.in_flight()).collect();
         items.sort_by_key(|item| item.scheduled_for);
+        let history = queue.recent_history(SCHEDULE_HISTORY_LIMIT);
 
-        if items.is_empty() {
+        if items.is_empty() && history.is_empty() {
             return Ok(ToolOutput::new("No scheduled tasks."));
         }
 
-        let mut summary = format!("{} scheduled task(s):", items.len());
+        let mut summary = if items.is_empty() {
+            "No pending scheduled tasks.".to_string()
+        } else {
+            format!("{} scheduled task(s):", items.len())
+        };
         for item in items {
             summary.push('\n');
             summary.push_str(&format_scheduled_item(item));
+            if item.delivery.state == ItemState::Dispatched {
+                summary.push_str(" | dispatched, awaiting acknowledgement");
+            }
+        }
+        if !history.is_empty() {
+            summary.push_str(&format!("\nRecent history ({}):", history.len()));
+            for item in history {
+                summary.push('\n');
+                summary.push_str(&format_history_item(item));
+            }
         }
 
         Ok(ToolOutput::new(summary).with_title("scheduled tasks"))
+    }
+
+    async fn execute_retry(&self, params: ScheduleToolInput) -> Result<ToolOutput> {
+        let id = params
+            .schedule_id
+            .as_deref()
+            .ok_or_else(|| anyhow::anyhow!("schedule_id is required for action=retry"))?;
+
+        let mut manager = AmbientManager::new()?;
+        let Some(item) = manager.retry_schedule(id)? else {
+            anyhow::bail!(
+                "No uncertain or missed scheduled task found with id '{}'",
+                id
+            );
+        };
+        nudge_schedule_runner();
+
+        let task = item.task_description.as_deref().unwrap_or(&item.context);
+        let message = if item.delivery.attempts.is_empty() {
+            format!(
+                "Retrying missed scheduled task '{task}' (id: {}). It was never dispatched, so \
+                 no earlier effects are expected.",
+                item.id
+            )
+        } else {
+            format!(
+                "Retrying scheduled task '{task}' (id: {}). Warning: attempt {} may already have \
+                 run, so its effects may already exist and this retry can duplicate them. \
+                 Retrying does not prove the first attempt failed. Prior attempt history is kept.",
+                item.id,
+                item.delivery.attempts.len()
+            )
+        };
+        Ok(ToolOutput::new(message).with_title(format!("retry: {}", item.id)))
     }
 
     async fn execute_cancel(&self, params: ScheduleToolInput) -> Result<ToolOutput> {
@@ -948,7 +1000,10 @@ impl ScheduleTool {
 
         let mut manager = AmbientManager::new()?;
         let Some(item) = manager.cancel_schedule(id)? else {
-            anyhow::bail!("No scheduled task found with id '{}'", id);
+            anyhow::bail!(
+                "No pending, uncertain or missed scheduled task found with id '{}'",
+                id
+            );
         };
         nudge_schedule_runner();
 
@@ -998,6 +1053,40 @@ fn format_schedule_target(target: &ScheduleTarget) -> String {
             format!("spawn one child session from {}", parent_session_id)
         }
     }
+}
+
+/// Terminal items shown by `schedule list`.
+const SCHEDULE_HISTORY_LIMIT: usize = 10;
+
+fn format_history_item(item: &ScheduledItem) -> String {
+    let record = &item.delivery;
+    let mut line = format!(
+        "- {} | {} | {} | {}",
+        item.id,
+        record.state.as_str(),
+        item.scheduled_for,
+        item.task_description.as_deref().unwrap_or(&item.context)
+    );
+    match record.state {
+        ItemState::Missed => {
+            if let Some(secs) = record.missed_delay_secs {
+                let mins = u32::try_from(secs / 60).unwrap_or(u32::MAX);
+                line.push_str(&format!(
+                    " | {} late, not delivered; retry explicitly with action=retry",
+                    crate::ambient::format_minutes_human(mins)
+                ));
+            }
+        }
+        ItemState::Uncertain => line.push_str(
+            " | acknowledgement missing, it may have run; retry explicitly with action=retry",
+        ),
+        ItemState::Delivered => line.push_str(" | target accepted the message (not task success)"),
+        _ => {}
+    }
+    if record.attempts.len() > 1 {
+        line.push_str(&format!(" | {} attempts", record.attempts.len()));
+    }
+    line
 }
 
 fn format_scheduled_item(item: &ScheduledItem) -> String {

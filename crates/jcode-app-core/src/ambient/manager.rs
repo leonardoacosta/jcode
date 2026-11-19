@@ -3,13 +3,18 @@ use chrono::Utc;
 
 use super::paths::{ambient_dir, queue_path, transcripts_dir};
 use super::{
-    AmbientCycleResult, AmbientState, AmbientStatus, ScheduleRequest, ScheduledItem, ScheduledQueue,
+    AmbientCycleResult, AmbientState, AmbientStatus, DeliveryRecord, RecoveryReport,
+    ScheduleRequest, ScheduledItem, ScheduledQueue, Settlement,
 };
 use crate::config::config;
 
 // ---------------------------------------------------------------------------
 // AmbientManager
 // ---------------------------------------------------------------------------
+
+/// A direct-delivery item overdue by more than this at runner startup is
+/// marked `missed` instead of being delivered late and silently.
+const MISSED_GRACE_MINUTES: i64 = 5;
 
 pub struct AmbientManager {
     state: AmbientState,
@@ -58,15 +63,33 @@ impl AmbientManager {
         Ok(())
     }
 
-    /// Remove and return all ready scheduled items.
+    /// Claim all ready scheduled items (`dispatched`, still persisted). Each
+    /// must be settled with [`Self::settle`].
     pub fn take_ready_items(&mut self) -> Vec<ScheduledItem> {
         self.queue.pop_ready()
     }
 
-    /// Remove and return only ready items targeted at direct delivery into a
-    /// specific resumed or spawned session.
+    /// Claim only ready items targeted at direct delivery into a specific
+    /// resumed or spawned session. Each must be settled with [`Self::settle`].
     pub fn take_ready_direct_items(&mut self) -> Vec<ScheduledItem> {
         self.queue.take_ready_direct_items()
+    }
+
+    /// Record how a claimed item ended. See [`ScheduledQueue::settle`].
+    pub fn settle(&mut self, id: &str, outcome: Settlement) -> Result<bool> {
+        self.queue.settle(id, outcome)
+    }
+
+    /// Startup recovery. Marks, never delivers. See
+    /// [`ScheduledQueue::recover_startup`].
+    pub fn recover_scheduled_runs(&mut self) -> Result<RecoveryReport> {
+        self.queue
+            .recover_startup(chrono::Duration::minutes(MISSED_GRACE_MINUTES))
+    }
+
+    /// Explicit manual retry of an uncertain or missed item.
+    pub fn retry_schedule(&mut self, id: &str) -> Result<Option<ScheduledItem>> {
+        self.queue.retry(id)
     }
 
     /// Add a schedule request to the queue. Returns the item ID.
@@ -83,6 +106,9 @@ impl AmbientManager {
             Utc::now() + chrono::Duration::minutes(request.wake_in_minutes.unwrap_or(30) as i64)
         });
 
+        let origin_generation =
+            crate::server::session_control::current_generation(&request.created_by_session);
+
         ScheduledItem {
             id: id.clone(),
             scheduled_for,
@@ -96,12 +122,16 @@ impl AmbientManager {
             relevant_files: request.relevant_files,
             git_branch: request.git_branch,
             additional_context: request.additional_context,
+            delivery: DeliveryRecord {
+                origin_generation,
+                ..Default::default()
+            },
         }
     }
 
-    /// Cancel a queued scheduled item by ID.
+    /// Cancel a pending scheduled item by ID. It moves to history as `cancelled`.
     pub fn cancel_schedule(&mut self, id: &str) -> Result<Option<ScheduledItem>> {
-        self.queue.remove_by_id(id)
+        self.queue.cancel(id)
     }
 
     pub fn state(&self) -> &AmbientState {

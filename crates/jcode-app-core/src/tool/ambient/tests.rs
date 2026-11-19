@@ -514,3 +514,197 @@ async fn test_schedule_tool_requires_time() {
         .expect_err("should require wake_in_minutes or wake_at");
     assert!(err.to_string().contains("wake_in_minutes"));
 }
+
+fn schedule_ctx() -> ToolContext {
+    ToolContext {
+        session_id: "origin_session".to_string(),
+        message_id: "msg_1".to_string(),
+        tool_call_id: "call_1".to_string(),
+        working_dir: None,
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: crate::tool::ToolExecutionMode::Direct,
+    }
+}
+
+struct HomeGuard(Option<std::ffi::OsString>);
+
+impl HomeGuard {
+    fn set(path: &std::path::Path) -> Self {
+        let prev = std::env::var_os("JCODE_HOME");
+        crate::env::set_var("JCODE_HOME", path);
+        Self(prev)
+    }
+}
+
+impl Drop for HomeGuard {
+    fn drop(&mut self) {
+        match self.0.take() {
+            Some(prev) => crate::env::set_var("JCODE_HOME", prev),
+            None => crate::env::remove_var("JCODE_HOME"),
+        }
+    }
+}
+
+fn overdue_request(hours: i64) -> ScheduleRequest {
+    ScheduleRequest {
+        wake_in_minutes: None,
+        wake_at: Some(Utc::now() - chrono::Duration::hours(hours)),
+        context: "overdue task".into(),
+        priority: Priority::Normal,
+        target: ScheduleTarget::Session {
+            session_id: "origin_session".into(),
+        },
+        created_by_session: "origin_session".into(),
+        working_dir: None,
+        task_description: Some("overdue task".into()),
+        relevant_files: vec![],
+        git_branch: None,
+        additional_context: None,
+    }
+}
+
+#[tokio::test]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "test intentionally serializes process-wide JCODE_HOME/env state across async tool execution"
+)]
+async fn schedule_list_shows_missed_history_and_retry_warns() {
+    let _guard = crate::storage::lock_test_env();
+    let temp = tempfile::tempdir().expect("tempdir");
+    let _home = HomeGuard::set(temp.path());
+
+    let mut manager = AmbientManager::new().expect("manager");
+    let id = manager.schedule(overdue_request(2)).expect("schedule");
+    manager.recover_scheduled_runs().expect("recover");
+
+    let tool = ScheduleTool::new();
+    let listed = tool
+        .execute(json!({"action": "list"}), schedule_ctx())
+        .await
+        .expect("list");
+    assert!(
+        listed.output.contains("Recent history"),
+        "{}",
+        listed.output
+    );
+    assert!(listed.output.contains(&format!("{id} | missed")));
+    assert!(listed.output.contains("2h late, not delivered"));
+    // Listing is read-only: nothing was claimed or delivered.
+    assert!(AmbientManager::new().unwrap().queue().items().is_empty());
+
+    let retried = tool
+        .execute(
+            json!({"action": "retry", "schedule_id": id}),
+            schedule_ctx(),
+        )
+        .await
+        .expect("retry");
+    // A missed item never ran, so there is no duplicate-effect warning.
+    assert!(
+        retried.output.contains("never dispatched"),
+        "{}",
+        retried.output
+    );
+    assert!(!retried.output.contains("may already have run"));
+    assert_eq!(AmbientManager::new().unwrap().queue().items().len(), 1);
+    assert!(
+        tool.execute(
+            json!({"action": "retry", "schedule_id": id}),
+            schedule_ctx()
+        )
+        .await
+        .is_err(),
+        "a pending item has nothing to retry"
+    );
+}
+
+#[tokio::test]
+#[allow(
+    clippy::await_holding_lock,
+    reason = "test intentionally serializes process-wide JCODE_HOME/env state across async tool execution"
+)]
+async fn schedule_list_shows_delivered_and_uncertain_and_retry_warns_of_prior_effects() {
+    let _guard = crate::storage::lock_test_env();
+    let temp = tempfile::tempdir().expect("tempdir");
+    let _home = HomeGuard::set(temp.path());
+    let mut manager = AmbientManager::new().expect("manager");
+    let delivered = manager.schedule(overdue_request(0)).expect("schedule");
+    let uncertain = manager.schedule(overdue_request(0)).expect("schedule");
+    let claimed = manager.take_ready_direct_items();
+    assert_eq!(claimed.len(), 2);
+    manager
+        .settle(
+            &delivered,
+            crate::ambient::Settlement::Acked {
+                target: "origin_session".into(),
+                generation: None,
+            },
+        )
+        .unwrap();
+    manager
+        .settle(
+            &uncertain,
+            crate::ambient::Settlement::Uncertain {
+                note: "no ack".into(),
+            },
+        )
+        .unwrap();
+
+    let tool = ScheduleTool::new();
+    let listed = tool
+        .execute(json!({"action": "list"}), schedule_ctx())
+        .await
+        .expect("list");
+    let delivered_line = listed
+        .output
+        .lines()
+        .find(|line| line.contains(&format!("{delivered} | delivered")))
+        .unwrap_or_else(|| panic!("no delivered line:\n{}", listed.output));
+    assert!(delivered_line.contains("not task success"));
+    let uncertain_line = listed
+        .output
+        .lines()
+        .find(|line| line.contains(&format!("{uncertain} | uncertain")))
+        .unwrap_or_else(|| panic!("no uncertain line:\n{}", listed.output));
+    assert!(uncertain_line.contains("it may have run"));
+
+    let retried = tool
+        .execute(
+            json!({"action": "retry", "schedule_id": uncertain}),
+            schedule_ctx(),
+        )
+        .await
+        .expect("retry uncertain");
+    assert!(retried.output.contains("may already have run"));
+    assert!(retried.output.contains("duplicate"));
+
+    // An uncertain item can also be dismissed, keeping its attempt history.
+    let mut manager = AmbientManager::new().unwrap();
+    manager.take_ready_direct_items();
+    manager
+        .settle(
+            &uncertain,
+            crate::ambient::Settlement::Uncertain {
+                note: "again".into(),
+            },
+        )
+        .unwrap();
+    let cancelled = tool
+        .execute(
+            json!({"action": "cancel", "schedule_id": uncertain}),
+            schedule_ctx(),
+        )
+        .await
+        .expect("cancel uncertain");
+    assert!(cancelled.output.contains("Cancelled"));
+    let manager = AmbientManager::new().unwrap();
+    let kept = manager
+        .queue()
+        .recent_history(100)
+        .into_iter()
+        .find(|item| item.id == uncertain)
+        .unwrap();
+    assert_eq!(kept.delivery.state, crate::ambient::ItemState::Cancelled);
+    assert_eq!(kept.delivery.attempts.len(), 2);
+}

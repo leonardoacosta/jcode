@@ -9,7 +9,7 @@
 use crate::agent::Agent;
 use crate::ambient::{
     self, AmbientCycleResult, AmbientLock, AmbientManager, AmbientState, AmbientStatus,
-    CycleStatus, ScheduleTarget, ScheduledItem,
+    CycleStatus, ScheduleTarget, ScheduledItem, Settlement,
 };
 use crate::ambient_scheduler::{AdaptiveScheduler, AmbientSchedulerConfig};
 use crate::config::config;
@@ -27,6 +27,39 @@ use std::sync::Arc;
 use tokio::sync::{Notify, RwLock};
 
 const MAX_IDLE_POLL_SECS: u64 = 30;
+
+/// Why a claimed item must not wake its target any more, if so. Checked right
+/// before delivery so a stop or revocation that landed after the claim wins.
+fn stale_reason(item: &ScheduledItem) -> Option<String> {
+    let control = crate::server::session_control::store();
+    let target = match &item.target {
+        ScheduleTarget::Ambient => return None,
+        ScheduleTarget::Session { session_id } => session_id,
+        ScheduleTarget::Spawn { parent_session_id } => parent_session_id,
+    };
+    if let Err(error) = control.runnable(target) {
+        return Some(format!("target session '{target}' is not runnable: {error:#}"));
+    }
+    let origin = item.delivery.origin_generation?;
+    if *target != item.created_by_session {
+        return None;
+    }
+    match control.inspect(target) {
+        Ok(Some(record)) if origin <= record.revoked_through => Some(format!(
+            "generation {origin} of session '{target}' was revoked before delivery"
+        )),
+        _ => None,
+    }
+}
+
+/// Newest execution generation of a session, for the acknowledgement record.
+fn current_generation_of(session_id: &str) -> Option<u64> {
+    crate::server::session_control::store()
+        .inspect(session_id)
+        .ok()
+        .flatten()
+        .map(|record| record.last_allocated_generation)
+}
 
 /// Re-read enabled on each loop iteration, without overriding an explicit stop.
 /// Config edits take effect on the next wake, not on the config cache's cadence.
@@ -496,13 +529,15 @@ impl AmbientRunnerHandle {
         Ok(child_session_id)
     }
 
+    /// Deliver one claimed item. `Ok` carries the session that accepted the
+    /// message (the child for spawns). It means accepted, not completed.
     async fn deliver_scheduled_direct_item(
         &self,
         provider: &Arc<dyn Provider>,
         item: &ScheduledItem,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<String> {
         match &item.target {
-            ScheduleTarget::Ambient => Ok(()),
+            ScheduleTarget::Ambient => Ok("ambient".to_string()),
             ScheduleTarget::Session { session_id } => {
                 let reminder = ambient::format_scheduled_session_message(item);
                 match self.notify_live_session(session_id, &reminder).await {
@@ -511,7 +546,7 @@ impl AmbientRunnerHandle {
                             "Ambient runner: delivered scheduled task {} to live session {}",
                             item.id, session_id
                         ));
-                        Ok(())
+                        Ok(session_id.clone())
                     }
                     Err(err) => {
                         logging::info(&format!(
@@ -519,7 +554,8 @@ impl AmbientRunnerHandle {
                             session_id, err
                         ));
                         self.resume_dead_session_with_reminder(provider, item, session_id)
-                            .await
+                            .await?;
+                        Ok(session_id.clone())
                     }
                 }
             }
@@ -531,7 +567,7 @@ impl AmbientRunnerHandle {
                     "Ambient runner: spawned scheduled task {} into child session {} from {}",
                     item.id, spawned_session_id, parent_session_id
                 ));
-                Ok(())
+                Ok(spawned_session_id)
             }
         }
     }
@@ -542,11 +578,38 @@ impl AmbientRunnerHandle {
         items: Vec<ScheduledItem>,
     ) {
         for item in items {
-            if let Err(e) = self.deliver_scheduled_direct_item(provider, &item).await {
-                logging::error(&format!(
-                    "Ambient runner: failed to deliver scheduled direct item {}: {}",
-                    item.id, e
-                ));
+            let outcome = match stale_reason(&item) {
+                Some(note) => {
+                    logging::info(&format!(
+                        "Ambient runner: suppressed stale scheduled item {}: {note}",
+                        item.id
+                    ));
+                    Settlement::Cancelled { note }
+                }
+                None => match self.deliver_scheduled_direct_item(provider, &item).await {
+                    Ok(target) => Settlement::Acked {
+                        generation: current_generation_of(&target),
+                        target,
+                    },
+                    Err(e) => {
+                        logging::error(&format!(
+                            "Ambient runner: failed to deliver scheduled direct item {}: {}",
+                            item.id, e
+                        ));
+                        Settlement::Uncertain {
+                            note: format!("delivery failed after dispatch: {e}"),
+                        }
+                    }
+                },
+            };
+            // A failed settle leaves the item `dispatched`; the next startup
+            // recovery marks it `uncertain`. Never redeliver on that path.
+            match AmbientManager::new().and_then(|mut mgr| mgr.settle(&item.id, outcome)) {
+                Ok(_) => {}
+                Err(e) => logging::error(&format!(
+                    "Ambient runner: failed to record outcome of scheduled item {}: {e:#}",
+                    item.id
+                )),
             }
         }
     }
@@ -559,6 +622,18 @@ impl AmbientRunnerHandle {
         }
         logging::info("Ambient runner: starting background loop");
         runner_mcp_wake::install();
+
+        // Mark (never deliver) scheduled items the previous run left unresolved.
+        match AmbientManager::new().and_then(|mut mgr| mgr.recover_scheduled_runs()) {
+            Ok(report) if report.uncertain + report.missed > 0 => logging::warn(&format!(
+                "Ambient runner: startup recovery marked {} scheduled item(s) uncertain and {} missed; neither is redelivered automatically",
+                report.uncertain, report.missed
+            )),
+            Ok(_) => {}
+            Err(e) => logging::error(&format!(
+                "Ambient runner: scheduled-run recovery failed: {e:#}"
+            )),
+        }
 
         // Spawn reply pollers only when ambient mode is enabled at startup; scheduled
         // session-targeted scheduled tasks should still work without the ambient-only reply
