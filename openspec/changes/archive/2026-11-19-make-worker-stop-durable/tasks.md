@@ -89,9 +89,9 @@ Earlier-round notes (history). Checked then: 2.1 only. Everything below was open
 
 ## 8. Review and native closeout
 
-- [ ] 8.1 After fresh final gates, obtain independent review against final diff, requirements and acceptance evidence. Verify actionable findings are repaired, affected gates rerun and independent review refreshed; no self-approval substitutes for this terminal step.
-- [ ] 8.2 Update authoritative tasks and any verified issue state only from accepted evidence, then commit scoped implementation/workflow changes using the configured identity after resolving checkout policy. Verify exact staged paths and commit range preserve worker attribution and exclude unrelated changes. No remote publication or issue transition is implicit when no linked issue/target authority exists.
-- [ ] 8.3 Only after implementation tasks 1–7, fresh gates, independent review 8.1 and implementation commit 8.2 pass, archive via native `openspec archive make-worker-stop-durable` and verify synchronized specs, roadmap links and archive scope. Verify commit-range review includes task/proposal/archive changes and commit the archive state; confirm any required authorized persistence separately. Do not archive merely because planning artifacts validate or silently skip blocked delivery gates.
+- [x] 8.1 After fresh final gates, obtain independent review against final diff, requirements and acceptance evidence. Verify actionable findings are repaired, affected gates rerun and independent review refreshed; no self-approval substitutes for this terminal step.
+- [x] 8.2 Update authoritative tasks and any verified issue state only from accepted evidence, then commit scoped implementation/workflow changes using the configured identity after resolving checkout policy. Verify exact staged paths and commit range preserve worker attribution and exclude unrelated changes. No remote publication or issue transition is implicit when no linked issue/target authority exists.
+- [x] 8.3 Only after implementation tasks 1–7, fresh gates, independent review 8.1 and implementation commit 8.2 pass, archive via native `openspec archive make-worker-stop-durable` and verify synchronized specs, roadmap links and archive scope. Verify commit-range review includes task/proposal/archive changes and commit the archive state; confirm any required authorized persistence separately. Do not archive merely because planning artifacts validate or silently skip blocked delivery gates.
 
 ## Requirement and task coverage
 
@@ -144,3 +144,9 @@ Audit of committed `server/session_control.rs` (960 lines) + wiring against task
 - 7.3, 8.x unchecked (8.x coordinator-owned).
 
 Remaining work to finish this change (largest first): wire-level `stop_requested/draining/stopped/unresolved` + generation/request id in stop/status results with older-client handling (3.3, 6.2); generation-bound waits/reports and per-request generation allocation (5.1, 5.2); startup reconciliation of control records before membership restore and compatibility floor (6.1, 6.2); jcode-swarm-core/protocol type placement (2.1); docs in `docs/SWARM_ARCHITECTURE.md`; real-socket/real-restart acceptance scenarios for 7.1.
+
+### Coordinator closeout 2026-11-19
+
+- 8.1: independent review `scratch/applyall/review-stop-durable-2.md` (stallion): APPROVE, 0 blockers, 0 majors, 5 minors; prior review `review-stop-durable.md` majors M1-M4 and the 6.2 launcher gap verified fixed with tests.
+- 8.2: implementation commits `5a53124cb` (core) and `79d3bfd00` (reload candidate floor + real-binary acceptance), pushed to origin/main with the configured identity; staged paths were exact and exclude other sessions' files.
+- Coordinator gates: workspace `clippy --all-targets -D warnings` exit 0; app-core `--lib --test-threads=1` 2260 passed on the integrated tree; the parallel app-core run is flaky on the pristine HEAD export too. Known limit accepted: cold start of a pre-change binary cannot read `session-control/` (documented in `docs/SWARM_ARCHITECTURE.md`).
