@@ -1397,7 +1397,8 @@ fn enforce_supervised_shared_server() -> Result<()> {
     // in herdr.service), so check that we actually live in the unit's cgroup.
     let cgroup = std::fs::read_to_string("/proc/self/cgroup").unwrap_or_default();
     supervised_gate(&cgroup, unit, &marker, || {
-        if systemd_unit_refuses_client_start(unit).is_some() {
+        if let Some(reason) = systemd_unit_refuses_client_start(unit) {
+            eprintln!("{reason}");
             return false;
         }
         ProcessCommand::new("systemctl")

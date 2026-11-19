@@ -2252,22 +2252,28 @@ pub async fn run_usage_command(emit_json: bool) -> Result<()> {
 }
 
 /// Upper bound for the whole promotion resume check (boot + resume + Done).
-const PROMOTE_RESUME_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+const PROMOTE_RESUME_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(120);
 /// Newest snapshots inspected while looking for a non-test session.
 const PROMOTE_RESUME_MAX_CANDIDATES: usize = 200;
 
 #[derive(Serialize)]
 struct ServerPromoteResumeCheck {
-    /// passed | failed | skipped_flag | skipped_no_session
+    /// passed | failed | skipped_flag | skipped_no_session | skipped_no_binary
     status: &'static str,
     detail: String,
 }
 
-/// Newest real (non-test/debug) persisted session under `sessions_dir`, as
-/// `(session_id, snapshot_path)`. Recency is the later mtime of the snapshot and
-/// its journal, since a live session appends to the journal only.
-fn pick_newest_real_session(sessions_dir: &Path) -> Option<(String, PathBuf)> {
-    let mut candidates: Vec<(std::time::SystemTime, String, PathBuf)> =
+/// Real (non-test/debug) sessions considered, newest first.
+const PROMOTE_RESUME_RECENT_REAL: usize = 20;
+
+/// Largest of the newest real (non-test/debug) persisted sessions under
+/// `sessions_dir`, as `(session_id, snapshot_path)`. Size (snapshot + journal
+/// bytes) stands in for history length: the 2026-11-19 overflow needed a long
+/// history, which a fresh tiny session would not exercise. Recency is the later
+/// mtime of the snapshot and its journal, since a live session appends to the
+/// journal only.
+fn pick_resume_check_session(sessions_dir: &Path) -> Option<(String, PathBuf)> {
+    let mut candidates: Vec<(std::time::SystemTime, u64, String, PathBuf)> =
         std::fs::read_dir(sessions_dir)
             .ok()?
             .flatten()
@@ -2278,19 +2284,24 @@ fn pick_newest_real_session(sessions_dir: &Path) -> Option<(String, PathBuf)> {
                 if !id.starts_with("session_") {
                     return None;
                 }
-                let mut mtime = entry.metadata().ok()?.modified().ok()?;
+                let meta = entry.metadata().ok()?;
+                let mut mtime = meta.modified().ok()?;
+                let mut size = meta.len();
                 let journal = sessions_dir.join(format!("{id}.journal.jsonl"));
-                if let Ok(journal_mtime) = std::fs::metadata(&journal).and_then(|m| m.modified()) {
-                    mtime = mtime.max(journal_mtime);
+                if let Ok(journal_meta) = std::fs::metadata(&journal) {
+                    size += journal_meta.len();
+                    if let Ok(journal_mtime) = journal_meta.modified() {
+                        mtime = mtime.max(journal_mtime);
+                    }
                 }
-                Some((mtime, id.to_string(), path))
+                Some((mtime, size, id.to_string(), path))
             })
             .collect();
     candidates.sort_by(|a, b| b.0.cmp(&a.0));
     candidates
         .into_iter()
         .take(PROMOTE_RESUME_MAX_CANDIDATES)
-        .find(|(_, _, path)| {
+        .filter(|(_, _, _, path)| {
             let is_debug = std::fs::read(path)
                 .ok()
                 .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
@@ -2298,7 +2309,10 @@ fn pick_newest_real_session(sessions_dir: &Path) -> Option<(String, PathBuf)> {
             // Unreadable snapshots are not a usable test input either.
             is_debug == Some(false)
         })
-        .map(|(_, id, path)| (id, path))
+        .take(PROMOTE_RESUME_RECENT_REAL)
+        // min of Reverse: largest wins, ties go to the first (newest).
+        .min_by_key(|(_, size, _, _)| std::cmp::Reverse(*size))
+        .map(|(_, _, id, path)| (id, path))
 }
 
 fn tail_of_file(path: &Path, max_bytes: usize) -> String {
@@ -2422,7 +2436,7 @@ async fn promote_resume_check(binary: &Path, skip: bool) -> ServerPromoteResumeC
     }
     let Some((session_id, snapshot)) = storage::jcode_dir()
         .ok()
-        .and_then(|dir| pick_newest_real_session(&dir.join("sessions")))
+        .and_then(|dir| pick_resume_check_session(&dir.join("sessions")))
     else {
         return ServerPromoteResumeCheck {
             status: "skipped_no_session",
@@ -2474,7 +2488,7 @@ async fn promote_resume_check(binary: &Path, skip: bool) -> ServerPromoteResumeC
 /// Promotion and reload intentionally remain separate operations: updates may
 /// advance a shared server that tracks stable, but must not overwrite a build
 /// the user deliberately promoted here. Before repointing, the candidate must
-/// resume a copy of the newest real session in a throwaway home.
+/// resume a copy of the largest recent real session in a throwaway home.
 pub async fn run_server_promote_command(
     version: Option<&str>,
     skip_resume_check: bool,
@@ -2503,7 +2517,10 @@ pub async fn run_server_promote_command(
         promote_resume_check(&binary, false).await
     } else {
         // Let promote_version_to_shared_server produce its usual not-installed error.
-        promote_resume_check(&binary, true).await
+        ServerPromoteResumeCheck {
+            status: "skipped_no_binary",
+            detail: format!("candidate binary {} is not installed", binary.display()),
+        }
     };
     if resume_check.status == "failed" {
         let report = ServerPromoteReport {

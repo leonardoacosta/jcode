@@ -1781,18 +1781,32 @@ fn promote_session_pick_skips_test_sessions_and_non_sessions() {
     write_promote_session(dir.path(), "session_real_old", false, 100);
     std::fs::write(dir.path().join("coord.json"), r#"{"is_debug":false}"#).unwrap();
 
-    let (id, path) = pick_newest_real_session(dir.path()).expect("a real session");
+    let (id, path) = pick_resume_check_session(dir.path()).expect("a real session");
     assert_eq!(id, "session_real_new");
     assert_eq!(path, dir.path().join("session_real_new.json"));
 }
 
 #[test]
+fn promote_session_pick_prefers_largest_recent_real_session() {
+    let dir = tempfile::tempdir().unwrap();
+    write_promote_session(dir.path(), "session_tiny_new", false, 1);
+    write_promote_session(dir.path(), "session_big_older", false, 50);
+    std::fs::write(
+        dir.path().join("session_big_older.journal.jsonl"),
+        "x".repeat(4096),
+    )
+    .unwrap();
+    let (id, _) = pick_resume_check_session(dir.path()).expect("a real session");
+    assert_eq!(id, "session_big_older");
+}
+
+#[test]
 fn promote_session_pick_empty_missing_or_only_test_is_none() {
     let dir = tempfile::tempdir().unwrap();
-    assert!(pick_newest_real_session(dir.path()).is_none());
-    assert!(pick_newest_real_session(&dir.path().join("absent")).is_none());
+    assert!(pick_resume_check_session(dir.path()).is_none());
+    assert!(pick_resume_check_session(&dir.path().join("absent")).is_none());
     write_promote_session(dir.path(), "session_only_test", true, 1);
-    assert!(pick_newest_real_session(dir.path()).is_none());
+    assert!(pick_resume_check_session(dir.path()).is_none());
 }
 
 #[test]
