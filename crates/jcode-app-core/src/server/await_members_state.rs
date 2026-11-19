@@ -394,7 +394,10 @@ fn scan_pending_await_members_including_expired() -> Vec<PersistedAwaitMembersSt
     let mut pending = Vec::new();
     for entry in entries.flatten() {
         let path = entry.path();
-        if !path.is_file() {
+        // Only primaries. Orphaned `.bak` siblings (e.g. from test fixtures that
+        // leaked into the shared runtime dir) would otherwise be parsed as
+        // records and warn on every daemon start.
+        if !path.is_file() || path.extension().is_none_or(|ext| ext != "json") {
             continue;
         }
 
