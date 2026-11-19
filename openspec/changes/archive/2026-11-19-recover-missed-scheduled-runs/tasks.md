@@ -15,7 +15,7 @@
 
 - [x] 2.1 `cargo test -p jcode-app-core` passes for the new tests
   - Evidence: `JCODE_REMOTE_CARGO=0 scripts/dev_cargo.sh test -p jcode-app-core --lib -- --test-threads=1 ambient schedule` → 181 passed, 0 failed (filters `ambient schedule tool::tests`, includes 2 new runner and 5 new queue tests); `test -p jcode --test e2e -- ambient` → 17 passed, 0 failed.
-- [ ] 2.2 `cargo clippy --workspace --all-targets -- -D warnings`
+- [x] 2.2 `cargo clippy --workspace --all-targets -- -D warnings` (coordinator, integrated tree at 59510024e: exit 0)
   - Coordinator-owned. Worker ran scoped: `cargo clippy -p jcode-app-core --all-targets --no-deps -- -D warnings` → clean.
 - [x] 2.3 `openspec validate recover-missed-scheduled-runs --strict`
   - Evidence: "Change 'recover-missed-scheduled-runs' is valid".

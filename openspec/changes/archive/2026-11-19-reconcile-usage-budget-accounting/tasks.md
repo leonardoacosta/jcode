@@ -15,7 +15,7 @@
 
 - [x] 2.1 `cargo test -p jcode-app-core` passes for the new tests
   - Evidence: `JCODE_REMOTE_CARGO=0 scripts/dev_cargo.sh test -p jcode-app-core --lib overnight:: -- --test-threads=1` → 37 passed, 0 failed; `... --lib cumulative_snapshots` → 1 passed; `-p jcode-overnight-core` → 16 passed. Scoped clippy on my 4 crates was clean before the review round; after it, `-p jcode-overnight-core -p jcode-app-core --all-targets` reports one diagnostic, in a file that is not mine (`server/background_tasks.rs:856`, MutexGuard held across await) and none in my files.
-- [ ] 2.2 `cargo clippy --workspace --all-targets -- -D warnings`
+- [x] 2.2 `cargo clippy --workspace --all-targets -- -D warnings` (coordinator, integrated tree at 59510024e: exit 0)
   - Left to coordinator (workspace gate). Scoped clippy on my 4 crates is clean.
 - [x] 2.3 `openspec validate reconcile-usage-budget-accounting --strict`
   - Evidence: "Change 'reconcile-usage-budget-accounting' is valid".

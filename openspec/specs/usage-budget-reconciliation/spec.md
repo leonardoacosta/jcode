@@ -1,0 +1,22 @@
+# usage-budget-reconciliation Specification
+
+## Purpose
+Define how overnight runs reconcile post-request provider usage into the review with run, session, generation and account attribution, marking missing usage as estimated or unavailable and never granting pre-send budget authority.
+
+## Requirements
+
+### Requirement: Per-run usage reconciliation
+
+Each overnight run SHALL record projected versus observed usage at completion.
+
+Usage SHALL retain run/session/generation and provider/account attribution and deduplicate mirrored/replayed usage events. Estimated or post-request usage SHALL NOT authorize monetary dispatch or be labeled an authoritative hard-spend reservation. Cancelled/unresolved workers remain attributable without implying zero consumption.
+
+#### Scenario: Reported usage
+
+- **WHEN** providers report usage during the run
+- **THEN** the report SHALL show observed usage marked `reported` alongside the projection
+
+#### Scenario: Missing usage
+
+- **WHEN** a provider reports no usage
+- **THEN** the report SHALL show that provider as `estimated` or `unavailable`, never as zero
