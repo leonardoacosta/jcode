@@ -21,6 +21,51 @@ pub(super) fn should_refresh_token(status: StatusCode, body: &str) -> bool {
     false
 }
 
+/// Terminal HTTP error text. Auth and quota failures carry the shared
+/// kind-specific remedy; other statuses keep the raw provider error.
+pub(super) fn format_http_error(status: StatusCode, body: &str) -> String {
+    use jcode_provider_core::ProviderFailureKind::{AuthExpired, AuthRevoked, QuotaExhausted};
+    let message = format!("OpenAI API error {status}: {body}");
+    let kind = jcode_provider_core::classify_provider_failure(&message);
+    if matches!(kind, AuthExpired | AuthRevoked | QuotaExhausted) {
+        format!(
+            "{message}\n{}",
+            kind.remedy(jcode_provider_core::DualAuthProvider::OpenAI)
+        )
+    } else {
+        message
+    }
+}
+
+/// Terminal in-stream (WebSocket) error events get the same shared remedy as
+/// terminal HTTP errors. Messages that already carry it are left unchanged.
+pub(super) fn with_failure_remedy(event: StreamEvent) -> StreamEvent {
+    use jcode_provider_core::ProviderFailureKind::{AuthExpired, AuthRevoked, QuotaExhausted};
+    let StreamEvent::Error {
+        message,
+        retry_after_secs,
+    } = event
+    else {
+        return event;
+    };
+    let kind = jcode_provider_core::classify_provider_failure(&message);
+    let message = if matches!(kind, AuthExpired | AuthRevoked | QuotaExhausted) {
+        let remedy = kind.remedy(jcode_provider_core::DualAuthProvider::OpenAI);
+        let label = remedy.split_once(':').map_or(remedy, |(label, _)| label);
+        if message.contains(&format!("{label}:")) {
+            message
+        } else {
+            format!("{message}\n{remedy}")
+        }
+    } else {
+        message
+    };
+    StreamEvent::Error {
+        message,
+        retry_after_secs,
+    }
+}
+
 /// Refresh credentials at most once per logical request so a persistently
 /// rejected token cannot trigger a refresh on every retry attempt.
 pub(super) fn claim_auth_refresh(status: StatusCode, body: &str, attempted: &mut bool) -> bool {

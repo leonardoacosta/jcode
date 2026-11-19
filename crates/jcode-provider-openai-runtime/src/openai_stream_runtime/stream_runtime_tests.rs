@@ -229,6 +229,49 @@ async fn cancelled_accepted_refresh_persists_commits_and_skips_transport() {
 }
 
 #[test]
+fn terminal_http_errors_render_kind_specific_remedies() {
+    let expired = format_http_error(StatusCode::UNAUTHORIZED, "token expired");
+    assert!(expired.contains("AuthExpired:"), "{expired}");
+    assert!(!expired.contains("jcode login"), "{expired}");
+    let quota = format_http_error(StatusCode::PAYMENT_REQUIRED, "insufficient_quota");
+    assert!(quota.contains("QuotaExhausted:"), "{quota}");
+    let revoked = format_http_error(StatusCode::BAD_REQUEST, "invalid_grant");
+    assert!(
+        revoked.contains("jcode login --provider openai"),
+        "{revoked}"
+    );
+    assert_eq!(
+        format_http_error(StatusCode::BAD_REQUEST, "invalid_request_error"),
+        "OpenAI API error 400 Bad Request: invalid_request_error"
+    );
+}
+
+#[test]
+fn terminal_stream_error_events_get_shared_remedy_once() {
+    let render = |message: &str| match with_failure_remedy(StreamEvent::Error {
+        message: message.to_string(),
+        retry_after_secs: Some(7),
+    }) {
+        StreamEvent::Error {
+            message,
+            retry_after_secs,
+        } => {
+            assert_eq!(retry_after_secs, Some(7));
+            message
+        }
+        other => panic!("{other:?}"),
+    };
+    let quota = render("The usage limit has been reached");
+    assert!(
+        quota.ends_with("QuotaExhausted: Check this account's usage and billing before retrying."),
+        "{quota}"
+    );
+    assert_eq!(render(&quota), quota, "remedy must not be appended twice");
+    assert!(render("Invalid token").contains("AuthExpired:"));
+    assert_eq!(render("Invalid tool schema."), "Invalid tool schema.");
+}
+
+#[test]
 fn unauthorized_triggers_token_refresh() {
     assert!(should_refresh_token(StatusCode::UNAUTHORIZED, ""));
 }

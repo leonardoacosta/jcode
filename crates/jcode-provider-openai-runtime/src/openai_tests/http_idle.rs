@@ -130,3 +130,105 @@ async fn http_idle_silent_transport_still_times_out() {
 async fn http_idle_stopped_heartbeats_still_time_out() {
     http_transport_idle_case(true, false).await;
 }
+
+// Real HTTP: a rejection after the one allowed refresh must end in the shared
+// remedy with exactly one request and no further refresh. API-key mode (empty
+// refresh token) keeps the fixture off the network and honours the base URL
+// override; a wrongly attempted refresh would surface as the "no refresh token"
+// error asserted absent below.
+async fn http_terminal_auth_case(
+    body: &'static str,
+    already_refreshed: bool,
+    expect_remedy: &'static str,
+) {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let _sandbox = jcode_base::auth::test_sandbox::AuthTestSandbox::new().unwrap();
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let _base = EnvVarGuard::set("JCODE_OPENAI_API_BASE", &format!("http://{addr}/v1"));
+    jcode_base::config::invalidate_config_cache();
+    let server = tokio::spawn(async move {
+        let mut requests = 0;
+        while let Ok(Ok((mut tcp, _))) =
+            tokio::time::timeout(Duration::from_millis(1500), listener.accept()).await
+        {
+            let mut data = Vec::new();
+            loop {
+                let mut buf = [0; 4096];
+                let n = tcp.read(&mut buf).await.unwrap();
+                if n == 0 {
+                    break;
+                }
+                data.extend_from_slice(&buf[..n]);
+                if let Some(end) = data.windows(4).position(|w| w == b"\r\n\r\n") {
+                    let headers = String::from_utf8_lossy(&data[..end]).to_ascii_lowercase();
+                    let length: usize = headers
+                        .lines()
+                        .find_map(|l| l.strip_prefix("content-length: ")?.parse().ok())
+                        .unwrap_or(0);
+                    if data.len() >= end + 4 + length {
+                        break;
+                    }
+                }
+            }
+            // Count only inference requests; unrelated background fetches
+            // (model catalog) may share the process-wide base URL override.
+            if data.starts_with(b"POST /v1/responses ") {
+                requests += 1;
+            }
+            let response = format!(
+                "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            tcp.write_all(response.as_bytes()).await.unwrap();
+        }
+        requests
+    });
+    let creds = Arc::new(RwLock::new(CodexCredentials {
+        access_token: "fixture-key".into(),
+        refresh_token: String::new(),
+        id_token: None,
+        account_id: None,
+        expires_at: None,
+    }));
+    let (tx, _rx) = mpsc::channel(64);
+    let mut attempted = already_refreshed;
+    let result = openai_stream_runtime::stream_response(
+        Client::new(),
+        Arc::clone(&creds),
+        None,
+        &serde_json::json!({"model":"fixture-model", "stream":true, "input":[]}),
+        "fixture".into(),
+        tx,
+        &mut attempted,
+    )
+    .await;
+    let message = match result.unwrap_err() {
+        OpenAIStreamFailure::Other(error) => format!("{error:#}"),
+        _ => panic!("unexpected failure variant"),
+    };
+    assert!(message.contains(expect_remedy), "{message}");
+    assert!(!message.contains("token refresh failed"), "{message}");
+    assert!(!message.contains("no refresh token"), "{message}");
+    assert!(!message.contains("token refreshed, retrying"), "{message}");
+    assert_eq!(server.await.unwrap(), 1, "exactly one request, no retry");
+    let tokens = creds.read().await;
+    assert_eq!(tokens.access_token, "fixture-key");
+    assert!(tokens.refresh_token.is_empty());
+}
+
+#[tokio::test]
+async fn http_second_401_after_refresh_is_auth_expired_without_another_refresh() {
+    http_terminal_auth_case(r#"{"error":{"message":"Invalid token"}}"#, true, "AuthExpired:").await;
+}
+
+#[tokio::test]
+async fn http_quota_rejection_skips_refresh_and_shows_quota_remedy() {
+    http_terminal_auth_case(
+        r#"{"error":{"code":"insufficient_quota","message":"You exceeded your current quota"}}"#,
+        false,
+        "QuotaExhausted:",
+    )
+    .await;
+}

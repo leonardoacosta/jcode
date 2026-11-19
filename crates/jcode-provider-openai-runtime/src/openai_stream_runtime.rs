@@ -1288,7 +1288,7 @@ async fn continue_persistent_ws_locked(
                         // A failed response will not send response.completed.
                         // Forward once and stop, even if the server keeps the
                         // socket open or the consumer retains its stream.
-                        let _ = tx.send(Ok(event)).await;
+                        let _ = tx.send(Ok(with_failure_remedy(event))).await;
                         return PersistentWsResult::TerminalError;
                     }
                     usage_recorder.observe(&event).await;
@@ -1310,7 +1310,7 @@ async fn continue_persistent_ws_locked(
                                 message
                             ));
                         }
-                        let _ = tx.send(Ok(event)).await;
+                        let _ = tx.send(Ok(with_failure_remedy(event))).await;
                         return PersistentWsResult::TerminalError;
                     }
                     if is_stream_activity_event(&event) {
@@ -1806,7 +1806,7 @@ async fn stream_response_websocket_authenticated(
                             // A failed response never sends response.completed,
                             // and the server may keep the socket open (usage
                             // limits do). Forward once and drop the socket.
-                            let _ = tx.send(Ok(event)).await;
+                            let _ = tx.send(Ok(with_failure_remedy(event))).await;
                             return Ok(());
                         }
                         usage_recorder.observe(&event).await;
@@ -1845,7 +1845,7 @@ async fn stream_response_websocket_authenticated(
                                     message
                                 )));
                             }
-                            let _ = tx.send(Ok(event)).await;
+                            let _ = tx.send(Ok(with_failure_remedy(event))).await;
                             return Ok(());
                         }
                         if matches!(event, StreamEvent::MessageEnd { .. }) {

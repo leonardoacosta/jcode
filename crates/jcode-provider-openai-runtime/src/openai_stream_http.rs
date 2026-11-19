@@ -220,7 +220,7 @@ pub(crate) async fn stream_response(
         let msg = if status == StatusCode::TOO_MANY_REQUESTS {
             format_rate_limit_error(&body, retry_after.map(|hint| hint.remaining()))
         } else {
-            format!("OpenAI API error {}: {}", status, body)
+            format_http_error(status, &body)
         };
         return Err(OpenAIStreamFailure::Other(
             jcode_provider_core::retry_after::error_with_retry_after(msg, retry_after),

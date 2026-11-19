@@ -478,4 +478,5 @@ async fn fresh_ws_terminal_error_ends_stream_with_socket_open() {
     let errors = errors.expect("usage-limit error left the websocket stream open");
     assert_eq!(errors.len(), 1, "{errors:?}");
     assert!(errors[0].contains("usage limit"), "{errors:?}");
+    assert!(errors[0].contains("QuotaExhausted:"), "{errors:?}");
 }
