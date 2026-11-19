@@ -1101,6 +1101,7 @@ mod tests {
                 expose: None,
                 workspaces: Vec::new(),
                 lazy: None,
+                notifications: None,
             },
         );
         let pool = SharedMcpPool::new(config);

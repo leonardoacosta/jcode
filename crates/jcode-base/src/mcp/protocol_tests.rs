@@ -1091,3 +1091,106 @@ fn workspace_glob_semantics() {
     assert!(m("/repo", "/repo/sub"));
     assert!(!m("/repo", "/repository"));
 }
+
+#[test]
+fn mcp_server_notifications_default_to_opted_out_and_parse_allowlists() {
+    let config: McpConfig = serde_json::from_str(
+        r#"{"servers": {
+            "off": {"command": "a"},
+            "on": {"command": "b", "notifications": {
+                "refresh": ["tools_list_changed"],
+                "wake": ["resource_updated"],
+                "resources": ["file:///x"]
+            }}
+        }}"#,
+    )
+    .unwrap();
+    assert!(config.servers["off"].notifications.is_none());
+    let on = config.servers["on"].notifications.as_ref().unwrap();
+    assert_eq!(on.refresh.len(), 1);
+    assert_eq!(on.wake.len(), 1);
+    assert_eq!(on.resources, vec!["file:///x".to_string()]);
+    assert!(
+        serde_json::from_str::<McpConfig>(
+            r#"{"servers": {"x": {"command": "a", "notifications": {"wake": ["bogus"]}}}}"#
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn project_local_config_cannot_opt_in_to_notifications() {
+    let _guard = crate::storage::lock_test_env();
+    let previous_home = std::env::var_os("JCODE_HOME");
+    let home = tempfile::tempdir().expect("home tempdir");
+    let project = tempfile::tempdir().expect("project tempdir");
+    crate::env::set_var("JCODE_HOME", home.path());
+
+    let opted = |name: &str| {
+        format!(
+            r#"{{"mcpServers":{{"{name}":{{"command":"bin","notifications":{{"refresh":["tools_list_changed"],"wake":["tools_list_changed"]}}}}}}}}"#
+        )
+    };
+    std::fs::write(home.path().join("mcp.json"), opted("global-srv")).unwrap();
+    std::fs::write(project.path().join(".mcp.json"), opted("root-srv")).unwrap();
+    std::fs::create_dir_all(project.path().join(".jcode")).unwrap();
+    std::fs::write(project.path().join(".jcode/mcp.json"), opted("jcode-srv")).unwrap();
+    std::fs::create_dir_all(project.path().join(".claude")).unwrap();
+    std::fs::write(project.path().join(".claude/mcp.json"), opted("claude-srv")).unwrap();
+
+    let result = std::panic::catch_unwind(|| {
+        let config = McpConfig::load_for_dir(Some(project.path()));
+        let global = config.servers["global-srv"]
+            .notifications
+            .as_ref()
+            .expect("global opt-in is honored");
+        assert!(global.refreshes(crate::mcp::notifications::NotificationClass::ToolsListChanged));
+        assert!(global.wakes(crate::mcp::notifications::NotificationClass::ToolsListChanged));
+        for name in ["root-srv", "jcode-srv", "claude-srv"] {
+            let server = config
+                .servers
+                .get(name)
+                .unwrap_or_else(|| panic!("{name} still loads as a server"));
+            assert!(
+                server.notifications.is_none(),
+                "{name}: project-local opt-in must be ignored"
+            );
+        }
+    });
+
+    match previous_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    result.expect("project-local notification trust assertions");
+}
+
+#[test]
+fn project_definition_shadowing_a_global_server_does_not_inherit_its_opt_in() {
+    let _guard = crate::storage::lock_test_env();
+    let previous_home = std::env::var_os("JCODE_HOME");
+    let home = tempfile::tempdir().expect("home tempdir");
+    let project = tempfile::tempdir().expect("project tempdir");
+    crate::env::set_var("JCODE_HOME", home.path());
+    std::fs::write(
+        home.path().join("mcp.json"),
+        r#"{"mcpServers":{"same":{"command":"trusted","notifications":{"wake":["tools_list_changed"]}}}}"#,
+    )
+    .unwrap();
+    std::fs::write(
+        project.path().join(".mcp.json"),
+        r#"{"mcpServers":{"same":{"command":"repo-controlled","notifications":{"wake":["tools_list_changed"]}}}}"#,
+    )
+    .unwrap();
+    let result = std::panic::catch_unwind(|| {
+        let config = McpConfig::load_for_dir(Some(project.path()));
+        let server = &config.servers["same"];
+        assert_eq!(server.command, "repo-controlled");
+        assert!(server.notifications.is_none());
+    });
+    match previous_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    result.expect("shadowing assertions");
+}

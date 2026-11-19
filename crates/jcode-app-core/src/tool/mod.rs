@@ -1724,6 +1724,11 @@ impl Registry {
                 }
             }
 
+            // A server that opted into `tools/list_changed` re-reads its catalog
+            // in the MCP layer; mirror that into this registry so the model
+            // sees the refreshed tools, not the ones from first connect.
+            self.spawn_mcp_catalog_resync(&mcp_manager);
+
             // Publish each completed connection independently. A slow handshake
             // must not hide an already-connected peer until an entire batch ends.
             let registry = self.clone();
@@ -1884,6 +1889,55 @@ impl Registry {
         }
     }
 
+    /// Re-register one connected server's tool proxies from the manager's
+    /// current catalog. Shared by connect and by notification-driven refresh.
+    async fn resync_mcp_server_tools(
+        &self,
+        mcp_manager: &Arc<RwLock<crate::mcp::McpManager>>,
+        name: &str,
+    ) -> Option<usize> {
+        let defs = mcp_manager.read().await.server_tools(name).await?;
+        let tools = crate::mcp::create_mcp_tools_from_cached(name, &defs, Arc::clone(mcp_manager));
+        let count = tools.len();
+        self.refresh_connected_mcp_server(tools, name).await;
+        Some(count)
+    }
+
+    /// Follow `tools/list_changed` refreshes for servers this manager owns.
+    /// Holds only weak references, so it ends once the registry or manager is
+    /// gone. Skipped entirely when no server opted into notifications.
+    fn spawn_mcp_catalog_resync(&self, mcp_manager: &Arc<RwLock<crate::mcp::McpManager>>) {
+        let manager = Arc::clone(mcp_manager);
+        let registry = self.downgrade();
+        let weak_manager = Arc::downgrade(mcp_manager);
+        let mut changes = crate::mcp::notifications::subscribe_tool_catalog_changes();
+        tokio::spawn(async move {
+            if !manager
+                .read()
+                .await
+                .config()
+                .servers
+                .values()
+                .any(|cfg| cfg.notifications.as_ref().is_some_and(|n| n.is_active()))
+            {
+                return;
+            }
+            drop(manager);
+            loop {
+                let name = match changes.recv().await {
+                    Ok(name) => name,
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => continue,
+                    Err(tokio::sync::broadcast::error::RecvError::Closed) => return,
+                };
+                let (Some(registry), Some(manager)) = (registry.upgrade(), weak_manager.upgrade())
+                else {
+                    return;
+                };
+                registry.resync_mcp_server_tools(&manager, &name).await;
+            }
+        });
+    }
+
     /// Register self-dev tools (only for canary/self-dev sessions)
     pub async fn register_selfdev_tools(&self) {
         // Self-dev management tool
@@ -1967,6 +2021,10 @@ impl Registry {
 #[cfg(test)]
 #[path = "registry_mcp_allow_list_tests.rs"]
 mod mcp_allow_list_tests;
+
+#[cfg(test)]
+#[path = "registry_mcp_notification_tests.rs"]
+mod mcp_notification_tests;
 
 fn external_effect_category(tool: &str, action: &str, custom_or_mcp: bool) -> Option<&'static str> {
     if tool == "bash" {

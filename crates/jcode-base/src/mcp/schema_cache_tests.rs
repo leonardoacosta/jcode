@@ -21,6 +21,7 @@ fn cfg(command: &str, args: &[&str]) -> McpServerConfig {
         expose: None,
         workspaces: Vec::new(),
         lazy: None,
+        notifications: None,
     }
 }
 

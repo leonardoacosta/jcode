@@ -29,6 +29,11 @@ struct Plan {
     protocol_version: String,
     get_content_type: String,
     paginated_tools: bool,
+    /// Capabilities returned from `initialize`.
+    capabilities: Value,
+    /// Extra server notification streamed before each `tools/call` reply
+    /// (POST-SSE mode only).
+    sse_notification: Option<Value>,
 }
 
 impl Default for Plan {
@@ -45,6 +50,8 @@ impl Default for Plan {
             protocol_version: "2025-06-18".to_string(),
             get_content_type: "text/event-stream".to_string(),
             paginated_tools: false,
+            capabilities: json!({"tools":{}}),
+            sse_notification: None,
         }
     }
 }
@@ -359,7 +366,7 @@ async fn serve(socket: TcpStream, state: Arc<FixtureState>) -> Result<()> {
     }
     let result = match method {
         "initialize" => {
-            json!({"protocolVersion":plan.protocol_version,"capabilities":{"tools":{}},"serverInfo":{"name":"localhost","version":"1"}})
+            json!({"protocolVersion":plan.protocol_version,"capabilities":plan.capabilities,"serverInfo":{"name":"localhost","version":"1"}})
         }
         "tools/list" => {
             if plan.paginated_tools && request.body.pointer("/params/cursor").is_some() {
@@ -425,8 +432,12 @@ async fn serve(socket: TcpStream, state: Arc<FixtureState>) -> Result<()> {
     };
     if plan.post_sse {
         socket.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\nConnection: close\r\n{session}\r\n").as_bytes()).await?;
+        let extra = match (&plan.sse_notification, method) {
+            (Some(note), "tools/call") => format!("data: {note}\r\r"),
+            _ => String::new(),
+        };
         let event = format!(
-            "\u{feff}: comment\revent: message\rdata: {{\rdata: \"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\"}}\r\rdata: {reply}\r\r"
+            "\u{feff}: comment\revent: message\rdata: {{\rdata: \"jsonrpc\":\"2.0\",\"method\":\"notifications/progress\"}}\r\r{extra}data: {reply}\r\r"
         );
         // Deliberately fragment CRLF and UTF-8 across actual HTTP chunks.
         for fragment in event.as_bytes().chunks(7) {
@@ -629,6 +640,110 @@ async fn public_post_sse_fragmentation_notifications_and_multiline_json() {
         "{\"word\":\"héllo 🦀\"}"
     );
     client.shutdown().await;
+}
+
+fn tool_list_requests(fixture: &Fixture) -> usize {
+    fixture
+        .requests()
+        .iter()
+        .filter(|r| r.body.get("method").and_then(Value::as_str) == Some("tools/list"))
+        .count()
+}
+
+fn notifying_plan() -> Plan {
+    Plan {
+        post_sse: true,
+        protocol_version: "2025-11-25".to_string(),
+        capabilities: json!({"tools": {"listChanged": true}}),
+        sse_notification: Some(
+            json!({"jsonrpc":"2.0","method":"notifications/tools/list_changed"}),
+        ),
+        ..Plan::default()
+    }
+}
+
+fn notifying_config(fixture: &Fixture, notifications: Value) -> McpServerConfig {
+    let mut config = fixture.config("http");
+    config.notifications = Some(serde_json::from_value(notifications).unwrap());
+    config
+}
+
+#[tokio::test]
+async fn remote_list_changed_over_http_sse_refreshes_catalog_for_opted_in_server() {
+    let fixture = Fixture::start(notifying_plan()).await;
+    let config = notifying_config(&fixture, json!({"refresh": ["tools_list_changed"]}));
+    let mut client = McpClient::connect("local-fixture".into(), &config)
+        .await
+        .unwrap();
+    let init = fixture
+        .requests()
+        .iter()
+        .find(|r| r.body["method"] == "initialize")
+        .unwrap()
+        .body
+        .clone();
+    assert_eq!(init["params"]["protocolVersion"], "2025-11-25");
+    // Establish reconciles once, in addition to the initial listing.
+    wait_until(|| tool_list_requests(&fixture) >= 2).await;
+    let before = tool_list_requests(&fixture);
+    client.call_tool("echo", json!({})).await.unwrap();
+    wait_until(|| tool_list_requests(&fixture) > before).await;
+    let status = client.handle().notification_status();
+    assert_eq!(status.era, Some("2025-11-25"));
+    assert_eq!(status.counters.accepted, 1);
+    client.shutdown().await;
+}
+
+#[tokio::test]
+async fn remote_notifications_are_ignored_without_opt_in() {
+    let fixture = Fixture::start(notifying_plan()).await;
+    let mut client = fixture.connect("http").await;
+    let before = tool_list_requests(&fixture);
+    client.call_tool("echo", json!({})).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert_eq!(tool_list_requests(&fixture), before);
+    let init = fixture
+        .requests()
+        .iter()
+        .find(|r| r.body["method"] == "initialize")
+        .unwrap()
+        .body
+        .clone();
+    assert_eq!(init["params"]["protocolVersion"], "2025-06-18");
+    client.shutdown().await;
+}
+
+#[tokio::test]
+async fn remote_unlisted_or_unadvertised_notifications_do_not_refresh() {
+    // Allowlist covers prompts only: a tools hint must not refresh tools.
+    let fixture = Fixture::start(notifying_plan()).await;
+    let config = notifying_config(&fixture, json!({"refresh": ["prompts_list_changed"]}));
+    let mut client = McpClient::connect("local-fixture".into(), &config)
+        .await
+        .unwrap();
+    let before = tool_list_requests(&fixture);
+    client.call_tool("echo", json!({})).await.unwrap();
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert_eq!(tool_list_requests(&fixture), before);
+    let counters = client.handle().notification_status().counters;
+    assert!(
+        counters.rejected >= 1 && counters.accepted == 0,
+        "{counters:?}"
+    );
+    client.shutdown().await;
+}
+
+#[tokio::test]
+async fn remote_server_cannot_force_listen_era_on_real_transport() {
+    // Server answers 2026-07-28: not accepted by the real transport.
+    let fixture = Fixture::start(Plan {
+        protocol_version: "2026-07-28".to_string(),
+        ..notifying_plan()
+    })
+    .await;
+    let config = notifying_config(&fixture, json!({"refresh": ["tools_list_changed"]}));
+    let result = McpClient::connect("local-fixture".into(), &config).await;
+    assert!(result.is_err(), "unsupported version must not connect");
 }
 
 #[tokio::test]

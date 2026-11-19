@@ -329,3 +329,80 @@ async fn spawn_target_creates_one_child_session_and_runs_task() {
                 .contains("Spawned session handled task.")
     }));
 }
+
+fn mcp_wake_item(session: Option<&str>) -> ScheduledItem {
+    let request = crate::mcp::notifications::WakeRequest {
+        server: "docs".into(),
+        class: crate::mcp::notifications::NotificationClass::ToolsListChanged,
+        session: session.map(str::to_string),
+    };
+    super::runner_mcp_wake::build_item(&request)
+}
+
+#[tokio::test]
+async fn mcp_wake_for_absent_session_fails_delivery_without_panicking() {
+    let _guard = crate::storage::lock_test_env();
+    let temp = tempfile::tempdir().expect("tempdir");
+    let _home = EnvVarGuard::set_path("JCODE_HOME", temp.path());
+    let provider: Arc<dyn Provider> = Arc::new(TestProvider);
+    let runner = AmbientRunnerHandle::new(Arc::new(crate::safety::SafetySystem::new()));
+    let item = mcp_wake_item(Some("session_does_not_exist"));
+    assert!(
+        runner
+            .deliver_scheduled_direct_item(&provider, &item)
+            .await
+            .is_err()
+    );
+}
+
+#[tokio::test]
+async fn mcp_wake_resumes_idle_session_with_identifiers_only() {
+    let _guard = crate::storage::lock_test_env();
+    let temp = tempfile::tempdir().expect("tempdir");
+    let _home = EnvVarGuard::set_path("JCODE_HOME", temp.path());
+    let streaming = StreamingTestProvider::default();
+    streaming.queue_response(vec![
+        StreamEvent::TextDelta("Checked.".to_string()),
+        StreamEvent::MessageEnd { stop_reason: None },
+    ]);
+    let provider: Arc<dyn Provider> = Arc::new(streaming);
+    let mut session = Session::create_with_id(
+        "session_mcp_wake_target".to_string(),
+        None,
+        Some("MCP wake".to_string()),
+    );
+    session.save().expect("save session");
+    let runner = AmbientRunnerHandle::new(Arc::new(crate::safety::SafetySystem::new()));
+    let item = mcp_wake_item(Some(&session.id));
+    runner
+        .deliver_scheduled_direct_item(&provider, &item)
+        .await
+        .expect("idle session resumes");
+    let reloaded = Session::load(&session.id).expect("reload");
+    assert!(reloaded.messages.iter().any(|m| {
+        let text = m.content_preview();
+        text.contains("[Scheduled task]")
+            && text.contains("docs")
+            && text.contains("tools_list_changed")
+    }));
+}
+
+#[test]
+fn mcp_ambient_wake_stays_queued_while_session_wakes_are_claimed() {
+    let temp = tempfile::tempdir().expect("tempdir");
+    let mut queue = crate::ambient::ScheduledQueue::load(temp.path().join("queue.json"));
+    queue.push(mcp_wake_item(None));
+    queue.push(mcp_wake_item(Some("sess-1")));
+    let direct = queue.take_ready_direct_items();
+    assert_eq!(direct.len(), 1);
+    assert_eq!(
+        direct[0].target,
+        ScheduleTarget::Session {
+            session_id: "sess-1".into()
+        }
+    );
+    // The ambient-targeted wake waits for an ambient cycle, which the
+    // existing gate skips while ambient is disabled or paused.
+    assert_eq!(queue.len(), 1);
+    assert_eq!(queue.items()[0].target, ScheduleTarget::Ambient);
+}

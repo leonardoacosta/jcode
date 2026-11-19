@@ -999,6 +999,7 @@ mod tests {
                 expose: None,
                 workspaces: Vec::new(),
                 lazy: None,
+                notifications: None,
             },
         );
         let manager = McpManager::with_config(config);
@@ -1038,6 +1039,7 @@ mod tests {
                 expose: None,
                 workspaces: Vec::new(),
                 lazy: None,
+                notifications: None,
             },
         );
         let manager = McpManager::with_config(config);
@@ -1154,6 +1156,7 @@ done
                 expose: None,
                 workspaces: Vec::new(),
                 lazy: None,
+                notifications: None,
             },
         );
         let config = config
@@ -1347,6 +1350,7 @@ done
                 expose: None,
                 workspaces: Vec::new(),
                 lazy: None,
+                notifications: None,
             },
         );
         let manager = McpManager::with_config(config.clone());
@@ -1410,6 +1414,7 @@ done
     async fn lazy_server_connects_on_first_call() {
         let server = McpServerConfig {
             lazy: Some(true),
+            notifications: None,
             timeout_secs: Some(1),
             ..crate::mcp::client::tests::fake_server_config()
         };

@@ -246,6 +246,11 @@ pub struct McpServerConfig {
     /// Connect on first search/call instead of at session start.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lazy: Option<bool>,
+    /// Opt-in server notification policy: which notification classes may
+    /// refresh catalogs/resources and, separately, wake an agent. Absent means
+    /// jcode opens no subscription and ignores server notifications.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub notifications: Option<super::notifications::McpNotificationConfig>,
 }
 
 impl McpServerConfig {
@@ -748,6 +753,7 @@ impl McpConfig {
                             expose: None,
                             workspaces: Vec::new(),
                             lazy: None,
+                            notifications: None,
                         },
                     );
                 }
@@ -852,12 +858,30 @@ impl McpConfig {
         for relative in [".jcode/mcp.json", ".mcp.json", ".claude/mcp.json"] {
             let path = project_root.join(relative);
             if path.exists()
-                && let Ok(config) = Self::load_from_file(&path)
+                && let Ok(mut config) = Self::load_from_file(&path)
             {
+                config.strip_untrusted_notifications(relative);
                 merged.merge_scoped(config.with_scope("project"));
             }
         }
         merged
+    }
+
+    /// Notification opt-in (catalog refresh and agent wakes) is a trust grant,
+    /// so only global/user config may give it. A repository-controlled file
+    /// could otherwise enable wakes for itself; its opt-in is ignored and the
+    /// server stays opted out, even when a global entry of the same name had
+    /// one (the project definition replaces the whole entry).
+    fn strip_untrusted_notifications(&mut self, source: &str) {
+        for (name, server) in &mut self.servers {
+            if server.notifications.take().is_some() {
+                let shown: String = name.chars().filter(|c| !c.is_control()).take(64).collect();
+                crate::logging::warn(&format!(
+                    "MCP: ignoring `notifications` for server '{shown}' in project-local {source}; \
+                     refresh and wake opt-in is honored only from global config"
+                ));
+            }
+        }
     }
 
     /// Load from default locations (merges jcode global + local, local overrides),

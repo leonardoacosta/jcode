@@ -59,6 +59,8 @@ pub(super) struct RemoteState {
     closed: Arc<AtomicBool>,
     stop: Notify,
     request_timeout: Duration,
+    /// Receives server-originated notifications (opted-in servers only).
+    inbound: super::notifications::InboundSlot,
     /// Set when the server rejected the Streamable HTTP `initialize` POST in a
     /// way that indicates a legacy SSE-only server (400/404/405).
     fallback_to_sse: AtomicBool,
@@ -152,12 +154,15 @@ impl RemoteState {
                 let is_response = map.contains_key("result") || map.contains_key("error");
                 if !is_response {
                     // Server-initiated request or notification. We advertise no
-                    // client capabilities, so there is nothing to act on.
+                    // client capabilities, so only the notification engine acts
+                    // on these, and only for servers that opted in. The slot
+                    // never blocks, so a flood cannot stall response routing.
                     crate::logging::debug(&format!(
-                        "MCP [{}]: ignoring server message {}",
+                        "MCP [{}]: server message {}",
                         self.name,
                         map.get("method").and_then(Value::as_str).unwrap_or("?")
                     ));
+                    self.inbound.offer(value);
                     return;
                 }
                 // Notifications and requests cannot impersonate response envelopes.
@@ -417,6 +422,7 @@ pub(super) async fn start(
     writer_rx: mpsc::Receiver<String>,
     pending: Pending,
     closed: Arc<AtomicBool>,
+    inbound: super::notifications::InboundSlot,
 ) -> Result<RemoteConnection> {
     let raw_url = config
         .url
@@ -459,6 +465,7 @@ pub(super) async fn start(
         closed,
         stop: Notify::new(),
         request_timeout: super::client::request_timeout_for(config),
+        inbound,
         fallback_to_sse: AtomicBool::new(false),
         // Even custom headers (not just Authorization) can contain credentials.
         // Never follow a redirect with them to a server-selected destination.

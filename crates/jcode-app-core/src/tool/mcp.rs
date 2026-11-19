@@ -559,6 +559,7 @@ fn connection_config(
         expose: None,
         workspaces: Vec::new(),
         lazy: None,
+        notifications: None,
     })
 }
 

@@ -28,6 +28,14 @@ pub struct McpHandle {
     tools: Arc<std::sync::RwLock<Vec<McpToolDef>>>,
     /// Reply timeout applied to every request on this server.
     request_timeout: std::time::Duration,
+    /// Opted-in notification policy. `None` keeps notifications off entirely.
+    notify_cfg: Option<super::notifications::McpNotificationConfig>,
+    /// Where transports hand server-originated notifications.
+    inbound: super::notifications::InboundSlot,
+    /// Observable notification handling state for this connection.
+    notify_status: super::notifications::SharedNotificationStatus,
+    /// Protocol version the server selected during `initialize`.
+    negotiated_version: Arc<std::sync::RwLock<String>>,
 }
 
 /// Removes waiters on timeout, send failure and cancellation of the caller.
@@ -135,6 +143,24 @@ impl McpHandle {
         &self.name
     }
 
+    /// Capabilities the server advertised during `initialize`.
+    pub fn capabilities(&self) -> ServerCapabilities {
+        self.capabilities
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone()
+    }
+
+    /// Snapshot of notification handling state (negotiated contract, inactive
+    /// subscriptions, last-known prompts/resources, per-target refresh errors
+    /// and counters). Empty for servers that did not opt in.
+    pub fn notification_status(&self) -> super::notifications::NotificationStatus {
+        self.notify_status
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone()
+    }
+
     /// Get server info
     pub fn server_info(&self) -> Option<ServerInfo> {
         self.server_info
@@ -199,12 +225,26 @@ impl McpHandle {
     }
 }
 
+#[async_trait::async_trait]
+impl super::notifications::McpBackend for McpHandle {
+    async fn request(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse> {
+        McpHandle::request(self, method, params).await
+    }
+
+    async fn refresh_tools(&self) -> Result<()> {
+        McpHandle::refresh_tools(self).await
+    }
+}
+
 /// MCP Client - owns the child process and provides shared handles.
 /// Only one McpClient exists per MCP server process, but many McpHandle
 /// clones can be distributed to different sessions.
 pub struct McpClient {
     handle: McpHandle,
     backend: Backend,
+    /// Notification pump for opted-in servers. Dies with the client, so a
+    /// reconnect (a new client) re-establishes subscriptions and reconciles.
+    notify_task: Option<tokio::task::JoinHandle<()>>,
 }
 
 /// What actually carries the JSON-RPC messages for a client.
@@ -348,6 +388,8 @@ impl McpClient {
         let closed = Arc::new(AtomicBool::new(false));
         let closed_clone = Arc::clone(&closed);
         let reader_name = name.clone();
+        let inbound_slot = super::notifications::InboundSlot::default();
+        let reader_inbound = inbound_slot.clone();
         let mut reader = BufReader::new(stdout);
         tokio::spawn(async move {
             let mut line = String::new();
@@ -359,7 +401,18 @@ impl McpClient {
                         break;
                     }
                     Ok(_) => {
-                        if let Ok(response) = serde_json::from_str::<JsonRpcResponse>(&line) {
+                        if let Ok(value) = serde_json::from_str::<Value>(&line)
+                            && value.get("result").is_none()
+                            && value.get("error").is_none()
+                            && value.get("method").is_some()
+                        {
+                            // Server-originated notification or request: a hint
+                            // for the notification engine, never a response.
+                            // `result`/`error` win, so a response carrying a
+                            // stray `method` still reaches its waiter.
+                            reader_inbound.offer(value);
+                        } else if let Ok(response) = serde_json::from_str::<JsonRpcResponse>(&line)
+                        {
                             if let Some(id) = response.id {
                                 let mut pending = pending_clone.lock().await;
                                 if let Some(tx) = pending.remove(&id) {
@@ -388,22 +441,12 @@ impl McpClient {
             pending.clear();
         });
 
-        let handle = McpHandle {
-            name: name.clone(),
-            source_scope: config.source_scope.clone(),
-            request_id: Arc::new(AtomicU64::new(1)),
-            pending,
-            closed,
-            writer_tx,
-            server_info: Arc::new(std::sync::RwLock::new(None)),
-            capabilities: Arc::new(std::sync::RwLock::new(ServerCapabilities::default())),
-            tools: Arc::new(std::sync::RwLock::new(Vec::new())),
-            request_timeout: request_timeout_for(config),
-        };
+        let handle = Self::new_handle(&name, config, pending, closed, writer_tx, inbound_slot);
 
         let mut client = Self {
             handle,
             backend: Backend::Stdio(child),
+            notify_task: None,
         };
 
         if let Err(err) = client.initialize().await {
@@ -425,6 +468,7 @@ impl McpClient {
             .refresh_tools()
             .await
             .with_context(|| format!("MCP server '{}' failed to list tools", name))?;
+        client.start_notifications();
 
         crate::logging::info(&format!(
             "MCP: Connected to '{}' with {} tools",
@@ -441,6 +485,7 @@ impl McpClient {
         pending: Arc<Mutex<HashMap<u64, oneshot::Sender<JsonRpcResponse>>>>,
         closed: Arc<AtomicBool>,
         writer_tx: mpsc::Sender<String>,
+        inbound_slot: super::notifications::InboundSlot,
     ) -> McpHandle {
         McpHandle {
             name: name.to_string(),
@@ -453,6 +498,10 @@ impl McpClient {
             capabilities: Arc::new(std::sync::RwLock::new(ServerCapabilities::default())),
             tools: Arc::new(std::sync::RwLock::new(Vec::new())),
             request_timeout: request_timeout_for(config),
+            notify_cfg: config.notifications.clone().filter(|c| c.is_active()),
+            inbound: inbound_slot,
+            notify_status: Default::default(),
+            negotiated_version: Arc::default(),
         }
     }
 
@@ -513,6 +562,7 @@ impl McpClient {
             Arc::new(Mutex::new(HashMap::new()));
         let closed = Arc::new(AtomicBool::new(false));
         let (writer_tx, writer_rx) = mpsc::channel::<String>(32);
+        let inbound_slot = super::notifications::InboundSlot::default();
         let connection = super::remote::start(
             name,
             config,
@@ -520,14 +570,16 @@ impl McpClient {
             writer_rx,
             Arc::clone(&pending),
             Arc::clone(&closed),
+            inbound_slot.clone(),
         )
         .await
         .map_err(|err| (err, false))?;
 
-        let handle = Self::new_handle(name, config, pending, closed, writer_tx);
+        let handle = Self::new_handle(name, config, pending, closed, writer_tx, inbound_slot);
         let mut client = Self {
             handle,
             backend: Backend::Remote(connection),
+            notify_task: None,
         };
 
         if let Err(err) = client.initialize().await {
@@ -543,6 +595,7 @@ impl McpClient {
             .await
             .with_context(|| format!("MCP server '{name}' failed to list tools"))
             .map_err(|err| (err, false))?;
+        client.start_notifications();
 
         crate::logging::info(&format!(
             "MCP: Connected to '{}' with {} tools",
@@ -550,6 +603,34 @@ impl McpClient {
             client.handle.tools().len()
         ));
         Ok(client)
+    }
+
+    /// Spawn the notification pump when the server opted in. Never fails the
+    /// connection: notifications are best effort and ordinary operations stay
+    /// available regardless.
+    fn start_notifications(&mut self) {
+        let Some(cfg) = self.handle.notify_cfg.clone() else {
+            return;
+        };
+        let version = self
+            .handle
+            .negotiated_version
+            .read()
+            .unwrap_or_else(|p| p.into_inner())
+            .clone();
+        let caps = self.handle.capabilities();
+        // Neither built-in transport holds a `subscriptions/listen` stream.
+        let engine = super::notifications::NotificationEngine::new(
+            self.handle.name.clone(),
+            self.handle.clone(),
+            cfg,
+            &version,
+            &caps,
+            false,
+            Arc::clone(&self.handle.notify_status),
+        );
+        let (rx, dropped) = self.handle.inbound.install();
+        self.notify_task = Some(tokio::spawn(engine.run_pump(rx, dropped)));
     }
 
     /// Get a shareable handle to this client
@@ -562,9 +643,15 @@ impl McpClient {
         // Remote servers get the newest revision we speak; older servers
         // answer with the version they support, which is fine because jcode
         // only uses methods common to every revision.
+        // An opted-in notification policy asks for 2025-11-25, the revision
+        // whose `resources/subscribe` and `listChanged` contract is modeled.
+        // The legacy HTTP+SSE transport predates it and keeps 2024-11-05.
+        let wants_notifications = self.handle.notify_cfg.is_some();
         let protocol_version = match &self.backend {
+            Backend::Stdio(_) if wants_notifications => super::notifications::LEGACY_VERSION,
             Backend::Stdio(_) => "2024-11-05",
             Backend::Remote(connection) if connection.is_legacy() => "2024-11-05",
+            Backend::Remote(_) if wants_notifications => super::notifications::LEGACY_VERSION,
             Backend::Remote(_) => "2025-06-18",
         };
         let params = InitializeParams {
@@ -589,7 +676,7 @@ impl McpClient {
             if let Backend::Remote(connection) = &self.backend {
                 if !matches!(
                     init_result.protocol_version.as_str(),
-                    "2024-11-05" | "2025-03-26" | "2025-06-18"
+                    "2024-11-05" | "2025-03-26" | "2025-06-18" | "2025-11-25"
                 ) {
                     anyhow::bail!(
                         "MCP server negotiated unsupported protocol version: {}",
@@ -598,6 +685,12 @@ impl McpClient {
                 }
                 connection.set_protocol_version(&init_result.protocol_version);
             }
+            *self
+                .handle
+                .negotiated_version
+                .write()
+                .unwrap_or_else(|poisoned| poisoned.into_inner()) =
+                init_result.protocol_version.clone();
             *self
                 .handle
                 .server_info
@@ -731,6 +824,9 @@ fn mcp_child_env(
 
 impl Drop for McpClient {
     fn drop(&mut self) {
+        if let Some(task) = self.notify_task.take() {
+            task.abort();
+        }
         if let Backend::Stdio(child) = &mut self.backend {
             kill_process_group(child);
             if let Err(error) = child.start_kill() {
@@ -848,6 +944,55 @@ done
             expose: None,
             workspaces: Vec::new(),
             lazy: None,
+            notifications: None,
+        }
+    }
+
+    /// A response that also carries a `method` field must still reach its
+    /// waiter, with or without notification opt-in (`result`/`error` win).
+    fn stray_method_config(notifications: bool) -> McpServerConfig {
+        let script = r#"
+while IFS= read -r line; do
+  id=$(printf '%s' "$line" | sed -n 's/.*"id":\([0-9][0-9]*\).*/\1/p')
+  case "$line" in
+    *'"initialize"'*)
+      printf '{"jsonrpc":"2.0","method":"notifications/tools/list_changed","id":%s,"result":{"protocolVersion":"2024-11-05","capabilities":{},"serverInfo":{"name":"stray","version":"0"}}}\n' "$id"
+      ;;
+    *'"tools/list"'*)
+      printf '{"jsonrpc":"2.0","method":"notifications/tools/list_changed","id":%s,"result":{"tools":[]}}\n' "$id"
+      ;;
+  esac
+done
+"#;
+        McpServerConfig {
+            args: vec!["-c".to_string(), script.to_string()],
+            notifications: notifications.then(|| {
+                crate::mcp::notifications::McpNotificationConfig {
+                    refresh: vec![crate::mcp::notifications::NotificationClass::ToolsListChanged],
+                    ..Default::default()
+                }
+            }),
+            ..fake_server_config()
+        }
+    }
+
+    #[tokio::test]
+    async fn response_with_stray_method_still_completes_requests() {
+        for opted_in in [false, true] {
+            let client = tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                McpClient::connect("stray".to_string(), &stray_method_config(opted_in)),
+            )
+            .await
+            .unwrap_or_else(|_| panic!("opted_in={opted_in}: response with a method hung"))
+            .unwrap_or_else(|e| panic!("opted_in={opted_in}: connect failed: {e:#}"));
+            assert_eq!(client.server_info().expect("info").name, "stray");
+            tokio::time::timeout(std::time::Duration::from_secs(10), client.refresh_tools())
+                .await
+                .unwrap_or_else(|_| panic!("opted_in={opted_in}: tools/list hung"))
+                .expect("tools/list answered");
+            // The stray method was a response field, not a hint to act on.
+            assert_eq!(client.handle().notification_status().counters.accepted, 0);
         }
     }
 

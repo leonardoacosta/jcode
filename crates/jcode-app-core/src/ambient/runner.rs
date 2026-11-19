@@ -558,6 +558,7 @@ impl AmbientRunnerHandle {
             *running = true;
         }
         logging::info("Ambient runner: starting background loop");
+        runner_mcp_wake::install();
 
         // Spawn reply pollers only when ambient mode is enabled at startup; scheduled
         // session-targeted scheduled tasks should still work without the ambient-only reply
@@ -1104,6 +1105,9 @@ enum VisibleCycleOutcome {
 }
 
 // ---------------------------------------------------------------------------
+
+#[path = "runner_mcp_wake.rs"]
+pub(crate) mod runner_mcp_wake;
 
 #[cfg(test)]
 #[path = "runner_tests.rs"]
