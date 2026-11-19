@@ -579,9 +579,44 @@ where
 /// final drain after the task leaves `Running` and then exits.
 #[cfg(unix)]
 fn spawn_detached_progress_follower(task_id: String, output_file: std::path::PathBuf) {
+    spawn_detached_progress_follower_from(task_id, output_file, 0);
+}
+
+/// Resume following a detached task after a reload or restart. Progress seen
+/// before the restart is already persisted in the status file, so the follower
+/// starts at the current end of the output instead of replaying every line
+/// (which would re-emit each historical checkpoint).
+pub(crate) fn resume_reattached_task(status: &crate::background::TaskStatusFile) {
+    #[cfg(unix)]
+    {
+        let manager = crate::background::global();
+        let output_file = manager.output_path_for(&status.task_id);
+        let from = std::fs::metadata(&output_file)
+            .map(|meta| meta.len())
+            .unwrap_or(0);
+        spawn_detached_progress_follower_from(status.task_id.clone(), output_file, from);
+        if let Some(seconds) = status.stall_wake_seconds {
+            let task_id = status.task_id.clone();
+            tokio::spawn(async move {
+                crate::background::global()
+                    .arm_stall_watchdog(&task_id, seconds)
+                    .await;
+            });
+        }
+    }
+    #[cfg(not(unix))]
+    let _ = status;
+}
+
+#[cfg(unix)]
+fn spawn_detached_progress_follower_from(
+    task_id: String,
+    output_file: std::path::PathBuf,
+    start: u64,
+) {
     tokio::spawn(async move {
         let manager = crate::background::global();
-        let mut pos: u64 = 0;
+        let mut pos: u64 = start;
         let mut partial: Vec<u8> = Vec::new();
         loop {
             let running = manager

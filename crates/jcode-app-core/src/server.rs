@@ -906,6 +906,9 @@ impl Server {
                     reconciled
                 ));
             }
+            // Detached tasks do survive reloads: reattach the live ones and
+            // finalize the rest exactly once.
+            background_tasks::reattach_background_tasks_on_startup().await;
         });
 
         // Spawn reload monitor (event-driven via in-process channel).

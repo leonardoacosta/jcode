@@ -59,7 +59,7 @@ struct BgInput {
     /// Restrict implicit selection/listing to this session. Defaults to false for list and true for implicit selection.
     #[serde(default)]
     session_only: Option<bool>,
-    /// Status filter, either a string or array of strings: running/completed/failed/superseded/terminal/all
+    /// Status filter, either a string or array of strings: running/completed/failed/superseded/lost/terminal/all
     #[serde(default)]
     status_filter: Option<Value>,
     /// Max age in hours for cleanup (default: 24)
@@ -163,6 +163,7 @@ fn status_label(status: &BackgroundTaskStatus) -> &'static str {
         BackgroundTaskStatus::Completed => "completed",
         BackgroundTaskStatus::Superseded => "superseded",
         BackgroundTaskStatus::Failed => "failed",
+        BackgroundTaskStatus::Lost => "lost",
     }
 }
 
@@ -176,6 +177,8 @@ fn is_success(status: &BackgroundTaskStatus, exit_code: Option<i32>) -> Option<b
         BackgroundTaskStatus::Completed => Some(exit_code.unwrap_or(0) == 0),
         BackgroundTaskStatus::Superseded => Some(true),
         BackgroundTaskStatus::Failed => Some(false),
+        // Unknown outcome: neither success nor failure.
+        BackgroundTaskStatus::Lost => None,
     }
 }
 
@@ -198,10 +201,14 @@ fn parse_status_filter(value: Option<&Value>) -> HashSet<&'static str> {
         "superseded" => {
             set.insert("superseded");
         }
+        "lost" => {
+            set.insert("lost");
+        }
         "terminal" | "finished" | "done" => {
             set.insert("completed");
             set.insert("failed");
             set.insert("superseded");
+            set.insert("lost");
         }
         "all" | "any" => {}
         _ => {}
@@ -455,9 +462,12 @@ async fn wait_many_polling(
         }
 
         if mode == "first_failure"
-            && tasks
-                .iter()
-                .any(|task| matches!(task.status, BackgroundTaskStatus::Failed))
+            && tasks.iter().any(|task| {
+                matches!(
+                    task.status,
+                    BackgroundTaskStatus::Failed | BackgroundTaskStatus::Lost
+                )
+            })
         {
             return Ok(("first_failure".to_string(), tasks));
         }
@@ -540,7 +550,7 @@ impl Tool for BgTool {
                 "session_only": { "type": "boolean", "description": "Only this session's tasks." },
                 "status_filter": {
                     "type": "string",
-                    "enum": ["running", "completed", "failed", "superseded", "terminal"]
+                    "enum": ["running", "completed", "failed", "superseded", "lost", "terminal"]
                 },
                 "max_age_hours": { "type": "integer", "description": "cleanup: default 24." },
                 "notify": { "type": "boolean", "description": "delivery: default true." },
@@ -860,8 +870,10 @@ impl Tool for BgTool {
                         }
 
                         let include_preview = params.include_output_preview.unwrap_or({
-                            matches!(task.status, BackgroundTaskStatus::Failed)
-                                || matches!(reason, background::BackgroundTaskWaitReason::Finished)
+                            matches!(
+                                task.status,
+                                BackgroundTaskStatus::Failed | BackgroundTaskStatus::Lost
+                            ) || matches!(reason, background::BackgroundTaskWaitReason::Finished)
                         });
                         let mut preview_meta = Value::Null;
                         if include_preview
@@ -990,6 +1002,66 @@ mod tests {
         assert_eq!(both, HashSet::from(["running", "failed"]));
         assert!(parse_status_filter(Some(&json!("all"))).is_empty());
         Ok(())
+    }
+
+    #[test]
+    fn lost_tasks_are_terminal_unknown_and_selectable() {
+        let lost = BackgroundTaskStatus::Lost;
+        assert_eq!(status_label(&lost), "lost");
+        assert!(is_terminal(&lost));
+        assert_eq!(is_success(&lost, None), None, "unknown is not success");
+        assert_eq!(is_success(&lost, Some(0)), None);
+        assert_eq!(
+            parse_status_filter(Some(&json!("lost"))),
+            HashSet::from(["lost"])
+        );
+        assert!(parse_status_filter(Some(&json!("terminal"))).contains("lost"));
+        assert!(!parse_status_filter(Some(&json!("failed"))).contains("lost"));
+    }
+
+    #[tokio::test]
+    async fn first_failure_wait_returns_on_a_lost_task() {
+        let dir = tempfile::tempdir().unwrap();
+        let manager = background::BackgroundTaskManager::with_output_dir(dir.path().into());
+        let sid = "bg_first_failure_lost";
+        let info = manager.reserve_task_info();
+        let status = background::TaskStatusFile {
+            task_id: info.task_id.clone(),
+            tool_name: "bash".into(),
+            display_name: None,
+            session_id: sid.into(),
+            status: BackgroundTaskStatus::Lost,
+            exit_code: None,
+            error: None,
+            started_at: chrono::Utc::now().to_rfc3339(),
+            completed_at: Some(chrono::Utc::now().to_rfc3339()),
+            duration_secs: None,
+            pid: None,
+            owner_pid: None,
+            owner_instance: None,
+            detached: true,
+            notify: false,
+            wake: false,
+            progress: None,
+            event_history: Vec::new(),
+            stall_wake_seconds: None,
+            pid_start_time: None,
+            owner_generation: None,
+        };
+        std::fs::write(&info.status_file, serde_json::to_string(&status).unwrap()).unwrap();
+        let ids = vec![info.task_id.clone()];
+        let (reason, tasks) = wait_many_polling(
+            &manager,
+            sid,
+            &ids,
+            Duration::from_secs(5),
+            false,
+            "first_failure",
+        )
+        .await
+        .unwrap();
+        assert_eq!(reason, "first_failure");
+        assert_eq!(tasks[0].status, BackgroundTaskStatus::Lost);
     }
 
     #[test]

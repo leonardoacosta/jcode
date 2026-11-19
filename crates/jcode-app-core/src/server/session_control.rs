@@ -146,20 +146,7 @@ fn group_has_live_member(pgid: u32) -> bool {
     })
 }
 
-/// Start time (clock ticks since boot) used to recognise a reused pid.
-fn process_start_time(pid: u32) -> Option<u64> {
-    #[cfg(target_os = "linux")]
-    {
-        let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
-        let close = stat.rfind(')')?;
-        stat[close + 1..].split_whitespace().nth(19)?.parse().ok()
-    }
-    #[cfg(not(target_os = "linux"))]
-    {
-        let _ = pid;
-        None
-    }
-}
+use crate::platform::process_start_time;
 
 #[derive(Default)]
 struct ControlEntry {
@@ -246,6 +233,19 @@ impl ControlStore {
     pub(crate) fn incompatible_records(&self) -> Vec<(String, String)> {
         let Ok(entries) = std::fs::read_dir(&self.root) else {
             return Vec::new();
+        };
+        let mut found: Vec<(String, String)> = entries
+            .flatten()
+            .filter_map(|entry| {
+                let name = entry.file_name().to_string_lossy().into_owned();
+                let id = name.strip_suffix(".json")?.to_string();
+                self.inspect(&id).err().map(|e| (id, format!("{e:#}")))
+            })
+            .collect();
+        found.sort();
+        found
+    }
+
     /// Records whose owner chain reaches `root` (excluding `root`). Unreadable
     /// records are skipped: they cannot prove ownership, and `incompatible_records`
     /// already surfaces them.
@@ -276,19 +276,6 @@ impl ControlStore {
             all.values().filter(|r| reaches_root(r)).cloned().collect();
         owned.sort_by(|a, b| a.session_id.cmp(&b.session_id));
         owned
-    }
-
-        };
-        let mut found: Vec<(String, String)> = entries
-            .flatten()
-            .filter_map(|entry| {
-                let name = entry.file_name().to_string_lossy().into_owned();
-                let id = name.strip_suffix(".json")?.to_string();
-                self.inspect(&id).err().map(|e| (id, format!("{e:#}")))
-            })
-            .collect();
-        found.sort();
-        found
     }
 
     /// Highest `min_reader_version` over every persisted control record, or
@@ -435,6 +422,70 @@ impl ControlStore {
                 }
                 Err(_) => true,
             }
+    }
+
+    /// True when a completion or stall wake for work bound to `generation` must
+    /// be suppressed: a stop revoked that generation (or any later state change
+    /// left the session non-runnable), or the record cannot be trusted. History
+    /// and attached clients may still be told; only the wake is withheld.
+    /// Sessions without a control record are not controlled and are never revoked.
+    pub(crate) fn wake_revoked(&self, id: &str, generation: u64) -> bool {
+        let fail_closed = self
+            .entry(id)
+            .map(|entry| entry.lock().map(|guard| guard.fail_closed).unwrap_or(true))
+            .unwrap_or(true);
+        fail_closed
+            || match self.inspect(id) {
+                Ok(None) => false,
+                Ok(Some(record)) => {
+                    record.state != ControlState::Runnable || generation <= record.revoked_through
+                }
+                Err(_) => true,
+            }
+    }
+
+    /// Keep a reattached detached process in the stop barrier of its session.
+    ///
+    /// A stop that was requested before a reload must not settle while a
+    /// process of the revoked generation may still be running. The pid is
+    /// normally already listed from the original spawn; this re-adds it when
+    /// the record lost it, and never marks anything else. A settled stop
+    /// (`Stopped`) or a runnable session is left untouched: the first cannot be
+    /// reopened here, the second has no barrier to keep.
+    pub(crate) fn retain_reattached_child(
+        &self,
+        id: &str,
+        pid: u32,
+        start_time: Option<u64>,
+    ) -> Result<()> {
+        let entry = self.entry(id)?;
+        let mut guard = entry
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Session control lock poisoned"))?;
+        let Some(mut record) = self.inspect(id)? else {
+            return Ok(());
+        };
+        if !matches!(
+            record.state,
+            ControlState::StopRequested | ControlState::Draining | ControlState::Unresolved
+        ) {
+            return Ok(());
+        }
+        let known = record.owned_children.iter().any(|child| child.pid == pid);
+        let categorized = record.unresolved_categories.contains(SHELL_CHILDREN);
+        if known && categorized {
+            return Ok(());
+        }
+        if !known {
+            record.owned_children.push(OwnedProcess { pid, start_time });
+        }
+        record.unresolved_categories.insert(SHELL_CHILDREN.into());
+        if let Err(error) = self.save_next(&mut record) {
+            guard.fail_closed = true;
+            return Err(error);
+        }
+        guard.changed.notify_waiters();
+        Ok(())
     }
 
     pub(crate) fn runnable(&self, id: &str) -> Result<()> {
@@ -1028,6 +1079,9 @@ pub(crate) fn current_token() -> Option<GenerationToken> {
 }
 
 pub(crate) async fn scope<F: Future>(token: Option<GenerationToken>, future: F) -> F::Output {
+    // Background tasks stamp the generation they were created under. First
+    // registration wins; every controlled tool call passes through here.
+    crate::background::set_generation_source(current_generation);
     let future = Box::pin(future);
     match token {
         Some(token) => EXECUTION.scope(token, future).await,
@@ -2014,6 +2068,90 @@ mod tests {
         drop(active_b);
         drop(work_b);
         assert_eq!(task.await.unwrap().unwrap().state, ControlState::Stopped);
+    }
+
+    #[test]
+    fn wake_is_revoked_only_for_stopped_generations() {
+        let root = tempfile::tempdir().unwrap();
+        let store = ControlStore::new(root.path().to_owned());
+        assert!(
+            !store.wake_revoked("unknown", 1),
+            "sessions without a control record are never revoked"
+        );
+        store.register("worker", None).unwrap();
+        let token = store.admit("worker").unwrap();
+        let generation = token.generation;
+        assert!(!store.wake_revoked("worker", generation));
+        let stopped = store
+            .request_stop("worker", "worker", false, "stop")
+            .unwrap();
+        assert!(store.wake_revoked("worker", generation), "stop revokes");
+        let settled = store.settle("worker", stopped.revision).unwrap();
+        assert!(
+            store.wake_revoked("worker", generation),
+            "settled stays revoked"
+        );
+        let resumed = store.resume("worker", settled.revision).unwrap();
+        assert!(
+            store.wake_revoked("worker", generation),
+            "an old generation stays revoked after the session resumes"
+        );
+        assert!(!store.wake_revoked("worker", resumed.generation));
+    }
+
+    #[test]
+    fn reattached_child_keeps_pending_stop_unresolved_and_is_idempotent() {
+        let root = tempfile::tempdir().unwrap();
+        let store = ControlStore::new(root.path().to_owned());
+        store.register("worker", None).unwrap();
+        store.admit("worker").unwrap();
+        store
+            .request_stop("worker", "worker", false, "stop")
+            .unwrap();
+        let mut child = spawn_group_leader("sleep 5");
+        let start = process_start_time(child.id());
+        for _ in 0..2 {
+            store
+                .retain_reattached_child("worker", child.id(), start)
+                .unwrap();
+        }
+        let record = store.inspect("worker").unwrap().unwrap();
+        assert!(record.unresolved_categories.contains(SHELL_CHILDREN));
+        assert_eq!(record.owned_children.len(), 1, "not duplicated");
+        // Live process: reconcile must keep the barrier.
+        store.reconcile_children("worker").unwrap();
+        assert!(
+            store
+                .inspect("worker")
+                .unwrap()
+                .unwrap()
+                .unresolved_categories
+                .contains(SHELL_CHILDREN)
+        );
+        child.kill().unwrap();
+        child.wait().unwrap();
+        store.reconcile_children("worker").unwrap();
+        assert!(
+            !store
+                .inspect("worker")
+                .unwrap()
+                .unwrap()
+                .unresolved_categories
+                .contains(SHELL_CHILDREN),
+            "cleared only after proven exit"
+        );
+    }
+
+    #[test]
+    fn reattached_child_of_runnable_session_is_not_marked() {
+        let root = tempfile::tempdir().unwrap();
+        let store = ControlStore::new(root.path().to_owned());
+        store.register("worker", None).unwrap();
+        store.admit("worker").unwrap();
+        store.retain_reattached_child("worker", 1, None).unwrap();
+        let record = store.inspect("worker").unwrap().unwrap();
+        assert!(record.owned_children.is_empty());
+        assert!(!record.unresolved_categories.contains(SHELL_CHILDREN));
     }
 
     #[test]

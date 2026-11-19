@@ -233,7 +233,7 @@ export -f cargo
         {
             BackgroundTaskStatus::Completed => BuildRequestState::Completed,
             BackgroundTaskStatus::Superseded => BuildRequestState::Superseded,
-            BackgroundTaskStatus::Failed => BuildRequestState::Failed,
+            BackgroundTaskStatus::Failed | BackgroundTaskStatus::Lost => BuildRequestState::Failed,
             BackgroundTaskStatus::Running => BuildRequestState::Building,
         };
         request.error = result.error.clone();
@@ -427,7 +427,7 @@ export -f cargo
         {
             BackgroundTaskStatus::Completed => BuildRequestState::Completed,
             BackgroundTaskStatus::Superseded => BuildRequestState::Superseded,
-            BackgroundTaskStatus::Failed => BuildRequestState::Failed,
+            BackgroundTaskStatus::Failed | BackgroundTaskStatus::Lost => BuildRequestState::Failed,
             BackgroundTaskStatus::Running => BuildRequestState::Building,
         };
         request.error = result.error.clone();
@@ -743,6 +743,7 @@ export -f cargo
             Some(BackgroundTaskStatus::Completed)
                 | Some(BackgroundTaskStatus::Superseded)
                 | Some(BackgroundTaskStatus::Failed)
+                | Some(BackgroundTaskStatus::Lost)
         );
 
         if !finished {

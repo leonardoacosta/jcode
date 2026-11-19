@@ -148,6 +148,7 @@ pub fn required_check_batch(
     Some(batch.bounded())
 }
 
+pub(crate) use bash::resume_reattached_task;
 pub(crate) use session_search::spawn_recent_index_warmup;
 
 #[derive(Clone, Debug, Default)]

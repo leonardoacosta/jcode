@@ -442,7 +442,7 @@ impl BuildRequest {
                 self.save()?;
                 Ok(false)
             }
-            BackgroundTaskStatus::Failed => {
+            BackgroundTaskStatus::Failed | BackgroundTaskStatus::Lost => {
                 self.state = BuildRequestState::Failed;
                 self.completed_at = task_status
                     .completed_at

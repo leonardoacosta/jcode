@@ -1033,6 +1033,219 @@ async fn background_task_progress_notifies_attached_clients() {
     }
 }
 
+fn write_generation_bound_task(task_id: &str, session_id: &str, generation: Option<u64>) {
+    let path = crate::background::global().status_path_for(task_id);
+    std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+    let status = crate::background::TaskStatusFile {
+        task_id: task_id.to_string(),
+        tool_name: "bash".to_string(),
+        display_name: None,
+        session_id: session_id.to_string(),
+        status: BackgroundTaskStatus::Running,
+        exit_code: None,
+        error: None,
+        started_at: chrono::Utc::now().to_rfc3339(),
+        completed_at: None,
+        duration_secs: None,
+        pid: None,
+        owner_pid: None,
+        owner_instance: None,
+        detached: true,
+        notify: true,
+        wake: true,
+        progress: None,
+        event_history: Vec::new(),
+        stall_wake_seconds: None,
+        pid_start_time: None,
+        owner_generation: generation,
+    };
+    std::fs::write(path, serde_json::to_string(&status).unwrap()).unwrap();
+}
+
+fn drain_events(rx: &mut mpsc::UnboundedReceiver<ServerEvent>) -> Vec<ServerEvent> {
+    let mut events = Vec::new();
+    while let Ok(event) = rx.try_recv() {
+        events.push(unwrap_test_turn_event(event));
+    }
+    events
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum WakeKind {
+    Completion,
+    Stall,
+}
+
+/// Dispatch one completion or stall for `task_id` and report what reached the
+/// attached client: `(notified, wake_requested)`. Dispatch is awaited to the
+/// end, so everything it emitted is already queued on the member channel.
+#[allow(clippy::too_many_arguments)]
+async fn dispatch_task_wake(
+    kind: WakeKind,
+    task_id: &str,
+    session_id: &str,
+    sessions: &Arc<crate::server::session_manager::SessionManager>,
+    queues: &SessionInterruptQueues,
+    members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
+    rx: &mut mpsc::UnboundedReceiver<ServerEvent>,
+) -> (bool, bool) {
+    let (swarms, history, counter, events) = empty_swarm_status_state();
+    match kind {
+        WakeKind::Completion => {
+            let task = BackgroundTaskCompleted {
+                task_id: task_id.to_string(),
+                tool_name: "bash".to_string(),
+                display_name: None,
+                session_id: session_id.to_string(),
+                status: BackgroundTaskStatus::Lost,
+                exit_code: None,
+                output_preview: String::new(),
+                output_file: std::env::temp_dir().join(format!("{task_id}.output")),
+                duration_secs: 0.1,
+                notify: true,
+                wake: true,
+            };
+            dispatch_background_task_completion(
+                &task, sessions, queues, members, &swarms, &history, &counter, &events,
+            )
+            .await;
+        }
+        WakeKind::Stall => {
+            let task = crate::bus::BackgroundTaskStalled {
+                task_id: task_id.to_string(),
+                tool_name: "bash".to_string(),
+                display_name: None,
+                session_id: session_id.to_string(),
+                stall_wake_seconds: 60,
+                running_secs: 61.0,
+                output_tail: String::new(),
+                output_file: std::env::temp_dir().join(format!("{task_id}.output")),
+                notify: true,
+                wake: true,
+            };
+            super::dispatch_background_task_stalled(
+                &task, sessions, queues, members, &swarms, &history, &counter, &events,
+            )
+            .await;
+        }
+    }
+    let seen = drain_events(rx);
+    let notified = seen
+        .iter()
+        .any(|event| matches!(event, ServerEvent::Notification { .. }));
+    let woke = seen
+        .iter()
+        .any(|event| matches!(event, ServerEvent::WakeRequested { .. }));
+    (notified, woke)
+}
+
+async fn revoked_wake_is_suppressed_but_resumed_work_wakes(kind: WakeKind) {
+    let _env_lock = crate::storage::lock_test_env();
+    let home = tempfile::tempdir().expect("create temporary JCODE_HOME");
+    let _home = ScopedEnvVar::set("JCODE_HOME", home.path());
+    let _wake_mode = ScopedEnvVar::set("JCODE_WAKE_MODE", "external");
+    let provider: Arc<dyn Provider> = Arc::new(StreamingMockProvider::default());
+    let agent = test_agent(provider).await;
+    let session_id = agent.lock().await.session_id().to_string();
+    let initial_messages = agent.lock().await.messages().len();
+    let sessions = Arc::new(crate::server::session_manager::SessionManager::from_agents(
+        HashMap::from([(session_id.clone(), agent.clone())]),
+    ));
+    let queue = agent.lock().await.soft_interrupt_queue();
+    let queues: SessionInterruptQueues = Arc::new(RwLock::new(HashMap::from([(
+        session_id.clone(),
+        queue.clone(),
+    )])));
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    let members = Arc::new(RwLock::new(HashMap::from([(
+        session_id.clone(),
+        attached_swarm_member(&session_id, tx),
+    )])));
+    let tag = format!("{kind:?}").to_lowercase();
+    let (old, legacy, fresh) = (
+        format!("revoke-old-{tag}"),
+        format!("revoke-legacy-{tag}"),
+        format!("revoke-fresh-{tag}"),
+    );
+
+    let store = crate::server::session_control::store();
+    store.register(&session_id, None).unwrap();
+    let first = store.admit(&session_id).unwrap().generation;
+    write_generation_bound_task(&old, &session_id, Some(first));
+    write_generation_bound_task(&legacy, &session_id, None);
+
+    macro_rules! run {
+        ($task:expr) => {
+            dispatch_task_wake(
+                kind,
+                $task,
+                &session_id,
+                &sessions,
+                &queues,
+                &members,
+                &mut rx,
+            )
+            .await
+        };
+    }
+
+    assert_eq!(
+        run!(&old),
+        (true, true),
+        "a live generation is woken as before"
+    );
+
+    let stop = store
+        .request_stop(&session_id, &session_id, false, "stop")
+        .unwrap();
+    assert_eq!(
+        run!(&old),
+        (true, false),
+        "revoked generation: clients are told, the wake is withheld"
+    );
+    assert_eq!(
+        run!(&legacy),
+        (true, false),
+        "a task with no recorded generation cannot prove it outlived the stop"
+    );
+
+    let settled = store.settle(&session_id, stop.revision).unwrap();
+    assert_eq!(run!(&old), (true, false), "settled stop stays revoked");
+
+    let second = store
+        .resume(&session_id, settled.revision)
+        .unwrap()
+        .generation;
+    assert!(second > first);
+    write_generation_bound_task(&fresh, &session_id, Some(second));
+    assert_eq!(
+        run!(&old),
+        (true, false),
+        "the old generation stays revoked after the session resumes"
+    );
+    assert_eq!(
+        run!(&fresh),
+        (true, true),
+        "work started after the resume wakes normally"
+    );
+
+    assert_eq!(agent.lock().await.messages().len(), initial_messages);
+    assert!(queue.lock().unwrap().is_empty(), "no soft interrupt queued");
+    for id in [&old, &legacy, &fresh] {
+        let _ = std::fs::remove_file(crate::background::global().status_path_for(id));
+    }
+}
+
+#[tokio::test]
+async fn background_task_completion_wake_is_withheld_for_revoked_generation() {
+    revoked_wake_is_suppressed_but_resumed_work_wakes(WakeKind::Completion).await;
+}
+
+#[tokio::test]
+async fn background_task_stall_wake_is_withheld_for_revoked_generation() {
+    revoked_wake_is_suppressed_but_resumed_work_wakes(WakeKind::Stall).await;
+}
+
 #[path = "startup_recovery_tests.rs"]
 mod startup_recovery;
 

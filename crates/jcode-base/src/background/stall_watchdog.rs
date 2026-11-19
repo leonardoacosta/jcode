@@ -16,12 +16,15 @@ impl BackgroundTaskManager {
         let status_guard = self.progress_updates.lock().await;
         let stall_wake_seconds = stall_wake_seconds.max(Self::MIN_STALL_WAKE_SECONDS);
         let status_path = self.status_path_for(task_id);
+        // Same order as `update_progress`: finalize_lock after progress_updates.
+        let finalizing = self.finalize_lock.lock().await;
         let mut status = self.read_status_file(&status_path).await?;
         if status.status != BackgroundTaskStatus::Running {
             return None;
         }
         status.stall_wake_seconds = Some(stall_wake_seconds);
         self.write_status_file(&status_path, &status).await;
+        drop(finalizing);
         drop(status_guard);
 
         let task_id_owned = task_id.to_string();
@@ -145,8 +148,10 @@ impl BackgroundTaskManager {
             handle.abort();
         }
         let _status_guard = self.progress_updates.lock().await;
+        let _finalizing = self.finalize_lock.lock().await;
         let status_path = self.status_path_for(task_id);
         if let Some(mut status) = self.read_status_file(&status_path).await
+            && status.status == BackgroundTaskStatus::Running
             && status.stall_wake_seconds.is_some()
         {
             status.stall_wake_seconds = None;

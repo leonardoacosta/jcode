@@ -34,6 +34,48 @@ use model::{
     progress_event_record, progress_wait_reason, push_task_event, task_dir, terminal_event_record,
 };
 
+/// Resolves the execution generation a session is currently running under.
+/// Registered by the server, which owns durable session control; the base
+/// crate cannot depend on it. Tasks created while it is unset or returns
+/// `None` are not generation-bound.
+pub type GenerationSource = fn(&str) -> Option<u64>;
+
+static GENERATION_SOURCE: std::sync::OnceLock<GenerationSource> = std::sync::OnceLock::new();
+
+/// Register the generation resolver used to stamp new tasks. First call wins.
+pub fn set_generation_source(source: GenerationSource) {
+    let _ = GENERATION_SOURCE.set(source);
+}
+
+fn current_owner_generation(session_id: &str) -> Option<u64> {
+    GENERATION_SOURCE
+        .get()
+        .and_then(|source| source(session_id))
+}
+
+/// Whether the process behind a detached task is still the one registered.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ProcessIdentity {
+    /// Alive, and its start time matches (or identity cannot be disproved).
+    Alive,
+    Gone,
+    /// The pid is alive but belongs to a different, later process.
+    Reused,
+}
+
+/// Outcome of [`BackgroundTaskManager::reattach_detached_tasks`].
+#[derive(Debug, Clone, Default)]
+pub struct ReattachReport {
+    /// Still-running tasks whose pid and start time match; the caller resumes
+    /// output following for these.
+    pub reattached: Vec<TaskStatusFile>,
+    /// Tasks whose process ended while no server watched them and whose exit
+    /// status was never recorded.
+    pub lost: usize,
+    /// Tasks finalized from a recorded exit status.
+    pub finalized: usize,
+}
+
 /// Manages background task execution
 pub struct BackgroundTaskManager {
     tasks: Arc<RwLock<HashMap<String, RunningTask>>>,
@@ -47,6 +89,13 @@ pub struct BackgroundTaskManager {
     /// Status files already seen in a terminal state by [`Self::sweep`]. A
     /// finished task never runs again, so the periodic sweep skips them.
     settled: Arc<Mutex<std::collections::HashSet<PathBuf>>>,
+    /// Serializes finalization of detached tasks. The sweep, `list`, `status`,
+    /// the output follower and `wait` all reconcile the same status file, and
+    /// without this two of them both see `Running`, both write a terminal
+    /// status and both publish a completion, so the owner is woken twice.
+    /// Never held together with `progress_updates` in the opposite order:
+    /// finalization does not take that lock.
+    finalize_lock: Arc<Mutex<()>>,
     output_dir: PathBuf,
 }
 
@@ -66,6 +115,7 @@ impl BackgroundTaskManager {
             progress_updates: Arc::new(Mutex::new(())),
             stall_watchdogs: Arc::new(RwLock::new(HashMap::new())),
             settled: Arc::new(Mutex::new(std::collections::HashSet::new())),
+            finalize_lock: Arc::new(Mutex::new(())),
             output_dir,
         }
     }
@@ -154,9 +204,32 @@ impl BackgroundTaskManager {
         }
     }
 
+    /// Classify the process behind a detached task. A matching pid alone is
+    /// not enough: a later process can reuse it, so the start time captured at
+    /// registration must also match when both sides are known. Where either is
+    /// unavailable identity cannot be disproved and the process counts as
+    /// alive, so uncertain liveness is never reported as gone.
+    fn detached_process_identity(status: &TaskStatusFile) -> ProcessIdentity {
+        let Some(pid) = status.pid else {
+            return ProcessIdentity::Gone;
+        };
+        // Compare start times before the liveness verdict: an unreaped zombie
+        // that took a reused pid is still not our task's process, and reaping
+        // it would steal that child's exit status.
+        let running = crate::platform::is_process_running(pid);
+        match (
+            status.pid_start_time,
+            crate::platform::process_start_time(pid),
+        ) {
+            (Some(recorded), Some(current)) if recorded != current => ProcessIdentity::Reused,
+            _ if running => ProcessIdentity::Alive,
+            _ => ProcessIdentity::Gone,
+        }
+    }
+
     async fn finalize_detached_status_if_needed(
         &self,
-        mut status: TaskStatusFile,
+        status: TaskStatusFile,
         status_path: &std::path::Path,
     ) -> TaskStatusFile {
         if status.status != BackgroundTaskStatus::Running || !status.detached {
@@ -167,29 +240,55 @@ impl BackgroundTaskManager {
             return status;
         };
 
-        let reaped_exit = crate::platform::try_reap_child_process(pid).ok().flatten();
-
-        if reaped_exit.is_none() && crate::platform::is_process_running(pid) {
+        let identity = Self::detached_process_identity(&status);
+        // A reused pid may name an unrelated child of this process: reaping it
+        // would steal that child's exit status.
+        let reaped_exit = if identity == ProcessIdentity::Reused {
+            None
+        } else {
+            crate::platform::try_reap_child_process(pid).ok().flatten()
+        };
+        if reaped_exit.is_none() && identity == ProcessIdentity::Alive {
             return status;
         }
+
+        // The sweep, `list`, `status`, the output follower and `wait` all land
+        // here for the same file. Exactly one may finalize and publish; the
+        // rest must observe its result instead of announcing a second
+        // completion to the owning session.
+        let _finalizing = self.finalize_lock.lock().await;
+        let mut status = match self.read_status_file(status_path).await {
+            Some(fresh) if fresh.status != BackgroundTaskStatus::Running => return fresh,
+            Some(fresh) => fresh,
+            None => status,
+        };
 
         let output_path = self.output_path_for(&status.task_id);
         let output = fs::read_to_string(&output_path).await.unwrap_or_default();
         let exit_code = reaped_exit.or_else(|| Self::parse_exit_code_from_output(&output));
         let completed_at = Utc::now();
         let duration_secs = Self::status_duration_secs(&status.started_at, completed_at);
-        let final_status = if matches!(exit_code, Some(0)) {
-            BackgroundTaskStatus::Completed
-        } else {
-            BackgroundTaskStatus::Failed
+        // Only a status the process (or its wrapper) actually recorded decides
+        // success. A process that vanished without one is `Lost`: its outcome
+        // is unknown, never assumed good.
+        let final_status = match exit_code {
+            Some(0) => BackgroundTaskStatus::Completed,
+            Some(_) => BackgroundTaskStatus::Failed,
+            None => BackgroundTaskStatus::Lost,
         };
-        let final_error = if matches!(final_status, BackgroundTaskStatus::Failed) {
-            Some(match exit_code {
-                Some(code) => format!("Command exited with code {}", code),
-                None => "Detached command exited without a readable exit code".to_string(),
-            })
-        } else {
-            None
+        let final_error = match (&final_status, exit_code) {
+            (BackgroundTaskStatus::Failed, Some(code)) => {
+                Some(format!("Command exited with code {}", code))
+            }
+            (BackgroundTaskStatus::Lost, _) if identity == ProcessIdentity::Reused => Some(
+                "Process is gone: its pid was reused by another process. Exit status unknown; output file is kept"
+                    .to_string(),
+            ),
+            (BackgroundTaskStatus::Lost, _) => Some(
+                "Process exited (status unknown): no exit status was recorded while no server was watching. Output file is kept"
+                    .to_string(),
+            ),
+            _ => None,
         };
 
         status.status = final_status.clone();
@@ -357,6 +456,67 @@ impl BackgroundTaskManager {
         reconciled
     }
 
+    /// Reconcile every persisted detached task against its live process.
+    ///
+    /// Run once when a server image starts (reload, restart or crash
+    /// recovery). Detached tasks are the ones that outlive a server, so each
+    /// `Running` file is checked by pid *and* recorded start time:
+    /// - alive and matching: reattached. It stays `Running`, keeps its task
+    ///   id, owner generation and delivery flags, and is returned so the
+    ///   caller can resume output following and stall watching;
+    /// - gone or pid reused: finalized once through the same path as every
+    ///   other reconciler. A recorded exit status (wrapper marker or reaped
+    ///   child) decides success or failure; without one the task is `Lost`
+    ///   and its exit status stays unknown. The output file is never touched.
+    ///
+    /// Idempotent: a second call finds no new work to finalize and returns
+    /// the same live set, and finalization publishes at most one completion.
+    pub async fn reattach_detached_tasks(&self) -> ReattachReport {
+        let mut report = ReattachReport::default();
+        let Ok(mut entries) = fs::read_dir(&self.output_dir).await else {
+            return report;
+        };
+        let mut candidates = Vec::new();
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let path = entry.path();
+            if !path.to_string_lossy().ends_with(".status.json") {
+                continue;
+            }
+            let Some(status) = self.read_status_file(&path).await else {
+                continue;
+            };
+            if status.status == BackgroundTaskStatus::Running
+                && status.detached
+                && status.pid.is_some()
+            {
+                candidates.push((path, status));
+            }
+        }
+        candidates.sort_by(|a, b| a.1.task_id.cmp(&b.1.task_id));
+        for (path, status) in candidates {
+            if Self::detached_process_identity(&status) == ProcessIdentity::Alive {
+                report.reattached.push(status);
+                continue;
+            }
+            let settled = self.finalize_detached_status_if_needed(status, &path).await;
+            match settled.status {
+                BackgroundTaskStatus::Lost => report.lost += 1,
+                BackgroundTaskStatus::Running => report.reattached.push(settled),
+                _ => report.finalized += 1,
+            }
+        }
+        report
+    }
+
+    /// Execution generation recorded for a task, read straight from its status
+    /// file without reconciling it. `None` for unknown tasks and tasks that are
+    /// not generation-bound.
+    pub async fn owner_generation_of(&self, task_id: &str) -> Option<u64> {
+        self.read_status_file(&self.status_path_for(task_id))
+            .await?
+            .owner_generation
+    }
+
     pub fn reserve_task_info(&self) -> BackgroundTaskInfo {
         let task_id = Self::generate_task_id();
         let output_file = self.output_path_for(&task_id);
@@ -405,6 +565,8 @@ impl BackgroundTaskManager {
             wake,
             progress: None,
             event_history: Vec::new(),
+            pid_start_time: crate::platform::process_start_time(pid),
+            owner_generation: current_owner_generation(session_id),
             stall_wake_seconds: None,
         };
         self.write_status_file(&info.status_file, &status).await;
@@ -478,8 +640,11 @@ impl BackgroundTaskManager {
             wake,
             progress: None,
             event_history: Vec::new(),
+            pid_start_time: None,
+            owner_generation: current_owner_generation(session_id),
             stall_wake_seconds: None,
         };
+        let owner_generation = initial_status.owner_generation;
         if let Ok(json) = serde_json::to_string_pretty(&initial_status) {
             let _ = std::fs::write(&status_path, json);
         }
@@ -556,6 +721,8 @@ impl BackgroundTaskManager {
                 wake: wake_flag,
                 progress: prior_progress,
                 event_history: prior_event_history,
+                pid_start_time: None,
+                owner_generation,
                 stall_wake_seconds: None,
             };
             push_task_event(
@@ -619,6 +786,7 @@ impl BackgroundTaskManager {
             display_name,
             session_id: session_id.to_string(),
             status_path: status_path.clone(),
+            owner_generation,
             started_at,
             started_at_rfc3339,
             delivery_flags: delivery_flags_tx,
@@ -700,8 +868,11 @@ impl BackgroundTaskManager {
             wake,
             progress: None,
             event_history: Vec::new(),
+            pid_start_time: None,
+            owner_generation: current_owner_generation(session_id),
             stall_wake_seconds: None,
         };
+        let owner_generation = initial_status.owner_generation;
         if let Ok(json) = serde_json::to_string_pretty(&initial_status) {
             let _ = std::fs::write(&status_path, json);
         }
@@ -786,6 +957,8 @@ impl BackgroundTaskManager {
                 wake: wake_flag,
                 progress: prior_progress,
                 event_history: prior_event_history,
+                pid_start_time: None,
+                owner_generation,
                 stall_wake_seconds: None,
             };
             push_task_event(
@@ -840,6 +1013,7 @@ impl BackgroundTaskManager {
             display_name: None,
             session_id: session_id.to_string(),
             status_path: status_path.clone(),
+            owner_generation,
             started_at,
             started_at_rfc3339: initial_status.started_at.clone(),
             delivery_flags: delivery_flags_tx,
@@ -1147,10 +1321,17 @@ impl BackgroundTaskManager {
         event_kind: BackgroundTaskEventKind,
     ) -> Result<Option<TaskStatusFile>> {
         let _progress_update_guard = self.progress_updates.lock().await;
+        // Detached finalization takes only `finalize_lock`; holding it for the
+        // read-modify-write keeps this writer from restoring `Running` over a
+        // terminal status that was written in between (a second completion).
+        let _finalizing = self.finalize_lock.lock().await;
         let status_path = self.status_path_for(task_id);
         let Some(mut status) = self.read_status_file(&status_path).await else {
             return Ok(None);
         };
+        if status.status != BackgroundTaskStatus::Running {
+            return Ok(Some(status));
+        }
 
         let mut progress = progress.normalize();
         if let Some(existing) = status.progress.as_ref() {
@@ -1222,11 +1403,15 @@ impl BackgroundTaskManager {
         wake: bool,
     ) -> Result<Option<TaskStatusFile>> {
         let _status_guard = self.progress_updates.lock().await;
+        let _finalizing = self.finalize_lock.lock().await;
         let (notify, wake) = normalize_delivery(notify, wake);
         let status_path = self.status_path_for(task_id);
         let Some(mut status) = self.read_status_file(&status_path).await else {
             return Ok(None);
         };
+        if status.status != BackgroundTaskStatus::Running {
+            return Ok(Some(status));
+        }
         status.notify = notify;
         status.wake = wake;
         let event_status = status.status.clone();
@@ -1294,6 +1479,8 @@ impl BackgroundTaskManager {
                 wake: wake_flag,
                 progress: None,
                 event_history: Vec::new(),
+                pid_start_time: None,
+                owner_generation: task.owner_generation,
                 stall_wake_seconds: None,
             };
             let event_status = final_status.status.clone();
@@ -1315,6 +1502,8 @@ impl BackgroundTaskManager {
             let Some(mut status) = self.read_status_file(&status_path).await else {
                 return Ok(false);
             };
+            // A dead or pid-reused process is finalized here, so the signals
+            // below can never reach an unrelated process that took the pid.
             status = self
                 .finalize_detached_status_if_needed(status, &status_path)
                 .await;
@@ -1326,11 +1515,20 @@ impl BackgroundTaskManager {
                 return Ok(false);
             };
 
+            // Hold the finalization lock from kill to terminal write so a
+            // concurrent reconciler cannot publish its own outcome for the
+            // process this call is about to kill, then lose to this write.
+            let _finalizing = self.finalize_lock.lock().await;
+            match self.read_status_file(&status_path).await {
+                Some(fresh) if fresh.status == BackgroundTaskStatus::Running => status = fresh,
+                _ => return Ok(false),
+            }
+
             #[cfg(unix)]
             {
                 let _ = crate::platform::signal_detached_process_group(pid, libc::SIGTERM);
                 tokio::time::sleep(_graceful_timeout).await;
-                if crate::platform::is_process_running(pid) {
+                if Self::detached_process_identity(&status) == ProcessIdentity::Alive {
                     let _ = crate::platform::signal_detached_process_group(pid, libc::SIGKILL);
                 }
             }
@@ -1419,6 +1617,8 @@ impl BackgroundTaskManager {
                 event_history: prior_status
                     .map(|status| status.event_history)
                     .unwrap_or_default(),
+                pid_start_time: None,
+                owner_generation: task.owner_generation,
                 stall_wake_seconds: None,
             };
             push_task_event(
@@ -1547,7 +1747,7 @@ impl BackgroundTaskManager {
             })
             .unwrap_or_default();
         drop(guard);
-        matches.retain(|status| status.pid.is_some_and(crate::platform::is_process_running));
+        matches.retain(|status| Self::detached_process_identity(status) == ProcessIdentity::Alive);
 
         matches.sort_by(|a, b| a.task_id.cmp(&b.task_id));
         matches

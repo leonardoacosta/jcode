@@ -714,6 +714,31 @@ fn format_background_task_notification_markdown_renders_superseded_status() {
 }
 
 #[test]
+fn lost_background_task_renders_as_unknown_status_never_success() {
+    let task = BackgroundTaskCompleted {
+        task_id: "lost123".to_string(),
+        tool_name: "bash".to_string(),
+        display_name: None,
+        session_id: "session".to_string(),
+        status: BackgroundTaskStatus::Lost,
+        exit_code: None,
+        output_preview: "partial output".to_string(),
+        output_file: std::path::PathBuf::from("/tmp/lost.output"),
+        duration_secs: 5.0,
+        notify: true,
+        wake: false,
+    };
+    let rendered = format_background_task_notification_markdown(&task);
+    assert!(rendered.contains("? exited (status unknown)"), "{rendered}");
+    assert!(!rendered.contains("✓ completed") && !rendered.contains("✗ failed"));
+    assert!(rendered.contains("partial output"));
+    assert_eq!(
+        background_task_status_notice(&task),
+        "Background task exited (status unknown) · bash"
+    );
+}
+
+#[test]
 fn format_background_task_progress_markdown_uses_compact_multiline_layout() {
     let rendered = format_background_task_progress_markdown(&BackgroundTaskProgressEvent {
         task_id: "bgprogress".to_string(),

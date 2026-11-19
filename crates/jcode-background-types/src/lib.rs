@@ -9,6 +9,9 @@ pub enum BackgroundTaskStatus {
     Completed,
     Superseded,
     Failed,
+    /// The process behind a persisted task is gone and its exit status was never
+    /// recorded (or its pid now belongs to another process). Never a success.
+    Lost,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

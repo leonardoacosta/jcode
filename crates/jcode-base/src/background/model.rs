@@ -36,6 +36,7 @@ pub enum BackgroundTaskEventKind {
     Superseded,
     Cancelled,
     DeliveryUpdated,
+    Lost,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -68,6 +69,19 @@ pub struct TaskStatusFile {
     pub duration_secs: Option<f64>,
     #[serde(default)]
     pub pid: Option<u32>,
+    /// Start time of `pid` (clock ticks since boot, Linux only) captured when
+    /// the process was registered. A matching pid with a different start time
+    /// is a reused pid, never the original task. `None` for files written by
+    /// older builds or where the platform cannot report it; identity then
+    /// falls back to plain liveness.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pid_start_time: Option<u64>,
+    /// Execution generation of the owning session when the task was created
+    /// (see `server::session_control`). Completion wakes are suppressed once
+    /// that generation is revoked by a stop. `None` for legacy files and tasks
+    /// created outside a controlled turn: those are not generation-bound.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner_generation: Option<u64>,
     /// PID of the process whose in-process future owns (or owned) this task.
     /// `None` for files written by older builds. Used to reconcile phantom
     /// `Running` entries after the owning server crashes or exec-reloads;
@@ -148,6 +162,7 @@ fn terminal_event_kind(
             BackgroundTaskEventKind::Cancelled
         }
         BackgroundTaskStatus::Failed => BackgroundTaskEventKind::Failed,
+        BackgroundTaskStatus::Lost => BackgroundTaskEventKind::Lost,
         BackgroundTaskStatus::Running => BackgroundTaskEventKind::Progress,
     }
 }
@@ -245,6 +260,7 @@ pub(super) struct RunningTask {
     pub(super) display_name: Option<String>,
     pub(super) session_id: String,
     pub(super) status_path: PathBuf,
+    pub(super) owner_generation: Option<u64>,
     pub(super) started_at: Instant,
     pub(super) started_at_rfc3339: String,
     pub(super) delivery_flags: watch::Sender<(bool, bool)>,

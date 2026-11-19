@@ -44,6 +44,61 @@ pub(super) async fn admit_runtime_delivery(
     Some(activity)
 }
 
+/// True when a wake for this task must be withheld because the session
+/// generation that owned it was revoked by a stop. The completion is still
+/// recorded in history and shown to attached clients; it just must not start,
+/// queue into or externally wake work the stop already cancelled. Sessions
+/// without a control record are never revoked.
+async fn wake_revoked_for_task(task_id: &str, session_id: &str) -> bool {
+    // A task with no recorded generation (legacy file, or created outside a
+    // controlled turn) cannot name one, so only a session whose stop is still
+    // in force suppresses it.
+    let generation = crate::background::global()
+        .owner_generation_of(task_id)
+        .await
+        .unwrap_or(u64::MAX);
+    let revoked = super::session_control::store().wake_revoked(session_id, generation);
+    if revoked {
+        crate::logging::info(&format!(
+            "Suppressed background task wake for {task_id}: generation {generation} of session {session_id} is revoked"
+        ));
+    }
+    revoked
+}
+
+/// Reconcile detached background tasks after a reload, restart or crash.
+///
+/// Live tasks (pid and start time match) stay `Running` and get their output
+/// follower and stall watchdog back; tasks whose process ended are finalized
+/// once, as `Lost` when no exit status was recorded. A reattached process that
+/// belongs to a session with an unsettled stop is kept in that session's stop
+/// barrier, so the stop reports unresolved instead of settling over a process
+/// of the revoked generation that may still be running.
+pub(super) async fn reattach_background_tasks_on_startup() {
+    let report = crate::background::global().reattach_detached_tasks().await;
+    let store = super::session_control::store();
+    for task in &report.reattached {
+        if let Some(pid) = task.pid
+            && let Err(error) =
+                store.retain_reattached_child(&task.session_id, pid, task.pid_start_time)
+        {
+            crate::logging::warn(&format!(
+                "Cannot retain reattached task {} in stop barrier of {}: {error:#}",
+                task.task_id, task.session_id
+            ));
+        }
+        crate::tool::resume_reattached_task(task);
+    }
+    if !report.reattached.is_empty() || report.lost > 0 || report.finalized > 0 {
+        crate::logging::info(&format!(
+            "Reattached {} background task(s); marked {} lost, finalized {} from recorded exit status",
+            report.reattached.len(),
+            report.lost,
+            report.finalized
+        ));
+    }
+}
+
 async fn emit_external_wake(
     session_id: &str,
     reason: &str,
@@ -120,6 +175,7 @@ pub(super) async fn dispatch_background_task_completion(
     }
 
     if task.wake
+        && !wake_revoked_for_task(&task.task_id, &task.session_id).await
         && !emit_external_wake(
             &task.session_id,
             "background_task_completed",
@@ -207,6 +263,7 @@ pub(super) async fn dispatch_background_task_stalled(
     }
 
     if task.wake
+        && !wake_revoked_for_task(&task.task_id, &task.session_id).await
         && !emit_external_wake(
             &task.session_id,
             "background_task_stalled",
@@ -757,6 +814,81 @@ pub(super) async fn dispatch_ui_activity(
 mod tests {
     use super::*;
     use crate::bus::{BatchProgress, ToolEvent, ToolStatus};
+
+    async fn write_owned_task(task_id: &str, session_id: &str, generation: Option<u64>) {
+        let manager = crate::background::global();
+        let status = crate::background::TaskStatusFile {
+            task_id: task_id.to_string(),
+            tool_name: "bash".to_string(),
+            display_name: None,
+            session_id: session_id.to_string(),
+            status: crate::bus::BackgroundTaskStatus::Running,
+            exit_code: None,
+            error: None,
+            started_at: chrono::Utc::now().to_rfc3339(),
+            completed_at: None,
+            duration_secs: None,
+            pid: None,
+            owner_pid: None,
+            owner_instance: None,
+            detached: true,
+            notify: true,
+            wake: true,
+            progress: None,
+            event_history: Vec::new(),
+            stall_wake_seconds: None,
+            pid_start_time: None,
+            owner_generation: generation,
+        };
+        tokio::fs::create_dir_all(manager.status_path_for(task_id).parent().unwrap())
+            .await
+            .unwrap();
+        tokio::fs::write(
+            manager.status_path_for(task_id),
+            serde_json::to_string(&status).unwrap(),
+        )
+        .await
+        .unwrap();
+    }
+
+    // The env lock must span the awaits: JCODE_HOME is process-global.
+    #[allow(clippy::await_holding_lock)]
+    #[tokio::test]
+    async fn reattached_task_wake_is_suppressed_only_after_its_generation_is_revoked() {
+        let _guard = crate::storage::lock_test_env();
+        let home = tempfile::tempdir().unwrap();
+        let prev = std::env::var_os("JCODE_HOME");
+        crate::env::set_var("JCODE_HOME", home.path());
+        let store = super::super::session_control::store();
+        store.register("wake-revoke-session", None).unwrap();
+        let generation = store.admit("wake-revoke-session").unwrap().generation;
+        write_owned_task("wakerev-bound", "wake-revoke-session", Some(generation)).await;
+        write_owned_task("wakerev-legacy", "wake-revoke-session", None).await;
+
+        assert!(!wake_revoked_for_task("wakerev-bound", "wake-revoke-session").await);
+        assert!(!wake_revoked_for_task("wakerev-legacy", "wake-revoke-session").await);
+        assert!(
+            !wake_revoked_for_task("wakerev-missing", "uncontrolled-session").await,
+            "sessions without a control record are never revoked"
+        );
+
+        store
+            .request_stop("wake-revoke-session", "wake-revoke-session", false, "stop")
+            .unwrap();
+        assert!(wake_revoked_for_task("wakerev-bound", "wake-revoke-session").await);
+        assert!(
+            wake_revoked_for_task("wakerev-legacy", "wake-revoke-session").await,
+            "a task with no recorded generation cannot prove it is newer than the stop"
+        );
+
+        for id in ["wakerev-bound", "wakerev-legacy"] {
+            let _ = tokio::fs::remove_file(crate::background::global().status_path_for(id)).await;
+        }
+        match prev {
+            Some(value) => crate::env::set_var("JCODE_HOME", value),
+            None => crate::env::remove_var("JCODE_HOME"),
+        }
+    }
 
     #[tokio::test]
     async fn silent_background_completion_fanouts_lifecycle_only() {

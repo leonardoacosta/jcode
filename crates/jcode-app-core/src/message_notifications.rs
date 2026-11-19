@@ -78,6 +78,7 @@ fn format_background_task_status(status: &BackgroundTaskStatus) -> &'static str 
         BackgroundTaskStatus::Completed => "✓ completed",
         BackgroundTaskStatus::Superseded => "↻ superseded",
         BackgroundTaskStatus::Failed => "✗ failed",
+        BackgroundTaskStatus::Lost => "? exited (status unknown)",
         BackgroundTaskStatus::Running => "running",
     }
 }
@@ -207,6 +208,10 @@ pub fn background_task_status_notice(task: &BackgroundTaskCompleted) -> String {
             ),
             None => format!("Background task failed · {}", task.tool_name),
         },
+        BackgroundTaskStatus::Lost => format!(
+            "Background task exited (status unknown) · {}",
+            task.tool_name
+        ),
         BackgroundTaskStatus::Running => format!("Background task running · {}", task.tool_name),
     }
 }

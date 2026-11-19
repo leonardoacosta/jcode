@@ -242,6 +242,22 @@ pub fn raise_nofile_limit_best_effort(minimum_soft_limit: u64) {
     }
 }
 
+/// Start time (clock ticks since boot) that tells a live process from a later
+/// process that reused its pid. `None` when unreadable or off Linux.
+pub fn process_start_time(pid: u32) -> Option<u64> {
+    #[cfg(target_os = "linux")]
+    {
+        let stat = std::fs::read_to_string(format!("/proc/{pid}/stat")).ok()?;
+        let close = stat.rfind(')')?;
+        stat[close + 1..].split_whitespace().nth(19)?.parse().ok()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = pid;
+        None
+    }
+}
+
 /// Check if a process is running by PID.
 ///
 /// On Unix, uses `kill(pid, 0)` to check without sending a signal. Linux also

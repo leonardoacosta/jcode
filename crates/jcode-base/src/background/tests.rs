@@ -608,6 +608,8 @@ fn running_status_fixture(task_id: &str, session_id: &str) -> TaskStatusFile {
         progress: None,
         event_history: Vec::new(),
         stall_wake_seconds: None,
+        pid_start_time: None,
+        owner_generation: None,
     }
 }
 
@@ -1039,5 +1041,541 @@ async fn sweep_counts_tasks_and_skips_settled_files() -> Result<()> {
     std::fs::remove_file(&info.status_file)?;
     assert_eq!(manager.sweep().await, 0);
     assert!(manager.settled.lock().await.is_empty());
+    Ok(())
+}
+
+fn detached_fixture(task_id: &str, pid: u32) -> TaskStatusFile {
+    let mut status = running_status_fixture(task_id, "session-detached");
+    status.tool_name = "bash".to_string();
+    status.detached = true;
+    status.pid = Some(pid);
+    status.pid_start_time = crate::platform::process_start_time(pid);
+    status.owner_generation = Some(3);
+    status.notify = true;
+    status.wake = true;
+    status
+}
+
+fn reaped_pid() -> u32 {
+    let mut child = std::process::Command::new("true")
+        .spawn()
+        .expect("spawn child");
+    let pid = child.id();
+    child.wait().expect("wait child");
+    pid
+}
+
+fn completions_for(
+    events: &mut tokio::sync::broadcast::Receiver<BusEvent>,
+    task_id: &str,
+) -> Vec<crate::bus::BackgroundTaskCompleted> {
+    let mut found = Vec::new();
+    while let Ok(event) = events.try_recv() {
+        if let BusEvent::BackgroundTaskCompleted(done) = event
+            && done.task_id == task_id
+        {
+            found.push(done);
+        }
+    }
+    found
+}
+
+#[tokio::test]
+async fn reattach_keeps_live_detached_task_running_and_is_idempotent() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    let mut child = std::process::Command::new("sleep").arg("30").spawn()?;
+    write_status_fixture(&manager, &detached_fixture("live1aaaaa", child.id())).await;
+
+    for _ in 0..2 {
+        let report = manager.reattach_detached_tasks().await;
+        assert_eq!(report.reattached.len(), 1);
+        assert_eq!((report.lost, report.finalized), (0, 0));
+    }
+    let status = manager.status("live1aaaaa").await.expect("status");
+    assert_eq!(status.status, BackgroundTaskStatus::Running);
+    assert_eq!(status.owner_generation, Some(3));
+    assert!(status.notify && status.wake, "delivery flags survive");
+    assert_eq!(manager.owner_generation_of("live1aaaaa").await, Some(3));
+    child.kill()?;
+    child.wait()?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn reattach_marks_vanished_task_lost_once_never_success() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    let mut events = Bus::global().subscribe();
+    let mut fixture = detached_fixture("gone1aaaaa", reaped_pid());
+    fixture.pid_start_time = Some(1);
+    write_status_fixture(&manager, &fixture).await;
+    tokio::fs::write(manager.output_path_for("gone1aaaaa"), "partial output\n").await?;
+
+    let first = manager.reattach_detached_tasks().await;
+    let second = manager.reattach_detached_tasks().await;
+    assert_eq!((first.lost, second.lost), (1, 0));
+    assert!(first.reattached.is_empty() && second.reattached.is_empty());
+    let status = manager.status("gone1aaaaa").await.expect("status");
+    assert_eq!(status.status, BackgroundTaskStatus::Lost);
+    assert_eq!(status.exit_code, None);
+    assert!(status.completed_at.is_some());
+    assert!(
+        tokio::fs::read_to_string(manager.output_path_for("gone1aaaaa"))
+            .await?
+            .contains("partial output"),
+        "output is preserved"
+    );
+    let done = completions_for(&mut events, "gone1aaaaa");
+    assert_eq!(done.len(), 1, "exactly one completion");
+    assert_eq!(done[0].status, BackgroundTaskStatus::Lost);
+    Ok(())
+}
+
+#[tokio::test]
+async fn reattach_uses_recorded_exit_marker_for_success_and_failure() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    for (id, code, expected) in [
+        ("exit0aaaaa", 0, BackgroundTaskStatus::Completed),
+        ("exit3aaaaa", 3, BackgroundTaskStatus::Failed),
+    ] {
+        write_status_fixture(&manager, &detached_fixture(id, reaped_pid())).await;
+        tokio::fs::write(
+            manager.output_path_for(id),
+            format!("out\n{EXIT_MARKER_PREFIX}{code} ---\n"),
+        )
+        .await?;
+        let report = manager.reattach_detached_tasks().await;
+        assert_eq!(report.finalized, 1);
+        let status = manager.status(id).await.expect("status");
+        assert_eq!(status.status, expected);
+        assert_eq!(status.exit_code, Some(code));
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+#[tokio::test]
+async fn reattach_treats_reused_pid_as_gone_without_touching_the_process() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    let mut child = std::process::Command::new("sleep").arg("30").spawn()?;
+    let mut fixture = detached_fixture("reuse1aaaa", child.id());
+    fixture.pid_start_time = fixture.pid_start_time.map(|t| t + 1);
+    write_status_fixture(&manager, &fixture).await;
+
+    let report = manager.reattach_detached_tasks().await;
+    assert!(report.reattached.is_empty());
+    assert_eq!(report.lost, 1);
+    assert!(
+        child.try_wait()?.is_none(),
+        "unrelated process must neither be killed nor reaped"
+    );
+    child.kill()?;
+    child.wait()?;
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn concurrent_reconcilers_publish_a_single_completion() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = Arc::new(BackgroundTaskManager::with_output_dir(
+        tmp.path().to_path_buf(),
+    ));
+    let mut events = Bus::global().subscribe();
+    write_status_fixture(&manager, &detached_fixture("race1aaaaa", reaped_pid())).await;
+    tokio::fs::write(
+        manager.output_path_for("race1aaaaa"),
+        format!("{EXIT_MARKER_PREFIX}0 ---\n"),
+    )
+    .await?;
+
+    let mut joins = Vec::new();
+    for i in 0..8 {
+        let manager = manager.clone();
+        joins.push(tokio::spawn(async move {
+            if i % 2 == 0 {
+                manager.status("race1aaaaa").await;
+            } else {
+                manager.reattach_detached_tasks().await;
+            }
+        }));
+    }
+    for join in joins {
+        join.await?;
+    }
+    assert_eq!(completions_for(&mut events, "race1aaaaa").len(), 1);
+    Ok(())
+}
+
+#[test]
+fn legacy_status_file_without_generation_fields_still_loads() {
+    let json = serde_json::json!({
+        "task_id": "legacy1aaaa",
+        "tool_name": "bash",
+        "session_id": "s",
+        "status": "running",
+        "started_at": Utc::now().to_rfc3339(),
+        "detached": true,
+        "pid": 42,
+        "notify": true,
+        "wake": false
+    });
+    let status: TaskStatusFile = serde_json::from_value(json).expect("legacy file loads");
+    assert_eq!(status.pid_start_time, None);
+    assert_eq!(status.owner_generation, None);
+    let back = serde_json::to_string(&status).unwrap();
+    assert!(!back.contains("owner_generation") && !back.contains("pid_start_time"));
+}
+
+#[cfg(unix)]
+fn spawn_group_leader_sleep() -> std::process::Child {
+    use std::os::unix::process::CommandExt;
+    std::process::Command::new("sleep")
+        .arg("30")
+        .process_group(0)
+        .spawn()
+        .expect("spawn group leader")
+}
+
+#[cfg(target_os = "linux")]
+#[allow(
+    clippy::zombie_processes,
+    reason = "early `?` returns end the test process, which reaps the sleeper"
+)]
+#[tokio::test]
+async fn cancel_of_reattached_task_kills_it_and_never_double_publishes() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    let mut events = Bus::global().subscribe();
+    let mut child = spawn_group_leader_sleep();
+    write_status_fixture(&manager, &detached_fixture("cancel1aaaa", child.id())).await;
+    assert_eq!(manager.reattach_detached_tasks().await.reattached.len(), 1);
+
+    assert!(manager.cancel("cancel1aaaa").await?);
+    let status = manager.status("cancel1aaaa").await.expect("status");
+    assert_eq!(status.status, BackgroundTaskStatus::Failed);
+    assert!(
+        child.wait()?.code().is_none(),
+        "process was terminated by a signal"
+    );
+    assert!(
+        !manager.cancel("cancel1aaaa").await?,
+        "second cancel is a no-op"
+    );
+    // A user cancel is reported by the caller; it must not also surface as a
+    // reconciler `Lost`/second completion for the same task.
+    assert!(completions_for(&mut events, "cancel1aaaa").is_empty());
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+#[allow(
+    clippy::zombie_processes,
+    reason = "early `?` returns end the test process, which reaps the sleeper"
+)]
+#[tokio::test]
+async fn cancel_never_signals_a_process_that_reused_the_pid() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    let mut child = spawn_group_leader_sleep();
+    let mut fixture = detached_fixture("cancel2aaaa", child.id());
+    fixture.pid_start_time = fixture.pid_start_time.map(|t| t + 1);
+    write_status_fixture(&manager, &fixture).await;
+
+    assert!(!manager.cancel("cancel2aaaa").await?);
+    assert_eq!(
+        manager.status("cancel2aaaa").await.expect("status").status,
+        BackgroundTaskStatus::Lost
+    );
+    assert!(child.try_wait()?.is_none(), "unrelated process survives");
+    child.kill()?;
+    child.wait()?;
+    Ok(())
+}
+
+fn stamping_generation_source(session_id: &str) -> Option<u64> {
+    (session_id == "stamp-generation-session").then_some(7)
+}
+
+#[tokio::test]
+async fn register_detached_task_stamps_start_time_and_owner_generation() -> Result<()> {
+    set_generation_source(stamping_generation_source);
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    let mut child = std::process::Command::new("sleep").arg("30").spawn()?;
+    let info = manager.reserve_task_info();
+    manager
+        .register_detached_task(
+            &info,
+            "bash",
+            None,
+            "stamp-generation-session",
+            child.id(),
+            &Utc::now().to_rfc3339(),
+            true,
+            true,
+        )
+        .await;
+    let status = manager.status(&info.task_id).await.expect("status");
+    assert_eq!(status.pid, Some(child.id()));
+    assert!(status.detached);
+    assert_eq!(
+        status.pid_start_time,
+        crate::platform::process_start_time(child.id())
+    );
+    #[cfg(target_os = "linux")]
+    assert!(
+        status.pid_start_time.is_some(),
+        "Linux always has a start time"
+    );
+    assert_eq!(status.owner_generation, Some(7));
+    assert_eq!(manager.owner_generation_of(&info.task_id).await, Some(7));
+
+    // A session the source does not know stays unbound.
+    let other = manager.reserve_task_info();
+    manager
+        .register_detached_task(
+            &other,
+            "bash",
+            None,
+            "unbound-session",
+            child.id(),
+            &Utc::now().to_rfc3339(),
+            false,
+            false,
+        )
+        .await;
+    assert_eq!(manager.owner_generation_of(&other.task_id).await, None);
+    child.kill()?;
+    child.wait()?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn legacy_running_file_is_reattached_when_alive_and_lost_when_dead() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    let mut child = std::process::Command::new("sleep").arg("30").spawn()?;
+    for (id, pid) in [("legacyalive", child.id()), ("legacydead1", reaped_pid())] {
+        let mut legacy = detached_fixture(id, pid);
+        legacy.pid_start_time = None;
+        legacy.owner_generation = None;
+        write_status_fixture(&manager, &legacy).await;
+    }
+    let report = manager.reattach_detached_tasks().await;
+    assert_eq!(report.reattached.len(), 1);
+    assert_eq!(report.reattached[0].task_id, "legacyalive");
+    assert_eq!(report.lost, 1);
+    assert_eq!(
+        manager.status("legacyalive").await.expect("alive").status,
+        BackgroundTaskStatus::Running
+    );
+    let dead = manager.status("legacydead1").await.expect("dead");
+    assert_eq!(
+        (dead.status, dead.exit_code),
+        (BackgroundTaskStatus::Lost, None)
+    );
+    child.kill()?;
+    child.wait()?;
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+#[tokio::test]
+async fn unreaped_zombie_with_reused_pid_is_not_reaped() -> Result<()> {
+    let mut child = std::process::Command::new("true").spawn()?;
+    // Wait for it to become a zombie without reaping it.
+    for _ in 0..200 {
+        if !crate::platform::is_process_running(child.id()) {
+            break;
+        }
+        sleep(Duration::from_millis(10)).await;
+    }
+    assert!(!crate::platform::is_process_running(child.id()));
+    let mut ours = detached_fixture("zombie1aaaa", child.id());
+    assert_eq!(
+        BackgroundTaskManager::detached_process_identity(&ours),
+        ProcessIdentity::Gone,
+        "the task's own zombie is gone and may be reaped"
+    );
+    ours.pid_start_time = ours.pid_start_time.map(|t| t + 1);
+    assert_eq!(
+        BackgroundTaskManager::detached_process_identity(&ours),
+        ProcessIdentity::Reused,
+        "a zombie that merely holds the pid must not be reaped as the task"
+    );
+
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    write_status_fixture(&manager, &ours).await;
+    assert_eq!(manager.reattach_detached_tasks().await.lost, 1);
+    assert!(
+        child.try_wait()?.is_some(),
+        "the zombie is still ours to reap here, so its exit status is intact"
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn progress_and_delivery_writers_never_overwrite_a_terminal_status() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = BackgroundTaskManager::with_output_dir(tmp.path().to_path_buf());
+    let mut events = Bus::global().subscribe();
+    write_status_fixture(&manager, &detached_fixture("term1aaaaa", reaped_pid())).await;
+    tokio::fs::write(
+        manager.output_path_for("term1aaaaa"),
+        format!("{EXIT_MARKER_PREFIX}0 ---\n"),
+    )
+    .await?;
+    assert_eq!(
+        manager.status("term1aaaaa").await.expect("status").status,
+        BackgroundTaskStatus::Completed
+    );
+
+    let progress = BackgroundTaskProgress {
+        kind: BackgroundTaskProgressKind::Determinate,
+        percent: Some(50.0),
+        message: Some("late".to_string()),
+        current: None,
+        total: None,
+        unit: None,
+        eta_seconds: None,
+        updated_at: Utc::now().to_rfc3339(),
+        source: BackgroundTaskProgressSource::Reported,
+    };
+    let after_progress = manager
+        .update_progress("term1aaaaa", progress)
+        .await?
+        .expect("file exists");
+    let after_delivery = manager
+        .update_delivery("term1aaaaa", false, false)
+        .await?
+        .expect("file exists");
+    for status in [after_progress, after_delivery] {
+        assert_eq!(status.status, BackgroundTaskStatus::Completed);
+        assert!(status.progress.is_none() && status.notify && status.wake);
+    }
+    let on_disk = manager.status("term1aaaaa").await.expect("status");
+    assert_eq!(on_disk.status, BackgroundTaskStatus::Completed);
+    assert_eq!(completions_for(&mut events, "term1aaaaa").len(), 1);
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn progress_update_racing_finalize_yields_one_completion_and_terminal_status() -> Result<()> {
+    let tmp = tempdir()?;
+    let manager = Arc::new(BackgroundTaskManager::with_output_dir(
+        tmp.path().to_path_buf(),
+    ));
+    let mut events = Bus::global().subscribe();
+    for round in 0..20 {
+        let id = format!("pgrace{round:04}");
+        write_status_fixture(&manager, &detached_fixture(&id, reaped_pid())).await;
+        tokio::fs::write(
+            manager.output_path_for(&id),
+            format!("{EXIT_MARKER_PREFIX}0 ---\n"),
+        )
+        .await?;
+        let mut joins = Vec::new();
+        for i in 0..6u32 {
+            let manager = manager.clone();
+            let id = id.clone();
+            joins.push(tokio::spawn(async move {
+                if i % 2 == 0 {
+                    let progress = BackgroundTaskProgress {
+                        kind: BackgroundTaskProgressKind::Determinate,
+                        percent: Some(f32::from(i as u8) * 10.0),
+                        message: Some(format!("step {i}")),
+                        current: None,
+                        total: None,
+                        unit: None,
+                        eta_seconds: None,
+                        updated_at: Utc::now().to_rfc3339(),
+                        source: BackgroundTaskProgressSource::Reported,
+                    };
+                    let _ = manager.update_progress(&id, progress).await;
+                } else {
+                    let _ = manager.reattach_detached_tasks().await;
+                    let _ = manager.status(&id).await;
+                }
+            }));
+        }
+        for join in joins {
+            join.await?;
+        }
+        let status = manager.status(&id).await.expect("status");
+        assert_eq!(
+            status.status,
+            BackgroundTaskStatus::Completed,
+            "round {round}"
+        );
+        assert_eq!(completions_for(&mut events, &id).len(), 1, "round {round}");
+        // And it stays terminal: another reconcile must not republish.
+        manager.reattach_detached_tasks().await;
+        assert!(
+            completions_for(&mut events, &id).is_empty(),
+            "round {round}"
+        );
+    }
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn stall_arm_and_disarm_racing_finalize_yield_one_completion_and_terminal_status()
+-> Result<()> {
+    let tmp = tempdir()?;
+    let manager = Arc::new(BackgroundTaskManager::with_output_dir(
+        tmp.path().to_path_buf(),
+    ));
+    let mut events = Bus::global().subscribe();
+    for round in 0..30 {
+        let id = format!("stgrace{round:04}");
+        let mut fixture = detached_fixture(&id, reaped_pid());
+        if round % 2 == 1 {
+            fixture.stall_wake_seconds = Some(60);
+        }
+        write_status_fixture(&manager, &fixture).await;
+        tokio::fs::write(
+            manager.output_path_for(&id),
+            format!("{EXIT_MARKER_PREFIX}0 ---\n"),
+        )
+        .await?;
+        let mut joins = Vec::new();
+        for i in 0..6u32 {
+            let manager = manager.clone();
+            let id = id.clone();
+            joins.push(tokio::spawn(async move {
+                match i % 3 {
+                    0 => {
+                        let _ = manager.arm_stall_watchdog(&id, 60).await;
+                    }
+                    1 => {
+                        let _ = manager.disarm_stall_watchdog(&id).await;
+                    }
+                    _ => {
+                        let _ = manager.reattach_detached_tasks().await;
+                    }
+                }
+            }));
+        }
+        for join in joins {
+            join.await?;
+        }
+        let status = manager.status(&id).await.expect("status");
+        assert_eq!(
+            status.status,
+            BackgroundTaskStatus::Completed,
+            "round {round}"
+        );
+        assert_eq!(completions_for(&mut events, &id).len(), 1, "round {round}");
+        manager.reattach_detached_tasks().await;
+        assert!(
+            completions_for(&mut events, &id).is_empty(),
+            "round {round}"
+        );
+        let _ = manager.disarm_stall_watchdog(&id).await;
+    }
     Ok(())
 }

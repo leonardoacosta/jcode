@@ -56,6 +56,7 @@ impl BackgroundTaskManager {
                         BackgroundTaskStatus::Completed => "completed",
                         BackgroundTaskStatus::Superseded => "superseded",
                         BackgroundTaskStatus::Failed => "failed",
+                        BackgroundTaskStatus::Lost => "lost",
                     };
                     if !status_filter.is_empty() && !status_filter.contains(status_label) {
                         continue;
@@ -92,6 +93,47 @@ mod tests {
         std::fs::create_dir(&unremovable)?;
         assert!(manager.cleanup(0).await.is_err());
         assert!(unremovable.is_dir());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn cleanup_status_filter_selects_lost_tasks_only() -> Result<()> {
+        let dir = tempfile::tempdir()?;
+        let manager = BackgroundTaskManager::with_output_dir(dir.path().to_path_buf());
+        for (id, status) in [
+            ("lostcleanup", BackgroundTaskStatus::Lost),
+            ("failcleanup", BackgroundTaskStatus::Failed),
+        ] {
+            let file = TaskStatusFile {
+                task_id: id.to_string(),
+                tool_name: "bash".to_string(),
+                display_name: None,
+                session_id: "s".to_string(),
+                status,
+                exit_code: None,
+                error: None,
+                started_at: chrono::Utc::now().to_rfc3339(),
+                completed_at: Some(chrono::Utc::now().to_rfc3339()),
+                duration_secs: None,
+                pid: None,
+                owner_pid: None,
+                owner_instance: None,
+                detached: true,
+                notify: false,
+                wake: false,
+                progress: None,
+                event_history: Vec::new(),
+                stall_wake_seconds: None,
+                pid_start_time: None,
+                owner_generation: None,
+            };
+            std::fs::write(manager.status_path_for(id), serde_json::to_string(&file)?)?;
+        }
+        let only_lost = std::collections::HashSet::from(["lost"]);
+        let result = manager.cleanup_filtered(0, &only_lost, false).await?;
+        assert_eq!(result.removed_files, 1);
+        assert!(!manager.status_path_for("lostcleanup").exists());
+        assert!(manager.status_path_for("failcleanup").exists());
         Ok(())
     }
 }
