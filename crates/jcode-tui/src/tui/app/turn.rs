@@ -1009,6 +1009,7 @@ impl App {
                                         self.append_streaming_text(&compact_msg);
                                         self.context_warning_shown = false;
                                     }
+                                    StreamEvent::GatewayRoute { .. } => {}
                                     StreamEvent::UpstreamProvider { provider } => {
                                         // Store the upstream provider (e.g., Fireworks, Together)
                                         self.upstream_provider = Some(provider);

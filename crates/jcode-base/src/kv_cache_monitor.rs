@@ -454,6 +454,21 @@ impl KvCacheMonitor {
         });
     }
 
+    /// Bind the route a gateway response reported to the request it served.
+    /// The connection fingerprint stands in for the account, so a gateway
+    /// failover between connections classifies as an account switch. Absent
+    /// values leave the request's existing route untouched.
+    pub fn note_gateway_route(&mut self, provider: Option<&str>, connection: Option<&str>) {
+        if let Some(pending) = self.pending.as_mut() {
+            if let Some(provider) = provider {
+                pending.route.upstream_provider = Some(provider.to_string());
+            }
+            if let Some(connection) = connection {
+                pending.route.account = Some(connection.to_string());
+            }
+        }
+    }
+
     /// Mark compaction evidenced by the completed provider stream, not by a
     /// guessed token-count drop. This applies only to the current request.
     pub fn note_provider_compaction(&mut self) {
@@ -1081,6 +1096,27 @@ mod tests {
         assert!(!late.contains("within"), "{late}");
         let early = describe_miss(MissReason::LowRead, &mk(60));
         assert!(early.contains("within estimated TTL 5m"), "{early}");
+    }
+
+    #[test]
+    fn observed_gateway_connection_switch_is_account_switch() {
+        let run = |first: Option<&str>, second: Option<&str>| {
+            let mut monitor = KvCacheMonitor::new();
+            monitor.begin_request_on_day(route(), sig(&[10, 11]), 5);
+            monitor.note_gateway_route(Some("codex"), first);
+            monitor.finish_request(50_000, Some(50_000));
+            monitor.begin_request_on_day(route(), sig(&[10, 11, 12]), 5);
+            monitor.note_gateway_route(Some("codex"), second);
+            monitor.finish_request(52_000, Some(2_000)).expect("miss")
+        };
+        let switched = run(Some("aaaa1111"), Some("bbbb2222"));
+        assert_eq!(switched.reason, MissReason::AccountSwitch);
+        assert!(switched.detail.contains("aaaa1111"), "{}", switched.detail);
+        assert_eq!(
+            run(Some("aaaa1111"), Some("aaaa1111")).reason,
+            MissReason::LowRead
+        );
+        assert_eq!(run(None, None).reason, MissReason::LowRead);
     }
 
     #[test]

@@ -694,6 +694,13 @@ impl Agent {
                             break;
                         }
                     }
+                    StreamEvent::GatewayRoute {
+                        provider,
+                        connection,
+                    } => {
+                        self.kv_cache_monitor
+                            .note_gateway_route(provider.as_deref(), connection.as_deref());
+                    }
                     StreamEvent::UpstreamProvider { provider } => {
                         // Log upstream provider for local trace output
                         if trace {

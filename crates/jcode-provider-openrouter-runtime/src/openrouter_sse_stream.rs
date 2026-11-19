@@ -387,6 +387,25 @@ pub(super) async fn run_stream_with_retries(
     }
 }
 
+/// Serving route a gateway reports on the response. The connection id is
+/// hashed so logs and events never carry the raw account identifier.
+fn gateway_route_event(headers: &reqwest::header::HeaderMap) -> Option<StreamEvent> {
+    let get = |name: &str| {
+        headers
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+    };
+    let provider = get("x-omniroute-provider").map(str::to_owned);
+    let connection = get("x-omniroute-selected-connection-id")
+        .map(|id| format!("{:08x}", jcode_provider_core::stable_hash_str(id) as u32));
+    (provider.is_some() || connection.is_some()).then_some(StreamEvent::GatewayRoute {
+        provider,
+        connection,
+    })
+}
+
 #[expect(
     clippy::too_many_arguments,
     reason = "stream helpers thread transport, auth, request, event channel, and pin state explicitly"
@@ -547,6 +566,10 @@ async fn stream_response(
             ),
             retry_after,
         ));
+    }
+
+    if let Some(route) = gateway_route_event(response.headers()) {
+        let _ = tx.send(Ok(route)).await;
     }
 
     let _ = tx

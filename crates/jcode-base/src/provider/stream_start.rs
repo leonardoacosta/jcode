@@ -49,7 +49,8 @@ async fn await_stream_start(mut stream: EventStream) -> Result<EventStream> {
             | StreamEvent::ServiceTier { .. }
             | StreamEvent::ResolvedModel { .. }
             | StreamEvent::SessionId(_)
-            | StreamEvent::UpstreamProvider { .. } => false,
+            | StreamEvent::UpstreamProvider { .. }
+            | StreamEvent::GatewayRoute { .. } => false,
             _ => true,
         };
         startup_events.push(Ok(event));

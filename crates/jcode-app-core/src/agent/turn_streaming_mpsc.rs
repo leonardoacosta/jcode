@@ -1029,6 +1029,13 @@ impl Agent {
                             }
                         }
                     }
+                    StreamEvent::GatewayRoute {
+                        provider,
+                        connection,
+                    } => {
+                        self.kv_cache_monitor
+                            .note_gateway_route(provider.as_deref(), connection.as_deref());
+                    }
                     StreamEvent::UpstreamProvider { provider } => {
                         self.last_upstream_provider = Some(provider.clone());
                         let _ = event_tx.send(ServerEvent::UpstreamProvider { provider });

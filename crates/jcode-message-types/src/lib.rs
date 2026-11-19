@@ -907,6 +907,12 @@ pub enum StreamEvent {
     ResolvedModel { model: String },
     /// Upstream provider info (e.g., which provider OpenRouter routed to)
     UpstreamProvider { provider: String },
+    /// Serving route reported by a gateway response (`X-OmniRoute-*` headers).
+    /// `connection` is an opaque fingerprint, never the raw connection id.
+    GatewayRoute {
+        provider: Option<String>,
+        connection: Option<String>,
+    },
     /// Native tool call from a provider bridge that needs execution by jcode
     NativeToolCall {
         request_id: String,

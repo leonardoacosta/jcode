@@ -196,3 +196,94 @@ fn direct_openai_compatible_chat_request_allows_stream_options_override() {
         "extra_body must override the generated stream options: {request}"
     );
 }
+
+fn spawn_route_header_server(headers: &'static str) -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").expect("bind fake gateway");
+    let addr = listener.local_addr().expect("fake gateway addr");
+    std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().expect("accept fake gateway request");
+        stream
+            .set_read_timeout(Some(Duration::from_secs(2)))
+            .expect("set read timeout");
+        let mut request = vec![0u8; 16384];
+        let _ = stream.read(&mut request);
+        let body = "data: [DONE]\n\n";
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n{headers}Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        );
+        stream.write_all(response.as_bytes()).expect("write response");
+    });
+    format!("http://{addr}/v1")
+}
+
+fn gateway_route_events(api: &str, headers: &'static str) -> Vec<StreamEvent> {
+    let profile = jcode_base::config::NamedProviderConfig {
+        base_url: spawn_route_header_server(headers),
+        api: Some(api.to_string()),
+        auth: jcode_base::config::NamedProviderAuth::None,
+        requires_api_key: Some(false),
+        default_model: Some("test-main".to_string()),
+        ..Default::default()
+    };
+    let provider = OpenRouterProvider::new_named_openai_compatible("gateway-test", &profile).unwrap();
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    rt.block_on(async {
+        let mut stream = provider.complete(&[], &[], "", None).await.unwrap();
+        let mut events = Vec::new();
+        while let Some(event) = stream.next().await {
+            events.push(event.unwrap());
+        }
+        events
+    })
+}
+
+#[test]
+fn gateway_route_headers_emit_one_fingerprinted_route_event() {
+    let _lock = ENV_LOCK.lock();
+    for api in ["openai-completions", "responses"] {
+        let events = gateway_route_events(
+            api,
+            "X-OmniRoute-Provider: codex\r\nX-OmniRoute-Selected-Connection-Id: secret-conn-1\r\n",
+        );
+        let routes: Vec<_> = events
+            .iter()
+            .filter_map(|e| match e {
+                StreamEvent::GatewayRoute { provider, connection } => {
+                    Some((provider.clone(), connection.clone()))
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(routes.len(), 1, "{api}: {events:?}");
+        assert_eq!(routes[0].0.as_deref(), Some("codex"));
+        let conn = routes[0].1.as_deref().expect("connection fingerprint");
+        assert!(!conn.contains("secret"), "{conn}");
+        assert_eq!(conn.len(), 8, "{conn}");
+        let route_at = events
+            .iter()
+            .position(|e| matches!(e, StreamEvent::GatewayRoute { .. }))
+            .unwrap();
+        let content_at = events
+            .iter()
+            .position(|e| matches!(e, StreamEvent::TextDelta(_) | StreamEvent::MessageEnd { .. }));
+        assert!(content_at.is_none_or(|i| route_at < i), "{events:?}");
+    }
+}
+
+#[test]
+fn absent_gateway_route_headers_emit_no_route_event() {
+    let _lock = ENV_LOCK.lock();
+    for api in ["openai-completions", "responses"] {
+        let events = gateway_route_events(api, "");
+        assert!(
+            !events
+                .iter()
+                .any(|e| matches!(e, StreamEvent::GatewayRoute { .. })),
+            "{api}: {events:?}"
+        );
+    }
+}

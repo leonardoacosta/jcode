@@ -63,7 +63,8 @@ fn stream_event_is_replay_visible(event: &StreamEvent) -> bool {
         | StreamEvent::ServiceTier { .. }
         | StreamEvent::Error { .. }
         | StreamEvent::SessionId(_)
-        | StreamEvent::UpstreamProvider { .. } => false,
+        | StreamEvent::UpstreamProvider { .. }
+        | StreamEvent::GatewayRoute { .. } => false,
     }
 }
 

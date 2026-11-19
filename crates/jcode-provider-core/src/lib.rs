@@ -668,7 +668,7 @@ pub async fn collect_simple_completion<P: Provider + ?Sized>(
                     ..Default::default()
                 };
             }
-            Ok(StreamEvent::UpstreamProvider { .. }) => {}
+            Ok(StreamEvent::UpstreamProvider { .. } | StreamEvent::GatewayRoute { .. }) => {}
             Ok(StreamEvent::MessageEnd { stop_reason })
                 if is_guardrail_stop_reason(stop_reason.as_deref()) =>
             {
