@@ -10,6 +10,14 @@ use tokio::sync::OnceCell;
 /// warm for short bursts, but do not pin it through long quiet periods.
 const EMBEDDING_IDLE_UNLOAD_DEFAULT_SECS: u64 = 60;
 
+/// True when a service manager owns this daemon's lifetime (the explicit
+/// `JCODE_SERVER_SYSTEMD_UNIT` opt-in that also disables client spawning). A
+/// supervised daemon must stay resident: an idle exit under `Restart=always`
+/// is pure churn (every exit is a restart and a full state reload).
+pub(crate) fn supervised_by_service_manager() -> bool {
+    std::env::var("JCODE_SERVER_SYSTEMD_UNIT").is_ok_and(|v| !v.trim().is_empty())
+}
+
 pub(crate) fn debug_control_allowed() -> bool {
     // Check config file setting
     if crate::config::config().display.debug_socket {

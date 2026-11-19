@@ -543,7 +543,8 @@ pub fn control_reader_version() -> u32 {
 pub use self::util::{MANAGED_CLOUD_LIVE_RELOAD_MARKER, ServerIdentity};
 use self::util::{
     debug_control_allowed, embedding_idle_unload_secs, git_common_dir_for, reload_exec_target,
-    startup_headless_recovery_test_delay, swarm_id_for_dir, swarm_id_for_session,
+    startup_headless_recovery_test_delay, supervised_by_service_manager, swarm_id_for_dir,
+    swarm_id_for_session,
 };
 
 mod file_activity;
@@ -1484,6 +1485,8 @@ impl Server {
             );
         } else if debug_control_allowed() {
             crate::logging::info("Debug control enabled; idle timeout monitor disabled.");
+        } else if supervised_by_service_manager() {
+            crate::logging::info("Supervised by a service manager; idle timeout monitor disabled.");
         } else {
             let idle_client_count = Arc::clone(&self.client_count);
             let idle_sessions = Arc::clone(&self.sessions);
