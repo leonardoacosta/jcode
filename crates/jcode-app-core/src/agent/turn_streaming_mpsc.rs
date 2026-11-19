@@ -20,7 +20,8 @@ impl Agent {
         raw_event_tx: mpsc::UnboundedSender<ServerEvent>,
     ) -> Result<()> {
         // Coalesce text while every attached client is unfocused.
-        let event_tx = crate::stream_batching::BatchingSender::new(raw_event_tx, self.session.id.clone());
+        let event_tx =
+            crate::stream_batching::BatchingSender::new(raw_event_tx, self.session.id.clone());
         let plan_only = crate::tool::plan_turn_active(&self.session.id);
         if plan_only && self.provider.handles_tools_internally() {
             return Err(crate::tool::PlanModeDenied("this provider executes tools outside Jcode dispatch; select a native-tool provider for /plan".into()).into());

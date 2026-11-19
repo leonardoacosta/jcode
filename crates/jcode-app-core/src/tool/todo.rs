@@ -1503,8 +1503,8 @@ impl Tool for TodoTool {
             json!("Specify phase/lane or inherit from after.");
         for route in ["add", "update"] {
             for field in ["description", "status", "priority", "lane", "phase"] {
-                if let Some(property) = schema["properties"][route]["items"]["properties"][field]
-                    .as_object_mut()
+                if let Some(property) =
+                    schema["properties"][route]["items"]["properties"][field].as_object_mut()
                 {
                     property.remove("description");
                 }

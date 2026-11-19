@@ -71,7 +71,7 @@ fn corpus() -> Vec<Value> {
     ] {
         for count in [1, 31, 2048] {
             values.push(json!(text.repeat(count)));
-            values.push(json!({text: [text.repeat(count), null, 3.14159]}));
+            values.push(json!({text: [text.repeat(count), null, 1.23456]}));
         }
     }
     values.push(Value::Object(

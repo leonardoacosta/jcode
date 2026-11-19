@@ -3610,6 +3610,5 @@ async fn council_provider_budget_covers_allowed_tool_followups_and_judge() {
     );
 
 }
-
 #[path = "agent_tests_additional_tests.rs"]
 mod additional_working_directory_moves_preserve_first_active_session_origin;

@@ -98,7 +98,7 @@ fn test_busy_automatic_continuation_waits_for_running_turn_without_retrying() {
         assert!(app.current_message_id.is_none());
         assert!(app.rate_limit_pending_message.is_none());
         assert!(app.rate_limit_reset.is_none());
-        assert_eq!(app.hidden_queued_system_messages, [retry_reminder.clone()]);
+        assert_eq!(app.hidden_queued_system_messages, std::slice::from_ref(&retry_reminder));
         assert!(!app.display_messages().iter().any(|m| m.role == "error"));
         assert!(app.pending_fallback_offer.is_none());
 
@@ -115,7 +115,7 @@ fn test_busy_automatic_continuation_waits_for_running_turn_without_retrying() {
         rt.block_on(remote::handle_tick(&mut app, &mut remote));
         assert!(app.is_processing);
         assert!(app.current_message_id.is_none());
-        assert_eq!(app.hidden_queued_system_messages, [retry_reminder.clone()]);
+        assert_eq!(app.hidden_queued_system_messages, std::slice::from_ref(&retry_reminder));
 
         app.handle_server_event(
             crate::protocol::ServerEvent::MessageEnd { stop_reason: None },

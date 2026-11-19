@@ -20,10 +20,9 @@ fn measure(
 #[test]
 #[ignore = "optimized alternating CPU/allocation probe: run --release --ignored --nocapture"]
 fn alternating_repair_cpu_and_allocations() {
-    assert!(
-        !cfg!(debug_assertions),
-        "CPU probe requires an optimized build"
-    );
+    if cfg!(debug_assertions) {
+        panic!("CPU probe requires an optimized build");
+    }
     let normal: Vec<_> = (0..256)
         .map(|i| {
             message(

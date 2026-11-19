@@ -609,6 +609,8 @@ async fn scoped_admission_allows_unrelated_turn_but_rejects_any_selected_swarm_c
     // The originating turn has finished. Its detached callback alone must
     // exclude both inspection and prepare of the entire selected swarm.
     let callback_gate = gate.clone();
+    // The detached callback handle is returned from the originating task on purpose.
+    #[allow(clippy::async_yields_async)]
     let callback = gate
         .spawn_session("leader", async move {
             callback_gate.spawn(std::future::pending::<()>()).unwrap()

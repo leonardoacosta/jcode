@@ -329,7 +329,7 @@ mod tests {
                     Some(data) => Sha256::digest(data[id].as_bytes()).into(),
                     None => Sha256::digest(id.to_le_bytes()).into(),
                 };
-                let value = || data.map_or(None, |data| decode_thumbnail(&data[id]));
+                let value = || data.and_then(|data| decode_thumbnail(&data[id]));
                 if policy == 0 {
                     hits[0] += usize::from(lru.access(key, value));
                 } else if cache.get(&key).is_some() {

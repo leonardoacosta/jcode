@@ -41,7 +41,11 @@ fn bash_definition_prefers_repository_search_tools() {
         .expect("command description should be a string");
     assert!(command_description.contains("hidden/ignored by default, not all untracked"));
     assert!(command_description.contains("--hidden --no-ignore"));
-    assert!(definition.description.contains("$JCODE_SCRATCH_DIR, not /tmp"));
+    assert!(
+        definition
+            .description
+            .contains("$JCODE_SCRATCH_DIR, not /tmp")
+    );
 }
 
 #[test]

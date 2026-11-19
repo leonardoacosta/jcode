@@ -337,7 +337,11 @@ impl MultiProvider {
         if let Some(session_id) = self.bound_session_id() {
             provider.set_session_id(&session_id);
         }
-        if let Some(profile) = *self.input_compression_profile.read().unwrap_or_else(|e| e.into_inner()) {
+        if let Some(profile) = *self
+            .input_compression_profile
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+        {
             provider.set_input_compression_profile(profile);
         }
     }
@@ -1700,7 +1704,10 @@ impl Provider for MultiProvider {
         &self,
         profile: jcode_provider_core::InputCompressionProfile,
     ) -> bool {
-        *self.input_compression_profile.write().unwrap_or_else(|e| e.into_inner()) = Some(profile);
+        *self
+            .input_compression_profile
+            .write()
+            .unwrap_or_else(|e| e.into_inner()) = Some(profile);
         self.active_provider() == ActiveProvider::OpenRouter
             && self
                 .active_openrouter_execution_provider()
@@ -2875,7 +2882,10 @@ impl Provider for MultiProvider {
             active_openai_compatible_profile: RwLock::new(None),
             session_id: RwLock::new(self.bound_session_id()),
             input_compression_profile: RwLock::new(
-                *self.input_compression_profile.read().unwrap_or_else(|e| e.into_inner()),
+                *self
+                    .input_compression_profile
+                    .read()
+                    .unwrap_or_else(|e| e.into_inner()),
             ),
             active: RwLock::new(active),
             startup_notices: RwLock::new(Vec::new()),

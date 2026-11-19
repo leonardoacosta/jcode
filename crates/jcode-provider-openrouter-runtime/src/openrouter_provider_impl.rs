@@ -364,7 +364,6 @@ impl Provider for OpenRouterProvider {
         let auth = (self.auth)()?;
         let send_openrouter_headers = self.send_openrouter_headers;
         let conversation_id = self.conversation_id.clone();
-        let session_cache_key = session_cache_key;
         let request_for_retries = request;
         let model_for_stream = model.clone();
         let provider_pin = Arc::clone(&self.provider_pin);

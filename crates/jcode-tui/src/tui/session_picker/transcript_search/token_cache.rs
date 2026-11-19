@@ -567,6 +567,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::type_complexity)] // the scan callback signature is the unit under test
     fn literal_extensions_scan_only_segments_matching_their_prefix() {
         let cache = Mutex::new(Cache::default());
         let text = Arc::new(Segments {

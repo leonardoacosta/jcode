@@ -15,7 +15,9 @@ fn measure(history: &[Message], repair: Repair, iterations: usize) -> (u64, u64,
 #[test]
 #[ignore = "optimized alternating actual Linux thread CPU/allocation probe"]
 fn alternating_cow_repair_cpu_allocations() {
-    assert!(!cfg!(debug_assertions));
+    if cfg!(debug_assertions) {
+        panic!("run --release");
+    }
     for (name, old, new) in repairs() {
         for shape in [
             "sparse-large",

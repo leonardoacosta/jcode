@@ -162,13 +162,13 @@ impl Provider for RecordingProvider {
         _: Option<&str>,
     ) -> Result<EventStream> {
         let call = self.calls.fetch_add(1, Ordering::SeqCst) + 1;
-        if call <= self.progress_turns {
-            if let Some(session_id) = self.progress_session.lock().unwrap().as_ref() {
-                let mut snapshot = open_snapshot();
-                snapshot.todos[0].content =
-                    format!("Complete remaining campaign work after step {call}");
-                todo::save_todos(session_id, &snapshot.todos)?;
-            }
+        if call <= self.progress_turns
+            && let Some(session_id) = self.progress_session.lock().unwrap().as_ref()
+        {
+            let mut snapshot = open_snapshot();
+            snapshot.todos[0].content =
+                format!("Complete remaining campaign work after step {call}");
+            todo::save_todos(session_id, &snapshot.todos)?;
         }
         Ok(Box::pin(futures::stream::iter([
             Ok(StreamEvent::TextDelta(

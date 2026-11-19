@@ -149,6 +149,7 @@ fn next_prompt_number(session: &SessionInfo, extras: Option<&PreviewExtras>) -> 
 /// Draw only the image rows intersecting the scrolling transcript. Raster
 /// images retain their original fit box when partially scrolled off screen.
 #[cfg(test)]
+#[allow(dead_code)] // test-only helper currently unused by any test
 pub(super) fn draw_images(
     frame: &mut Frame,
     area: Rect,

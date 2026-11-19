@@ -379,7 +379,9 @@ impl ActivityGate {
                 return None;
             }
         };
-        Some(jcode_provider_core::provider_call_budget::spawn(reserved.scope(future)))
+        Some(jcode_provider_core::provider_call_budget::spawn(
+            reserved.scope(future),
+        ))
     }
 }
 
@@ -588,6 +590,8 @@ mod tests {
         let gate = Arc::new(ActivityGate::default());
         let selected = BTreeSet::from(["selected".into()]);
         let other_gate = gate.clone();
+        // The detached callback handle is returned from the originating task on purpose.
+        #[allow(clippy::async_yields_async)]
         let child = gate
             .spawn_session("selected", async move {
                 other_gate.spawn(std::future::pending::<()>()).unwrap()

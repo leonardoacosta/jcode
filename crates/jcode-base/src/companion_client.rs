@@ -471,6 +471,7 @@ mod tests {
 }
 
 #[cfg(test)]
+#[allow(dead_code)] // mirrors the old wire schema; only deserialization success matters
 #[derive(Debug, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 enum OldCompanionRequest {

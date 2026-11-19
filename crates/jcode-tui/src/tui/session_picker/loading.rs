@@ -2460,6 +2460,7 @@ pub(super) fn load_codex_external_preview(path: &Path) -> Option<ExternalPreview
 }
 
 #[cfg(test)]
+#[allow(dead_code)] // test-only helper currently unused by any test
 pub(super) fn load_codex_preview(session_id: &str) -> Option<Vec<PreviewMessage>> {
     let path = find_codex_session_file(session_id)?;
     load_codex_preview_from_path(&path)
@@ -2474,6 +2475,7 @@ mod pi_sessions;
 use pi_sessions::load_external_pi_sessions;
 pub(super) use pi_sessions::load_pi_external_preview;
 #[cfg(test)]
+#[allow(unused_imports)] // test-only helper currently unused by any test
 pub(super) use pi_sessions::load_pi_preview_from_path;
 fn load_external_opencode_sessions(scan_limit: usize) -> Vec<SessionInfo> {
     let Ok(root) = crate::storage::user_home_path(".local/share/opencode/storage/session") else {
@@ -2493,6 +2495,7 @@ fn load_external_opencode_sessions(scan_limit: usize) -> Vec<SessionInfo> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)] // test-only helper currently unused by any test
 pub(super) fn load_opencode_preview_from_path(path: &Path) -> Option<Vec<PreviewMessage>> {
     load_opencode_external_preview(path).map(|preview| preview.messages)
 }
@@ -2608,6 +2611,7 @@ fn load_external_cursor_sessions(scan_limit: usize) -> Vec<SessionInfo> {
 }
 
 #[cfg(test)]
+#[allow(dead_code)] // test-only helper currently unused by any test
 pub(super) fn load_cursor_preview_from_path(path: &Path) -> Option<Vec<PreviewMessage>> {
     load_cursor_external_preview(path).map(|preview| preview.messages)
 }

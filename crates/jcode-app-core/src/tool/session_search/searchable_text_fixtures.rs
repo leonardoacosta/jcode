@@ -1,3 +1,6 @@
+// Shared by several examples and tests through `#[path]`; each uses only a subset.
+#![allow(dead_code)]
+
 use super::{ContentBlock, StoredMessage};
 use serde_json::json;
 

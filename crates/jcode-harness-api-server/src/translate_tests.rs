@@ -560,8 +560,10 @@ fn attach_session_unknown_target_error_is_correlated_and_clears_pending_attach()
 
 #[test]
 fn subscribe_forwards_hello_client_name() {
-    let mut state = BridgeState::default();
-    state.client_name = Some("jcode-ios/0.3.0".into());
+    let mut state = BridgeState {
+        client_name: Some("jcode-ios/0.3.0".into()),
+        ..Default::default()
+    };
     let out =
         state.api_request_to_legacy(&json!({"req": "attach_session", "id": 1, "session_id": "s1"}));
     let Outbound::Legacy(value) = &out[0] else {
@@ -586,8 +588,10 @@ fn mobile_sessions_continue_after_transport_disconnect() {
         "jcode-android/1.0",
     ] {
         for req in ["create_session", "attach_session"] {
-            let mut state = BridgeState::default();
-            state.client_name = Some(client.into());
+            let mut state = BridgeState {
+                client_name: Some(client.into()),
+                ..Default::default()
+            };
             let out = state.api_request_to_legacy(&json!({
                 "req": req, "id": 1, "session_id": "mobile-session",
             }));

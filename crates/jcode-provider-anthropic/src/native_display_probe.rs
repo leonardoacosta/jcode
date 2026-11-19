@@ -252,10 +252,9 @@ fn native_display_frozen_legacy_exact_outputs() {
 #[cfg(target_os = "linux")]
 fn native_display_actual_cpu_allocation_probe() {
     let iterations = 2000;
-    assert!(
-        !cfg!(debug_assertions),
-        "CPU probe requires an optimized build"
-    );
+    if cfg!(debug_assertions) {
+        panic!("CPU probe requires an optimized build");
+    }
     for (name, blocks) in cases() {
         for mode in ["fallback", "replay", "downgrade"] {
             let replay = mode != "fallback";
@@ -312,7 +311,9 @@ fn native_display_actual_cpu_allocation_probe() {
 #[ignore = "optimized three-way actual thread CPU/allocation probe"]
 #[cfg(target_os = "linux")]
 fn borrowed_replay_actual_cpu_allocation_probe() {
-    assert!(!cfg!(debug_assertions));
+    if cfg!(debug_assertions) {
+        panic!("run --release");
+    }
     let iterations = 2000;
     for (name, blocks) in cases() {
         for replay in [false, true] {

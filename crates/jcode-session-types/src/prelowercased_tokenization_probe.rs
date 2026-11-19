@@ -54,7 +54,9 @@ fn optimized(text: &str) -> Vec<String> {
 #[test]
 #[ignore = "optimized CPU/allocation probe"]
 fn tokenization_probe() {
-    assert!(!cfg!(debug_assertions), "run --release");
+    if cfg!(debug_assertions) {
+        panic!("run --release");
+    }
     let cases = [
         ("small-ascii", "Find alpha ALPHA and beta 42".to_owned()),
         (

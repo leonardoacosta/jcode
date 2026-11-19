@@ -463,7 +463,9 @@ impl JevClient {
             return self.send_hedged(body, &questions).await;
         }
         let mut value = if !retry || self.purpose == JevPurpose::Supervision {
-            let response = self.send_once(&self.client, &self.endpoint, body.into()).await?;
+            let response = self
+                .send_once(&self.client, &self.endpoint, body.into())
+                .await?;
             read_response_for_purpose(response, MAX_RESPONSE_BYTES, self.provider, self.purpose)
                 .await?
         } else {
@@ -881,10 +883,6 @@ fn resolve_explicit_supervision(
 #[path = "jev/route_resolution.rs"]
 mod route_resolution;
 use route_resolution::{resolve_providers, resolve_voice_with, resolve_with, trusted_gateway_base};
-
-
-
-
 
 #[cfg(test)]
 fn request_body(

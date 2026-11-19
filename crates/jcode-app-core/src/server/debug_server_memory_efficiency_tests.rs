@@ -180,6 +180,7 @@ async fn memory_payload(sessions: &SessionAgents) -> serde_json::Value {
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn server_memory_preserves_session_output_and_skips_busy_agents() {
     let _env = crate::storage::lock_test_env();
     let _home = PrivateHome::new();

@@ -1355,10 +1355,7 @@ fn handle_server_event_inner(
                     );
                 } else {
                     app.handle_turn_error(message.clone());
-                    app.offer_fallback_after_error_with_payload(
-                        &message,
-                        failed_fallback_payload,
-                    );
+                    app.offer_fallback_after_error_with_payload(&message, failed_fallback_payload);
                 }
                 return false;
             }

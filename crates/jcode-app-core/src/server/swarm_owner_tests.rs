@@ -34,10 +34,10 @@ async fn worker_report_publishes_one_owner_wake_without_explicit_await() {
     }
     let mut reports = Vec::new();
     while let Ok(event) = bus.try_recv() {
-        if let crate::bus::BusEvent::SwarmWorkerReported(report) = event {
-            if report.worker_session_id == worker_id {
-                reports.push(report);
-            }
+        if let crate::bus::BusEvent::SwarmWorkerReported(report) = event
+            && report.worker_session_id == worker_id
+        {
+            reports.push(report);
         }
     }
     assert_eq!(
@@ -701,6 +701,7 @@ async fn update_member_status_includes_completion_report_in_owner_notification()
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn forced_stop_does_not_promote_gallery_activity_to_final_response() {
     let _env_lock = crate::storage::lock_test_env();
     let home = tempfile::tempdir().unwrap();

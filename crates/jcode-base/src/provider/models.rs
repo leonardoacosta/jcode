@@ -834,7 +834,9 @@ mod catalog_ownership_tests {
     #[ignore = "release-only CPU experiment, run explicitly with --release --ignored --nocapture"]
     #[cfg(target_os = "linux")]
     fn scoped_writer_release_cpu_comparison() {
-        assert!(!cfg!(debug_assertions), "run with --release");
+        if cfg!(debug_assertions) {
+            panic!("run with --release");
+        }
         use std::hint::black_box;
         for (name, models, scopes, batch) in [
             ("tiny", 1, 1, 4096),

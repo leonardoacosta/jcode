@@ -28,7 +28,8 @@ const MAX_OUTPUT_LEN: usize = 30000;
 const DEFAULT_TIMEOUT_MS: u64 = 120000;
 const PROGRESS_MARKER_PREFIX: &str = "JCODE_PROGRESS ";
 const CHECKPOINT_MARKER_PREFIX: &str = "JCODE_CHECKPOINT ";
-const BASH_TOOL_DESCRIPTION: &str = "Prefer agentgrep or rg over grep -r. Temp: $JCODE_SCRATCH_DIR, not /tmp.";
+const BASH_TOOL_DESCRIPTION: &str =
+    "Prefer agentgrep or rg over grep -r. Temp: $JCODE_SCRATCH_DIR, not /tmp.";
 const WINDOWS_SHELL_TOOL_DESCRIPTION: &str =
     "Run a Windows cmd.exe command (compatibility name `bash`). Use cmd.exe syntax, not Bash.";
 

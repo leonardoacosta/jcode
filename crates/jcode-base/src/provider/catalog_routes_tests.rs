@@ -173,8 +173,14 @@ impl EnvGuard {
         let vars = vec![
             ("JCODE_HOME", std::env::var_os("JCODE_HOME")),
             ("OPENCODE_API_KEY", std::env::var_os("OPENCODE_API_KEY")),
-            ("JCODE_NAMED_PROVIDER_PROFILE", std::env::var_os("JCODE_NAMED_PROVIDER_PROFILE")),
-            ("JCODE_PROVIDER_PROFILE_ACTIVE", std::env::var_os("JCODE_PROVIDER_PROFILE_ACTIVE")),
+            (
+                "JCODE_NAMED_PROVIDER_PROFILE",
+                std::env::var_os("JCODE_NAMED_PROVIDER_PROFILE"),
+            ),
+            (
+                "JCODE_PROVIDER_PROFILE_ACTIVE",
+                std::env::var_os("JCODE_PROVIDER_PROFILE_ACTIVE"),
+            ),
         ];
         crate::env::set_var("JCODE_HOME", temp.path());
         crate::env::set_var("OPENCODE_API_KEY", "sk-test-opencode");

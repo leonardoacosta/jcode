@@ -59,6 +59,8 @@ fn pty_child() {
 }
 
 #[test]
+// macOS libc needs `*mut winsize`, so the `&mut` cannot become `&` portably.
+#[allow(clippy::unnecessary_mut_passed)]
 fn live_queries_and_fragmented_color_replies_work_through_crossterm() {
     let mut master = -1;
     let mut slave = -1;

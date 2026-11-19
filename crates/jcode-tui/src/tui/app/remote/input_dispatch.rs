@@ -276,7 +276,9 @@ pub(in crate::tui::app) async fn submit_prepared_remote_input(
     // not just its compact placeholder.
     let expanded_image_markers = prepared.raw_input.contains("[pasted ")
         || prepared.images.iter().enumerate().any(|(index, _)| {
-            !prepared.raw_input.contains(&format!("[image {}]", index + 1))
+            !prepared
+                .raw_input
+                .contains(&format!("[image {}]", index + 1))
         });
     let recovery_input = if prepared.raw_input.contains("[pasted ") {
         prepared.expanded.clone()

@@ -62,6 +62,7 @@ async fn agent(session_id: &str) -> AgentHandle {
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn concurrent_get_or_start_runs_only_one_factory() -> Result<()> {
     let _env_lock = crate::storage::lock_test_env();
     let _home = TestHome::new();
@@ -84,6 +85,7 @@ async fn concurrent_get_or_start_runs_only_one_factory() -> Result<()> {
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn failed_or_cancelled_factory_releases_reservation() -> Result<()> {
     let _env_lock = crate::storage::lock_test_env();
     let _home = TestHome::new();
@@ -123,6 +125,7 @@ async fn failed_or_cancelled_factory_releases_reservation() -> Result<()> {
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn publication_never_overwrites_even_after_removal() -> Result<()> {
     let _env_lock = crate::storage::lock_test_env();
     let _home = TestHome::new();
@@ -180,6 +183,7 @@ async fn reservations_are_per_manager_and_target() {
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn rejected_rekey_keeps_both_original_owners() -> Result<()> {
     let _env_lock = crate::storage::lock_test_env();
     let _home = TestHome::new();
@@ -235,6 +239,7 @@ async fn rejected_rekey_keeps_both_original_owners() -> Result<()> {
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn publication_rejects_wrong_session_identity() -> Result<()> {
     let _env_lock = crate::storage::lock_test_env();
     let _home = TestHome::new();
@@ -251,6 +256,7 @@ async fn publication_rejects_wrong_session_identity() -> Result<()> {
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn observer_is_available_while_runtime_is_busy_and_retires_with_entry() -> Result<()> {
     let _env_lock = crate::storage::lock_test_env();
     let _home = TestHome::new();
@@ -281,6 +287,7 @@ async fn observer_is_available_while_runtime_is_busy_and_retires_with_entry() ->
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn accepted_turn_blocks_restore_even_before_worker_locks_agent() -> Result<()> {
     let _env_lock = crate::storage::lock_test_env();
     let _home = TestHome::new();
@@ -306,6 +313,7 @@ async fn accepted_turn_blocks_restore_even_before_worker_locks_agent() -> Result
 }
 
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn failed_cold_restore_keeps_published_and_retiring_sources_unchanged() -> Result<()> {
     let _env_lock = crate::storage::lock_test_env();
     let _home = TestHome::new();

@@ -22,6 +22,8 @@ pub(super) fn rearm() {
     PENDING.store(true, Ordering::Release);
 }
 
+// The trailing `return` is the last statement when the watcher block is cfg'd out.
+#[allow(clippy::needless_return)]
 pub(super) fn ensure_started() {
     if STARTED.swap(true, Ordering::AcqRel) {
         return;

@@ -1123,9 +1123,6 @@ mod backoff_tests {
         assert_eq!(failed_connect_cooldown(1), Duration::from_secs(30));
         assert_eq!(failed_connect_cooldown(2), Duration::from_secs(60));
         assert_eq!(failed_connect_cooldown(4), Duration::from_secs(240));
-        assert_eq!(
-            failed_connect_cooldown(50),
-            BACKOFF_CAP
-        );
+        assert_eq!(failed_connect_cooldown(50), BACKOFF_CAP);
     }
 }

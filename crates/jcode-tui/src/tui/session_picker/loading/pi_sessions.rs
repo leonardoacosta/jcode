@@ -1,6 +1,7 @@
 use super::*;
 
 #[cfg(test)]
+#[allow(dead_code)] // test-only helper currently unused by any test
 pub(in crate::tui::session_picker) fn load_pi_preview_from_path(
     path: &Path,
 ) -> Option<Vec<PreviewMessage>> {

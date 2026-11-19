@@ -3,6 +3,8 @@ use std::path::Path;
 
 /// Only the opt-in wrapper's namespace-private, read-only source mount attests
 /// compiler inputs. Environment flags alone never establish provenance.
+// Shared with build.rs through `#[path]`; the library half never calls it.
+#[allow(dead_code)]
 pub fn immutable_source_verified(repo_root: &Path, fingerprint: &str) -> bool {
     if repo_root != Path::new("/src")
         || fingerprint.len() != 64

@@ -22,10 +22,10 @@ fn accept_token_request(listener: &std::net::TcpListener) -> std::net::TcpStream
             if line == "\r\n" {
                 break;
             }
-            if let Some((name, value)) = line.split_once(':') {
-                if name.eq_ignore_ascii_case("content-length") {
-                    content_length = value.trim().parse().expect("request content length");
-                }
+            if let Some((name, value)) = line.split_once(':')
+                && name.eq_ignore_ascii_case("content-length")
+            {
+                content_length = value.trim().parse().expect("request content length");
             }
         }
         assert!(

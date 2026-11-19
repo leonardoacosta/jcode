@@ -33,6 +33,7 @@ impl Provider for WakeProvider {
 /// The producer's `notify` preference controls receipt cards, not whether an
 /// actual model injection gets its own chronological transcript entry.
 #[tokio::test]
+#[allow(clippy::await_holding_lock)] // test env lock intentionally serializes the whole async test
 async fn silent_stall_and_await_wakes_publish_idle_and_queued_context_entries() {
     let _lock = crate::storage::lock_test_env();
     let home = tempfile::tempdir().unwrap();

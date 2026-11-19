@@ -1027,7 +1027,10 @@ async fn send_history_with_guard(
                     .as_deref()
                     .and_then(|root| path.strip_prefix(root).ok())
                     .map(|relative| {
-                        let first = relative.components().next().and_then(|part| part.as_os_str().to_str());
+                        let first = relative
+                            .components()
+                            .next()
+                            .and_then(|part| part.as_os_str().to_str());
                         if matches!(first, Some(".jcode" | ".agents" | ".claude")) {
                             "project"
                         } else {
@@ -1038,7 +1041,10 @@ async fn send_history_with_guard(
                 let is_symlink = std::fs::symlink_metadata(&path)
                     .ok()
                     .map(|metadata| metadata.file_type().is_symlink());
-                let resolved_path = path.canonicalize().ok().map(|path| path.display().to_string());
+                let resolved_path = path
+                    .canonicalize()
+                    .ok()
+                    .map(|path| path.display().to_string());
                 (
                     skill.name.clone(),
                     crate::protocol::SkillMetadata {

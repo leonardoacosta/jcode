@@ -105,7 +105,9 @@ fn cpu() -> u128 {
 #[ignore = "optimized alternating Linux thread CPU probe"]
 #[cfg(target_os = "linux")]
 fn search_traversal_probe() {
-    assert!(!cfg!(debug_assertions));
+    if cfg!(debug_assertions) {
+        panic!("run --release");
+    }
     let cases = [
         ("single-hit", "7".into(), "7"),
         ("single-no-hit", "y".into(), "7"),

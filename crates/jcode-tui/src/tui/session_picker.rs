@@ -2024,6 +2024,7 @@ impl SessionPicker {
     /// Returns the index of the first line that contains a highlighted match, if
     /// any. Each token highlights independently (matching the AND-token filter).
     #[cfg(test)]
+    #[allow(dead_code)] // test-only helper currently unused by any test
     fn highlight_lines_in_place(lines: &mut [Line<'static>], tokens: &[String]) -> Option<usize> {
         if tokens.is_empty() {
             return None;
@@ -2057,6 +2058,7 @@ impl SessionPicker {
     /// Mirrors the main chat viewport's `prompt_preview`: the last user prompt
     /// whose wrapped start has scrolled above the viewport, drawn dimmed.
     #[cfg(test)]
+    #[allow(dead_code)] // test-only helper currently unused by any test
     fn preview_prompt_header_lines(
         &self,
         scroll: usize,

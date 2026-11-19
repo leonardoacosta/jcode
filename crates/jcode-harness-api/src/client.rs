@@ -97,6 +97,56 @@ fn read_frame_with_limit<R: BufRead, T: serde::de::DeserializeOwned>(
     }
 }
 
+/// Minimal blocking harness client over any read/write pair.
+///
+/// Handles id assignment and the version handshake. Transport-agnostic:
+/// pass a Unix socket, TCP stream, or an in-memory pipe for tests.
+pub struct HarnessClient<R: BufRead, W: Write> {
+    reader: R,
+    writer: W,
+    next_id: u64,
+}
+
+impl<R: BufRead, W: Write> HarnessClient<R, W> {
+    pub fn new(reader: R, writer: W) -> Self {
+        Self {
+            reader,
+            writer,
+            next_id: 1,
+        }
+    }
+
+    /// Perform the version handshake. Must be called first.
+    pub fn hello(&mut self, client_name: &str) -> Result<ServerFrame, FrameError> {
+        self.send(ApiRequest::Hello {
+            min_version: API_VERSION_MAJOR,
+            max_version: API_VERSION_MAJOR,
+            client: client_name.to_string(),
+            supports_user_response: false,
+        })?;
+        self.recv()
+    }
+
+    /// Send a request, returning the assigned frame id.
+    pub fn send(&mut self, request: ApiRequest) -> Result<u64, FrameError> {
+        let id = self.next_id;
+        self.next_id += 1;
+        write_frame(&mut self.writer, &ClientFrame::new(id, request))?;
+        Ok(id)
+    }
+
+    /// Receive the next server frame, skipping unknown event kinds.
+    pub fn recv(&mut self) -> Result<ServerFrame, FrameError> {
+        loop {
+            let frame: ServerFrame = read_frame(&mut self.reader)?;
+            if matches!(frame.event, ApiEvent::Unknown) {
+                continue;
+            }
+            return Ok(frame);
+        }
+    }
+}
+
 #[cfg(test)]
 mod framing_limits {
     use super::*;
@@ -151,55 +201,5 @@ mod framing_limits {
             read_frame_with_limit::<_, serde_json::Value>(&mut reader, 16),
             Err(FrameError::Io(_))
         ));
-    }
-}
-
-/// Minimal blocking harness client over any read/write pair.
-///
-/// Handles id assignment and the version handshake. Transport-agnostic:
-/// pass a Unix socket, TCP stream, or an in-memory pipe for tests.
-pub struct HarnessClient<R: BufRead, W: Write> {
-    reader: R,
-    writer: W,
-    next_id: u64,
-}
-
-impl<R: BufRead, W: Write> HarnessClient<R, W> {
-    pub fn new(reader: R, writer: W) -> Self {
-        Self {
-            reader,
-            writer,
-            next_id: 1,
-        }
-    }
-
-    /// Perform the version handshake. Must be called first.
-    pub fn hello(&mut self, client_name: &str) -> Result<ServerFrame, FrameError> {
-        self.send(ApiRequest::Hello {
-            min_version: API_VERSION_MAJOR,
-            max_version: API_VERSION_MAJOR,
-            client: client_name.to_string(),
-            supports_user_response: false,
-        })?;
-        self.recv()
-    }
-
-    /// Send a request, returning the assigned frame id.
-    pub fn send(&mut self, request: ApiRequest) -> Result<u64, FrameError> {
-        let id = self.next_id;
-        self.next_id += 1;
-        write_frame(&mut self.writer, &ClientFrame::new(id, request))?;
-        Ok(id)
-    }
-
-    /// Receive the next server frame, skipping unknown event kinds.
-    pub fn recv(&mut self) -> Result<ServerFrame, FrameError> {
-        loop {
-            let frame: ServerFrame = read_frame(&mut self.reader)?;
-            if matches!(frame.event, ApiEvent::Unknown) {
-                continue;
-            }
-            return Ok(frame);
-        }
     }
 }
