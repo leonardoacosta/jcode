@@ -404,6 +404,70 @@ impl Agent {
         crate::hooks::dispatch_observer(event);
     }
 
+    /// `[[hooks.Stop]]` at natural completion. Returns true when a hook asked
+    /// to continue and the reason was appended as the next user instruction.
+    ///
+    /// Explicit cancel, a migrated copy, plan turns and a revoked generation
+    /// never continue, whatever the hook printed. At most
+    /// `STOP_CONTINUATIONS_PER_TURN` continuations run per turn, one per
+    /// completion event, and the continuation goes through the normal loop so
+    /// provider budgets and tool admission apply as usual.
+    pub(super) async fn stop_hook_continues(
+        &mut self,
+        continuations: &mut u32,
+        final_text: &str,
+    ) -> Result<Option<String>> {
+        if self.is_graceful_shutdown()
+            || self.session.migration_lease_block().is_some()
+            || crate::tool::plan_turn_active(&self.session.id)
+        {
+            return Ok(None);
+        }
+        let working_dir = self.working_dir().map(str::to_owned);
+        let Some(outcome) = crate::lifecycle_hooks::run_stop(
+            &self.session.id,
+            working_dir.as_deref(),
+            final_text,
+            *continuations > 0,
+        )
+        .await
+        else {
+            return Ok(None);
+        };
+        // Decide after the hook returns: a cancel or revocation that landed
+        // while it ran wins over its output.
+        if outcome.admission_error.is_some()
+            || outcome.halt.is_some()
+            || self.is_graceful_shutdown()
+            || crate::server::session_control::reserve_current(&self.session.id).is_err()
+        {
+            return Ok(None);
+        }
+        let Some(reason) = outcome.block else {
+            return Ok(None);
+        };
+        if *continuations >= crate::lifecycle_hooks::STOP_CONTINUATIONS_PER_TURN {
+            logging::warn("Stop hook continuation limit reached; ending the turn");
+            return Ok(None);
+        }
+        *continuations += 1;
+        let mut text = reason.clone();
+        for context in &outcome.additional_context {
+            text.push_str("\n\n");
+            text.push_str(context);
+        }
+        self.add_message_with_display_role(
+            Role::User,
+            vec![ContentBlock::Text {
+                text,
+                cache_control: None,
+            }],
+            Some(crate::session::StoredDisplayRole::System),
+        );
+        self.session.save()?;
+        Ok(Some(reason))
+    }
+
     /// Fire the `turn_end` observer hook with turn outcome metadata.
     /// No-op (without building the payload) when the hook is not configured.
     fn fire_turn_end_hook(

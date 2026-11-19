@@ -501,6 +501,63 @@ fn hooks_config_defaults_and_parses_from_toml() {
 }
 
 #[test]
+fn lifecycle_hook_entries_parse_alongside_legacy_keys_and_round_trip() {
+    let cfg: Config = toml::from_str(
+        r#"
+[hooks]
+pre_tool = "legacy-policy"
+
+[[hooks.PreToolUse]]
+matcher = "Edit|Write"
+path = "src/**/*.rs"
+command = "guard --strict"
+timeout = 3
+fail_closed = true
+
+[[hooks.Stop]]
+command = "check-done"
+mode = "blocking"
+
+[[hooks.SessionStart]]
+command = "announce"
+"#,
+    )
+    .expect("lifecycle hooks should parse");
+    assert_eq!(
+        cfg.hooks.pre_tool.as_ref().and_then(HookCommands::first),
+        Some("legacy-policy")
+    );
+    let pre = cfg.hooks.lifecycle_entries("PreToolUse");
+    assert_eq!(pre.len(), 1);
+    assert_eq!(pre[0].matcher.as_deref(), Some("Edit|Write"));
+    assert_eq!(pre[0].path.as_deref(), Some("src/**/*.rs"));
+    assert_eq!(pre[0].timeout, 3);
+    assert!(pre[0].fail_closed);
+    assert_eq!(
+        cfg.hooks.lifecycle_entries("Stop")[0].mode.as_deref(),
+        Some("blocking")
+    );
+    assert_eq!(cfg.hooks.lifecycle_entries("SessionStart")[0].timeout, 10);
+    assert!(cfg.hooks.lifecycle_entries("PostToolUse").is_empty());
+    assert!(cfg.hooks.lifecycle_entries("Nope").is_empty());
+
+    let serialized = toml::to_string(&cfg).expect("serialize");
+    let round_trip: Config = toml::from_str(&serialized).expect("round trip");
+    assert_eq!(
+        round_trip.hooks.lifecycle_entries("PreToolUse")[0].command,
+        "guard --strict"
+    );
+    // Unconfigured events are not serialized.
+    assert!(!serialized.contains("PostToolUse"));
+    assert!(
+        Config::default()
+            .hooks
+            .lifecycle_entries("PreToolUse")
+            .is_empty()
+    );
+}
+
+#[test]
 fn test_env_override_lifecycle_hooks() {
     let _guard = crate::storage::lock_test_env();
     let prev_turn_end = std::env::var_os("JCODE_HOOK_TURN_END");

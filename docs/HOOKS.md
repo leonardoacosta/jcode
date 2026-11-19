@@ -272,6 +272,70 @@ session_end   = "~/bin/jcode-event-log"
 post_tool     = "~/bin/jcode-event-log"
 ```
 
+## Claude Code style events: `[[hooks.<Event>]]`
+
+Six events use arrays of tables keyed by Claude Code event names. They run in
+addition to the snake_case keys above. Their stdin payload is a JSON object
+with `session_id`, `transcript_path`, `cwd`, `hook_event_name` and the event
+fields below.
+
+```toml
+[[hooks.PreToolUse]]
+matcher = "edit|write"        # whole-string, case-insensitive regex on tool name
+path = "src/**/*.rs"          # glob on file paths in the tool input
+command = "~/bin/protect-paths"
+timeout = 10                  # seconds, default 10; the process group is killed
+fail_closed = true            # block on failure/timeout (blocking mode only)
+
+[[hooks.Stop]]
+command = "~/bin/check-done"
+```
+
+| Event | Fires | Default mode | Fields |
+| --- | --- | --- | --- |
+| `SessionStart` | new or resumed session | `observe` | `source` (`startup`, `resume`); `matcher` matches it |
+| `PreToolUse` | before a tool runs | `blocking` | `tool_name`, `tool_use_id`, `tool_input` |
+| `PostToolUse` | after a tool result | `async` | as above plus `tool_response` |
+| `SubagentStop` | a swarm worker's completion report is recorded | `async` | `status`, `message`, `validation`, `follow_up`, `report` |
+| `Stop` | the assistant finishes naturally | `blocking` | `stop_hook_active`, `last_assistant_message` |
+| `PreCompact` | before compaction | `observe` | `trigger` (`manual`, `auto`); `matcher` matches it |
+
+Modes: `blocking` is awaited and its decision applies. `observe` is awaited
+and its output is logged, decisions are ignored. `async` is detached and
+killed at its timeout. `mode = "blocking"` on an event that cannot block logs
+a config warning and runs as `observe`.
+
+Decisions (blocking mode): exit `2` blocks with stderr as the reason. Exit `0`
+may print JSON: `decision: "block"` + `reason`, `hookSpecificOutput`
+`permissionDecision` (`allow`, `deny`, `ask`; `ask` blocks with a "requires user
+approval" reason, jcode has no hook approval prompt), `updatedInput` (PreToolUse), `additionalContext`,
+`continue: false` + `stopReason`, `suppressOutput`. Other failures and
+timeouts allow the call unless `fail_closed = true` (`PreToolUse` only; a failed
+`Stop` hook is logged and never continues the turn). Fail-open never overrides
+cancellation, revocation or other policy denials; the tool is rechecked
+against normal admission after the hook returns.
+
+`Stop` continues the turn only when a hook blocks with a `reason`. The reason
+is added as a system-role user message and the turn runs again, at most 3
+times per user turn, with `stop_hook_active = true` after the first. An
+explicit cancel, shutdown, plan turn, migrated copy or revoked generation
+never continues, whatever the hook printed.
+
+Invalid entries (bad regex, glob, mode or empty command) are disabled with a
+config warning written to the log (not shown in the TUI); other hooks still load. Hook output is bounded
+(64 KB read, 500 characters logged) and secrets are redacted. A command listed
+under both a legacy key and its event table (`pre_tool` and `PreToolUse`,
+`post_tool` and `PostToolUse`, `session_start` and `SessionStart`) runs once,
+as the table entry, so the legacy key's own timeout (such as
+`pre_tool_timeout_ms`) does not apply to it. `path` filters see the tool input
+as the model issued it, even after an earlier hook rewrites it. A hook that
+backgrounds a child holding stdout open makes the runner wait for EOF, so
+redirect the child's output (`cmd >/dev/null 2>&1 &`). Hook child processes are owned by the session's durable
+generation, so a stop or revoke settles them (`SubagentStop` runs from the
+report handler, outside any session generation, and is not owned; its timeout
+still kills the process group). Hook waits are not raced
+against cancel: Esc can wait up to the hook timeout.
+
 ## Design notes
 
 - Hook lookups are config-driven and re-read on config reload; you can add or

@@ -83,6 +83,11 @@ struct CommandVerdict {
     block: Option<String>,
     updated_input: Option<Value>,
     context: Option<String>,
+    /// `continue: false` with `stopReason`. Only the lifecycle runner acts on
+    /// it, so the legacy `pre_tool` gate keeps its current semantics.
+    halt: Option<String>,
+    /// `suppressOutput: true`: the hook's stdout must not be logged.
+    suppress_output: bool,
 }
 
 impl CommandVerdict {
@@ -111,12 +116,21 @@ fn json_str<'a>(value: &'a Value, key: &str) -> Option<&'a str> {
 /// jcode has no interactive approval for hooks, so `ask` blocks. Stdout that
 /// is not a JSON object is ignored, preserving the plain exit-code contract.
 fn parse_gate_stdout(stdout: &str) -> CommandVerdict {
+    parse_decision_stdout(stdout, "pre_tool")
+}
+
+/// [`parse_gate_stdout`] for any hook label (`pre_tool`, `Stop`, ...), used in
+/// default block reasons and warnings.
+fn parse_decision_stdout(stdout: &str, label: &str) -> CommandVerdict {
+    let default_reason = format!("blocked by {label} hook");
     let trimmed = stdout.trim();
     if !trimmed.starts_with('{') {
         return CommandVerdict::default();
     }
     let Ok(value) = serde_json::from_str::<Value>(trimmed) else {
-        crate::logging::warn("Hook 'pre_tool' printed invalid JSON on stdout (ignored)");
+        crate::logging::warn(&format!(
+            "Hook '{label}' printed invalid JSON on stdout (ignored)"
+        ));
         return CommandVerdict::default();
     };
     let specific = value.get("hookSpecificOutput").unwrap_or(&Value::Null);
@@ -126,7 +140,7 @@ fn parse_gate_stdout(stdout: &str) -> CommandVerdict {
     if matches!(top_decision.as_deref(), Some("block" | "deny")) {
         verdict.block = Some(
             json_str(&value, "reason")
-                .unwrap_or("blocked by pre_tool hook")
+                .unwrap_or(default_reason.as_str())
                 .to_string(),
         );
     }
@@ -136,7 +150,7 @@ fn parse_gate_stdout(stdout: &str) -> CommandVerdict {
             verdict.block = Some(
                 json_str(specific, "permissionDecisionReason")
                     .or_else(|| json_str(&value, "reason"))
-                    .unwrap_or("blocked by pre_tool hook")
+                    .unwrap_or(default_reason.as_str())
                     .to_string(),
             );
         }
@@ -145,7 +159,7 @@ fn parse_gate_stdout(stdout: &str) -> CommandVerdict {
                 .or_else(|| json_str(&value, "reason"));
             verdict.block = Some(match reason {
                 Some(reason) => format!("requires user approval: {reason}"),
-                None => "requires user approval (pre_tool hook asked)".to_string(),
+                None => format!("requires user approval ({label} hook asked)"),
             });
         }
         _ => {}
@@ -154,6 +168,15 @@ fn parse_gate_stdout(stdout: &str) -> CommandVerdict {
         verdict.block = Some(truncate_bytes(&reason, BLOCK_REASON_LIMIT).to_string());
     }
 
+    if value.get("continue").and_then(Value::as_bool) == Some(false) {
+        verdict.halt = Some(
+            json_str(&value, "stopReason")
+                .or_else(|| json_str(&value, "reason"))
+                .unwrap_or("stopped by hook")
+                .to_string(),
+        );
+    }
+    verdict.suppress_output = value.get("suppressOutput").and_then(Value::as_bool) == Some(true);
     if let Some(updated) = specific.get("updatedInput")
         && updated.is_object()
     {
@@ -320,12 +343,17 @@ pub fn hook_commands(event: &str) -> Vec<String> {
         "post_tool_feedback" => hooks.post_tool_feedback.as_ref(),
         _ => None,
     };
-    raw.into_iter()
+    let mut commands: Vec<String> = raw
+        .into_iter()
         .flat_map(|commands| commands.iter())
         .map(str::trim)
         .filter(|command| !command.is_empty())
         .map(str::to_owned)
-        .collect()
+        .collect();
+    // A command also listed under the matching lifecycle event (`pre_tool` and
+    // `PreToolUse`, ...) runs once, as the lifecycle entry.
+    lifecycle::drop_aliased_legacy(hooks, event, &mut commands);
+    commands
 }
 
 /// The first configured command for `event`, retained for scalar callers.
@@ -880,6 +908,10 @@ async fn run_post_tool_feedback_command(
     }
     Some(text)
 }
+
+#[path = "hooks_lifecycle.rs"]
+mod lifecycle;
+pub use lifecycle::*;
 
 #[cfg(test)]
 #[allow(clippy::await_holding_lock)]

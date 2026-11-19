@@ -976,9 +976,23 @@ impl Agent {
                 Ok(mut manager) => {
                     let discarded_oversized_native =
                         manager.discard_oversized_openai_native_compaction();
+                    let hook_session = (self.session.id.clone(), self.session.working_dir.clone());
                     let messages = {
                         let all_messages = self.session.provider_messages();
                         if self.provider.uses_jcode_compaction() {
+                            // Once per compaction, not per request: skip while
+                            // a background compaction is already running.
+                            if !manager.is_compacting()
+                                && (manager.should_compact_with(all_messages)
+                                    || manager.context_usage_with(all_messages)
+                                        >= crate::compaction::CRITICAL_THRESHOLD)
+                            {
+                                crate::lifecycle_hooks::fire_pre_compact(
+                                    &hook_session.0,
+                                    hook_session.1.as_deref(),
+                                    "auto",
+                                );
+                            }
                             let action =
                                 manager.ensure_context_fits(all_messages, self.provider.clone());
                             match action {
@@ -1284,6 +1298,19 @@ impl Agent {
     /// Fire a session lifecycle observer hook (`session_start`/`session_end`).
     /// No-op when the hook is not configured.
     pub(crate) fn fire_session_lifecycle_hook(&self, event_name: &'static str, source: &str) {
+        if event_name == "session_start" {
+            // Claude Code `source` values for `[[hooks.SessionStart]]`.
+            let source = if matches!(source, "attach" | "resume") {
+                "resume"
+            } else {
+                "startup"
+            };
+            crate::lifecycle_hooks::fire_session_start(
+                &self.session.id,
+                self.working_dir(),
+                source,
+            );
+        }
         if !crate::hooks::hook_configured(event_name) {
             return;
         }

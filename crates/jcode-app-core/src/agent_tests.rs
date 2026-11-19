@@ -2932,6 +2932,267 @@ async fn stranded_tool_use_stop_continues_instead_of_ending_the_turn() {
     );
 }
 
+#[derive(Clone, Default)]
+struct CountingAnswerProvider {
+    calls: Arc<std::sync::atomic::AtomicUsize>,
+}
+
+#[async_trait]
+impl Provider for CountingAnswerProvider {
+    async fn complete(
+        &self,
+        _messages: &[Message],
+        _tools: &[ToolDefinition],
+        _system: &str,
+        _resume_session_id: Option<&str>,
+    ) -> Result<EventStream> {
+        let call = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
+        let (tx, rx) = tokio_mpsc::channel::<Result<StreamEvent>>(8);
+        tokio::spawn(async move {
+            let _ = tx
+                .send(Ok(StreamEvent::TextDelta(format!("answer {call}"))))
+                .await;
+            let _ = tx
+                .send(Ok(StreamEvent::MessageEnd {
+                    stop_reason: Some("end_turn".to_string()),
+                }))
+                .await;
+        });
+        Ok(Box::pin(ReceiverStream::new(rx)))
+    }
+
+    fn name(&self) -> &str {
+        "counting-answer"
+    }
+
+    fn fork(&self) -> Arc<dyn Provider> {
+        Arc::new(self.clone())
+    }
+}
+
+/// Run one streamed turn with a `[[hooks.Stop]]` script and return the number
+/// of provider calls. `before_turn` may arm a side effect (such as a cancel).
+#[cfg(unix)]
+async fn stop_hook_turn_calls(
+    script_body: &str,
+    before_turn: impl FnOnce(&Agent, &std::path::Path),
+) -> usize {
+    use std::os::unix::fs::PermissionsExt;
+    let temp = tempfile::TempDir::new().expect("temp dir");
+    let script = temp.path().join("stop.sh");
+    std::fs::write(&script, script_body).unwrap();
+    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::write(
+        temp.path().join("config.toml"),
+        format!("[[hooks.Stop]]\ncommand = \"{}\"\n", script.display()),
+    )
+    .unwrap();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", temp.path());
+    crate::config::invalidate_config_cache();
+
+    let counting = CountingAnswerProvider::default();
+    let calls = counting.calls.clone();
+    let provider: Arc<dyn Provider> = Arc::new(counting);
+    let registry = Registry::new(provider.clone()).await;
+    let mut agent = Agent::new(provider, registry);
+    before_turn(&agent, temp.path());
+    let (tx, _rx) = tokio::sync::mpsc::unbounded_channel();
+    let result = agent
+        .run_once_streaming_mpsc("do the task", Vec::new(), None, tx)
+        .await;
+
+    match prev_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    crate::config::invalidate_config_cache();
+    result.expect("turn should complete");
+    calls.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+#[cfg(unix)]
+#[tokio::test]
+#[allow(clippy::await_holding_lock)]
+async fn stop_hook_block_continues_the_turn_up_to_the_bound() {
+    let _guard = crate::storage::lock_test_env();
+    // Always blocks: one original answer plus 3 bounded continuations.
+    let calls = stop_hook_turn_calls(
+        "#!/bin/sh\ncat >/dev/null\necho '{\"decision\":\"block\",\"reason\":\"keep going\"}'\n",
+        |_, _| {},
+    )
+    .await;
+    assert_eq!(calls, 4);
+}
+
+#[cfg(unix)]
+#[tokio::test]
+#[allow(clippy::await_holding_lock)]
+async fn stop_hook_without_block_does_not_continue() {
+    let _guard = crate::storage::lock_test_env();
+    let calls = stop_hook_turn_calls("#!/bin/sh\ncat >/dev/null\nexit 0\n", |_, _| {}).await;
+    assert_eq!(calls, 1);
+}
+
+#[cfg(unix)]
+#[tokio::test]
+#[allow(clippy::await_holding_lock)]
+async fn stop_hook_stop_hook_active_is_set_after_the_first_continuation() {
+    let _guard = crate::storage::lock_test_env();
+    // Blocks only while stop_hook_active is false: exactly one continuation.
+    let calls = stop_hook_turn_calls(
+        "#!/bin/sh\nif grep -q '\"stop_hook_active\":true'; then exit 0; fi\necho '{\"decision\":\"block\",\"reason\":\"once\"}'\n",
+        |_, _| {},
+    )
+    .await;
+    assert_eq!(calls, 2);
+}
+
+#[cfg(unix)]
+#[tokio::test]
+#[allow(clippy::await_holding_lock)]
+async fn explicit_cancel_while_stop_hook_runs_never_continues() {
+    let _guard = crate::storage::lock_test_env();
+    // The hook signals it started, lingers, then asks to continue. A cancel
+    // that lands meanwhile must win over its output.
+    let calls = stop_hook_turn_calls(
+        "#!/bin/sh\ncat >/dev/null\ntouch \"$(dirname \"$0\")/started\"\nsleep 1\necho '{\"decision\":\"block\",\"reason\":\"again\"}'\n",
+        |agent, dir| {
+            let signal = agent.graceful_shutdown_signal();
+            let started = dir.join("started");
+            tokio::spawn(async move {
+                while !started.exists() {
+                    tokio::time::sleep(Duration::from_millis(20)).await;
+                }
+                signal.fire();
+            });
+        },
+    )
+    .await;
+    assert_eq!(calls, 1);
+}
+
+/// Install a capture script for `[[hooks.<event>]]`, run `body`, and return the
+/// JSON payloads it received.
+#[cfg(unix)]
+async fn lifecycle_payloads<F, Fut>(event: &str, body: F) -> Vec<serde_json::Value>
+where
+    F: FnOnce() -> Fut,
+    Fut: std::future::Future<Output = ()>,
+{
+    use std::os::unix::fs::PermissionsExt;
+    let temp = tempfile::TempDir::new().expect("temp dir");
+    let out = temp.path().join("out");
+    std::fs::create_dir(&out).unwrap();
+    let script = temp.path().join("capture.sh");
+    std::fs::write(
+        &script,
+        format!("#!/bin/sh\ncat > {}/$$.json\n", out.display()),
+    )
+    .unwrap();
+    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::write(
+        temp.path().join("config.toml"),
+        format!("[[hooks.{event}]]\ncommand = \"{}\"\n", script.display()),
+    )
+    .unwrap();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", temp.path());
+    crate::config::invalidate_config_cache();
+
+    body().await;
+    // Hooks run detached; wait for the first payload, then let stragglers land.
+    for _ in 0..50 {
+        if std::fs::read_dir(&out).is_ok_and(|mut dir| dir.next().is_some()) {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    let files: Vec<String> = std::fs::read_dir(&out)
+        .unwrap()
+        .map(|entry| std::fs::read_to_string(entry.unwrap().path()).unwrap_or_default())
+        .collect();
+
+    match prev_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    crate::config::invalidate_config_cache();
+    files
+        .iter()
+        .filter(|text| !text.trim().is_empty())
+        .map(|text| serde_json::from_str(text).expect("json payload"))
+        .collect()
+}
+
+#[cfg(unix)]
+#[tokio::test]
+#[allow(clippy::await_holding_lock)]
+async fn session_start_hook_reports_startup_and_resume_sources() {
+    let _guard = crate::storage::lock_test_env();
+    let session_id = std::sync::Mutex::new(String::new());
+    let restored_id = std::sync::Mutex::new(String::new());
+    let payloads = lifecycle_payloads("SessionStart", || async {
+        let provider: Arc<dyn Provider> = Arc::new(NativeAutoCompactionProvider);
+        let registry = Registry::new(provider.clone()).await;
+        let mut agent = Agent::new(provider.clone(), registry.clone());
+        *session_id.lock().unwrap() = agent.session_id().to_string();
+        let resumed =
+            Agent::new_with_session(provider, registry, Session::create(None, None), None);
+        let mut other = Session::create(None, Some("restore me".into()));
+        other.save().unwrap();
+        *restored_id.lock().unwrap() = other.id.clone();
+        agent.restore_session(&other.id).unwrap();
+        drop((agent, resumed));
+    })
+    .await;
+    let id = session_id.lock().unwrap().clone();
+    let restored = restored_id.lock().unwrap().clone();
+    let restore_payload = payloads
+        .iter()
+        .find(|payload| payload["session_id"] == restored.as_str())
+        .expect("restore_session payload");
+    assert_eq!(restore_payload["source"], "resume");
+    let created = payloads
+        .iter()
+        .find(|payload| payload["session_id"] == id.as_str())
+        .expect("create payload");
+    assert_eq!(created["hook_event_name"], "SessionStart");
+    assert_eq!(created["source"], "startup");
+    assert!(
+        payloads.iter().any(|payload| payload["source"] == "resume"),
+        "attached session must report source=resume: {payloads:?}"
+    );
+}
+
+#[cfg(unix)]
+#[tokio::test]
+#[allow(clippy::await_holding_lock)]
+async fn pre_compact_hook_reports_manual_trigger() {
+    let _guard = crate::storage::lock_test_env();
+    let payloads = lifecycle_payloads("PreCompact", || async {
+        let provider: Arc<dyn Provider> = Arc::new(NativeAutoCompactionProvider);
+        let registry = Registry::new(provider.clone()).await;
+        let mut agent = Agent::new(provider, registry);
+        for i in 0..30 {
+            agent.add_message(
+                Role::User,
+                vec![ContentBlock::Text {
+                    text: format!("turn {i} {}", "x".repeat(120)),
+                    cache_control: None,
+                }],
+            );
+        }
+        let (message, success) = agent.request_manual_compaction();
+        assert!(success, "manual compaction should start: {message}");
+    })
+    .await;
+    assert_eq!(payloads.len(), 1, "{payloads:?}");
+    assert_eq!(payloads[0]["hook_event_name"], "PreCompact");
+    assert_eq!(payloads[0]["trigger"], "manual");
+}
+
 #[path = "agent_tests/system_prompt_reminder.rs"]
 mod system_prompt_reminder;
 

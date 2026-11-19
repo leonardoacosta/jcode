@@ -10,7 +10,7 @@ The config SHALL accept a `[hooks]` table keyed by event (`SessionStart`, `PreTo
 
 #### Scenario: Invalid matcher
 - **WHEN** a hook entry has an invalid matcher regex
-- **THEN** that entry is disabled with a visible config warning and other hooks still load
+- **THEN** that entry is disabled with a config warning written to the log and other hooks still load
 
 ### Requirement: Claude Code compatible payload
 Each hook SHALL receive a JSON object on stdin containing `session_id`, `transcript_path`, `cwd`, and `hook_event_name`, plus event fields compatible with Claude Code hooks (`tool_name` and `tool_input` for tool events, `tool_response` for `PostToolUse`, `trigger` for `PreCompact`, `source` for `SessionStart`).
@@ -27,7 +27,7 @@ Tool event hooks SHALL run only when `matcher` matches the tool name and, when `
 - **THEN** the hook does not run
 
 ### Requirement: PreToolUse blocking
-A `blocking` `PreToolUse` hook exiting with code 2 SHALL block the tool call and return bounded safe stderr as its result. Other failures and timeouts SHALL block only when `fail_closed` is true, but fail-open SHALL resume normal admission rather than override cancellation, revocation, budgets or other policy denials.
+A `blocking` `PreToolUse` hook exiting with code 2 SHALL block the tool call and return bounded safe stderr as its result. Other failures and timeouts SHALL block only when `fail_closed` is true (`PreToolUse` only; `fail_closed` has no effect on other events), but fail-open SHALL resume normal admission rather than override cancellation, revocation, budgets or other policy denials.
 
 #### Scenario: Exit code 2 blocks
 - **WHEN** a `PreToolUse` hook exits 2 with stderr `protected path`
@@ -37,7 +37,7 @@ A `blocking` `PreToolUse` hook exiting with code 2 SHALL block the tool call and
 - **WHEN** a `PreToolUse` hook without `fail_closed` times out
 - **THEN** the tool is rechecked against normal admission and executes only if still permitted, with a safe warning logged
 
-#### Scenario: Fail-closed error
+#### Scenario: Fail-closed error (exit 1 or timeout)
 - **WHEN** a `PreToolUse` hook with `fail_closed = true` exits 1
 - **THEN** the tool is not executed
 
@@ -49,7 +49,7 @@ When a swarm worker submits its completion report, the coordinator SHALL run `Su
 - **THEN** a configured `SubagentStop` command receives JSON including that status and message
 
 ### Requirement: Hook execution modes
-Each hook entry SHALL accept `mode` of `blocking`, `observe`, or `async`. Defaults SHALL be `blocking` for `PreToolUse` and `Stop`, `observe` for `SessionStart` and `PreCompact`, and `async` for `PostToolUse` and `SubagentStop`. `blocking` on any other event SHALL produce a config warning and behave as `observe`.
+Each hook entry SHALL accept `mode` of `blocking`, `observe`, or `async`. Defaults SHALL be `blocking` for `PreToolUse` and `Stop`, `observe` for `SessionStart` and `PreCompact`, and `async` for `PostToolUse` and `SubagentStop`. `blocking` on any other event SHALL produce a logged config warning and behave as `observe`.
 
 #### Scenario: Async hook does not delay
 - **WHEN** an `async` `SubagentStop` hook sleeps 30 seconds
@@ -61,10 +61,10 @@ Each hook entry SHALL accept `mode` of `blocking`, `observe`, or `async`. Defaul
 
 #### Scenario: Blocking on unsupported event
 - **WHEN** a `PostToolUse` hook sets `mode = "blocking"`
-- **THEN** a config warning is shown and the hook runs as `observe`
+- **THEN** a config warning is logged and the hook runs as `observe`
 
 ### Requirement: JSON decision output
-A `blocking` hook exiting 0 with JSON stdout SHALL be honored: `decision: "block"` or `hookSpecificOutput.permissionDecision: "deny"` blocks with `reason` returned to the model; `permissionDecision: "ask"` routes to the normal permission prompt; `additionalContext` is appended to model context. For natural-completion `Stop`, `decision: "block"` SHALL request at most one continuation per completion event with `reason` as the next instruction, subject to normal admission and budgets. Explicit cancellation, durable stop or revoked generation SHALL suppress continuation regardless of hook output. Non-JSON stdout SHALL be treated as no decision.
+A `blocking` hook exiting 0 with JSON stdout SHALL be honored: `decision: "block"` or `hookSpecificOutput.permissionDecision: "deny"` blocks with `reason` returned to the model; `permissionDecision: "ask"` blocks the call with a clear "requires user approval" reason, because jcode has no hook approval prompt; `additionalContext` is appended to model context. For natural-completion `Stop`, `decision: "block"` SHALL request at most one continuation per completion event, and at most 3 continuations per user turn, with `reason` as the next instruction, subject to normal admission and budgets. A failed, timed-out or crashed `Stop` hook (including with `fail_closed`) SHALL only be logged and never becomes a continuation. Explicit cancellation, durable stop or revoked generation SHALL suppress continuation regardless of hook output. Non-JSON stdout SHALL be treated as no decision.
 
 #### Scenario: JSON deny
 - **WHEN** a `PreToolUse` hook exits 0 with `{"hookSpecificOutput":{"permissionDecision":"deny","permissionDecisionReason":"no prod"}}`

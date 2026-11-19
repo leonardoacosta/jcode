@@ -825,9 +825,60 @@ impl<'de> Deserialize<'de> for HookCommands {
     }
 }
 
+/// One entry of a lifecycle event table (`[[hooks.PreToolUse]]` etc.).
+///
+/// `mode` stays a raw string so an unknown value disables only this entry
+/// (with a visible warning) instead of failing the whole config load.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct HookEntry {
+    /// Regex matched (case-insensitively, whole string) against the tool name
+    /// for tool events, the `source` for `SessionStart`, and the `trigger` for
+    /// `PreCompact`. Absent or `*` matches everything.
+    pub matcher: Option<String>,
+    /// Glob matched against file paths named in the tool input (tool events).
+    pub path: Option<String>,
+    /// Command line, parsed shell-style and executed directly (no shell).
+    pub command: String,
+    /// Seconds before the hook is killed (default: 10).
+    pub timeout: u64,
+    /// Block on failure or timeout (blocking mode only; default: false).
+    pub fail_closed: bool,
+    /// `blocking`, `observe`, or `async`. Absent uses the event default.
+    pub mode: Option<String>,
+}
+
+impl Default for HookEntry {
+    fn default() -> Self {
+        Self {
+            matcher: None,
+            path: None,
+            command: String::new(),
+            timeout: 10,
+            fail_closed: false,
+            mode: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct HooksConfig {
+    /// Lifecycle event tables, keyed by Claude Code compatible event name.
+    /// They run alongside the legacy snake_case keys below; see
+    /// `docs/HOOKS.md` for precedence.
+    #[serde(rename = "SessionStart", skip_serializing_if = "Vec::is_empty")]
+    pub lifecycle_session_start: Vec<HookEntry>,
+    #[serde(rename = "PreToolUse", skip_serializing_if = "Vec::is_empty")]
+    pub lifecycle_pre_tool_use: Vec<HookEntry>,
+    #[serde(rename = "PostToolUse", skip_serializing_if = "Vec::is_empty")]
+    pub lifecycle_post_tool_use: Vec<HookEntry>,
+    #[serde(rename = "SubagentStop", skip_serializing_if = "Vec::is_empty")]
+    pub lifecycle_subagent_stop: Vec<HookEntry>,
+    #[serde(rename = "Stop", skip_serializing_if = "Vec::is_empty")]
+    pub lifecycle_stop: Vec<HookEntry>,
+    #[serde(rename = "PreCompact", skip_serializing_if = "Vec::is_empty")]
+    pub lifecycle_pre_compact: Vec<HookEntry>,
     /// Synchronous input transformers run before each tool call. Each receives
     /// the tool input JSON on stdin and may print replacement JSON on stdout.
     /// Empty stdout or any failure leaves the input unchanged.
@@ -874,9 +925,30 @@ pub struct HooksConfig {
     pub pre_tool_timeout_ms: u64,
 }
 
+impl HooksConfig {
+    /// Entries for a lifecycle event name (`PreToolUse`, ...), empty if unknown.
+    pub fn lifecycle_entries(&self, event: &str) -> &[HookEntry] {
+        match event {
+            "SessionStart" => &self.lifecycle_session_start,
+            "PreToolUse" => &self.lifecycle_pre_tool_use,
+            "PostToolUse" => &self.lifecycle_post_tool_use,
+            "SubagentStop" => &self.lifecycle_subagent_stop,
+            "Stop" => &self.lifecycle_stop,
+            "PreCompact" => &self.lifecycle_pre_compact,
+            _ => &[],
+        }
+    }
+}
+
 impl Default for HooksConfig {
     fn default() -> Self {
         Self {
+            lifecycle_session_start: Vec::new(),
+            lifecycle_pre_tool_use: Vec::new(),
+            lifecycle_post_tool_use: Vec::new(),
+            lifecycle_subagent_stop: Vec::new(),
+            lifecycle_stop: Vec::new(),
+            lifecycle_pre_compact: Vec::new(),
             pre_tool_transform: None,
             pre_tool_transform_timeout_ms: 500,
             turn_start: None,

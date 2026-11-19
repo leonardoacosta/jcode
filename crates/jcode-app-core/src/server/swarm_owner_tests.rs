@@ -1168,3 +1168,96 @@ async fn update_member_status_notifies_owner_when_worker_crashes_mid_task() {
         "owner should be notified of the crash, got {owner_events:?}"
     );
 }
+
+#[cfg(unix)]
+#[tokio::test]
+#[allow(clippy::await_holding_lock)]
+async fn subagent_stop_hook_receives_the_worker_report_once() {
+    use std::os::unix::fs::PermissionsExt;
+    let _guard = crate::storage::lock_test_env();
+    let temp = tempfile::TempDir::new().expect("temp dir");
+    let out = temp.path().join("payloads.jsonl");
+    let script = temp.path().join("capture.sh");
+    std::fs::write(
+        &script,
+        format!("#!/bin/sh\ncat >> {}\necho >> {0}\n", out.display()),
+    )
+    .unwrap();
+    std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).unwrap();
+    std::fs::write(
+        temp.path().join("config.toml"),
+        format!(
+            "[[hooks.SubagentStop]]\ncommand = \"{}\"\n",
+            script.display()
+        ),
+    )
+    .unwrap();
+    let prev_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", temp.path());
+    crate::config::invalidate_config_cache();
+
+    let worker_id = "subagent-stop-worker";
+    let (mut worker, _rx) = swarm_member(worker_id, "agent", true);
+    worker.status = "running".into();
+    worker.working_dir = Some(temp.path().to_path_buf());
+    let members = Arc::new(RwLock::new(HashMap::from([(worker_id.into(), worker)])));
+    let swarms = Arc::new(RwLock::new(HashMap::from([(
+        "swarm-1".into(),
+        HashSet::from([worker_id.into()]),
+    )])));
+    // The same report twice must fire the hook once.
+    for _ in 0..2 {
+        crate::lifecycle_hooks::with_report_parts(
+            "Hook payload report.",
+            Some("cargo test ok"),
+            Some("none"),
+            update_member_status_with_report(
+                worker_id,
+                "ready",
+                None,
+                Some("Hook payload report.".into()),
+                &members,
+                &swarms,
+                None,
+                None,
+                None,
+            ),
+        )
+        .await;
+    }
+    let mut text = String::new();
+    for _ in 0..50 {
+        text = std::fs::read_to_string(&out).unwrap_or_default();
+        if !text.is_empty() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
+    }
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    let text = std::fs::read_to_string(&out).unwrap_or(text);
+    let payloads: Vec<serde_json::Value> = text
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .map(|line| serde_json::from_str(line).expect("json payload"))
+        .collect();
+    match prev_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    crate::config::invalidate_config_cache();
+
+    assert_eq!(payloads.len(), 1, "{text}");
+    assert_eq!(payloads[0]["hook_event_name"], "SubagentStop");
+    assert_eq!(payloads[0]["session_id"], worker_id);
+    assert_eq!(payloads[0]["stop_hook_active"], false);
+    assert_eq!(payloads[0]["status"], "ready");
+    assert_eq!(payloads[0]["message"], "Hook payload report.");
+    assert_eq!(payloads[0]["validation"], "cargo test ok");
+    assert_eq!(payloads[0]["follow_up"], "none");
+    assert!(
+        payloads[0]["report"]
+            .as_str()
+            .unwrap()
+            .contains("Hook payload report.")
+    );
+}

@@ -58,6 +58,7 @@ impl Agent {
         let mut incomplete_continuations = 0u32;
         let mut empty_post_tool_continuations = 0u32;
         let mut fable_guardrail_reconsiderations = 0u32;
+        let mut stop_hook_continuations = 0u32;
         let mut sequential_single_tool_rounds = 0u32;
         let mut batch_nudge_pending = false;
         let mut turn_tool_calls = 0usize;
@@ -1068,6 +1069,13 @@ impl Agent {
                 logging::info("Turn complete - no tool calls, returning");
                 if print_output {
                     println!();
+                }
+                if self
+                    .stop_hook_continues(&mut stop_hook_continuations, &text_content)
+                    .await?
+                    .is_some()
+                {
+                    continue;
                 }
                 final_text = text_content;
                 break;

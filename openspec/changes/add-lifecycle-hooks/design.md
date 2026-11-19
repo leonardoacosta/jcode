@@ -29,7 +29,7 @@ Key differences: every shell-based harness converged on exit 2 + Claude-style JS
 ## Decision: C
 
 - Latency: notification hooks (`SubagentStop`, `PostToolUse`) default to `async`, so they never stall a turn.
-- Safety: only `PreToolUse` and natural-completion `Stop` honor decisions in blocking mode. Explicit user/coordinator cancellation, budgets and revoked generations take precedence, never run a continuation. Limit Stop continuation to one per completion event, preserve recursion prevention, and account hook children in generation settlement. `fail_closed` applies only to blocking mode.
+- Safety: only `PreToolUse` and natural-completion `Stop` honor decisions in blocking mode. Explicit user/coordinator cancellation, budgets and revoked generations take precedence, never run a continuation. Limit Stop continuation to one per completion event and 3 per user turn, preserve recursion prevention, and account hook children in generation settlement. `fail_closed` applies only to blocking mode.
 - Compat: compatible JSON payload/output fields are the target, with explicit fixtures for supported forms. Current external scripts are not guaranteed unchanged across harness versions. `mode` is additive and existing Jcode keys remain supported.
 - Explicitness: whether a hook can gate execution is visible in config instead of inferred per event.
 
@@ -43,3 +43,14 @@ Extend `crates/jcode-base/src/hooks.rs` and current `HooksConfig`; retain legacy
 
 1. No `.claude/settings.json` import in v1; payload/output compatibility only.
 2. Timeout: kill + warning, non-blocking unless `fail_closed = true` (blocking mode only). Default 10s.
+
+## Amendments (review follow-up, 2026-11-19)
+
+- `permissionDecision: "ask"`: jcode has no hook approval prompt, so `ask` blocks the call with a "requires user approval" reason instead of routing to a prompt. Interactive routing is out of scope for v1.
+- `fail_closed` is honored for `PreToolUse` only. A failed `Stop` hook is logged and never becomes a continuation.
+- Config warnings (invalid entry, unsupported `blocking`) are logged, not surfaced in the TUI.
+- `path` filters judge the tool input as the model issued it; they are not recomputed after an earlier hook rewrites `updatedInput`.
+- `SubagentStop` hook children are intentionally not owned by a durable generation: the event fires from the report handler, outside the worker's and coordinator's running generation scope, it is `async` by default and the timeout kills the process group. `PostToolUse`/`PreToolUse`/`Stop`/`SessionStart`/`PreCompact` children are owned by the running session generation.
+- When a command is configured under both a legacy key and its event table, only the table entry runs, so the legacy key's timeout (for example `pre_tool_timeout_ms`) does not apply to it.
+- A hook that backgrounds a child which keeps stdout open makes the runner wait for EOF, so a clean exit can read as a timeout. This matches Claude Code behavior.
+- Hook waits are not raced against cancel: Esc can wait up to the hook timeout (default 10s) for `PreToolUse`/`Stop`/`observe` hooks. Cancellation still wins once the hook returns. Accepted limit.

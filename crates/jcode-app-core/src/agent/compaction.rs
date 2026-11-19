@@ -60,6 +60,7 @@ impl Agent {
             );
         }
 
+        crate::lifecycle_hooks::fire_pre_compact(&self.session.id, self.working_dir(), "manual");
         let provider = self.provider.fork();
         let messages = self.session.messages_for_provider();
         let compaction = self.registry.compaction();
@@ -153,6 +154,7 @@ impl Agent {
             return false;
         }
 
+        crate::lifecycle_hooks::fire_pre_compact(&self.session.id, self.working_dir(), "auto");
         let context_limit = self.provider.context_window() as u64;
         let compaction = self.registry.compaction();
 

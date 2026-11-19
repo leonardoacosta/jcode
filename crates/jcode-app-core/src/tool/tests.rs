@@ -1107,6 +1107,114 @@ async fn registry_execute_pre_tool_hook_blocks_and_allows() {
 
 #[cfg(unix)]
 #[tokio::test]
+#[allow(clippy::await_holding_lock)]
+async fn registry_execute_lifecycle_hooks_gate_rewrite_and_report_tool_calls() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let _guard = crate::storage::lock_test_env();
+    let provider: Arc<dyn Provider> = Arc::new(MockProvider);
+    let registry = Registry::new(provider).await;
+    let temp = tempfile::TempDir::new().expect("temp dir");
+    let script = |name: &str, body: &str| {
+        let path = temp.path().join(name);
+        std::fs::write(&path, body).expect("write script");
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).expect("chmod");
+        path.display().to_string()
+    };
+    let deny = script(
+        "deny.sh",
+        "#!/bin/sh\ncat >/dev/null\necho 'protected: lifecycle' >&2\nexit 2\n",
+    );
+    let rewrite = script(
+        "rewrite.sh",
+        "#!/bin/sh\ncat >/dev/null\necho '{\"hookSpecificOutput\":{\"updatedInput\":{\"command\":\"echo rewritten\"}}}'\n",
+    );
+    let post_out = temp.path().join("post.json");
+    let post = script(
+        "post.sh",
+        &format!("#!/bin/sh\ncat > {}\n", post_out.display()),
+    );
+    std::fs::write(
+        temp.path().join("config.toml"),
+        format!(
+            "[[hooks.PreToolUse]]\nmatcher = \"BASH\"\ncommand = \"{deny}\"\npath = \"never/**\"\n\n\
+             [[hooks.PreToolUse]]\nmatcher = \"bash\"\ncommand = \"{rewrite}\"\n\n\
+             [[hooks.PostToolUse]]\nmatcher = \"bash\"\ncommand = \"{post}\"\n"
+        ),
+    )
+    .expect("config");
+    let prev_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", temp.path());
+    crate::config::invalidate_config_cache();
+
+    let ctx = || ToolContext {
+        session_id: "test-lifecycle-hooks".to_string(),
+        message_id: "test".to_string(),
+        tool_call_id: "call-1".to_string(),
+        working_dir: Some(std::env::temp_dir()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: ToolExecutionMode::Direct,
+    };
+    // The deny hook's `path` does not match: it must not run. The rewrite hook
+    // replaces the command, and PostToolUse then sees the rewritten input.
+    let output = registry
+        .execute(
+            "bash",
+            serde_json::json!({"command": "echo original"}),
+            ctx(),
+        )
+        .await
+        .expect("bash should run");
+    for _ in 0..50 {
+        if post_out.exists()
+            && std::fs::metadata(&post_out)
+                .map(|m| m.len() > 0)
+                .unwrap_or(false)
+        {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    }
+    let post_payload = std::fs::read_to_string(&post_out).unwrap_or_default();
+
+    // Same deny hook without a path filter blocks.
+    std::fs::write(
+        temp.path().join("config.toml"),
+        format!("[[hooks.PreToolUse]]\ncommand = \"{deny}\"\n"),
+    )
+    .expect("config");
+    crate::config::invalidate_config_cache();
+    let blocked = registry
+        .execute(
+            "bash",
+            serde_json::json!({"command": "echo original"}),
+            ctx(),
+        )
+        .await;
+
+    match prev_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    crate::config::invalidate_config_cache();
+
+    assert!(output.output.contains("rewritten"), "{}", output.output);
+    assert!(!output.output.contains("original"));
+    let post: serde_json::Value = serde_json::from_str(&post_payload).expect("post payload");
+    assert_eq!(post["hook_event_name"], "PostToolUse");
+    assert_eq!(post["tool_name"], "bash");
+    assert_eq!(post["tool_input"]["command"], "echo rewritten");
+    assert!(post["tool_response"].to_string().contains("rewritten"));
+    let error = blocked.expect_err("unfiltered PreToolUse hook should block");
+    assert!(
+        error.to_string().contains("protected: lifecycle"),
+        "{error}"
+    );
+}
+
+#[cfg(unix)]
+#[tokio::test]
 async fn registry_execute_denies_tools_when_config_composition_is_broken() {
     let _guard = crate::storage::lock_test_env();
     let provider: Arc<dyn Provider> = Arc::new(MockProvider);

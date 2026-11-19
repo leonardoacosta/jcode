@@ -7,8 +7,8 @@ pub use jcode_config_types::{
     AdmissionDecision, AdmissionState, AgentRoleModels, AgentsConfig, AmbientConfig, AuthConfig,
     AutoJudgeConfig, AutoReviewConfig, CompactionConfig, CompactionMode, CrossProviderFailoverMode,
     CustomWebSearchConfig, CustomWebSearchMethod, DiagramDisplayMode, DiagramPanePosition,
-    DiffDisplayMode, DisplayConfig, FeatureConfig, GatewayConfig, HookCommands, HooksConfig,
-    KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
+    DiffDisplayMode, DisplayConfig, FeatureConfig, GatewayConfig, HookCommands, HookEntry,
+    HooksConfig, KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
     MarkdownSpacingMode, MenubarConfig, NamedProviderAuth, NamedProviderConfig,
     NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig, NotificationsConfig,
     PowerConfig, ProviderConfig, ReasoningDisplayMode, ResumeOpenElsewhere, ResumeTimeMode,
@@ -377,7 +377,12 @@ static CONFIG_CACHE: LazyLock<RwLock<ConfigCache>> = LazyLock::new(|| {
 /// authorization-sensitive consumers can deny instead of trusting the fallback.
 fn load_for_cache() -> (Config, Option<String>) {
     match Config::load_strict() {
-        Ok(config) => (config, None),
+        Ok(config) => {
+            for warning in crate::hooks::lifecycle_config_warnings(&config.hooks) {
+                crate::logging::warn(&format!("Hook config warning: {warning}"));
+            }
+            (config, None)
+        }
         Err(error) => {
             crate::logging::error(&format!("Failed to load config: {error:#}"));
             let mut config = Config::default();

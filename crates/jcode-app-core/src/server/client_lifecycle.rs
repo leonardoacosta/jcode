@@ -2986,19 +2986,24 @@ pub(super) async fn handle_client(
                     follow_up.as_deref(),
                 );
                 let detail = Some(truncate_detail(&message, 160));
-                super::session_control::with_reported_generation(
-                    generation,
-                    update_member_status_with_report_tldr(
-                        &req_session_id,
-                        &status,
-                        detail,
-                        Some(report),
-                        tldr,
-                        &swarm_members,
-                        &swarms_by_id,
-                        Some(&event_history),
-                        Some(&event_counter),
-                        Some(&swarm_event_tx),
+                crate::lifecycle_hooks::with_report_parts(
+                    &message,
+                    validation.as_deref(),
+                    follow_up.as_deref(),
+                    super::session_control::with_reported_generation(
+                        generation,
+                        update_member_status_with_report_tldr(
+                            &req_session_id,
+                            &status,
+                            detail,
+                            Some(report),
+                            tldr,
+                            &swarm_members,
+                            &swarms_by_id,
+                            Some(&event_history),
+                            Some(&event_counter),
+                            Some(&swarm_event_tx),
+                        ),
                     ),
                 )
                 .await;

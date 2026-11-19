@@ -1029,6 +1029,12 @@ impl Registry {
                 (["pre_tool", "post_tool", "post_tool_feedback"]
                     .iter()
                     .any(|event| crate::hooks::hook_configured(event))
+                    || [
+                        crate::hooks::LifecycleEvent::PreToolUse,
+                        crate::hooks::LifecycleEvent::PostToolUse,
+                    ]
+                    .into_iter()
+                    .any(crate::hooks::lifecycle_configured)
                     || crate::config::config().hooks.pre_tool_transform.is_some())
                 .then_some("hook_children")
             });
@@ -1100,6 +1106,55 @@ impl Registry {
                 return Err(anyhow::anyhow!(
                     "Tool call blocked by pre_tool hook: {reason}"
                 ));
+            }
+        }
+
+        // `[[hooks.PreToolUse]]` lifecycle gate (see `lifecycle_hooks`). It runs
+        // after the legacy gate; a command listed under both runs only here.
+        if !plan_only {
+            let paths: Vec<String> = Self::touched_paths(&input, &ctx)
+                .into_iter()
+                .map(|(_, path)| path.display().to_string())
+                .collect();
+            if let Some(outcome) = crate::lifecycle_hooks::run_pre_tool_use(
+                &ctx.session_id,
+                working_dir.as_deref(),
+                resolved_name,
+                &ctx.tool_call_id,
+                &input,
+                paths,
+            )
+            .await
+            {
+                gate_context.extend(outcome.additional_context);
+                let denial = outcome.admission_error.or(outcome.block);
+                if let Some(mut reason) = denial {
+                    for context in &gate_context {
+                        reason.push_str("\n\n[pre_tool context]\n");
+                        reason.push_str(context);
+                    }
+                    let mut fields =
+                        Self::tool_lifecycle_fields("blocked", name, resolved_name, &input, &ctx);
+                    fields.push(("block_reason".to_string(), reason.clone()));
+                    crate::logging::event_warn("TOOL_LIFECYCLE", fields);
+                    return Err(anyhow::anyhow!(
+                        "Tool call blocked by PreToolUse hook: {reason}"
+                    ));
+                }
+                if let Some(updated) = outcome.updated_input {
+                    input = updated;
+                }
+                // A fail-open hook resumes normal admission: a cancel or revoked
+                // generation that landed while it ran still wins.
+                anyhow::ensure!(
+                    !ctx.graceful_shutdown_signal
+                        .as_ref()
+                        .is_some_and(|signal| signal.is_set()),
+                    "Tool call cancelled"
+                );
+                drop(crate::server::session_control::reserve_current(
+                    &ctx.session_id,
+                )?);
             }
         }
 

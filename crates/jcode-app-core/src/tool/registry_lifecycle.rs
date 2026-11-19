@@ -117,6 +117,26 @@ impl Registry {
         result: &Result<ToolOutput>,
         latency_ms: u64,
     ) {
+        // `[[hooks.PostToolUse]]` lifecycle hooks (async by default).
+        if crate::hooks::lifecycle_configured(crate::hooks::LifecycleEvent::PostToolUse) {
+            let error_text = result.as_ref().err().map(|error| error.to_string());
+            crate::lifecycle_hooks::fire_post_tool_use(
+                &ctx.session_id,
+                ctx.working_dir.as_deref().and_then(|dir| dir.to_str()),
+                resolved_name,
+                &ctx.tool_call_id,
+                input,
+                Self::touched_paths(input, ctx)
+                    .into_iter()
+                    .map(|(_, path)| path.display().to_string())
+                    .collect(),
+                match (result, &error_text) {
+                    (Ok(output), _) => Ok(output.output.as_str()),
+                    (Err(_), Some(error)) => Err(error.as_str()),
+                    (Err(_), None) => Err(""),
+                },
+            );
+        }
         if !crate::hooks::hook_configured("post_tool") {
             return;
         }

@@ -71,6 +71,7 @@ impl Agent {
         let mut empty_post_tool_continuations = 0u32;
         let mut fable_guardrail_reconsiderations = 0u32;
         let mut consecutive_malformed_tool_rounds = 0u32;
+        let mut stop_hook_continuations = 0u32;
 
         loop {
             // Never open a new provider request after a cancel. Several paths
@@ -1427,6 +1428,22 @@ impl Agent {
                                 stop_reason: stop_reason.clone(),
                                 message: notice,
                             });
+                        }
+                        // `[[hooks.Stop]]`: natural completion only (the provider
+                        // ended the message, nobody cancelled).
+                        if saw_message_end
+                            && let Some(reason) = self
+                                .stop_hook_continues(&mut stop_hook_continuations, &text_content)
+                                .await?
+                        {
+                            let _ = event_tx.send(ServerEvent::SoftInterruptInjected {
+                                content: reason,
+                                display_role: Some("system".to_string()),
+                                point: "stop_hook".to_string(),
+                                tools_skipped: None,
+                                client_ids: Vec::new(),
+                            });
+                            continue;
                         }
                         break;
                     }

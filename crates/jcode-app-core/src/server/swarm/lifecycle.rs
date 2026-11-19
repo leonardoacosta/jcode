@@ -715,6 +715,10 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
 ) {
     let completion_report = normalize_completion_report(completion_report);
     let detail_present = detail.is_some();
+    // Set when this call records a new completion report for a known member:
+    // the worker's cwd, for the `SubagentStop` hook. The stale-generation
+    // projection check below runs first, so a rejected report never fires it.
+    let mut subagent_stop_cwd: Option<Option<String>> = None;
     let (
         swarm_id,
         agent_name,
@@ -764,6 +768,14 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
                     let report_changed = completion_report.is_some()
                         && member.latest_completion_report != completion_report;
                     let member_changed = status_changed || detail_changed || report_changed;
+                    if report_changed {
+                        subagent_stop_cwd = Some(
+                            member
+                                .working_dir
+                                .as_ref()
+                                .map(|dir| dir.display().to_string()),
+                        );
+                    }
                     if status_changed {
                         member.last_status_change = Instant::now();
                         if matches!(status, "running" | "streaming" | "thinking") {
@@ -824,6 +836,9 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
             }
         }
     };
+    if let (Some(cwd), Some(report)) = (subagent_stop_cwd, completion_report.as_deref()) {
+        crate::lifecycle_hooks::fire_subagent_stop(session_id, cwd.as_deref(), status, report);
+    }
     if let Some(ref id) = swarm_id {
         if !member_changed {
             return;
