@@ -28,25 +28,33 @@ fn prepare_server_exec(cmd: &mut std::process::Command, socket_path: &std::path:
         .stderr(Stdio::null());
 }
 
-/// Global flags the daemon was launched with that select its provider. The
-/// replacement must serve the same provider (managed cloud hosts start with
-/// `--provider jcode` when they have no model login of their own).
+/// Flags the daemon was launched with that select its provider and identity.
+/// The replacement must serve the same provider and name: a systemd unit running
+/// `serve --provider-profile omni --server-name homelab` must not come back in
+/// auto-provider mode under a random name. Global flags may appear on either side
+/// of `serve`; the result is appended after `serve --socket <path>`.
 fn inherited_serve_flags(args: impl IntoIterator<Item = String>) -> Vec<String> {
+    const VALUE_FLAGS: &[&str] = &[
+        "-p",
+        "--provider",
+        "-m",
+        "--model",
+        "--provider-profile",
+        "--server-name",
+    ];
     let mut out = Vec::new();
     let mut args = args.into_iter().skip(1);
     while let Some(arg) = args.next() {
-        if arg == "serve" {
-            break;
-        }
-        match arg.as_str() {
-            "-p" | "--provider" | "-m" | "--model" => {
-                if let Some(value) = args.next() {
-                    out.push(arg);
-                    out.push(value);
-                }
+        if VALUE_FLAGS.contains(&arg.as_str()) {
+            if let Some(value) = args.next() {
+                out.push(arg);
+                out.push(value);
             }
-            _ if arg.starts_with("--provider=") || arg.starts_with("--model=") => out.push(arg),
-            _ => {}
+        } else if VALUE_FLAGS
+            .iter()
+            .any(|flag| flag.starts_with("--") && arg.starts_with(&format!("{flag}=")))
+        {
+            out.push(arg);
         }
     }
     out
@@ -59,7 +67,32 @@ mod inherited_serve_flags_tests {
         list.iter().map(|s| s.to_string()).collect()
     }
     #[test]
-    fn keeps_provider_and_model_before_serve_only() {
+    fn keeps_systemd_provider_profile_and_server_name() {
+        let first = inherited_serve_flags(args(&[
+            "jcode",
+            "serve",
+            "--provider-profile",
+            "omni",
+            "--server-name",
+            "homelab",
+        ]));
+        assert_eq!(
+            first,
+            args(&["--provider-profile", "omni", "--server-name", "homelab"])
+        );
+        // A replacement launched as `serve --socket <path> <flags>` must carry
+        // the same flags into its own later reloads.
+        let mut second = args(&["jcode", "serve", "--socket", "/x"]);
+        second.extend(first.clone());
+        assert_eq!(inherited_serve_flags(second), first);
+        assert_eq!(
+            inherited_serve_flags(args(&["jcode", "serve", "--provider-profile=omni"])),
+            args(&["--provider-profile=omni"])
+        );
+    }
+
+    #[test]
+    fn keeps_provider_and_model_flags() {
         assert_eq!(
             inherited_serve_flags(args(&[
                 "jcode",
@@ -80,7 +113,7 @@ mod inherited_serve_flags_tests {
                 "--provider",
                 "y"
             ])),
-            args(&["--model=x"])
+            args(&["--model=x", "--provider", "y"])
         );
         assert!(inherited_serve_flags(args(&["jcode", "serve"])).is_empty());
     }
@@ -253,10 +286,8 @@ pub(super) async fn await_reload_signal(
                     }),
                 );
                 let mut cmd = ProcessCommand::new(&binary);
-                if label == "managed-cloud" {
-                    cmd.args(inherited_serve_flags(std::env::args()));
-                }
                 cmd.arg("serve").arg("--socket").arg(socket.as_os_str());
+                cmd.args(inherited_serve_flags(std::env::args()));
                 // Auto provider detection is dominated by credential-file probes.
                 // The replacement process is the same trusted daemon with the same
                 // environment, so carry the already-resolved, non-secret status
