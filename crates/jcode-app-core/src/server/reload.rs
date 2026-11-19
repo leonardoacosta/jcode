@@ -204,6 +204,30 @@ pub(super) async fn await_reload_signal(
             continue;
         }
 
+        // Compatibility floor: vet the exec target before any session is shut
+        // down, so a refusal leaves the running daemon serving. The same target
+        // is exec'd below; it is not re-resolved.
+        let exec_target = super::reload_exec_target(signal.prefer_selfdev_binary);
+        if let Some((binary, label)) = exec_target.as_ref()
+            && let Err(error) = super::ensure_candidate_control_floor(binary).await
+        {
+            crate::logging::error(&format!(
+                "Server: refusing reload into {label} binary {binary:?}: {error:#}"
+            ));
+            super::reload_trace::record_value(
+                &signal.request_id,
+                "refused_control_floor",
+                serde_json::json!({ "binary": binary, "error": format!("{error:#}") }),
+            );
+            crate::server::write_reload_state(
+                &signal.request_id,
+                &signal.hash,
+                crate::server::ReloadPhase::Failed,
+                Some(format!("reload refused: {error:#}")),
+            );
+            continue;
+        }
+
         persist_reload_recovery_intents(
             &signal.request_id,
             &swarm_members,
@@ -262,9 +286,7 @@ pub(super) async fn await_reload_signal(
             serde_json::json!({ "count": aborted }),
         );
 
-        let prefers_selfdev = signal.prefer_selfdev_binary;
-
-        if let Some((binary, label)) = super::reload_exec_target(prefers_selfdev) {
+        if let Some((binary, label)) = exec_target {
             if binary.exists() {
                 let socket = super::socket_path();
                 crate::logging::info(&format!(

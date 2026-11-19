@@ -1,6 +1,80 @@
 //! Selection of the reload executable with downgrade protection.
 
 use super::*;
+use anyhow::{Context, Result, ensure};
+use std::time::Duration;
+use tokio::io::AsyncReadExt;
+
+const CANDIDATE_PROBE_TIMEOUT: Duration = Duration::from_secs(5);
+const MAX_PROBE_BYTES: u64 = 64 * 1024;
+
+/// Ask a candidate daemon binary which session-control reader version it
+/// implements (`version --json` field `control_reader_version`). `Ok(None)`
+/// means a valid report without the field: a build that predates durable stop.
+/// Any failure to run or parse the probe is an error. The probe is pointed at a
+/// nonexistent socket so it never talks to a live daemon.
+pub(crate) async fn probe_control_reader_version(candidate: &Path) -> Result<Option<u32>> {
+    let mut command = std::process::Command::new(candidate);
+    command
+        .args(["--no-update", "version", "--json"])
+        .env("JCODE_NON_INTERACTIVE", "1")
+        .env("JCODE_SOCKET", "/nonexistent/jcode-candidate-probe.sock")
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null());
+    let mut command = tokio::process::Command::from(command);
+    command.kill_on_drop(true);
+    let mut child = command
+        .spawn()
+        .context("could not probe candidate binary")?;
+    let mut stdout = child
+        .stdout
+        .take()
+        .context("candidate stdout unavailable")?
+        .take(MAX_PROBE_BYTES + 1);
+    let bytes = tokio::time::timeout(CANDIDATE_PROBE_TIMEOUT, async {
+        let mut bytes = Vec::new();
+        stdout.read_to_end(&mut bytes).await?;
+        ensure!(
+            bytes.len() as u64 <= MAX_PROBE_BYTES,
+            "candidate version report too large"
+        );
+        ensure!(
+            child.wait().await?.success(),
+            "candidate version probe failed"
+        );
+        Ok::<_, anyhow::Error>(bytes)
+    })
+    .await
+    .map_err(|_| anyhow::anyhow!("candidate version probe timed out"))??;
+    let report: serde_json::Value =
+        serde_json::from_slice(&bytes).context("candidate did not print a version report")?;
+    Ok(report
+        .get("control_reader_version")
+        .and_then(|v| v.as_u64())
+        .map(|v| u32::try_from(v).unwrap_or(u32::MAX)))
+}
+
+/// Refuse a candidate daemon binary that cannot honor the persisted stop
+/// control: its reader version must be at least every record's
+/// `min_reader_version`. Fails closed: an unreadable record directory, or a
+/// candidate that cannot be probed or reports no version, is a refusal. With no
+/// control records there is nothing to protect.
+pub(crate) async fn ensure_candidate_control_floor(candidate: &Path) -> Result<()> {
+    ensure_candidate_floor_in(&crate::server::session_control::store(), candidate).await
+}
+
+async fn ensure_candidate_floor_in(
+    store: &crate::server::session_control::ControlStore,
+    candidate: &Path,
+) -> Result<()> {
+    let floor = store.required_reader_floor()?;
+    if floor.is_none() {
+        return Ok(());
+    }
+    let version = probe_control_reader_version(candidate).await?;
+    crate::server::session_control::ensure_reader_floor(floor, version)
+}
 
 pub(crate) fn server_update_candidate(is_selfdev_session: bool) -> Option<(PathBuf, &'static str)> {
     build::shared_server_update_candidate(is_selfdev_session)
@@ -108,5 +182,134 @@ pub(crate) fn reload_exec_target(is_selfdev_session: bool) -> Option<(PathBuf, &
             ));
             Some(target)
         }
+    }
+}
+
+#[cfg(test)]
+mod control_floor_tests {
+    use super::*;
+    use crate::server::session_control::ControlStore;
+    use std::os::unix::fs::PermissionsExt;
+
+    fn fake_candidate(dir: &Path, stdout: &str, exit: i32) -> PathBuf {
+        let path = dir.join("candidate");
+        std::fs::write(
+            &path,
+            format!("#!/bin/sh\nprintf '%s' '{stdout}'\nexit {exit}\n"),
+        )
+        .unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        path
+    }
+
+    fn store_with_record() -> (tempfile::TempDir, ControlStore) {
+        let root = tempfile::tempdir().unwrap();
+        let store = ControlStore::new(root.path().join("session-control"));
+        store.register("worker", None).unwrap();
+        (root, store)
+    }
+
+    #[tokio::test]
+    async fn no_records_means_nothing_to_protect_and_no_probe() {
+        let root = tempfile::tempdir().unwrap();
+        let store = ControlStore::new(root.path().join("session-control"));
+        ensure_candidate_floor_in(&store, Path::new("/nonexistent/candidate"))
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn candidate_at_or_above_floor_is_accepted() {
+        let (root, store) = store_with_record();
+        let floor = jcode_swarm_core::control::CONTROL_MIN_READER_VERSION;
+        for version in [floor, floor + 1] {
+            let bin = fake_candidate(
+                root.path(),
+                &format!(r#"{{"git_hash":"x","control_reader_version":{version}}}"#),
+                0,
+            );
+            ensure_candidate_floor_in(&store, &bin).await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn candidate_below_floor_or_without_version_is_refused() {
+        let (root, store) = store_with_record();
+        let below = fake_candidate(
+            root.path(),
+            r#"{"git_hash":"x","control_reader_version":1}"#,
+            0,
+        );
+        let error = ensure_candidate_floor_in(&store, &below).await.unwrap_err();
+        assert!(
+            format!("{error:#}").contains("below persisted"),
+            "{error:#}"
+        );
+        let legacy = fake_candidate(root.path(), r#"{"git_hash":"x"}"#, 0);
+        let error = ensure_candidate_floor_in(&store, &legacy)
+            .await
+            .unwrap_err();
+        assert!(
+            format!("{error:#}").contains("predates durable stop"),
+            "{error:#}"
+        );
+    }
+
+    #[tokio::test]
+    async fn unprobeable_candidate_is_refused_fail_closed() {
+        let (root, store) = store_with_record();
+        for bin in [
+            fake_candidate(root.path(), "not json", 0),
+            fake_candidate(root.path(), r#"{"control_reader_version":9}"#, 3),
+            root.path().join("missing"),
+        ] {
+            assert!(
+                ensure_candidate_floor_in(&store, &bin).await.is_err(),
+                "{bin:?}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn higher_record_floor_refuses_a_candidate_at_this_builds_version() {
+        let (root, store) = store_with_record();
+        let path = store.path("worker").unwrap();
+        let mut value: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        value["min_reader_version"] = serde_json::json!(7);
+        std::fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+        let bin = fake_candidate(
+            root.path(),
+            r#"{"git_hash":"x","control_reader_version":2}"#,
+            0,
+        );
+        assert!(ensure_candidate_floor_in(&store, &bin).await.is_err());
+        let ok = fake_candidate(
+            root.path(),
+            r#"{"git_hash":"x","control_reader_version":7}"#,
+            0,
+        );
+        ensure_candidate_floor_in(&store, &ok).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn legacy_and_corrupt_records_set_the_floor_without_being_rewritten() {
+        let root = tempfile::tempdir().unwrap();
+        let store = ControlStore::new(root.path().join("session-control"));
+        std::fs::create_dir_all(root.path().join("session-control")).unwrap();
+        let legacy = root.path().join("session-control/legacy.json");
+        std::fs::write(&legacy, r#"{"schema_version":1,"session_id":"legacy"}"#).unwrap();
+        assert_eq!(store.required_reader_floor().unwrap(), Some(1));
+        let corrupt = root.path().join("session-control/bad.json");
+        std::fs::write(&corrupt, b"{ not json").unwrap();
+        assert_eq!(
+            store.required_reader_floor().unwrap(),
+            Some(jcode_swarm_core::control::CONTROL_MIN_READER_VERSION)
+        );
+        assert_eq!(std::fs::read(&corrupt).unwrap(), b"{ not json");
+        assert_eq!(
+            std::fs::read(&legacy).unwrap(),
+            br#"{"schema_version":1,"session_id":"legacy"}"#
+        );
     }
 }

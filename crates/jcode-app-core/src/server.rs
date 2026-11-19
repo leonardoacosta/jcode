@@ -532,7 +532,14 @@ pub use self::socket::{
 };
 use self::socket::{signal_ready_fd, socket_has_live_listener};
 
+pub(crate) use self::util::ensure_candidate_control_floor;
 pub(crate) use self::util::server_has_newer_binary;
+
+/// Session-control reader version this build implements, reported by
+/// `jcode version --json` so a running daemon can vet a reload candidate.
+pub fn control_reader_version() -> u32 {
+    jcode_swarm_core::control::CONTROL_MIN_READER_VERSION
+}
 pub use self::util::{MANAGED_CLOUD_LIVE_RELOAD_MARKER, ServerIdentity};
 use self::util::{
     debug_control_allowed, embedding_idle_unload_secs, git_common_dir_for, reload_exec_target,

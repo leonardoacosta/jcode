@@ -69,7 +69,9 @@ pub(crate) async fn get_shared_mcp_pool(
 
 #[path = "reload_exec_target.rs"]
 mod reload_exec_target;
-pub(crate) use reload_exec_target::{reload_exec_target, server_update_candidate};
+pub(crate) use reload_exec_target::{
+    ensure_candidate_control_floor, reload_exec_target, server_update_candidate,
+};
 
 /// Capability marker. `jcode cloud runtime reload` greps the running daemon's
 /// executable for it to decide whether an in-place session-preserving handoff

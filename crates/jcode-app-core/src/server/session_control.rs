@@ -259,6 +259,36 @@ impl ControlStore {
         found
     }
 
+    /// Highest `min_reader_version` over every persisted control record, or
+    /// `None` when there are none. A record whose floor cannot be read counts as
+    /// this build's own floor; an unreadable directory is an error (fail closed).
+    pub(crate) fn required_reader_floor(&self) -> Result<Option<u32>> {
+        let entries = match std::fs::read_dir(&self.root) {
+            Ok(entries) => entries,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(e) => return Err(e).context("Cannot scan session control"),
+        };
+        let own = jcode_swarm_core::control::CONTROL_MIN_READER_VERSION;
+        let mut floor = None;
+        for entry in entries {
+            let path = entry.context("Cannot scan session control")?.path();
+            if path.extension().is_none_or(|ext| ext != "json") {
+                continue;
+            }
+            let record_floor = std::fs::read(&path)
+                .ok()
+                .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+                .map_or(own, |value| match value.get("min_reader_version") {
+                    None => 1,
+                    Some(v) => v
+                        .as_u64()
+                        .map_or(own, |v| u32::try_from(v).unwrap_or(u32::MAX)),
+                });
+            floor = floor.max(Some(record_floor));
+        }
+        Ok(floor)
+    }
+
     fn required(&self, id: &str) -> Result<ControlRecord> {
         self.inspect(id)?
             .with_context(|| format!("Unknown session '{id}'"))
@@ -916,6 +946,25 @@ pub(crate) fn import_identity(id: &str, owner_hint: Option<&str>) -> Result<Cont
         store.register(parent, parent_owner.as_deref())?;
     }
     store.register(id, owner.as_deref())
+}
+
+/// Compatibility floor for a candidate daemon binary: with persisted control
+/// records, the candidate must report a control reader version at or above every
+/// record's `min_reader_version`. An unreported version (a build that predates
+/// durable stop and would ignore revocation) is refused, never assumed.
+pub(crate) fn ensure_reader_floor(floor: Option<u32>, candidate: Option<u32>) -> Result<()> {
+    let Some(floor) = floor else { return Ok(()) };
+    match candidate {
+        Some(version) if version >= floor => Ok(()),
+        Some(version) => bail!(
+            "candidate control reader version {version} is below persisted session control floor {floor}; \
+             it would serve state while ignoring stop revocation"
+        ),
+        None => bail!(
+            "candidate reports no control reader version (predates durable stop control) but session control \
+             records exist; it would serve state while ignoring stop revocation"
+        ),
+    }
 }
 
 pub(crate) fn store() -> ControlStore {

@@ -125,6 +125,9 @@ pub(super) struct VersionReport {
     pub(super) build_time: String,
     pub(super) git_date: String,
     pub(super) release_build: bool,
+    /// Session-control reader version, read by a running daemon vetting this
+    /// binary as a reload candidate (see `ensure_candidate_control_floor`).
+    pub(super) control_reader_version: u32,
 }
 
 #[derive(Debug, Serialize)]
@@ -517,6 +520,7 @@ pub(super) async fn run_version_command(emit_json: bool) -> Result<()> {
             .unwrap_or_else(|| "unknown".to_string()),
         git_date: jcode_build_meta::git_date().to_string(),
         release_build: jcode_build_meta::is_release_build(),
+        control_reader_version: crate::server::control_reader_version(),
     };
 
     if emit_json {

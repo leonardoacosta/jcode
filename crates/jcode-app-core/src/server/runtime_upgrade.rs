@@ -190,6 +190,7 @@ fn reserve_upgrade(
 async fn prepare_upgrade(candidate: &Path) -> Result<UpgradeDecision> {
     let (path, metadata) = validate_path(candidate)?;
     let version = probe_version(&path).await?;
+    super::ensure_candidate_control_floor(&path).await?;
     reserve_upgrade(
         path,
         metadata,

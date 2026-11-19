@@ -679,6 +679,10 @@ pub(super) async fn execute_debug_command(
             )));
         }
 
+        super::ensure_candidate_control_floor(&target_binary)
+            .await
+            .map_err(|error| anyhow::anyhow!("Reload refused before publishing: {error:#}"))?;
+
         let source = crate::build::current_source_state(&repo_dir)?;
         let hash = source.version_label.clone();
         let published = crate::build::publish_local_current_build_for_source(&repo_dir, &source)?;

@@ -309,6 +309,12 @@ impl SelfDevTool {
             ));
         }
 
+        if !test_mode {
+            server::ensure_candidate_control_floor(&target_binary)
+                .await
+                .map_err(|error| anyhow::anyhow!("Reload refused before publishing: {error:#}"))?;
+        }
+
         let source = if test_mode {
             build::SourceState {
                 repo_scope: "test-repo-scope".to_string(),

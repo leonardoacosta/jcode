@@ -10,7 +10,7 @@ from pathlib import Path
 
 root, binary, parent_net = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3]
 scenario = sys.argv[4] if len(sys.argv) > 4 else 'write'
-BUSY = ('bash','handoff','stalewait','reload_drain','reload_settled','restart','alias','resume','churn','restart_settled','restart_drain','stopwake')
+BUSY = ('bash','handoff','stalewait','reload_drain','reload_settled','reload_refused','restart','alias','resume','churn','restart_settled','restart_drain','stopwake')
 assert os.readlink('/proc/self/ns/net') != parent_net, 'refusing shared network namespace'
 subprocess.run(['/usr/sbin/ip', 'link', 'set', 'lo', 'up'], check=True)
 links = json.loads(subprocess.check_output(['/usr/sbin/ip', '-json', 'link', 'show']))
@@ -349,6 +349,33 @@ with tempfile.TemporaryDirectory(prefix='jc-stop-') as directory:
             assert len(requests) == n_before == 1, requests
             assert not faults, faults
             sys.exit(0)
+        if scenario == 'reload_refused':
+            stop = stop_req(session,worker,30,limit=40)
+            assert stop['type']=='done', stop
+            before_snap = status_of(worker,31)
+            # A newer-by-mtime stable candidate that predates durable stop: it reports no control reader version.
+            channel = home/'builds'/'stable'; channel.mkdir(parents=True)
+            fake = channel/'jcode'
+            fake.write_text('#!/bin/sh\nprintf \'{"git_hash":"fake"}\'\n'); fake.chmod(0o755)
+            future = time.time()+3600; os.utime(fake,(future,future))
+            n_before = len(requests); pid_before = process.pid
+            send(client,{'type':'reload','id':900,'force':True})
+            time.sleep(6)
+            assert process.poll() is None and process.pid == pid_before, 'daemon exited or was replaced despite refusal'
+            log_text = (state/'daemon.log').read_text(errors='replace')
+            home_logs = ''.join(p.read_text(errors='replace') for p in home.rglob('*.log'))
+            refused_logged = 'refusing reload' in log_text + home_logs
+            snap = status_of(worker,41)
+            dms = dm_stopped(session,worker,47)
+            time.sleep(2)
+            print(json.dumps({'scenario':'reload_refused_below_floor','same_pid':process.pid==pid_before,'refused_logged':refused_logged,
+                              'before':before_snap.get('control'),'after':snap.get('control'),'dms':dms,'new_requests':len(requests)-n_before,
+                              'faults':faults},sort_keys=True),flush=True)
+            assert refused_logged, 'no control-floor refusal was logged'
+            assert snap['control']['state']=='stopped' and snap['control']['revoked_through']>=1, snap
+            assert len(requests) == n_before, ('turn started after refused reload', requests)
+            assert not faults, faults
+            sys.exit(0)
         if scenario == 'reload_settled':
             stop = stop_req(session,worker,30,limit=40)
             assert stop['type']=='done', stop
@@ -613,10 +640,10 @@ with tempfile.TemporaryDirectory(prefix='jc-stop-') as directory:
                 print(json.dumps({'scenario':'resume_race','dm_replies_to_stopped_live_worker':dms,'generation_when_stopped':gen_stopped,'wake_replies':replies,
                                   'control_after':control,'provider_requests':requests,'faults':faults},sort_keys=True),flush=True)
                 assert all(r['type']=='comm_task_control_response' for r in replies), replies
-                # One winner resumes (G+1). Its turn then admits its own generation (G+2).
-                # A second resume would have produced G+3 or more.
-                assert control['generation'] == gen_stopped + 2, ('exactly one resume and one turn', control)
-                assert control['state'] == 'runnable' and control['admitted_generation'] == gen_stopped + 2, control
+                # One winner resumes (G+1) and its turn adopts that pre-admitted generation, so the
+                # worker ends at G+1. A second resume would have produced G+2 or more.
+                assert control['generation'] == gen_stopped + 1, ('exactly one resume and one turn', control)
+                assert control['state'] == 'runnable' and control['admitted_generation'] == gen_stopped + 1, control
                 assert control['revoked_through'] == gen_stopped, control
                 assert sorted(r['status'] for r in replies) == ['queued','running'], replies
                 assert not faults, faults
@@ -1110,6 +1137,42 @@ fn graceful_reload_while_draining_keeps_worker_revoked() {
         .arg(binary)
         .arg(namespace)
         .arg("reload_drain")
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .env("TMPDIR", root.join("scratch"))
+        .output()
+        .expect("launch isolated graceful reload acceptance");
+    println!("{}", String::from_utf8_lossy(&output.stdout));
+    assert!(
+        output.status.success(),
+        "private graceful reload acceptance failed ({}):\n{}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+#[ignore = "actual private binary + Linux user/network namespaces; see change evidence.md"]
+fn reload_into_candidate_below_control_floor_is_refused_and_daemon_keeps_serving() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let binary = std::env::var_os("JCODE_WORKER_STOP_BINARY")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| root.join("target/selfdev/jcode"));
+    let namespace = std::fs::read_link("/proc/self/ns/net").expect("Linux network namespace");
+    let output = Command::new("/usr/bin/timeout")
+        .args(["--kill-after=5", "120", "/usr/bin/unshare"])
+        .args([
+            "--user",
+            "--map-root-user",
+            "--net",
+            "/usr/bin/python3",
+            "-c",
+            ACCEPTANCE,
+        ])
+        .arg(root)
+        .arg(binary)
+        .arg(namespace)
+        .arg("reload_refused")
         .env_clear()
         .env("PATH", "/usr/bin:/bin")
         .env("TMPDIR", root.join("scratch"))
