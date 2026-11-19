@@ -1184,6 +1184,7 @@ fn render_overnight_message_uses_rounded_progress_card() {
         log_path: "/tmp/overnight/run.log".to_string(),
         run_dir: "/tmp/overnight".to_string(),
         completed_at: None,
+        stale_pid: None,
     };
     let msg = DisplayMessage::overnight(serde_json::to_string(&card).unwrap());
 

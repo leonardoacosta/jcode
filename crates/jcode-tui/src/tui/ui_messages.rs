@@ -675,6 +675,16 @@ pub(crate) fn render_overnight_message(
         status_style,
     )];
 
+    if let Some(pid) = card.stale_pid {
+        push_wrapped_kv_line(
+            &mut box_content,
+            "Status",
+            &format!("stale, supervisor pid {pid} gone"),
+            inner_width,
+            label_style,
+            status_style,
+        );
+    }
     push_wrapped_kv_line(
         &mut box_content,
         "Target",

@@ -31,6 +31,9 @@ pub(super) fn handle_overnight_command(app: &mut App, trimmed: &str) -> bool {
                 .map(std::path::PathBuf::from)
                 .filter(|path| path.is_dir())
                 .or_else(|| std::env::current_dir().ok());
+            if refuse_duplicate_overnight_start(app) {
+                return true;
+            }
             let provider = overnight_provider_for_app(app);
             let visible_provider = provider.clone();
             let options = OvernightStartOptions {
@@ -67,6 +70,34 @@ pub(super) fn handle_overnight_command(app: &mut App, trimmed: &str) -> bool {
     }
 
     true
+}
+
+/// Returns true (after showing an error) when this session already has a live
+/// active run. A stale active run only produces a notice.
+fn refuse_duplicate_overnight_start(app: &mut App) -> bool {
+    let Ok(Some(existing)) = crate::overnight::latest_manifest() else {
+        return false;
+    };
+    if existing.coordinator_session_id != app.session.id
+        || !matches!(
+            existing.status,
+            OvernightRunStatus::Running | OvernightRunStatus::CancelRequested
+        )
+    {
+        return false;
+    }
+    if crate::overnight::supervisor_is_alive(&existing) {
+        app.push_display_message(DisplayMessage::error(format!(
+            "This session already has an active overnight run {}. Inspect status or cancel it before starting another.",
+            existing.run_id
+        )));
+        return true;
+    }
+    app.push_display_message(DisplayMessage::system(format!(
+        "Previous overnight run {} is stale (supervisor pid {} gone). Starting a new run.",
+        existing.run_id, existing.process_id
+    )));
+    false
 }
 
 fn start_visible_overnight_turn(app: &mut App, content: String) {
@@ -226,7 +257,9 @@ fn open_overnight_review(app: &mut App) {
 fn cancel_overnight(app: &mut App) {
     match crate::overnight::cancel_latest_run() {
         Ok(manifest) => {
-            app.overnight_auto_poke = None;
+            if app.overnight_auto_poke.take().is_some() {
+                app.finalize_overnight_auto_poke(&manifest.run_id, "cancelled");
+            }
             if !app.upsert_overnight_display_card(&manifest) {
                 app.push_display_message(DisplayMessage::system(format!(
                     "Cancellation requested for overnight run {}. The coordinator will stop after the current turn reaches a safe boundary.",
@@ -253,7 +286,7 @@ impl App {
             return false;
         }
 
-        self.overnight_auto_poke = None;
+        let tracked_run_id = self.overnight_auto_poke.take().map(|state| state.run_id);
         let before = self.queued_messages.len();
         self.queued_messages
             .retain(|message| !is_overnight_auto_poke_message(message));
@@ -263,6 +296,9 @@ impl App {
 
         match crate::overnight::cancel_latest_run() {
             Ok(manifest) => {
+                if let Some(run_id) = tracked_run_id {
+                    self.finalize_overnight_auto_poke(&run_id, "cancelled");
+                }
                 let _ = self.upsert_overnight_display_card(&manifest);
                 self.push_display_message(DisplayMessage::system(format!(
                     "🌙 Overnight run {} cancelled by interrupt.",
@@ -297,17 +333,42 @@ impl App {
     }
 
     pub(super) fn stop_overnight_auto_poke_for_non_retryable_error(&mut self, error: &str) -> bool {
-        if self.overnight_auto_poke.is_none()
-            || !super::commands::is_non_retryable_auto_poke_error(error)
-        {
+        let Some(run_id) = self
+            .overnight_auto_poke
+            .as_ref()
+            .map(|state| state.run_id.clone())
+        else {
+            return false;
+        };
+        record_overnight_poke_event(
+            &run_id,
+            "auto_poke_turn_error",
+            "Auto-poke observed a turn error".to_string(),
+            serde_json::json!({ "error": error }),
+        );
+        if !super::commands::is_non_retryable_auto_poke_error(error) {
             return false;
         }
         self.overnight_auto_poke = None;
+        self.finalize_overnight_auto_poke(&run_id, "non_retryable_error");
         self.push_display_message(DisplayMessage::system(
             "🛑 The last request failed in a way that retrying won't fix, so we stopped the overnight run. Check /overnight status and continue manually if it looks right.".to_string(),
         ));
         self.set_status_notice("Overnight run stopped: this error won't fix itself");
         true
+    }
+
+    /// Records why auto-poke stopped and, if the run is still `Running`, closes
+    /// it: `Completed` for `final_done`, `Failed` for every other reason except
+    /// `cancelled`, which keeps the `CancelRequested` status already persisted.
+    /// Best-effort: failures surface as a system message.
+    fn finalize_overnight_auto_poke(&mut self, run_id: &str, reason: &'static str) {
+        if let Err(error) = finalize_overnight_run(run_id, reason) {
+            self.push_display_message(DisplayMessage::system(format!(
+                "Could not finalize overnight run {run_id} after auto-poke stopped ({reason}): {}",
+                crate::util::format_error_chain(&error)
+            )));
+        }
     }
 
     pub(super) fn schedule_overnight_poke_followup_if_needed(&mut self) -> bool {
@@ -324,7 +385,22 @@ impl App {
         };
         let manifest = match crate::overnight::latest_manifest() {
             Ok(Some(manifest)) if manifest.run_id == state.run_id => manifest,
-            _ => return false,
+            Ok(Some(other)) => {
+                self.push_display_message(DisplayMessage::system(format!(
+                    "🛑 Overnight auto-poke stopped: latest run is {}, not tracked run {}.",
+                    other.run_id, state.run_id
+                )));
+                self.finalize_overnight_auto_poke(&state.run_id, "run_mismatch");
+                return false;
+            }
+            _ => {
+                self.push_display_message(DisplayMessage::system(format!(
+                    "🛑 Overnight auto-poke stopped: could not read the manifest for run {}.",
+                    state.run_id
+                )));
+                self.finalize_overnight_auto_poke(&state.run_id, "manifest_unreadable");
+                return false;
+            }
         };
 
         if !matches!(
@@ -337,6 +413,7 @@ impl App {
                 overnight_status_label(&manifest.status)
             )));
             self.set_status_notice("Overnight auto-poke finished");
+            self.finalize_overnight_auto_poke(&state.run_id, "final_done");
             return false;
         }
         if matches!(manifest.status, OvernightRunStatus::CancelRequested) {
@@ -344,6 +421,7 @@ impl App {
                 "🛑 Overnight auto-poke stopped: cancellation requested.".to_string(),
             ));
             self.set_status_notice("Overnight auto-poke stopped");
+            self.finalize_overnight_auto_poke(&state.run_id, "cancelled");
             return false;
         }
 
@@ -363,6 +441,7 @@ impl App {
                 manifest.review_path.display()
             )));
             self.set_status_notice("Overnight stopped: no progress");
+            self.finalize_overnight_auto_poke(&state.run_id, "stalled");
             return false;
         }
         if state.error_turns >= OVERNIGHT_ERROR_LIMIT {
@@ -370,6 +449,7 @@ impl App {
                 "🛑 Overnight auto-poke stopped after repeated turn errors.".to_string(),
             ));
             self.set_status_notice("Overnight stopped: errors");
+            self.finalize_overnight_auto_poke(&state.run_id, "non_retryable_error");
             return false;
         }
         if state.total_pokes_sent >= overnight_poke_budget(&manifest) {
@@ -378,6 +458,7 @@ impl App {
                 state.total_pokes_sent
             )));
             self.set_status_notice("Overnight stopped: poke budget");
+            self.finalize_overnight_auto_poke(&state.run_id, "poke_budget");
             return false;
         }
 
@@ -388,6 +469,7 @@ impl App {
                 manifest.review_path.display()
             )));
             self.set_status_notice("Overnight auto-poke complete");
+            self.finalize_overnight_auto_poke(&state.run_id, "final_done");
             return false;
         }
 
@@ -407,11 +489,55 @@ impl App {
             "🌙 Overnight auto-poking: {}. /overnight cancel to stop.",
             overnight_phase_label(phase)
         )));
+        let _ = crate::overnight::record_event(
+            &manifest,
+            "auto_poke_sent",
+            format!("Auto-poke sent: {}", overnight_phase_label(phase)),
+            serde_json::json!({
+                "phase": overnight_phase_label(phase),
+                "stalled_turns": state.stalled_turns,
+            }),
+            false,
+        );
         self.queued_messages.push(prompt);
         self.pending_queued_dispatch = true;
         self.overnight_auto_poke = Some(state);
         true
     }
+}
+
+/// Best-effort event write for the poke path; the poke proceeds if it fails.
+fn record_overnight_poke_event(
+    run_id: &str,
+    kind: &str,
+    summary: String,
+    details: serde_json::Value,
+) {
+    if let Ok(manifest) = crate::overnight::load_manifest(run_id) {
+        let _ = crate::overnight::record_event(&manifest, kind, summary, details, false);
+    }
+}
+
+fn finalize_overnight_run(run_id: &str, reason: &'static str) -> anyhow::Result<()> {
+    let mut manifest = crate::overnight::load_manifest(run_id)?;
+    crate::overnight::record_event(
+        &manifest,
+        "auto_poke_stopped",
+        format!("Auto-poke stopped: {reason}"),
+        serde_json::json!({ "reason": reason }),
+        false,
+    )?;
+    if reason == "cancelled" || !matches!(manifest.status, OvernightRunStatus::Running) {
+        return Ok(());
+    }
+    manifest.status = if reason == "final_done" {
+        OvernightRunStatus::Completed
+    } else {
+        OvernightRunStatus::Failed
+    };
+    manifest.completed_at = Some(Utc::now());
+    crate::overnight::save_manifest(&manifest)?;
+    crate::overnight::render_review_html(&manifest)
 }
 
 fn is_overnight_auto_poke_message(message: &str) -> bool {
@@ -475,6 +601,8 @@ fn overnight_status_label(status: &OvernightRunStatus) -> &'static str {
         OvernightRunStatus::CancelRequested => "cancel requested",
         OvernightRunStatus::Completed => "completed",
         OvernightRunStatus::Failed => "failed",
+        OvernightRunStatus::Blocked => "blocked",
+        OvernightRunStatus::Unknown => "unknown",
     }
 }
 
@@ -515,7 +643,13 @@ fn overnight_fingerprint_for_app(
         status: overnight_status_label(&manifest.status).to_string(),
         last_activity_at: manifest.last_activity_at.to_rfc3339(),
         events_len: crate::overnight::read_events(manifest)
-            .map(|events| events.len())
+            .map(|events| {
+                // Poke bookkeeping events must not look like run progress.
+                events
+                    .iter()
+                    .filter(|event| !event.kind.starts_with("auto_poke_"))
+                    .count()
+            })
             .unwrap_or(0),
         task_total: task_summary.total,
         task_completed: task_summary.counts.completed,
@@ -710,5 +844,247 @@ mod tests {
             now + ChronoDuration::hours(74),
         );
         assert_eq!(overnight_poke_budget(&long), OVERNIGHT_MAX_POKES);
+    }
+
+    struct HomeGuard {
+        _lock: std::sync::MutexGuard<'static, ()>,
+        original: Option<std::ffi::OsString>,
+        _temp: tempfile::TempDir,
+    }
+
+    impl HomeGuard {
+        fn new() -> Self {
+            let lock = crate::storage::lock_test_env();
+            let temp = tempfile::tempdir().expect("tempdir");
+            let original = std::env::var_os("JCODE_HOME");
+            crate::env::set_var("JCODE_HOME", temp.path());
+            Self {
+                _lock: lock,
+                original,
+                _temp: temp,
+            }
+        }
+    }
+
+    impl Drop for HomeGuard {
+        fn drop(&mut self) {
+            match self.original.take() {
+                Some(value) => crate::env::set_var("JCODE_HOME", value),
+                None => crate::env::remove_var("JCODE_HOME"),
+            }
+        }
+    }
+
+    /// Saved `Running` manifest under the temp `JCODE_HOME`.
+    fn saved_manifest(
+        run_id: &str,
+        session_id: &str,
+        process_id: u32,
+    ) -> crate::overnight::OvernightManifest {
+        let now = Utc::now();
+        let mut manifest = test_manifest_with_times(
+            now - ChronoDuration::hours(1),
+            now + ChronoDuration::hours(6),
+            now + ChronoDuration::hours(8),
+        );
+        let dir = crate::overnight::run_dir(run_id).unwrap();
+        std::fs::create_dir_all(&dir).unwrap();
+        manifest.run_id = run_id.to_string();
+        manifest.coordinator_session_id = session_id.to_string();
+        manifest.process_id = process_id;
+        manifest.events_path = dir.join("events.jsonl");
+        manifest.human_log_path = dir.join("run.log");
+        manifest.review_path = dir.join("review.html");
+        manifest.review_notes_path = dir.join("review-notes.md");
+        manifest.preflight_path = dir.join("preflight.json");
+        manifest.task_cards_dir = dir.join("task-cards");
+        manifest.issue_drafts_dir = dir.join("issue-drafts");
+        manifest.validation_dir = dir.join("validation");
+        manifest.run_dir = dir;
+        crate::overnight::save_manifest(&manifest).unwrap();
+        manifest
+    }
+
+    fn event_reasons(manifest: &crate::overnight::OvernightManifest, kind: &str) -> Vec<String> {
+        crate::overnight::read_events(manifest)
+            .unwrap()
+            .into_iter()
+            .filter(|event| event.kind == kind)
+            .map(|event| {
+                event.details["reason"]
+                    .as_str()
+                    .unwrap_or_default()
+                    .to_string()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn finalize_reasons_set_expected_status_and_record_event() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let cases = [
+            ("final_done", OvernightRunStatus::Completed),
+            ("stalled", OvernightRunStatus::Failed),
+            ("poke_budget", OvernightRunStatus::Failed),
+            ("non_retryable_error", OvernightRunStatus::Failed),
+            ("run_mismatch", OvernightRunStatus::Failed),
+            ("manifest_unreadable", OvernightRunStatus::Failed),
+            ("cancelled", OvernightRunStatus::Running),
+        ];
+        for (reason, expected) in cases {
+            let run_id = format!("overnight_finalize_{reason}");
+            let manifest = saved_manifest(&run_id, "session", std::process::id());
+            app.finalize_overnight_auto_poke(&run_id, reason);
+            let loaded = crate::overnight::load_manifest(&run_id).unwrap();
+            assert_eq!(loaded.status, expected, "{reason}");
+            assert_eq!(
+                loaded.completed_at.is_some(),
+                !matches!(expected, OvernightRunStatus::Running),
+                "{reason}"
+            );
+            assert_eq!(
+                event_reasons(&manifest, "auto_poke_stopped"),
+                vec![reason.to_string()],
+                "{reason}"
+            );
+        }
+    }
+
+    #[test]
+    fn finalize_keeps_cancel_requested_status() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let mut manifest = saved_manifest("overnight_cancel_kept", "session", 1);
+        manifest.status = OvernightRunStatus::CancelRequested;
+        crate::overnight::save_manifest(&manifest).unwrap();
+        app.finalize_overnight_auto_poke("overnight_cancel_kept", "stalled");
+        let loaded = crate::overnight::load_manifest("overnight_cancel_kept").unwrap();
+        assert_eq!(loaded.status, OvernightRunStatus::CancelRequested);
+    }
+
+    #[test]
+    fn finalize_missing_manifest_reports_system_message_without_panic() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let before = app.display_messages.len();
+        app.finalize_overnight_auto_poke("overnight_missing", "stalled");
+        assert_eq!(app.display_messages.len(), before + 1);
+    }
+
+    #[test]
+    fn poke_followup_records_auto_poke_sent() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let manifest = saved_manifest("overnight_poke_sent", "session", std::process::id());
+        app.enable_overnight_auto_poke(&manifest);
+        assert!(app.schedule_overnight_poke_followup_if_needed());
+        assert_eq!(app.queued_messages.len(), 1);
+        let events = crate::overnight::read_events(&manifest).unwrap();
+        let sent: Vec<_> = events
+            .iter()
+            .filter(|event| event.kind == "auto_poke_sent")
+            .collect();
+        assert_eq!(sent.len(), 1);
+        assert!(sent[0].details["phase"].is_string());
+        assert!(sent[0].details["stalled_turns"].is_number());
+    }
+
+    #[test]
+    fn poke_followup_stops_and_fails_run_on_budget_exhaustion() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let manifest = saved_manifest("overnight_budget", "session", std::process::id());
+        app.enable_overnight_auto_poke(&manifest);
+        app.overnight_auto_poke.as_mut().unwrap().total_pokes_sent = OVERNIGHT_MAX_POKES;
+        assert!(!app.schedule_overnight_poke_followup_if_needed());
+        assert!(app.overnight_auto_poke.is_none());
+        let loaded = crate::overnight::load_manifest("overnight_budget").unwrap();
+        assert_eq!(loaded.status, OvernightRunStatus::Failed);
+        assert_eq!(
+            event_reasons(&manifest, "auto_poke_stopped"),
+            vec!["poke_budget".to_string()]
+        );
+    }
+
+    #[test]
+    fn poke_followup_run_mismatch_finalizes_tracked_run() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let tracked = saved_manifest("overnight_tracked", "session", std::process::id());
+        app.enable_overnight_auto_poke(&tracked);
+        // A newer run becomes "latest", so the tracked one mismatches.
+        let mut newer = saved_manifest("overnight_newer", "other", std::process::id());
+        newer.started_at = Utc::now();
+        crate::overnight::save_manifest(&newer).unwrap();
+        assert!(!app.schedule_overnight_poke_followup_if_needed());
+        let loaded = crate::overnight::load_manifest("overnight_tracked").unwrap();
+        assert_eq!(loaded.status, OvernightRunStatus::Failed);
+        assert_eq!(
+            event_reasons(&tracked, "auto_poke_stopped"),
+            vec!["run_mismatch".to_string()]
+        );
+    }
+
+    #[test]
+    fn non_retryable_error_records_turn_error_and_fails_run() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let manifest = saved_manifest("overnight_nonretry", "session", std::process::id());
+        app.enable_overnight_auto_poke(&manifest);
+        let error = "400 Bad Request: invalid_request_error";
+        assert!(app.stop_overnight_auto_poke_for_non_retryable_error(error));
+        let loaded = crate::overnight::load_manifest("overnight_nonretry").unwrap();
+        assert_eq!(loaded.status, OvernightRunStatus::Failed);
+        assert_eq!(
+            event_reasons(&manifest, "auto_poke_stopped"),
+            vec!["non_retryable_error".to_string()]
+        );
+        let events = crate::overnight::read_events(&manifest).unwrap();
+        assert!(
+            events
+                .iter()
+                .any(|event| event.kind == "auto_poke_turn_error")
+        );
+    }
+
+    #[test]
+    fn start_guard_refuses_live_duplicate_in_same_session() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        saved_manifest(
+            "overnight_live",
+            &app.session.id.clone(),
+            std::process::id(),
+        );
+        let before = app.display_messages.len();
+        assert!(refuse_duplicate_overnight_start(&mut app));
+        let message = app.display_messages.last().unwrap();
+        assert_eq!(app.display_messages.len(), before + 1);
+        assert_eq!(message.role, "error");
+        assert!(message.content.contains(
+            "This session already has an active overnight run overnight_live. Inspect status or cancel it before starting another."
+        ));
+    }
+
+    #[test]
+    fn start_guard_allows_stale_run_and_names_it() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        saved_manifest("overnight_stale", &app.session.id.clone(), u32::MAX);
+        assert!(!refuse_duplicate_overnight_start(&mut app));
+        let message = app.display_messages.last().unwrap();
+        assert_eq!(message.role, "system");
+        assert!(message.content.contains("overnight_stale"));
+    }
+
+    #[test]
+    fn start_guard_ignores_other_sessions() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        saved_manifest("overnight_other", "someone-else", std::process::id());
+        let before = app.display_messages.len();
+        assert!(!refuse_duplicate_overnight_start(&mut app));
+        assert_eq!(app.display_messages.len(), before);
     }
 }
