@@ -506,12 +506,9 @@ pub(super) fn is_remote_clipboard_session(env: impl Fn(&str) -> Option<String>) 
 ///
 /// The *order* is the contract (it is what the original bug violated):
 ///
-/// - **Remote (SSH) session**: OSC 52 runs first, because it is the only path
-///   to the user's (client-side) clipboard, and the native server-side
-///   clipboard (NSPasteboard / Win32) would otherwise succeed headless and
-///   short-circuit the chain. The local clipboard is then also filled so
-///   paste inside jcode keeps working. If OSC 52 is unavailable (e.g. stdout
-///   is not a TTY), the local clipboard is still the fallback.
+/// - **Remote (SSH/mosh/Herdr) session**: OSC 52 only. It is the only path to
+///   the user's (client-side) clipboard; the native server-side clipboard is
+///   never invoked. `JCODE_CLIPBOARD=native` opts back into the native path.
 /// - **Local session**: the native clipboard is authoritative and OSC 52 only
 ///   runs if it fails (a working native clipboard must not emit terminal
 ///   escape sequences).
@@ -524,15 +521,7 @@ fn run_copy_chain(
     mut local: impl FnMut() -> bool,
 ) -> bool {
     if remote {
-        if osc52() {
-            // Keep the local clipboard in sync so paste inside jcode
-            // (which reads the server-side clipboard) keeps working.
-            let _ = local();
-            return true;
-        }
-        // OSC 52 did not go through (e.g. stdout is not a TTY): still try the
-        // local clipboard rather than failing outright.
-        return local();
+        return osc52();
     }
     if local() {
         return true;
@@ -591,36 +580,25 @@ mod copy_chain_tests {
     }
 
     #[test]
-    fn ssh_session_writes_osc52_first_then_local() {
+    fn ssh_session_writes_osc52_only() {
         let log = OrderLog(RefCell::new(Vec::new()));
         assert!(run_copy_chain(
             true,
             log.writer("osc52", true),
             log.writer("local", true),
         ));
-        assert_eq!(log.events(), ["osc52", "local"]);
+        assert_eq!(log.events(), ["osc52"]);
     }
 
     #[test]
-    fn ssh_session_still_writes_local_when_osc52_fails() {
-        let log = OrderLog(RefCell::new(Vec::new()));
-        assert!(run_copy_chain(
-            true,
-            log.writer("osc52", false),
-            log.writer("local", true),
-        ));
-        assert_eq!(log.events(), ["osc52", "local"]);
-    }
-
-    #[test]
-    fn ssh_session_reports_failure_when_both_writers_fail() {
+    fn ssh_session_never_falls_back_to_native_when_osc52_fails() {
         let log = OrderLog(RefCell::new(Vec::new()));
         assert!(!run_copy_chain(
             true,
             log.writer("osc52", false),
-            log.writer("local", false),
+            log.writer("local", true),
         ));
-        assert_eq!(log.events(), ["osc52", "local"]);
+        assert_eq!(log.events(), ["osc52"]);
     }
 
     #[test]
