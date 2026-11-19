@@ -193,26 +193,30 @@ impl SessionReservation<'_> {
         crate::session::SessionStatus,
         bool,
         crate::agent::RuntimeMutationLease,
+        ResumeMarker,
     )> {
         self.ensure_vacant()?;
         let lease = owner.claim_runtime_mutation()?;
         let marker = resume_marker_path(&self.session_id);
-        let previous = super::run_blocking_io(|| {
+        let (previous, guard) = super::run_blocking_io(|| {
             refuse_poisoned_resume(marker.as_deref(), &self.session_id)?;
-            if let Some(marker) = &marker {
-                let _ = std::fs::write(marker, std::process::id().to_string());
-            }
-            let restored = owner.restore_session_deferring_save(&self.session_id, working_dir);
-            if let Some(marker) = &marker {
-                let _ = std::fs::remove_file(marker);
-            }
-            restored
+            // The guard removes the marker on drop: on error here, or once the
+            // caller has finished the whole resume (History sent, Done).
+            let guard = ResumeMarker::arm(marker);
+            let previous = owner.restore_session_deferring_save(&self.session_id, working_dir)?;
+            Ok::<_, anyhow::Error>((previous, guard))
         })?;
         if selfdev {
             owner.set_canary("self-dev");
         }
         let is_canary = owner.is_canary();
-        Ok((Arc::new(Mutex::new(owner)), previous, is_canary, lease))
+        Ok((
+            Arc::new(Mutex::new(owner)),
+            previous,
+            is_canary,
+            lease,
+            guard,
+        ))
     }
 
     pub(super) async fn refresh_stale(&self, working_dir: Option<&str>) -> Result<()> {
@@ -323,14 +327,60 @@ impl SessionReservation<'_> {
     }
 }
 
-/// Marker that a server is restoring this session. Written before the restore
-/// and removed after it; a left-over marker from a dead pid means the restore
+/// Marker that a server is resuming this session. Written before the restore
+/// and removed when the resume finishes (see [`ResumeMarker`]); a left-over marker from a dead pid means the restore
 /// itself took the previous server down (the 2026-11-19 stack overflow looped
 /// 39 times because every reconnecting client re-requested the same resume).
 fn resume_marker_path(session_id: &str) -> Option<std::path::PathBuf> {
     let dir = crate::storage::jcode_dir().ok()?.join("resume-in-progress");
     std::fs::create_dir_all(&dir).ok()?;
-    Some(dir.join(super::durable_state::sanitize_session_id(session_id)))
+    let mut name = super::durable_state::sanitize_session_id(session_id);
+    if name != session_id {
+        // Keep distinct ids distinct after sanitizing ("a/b" vs "a_b").
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        session_id.hash(&mut hasher);
+        name = format!("{name}-{:016x}", hasher.finish());
+    }
+    Some(dir.join(name))
+}
+
+/// This binary's identity, recorded in markers so that a marker left by a
+/// since-replaced (e.g. fixed or rolled-back) binary does not block resume.
+fn current_binary_id() -> String {
+    std::env::current_exe()
+        .and_then(std::fs::canonicalize)
+        .map(|path| path.display().to_string())
+        .unwrap_or_default()
+}
+
+/// Removes the resume marker when dropped.
+#[must_use]
+pub(super) struct ResumeMarker(Option<std::path::PathBuf>);
+
+impl ResumeMarker {
+    fn arm(marker: Option<std::path::PathBuf>) -> Self {
+        if let Some(path) = &marker
+            && let Err(e) = std::fs::write(
+                path,
+                format!("{}\n{}", std::process::id(), current_binary_id()),
+            )
+        {
+            crate::logging::warn(&format!(
+                "resume marker {} not written ({e}); crash quarantine disabled for this resume",
+                path.display()
+            ));
+        }
+        Self(marker)
+    }
+}
+
+impl Drop for ResumeMarker {
+    fn drop(&mut self) {
+        if let Some(path) = &self.0 {
+            let _ = std::fs::remove_file(path);
+        }
+    }
 }
 
 fn refuse_poisoned_resume(marker: Option<&std::path::Path>, session_id: &str) -> Result<()> {
@@ -340,9 +390,17 @@ fn refuse_poisoned_resume(marker: Option<&std::path::Path>, session_id: &str) ->
     let Ok(contents) = std::fs::read_to_string(marker) else {
         return Ok(());
     };
-    let Ok(pid) = contents.trim().parse::<u32>() else {
+    let mut lines = contents.lines();
+    let Some(Ok(pid)) = lines.next().map(|l| l.trim().parse::<u32>()) else {
         return Ok(());
     };
+    // Written by a different binary: that build may be the one that crashed,
+    // and this one may already carry the fix. Retry rather than quarantine.
+    if let Some(binary) = lines.next().map(str::trim).filter(|b| !b.is_empty())
+        && binary != current_binary_id()
+    {
+        return Ok(());
+    }
     // Our own pid, or a live sibling restoring concurrently: not poison.
     if pid == std::process::id() || super::lifecycle::process_alive(pid) {
         return Ok(());

@@ -358,6 +358,10 @@ fn poisoned_resume_marker_blocks_only_when_writer_is_dead() {
     // Dead writer: the previous restore took the server down.
     // Above pid_max (4194304) on Linux, so never live.
     std::fs::write(&marker, "4194305").unwrap();
+    // Same dead pid, but written by another binary: retry, do not quarantine.
+    std::fs::write(&marker, "4194305\n/nonexistent/other-jcode").unwrap();
+    assert!(refuse_poisoned_resume(Some(&marker), "session_x").is_ok());
+    std::fs::write(&marker, format!("4194305\n{}", current_binary_id())).unwrap();
     let err = refuse_poisoned_resume(Some(&marker), "session_x")
         .unwrap_err()
         .to_string();
@@ -376,7 +380,14 @@ fn resume_marker_is_keyed_per_session_and_sanitized() {
         s.parent().unwrap().file_name().unwrap(),
         "resume-in-progress"
     );
-    assert_eq!(s.file_name().unwrap(), "session_s");
+    assert_ne!(s, resume_marker_path("session_s").unwrap());
+    assert!(
+        s.file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .starts_with("session_s-")
+    );
     // A dead-pid marker for S does not block T.
     std::fs::write(&s, "4194305").unwrap();
     assert!(refuse_poisoned_resume(Some(&t), "session_t").is_ok());

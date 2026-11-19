@@ -1692,11 +1692,17 @@ pub(super) async fn handle_resume_session(
     let restored = resume_guard
         .restore_new(detached, working_dir_override, *client_selfdev)
         .await;
-    let (restored_agent, result, is_canary, restore_lease) = match restored {
-        Ok((restored_agent, previous, canary, lease)) => {
-            (restored_agent, Ok(previous), canary, Some(lease))
-        }
-        Err(error) => (Arc::clone(source_agent), Err(error), false, None),
+    // `_resume_marker` stays armed until this function returns, so a crash
+    // anywhere in attach/History (the 2026-11-19 overflow site) quarantines.
+    let (restored_agent, result, is_canary, restore_lease, _resume_marker) = match restored {
+        Ok((restored_agent, previous, canary, lease, marker)) => (
+            restored_agent,
+            Ok(previous),
+            canary,
+            Some(lease),
+            Some(marker),
+        ),
+        Err(error) => (Arc::clone(source_agent), Err(error), false, None, None),
     };
     let agent = &restored_agent;
 
