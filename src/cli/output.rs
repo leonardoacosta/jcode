@@ -15,7 +15,11 @@ pub fn quiet_enabled() -> bool {
 }
 
 pub fn stderr_info(message: impl AsRef<str>) {
-    if !quiet_enabled() {
+    // In raw mode a TUI owns the screen; a raw eprintln lands on top of it
+    // (the garbled reconnect screen of 2026-11-19). The TUI surfaces its own
+    // status, so drop the line rather than corrupt the frame.
+    let tui_owns_terminal = crossterm::terminal::is_raw_mode_enabled().unwrap_or(false);
+    if !quiet_enabled() && !tui_owns_terminal {
         eprintln!("{}", crate::output_style::terminal_text(message.as_ref()));
     }
 }

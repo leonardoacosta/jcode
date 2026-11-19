@@ -1392,12 +1392,59 @@ fn enforce_supervised_shared_server() -> Result<()> {
     // in herdr.service), so check that we actually live in the unit's cgroup.
     let cgroup = std::fs::read_to_string("/proc/self/cgroup").unwrap_or_default();
     supervised_gate(&cgroup, unit, &marker, || {
+        if systemd_unit_refuses_client_start(unit).is_some() {
+            return false;
+        }
         ProcessCommand::new("systemctl")
             .args(["--user", "start", "--no-block", unit])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status()
             .map(|s| s.success())
             .unwrap_or(false)
     })
+}
+
+/// Clients may start a stopped unit, but never re-arm one systemd has given
+/// up on. Returns the user-facing reason when a start must be refused.
+#[cfg(unix)]
+fn systemd_unit_refuses_client_start(unit: &str) -> Option<String> {
+    let out = ProcessCommand::new("systemctl")
+        .args([
+            "--user",
+            "show",
+            unit,
+            "-p",
+            "Result",
+            "-p",
+            "ExecMainStatus",
+        ])
+        .stdin(Stdio::null())
+        .stderr(Stdio::null())
+        .output()
+        .ok()?;
+    unit_refusal_from_show(unit, &String::from_utf8_lossy(&out.stdout))
+}
+
+/// `Result=start-limit-hit` sticks until `reset-failed` or a successful start,
+/// so it is the one durable "systemd gave up" signal. `NRestarts` is lifetime
+/// cumulative, not windowed, and is deliberately not used.
+#[cfg(unix)]
+fn unit_refusal_from_show(unit: &str, show: &str) -> Option<String> {
+    let field = |key: &str| {
+        show.lines()
+            .find_map(|l| l.strip_prefix(&format!("{key}=")))
+            .unwrap_or("")
+            .trim()
+    };
+    if field("Result") != "start-limit-hit" {
+        return None;
+    }
+    let status = field("ExecMainStatus");
+    Some(format!(
+        "{unit} hit its start limit (last exit status {status}); not restarting it from this client. Check `journalctl --user -u {unit}`, then `systemctl --user reset-failed {unit}` and `systemctl --user start {unit}`"
+    ))
 }
 
 #[cfg(unix)]
@@ -1477,9 +1524,21 @@ async fn spawn_server_with_lifetime(
             .ok()
             .filter(|u| !u.trim().is_empty())
     {
+        let unit = unit.trim();
+        // A unit systemd has already given up on must not be re-kicked by every
+        // reconnecting client: that bypasses RestartSec and the start limit and
+        // turned one bad binary into 39 crashes over 36 minutes on 2026-11-19.
+        if let Some(reason) = systemd_unit_refuses_client_start(unit) {
+            anyhow::bail!("{reason}");
+        }
         output::stderr_info(format!("Starting server via systemd unit {unit}..."));
+        // Detach systemctl's stdio: its diagnostics otherwise land on top of a
+        // live TUI (the garbled screen in the same incident).
         let status = ProcessCommand::new("systemctl")
-            .args(["--user", "start", unit.trim()])
+            .args(["--user", "start", unit])
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status();
         if !matches!(status, Ok(s) if s.success()) {
             anyhow::bail!(

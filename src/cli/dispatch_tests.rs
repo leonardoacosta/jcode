@@ -432,3 +432,49 @@ fn supervised_gate_marker_absent_or_empty_allows_serve() {
         None => crate::env::remove_var("HOME"),
     }
 }
+
+#[cfg(unix)]
+#[test]
+fn client_start_refused_once_systemd_gave_up() {
+    let u = "jcode.service";
+    // Healthy, cleanly stopped, or still inside systemd's own Restart= budget:
+    // a client may start it.
+    assert!(unit_refusal_from_show(u, "Result=success\nExecMainStatus=0\n").is_none());
+    assert!(unit_refusal_from_show(u, "Result=exit-code\nExecMainStatus=255\n").is_none());
+    // systemd hit its start limit: refuse with the exit status and recovery hint.
+    let r = unit_refusal_from_show(u, "Result=start-limit-hit\nExecMainStatus=255\n").unwrap();
+    assert!(r.contains("start limit") && r.contains("255") && r.contains("reset-failed"));
+    // Unparseable output never blocks a start.
+    assert!(unit_refusal_from_show(u, "").is_none());
+}
+
+#[cfg(unix)]
+#[test]
+fn unit_refusal_success_result_is_none() {
+    assert!(
+        unit_refusal_from_show("jcode.service", "Result=success\nExecMainStatus=0\n").is_none()
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn unit_refusal_start_limit_hit_names_unit_status_and_recovery() {
+    let r = unit_refusal_from_show(
+        "jcode-x.service",
+        "Result=start-limit-hit\nExecMainStatus=139\n",
+    )
+    .unwrap();
+    assert!(r.contains("jcode-x.service"), "{r}");
+    assert!(r.contains("139"), "{r}");
+    assert!(r.contains("journalctl --user -u jcode-x.service"), "{r}");
+    assert!(r.contains("reset-failed jcode-x.service"), "{r}");
+}
+
+#[cfg(unix)]
+#[test]
+fn unit_refusal_ignores_nrestarts_alone() {
+    let show = "Result=success\nExecMainStatus=0\nNRestarts=50\n";
+    assert!(unit_refusal_from_show("jcode.service", show).is_none());
+    let show = "NRestarts=50\nResult=exit-code\nExecMainStatus=1\n";
+    assert!(unit_refusal_from_show("jcode.service", show).is_none());
+}
