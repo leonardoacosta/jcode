@@ -1330,7 +1330,7 @@ fn handle_server_event_inner(
             {
                 app.clear_pending_remote_retry();
                 crate::tui::app::commands::disable_auto_poke(app);
-                app.overnight_auto_poke = None;
+                app.clear_overnight_auto_poke("provider_failover");
                 if app.pending_provider_failover.is_none()
                     && app.pending_automatic_failover_route.is_none()
                     && app.pending_automatic_failover_request_id.is_none()

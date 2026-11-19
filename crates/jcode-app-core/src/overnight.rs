@@ -831,6 +831,37 @@ pub fn latest_manifest() -> Result<Option<OvernightManifest>> {
     Ok(manifests.pop())
 }
 
+/// Parseable manifests whose coordinator is `session_id`, newest first.
+/// Unreadable manifests are skipped, like `latest_manifest`.
+pub fn session_manifests_newest_first(session_id: &str) -> Result<Vec<OvernightManifest>> {
+    let dir = runs_dir()?;
+    if !dir.exists() {
+        return Ok(Vec::new());
+    }
+    let mut manifests = Vec::new();
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let path = entry.path().join("manifest.json");
+        if path.exists() {
+            match admission::read_manifest_at(&path) {
+                Ok(manifest) if manifest.coordinator_session_id == session_id => {
+                    manifests.push(manifest)
+                }
+                Ok(_) => {}
+                Err(error) => crate::logging::warn(&format!(
+                    "Skipping unreadable overnight manifest {}: {error}",
+                    path.display()
+                )),
+            }
+        }
+    }
+    manifests.sort_by_key(|manifest| std::cmp::Reverse(manifest.started_at));
+    Ok(manifests)
+}
+
 /// Whether the process that supervises this run still exists.
 pub fn supervisor_is_alive(manifest: &OvernightManifest) -> bool {
     process_is_alive(manifest.process_id)

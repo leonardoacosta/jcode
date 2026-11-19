@@ -559,7 +559,7 @@ impl App {
         // pokes or held retries resend on the same unavailable route while a
         // manual switch or configured countdown awaits a decision.
         super::commands::disable_auto_poke(self);
-        self.overnight_auto_poke = None;
+        self.clear_overnight_auto_poke("provider_failover");
         let remote_resend = if self.is_remote {
             self.rate_limit_pending_message
                 .as_ref()

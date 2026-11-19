@@ -252,7 +252,7 @@ impl App {
             "retry_budget_exhausted",
         );
         super::commands::disable_auto_poke(self);
-        self.overnight_auto_poke = None;
+        self.clear_overnight_auto_poke("retry_budget_exhausted");
         if self.is_remote {
             self.restore_failed_input_to_box();
             self.clear_pending_remote_retry();
@@ -308,7 +308,7 @@ impl App {
         } else {
             0
         };
-        self.overnight_auto_poke = None;
+        self.clear_overnight_auto_poke("auth_failed");
 
         // Surface the streak as an explicit auth_failed telemetry event to
         // distinguish "breaker tripped on a dead credential" from blips.

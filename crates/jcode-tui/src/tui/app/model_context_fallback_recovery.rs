@@ -181,7 +181,7 @@ impl App {
             return;
         }
         super::super::commands::disable_auto_poke(self);
-        self.overnight_auto_poke = None;
+        self.clear_overnight_auto_poke("provider_failover");
         self.clear_pending_remote_retry();
         self.pending_provider_failover = None;
         self.pending_automatic_failover_route = None;

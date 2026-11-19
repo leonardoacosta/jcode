@@ -1411,7 +1411,8 @@ impl App {
     /// and tell the user why, instead of silently re-sending the refused
     /// request on every turn end.
     pub(super) fn stop_auto_continuation_after_guardrail(&mut self) {
-        let had_overnight = self.overnight_auto_poke.take().is_some();
+        let had_overnight = self.overnight_auto_poke.is_some();
+        self.clear_overnight_auto_poke("guardrail_stop");
         if !self.auto_poke_incomplete_todos && !had_overnight {
             return;
         }
