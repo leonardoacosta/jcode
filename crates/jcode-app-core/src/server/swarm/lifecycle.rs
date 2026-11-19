@@ -627,67 +627,15 @@ pub(in crate::server) async fn set_member_task_label(
     task_text: &str,
     swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
 ) {
-    let Some(label) = jcode_swarm_core::derive_swarm_task_label(task_text) else {
+    let Some(label) = jcode_swarm_core::derive_swarm_task_label(task_text)
+        .map(|label| crate::message::redact_preview_secrets(&label))
+    else {
         return;
     };
     let mut members = swarm_members.write().await;
     if let Some(member) = members.get_mut(session_id) {
         member.task_label = Some(label);
     }
-}
-
-pub(in crate::server) async fn record_swarm_event(
-    event_history: &Arc<RwLock<std::collections::VecDeque<SwarmEvent>>>,
-    event_counter: &Arc<std::sync::atomic::AtomicU64>,
-    swarm_event_tx: &broadcast::Sender<SwarmEvent>,
-    session_id: String,
-    session_name: Option<String>,
-    swarm_id: Option<String>,
-    event: SwarmEventType,
-) {
-    let swarm_event = SwarmEvent {
-        id: event_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
-        session_id,
-        session_name,
-        swarm_id,
-        event,
-        timestamp: Instant::now(),
-        absolute_time: std::time::SystemTime::now(),
-    };
-    let _ = swarm_event_tx.send(swarm_event.clone());
-    let mut history = event_history.write().await;
-    history.push_back(swarm_event);
-    if history.len() > MAX_EVENT_HISTORY {
-        history.pop_front();
-    }
-}
-
-pub(in crate::server) async fn record_swarm_event_for_session(
-    session_id: &str,
-    event: SwarmEventType,
-    swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
-    event_history: &Arc<RwLock<std::collections::VecDeque<SwarmEvent>>>,
-    event_counter: &Arc<std::sync::atomic::AtomicU64>,
-    swarm_event_tx: &broadcast::Sender<SwarmEvent>,
-) {
-    let (session_name, swarm_id) = {
-        let members = swarm_members.read().await;
-        if let Some(member) = members.get(session_id) {
-            (member.friendly_name.clone(), member.swarm_id.clone())
-        } else {
-            (None, None)
-        }
-    };
-    record_swarm_event(
-        event_history,
-        event_counter,
-        swarm_event_tx,
-        session_id.to_string(),
-        session_name,
-        swarm_id,
-        event,
-    )
-    .await;
 }
 
 #[expect(
@@ -764,7 +712,7 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
     event_counter: Option<&Arc<std::sync::atomic::AtomicU64>>,
     swarm_event_tx: Option<&broadcast::Sender<SwarmEvent>>,
 ) {
-    let mut completion_report = normalize_completion_report(completion_report);
+    let completion_report = normalize_completion_report(completion_report);
     let detail_present = detail.is_some();
     let (
         swarm_id,
@@ -785,22 +733,6 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
                 release_file_claims_of(session_id);
             }
             if let Some(member) = members.get_mut(session_id) {
-                // Forced stops and crashes may abort the turn before its transcript
-                // can be collected. Preserve the already streamed public tail before
-                // the terminal transition clears the gallery buffer.
-                if completion_report.is_none()
-                    && matches!(
-                        status,
-                        "ready" | "completed" | "done" | "failed" | "crashed" | "stopped"
-                    )
-                {
-                    completion_report = member.output_tail.as_deref().and_then(|tail| {
-                        jcode_swarm_core::recent_output_tail(
-                            std::iter::once(tail),
-                            jcode_swarm_core::SWARM_OUTPUT_TAIL_TOKENS,
-                        )
-                    });
-                }
                 let previous_status = member.status.clone();
                 let status_changed = member.status != status;
                 let detail_changed = member.detail != detail;
@@ -850,6 +782,13 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
                 }
                 if completion_report.is_some() {
                     member.latest_completion_report = completion_report.clone();
+                } else if status_changed
+                    && matches!(
+                        status,
+                        "ready" | "completed" | "done" | "failed" | "crashed" | "stopped"
+                    )
+                {
+                    member.latest_completion_report = None;
                 }
                 (
                     member.swarm_id.clone(),
@@ -959,8 +898,14 @@ pub(in crate::server) async fn update_member_status_with_report_tldr(
                 let name = agent_name
                     .as_deref()
                     .unwrap_or(&session_id[..8.min(session_id.len())]);
-                let msg =
-                    completion_notification_message(name, status, completion_report.as_deref());
+                let todos = crate::todo::load_todos(session_id).unwrap_or_default();
+                let lane_plan = crate::server::swarm_todo_link::completion_lane_plan(&todos);
+                let msg = completion_notification_with_lane_plan(
+                    name,
+                    status,
+                    completion_report.as_deref(),
+                    lane_plan.as_deref(),
+                );
                 // Display notifications alone never enter the owner's model
                 // context. Deliver reports through the reliable runtime bus,
                 // which wakes idle owners and queues reports for busy ones.

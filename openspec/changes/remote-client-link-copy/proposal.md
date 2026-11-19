@@ -9,7 +9,7 @@ Copying or opening links from the TUI keeps failing when it runs on `homelab` un
 
 ## What Changes
 
-- Remote detection: treat the session as remote when `HERDR_ENV`, `SSH_CONNECTION`, `SSH_TTY`, or any `MOSH_` variable is set, or when `JCODE_CLIPBOARD=osc52` is set. In a remote session, copying uses only OSC 52 and never `wl-copy`, `xclip`, or `arboard`.
+- Remote detection: treat the session as remote when `HERDR_ENV`, `SSH_CONNECTION`, `SSH_TTY`, or any `MOSH_` variable is set, or when `JCODE_CLIPBOARD=osc52` is set. In a remote session, copying uses only OSC 52 and never `wl-copy`, `xclip`, or `arboard`, unless the user explicitly sets `JCODE_CLIPBOARD=native` to choose the native path.
 - A link picker (`/links`) and a copy-last-link key that copy the full, unwrapped destination.
 - A key and `/mouse` command that switch mouse capture on or off, so the client's native selection works.
 - In a remote session, opening an HTTP(S) link always copies it through OSC 52 and shows the full URL in an unwrapped notice. Chrome on a Mac (`JCODE_LINK_OPEN_SSH_HOST`) remains an optional extra.
@@ -17,7 +17,10 @@ Copying or opening links from the TUI keeps failing when it runs on `homelab` un
 
 Roadmap: [P09 TUI/onboarding everyday UX](../../../docs/plans/PRODUCT_ROADMAP.md#p09-tuionboarding-everyday-ux), copy/selection and links gate.
 
-## Non-scope
+## Upstream v1.0.1 reconciliation
+
+Keep remote routing, OSC 52 clipboard writes, `/links`, and `/mouse` as fork behavior. The native clipboard route is opt-in only through explicit `JCODE_CLIPBOARD=native`; remote detection alone never falls through to host clipboard tools. Keep physical-device client testing as a separate open acceptance gate.
+
 
 - Changes to Herdr, mosh, or the client apps themselves.
 - Reading the clipboard over OSC 52 (paste).

@@ -1028,13 +1028,16 @@ fn compacted_history_app_with_remaining(turns: usize) -> App {
         }],
     );
     let compacted_count = turns * 2;
-    app.session.compaction = Some(crate::session::StoredCompactionState {
-        summary_text: "older turns".to_string(),
-        openai_encrypted_content: None,
-        covers_up_to_turn: turns,
-        original_turn_count: turns,
-        compacted_count,
-    });
+    app.session.compaction = Some(
+        crate::session::StoredCompactionState {
+            summary_text: "older turns".to_string(),
+            openai_encrypted_content: None,
+            covers_up_to_turn: turns,
+            original_turn_count: turns,
+            compacted_count,
+        }
+        .into(),
+    );
 
     let (rendered_messages, _images, _info) =
         crate::session::render_messages_and_images_with_compacted_history(&app.session, 0);
@@ -1618,8 +1621,8 @@ fn repro_scroll_held_across_reasoning_close_and_answer() {
 }
 
 /// End-to-end: a swarm notification carrying a sender-provided tldr renders
-/// collapsed (tldr + `▸ expand` badge, body hidden) through a REAL draw, and a
-/// left click on the badge expands it in place (body visible, `▾ collapse`
+/// collapsed (shared token row + `⊞` badge, body hidden) through a REAL draw,
+/// and a left click on the badge expands it in place (body visible, `⊟`
 /// badge). Exercises the full path: collapsible encoding -> body render ->
 /// live copy-viewport snapshot -> `swarm_expand_target_from_screen` ->
 /// `toggle_swarm_message_expand`.
@@ -1648,8 +1651,8 @@ fn test_click_on_swarm_expand_badge_toggles_tldr_collapse() {
 
     let collapsed = render_and_snap(&app, &mut terminal);
     assert!(
-        collapsed.contains("fixed the flaky test"),
-        "collapsed card must show the tldr:\n{collapsed}"
+        collapsed.contains("tok") && !collapsed.contains("fixed the flaky test"),
+        "collapsed DM must show only token usage:\n{collapsed}"
     );
     assert!(
         collapsed.contains("⊞"),
@@ -1692,7 +1695,7 @@ fn test_click_on_swarm_expand_badge_toggles_tldr_collapse() {
         });
     };
 
-    // A click on the tldr text (left of the badge) must NOT toggle.
+    // A click on the token text (left of the badge) must NOT toggle.
     click(&mut app, badge_col.saturating_sub(6), badge_row);
     assert!(
         jcode_tui_messages::parse_collapsible_swarm_content(&app.display_messages[1].content)
@@ -1700,7 +1703,7 @@ fn test_click_on_swarm_expand_badge_toggles_tldr_collapse() {
         "click left of the badge must not expand the card"
     );
 
-    click(&mut app, badge_col + 2, badge_row);
+    click(&mut app, badge_col, badge_row);
     let parsed =
         jcode_tui_messages::parse_collapsible_swarm_content(&app.display_messages[1].content)
             .expect("content stays collapsible after toggle");
@@ -1737,13 +1740,16 @@ fn test_click_on_swarm_expand_badge_toggles_tldr_collapse() {
     }
     let (collapse_col, collapse_row) =
         collapse_badge.expect("collapse badge must be visible in the frame");
-    click(&mut app, collapse_col + 2, collapse_row);
+    click(&mut app, collapse_col, collapse_row);
     assert!(
         jcode_tui_messages::parse_collapsible_swarm_content(&app.display_messages[1].content)
             .is_some_and(|parsed| !parsed.expanded),
         "collapse badge click must fold the card back down"
     );
 }
+
+#[path = "scroll_copy_03/grouped_dm_badge.rs"]
+mod grouped_dm_badge;
 
 #[cfg(test)]
 #[path = "../tests_input_scroll.rs"]
@@ -2001,4 +2007,5 @@ fn keyboard_activation_reachable_from_copy_mode_entry() {
         app.handle_key(KeyCode::Down, KeyModifiers::NONE).unwrap();
     }
     panic!("keyboard parity missing: swarm disclosure cannot be reached from copy-mode entry");
-}
+}#[path = "scroll_copy_03_additional_tests.rs"]
+mod additional_test_scroll_ctrl_k_j_offset;

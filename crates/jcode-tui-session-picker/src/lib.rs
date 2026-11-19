@@ -307,7 +307,7 @@ mod tests {
     }
 
     #[test]
-    fn source_predicates_cover_provider_and_model_fallbacks() {
+    fn source_predicates_cover_provider_and_model_names() {
         assert!(session_is_claude_code(
             SessionSource::Jcode,
             "imported_cc_123"

@@ -1277,7 +1277,8 @@ fn test_new_for_remote_uses_startup_stub_without_loading_full_transcript() {
         content: vec![crate::message::ContentBlock::Text {
             text: "hello from persisted history".to_string(),
             cache_control: None,
-        }],
+        }]
+        .into(),
         display_role: None,
         timestamp: None,
         tool_duration_ms: None,
@@ -3166,3 +3167,6 @@ fn test_remote_model_changed_updates_reasoning_effort() {
         "a failed switch keeps the running model's effort"
     );
 }
+
+#[path = "remote_events_reload_04_additional_tests.rs"]
+mod additional_test_remote_fast_status_tracks_history_tier_including_explicit_off;

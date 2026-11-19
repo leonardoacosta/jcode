@@ -6,7 +6,11 @@ async fn mock_server_does_not_count_local_discovery_probes_as_requests() {
         assert!(!request.contains("Go-http-client/1.1"));
         (200, "{}".into(), vec![])
     });
-    let client = client_builder().no_proxy().build().unwrap();
+    let client = client_builder()
+        .no_proxy()
+        .user_agent(jcode_provider_core::JCODE_USER_AGENT)
+        .build()
+        .unwrap();
     for host in ["127.0.0.1", "localhost"] {
         let probe = client
             .get(format!("{base}/"))

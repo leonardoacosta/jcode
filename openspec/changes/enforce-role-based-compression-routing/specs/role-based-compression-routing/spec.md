@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Gateway endpoints own compression selection
-Jcode SHALL send the selected combo/model and allow the gateway's predefined compression policy to apply. Jcode SHALL NOT select OmniRoute compression from session roles, send compression override or forced cache-bypass headers, or emit requested-policy notices. Legacy named-provider compression header configuration SHALL NOT enable client selection. Final review SHALL retain full findings, risks, and evidence rather than force ultra-terse output styles.
+Jcode SHALL use the upstream-compatible HTTP compression transport and send the selected combo/model while allowing the gateway's predefined compression policy to apply. Jcode SHALL NOT select OmniRoute compression from session roles, retain superseded Jev-specific compression/cache override controls, or automatically cross provider/gateway routes. Final review and swarm outputs SHALL retain complete findings, risks, and evidence. Local transport success SHALL NOT count as external gateway applied-policy acceptance.
 
 #### Scenario: Root and worker use endpoint defaults
 - **WHEN** root, coding-worker, or reviewer sessions issue requests
@@ -11,23 +11,19 @@ Jcode SHALL send the selected combo/model and allow the gateway's predefined com
 - **WHEN** named-provider configuration still contains an OmniRoute compression selector
 - **THEN** it does not override gateway defaults or produce a requested-policy notice
 
-### Requirement: Gateway defaults apply across compatible transports
-The same endpoint-owned policy SHALL apply to Chat Completions and Responses requests, including concurrent forks and model changes. Jcode SHALL NOT inject gateway-specific compression controls into direct-provider requests. Conservative SHALL mean session-dedup followed by lite. Optimized-trial SHALL mean RTK aggressive followed by Caveman ultra with protected-content rules. Exact SHALL disable input compression. These pipeline choices belong in gateway configuration, not Jcode role headers.
+### Requirement: Upstream compression transport preserves request identity and report semantics
+The upstream compression transport SHALL preserve selected route/model identity across supported HTTP request paths. Jcode SHALL NOT inject role-selected compression or forced cache-bypass controls into gateway or direct-provider requests. It SHALL preserve complete swarm reports and report-completion semantics. Gateway-specific pipeline configuration and applied-policy evidence remain owned by the external gateway and require separate acceptance.
 
-#### Scenario: Concurrent forks select different endpoints
-- **WHEN** root, worker, and reviewer forks issue concurrent Chat or Responses requests with different selected models
-- **THEN** each request retains its model ID without compression or forced cache-bypass headers
+#### Scenario: Concurrent requests retain selection and report completeness
+- **WHEN** concurrent sessions issue requests through the upstream compression transport
+- **THEN** each request retains its selected route/model and report output is not truncated or treated as complete before its completion event
 
 #### Scenario: Direct provider remains unaffected
 - **WHEN** an explicitly selected direct provider handles a request
 - **THEN** gateway-specific compression headers and requested-policy notices are absent
 
-### Requirement: Gateway fallback is conservative and routing remains explicit
-Both gateways SHALL use a conservative fallback for unbound chat. Pi5 SHALL remain primary, local Omni SHALL remain a manually selected alternate, and gateway or provider failures SHALL NOT silently substitute another route. Effective pipeline selection SHALL be verified independently of combo-card labels.
-
-#### Scenario: Missing binding has a safe fallback
-- **WHEN** a chat route lacks a named profile binding
-- **THEN** both gateways apply the documented conservative fallback and expose the selected plan
+### Requirement: Gateway routing remains explicit
+Pi5 SHALL remain primary and local Omni SHALL remain a manually selected alternate unless separately authorized. Gateway or provider failures SHALL NOT silently substitute another route. External gateway effective pipeline selection SHALL be verified independently of combo-card labels and is not satisfied by this change's local transport tests.
 
 #### Scenario: Primary route fails
 - **WHEN** Pi5 cannot serve a request

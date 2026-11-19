@@ -1315,3 +1315,12 @@ async fn required_check_real_startup_error_never_passes() {
 
 #[path = "bash_promoted_tests.rs"]
 mod promoted;
+
+#[test]
+fn background_timeout_honors_values_above_the_foreground_cap() {
+    // Field report: run_in_background with timeout=1800000 (30 min) was
+    // recorded as "timed out after 600000ms" and killed at 10 minutes.
+    assert_eq!(background_timeout_ms(Some(1_800_000)), Some(1_800_000));
+    assert_eq!(background_timeout_ms(Some(100)), Some(100));
+    assert_eq!(background_timeout_ms(None), None);
+}

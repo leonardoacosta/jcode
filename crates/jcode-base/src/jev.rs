@@ -402,15 +402,30 @@ impl JevClient {
         if self.purpose == JevPurpose::Supervision {
             return tokio::time::timeout(
                 Duration::from_secs(2),
-                self.evaluate_inner(state, questions),
+                self.evaluate_inner(state, questions, true),
             )
             .await
             .map_err(|_| anyhow!("Jev supervision observation timed out"))?;
         }
-        self.evaluate_inner(state, questions).await
+        self.evaluate_inner(state, questions, true).await
     }
 
-    async fn evaluate_inner(&self, state: Value, questions: Map<String, Value>) -> Result<Value> {
+    /// A single bounded classification, with no hedging or transient retries.
+    /// Retains the same provider binding, entitlement and typed-answer checks.
+    pub async fn evaluate_once(
+        &self,
+        state: Value,
+        questions: Map<String, Value>,
+    ) -> Result<Value> {
+        self.evaluate_inner(state, questions, false).await
+    }
+
+    async fn evaluate_inner(
+        &self,
+        state: Value,
+        questions: Map<String, Value>,
+        retry: bool,
+    ) -> Result<Value> {
         let body = request_body_with_model(
             self.purpose,
             self.provider,
@@ -444,11 +459,11 @@ impl JevClient {
                 self.purpose.capability()
             );
         }
-        if self.purpose == JevPurpose::Voice {
+        if retry && self.purpose == JevPurpose::Voice {
             return self.send_hedged(body, &questions).await;
         }
-        let mut value = if self.purpose == JevPurpose::Supervision {
-            let response = self.send_once(&self.client, &self.endpoint, body).await?;
+        let mut value = if !retry || self.purpose == JevPurpose::Supervision {
+            let response = self.send_once(&self.client, &self.endpoint, body.into()).await?;
             read_response_for_purpose(response, MAX_RESPONSE_BYTES, self.provider, self.purpose)
                 .await?
         } else {
@@ -490,6 +505,9 @@ impl JevClient {
     /// while any other attempt is still pending.
     async fn send_hedged(&self, body: Vec<u8>, questions: &Map<String, Value>) -> Result<Value> {
         use futures::StreamExt;
+        // All attempts send identical immutable wire bytes. Share their backing
+        // rather than copying the full request for every hedge and retry.
+        let body = bytes::Bytes::from(body);
         let attempt = |client: &Client, delay: Duration, primary: bool| {
             let body = body.clone();
             let client = client.clone();
@@ -528,14 +546,19 @@ impl JevClient {
     }
 
     async fn send(&self, endpoint: &str, body: Vec<u8>) -> Result<Value> {
-        self.send_with(&self.client, endpoint, body).await
+        self.send_with(&self.client, endpoint, body.into()).await
     }
 
     /// Decisions requests are side-effect-free classifications, so transient
     /// overload responses (429/502/503/504/529) are retried with a short bounded
     /// backoff on the same provider and account. Auth, billing, redirect, and
     /// other failures are never retried and never fall back to another account.
-    async fn send_with(&self, client: &Client, endpoint: &str, body: Vec<u8>) -> Result<Value> {
+    async fn send_with(
+        &self,
+        client: &Client,
+        endpoint: &str,
+        body: bytes::Bytes,
+    ) -> Result<Value> {
         let mut attempt = 0;
         loop {
             let response = self.send_once(client, endpoint, body.clone()).await?;
@@ -570,7 +593,12 @@ impl JevClient {
         }
     }
 
-    async fn send_once(&self, client: &Client, endpoint: &str, body: Vec<u8>) -> Result<Response> {
+    async fn send_once(
+        &self,
+        client: &Client,
+        endpoint: &str,
+        body: bytes::Bytes,
+    ) -> Result<Response> {
         let request_id = (self.provider == JevProvider::OmniRoute)
             .then(|| serde_json::from_slice::<Value>(&body).ok())
             .flatten()
@@ -583,10 +611,7 @@ impl JevClient {
             request = request.bearer_auth(&self.api_key);
         }
         if self.provider == JevProvider::OmniRoute {
-            request = request
-                .header(SUPERVISION_PURPOSE_HEADER, "supervision")
-                .header("X-OmniRoute-No-Cache", "true")
-                .header("X-OmniRoute-Compression", "off");
+            request = request.header(SUPERVISION_PURPOSE_HEADER, "supervision");
             if let Some(id) = request_id {
                 request = request.header("X-Request-Id", id);
             }
@@ -853,108 +878,13 @@ fn resolve_explicit_supervision(
     Ok((provider, api_key, endpoint, me_endpoint))
 }
 
-fn resolve_voice_with(
-    selector: &str,
-    load: impl FnMut(&str, &str) -> Option<String>,
-) -> Result<(JevProvider, String)> {
-    match selector.trim().to_ascii_lowercase().as_str() {
-        "auto" => resolve_providers(&[JevProvider::Jcode, JevProvider::TypeSafe], load),
-        "typesafe" | "laya" | "jcode" | "subscription" | "jcode-subscription" => {
-            resolve_with(selector, load)
-        }
-        _ => bail!(
-            "Invalid voice Jev provider. Choose auto, typesafe, laya, or jcode; voice never uses OpenRouter or AIMLAPI"
-        ),
-    }
-}
+#[path = "jev/route_resolution.rs"]
+mod route_resolution;
+use route_resolution::{resolve_providers, resolve_voice_with, resolve_with, trusted_gateway_base};
 
-fn resolve_with(
-    selector: &str,
-    mut load: impl FnMut(&str, &str) -> Option<String>,
-) -> Result<(JevProvider, String)> {
-    let providers: &[JevProvider] = match selector.trim().to_ascii_lowercase().as_str() {
-        "auto" => &[
-            // Included subscriber access wins over personal paid provider keys.
-            // Entitlement is checked live before evaluation. Failure must not
-            // silently spend a BYOK balance; users can select BYOK explicitly.
-            // Typesafe serves Jev directly, so it beats resellers of the same model.
-            JevProvider::Jcode,
-            JevProvider::TypeSafe,
-            JevProvider::OpenRouter,
-            JevProvider::Aimlapi,
-        ],
-        "openrouter" => &[JevProvider::OpenRouter],
-        "typesafe" => &[JevProvider::TypeSafe],
-        "laya" => return resolve_laya_with(&mut load),
-        "aimlapi" => &[JevProvider::Aimlapi],
-        "jcode" | "subscription" | "jcode-subscription" => &[JevProvider::Jcode],
-        _ => bail!(
-            "Invalid Jev provider. Choose auto, laya, openrouter, typesafe, aimlapi, or jcode"
-        ),
-    };
-    resolve_providers(providers, load)
-}
 
-fn resolve_providers(
-    providers: &[JevProvider],
-    mut load: impl FnMut(&str, &str) -> Option<String>,
-) -> Result<(JevProvider, String)> {
-    for &provider in providers {
-        let (env, file) = provider.credentials();
-        if let Some(key) = load(env, file) {
-            let key = jcode_provider_env::sanitize_secret_value(&key);
-            if !key.is_empty() {
-                // Reject malformed headers now rather than leaking a provider's
-                // request-builder error through a later error chain.
-                ensure!(
-                    reqwest::header::HeaderValue::from_str(&format!("Bearer {key}")).is_ok(),
-                    "The selected Jev provider credential is not a valid HTTP bearer value"
-                );
-                return Ok((provider, key.to_owned()));
-            }
-        }
-    }
-    if let [provider] = providers {
-        let (env, file) = provider.credentials();
-        bail!(
-            "No credential for the selected Jev provider {}. Configure {env} ({file}). Explicit provider selection never falls back to another account.",
-            provider.name()
-        );
-    }
-    let credentials = providers
-        .iter()
-        .map(|provider| {
-            let (env, file) = provider.credentials();
-            format!("{env} ({file})")
-        })
-        .collect::<Vec<_>>()
-        .join(" or ");
-    bail!(
-        "No credential for the selected Jev route. Configure {credentials}. Provider failures never fall back to another account."
-    )
-}
 
-fn trusted_gateway_base(base: &str) -> Result<String> {
-    let url = Url::parse(base.trim()).map_err(|_| anyhow!("Invalid Jcode gateway base URL"))?;
-    let loopback = url.host_str().is_some_and(|host| {
-        host.eq_ignore_ascii_case("localhost")
-            || host
-                .trim_start_matches('[')
-                .trim_end_matches(']')
-                .parse::<std::net::IpAddr>()
-                .is_ok_and(|ip| ip.is_loopback())
-    });
-    ensure!(
-        url.host_str().is_some()
-            && (url.scheme() == "https" || (url.scheme() == "http" && loopback))
-            && url.username().is_empty()
-            && url.password().is_none()
-            && url.query().is_none()
-            && url.fragment().is_none(),
-        "Jcode Jev gateway requires HTTPS (HTTP only for loopback), without URL credentials, query, or fragment"
-    );
-    Ok(url.as_str().trim_end_matches('/').to_owned())
-}
+
 
 #[cfg(test)]
 fn request_body(
@@ -1867,12 +1797,13 @@ mod tests {
         let headers = wire.split_once("\r\n\r\n").unwrap().0.to_ascii_lowercase();
         for header in [
             "x-jcode-jev-purpose: supervision",
-            "x-omniroute-no-cache: true",
-            "x-omniroute-compression: off",
             "x-request-id: synthetic",
         ] {
             assert!(headers.contains(header));
         }
+        // Retired compression/cache overrides must not reappear.
+        assert!(!headers.contains("x-omniroute-no-cache"));
+        assert!(!headers.contains("x-omniroute-compression"));
         let body: Value = serde_json::from_str(wire.split_once("\r\n\r\n").unwrap().1).unwrap();
         assert_eq!(body["model"], "gpt-6-luna");
         assert_eq!(body["stream"], false);

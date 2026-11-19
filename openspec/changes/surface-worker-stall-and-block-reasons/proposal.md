@@ -28,9 +28,13 @@ Roadmap owner: [P04: Swarm collaboration and handoffs](../../../docs/plans/PRODU
 
 `swarm_watchdog.rs`, swarm member status types, background task status, `info_widget_swarm_background.rs`. Persisted status strings keep backward-compatible parsing.
 
+## Upstream v1.0.1 reconciliation
+
+The approved integration adopts the upstream dedicated swarm page and report coalescing rather than adding a competing inline swarm strip. This change retains truthful stall/block/completion projection and consumer-specific seen state on the upstream page. Preserve full report and report-completion behavior. The `make-worker-stop-durable` dependency and existing stop/owner safeguards remain unchanged; its acceptance is unfinished and is neither expanded nor marked complete here. Do not use status presentation or coalescing to weaken stop, owner, cancellation, or completion semantics.
+
 ## Resolved defaults
 
-1. Stall actions use an inline toast with keys, with `/agents` as the fallback.
+1. Stall actions use the upstream swarm page and its supported controls; do not add a fork-only inline strip. Keep `/agents` as the fallback entry point where available.
 
 ## Evidence
 

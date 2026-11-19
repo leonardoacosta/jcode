@@ -1,29 +1,16 @@
 # Tasks
 
-## 1. Config and classification
+## Retirement contract
 
-- [x] 1.1 Add `model_fallback: HashMap<String, Vec<String>>` to config types, dropping blanks and self-references.
-- [x] 1.2 Add a provider error classifier returning `Transient` or `Permanent` (auth, invalid request, config are permanent).
+- [ ] 1.1 Compare the exact upstream v1.0.1 change and fork implementation/tests for `model_fallback`; record the superseding upstream behavior and every fork-only config, execution, cooling/cycle, and transcript surface to remove. Do not infer removal from file overlap alone.
+- [ ] 1.2 Remove the custom automatic model-fallback config and runtime chain only as part of the approved merge reconciliation. Retain shared provider failure classification and supported user-directed recovery. Verify no automatic model/provider/account/gateway substitution remains on the retired path.
+- [ ] 1.3 Add or update regression tests proving the retired chain cannot switch models automatically and confirmed quota/billing exhaustion, auth failure, failed refresh transport, selected route, and account identity retain their safeguards. Run the owning package tests and record exact command/results.
+- [ ] 1.4 Reconcile references and dependencies in active proposals that assume this fallback chain exists. Do not modify canonical specs, archived artifacts, or roadmap in this change lane.
+- [ ] 1.5 Run `openspec validate fallback-on-transient-model-errors --strict` and `git diff --check`. Keep external gateway acceptance and the separate full integration review gates open unless their own evidence is supplied.
 
-## 2. Health and chain
+## Historical implementation evidence (not retirement completion)
 
-- [x] 2.1 Track per-model failure timestamps (bounded history) and reset on success.
-- [x] 2.2 Mark a model cooling at 3 failures within 60s; order candidates healthy-first, cooling last, then config order.
-- [x] 2.3 Iterate the chain at most 3 cycles, then surface the original error.
+The checked tasks below record the previous feature implementation only. They do not satisfy tasks 1.1-1.5 or authorize retaining the behavior. The former transcript-notice integration and shared-classification acceptance were incomplete; the retirement remains pending until the upstream reconciliation and safeguards above pass.
 
-## 3. Turn integration and UX
-
-- [x] 3.1 After existing retries and account failover, switch to the next candidate only for transient errors.
-- [ ] 3.2 Emit a transcript notice for each switch and each skipped candidate, including the reason class.
-  - Partial: notices are logged and emitted as `StatusDetail` stream events before the fallback stream; not yet rendered as persistent transcript lines in the TUI.
-- [x] 3.3 Keep the manual `fallback_switch` offer for permanent errors.
-
-## 4. Verification
-
-- [x] 4.1 Unit tests: classifier, cooling window, chain ordering, 3-cycle cap, permanent error never switches.
-- [ ] 4.2 Integration test with a mock provider returning 503 then success on fallback, asserting transcript notice.
-- [x] 4.3 Run `openspec validate fallback-on-transient-model-errors --strict`.
-
-## 5. Reconciled shared classification acceptance
-
-- [ ] 5.1 Consume classify-provider-auth-failures categories and verify confirmed billing/quota 429 never triggers transient fallback, transport refresh failure never implies revocation, and gateway route prohibitions exclude cross-provider substitutions. Preserve historical checked implementation evidence; rerun real integration and transcript-notice gates before final review/closeout.
+- Historical 1.1 config addition, 1.2 classifier, 2.1-2.3 health/cooling/chain, 3.1-3.3 turn integration/manual offer, and 4.1/4.3 unit/strict validation are retained in the repository history. Previous task 3.2 transcript output was partial; previous task 4.2 integration was incomplete. These prior marks describe old implementation work only.
+- Historical task 5.1 was not accepted. Its checks remain relevant as safety regression cases, not as evidence that automatic fallback should remain.

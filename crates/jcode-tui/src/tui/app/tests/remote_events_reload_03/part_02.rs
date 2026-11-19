@@ -85,7 +85,8 @@ fn test_metadata_only_history_preserves_fast_restored_startup_state() {
         content: vec![crate::message::ContentBlock::Text {
             text: "restored locally before connect".to_string(),
             cache_control: None,
-        }],
+        }]
+        .into(),
         display_role: None,
         timestamp: None,
         tool_duration_ms: None,
@@ -307,13 +308,16 @@ fn test_local_compacted_history_marker_scroll_expands_from_session() {
             cache_control: None,
         }],
     );
-    app.session.compaction = Some(crate::session::StoredCompactionState {
-        summary_text: "old prompts and responses".to_string(),
-        openai_encrypted_content: None,
-        covers_up_to_turn: TURNS,
-        original_turn_count: TURNS,
-        compacted_count,
-    });
+    app.session.compaction = Some(
+        crate::session::StoredCompactionState {
+            summary_text: "old prompts and responses".to_string(),
+            openai_encrypted_content: None,
+            covers_up_to_turn: TURNS,
+            original_turn_count: TURNS,
+            compacted_count,
+        }
+        .into(),
+    );
 
     let (rendered_messages, _images, _compacted_info) =
         crate::session::render_messages_and_images_with_compacted_history(&app.session, 0);
@@ -380,7 +384,9 @@ fn test_compacted_history_event_applies_expanded_window() {
     app.remote_session_id = Some("session_lazy_history".to_string());
     app.push_display_message(DisplayMessage::assistant("existing tail"));
     app.scroll_offset = 12;
-    app.auto_scroll_paused = false;
+    // Scrolling up to load older messages pauses tail-following. Background
+    // prompt-history backfills while following the tail preserve that mode.
+    app.auto_scroll_paused = true;
 
     let needs_redraw = app.handle_server_event(
         crate::protocol::ServerEvent::CompactedHistory {

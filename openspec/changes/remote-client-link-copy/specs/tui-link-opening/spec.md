@@ -16,6 +16,10 @@ When the TUI runs in a remote session, the clipboard MUST be written only throug
 - **WHEN** no remote markers are set
 - **THEN** the existing native-first order is unchanged
 
+#### Scenario: Explicit native override in a remote session
+- **WHEN** `JCODE_CLIPBOARD=native` and a remote marker are both set
+- **THEN** the native path is used only because the user explicitly selected it
+
 #### Scenario: Forced native override
 - **WHEN** `JCODE_CLIPBOARD=native` is set and `SSH_CONNECTION` is set
 - **THEN** the TUI uses the native path

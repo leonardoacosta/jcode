@@ -16,13 +16,45 @@ pub(in crate::tui::app) async fn begin_remote_send(
     auto_retry: bool,
     retry_attempts: u8,
 ) -> Result<u64> {
-    app.prepare_cloud_environment(remote).await?;
+    if let Err(error) = app.prepare_local_tools(remote).await {
+        crate::logging::info(&format!(
+            "RECOVERY_SEND_FAILED session_id={:?} previous_request_id={:?} request_id=unassigned phase=prepare content_bytes={} images={} retry_attempts={}",
+            app.remote_session_id,
+            app.current_message_id,
+            content.len(),
+            images.len(),
+            retry_attempts
+        ));
+        return Err(error);
+    }
+    // Reload delivery is idempotent on the server: an exact repeat of its
+    // hidden reminder is acknowledged with Done without running the agent.
+    // Delivery does not imply successful execution, though. A provider failure
+    // (including a fallback route switch) must resume that accepted turn rather
+    // than replay the original delivery token. Keep the instructions, but mark
+    // this as an execution retry. Do this at the shared send boundary so both
+    // fallback resends and same-route retries behave identically.
+    const EXECUTION_RETRY_PREFIX: &str = "<system-reminder>Retry the interrupted execution of the previous turn. Continue from the current conversation and completed tool results without repeating completed work.</system-reminder>\n\n";
     let recovery = app.cloud_recovery_reminder();
     let system_reminder = match (system_reminder, recovery.as_ref()) {
         (Some(reminder), Some(recovery)) => Some(format!("{reminder}\n\n{recovery}")),
         (None, Some(recovery)) => Some(recovery.clone()),
         (reminder, None) => reminder,
     };
+    // Classify the final wire reminder, including cloud recovery context. A
+    // cloud-only continuation otherwise bypasses the execution-retry marker.
+    let system_reminder = system_reminder.map(|reminder| {
+        if retry_attempts > 0
+            && is_system
+            && content.trim().is_empty()
+            && images.is_empty()
+            && !reminder.starts_with(EXECUTION_RETRY_PREFIX)
+        {
+            format!("{EXECUTION_RETRY_PREFIX}{reminder}")
+        } else {
+            reminder
+        }
+    });
     app.pending_remote_turn_error = None;
     let plan_only = app.next_turn_plan_only;
     let plan_turn_id = app.next_plan_turn_id.clone();
@@ -45,11 +77,34 @@ pub(in crate::tui::app) async fn begin_remote_send(
             plan_only,
             plan_turn_id.clone(),
         )
-        .await?;
+        .await;
+    let msg_id = match msg_id {
+        Ok(id) => id,
+        Err(error) => {
+            crate::logging::info(&format!(
+                "RECOVERY_SEND_FAILED session_id={:?} request_id=unassigned previous_request_id={:?} phase=write content_bytes={} images={} retry_attempts={}",
+                app.remote_session_id,
+                app.current_message_id,
+                content.len(),
+                images.len(),
+                retry_attempts
+            ));
+            return Err(error);
+        }
+    };
     app.next_turn_plan_only = false;
     app.next_plan_turn_id = None;
     app.pending_plan_ack = plan_only.then_some(msg_id);
     app.clear_required_checks_for_turn();
+    crate::logging::info(&format!(
+        "RECOVERY_SEND_SUBMITTED session_id={:?} request_id={} content_bytes={} images={} retry_attempts={} is_system={}",
+        app.remote_session_id,
+        msg_id,
+        content.len(),
+        images.len(),
+        retry_attempts,
+        is_system
+    ));
     if !is_system {
         app.publish_user_image_previews(&images);
     }
@@ -101,6 +156,13 @@ pub(in crate::tui::app) fn restore_prepared_remote_input(
     app: &mut App,
     prepared: input::PreparedInput,
 ) {
+    crate::logging::info(&format!(
+        "RECOVERY_DRAFT_RESTORED session_id={:?} request_id={:?} content_bytes={} images={}",
+        app.remote_session_id,
+        app.current_message_id,
+        prepared.raw_input.len(),
+        prepared.images.len()
+    ));
     app.pending_images.extend(prepared.images);
     app.restore_failed_prompt(prepared.expanded);
 }
@@ -151,6 +213,14 @@ pub(in crate::tui::app) async fn submit_prepared_remote_input(
         return Ok(());
     }
     if app.remote_model_switch_in_flight || app.auth_catalog_refresh_pending {
+        crate::logging::info(&format!(
+            "RECOVERY_SUBMISSION_DEFERRED session_id={:?} request_id={:?} reason=model_setup content_bytes={} images={} replacing_pending={}",
+            app.remote_session_id,
+            app.current_message_id,
+            prepared.expanded.len(),
+            prepared.images.len(),
+            app.pending_prompt_after_model_switch.is_some()
+        ));
         app.pending_prompt_after_model_switch = Some(prepared);
         app.set_status_notice(if app.auth_catalog_refresh_pending {
             "Prompt queued until model setup completes"
@@ -168,9 +238,14 @@ pub(in crate::tui::app) async fn submit_prepared_remote_input(
     // `process_remote_followups` dispatch it once history is loaded - the same
     // gating that startup auto-submit already relies on.
     if !remote.has_loaded_history() {
-        crate::logging::info(
-            "Deferring manually submitted prompt until remote history loads (avoids first-prompt clobber)",
-        );
+        crate::logging::info(&format!(
+            "RECOVERY_SUBMISSION_DEFERRED session_id={:?} request_id={:?} reason=history content_bytes={} images={} replacing_pending={}",
+            app.remote_session_id,
+            app.current_message_id,
+            prepared.expanded.len(),
+            prepared.images.len(),
+            app.pending_prompt_before_history.is_some()
+        ));
         app.pending_prompt_before_history = Some(prepared);
         app.set_status_notice("Loading session...");
         return Ok(());
@@ -197,17 +272,36 @@ pub(in crate::tui::app) async fn submit_prepared_remote_input(
     // A manually submitted prompt supersedes any armed post-error fallback
     // offer (and its staged resend): the user chose to continue differently.
     app.clear_pending_fallback_offer();
-    // Remember the typed prompt so we can restore it to the input box if this turn
-    // fails (e.g. "token refresh needed"), instead of dropping it.
+    // Remember the expanded prompt so failed submissions can restore pasted text,
+    // not just its compact placeholder.
+    let expanded_image_markers = prepared.raw_input.contains("[pasted ")
+        || prepared.images.iter().enumerate().any(|(index, _)| {
+            !prepared.raw_input.contains(&format!("[image {}]", index + 1))
+        });
+    let recovery_input = if prepared.raw_input.contains("[pasted ") {
+        prepared.expanded.clone()
+    } else {
+        let mut recovery = prepared.raw_input.clone();
+        for (index, _) in prepared.images.iter().enumerate() {
+            let marker = format!("[image {}]", index + 1);
+            if !recovery.contains(&marker) {
+                if !recovery.is_empty() && !recovery.ends_with(char::is_whitespace) {
+                    recovery.push(' ');
+                }
+                recovery.push_str(&marker);
+            }
+        }
+        recovery
+    };
     app.last_submitted_input = Some(prepared.expanded.clone());
-    app.push_display_message(DisplayMessage {
-        role: "user".to_string(),
-        content: prepared.raw_input,
-        tool_calls: vec![],
-        duration_secs: None,
-        title: None,
-        tool_data: None,
-    });
+    app.automatic_failover_targets.clear();
+    app.automatic_failover_stopped = false;
+    let echo_index = app.display_messages().len();
+    app.push_display_message(DisplayMessage::user(prepared.raw_input.clone()));
+    let content_bytes = prepared.expanded.len();
+    let image_count = prepared.images.len();
+    let raw_input = prepared.raw_input.clone();
+    let images = prepared.images.clone();
     if let Err(error) = app
         .begin_remote_send(
             remote,
@@ -217,11 +311,47 @@ pub(in crate::tui::app) async fn submit_prepared_remote_input(
         )
         .await
     {
-        app.pending_images.extend(prepared.images);
-        app.restore_failed_input_to_box();
+        crate::logging::info(&format!(
+            "RECOVERY_SUBMISSION_RESTORED session_id={:?} request_id={:?} content_bytes={} images={} queued={}",
+            app.remote_session_id,
+            app.current_message_id,
+            content_bytes,
+            image_count,
+            app.queued_messages.len()
+        ));
+        app.remove_display_message(echo_index);
+        if !app.input.is_empty() {
+            app.restore_failover_payload(super::super::FallbackResendPayload {
+                content: recovery_input,
+                images,
+                raw_input: Some(raw_input),
+                is_system: false,
+                system_reminder: None,
+                auto_retry: false,
+                retry_attempts: 0,
+                plan_only: app.next_turn_plan_only,
+                plan_turn_id: app.next_plan_turn_id.clone(),
+            });
+        } else {
+            app.pending_images.extend(images);
+            if expanded_image_markers {
+                app.input = recovery_input.clone();
+                app.cursor_pos = app.input.len();
+                if prepared.raw_input.contains("[pasted ") {
+                    app.last_submitted_input = None;
+                } else {
+                    app.last_submitted_input = Some(raw_input);
+                }
+                app.restore_failed_prompt(recovery_input);
+            } else {
+                app.restore_failed_prompt(raw_input);
+            }
+        }
         app.push_display_message(DisplayMessage::error(format!(
             "Failed to send message: {error}\nDelivery unconfirmed. Check the session before resending."
         )));
+        app.set_status_notice("Message not sent; draft restored");
+        return Ok(());
     }
     Ok(())
 }
@@ -449,6 +579,10 @@ fn queue_transcript_input(app: &mut App) {
 }
 
 fn submit_transcript_input(app: &mut App) {
+    // An armed new-session prompt takes precedence over steering or queueing.
+    if input::route_prompt_to_new_session_local(app) {
+        return;
+    }
     match app.send_action(false) {
         SendAction::Submit => app.submit_input(),
         SendAction::Queue => queue_transcript_input(app),
@@ -484,9 +618,16 @@ async fn submit_remote_transcript_input(
         return Ok(());
     }
 
+    if app.route_next_prompt_to_new_session && app.pending_login.is_none() {
+        let prepared = input::take_prepared_input(app);
+        return route_prepared_input_to_new_remote_session(app, remote, prepared).await;
+    }
+
     match app.send_action(false) {
         SendAction::Submit => {
             let prepared = input::take_prepared_input(app);
+            app.automatic_failover_targets.clear();
+            app.automatic_failover_stopped = false;
             app.push_display_message(DisplayMessage {
                 role: "user".to_string(),
                 content: prepared.raw_input,

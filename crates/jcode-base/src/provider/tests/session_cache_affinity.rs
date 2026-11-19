@@ -92,7 +92,8 @@ async fn capture(
             content: vec![crate::message::ContentBlock::Text {
                 text: "cache lifecycle regression".into(),
                 cache_control: None,
-            }],
+            }]
+            .into(),
             timestamp: None,
             tool_duration_ms: None,
         }];

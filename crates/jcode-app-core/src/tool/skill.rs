@@ -48,6 +48,23 @@ fn default_action() -> String {
     "load".to_string()
 }
 
+/// Explain which discovered `SKILL.md` files were rejected, so a skill that
+/// fails to load is never silently absent from `list` or `reload_all`.
+fn skill_load_errors_section(registry: &SkillRegistry) -> String {
+    let errors = registry.load_errors();
+    if errors.is_empty() {
+        return String::new();
+    }
+    let mut section = format!(
+        "\nSkipped {} skill file(s) that failed to load:\n",
+        errors.len()
+    );
+    for failed in errors {
+        section.push_str(&format!("- {}: {}\n", failed.path.display(), failed.error));
+    }
+    section
+}
+
 #[async_trait]
 impl Tool for SkillTool {
     fn name(&self) -> &str {
@@ -91,7 +108,13 @@ impl Tool for SkillTool {
             "info" => {
                 let name = normalize_skill_name(params.name, "info")?;
                 let registry = self.effective_registry(ctx.working_dir.as_deref()).await;
-                let output = registry.get(&name).map(|skill| skill.info())
+                let output = registry.get(&name).map(|skill| format!(
+                    "## /{}\n\n{}\n\n{}\nAllowed tools: {}",
+                    skill.name,
+                    skill.description,
+                    skill.info(),
+                    skill.allowed_tools.as_deref().unwrap_or_default().join(", "),
+                ))
                     .unwrap_or_else(|| format!("Skill '{}' not found", name.chars().filter(|c| !c.is_control()).collect::<String>()));
                 Ok(ToolOutput::new(output).with_title("Skill info"))
             }
@@ -194,11 +217,11 @@ impl SkillTool {
                 output.push_str(&format!("## /{}\n", skill.name));
                 output.push_str(&format!("  {}\n", skill.description));
                 output.push_str(&format!("  Path: {}\n", skill.path.display()));
-                for warning in skill.warnings() {
-                    output.push_str(&format!("  Warning: {}\n", warning));
-                }
                 if let Some(ref tools) = skill.allowed_tools {
                     output.push_str(&format!("  Tools: {}\n", tools.join(", ")));
+                }
+                for warning in skill.warnings() {
+                    output.push_str(&format!("  Warning: {warning}\n"));
                 }
                 output.push('\n');
             }
@@ -206,6 +229,7 @@ impl SkillTool {
         };
 
         append_endorsed_skills(&mut output, &installed);
+        output.push_str(&skill_load_errors_section(&registry));
 
         Ok(ToolOutput::new(output).with_title("Skills: List"))
     }
@@ -272,6 +296,7 @@ impl SkillTool {
                 for skill in skills {
                     output.push_str(&format!("- /{}: {}\n", skill.name, skill.description));
                 }
+                output.push_str(&skill_load_errors_section(&effective));
 
                 Ok(
                     ToolOutput::new(output)

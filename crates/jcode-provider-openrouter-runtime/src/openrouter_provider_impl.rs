@@ -3,6 +3,20 @@ use super::openrouter_sse_stream::run_stream_with_retries;
 use super::*;
 use jcode_base::provider::{ModelCatalogRefreshSummary, summarize_model_catalog_refresh};
 
+fn canonical_input_parts(request: &Value) -> (&[Value], Option<&Value>, Option<&Value>, usize) {
+    let items = request
+        .get("messages")
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+        .unwrap_or(&[]);
+    let system = items
+        .first()
+        .filter(|message| message.get("role").and_then(Value::as_str) == Some("system"));
+    let tools = request.get("tools");
+    let count = tools.and_then(Value::as_array).map(Vec::len).unwrap_or(0);
+    (items, system, tools, count)
+}
+
 #[async_trait]
 impl Provider for OpenRouterProvider {
     fn set_session_id(&self, session_id: &str) {
@@ -73,6 +87,18 @@ impl Provider for OpenRouterProvider {
         }
         if self.builtin_azure {
             return self.complete_azure_responses(messages, tools, system).await;
+        }
+        if let Some(affinity) = &self.session_cache_affinity {
+            let mut key_check = serde_json::json!({});
+            let key = self
+                .extra_body
+                .as_ref()
+                .and_then(|body| body.get("prompt_cache_key"));
+            if let Some(key) = key {
+                key_check["prompt_cache_key"] = key.clone();
+            }
+            affinity.insert_default(&mut key_check);
+            affinity.final_key(&key_check)?;
         }
         let model = self.model.read().await.clone();
         let responses_api = self.responses_api
@@ -240,10 +266,6 @@ impl Provider for OpenRouterProvider {
             request["provider"] = obj;
         }
 
-        if let Some(key) = &session_cache_key {
-            request["prompt_cache_key"] = Value::String(key.clone());
-        }
-
         // Merge user-configured extra request-body fields last so they can
         // satisfy non-standard backend requirements (e.g. NVIDIA NIM
         // DeepSeek-V4 `chat_template_kwargs`) and intentionally override any
@@ -256,44 +278,24 @@ impl Provider for OpenRouterProvider {
             }
         }
 
+        if let Some(key) = &session_cache_key {
+            request["prompt_cache_key"] = Value::String(key.clone());
+        }
+
         // OpenCode Go exposes a small model-specific subset through the
         // Responses API. Build that protocol after the generic chat request so
         // provider-only fields cannot leak into `/responses`; configured extra
         // body fields remain an intentional escape hatch and are merged last.
         if responses_api {
-            if self.responses_api {
-                let mut input = jcode_provider_openai::build_responses_input(messages);
-                jcode_provider_openai::insert_additional_tools(&mut input, messages, tools);
-                request = serde_json::json!({
-                    "model": model,
-                    "instructions": system,
-                    "input": input,
-                    "tools": jcode_provider_openai::build_tools(tools),
-                    "tool_choice": "auto",
-                    "parallel_tool_calls": false,
-                    "stream": true,
-                    "store": false,
-                    "include": ["reasoning.encrypted_content"],
-                });
-                if let Some(limit) = self.max_tokens {
-                    request["max_output_tokens"] = serde_json::json!(limit);
-                }
-                if let Some(effort) = reasoning_effort.as_deref() {
-                    let resolved =
-                        jcode_base::prompt::swarm_root_reasoning_effort(effort).unwrap_or(effort);
-                    request["reasoning"] = serde_json::json!({"effort": resolved});
-                }
-            } else {
-                request = super::opencode_go_responses::build_request(
-                    &effective_messages,
-                    tools,
-                    system,
-                    &model,
-                    reasoning_effort.as_deref(),
-                    self.max_tokens,
-                    jcode_provider_openrouter::request::sanitize_tool_parameters_schema,
-                );
-            }
+            request = super::opencode_go_responses::build_request(
+                &effective_messages,
+                tools,
+                system,
+                &model,
+                reasoning_effort.as_deref(),
+                self.max_tokens,
+                jcode_provider_openrouter::request::sanitize_tool_parameters_schema,
+            );
             if let Some(key) = &session_cache_key {
                 request["prompt_cache_key"] = Value::String(key.clone());
             }
@@ -304,29 +306,18 @@ impl Provider for OpenRouterProvider {
                     request_obj.insert(key.clone(), value.clone());
                 }
             }
+            if let Some(key) = &session_cache_key {
+                request["prompt_cache_key"] = Value::String(key.clone());
+            }
         }
 
-        let session_cache_key = self
-            .session_cache_affinity
-            .as_ref()
-            .map(|affinity| affinity.final_key(&request))
-            .transpose()?;
+        if let Some(affinity) = &self.session_cache_affinity {
+            affinity.insert_default(&mut request);
+        }
 
-        let message_items = request
-            .get("messages")
-            .and_then(|value| value.as_array())
-            .cloned()
-            .unwrap_or_default();
-        let tools_value = request.get("tools").cloned();
-        let system_value = message_items
-            .first()
-            .filter(|message| message.get("role").and_then(|role| role.as_str()) == Some("system"))
-            .cloned();
-        let tool_count = tools_value
-            .as_ref()
-            .and_then(|value| value.as_array())
-            .map(|tools| tools.len())
-            .unwrap_or(0);
+        let (message_items, system_value, tools_value, tool_count) =
+            canonical_input_parts(&request);
+
         jcode_provider_core::fingerprint::log_provider_canonical_input(
             if self.supports_provider_features {
                 "openrouter"
@@ -340,9 +331,9 @@ impl Provider for OpenRouterProvider {
                 "chat_completions"
             },
             &request,
-            &message_items,
-            system_value.as_ref(),
-            tools_value.as_ref(),
+            message_items,
+            system_value,
+            tools_value,
             Some(tool_count),
             &[
                 ("cache_supported", cache_supported.to_string()),
@@ -358,15 +349,24 @@ impl Provider for OpenRouterProvider {
         // OpenRouter uses HTTPS/SSE transport only
         jcode_base::logging::info("OpenRouter transport: HTTPS (SSE)");
 
+        if let Some(affinity) = &self.session_cache_affinity {
+            affinity.insert_default(&mut request);
+        }
+        let session_cache_key = self
+            .session_cache_affinity
+            .as_ref()
+            .map(|affinity| affinity.final_key(&request))
+            .transpose()?;
+
         let (tx, rx) = mpsc::channel::<Result<StreamEvent>>(100);
         let client = self.client.clone();
         let api_base = self.api_base.clone();
         let auth = (self.auth)()?;
         let send_openrouter_headers = self.send_openrouter_headers;
         let conversation_id = self.conversation_id.clone();
+        let session_cache_key = session_cache_key;
         let request_for_retries = request;
         let model_for_stream = model.clone();
-        let openai_responses_api = self.responses_api;
         let provider_pin = Arc::clone(&self.provider_pin);
 
         jcode_provider_core::provider_call_budget::spawn(async move {
@@ -392,7 +392,7 @@ impl Provider for OpenRouterProvider {
                 provider_pin,
                 model_for_stream,
                 responses_api,
-                openai_responses_api,
+                false,
             )
             .await;
         });
@@ -896,8 +896,11 @@ impl Provider for OpenRouterProvider {
     }
 
     fn fork(&self) -> Arc<dyn Provider> {
+        let session_cache_affinity = self
+            .session_cache_affinity
+            .as_ref()
+            .map(session_cache_affinity::SessionCacheAffinity::fork);
         Arc::new(Self {
-            responses_api: self.responses_api,
             client: self.client.clone(),
             model: Arc::new(RwLock::new(
                 self.model.try_read().map(|m| m.clone()).unwrap_or_default(),
@@ -908,6 +911,7 @@ impl Provider for OpenRouterProvider {
             supports_provider_features: self.supports_provider_features,
             supports_model_catalog: self.supports_model_catalog,
             profile_id: self.profile_id.clone(),
+            responses_api: self.responses_api,
             builtin_azure: self.builtin_azure,
             reasoning_effort_support: self.reasoning_effort_support,
             disable_reasoning_heuristics: self.disable_reasoning_heuristics,
@@ -921,10 +925,7 @@ impl Provider for OpenRouterProvider {
             // A fork is a new conversation (new session or subagent), so it
             // gets its own stable id.
             conversation_id: new_conversation_id(),
-            session_cache_affinity: self
-                .session_cache_affinity
-                .as_ref()
-                .map(|affinity| affinity.fork()),
+            session_cache_affinity,
             models_cache: Arc::clone(&self.models_cache),
             model_catalog_refresh: Arc::clone(&self.model_catalog_refresh),
             provider_routing: Arc::new(RwLock::new(
@@ -1006,7 +1007,7 @@ impl OpenRouterProvider {
         let api_base = self.api_base.clone();
         let conversation_id = self.conversation_id.clone();
         let provider_pin = Arc::clone(&self.provider_pin);
-        jcode_provider_core::provider_call_budget::spawn(async move {
+        tokio::spawn(async move {
             if tx
                 .send(Ok(StreamEvent::ConnectionType {
                     connection: "https/sse".to_string(),
@@ -1159,3 +1160,7 @@ fn declares_image_input(model: &jcode_provider_openrouter::ModelInfo) -> bool {
         .iter()
         .any(|modality| modality.eq_ignore_ascii_case("image"))
 }
+
+#[cfg(test)]
+#[path = "openrouter_canonical_input_tests.rs"]
+mod canonical_input_tests;

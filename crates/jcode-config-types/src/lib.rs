@@ -6,8 +6,8 @@ pub use update_policy::{CrossProviderFailoverMode, UpdateChannel};
 mod menubar;
 mod power;
 mod session;
-mod task_policy;
 pub use session::{HibernationMode, SessionConfig, SessionRetentionConfig, SessionsConfig};
+mod task_policy;
 pub use task_policy::*;
 pub use {
     display::{DisplayConfig, ResumeOpenElsewhere, ResumeTimeMode},
@@ -442,11 +442,10 @@ pub struct NamedProviderConfig {
     pub model_catalog: bool,
     #[serde(default)]
     pub allow_provider_pinning: bool,
-    /// Send a stable per-profile/session prompt cache key and matching x-session-id.
-    #[serde(default)]
-    pub session_cache_affinity: bool,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub models: Vec<NamedProviderModelConfig>,
+    #[serde(default)]
+    pub session_cache_affinity: bool,
     /// Extra top-level JSON fields merged into every chat/completions request
     /// body sent to this provider. Lets users inject non-standard parameters
     /// some OpenAI-compatible backends require (e.g. NVIDIA NIM DeepSeek-V4
@@ -489,11 +488,11 @@ impl Default for NamedProviderConfig {
             provider_routing: false,
             model_catalog: false,
             allow_provider_pinning: false,
-            session_cache_affinity: false,
             models: Vec::new(),
             extra_body: None,
             supports_reasoning_effort: None,
             disable_reasoning_heuristics: false,
+            session_cache_affinity: false,
         }
     }
 }
@@ -513,8 +512,7 @@ pub struct AuthConfig {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SwarmConfig {
-    /// Per-file edit claims among swarm workers: `off`, `warn` (default),
-    /// or `block`.
+    /// Per-file edit claims among swarm workers: `off`, `warn` (default), or `block`.
     pub file_claims: Option<String>,
 }
 
@@ -541,17 +539,9 @@ pub struct AgentsConfig {
     pub swarm_root_effort: Option<String>,
     /// Default terminal mode for swarm-created agents.
     pub swarm_spawn_mode: SwarmSpawnMode,
-    /// Maximum percentage (1-90) of the chat column height the inline swarm
-    /// gallery band may occupy. Leave unset to use the built-in default (40%).
-    /// Lower values keep more of the transcript visible; set near the minimum
-    /// to effectively collapse the gallery to a thin strip.
-    pub swarm_gallery_max_pct: Option<u8>,
-    /// Layout of the inline swarm strip above the status line:
-    /// `"vertical"` (default) lists one agent per row (session icon + status
-    /// glyph + task), capped to a few lines; `"horizontal"` packs all agents
-    /// as chips on a single row.
+    /// Per-role model defaults (`[agents.roles]`).
     #[serde(default)]
-    pub swarm_strip_layout: SwarmStripLayout,
+    pub roles: AgentRoleModels,
     /// Jev Decisions provider for recall: auto, openrouter, typesafe, laya,
     /// aimlapi, or jcode. Auto uses a provider-specific BYOK credential before Jcode.
     #[serde(default = "default_memory_jev_provider")]
@@ -562,9 +552,6 @@ pub struct AgentsConfig {
     pub browser_jev_model: Option<String>,
     /// Optional model override for voice Jev Decisions.
     pub voice_jev_model: Option<String>,
-    /// Per-role default models (`[agents.roles]`) for spawned agents.
-    #[serde(default)]
-    pub roles: AgentRoleModels,
     /// Minimum Jev relevance probability. Invalid values fail closed.
     #[serde(default = "default_memory_jev_threshold")]
     pub memory_jev_threshold: f32,
@@ -671,7 +658,6 @@ pub struct AgentRoleModels {
 impl AgentRoleModels {
     pub const ROLES: [&'static str; 5] = ["research", "edit", "compaction", "websearch", "council"];
 
-    /// Configured, non-blank model for `role` (case-insensitive).
     pub fn get(&self, role: &str) -> Option<&str> {
         let slot = match role.trim().to_ascii_lowercase().as_str() {
             "research" => &self.research,
@@ -681,80 +667,14 @@ impl AgentRoleModels {
             "council" => &self.council,
             _ => return None,
         };
-        slot.as_deref().map(str::trim).filter(|m| !m.is_empty())
+        slot.as_deref()
+            .map(str::trim)
+            .filter(|model| !model.is_empty())
     }
 }
 
-impl Default for AgentsConfig {
-    fn default() -> Self {
-        Self {
-            swarm_model: None,
-            swarm_model_selection: false,
-            swarm_model_allowlist: Vec::new(),
-            swarm_effort: None,
-            swarm_root_effort: None,
-            swarm_spawn_mode: SwarmSpawnMode::default(),
-            swarm_gallery_max_pct: None,
-            swarm_strip_layout: SwarmStripLayout::default(),
-            memory_jev_provider: default_memory_jev_provider(),
-            memory_jev_model: None,
-            browser_jev_model: None,
-            voice_jev_model: None,
-            roles: AgentRoleModels::default(),
-            memory_jev_threshold: default_memory_jev_threshold(),
-            memory_model: None,
-            memory_sidecar_enabled: default_memory_sidecar_enabled(),
-            memory_rerank_cadence: default_memory_rerank_cadence(),
-            memory_rerank_votes: default_memory_rerank_votes(),
-            memory_rerank_min_agree: default_memory_rerank_min_agree(),
-            memory_embedding_backend: default_memory_embedding_backend(),
-            memory_embedding_model: None,
-            memory_embedding_base_url: None,
-            memory_embedding_dim: None,
-            swarm_max_concurrent_agents: default_swarm_max_concurrent_agents(),
-            swarm_stall_after_secs: default_swarm_stall_after_secs(),
-            swarm_stall_nudge: false,
-        }
-    }
-}
-
-impl AgentsConfig {
-    /// Validate an agent-supplied override before resolving any provider route.
-    /// Matching is exact: a bare model never authorizes another provider's route.
-    pub fn validate_swarm_model_request(&self, model: Option<&str>) -> Result<(), &'static str> {
-        let Some(model) = model else {
-            return Ok(());
-        };
-        if !self.swarm_model_selection {
-            return Err(
-                "Agent-selected swarm models are disabled. Omit model to use the user-configured default.",
-            );
-        }
-        if model.trim().is_empty()
-            || !self
-                .swarm_model_allowlist
-                .iter()
-                .any(|allowed| allowed == model)
-        {
-            return Err(
-                "Requested swarm model is not in agents.swarm_model_allowlist. Omit model to use the user-configured default.",
-            );
-        }
-        Ok(())
-    }
-
-    /// Resolve swarm mode's root effort without allowing the orchestration
-    /// sentinel to recurse into itself. Unknown values use the low-effort
-    /// default without invalidating other settings.
-    pub fn root_effort_for_swarm(&self) -> &'static str {
-        let value = self.swarm_root_effort.as_deref().unwrap_or("low").trim();
-        ["none", "minimal", "low", "medium", "high", "xhigh", "max"]
-            .into_iter()
-            .find(|level| level.eq_ignore_ascii_case(value))
-            .unwrap_or("low")
-    }
-}
-
+#[path = "lib_agents_defaults.rs"]
+mod agents_defaults;
 /// How swarm-created agents should be spawned.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
@@ -789,36 +709,6 @@ impl SwarmSpawnMode {
             Self::Headless => "headless",
             Self::Inline => "inline",
             Self::Auto => "auto",
-        }
-    }
-}
-
-/// Layout of the inline swarm strip shown above the status line.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum SwarmStripLayout {
-    /// One agent per row: session icon + status glyph + task label, capped to
-    /// a few lines with a `+N more` overflow marker.
-    #[default]
-    Vertical,
-    /// All agents packed as chips on a single row (the historical layout).
-    Horizontal,
-}
-
-impl SwarmStripLayout {
-    pub fn parse(value: &str) -> Option<Self> {
-        match value.trim().to_ascii_lowercase().as_str() {
-            "vertical" | "list" => Some(Self::Vertical),
-            "horizontal" | "chips" | "strip" => Some(Self::Horizontal),
-            _ => None,
-        }
-    }
-
-    /// Canonical lowercase string for this layout (matches config/env values).
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Vertical => "vertical",
-            Self::Horizontal => "horizontal",
         }
     }
 }
@@ -1323,11 +1213,8 @@ pub struct ProviderConfig {
     /// Whether jcode should automatically try another account on the same provider
     /// before falling back to a different provider.
     pub same_provider_account_failover: bool,
-    /// Automatic model fallback on transient errors: model id -> ordered
-    /// fallback model ids. Unset means no automatic switching.
-    pub model_fallback: std::collections::HashMap<String, Vec<String>>,
     /// Automatically redeem an earned OpenAI banked reset when weekly OAuth
-    /// usage is exhausted. Never purchases credits. Disabled by default.
+    /// usage is exhausted. Never purchases credits. Enabled by default.
     pub openai_auto_banked_reset: bool,
     /// Automatically redeem earned Anthropic Fable resets for exhausted weekly
     /// OAuth usage. Never purchases credits. Disabled by default.
@@ -1390,8 +1277,7 @@ impl Default for ProviderConfig {
             exhausted_usage_immediate_failover: true,
             anthropic_retry_recoverable_rate_limits: true,
             same_provider_account_failover: true,
-            model_fallback: Default::default(),
-            openai_auto_banked_reset: false,
+            openai_auto_banked_reset: true,
             anthropic_auto_fable_reset: false,
             auto_reset_only_when_no_routes: true,
             copilot_premium: None,
@@ -1669,38 +1555,6 @@ mod reasoning_display_defaults_tests;
 #[cfg(test)]
 mod exhausted_usage_failover_tests {
     use super::*;
-
-    #[test]
-    fn semantic_poke_shadow_is_explicitly_opt_in() {
-        assert!(!FeatureConfig::default().semantic_poke_shadow);
-        let defaults: FeatureConfig = serde_json::from_str("{}").unwrap();
-        assert!(!defaults.semantic_poke_shadow);
-        let enabled: FeatureConfig =
-            serde_json::from_str(r#"{"semantic_poke_shadow":true}"#).unwrap();
-        assert!(enabled.semantic_poke_shadow);
-    }
-
-    #[test]
-    fn explicit_reasoning_display_is_distinguishable_from_the_legacy_fallback() {
-        // Front-ends (the desktop) apply their own default only when the user
-        // has not chosen one, so this flag must not be true just because
-        // `show_thinking` happens to be set.
-        let mut display = DisplayConfig {
-            reasoning_display: None,
-            show_thinking: true,
-            ..DisplayConfig::default()
-        };
-        assert!(!display.has_explicit_reasoning_display());
-        assert_eq!(display.reasoning_display(), ReasoningDisplayMode::Full);
-
-        display.set_reasoning_display(ReasoningDisplayMode::Current);
-        assert!(display.has_explicit_reasoning_display());
-        assert_eq!(display.reasoning_display(), ReasoningDisplayMode::Current);
-        assert!(
-            display.show_thinking,
-            "any active display mode must keep reasoning requested from the provider"
-        );
-    }
 
     #[test]
     fn exhaustion_immediate_defaults_on_and_is_independent_of_manual_mode() {

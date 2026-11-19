@@ -62,8 +62,10 @@ impl SessionCacheAffinity {
     }
 
     pub(super) fn insert_default(&self, request: &mut Value) {
-        request["prompt_cache_key"] =
-            Value::String(self.explicit_header.clone().unwrap_or_else(|| self.key()));
+        if request.get("prompt_cache_key").is_none() {
+            request["prompt_cache_key"] =
+                Value::String(self.explicit_header.clone().unwrap_or_else(|| self.key()));
+        }
     }
 
     pub(super) fn final_key(&self, request: &Value) -> Result<String> {

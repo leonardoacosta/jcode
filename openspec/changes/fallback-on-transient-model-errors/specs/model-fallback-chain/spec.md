@@ -1,39 +1,20 @@
 ## ADDED Requirements
 
-### Requirement: Ordered fallback on transient errors
-The agent SHALL, after retries are exhausted for a transient model error, retry the turn on the next model in the configured `model_fallback` chain for the current model.
+### Requirement: Custom automatic model fallback is retired
+The fork SHALL NOT configure or execute the custom automatic `model_fallback` chain, including its automatic model substitution, cooling-order state, and chain-cycle behavior, once the approved upstream v1.0.1 reconciliation removes that fork-only feature. The retirement SHALL be explicit in source/tests and SHALL NOT use a supersession disposition or skipped spec synchronization as a substitute. Shared provider failure classification, auth/quota safeguards, selected route/account identity, and supported user-directed recovery remain authoritative.
 
-It SHALL consume shared provider failure classification and existing route/account authorization. Confirmed billing/quota exhaustion SHALL NOT be transient, and configured fallback SHALL NOT silently cross an endpoint/provider boundary forbidden by the selected route contract.
+#### Scenario: Transient model error after retirement
+- **WHEN** the selected model encounters a transient error and the old custom `model_fallback` configuration would have listed another model
+- **THEN** the retired custom chain does not automatically switch models and the normal upstream error/recovery behavior is used
 
-#### Scenario: Rate limit triggers fallback
-- **WHEN** the primary model returns retryable rate-limit HTTP 429 after retries, not confirmed billing/quota exhaustion, and `model_fallback` lists model B on a permitted route
-- **THEN** the turn is retried on permitted model B without changing account/gateway identity
+#### Scenario: Confirmed quota or billing exhaustion
+- **WHEN** shared classification identifies a confirmed quota or billing failure, including a 429 response
+- **THEN** it is not treated as a transient signal for automatic model, provider, account, or gateway substitution
 
-#### Scenario: No chain configured
-- **WHEN** a transient error occurs and the current model has no `model_fallback` entry
-- **THEN** no automatic switch occurs and the error is surfaced as today
+#### Scenario: Authentication or refresh transport failure
+- **WHEN** authentication fails or refresh transport is unavailable
+- **THEN** no model fallback is attempted, revocation is not inferred from transport failure alone, and the existing auth remedy/safeguard is preserved
 
-### Requirement: Permanent errors never switch
-The agent SHALL NOT switch models automatically for authentication, configuration, or invalid-request (4xx other than 408, 409, 429) errors.
-
-#### Scenario: Auth failure
-- **WHEN** the primary model returns HTTP 401
-- **THEN** no fallback model is tried and the manual fallback offer is shown
-
-### Requirement: Model cooldown and cycle cap
-The agent SHALL treat a model with 3 or more failures within the last 60 seconds since its last success as cooling, SHALL try cooling models after healthy ones, and SHALL stop after 3 full passes over the chain.
-
-#### Scenario: Cooling model deprioritized
-- **WHEN** fallback model B failed 3 times in the last 60 seconds and model C is healthy
-- **THEN** model C is tried before model B
-
-#### Scenario: Chain exhausted
-- **WHEN** every candidate fails for 3 full cycles
-- **THEN** the original error is surfaced and no further switches occur
-
-### Requirement: Visible switches
-The agent SHALL record each automatic model switch and each skipped candidate as a transcript notice naming the source model, target model, and error class.
-
-#### Scenario: Switch shown
-- **WHEN** the agent switches from model A to model B after a 503
-- **THEN** the transcript shows a notice containing `A`, `B`, and the overloaded/transient reason
+#### Scenario: Supported user-directed model selection
+- **WHEN** the user explicitly selects another model through an upstream-supported control
+- **THEN** the explicit selection may take effect without restoring the retired automatic chain

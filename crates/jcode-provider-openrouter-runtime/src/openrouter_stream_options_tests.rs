@@ -115,7 +115,8 @@ fn direct_openai_compatible_chat_request_requests_usage_chunk() {
         content: vec![ContentBlock::Text {
             text: "hello".to_string(),
             cache_control: None,
-        }],
+        }]
+        .into(),
         timestamp: None,
         tool_duration_ms: None,
     }];
@@ -168,7 +169,8 @@ fn direct_openai_compatible_chat_request_allows_stream_options_override() {
         content: vec![ContentBlock::Text {
             text: "hello".to_string(),
             cache_control: None,
-        }],
+        }]
+        .into(),
         timestamp: None,
         tool_duration_ms: None,
     }];

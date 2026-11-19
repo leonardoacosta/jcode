@@ -143,6 +143,49 @@ fn hierarchy_rejects_malformed_structures() {
 }
 
 #[test]
+fn hierarchy_open_items_validate_fields_and_types() {
+    let wrap =
+        |item: Value| json!({"phases":[{"phase":1,"lanes":[{"lane":"work","items":[item]}]}]});
+    let item = json!({"name":"Implement","description":"Keep the full brief",
+        "status":"pending","priority":"high","confidence":"validated",
+        "waiting_on":{"ids":["background_1"],"reason":"Build running"},
+        "requires_user_auth":{"reason":"Sign in"}});
+    let parsed = parse_todo_input(wrap(item.clone())).unwrap().todos.unwrap();
+    assert_eq!(parsed[0].content, "Implement");
+    assert_eq!(parsed[0].details.as_deref(), Some("Keep the full brief"));
+    assert_eq!(parsed[0].waiting_on, ["background_1"]);
+    assert_eq!(parsed[0].waiting_reason.as_deref(), Some("Build running"));
+    assert!(parsed[0].requires_user_auth.is_some());
+    for (field, value) in [
+        ("statuss", json!("completed")),
+        ("after", json!("Other")),
+        ("lane_dependencies", json!(["Other"])),
+        ("description", json!(42)),
+        ("confidence", json!("certain")),
+        ("status", json!("unknown")),
+        ("priority", json!([])),
+        ("waiting_on", json!({"ids":42,"reason":"Build"})),
+        ("requires_user_auth", json!({"reason":42})),
+    ] {
+        let mut invalid = item.clone();
+        invalid[field] = value;
+        assert!(parse_todo_input(wrap(invalid)).is_err(), "accepted {field}");
+    }
+    // Legacy storage fields and the bare waiting ID list remain accepted.
+    let legacy = json!({"id":"legacy","content":"Legacy","details":"Brief",
+        "status":"pending","priority":"high","confidence":80,
+        "confidence_history":[],"blocked_by":[],"assigned_to":"@self",
+        "waiting_on":["background_1"],"waiting_reason":"Building"});
+    assert!(parse_todo_input(wrap(legacy)).is_ok());
+    let mut cleared = item;
+    cleared["waiting_on"] = Value::Null;
+    cleared["requires_user_auth"] = Value::Null;
+    let parsed = parse_todo_input(wrap(cleared)).unwrap().todos.unwrap();
+    assert!(parsed[0].waiting_on.is_empty());
+    assert!(parsed[0].requires_user_auth.is_none());
+}
+
+#[test]
 fn hierarchy_patch_inherits_and_preserves_membership() {
     let stored = json!([{"id":"a","content":"A","status":"pending","priority":"high","stage":2,"group":"x"}]);
     let result = apply_todo_patch(
@@ -279,16 +322,62 @@ fn model_facing_descriptions_stay_compact() {
         "todo description bytes: {bytes}; schema bytes: {}",
         schema.to_string().len()
     );
-    assert!(bytes < 3_500, "todo descriptions grew to {bytes} bytes");
-    for route in ["add", "update"] {
-        let properties = &schema["properties"][route]["items"]["properties"];
-        for field in ["description", "status", "priority", "lane", "phase"] {
-            assert!(
-                properties[field].get("description").is_none(),
-                "{route}.{field}"
-            );
-        }
+    // Item-field guidance is written once, on add. Other routes are open.
+    assert!(bytes < 2_600, "todo descriptions grew to {bytes} bytes");
+    assert!(
+        schema.to_string().len() < 8_000,
+        "todo schema grew to {} bytes",
+        schema.to_string().len()
+    );
+    let add = &schema["properties"]["add"]["items"]["properties"];
+    for field in ["description", "status", "priority", "lane", "phase"] {
+        assert!(add[field].get("description").is_none(), "add.{field}");
     }
+    let phase_item = &schema["properties"]["phases"]["items"]["properties"]["lanes"]["items"]["properties"]
+        ["items"]["items"]["properties"];
+    for (field, property) in phase_item.as_object().unwrap() {
+        assert!(
+            property.get("description").is_none(),
+            "phases.{field} repeats a description already given on add"
+        );
+    }
+    assert_eq!(phase_item.as_object().unwrap().len(), 4);
+    assert_eq!(
+        schema["properties"]["phases"]["items"]["properties"]["lanes"]["items"]["properties"]["items"]
+            ["items"]["additionalProperties"],
+        true
+    );
+    let update = &schema["properties"]["update"]["items"];
+    assert!(update["properties"]["id"].is_object());
+    assert!(update["properties"]["status"].is_object());
+    assert!(update["properties"]["rename_to"].is_object());
+    assert_eq!(update["additionalProperties"], false);
+}
+
+#[test]
+fn update_rejects_fields_the_open_schema_cannot_catch() {
+    let stored = || json!([{"id": "a", "content": "a", "status": "pending", "priority": "high"}]);
+    let error = apply_todo_patch(
+        json!({"update": [{"id": "a", "statuss": "completed"}]}),
+        stored,
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(
+        error.contains("unknown update field \"statuss\""),
+        "{error}"
+    );
+
+    let patched = apply_todo_patch(
+        json!({"update": [{
+            "id": "a", "status": "in_progress", "priority": "low", "lane": "x", "phase": 2,
+            "confidence": "plausible", "waiting_on": {"ids": ["t1"], "reason": "build"}
+        }]}),
+        stored,
+    )
+    .unwrap();
+    assert_eq!(patched["todos"][0]["status"], "in_progress");
+    assert_eq!(patched["todos"][0]["group"], "x");
 }
 
 #[test]
@@ -300,11 +389,12 @@ fn add_schema_declares_all_todo_fields_and_conforms_to_gemini() {
         .as_object()
         .unwrap()
     {
-        let mut expected = property.clone();
-        let mut actual = add["properties"][name].clone();
-        expected.as_object_mut().unwrap().remove("description");
-        actual.as_object_mut().unwrap().remove("description");
-        assert_eq!(actual, expected, "{name}");
+        let expected = property.clone();
+        let actual = add["properties"][name].clone();
+        assert_eq!(actual["type"], expected["type"], "{name}");
+        if let Some(enum_values) = expected.get("enum") {
+            assert_eq!(actual["enum"], *enum_values, "{name}");
+        }
     }
     assert_eq!(add["properties"]["after"]["type"], "string");
     let errors = jcode_schema_dialect::must_not_contain_unsupported_constructs(
@@ -355,10 +445,11 @@ fn schema_advertises_intent_and_todos() {
     assert!(!item_props.contains_key("stage"));
     assert!(!item_props.contains_key("group"));
     assert!(item_props.contains_key("confidence"));
-    assert!(item_props.contains_key("completion_confidence"));
+    assert!(!item_props.contains_key("completion_confidence"));
+    assert!(props["add"]["items"]["properties"]["completion_confidence"].is_object());
     assert!(!item_props.contains_key("closed_feedback_loop"));
     assert_eq!(
-        item_props["confidence"]["description"],
+        props["add"]["items"]["properties"]["confidence"]["description"],
         "Evidence that the task can be completed correctly."
     );
 
@@ -403,7 +494,8 @@ fn schema_advertises_intent_and_todos() {
     assert!(!goal_props.contains_key("user_intention"));
     assert!(!goal_props.contains_key("alignment_score"));
     assert!(!goal_props.contains_key("objective"));
-    assert_eq!(goal_props.len(), 11);
+    assert!(goal_props.contains_key("cannot_complete"));
+    assert_eq!(goal_props.len(), 12);
     assert_eq!(
         goal_props["feedback_loop_relevance"]["enum"],
         json!([
@@ -1000,4 +1092,26 @@ fn test_ctx(session_id: &str) -> ToolContext {
         graceful_shutdown_signal: None,
         execution_mode: crate::tool::ToolExecutionMode::Direct,
     }
+}
+
+/// Field report: a goals-only write for a group whose todos had been replaced
+/// returned normally and saved nothing, so the agent kept resending it.
+#[test]
+fn goal_updates_for_groups_without_todos_are_reported_not_silently_dropped() {
+    let todos = vec![todo_in_group(Some("new task"), "1")];
+    let incoming = vec![
+        goal(Some("old task"), crate::todo::FeedbackLoopState::Closed),
+        goal(Some("new task"), crate::todo::FeedbackLoopState::Strong),
+        goal(Some(" old task "), crate::todo::FeedbackLoopState::Closed),
+    ];
+    let note = ignored_goal_groups_note(&incoming, &todos).expect("dropped goal must be reported");
+    assert!(note.contains("ignored for \"old task\":"), "{note}");
+    assert!(note.contains("Current groups: \"new task\"."), "{note}");
+
+    assert_eq!(ignored_goal_groups_note(&incoming[1..2], &todos), None);
+    // An empty list prunes nothing, so there is nothing to report.
+    assert_eq!(ignored_goal_groups_note(&incoming, &[]), None);
+    let flat = vec![todo_in_group(None, "1")];
+    let note = ignored_goal_groups_note(&incoming[..1], &flat).unwrap();
+    assert!(note.contains("Current groups: (ungrouped)."), "{note}");
 }

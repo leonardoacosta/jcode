@@ -1,16 +1,75 @@
 use super::openai_stream_cancellation::while_consumer_open;
 use super::openai_stream_runtime::{
-    recover_opaque_ws_rejection, stream_response_websocket_persistent,
-    stream_response_with_auth_refresh as stream_response,
+    recover_opaque_ws_rejection, stream_response, stream_response_websocket_persistent,
     try_persistent_ws_continuation,
 };
 use super::*;
+
+#[path = "openai_catalog_prefetch.rs"]
+mod catalog_prefetch;
 
 /// Whether a model catalog fetch error is an auth rejection (401/403) that a
 /// token force-refresh may fix, as opposed to a network/server failure.
 fn catalog_error_is_auth_rejection(err: &anyhow::Error) -> bool {
     err.downcast_ref::<jcode_base::provider::ModelCatalogHttpStatus>()
         .is_some_and(|status| status.0 == 401 || status.0 == 403)
+}
+
+#[cfg(test)]
+#[test]
+fn borrowed_request_fingerprint_fields_match_owned_fields() {
+    use jcode_provider_core::fingerprint::stable_hash_json;
+
+    fn fingerprint(value: &Value) -> (u64, usize) {
+        (
+            stable_hash_json(value),
+            serde_json::to_vec(value).unwrap().len(),
+        )
+    }
+
+    for request in [
+        serde_json::json!({}),
+        serde_json::json!({"tools": null, "instructions": null}),
+        serde_json::json!({"tools": [], "instructions": ""}),
+        serde_json::json!({"tools": [{"name": "read", "schema": {"type": "object"}}], "instructions": "日本語\n"}),
+        serde_json::json!({"tools": {"unexpected": true}, "instructions": ["structured"]}),
+    ] {
+        let owned_tools = request
+            .get("tools")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!([]));
+        let owned_instructions = request.get("instructions").cloned();
+        let empty_tools = serde_json::json!([]);
+        let borrowed_tools = request.get("tools").unwrap_or(&empty_tools);
+        let borrowed_instructions = request.get("instructions");
+        assert_eq!(fingerprint(borrowed_tools), fingerprint(&owned_tools));
+        assert_eq!(
+            borrowed_instructions.map(fingerprint),
+            owned_instructions.as_ref().map(fingerprint)
+        );
+        // Full requests fall back to the caller's tool count, continuations to zero.
+        for fallback_count in [0, 7] {
+            assert_eq!(
+                borrowed_tools
+                    .as_array()
+                    .map(Vec::len)
+                    .unwrap_or(fallback_count),
+                owned_tools
+                    .as_array()
+                    .map(Vec::len)
+                    .unwrap_or(fallback_count)
+            );
+        }
+        if let Some(tools) = request.get("tools") {
+            assert!(std::ptr::eq(borrowed_tools, tools));
+        } else {
+            assert_eq!(borrowed_tools, &serde_json::json!([]));
+        }
+        assert_eq!(
+            borrowed_instructions.is_some(),
+            request.get("instructions").is_some()
+        );
+    }
 }
 
 #[async_trait]
@@ -196,11 +255,9 @@ impl Provider for OpenAIProvider {
         } else {
             self.prewarm.clear();
         }
-        let request_tools = request
-            .get("tools")
-            .cloned()
-            .unwrap_or_else(|| serde_json::json!([]));
-        let request_instructions = request.get("instructions").cloned();
+        let empty_tools = serde_json::json!([]);
+        let request_tools = request.get("tools").unwrap_or(&empty_tools);
+        let request_instructions = request.get("instructions");
         let request_tool_count = request_tools
             .as_array()
             .map(|tools| tools.len())
@@ -228,8 +285,8 @@ impl Provider for OpenAIProvider {
             "openai_responses_full",
             &canonical_payload,
             &input,
-            request_instructions.as_ref(),
-            Some(&request_tools),
+            request_instructions,
+            Some(request_tools),
             Some(request_tool_count),
             &[
                 (
@@ -327,7 +384,7 @@ impl Provider for OpenAIProvider {
         let client = self.client.clone();
         let panic_tx = tx.clone();
 
-        jcode_provider_core::provider_call_budget::spawn(async move {
+        tokio::spawn(async move {
             let stream_task = async move {
                 let mut retry_diagnostics =
                     super::openai_retry_diagnostics::OpenAIRetryDiagnostics::default();
@@ -361,7 +418,7 @@ impl Provider for OpenAIProvider {
                             recover_opaque_ws_rejection(
                                 Arc::clone(&credentials),
                                 account_label.clone(),
-                                request.clone(),
+                                &request,
                                 &tx,
                             )
                             .await;
@@ -431,12 +488,17 @@ impl Provider for OpenAIProvider {
                     }
                 }
 
+                // The retry request already owns the full input. The separate
+                // array is needed only for the continuation attempt above, not
+                // throughout a fresh HTTPS/WS response or its retries.
+                drop(input);
+
                 // Normal path: fresh connection with full input (with retry logic)
                 let mut last_error = None;
+                let mut attempted_auth_refresh = false;
                 let mut force_https_for_request = false;
                 let mut skip_backoff_once = false;
                 let mut next_retry_delay = None;
-                let mut attempted_auth_refresh = false;
 
                 for attempt in 0..MAX_RETRIES {
                     if tx.is_closed() {
@@ -566,7 +628,7 @@ impl Provider for OpenAIProvider {
                             attempt_client,
                             Arc::clone(&credentials),
                             account_label.clone(),
-                            request.clone(),
+                            &request,
                             if force_https_for_request {
                                 let reason = last_error
                                     .as_ref()
@@ -600,7 +662,7 @@ impl Provider for OpenAIProvider {
                             recover_opaque_ws_rejection(
                                 Arc::clone(&credentials),
                                 account_label.clone(),
-                                request.clone(),
+                                &request,
                                 &tx,
                             )
                             .await;
@@ -777,13 +839,14 @@ impl Provider for OpenAIProvider {
                                 }
                                 None => error,
                             };
-                            let kind = jcode_provider_core::classify_provider_failure(&format!(
-                                "{error:#}"
-                            ));
-                            let remedy = kind.remedy(jcode_provider_core::DualAuthProvider::OpenAI);
-                            let message = format!("{error:#}\n{remedy}");
                             let _ = tx
-                                .send(Err(retry_diagnostics.annotate(error.context(message))))
+                                .send(Err(retry_diagnostics.annotate(anyhow::anyhow!(
+                                    "{error:#}\n{}",
+                                    jcode_provider_core::classify_provider_failure(&format!(
+                                        "{error:#}"
+                                    ))
+                                    .remedy(jcode_provider_core::DualAuthProvider::OpenAI)
+                                ))))
                                 .await;
                             return;
                         }
@@ -924,101 +987,7 @@ impl Provider for OpenAIProvider {
     }
 
     async fn prefetch_models(&self) -> Result<()> {
-        if self.is_browser_only() {
-            return Ok(());
-        }
-        // The loaded credential's *shape* is authoritative for which catalog
-        // endpoint to hit, not the requested credential mode. In Auto mode a
-        // user with only an OPENAI_API_KEY loads an API-key-shaped credential
-        // while the mode stays Auto; routing by mode would send that platform
-        // key to the ChatGPT/Codex endpoint and get a 401.
-        let account_label = self.refresh_account_label();
-        let (access_token, is_chatgpt_mode, credential_identity, scope) = {
-            let creds = self.credentials.read().await;
-            (
-                creds.access_token.clone(),
-                Self::is_chatgpt_mode(&creds),
-                Self::catalog_credential_identity(&creds),
-                self.selected_catalog_scope_for(&creds),
-            )
-        };
-        let catalog = if is_chatgpt_mode {
-            let access_token =
-                openai_access_token(self.refresh_account_label(), &self.credentials).await?;
-            match jcode_base::provider::fetch_openai_model_catalog(&access_token).await {
-                Ok(catalog) => catalog,
-                // The server can reject a token that still looks fresh by its
-                // local expiry (revoked/rotated). The chat path recovers by
-                // force-refreshing; without the same recovery here the model
-                // catalog silently stays stale and newly released models never
-                // show up until the user happens to re-login (observed as
-                // days of bootstrap 401s in the logs).
-                Err(err) if catalog_error_is_auth_rejection(&err) => {
-                    let refresh_token = {
-                        let creds = self.credentials.read().await;
-                        creds.refresh_token.clone()
-                    };
-                    if refresh_token.is_empty() {
-                        return Err(err);
-                    }
-                    jcode_base::logging::info(
-                        "OpenAI model catalog fetch rejected the access token; force-refreshing and retrying",
-                    );
-                    let refreshed = super::openai_stream_runtime::force_refresh_openai_token(
-                        &self.credentials,
-                        &refresh_token,
-                        account_label.clone(),
-                    )
-                    .await
-                    .map_err(|refresh_err| {
-                        anyhow::anyhow!(
-                            "OpenAI catalog token refresh failed: {refresh_err:#}\n{}",
-                            jcode_provider_core::classify_provider_failure(&format!(
-                                "refresh: {refresh_err:#}"
-                            ))
-                            .remedy(jcode_provider_core::DualAuthProvider::OpenAI)
-                        )
-                    })?;
-                    jcode_base::provider::fetch_openai_model_catalog(&refreshed).await?
-                }
-                Err(err) => return Err(err),
-            }
-        } else {
-            jcode_base::provider::fetch_openai_api_key_model_catalog(&access_token).await?
-        };
-        let current_credential_identity = {
-            let credentials = self.credentials.read().await;
-            Self::catalog_credential_identity(&credentials)
-        };
-        if current_credential_identity != credential_identity
-            || self.refresh_account_label() != account_label
-        {
-            jcode_base::logging::info(
-                "Discarding OpenAI model catalog fetched for credentials that are no longer active",
-            );
-            return Ok(());
-        }
-        match self.model_reasoning_efforts.write() {
-            Ok(mut efforts) => *efforts = catalog.reasoning_efforts.clone(),
-            Err(poisoned) => *poisoned.into_inner() = catalog.reasoning_efforts.clone(),
-        }
-        *self
-            .model_service_tiers
-            .write()
-            .unwrap_or_else(|p| p.into_inner()) = catalog.service_tiers.clone();
-        self.warn_unsupported_service_tier();
-        self.revalidate_reasoning_effort();
-        jcode_base::provider::persist_openai_model_catalog_for_scope(&scope, &catalog);
-        if !catalog.context_limits.is_empty() {
-            jcode_base::provider::populate_context_limits(catalog.context_limits);
-        }
-        if !catalog.available_models.is_empty() {
-            jcode_base::provider::populate_account_models_for_scope(
-                &scope,
-                catalog.available_models,
-            );
-        }
-        Ok(())
+        self.prefetch_model_catalog().await
     }
 
     fn reasoning_effort(&self) -> Option<String> {

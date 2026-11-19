@@ -68,9 +68,10 @@ async fn http_transport_idle_case(heartbeats: bool, complete: bool) {
             Client::new(),
             creds,
             None,
-            serde_json::json!({"model":"fixture-model", "stream":true, "input":[]}),
+            &serde_json::json!({"model":"fixture-model", "stream":true, "input":[]}),
             "fixture".into(),
             tx,
+            &mut false,
         ),
     )
     .await

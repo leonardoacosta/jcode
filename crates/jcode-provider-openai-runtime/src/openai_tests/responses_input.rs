@@ -6,7 +6,8 @@ fn assistant_tool_use(id: &str, name: &str, input: serde_json::Value) -> ChatMes
             name: name.to_string(),
             input,
             thought_signature: None,
-        }],
+        }]
+        .into(),
         timestamp: None,
         tool_duration_ms: None,
     }
@@ -18,7 +19,8 @@ fn user_text(text: &str) -> ChatMessage {
         content: vec![ContentBlock::Text {
             text: text.to_string(),
             cache_control: None,
-        }],
+        }]
+        .into(),
         timestamp: None,
         tool_duration_ms: None,
     }
@@ -158,7 +160,8 @@ fn test_build_responses_input_keeps_image_context_after_tool_output() {
                             .to_string(),
                     cache_control: None,
                 },
-            ],
+            ]
+            .into(),
             timestamp: None,
             tool_duration_ms: None,
         },
@@ -216,7 +219,8 @@ fn test_build_responses_input_replaces_oversized_native_compaction_with_text() {
         role: Role::User,
         content: vec![ContentBlock::OpenAICompaction {
             encrypted_content: oversized,
-        }],
+        }]
+        .into(),
         timestamp: None,
         tool_duration_ms: None,
     }];

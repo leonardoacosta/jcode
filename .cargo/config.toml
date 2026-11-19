@@ -35,3 +35,10 @@ rustc-wrapper = "scripts/rustc-parallel-frontend"
 # memory-safe on a ~15 GiB machine while staying parallel. The adaptive
 # dev_cargo.sh path uses more cores when memory allows.
 jobs = 4
+
+[env]
+# The fork's extra CLI subcommands push clap's unoptimized
+# `Args::from_arg_matches` frame past the 2 MiB default test-thread stack
+# (cli::args tests abort with a stack overflow). Release binaries run the
+# parser on the 8 MiB main thread, so only test threads need this.
+RUST_MIN_STACK = "8388608"

@@ -926,7 +926,7 @@ fn claude_md_only_is_loaded() {
 }
 
 #[test]
-fn claude_md_identical_or_pointer_is_skipped() {
+fn claude_md_identical_content_is_loaded_with_distinct_header() {
     for claude in [
         "same body\n",
         "@AGENTS.md\n",
@@ -936,10 +936,15 @@ fn claude_md_identical_or_pointer_is_skipped() {
         std::fs::write(project.path().join("AGENTS.md"), "same body").unwrap();
         std::fs::write(project.path().join("CLAUDE.md"), claude).unwrap();
         let (content, info) = load_instruction_layers(None, project.path(), None);
-        assert_eq!(content.unwrap().matches("# Project").count(), 1);
+        let expected = if claude.contains("AGENTS.md") { 1 } else { 2 };
+        assert_eq!(content.unwrap().matches("# Project").count(), expected);
         assert_eq!(
             status_of(&info, "CLAUDE"),
-            Some(InstructionStatus::SkippedDuplicate)
+            Some(if expected == 1 {
+                InstructionStatus::SkippedDuplicate
+            } else {
+                InstructionStatus::Loaded
+            })
         );
     }
 }
@@ -956,7 +961,7 @@ fn claude_md_differing_is_loaded_with_distinct_header() {
 }
 
 #[test]
-fn home_cwd_and_content_duplicates_load_once() {
+fn home_cwd_same_path_loads_once_but_distinct_files_are_preserved() {
     let home = tempfile::TempDir::new().unwrap();
     let global = home.path().join("AGENTS.md");
     std::fs::write(&global, "home body").unwrap();
@@ -967,10 +972,10 @@ fn home_cwd_and_content_duplicates_load_once() {
         Some(InstructionStatus::SkippedDuplicate)
     );
 
-    // Same content at different paths across layers is also deduped.
+    // Same content at different paths across layers remains distinct guidance.
     let shared = home.path().join("shared.md");
     std::fs::write(&shared, "home body\n\n").unwrap();
     let project = tempfile::TempDir::new().unwrap();
     let (content, _) = load_instruction_layers(Some(&shared), project.path(), Some(&global));
-    assert_eq!(content.unwrap().matches("home body").count(), 1);
+    assert_eq!(content.unwrap().matches("home body").count(), 2);
 }

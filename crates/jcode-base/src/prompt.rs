@@ -964,18 +964,6 @@ pub struct InstructionSource {
     pub chars: usize,
 }
 
-fn normalized_instruction_hash(content: &str) -> u64 {
-    use std::hash::{Hash, Hasher};
-    let normalized: Vec<&str> = content
-        .lines()
-        .map(str::trim_end)
-        .filter(|line| !line.is_empty())
-        .collect();
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    normalized.hash(&mut hasher);
-    hasher.finish()
-}
-
 /// True when CLAUDE.md content only points at AGENTS.md (e.g. `@AGENTS.md`).
 fn is_agents_md_pointer(content: &str) -> bool {
     let trimmed = content.trim();
@@ -993,7 +981,6 @@ fn load_instruction_layers(
     let mut contents = vec![];
     let mut info = ContextInfo::default();
     let mut seen_paths: Vec<PathBuf> = vec![];
-    let mut seen_hashes: Vec<u64> = vec![];
 
     // Returns raw content when the file was newly loaded.
     let mut consider = |path: &Path,
@@ -1018,13 +1005,11 @@ fn load_instruction_layers(
             return None;
         };
         let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
-        let hash = normalized_instruction_hash(&content);
-        if seen_paths.contains(&canonical) || seen_hashes.contains(&hash) {
+        if seen_paths.contains(&canonical) {
             record(InstructionStatus::SkippedDuplicate, content.len());
             return None;
         }
         seen_paths.push(canonical);
-        seen_hashes.push(hash);
         record(InstructionStatus::Loaded, content.len());
         contents.push(format!("# {}\n\n{}", layer, content.trim()));
         Some(content)

@@ -71,16 +71,6 @@ pub(in crate::server) fn now_unix_ms() -> u64 {
         .as_millis() as u64
 }
 
-pub(in crate::server) fn log_swarm_lifecycle(phase: &str, fields: Vec<(&str, String)>) {
-    crate::logging::event_info(
-        "SWARM_LIFECYCLE",
-        Vec::from([("phase", phase.to_string())])
-            .into_iter()
-            .chain(fields)
-            .collect::<Vec<_>>(),
-    );
-}
-
 pub(in crate::server) fn swarm_task_heartbeat_interval() -> Duration {
     Duration::from_secs(configured_positive_u64(
         "JCODE_SWARM_TASK_HEARTBEAT_SECS",

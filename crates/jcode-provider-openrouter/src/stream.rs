@@ -68,6 +68,8 @@ pub struct OpenRouterStream {
     tool_call_accumulators: std::collections::BTreeMap<u64, ToolCallAccumulator>,
     /// Track if we've emitted the provider info (only emit once)
     provider_emitted: bool,
+    /// Last actual upstream model, scoped to this stream attempt, not the requested alias.
+    resolved_model: Option<String>,
     model: String,
     provider_pin: Arc<Mutex<Option<ProviderPin>>>,
     reasoning_buffer: String,
@@ -103,6 +105,7 @@ impl OpenRouterStream {
             pending: VecDeque::new(),
             tool_call_accumulators: std::collections::BTreeMap::new(),
             provider_emitted: false,
+            resolved_model: None,
             model,
             provider_pin,
             reasoning_buffer: String::new(),
@@ -378,6 +381,20 @@ impl OpenRouterStream {
                     continue;
                 }
             };
+
+            // Capture the model returned by the upstream, including metadata-only
+            // chunks. Never substitute the requested ID, which may be an alias.
+            if let Some(model) = parsed
+                .get("model")
+                .and_then(Value::as_str)
+                .filter(|model| !model.trim().is_empty())
+                && self.resolved_model.as_deref() != Some(model)
+            {
+                self.resolved_model = Some(model.to_owned());
+                self.pending.push_back(StreamEvent::ResolvedModel {
+                    model: model.to_owned(),
+                });
+            }
 
             // Extract upstream provider info (only emit once)
             // OpenRouter returns "provider" field indicating which provider handled the request

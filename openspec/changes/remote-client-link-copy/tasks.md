@@ -18,7 +18,7 @@
 
 ## 5. Matrix (fix 5)
 - [x] 5.1 Add `docs/remote-clipboard.md` with a Ghostty/Tern/Moshi × SSH/mosh matrix and the OSC 52 probe command
-- [ ] 5.2 Manual: run the probe and `/links` copy from each available client and record the results (blocked on physical devices)
+- [ ] 5.2 Manual: run the OSC 52 probe and `/links` copy from each available client and record results. Physical-device acceptance stays open until those real client checks pass; source and synthetic terminal tests do not close it.
 
 ## 6. Verify
 - [x] 6.1 `cargo test -p jcode-tui` and `openspec validate remote-client-link-copy --strict`

@@ -400,7 +400,7 @@ pub(super) async fn handle_comm_message(
                         session_id,
                         &from_session,
                         &message,
-                        crate::config::config().autojudge.max_continuations_per_turn,
+                        3,
                     ) {
                         Ok(admission) => admission,
                         Err(error) => Some(FeedbackAdmission::Note(format!(

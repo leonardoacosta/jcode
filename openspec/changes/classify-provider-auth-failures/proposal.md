@@ -7,7 +7,7 @@ Roadmap owner: [P06: Provider/auth/usage-budget reliability](../../../docs/plans
 
 ## Why
 
-Failure handling is split across ad hoc string matching: Anthropic matches substrings (`crates/jcode-provider-anthropic-runtime/src/error_classification.rs:7-40`), `classify_failover_error_message` returns only `None|RetryNextProvider|RetryAndMarkUnavailable` (`crates/jcode-provider-core/src/failover.rs:36-72`), and OpenAI handles catalog 401/403 with a one-off force-refresh (`crates/jcode-provider-openai-runtime/src/openai_provider_impl.rs:7-11,963-983`). No shared category distinguishes expired-refreshable, revoked, quota-exhausted and model-unavailable, so the user message and recovery action differ per provider. `fallback-on-transient-model-errors` covers transient errors only and explicitly never switches on auth.
+Failure handling is split across ad hoc string matching: Anthropic matches substrings (`crates/jcode-provider-anthropic-runtime/src/error_classification.rs:7-40`), `classify_failover_error_message` returns only `None|RetryNextProvider|RetryAndMarkUnavailable` (`crates/jcode-provider-core/src/failover.rs:36-72`), and OpenAI handles catalog 401/403 with a one-off force-refresh (`crates/jcode-provider-openai-runtime/src/openai_provider_impl.rs:7-11,963-983`). No shared category distinguishes expired-refreshable, revoked, quota-exhausted and model-unavailable, so the user message and recovery action differ per provider. Automatic model fallback is being retired during upstream v1.0.1 adoption; this change owns the shared auth/quota taxonomy and recovery safeguards, not a model fallback consumer.
 
 ## What Changes
 
@@ -17,7 +17,7 @@ Failure handling is split across ad hoc string matching: Anthropic matches subst
 
 ## Non-scope
 
-- Model fallback chain selection remains in `fallback-on-transient-model-errors`; both consume this single failure taxonomy rather than divergent string classifiers. A failed refresh transport is not proof of revoked credentials, and quota/billing exhaustion is not retryable rate limiting. Selected-route and gateway no-substitution constraints remain authoritative.
+- Automatic model-fallback chain selection is being retired by `adopt-upstream-v1-0-1`; do not retain or add a fallback-chain consumer here. This change owns shared provider failure classification and auth/quota recovery safeguards only. A failed refresh transport is not proof of revoked credentials, and quota/billing exhaustion is not retryable rate limiting. Selected-route and gateway no-substitution constraints remain authoritative.
 - Providers beyond Anthropic and OpenAI in this slice.
 
 ## Capabilities

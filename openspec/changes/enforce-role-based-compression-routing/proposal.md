@@ -16,12 +16,10 @@ Historical 2026-11-02 approval concerned role profiles on existing Pi5/local gat
 
 ## What Changes
 
-- Current contract: Jcode sends the selected combo/model without role-selected compression or forced cache-bypass overrides. Compression selection belongs to the endpoint's inherited defaults. Preserve Chat/Responses forks, route identity and complete review-output instructions.
-- Historical role/profile selection below is superseded by the 2026-11-03 correction and is not executable work. Do not restore root/coding/reviewer override headers from old checked tasks.
-- Both gateways retain their user-selected inherited defaults and conservative fallback. Differentiated per-combo mapping remains recommendation-only unless separately selected; local Omni stays manually selected and no automatic cross-gateway/direct-provider substitution is allowed.
-- Mark direct routes as lacking gateway compression, without claiming a profile ran. Preserve explicit direct-provider exceptions.
-- Verify the actual gateway resolver and receipts, including stored combo mode versus effective override behavior. Exact review must not force ultra-terse output styles.
-- Verify one real production TypeSafe Jev evaluation with synthetic nonsecret input and no cross-provider fallback. Missing credentials or failed transport are blockers, not passing evidence.
+- Keep the existing endpoint-owned compression contract: Jcode sends the selected combo/model without role-selected compression or forced cache-bypass overrides. Compression selection belongs to endpoint inherited defaults. Preserve Chat/Responses forks, route identity, complete review-output instructions, and full swarm report/report-completion semantics.
+- Adopt upstream compatible HTTP compression transport and retire Jev-specific compression/cache overrides only where they duplicate or conflict with that transport. Do not restore role selector headers or request cache controls from historical checked tasks.
+- Preserve explicit direct-provider routes and their no-substitution rules. The external gateway applied-policy/receipt gate remains separate and open; transport tests do not close it.
+- Keep historical gateway and TypeSafe Jev evidence as evidence only. Do not add a new live provider call or configuration mutation to this bounded reconciliation.
 
 ## Capabilities
 
@@ -35,7 +33,7 @@ None. Existing `route-jev-supervision-explicitly` remains outside implementation
 
 ## Impact
 
-Jcode provider request transport and fork isolation, agent task classification, memory sidecar calls, council review output policy, and existing Homelab OmniRoute patch/configuration deployment surfaces. Pi5 infrastructure uses its repository-owned deployment path. No new credentials, provider accounts, dependencies, branches, or worktrees. Preserve unrelated changes and existing contributor identity. Source checkout is on `main` while remote HEAD names `dev`; preserve the checkout and do not switch branches or publish unrelated history.
+Jcode provider HTTP compression/Jev request transport, route preservation, complete report delivery and report completion. No new credentials, provider accounts, dependencies, branches, or worktrees. Preserve unrelated changes and existing contributor identity. Source checkout remains in place.
 
 ## Authorization and preflight
 

@@ -15,7 +15,7 @@ pub(super) fn transcript_definitely_overflows(
         rows = rows.saturating_add(match role {
             // Voice/transcription normalization can remove source lines, but
             // even an empty user prompt still emits its numbered first row.
-            "user" | "meta" | "error" => 1,
+            "user" | "meta" | "error" | "failed_prompt" => 1,
             "spacer" => message
                 .content
                 .trim()

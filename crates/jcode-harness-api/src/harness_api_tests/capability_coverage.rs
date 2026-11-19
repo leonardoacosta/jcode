@@ -50,6 +50,7 @@ const LEDGER: &[(&str, Disposition)] = &[
     ("CancelSoftInterrupts", Covered),
     ("Clear", Covered),
     ("ClientDebugResponse", ClientInternal),
+    ("ClientFocus", ClientInternal),
     ("Compact", Covered),
     ("ConfigureTools", Covered),
     ("CycleModel", ClientInternal),
@@ -80,6 +81,9 @@ const LEDGER: &[(&str, Disposition)] = &[
     ("Rewind", Covered),
     ("RewindUndo", Covered),
     ("RunSubagent", ClientInternal),
+    // The same typed runtime-command gateway is exposed by ApiRequest.
+    ("RuntimeCommand", Covered),
+    ("ScreenContext", ClientInternal),
     ("SetAgentModel", Covered),
     ("SetCompactionMode", ClientInternal),
     ("SetFeature", ClientInternal),

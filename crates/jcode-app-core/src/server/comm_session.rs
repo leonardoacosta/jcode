@@ -20,6 +20,10 @@ use std::sync::{Arc, Mutex as StdMutex, OnceLock, Weak};
 use std::time::Instant;
 use tokio::sync::{Mutex, RwLock, broadcast, mpsc};
 
+#[path = "swarm_stop_target.rs"]
+mod swarm_stop_target;
+use swarm_stop_target::*;
+
 use super::SessionAgents;
 type ChannelSubscriptions = Arc<RwLock<HashMap<String, HashMap<String, HashSet<String>>>>>;
 type ClientConnections = Arc<RwLock<HashMap<String, ClientConnectionInfo>>>;
@@ -931,6 +935,18 @@ pub(super) async fn handle_comm_stop(
             .await
             .get(&target)
             .and_then(|member| member.report_back_to_session_id.clone());
+        let stop_allowed = {
+            let members = swarm_members.read().await;
+            members.get(&target).is_some_and(|member| {
+                swarm_stop_allowed_by_owner(&req_session_id, member, force)
+                    || (!force
+                        && super::swarm_is_self_or_ancestor(&members, &req_session_id, &target))
+            })
+        };
+        anyhow::ensure!(
+            stop_allowed,
+            "Refusing to stop session '{target}' because it was not spawned by this coordinator. Pass force=true to stop a non-owned/user-created swarm session explicitly."
+        );
         super::session_control::import_identity(&target, owner_hint.as_deref())?;
         store.request_stop(
             &req_session_id,
@@ -980,70 +996,6 @@ pub(super) async fn handle_comm_stop(
         message,
         retry_after_secs: None,
     });
-}
-
-#[cfg(test)]
-fn swarm_stop_allowed_by_owner(
-    req_session_id: &str,
-    target_member: &SwarmMember,
-    force: bool,
-) -> bool {
-    force || target_member.report_back_to_session_id.as_deref() == Some(req_session_id)
-}
-
-async fn resolve_stop_target_session(
-    swarm_id: &str,
-    target: &str,
-    swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
-) -> std::result::Result<String, String> {
-    let target = target.trim();
-    if target.is_empty() {
-        return Err("target_session is required.".to_string());
-    }
-
-    let members = swarm_members.read().await;
-    if members
-        .get(target)
-        .is_some_and(|member| member.swarm_id.as_deref() == Some(swarm_id))
-    {
-        return Ok(target.to_string());
-    }
-
-    let mut matches = members
-        .iter()
-        .filter(|(_, member)| member.swarm_id.as_deref() == Some(swarm_id))
-        .filter(|(session_id, member)| {
-            member.friendly_name.as_deref() == Some(target)
-                || session_id.starts_with(target)
-                || session_id.ends_with(target)
-        })
-        .map(|(session_id, member)| {
-            (
-                session_id.clone(),
-                member
-                    .friendly_name
-                    .as_deref()
-                    .unwrap_or(session_id)
-                    .to_string(),
-            )
-        })
-        .collect::<Vec<_>>();
-    matches.sort_by(|a, b| a.0.cmp(&b.0));
-
-    match matches.len() {
-        0 => Err(format!(
-            "Unknown swarm session '{target}'. Use an exact session ID, unique friendly name, or unique session ID prefix/suffix."
-        )),
-        1 => Ok(matches.remove(0).0),
-        _ => Err(format!(
-            "Ambiguous swarm session '{target}' matched: {}. Use an exact session ID.",
-            matches
-                .iter()
-                .map(|(session_id, friendly)| format!("{friendly} [{session_id}]"))
-                .collect::<Vec<_>>()
-                .join(", ")
-        )),
-    }
 }
 
 fn swarm_member_status_is_stale_for_coordination(status: &str) -> bool {

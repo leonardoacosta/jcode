@@ -1088,8 +1088,8 @@ async fn update_member_status_includes_completion_report_in_owner_notification()
                 message,
                 ..
             } if from_session == "worker" && scope == "swarm"
-                && message.contains("Recent output (automatically captured):\nValidated the parser and all tests passed.")
-                && !message.contains("No recent assistant output was captured")
+                && message.contains("Final response:\nValidated the parser and all tests passed.")
+                && !message.contains("No report captured")
         )
     }));
 }

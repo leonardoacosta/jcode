@@ -1,3 +1,7 @@
+## Current scope, 2026-11-18
+
+The endpoint-owned compression correction remains authoritative. Upstream HTTP compression transport replaces the fork's Jev-specific compression/cache overrides where they overlap. Preserve selected route/model identity, complete report and report-completion semantics, and full review-output instructions. The external gateway applied-policy/receipt gate remains independently open. Historical role-selection and gateway configuration evidence below is retained for provenance only, not as active client override work.
+
 ## Context
 
 ### Current correction, 2026-11-03

@@ -415,9 +415,7 @@ impl ControlStore {
         if record.state == ControlState::Stopped {
             return Ok(record);
         }
-        for signal in crate::turn_cancel_registry::active_turn_signals(id) {
-            signal.fire();
-        }
+        super::swarm::cancel_active_turns(id);
         let expires = tokio::time::Instant::now() + deadline;
         loop {
             let (_, changed) = self.work_observation(id)?;

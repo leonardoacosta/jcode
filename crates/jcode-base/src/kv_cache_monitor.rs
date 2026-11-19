@@ -322,7 +322,10 @@ impl MissContext<'_> {
             )
         });
         match (idle, ttl) {
-            (Some(i), Some(t)) => format!("{i}, within {t}"),
+            (Some(i), Some(t)) => {
+                let past = matches!((self.idle_secs, self.ttl_secs), (Some(i), Some(t)) if i > t);
+                format!("{i}, {} {t}", if past { "exceeded" } else { "within" })
+            }
             (Some(i), None) => i,
             (None, Some(t)) => t,
             (None, None) => String::new(),
@@ -1053,6 +1056,31 @@ mod tests {
         monitor.begin_request_on_day(openai, sig(&[10, 11, 12]), 6);
         let miss = monitor.finish_request(52_000, Some(2_000)).expect("miss");
         assert_eq!(miss.reason, MissReason::LowRead);
+    }
+
+    #[test]
+    fn low_read_timing_reports_exceeded_ttl() {
+        let mk = |idle| MissContext {
+            old_provider: "p",
+            new_provider: "p",
+            old_model: "m",
+            new_model: "m",
+            old_account: None,
+            new_account: None,
+            old_upstream: None,
+            new_upstream: None,
+            idle_secs: Some(idle),
+            ttl_secs: Some(300),
+            ttl_is_estimate: true,
+            expected_tokens: 50_000,
+            read_tokens: 2_000,
+            first_changed_message: None,
+        };
+        let late = describe_miss(MissReason::LowRead, &mk(4620));
+        assert!(late.contains("exceeded estimated TTL 5m"), "{late}");
+        assert!(!late.contains("within"), "{late}");
+        let early = describe_miss(MissReason::LowRead, &mk(60));
+        assert!(early.contains("within estimated TTL 5m"), "{early}");
     }
 
     #[test]

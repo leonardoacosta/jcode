@@ -2,6 +2,20 @@ use super::*;
 use crate::auth::{AuthState, ProviderAuth};
 
 #[test]
+fn names_only_catalog_keeps_future_openai_models_on_direct_routes() {
+    let _guard = EnvGuard::new();
+    let model = "gpt-99.7-future";
+    assert!(!ALL_OPENAI_MODELS.contains(&model));
+    let routes = remote_model_routes_fallback(Some("OpenAI"), &[model.into()]);
+    assert!(
+        routes.iter().any(|route| route.model == model
+            && route.provider == "OpenAI"
+            && route.api_method == "openai-oauth"),
+        "a live catalog discovery must not require a compiled allowlist: {routes:?}"
+    );
+}
+
+#[test]
 fn saved_account_catalogs_keep_work_personal_and_named_accounts_separate() {
     let _guard = EnvGuard::new();
     let home = crate::storage::jcode_dir().unwrap();
@@ -159,9 +173,13 @@ impl EnvGuard {
         let vars = vec![
             ("JCODE_HOME", std::env::var_os("JCODE_HOME")),
             ("OPENCODE_API_KEY", std::env::var_os("OPENCODE_API_KEY")),
+            ("JCODE_NAMED_PROVIDER_PROFILE", std::env::var_os("JCODE_NAMED_PROVIDER_PROFILE")),
+            ("JCODE_PROVIDER_PROFILE_ACTIVE", std::env::var_os("JCODE_PROVIDER_PROFILE_ACTIVE")),
         ];
         crate::env::set_var("JCODE_HOME", temp.path());
         crate::env::set_var("OPENCODE_API_KEY", "sk-test-opencode");
+        crate::env::remove_var("JCODE_NAMED_PROVIDER_PROFILE");
+        crate::env::remove_var("JCODE_PROVIDER_PROFILE_ACTIVE");
         Self {
             vars,
             _temp: temp,
@@ -449,14 +467,14 @@ fn remote_compatible_route_uses_live_cache_and_does_not_mark_fallback() {
 }
 
 #[test]
-fn slash_model_fallback_prefers_matching_compatible_profile() {
+fn slash_model_route_prefers_matching_compatible_profile() {
     let guard = EnvGuard::new();
     let model = "vendouple/gpt-5.6-sol";
     guard.save_opencode_cache("https://opencode.ai/zen/v1", &[model]);
 
     let routes = remote_model_routes_fallback(Some("OpenCode Zen"), &[model.to_string()]);
 
-    assert_eq!(routes.len(), 1, "unexpected fallback routes: {routes:?}");
+    assert_eq!(routes.len(), 1, "unexpected routes: {routes:?}");
     assert_eq!(routes[0].provider, "OpenCode Zen");
     assert_eq!(routes[0].api_method, "openai-compatible:opencode");
     assert!(routes[0].available);

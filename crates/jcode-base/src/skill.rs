@@ -72,7 +72,18 @@ enum AllowedTools {
 /// Registry of available skills
 #[derive(Debug, Default, Clone)]
 pub struct SkillRegistry {
-    skills: HashMap<String, Skill>,
+    // Snapshots keep independent maps but share immutable skill definitions.
+    skills: HashMap<String, Arc<Skill>>,
+    // SKILL.md files that were found but could not be loaded, so reloads and
+    // listings can say why a skill is missing instead of omitting it silently.
+    load_errors: Vec<SkillLoadError>,
+}
+
+/// A `SKILL.md` that was discovered but rejected while loading.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SkillLoadError {
+    pub path: PathBuf,
+    pub error: String,
 }
 
 /// Maximum directory depth scanned under a Claude Code plugin root when
@@ -298,14 +309,14 @@ impl SkillRegistry {
             registry.load_plugin_skills_from_root(&plugins_root);
         }
 
-        // Later inserts win: plugins < shared agents < explicit jcode skills.
+        // Shared `.agents` skills load first; explicit Jcode skills win collisions.
         if let Ok(agents_skills) = crate::storage::user_home_path(".agents/skills")
             && agents_skills.exists()
         {
             registry.load_from_dir_with_source(&agents_skills, SkillSource::Agents)?;
         }
 
-        // Load from ~/.jcode/skills/ (jcode's own global skills)
+        // Load from ~/.jcode/skills/ last so Jcode-specific skills override shared skills.
         if let Ok(jcode_dir) = crate::storage::jcode_dir() {
             let jcode_skills = jcode_dir.join("skills");
             if jcode_skills.exists() {
@@ -334,7 +345,12 @@ impl SkillRegistry {
     /// (project dirs loaded last).
     pub fn merge_overlay(&mut self, overlay: Self) {
         for skill in overlay.skills.into_values() {
-            self.insert_loaded_skill(skill);
+            self.insert_skill((*skill).clone());
+        }
+        for failed in overlay.load_errors {
+            if !self.load_errors.contains(&failed) {
+                self.load_errors.push(failed);
+            }
         }
     }
 
@@ -356,17 +372,14 @@ impl SkillRegistry {
         Ok(registry)
     }
 
-    /// Project roots for a working dir: the dir and each ancestor, stopping
-    /// before `$HOME` (home-level `.agents` is global, not project-local).
-    /// Ordered farthest first so nearer roots override on name collision.
+    /// Project roots for a working dir, farthest first so nearer roots win.
     fn project_roots(working_dir: Option<&Path>) -> Vec<PathBuf> {
-        let start = match working_dir {
-            Some(dir) => dir.to_path_buf(),
-            None => std::env::current_dir().unwrap_or_default(),
-        };
+        let start = working_dir
+            .map(Path::to_path_buf)
+            .unwrap_or_else(|| std::env::current_dir().unwrap_or_default());
         let home = crate::storage::user_home_path(".agents")
             .ok()
-            .and_then(|p| p.parent().map(Path::to_path_buf));
+            .and_then(|path| path.parent().map(Path::to_path_buf));
         let mut roots = Vec::new();
         for dir in start.ancestors() {
             if dir.as_os_str().is_empty() || home.as_deref() == Some(dir) {
@@ -380,8 +393,8 @@ impl SkillRegistry {
 
     fn load_project_local_dirs(&mut self, working_dir: Option<&Path>) -> Result<()> {
         for root in Self::project_roots(working_dir) {
-            for name in [".claude", ".agents", ".jcode"] {
-                let dir = root.join(name).join("skills");
+            for scope in [".claude", ".agents", ".jcode"] {
+                let dir = root.join(scope).join("skills");
                 if dir.is_dir() {
                     let mut visited = std::collections::HashSet::new();
                     self.load_nested(&dir, 0, &mut visited);
@@ -391,9 +404,6 @@ impl SkillRegistry {
         Ok(())
     }
 
-    /// Walk `dir` for skill folders: stop descending at a dir holding
-    /// SKILL.md, skip `.git`/`node_modules`, follow symlinks with a
-    /// canonical-path cycle guard, bounded depth.
     fn load_nested(
         &mut self,
         dir: &Path,
@@ -412,13 +422,12 @@ impl SkillRegistry {
         };
         for entry in entries.flatten() {
             let path = entry.path();
-            let name = entry.file_name();
-            if name == ".git" || name == "node_modules" || !path.is_dir() {
+            if entry.file_name() == ".git" || entry.file_name() == "node_modules" || !path.is_dir()
+            {
                 continue;
             }
-            let skill_file = path.join("SKILL.md");
-            if skill_file.exists() {
-                if let Ok(skill) = Self::parse_skill(&skill_file, SkillSource::Project) {
+            if path.join("SKILL.md").exists() {
+                if let Ok(skill) = Self::parse_skill(&path.join("SKILL.md"), SkillSource::Project) {
                     self.insert_loaded_skill(skill);
                 }
             } else {
@@ -556,29 +565,52 @@ impl SkillRegistry {
         })
     }
 
-    fn insert_skill(&mut self, mut skill: Skill) {
-        if let Some(previous) = self
-            .skills
-            .get(&skill.name)
-            .and_then(|s| s.provenance.as_ref())
-            && let Some(provenance) = skill.provenance.as_mut()
-        {
-            let mut roots = previous.shadowed_roots.clone();
-            roots.push(previous.source);
-            roots.extend(provenance.shadowed_roots.iter().copied());
-            roots.dedup();
-            provenance.shadowed_roots = roots;
-        }
-        self.skills.insert(skill.name.clone(), skill);
-    }
-
-    #[cfg(test)]
-    fn load_from_dir(&mut self, dir: &Path) -> Result<()> {
-        self.load_from_dir_with_source(dir, SkillSource::Global)
-    }
-
     fn load_from_dir_with_source(&mut self, dir: &Path, source: SkillSource) -> Result<()> {
-        self.load_from_dir_count(dir, source).map(|_| ())
+        if !dir.is_dir() {
+            return Ok(());
+        }
+
+        for entry in std::fs::read_dir(dir)? {
+            let entry = entry?;
+            let path = entry.path();
+
+            if path.is_dir() {
+                let skill_file = path.join("SKILL.md");
+                if skill_file.exists() {
+                    self.load_skill_file(&skill_file, source);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Parse one discovered `SKILL.md` and register it, or record why it was
+    /// rejected. Returns whether the skill loaded.
+    fn load_skill_file(&mut self, skill_file: &Path, source: SkillSource) -> bool {
+        match Self::parse_skill(skill_file, source) {
+            Ok(skill) => {
+                self.load_errors.retain(|failed| failed.path != skill_file);
+                self.insert_loaded_skill(skill);
+                true
+            }
+            Err(error) => {
+                self.load_errors.retain(|failed| failed.path != skill_file);
+                self.load_errors.push(SkillLoadError {
+                    path: skill_file.to_path_buf(),
+                    error: format!("{error:#}"),
+                });
+                false
+            }
+        }
+    }
+
+    /// `SKILL.md` files that were found but could not be loaded, sorted by
+    /// path for stable output.
+    pub fn load_errors(&self) -> Vec<&SkillLoadError> {
+        let mut errors: Vec<&SkillLoadError> = self.load_errors.iter().collect();
+        errors.sort_by(|a, b| a.path.cmp(&b.path));
+        errors
     }
 
     /// Parse a SKILL.md file
@@ -590,7 +622,7 @@ impl SkillRegistry {
                     resolved_path: path.canonicalize().ok(),
                     is_symlink: path.ancestors().any(|ancestor| {
                         std::fs::symlink_metadata(ancestor)
-                            .is_ok_and(|m| m.file_type().is_symlink())
+                            .is_ok_and(|metadata| metadata.file_type().is_symlink())
                     }),
                     shadowed_roots: Vec::new(),
                 });
@@ -625,9 +657,6 @@ impl SkillRegistry {
                 .collect(),
             AllowedTools::Sequence(tools) => tools,
         });
-        if let Some(warning) = name_mismatch_warning(&name, path) {
-            crate::logging::warn(&warning);
-        }
         Ok(Skill {
             name,
             description,
@@ -655,14 +684,111 @@ impl SkillRegistry {
         let yaml = &rest[..end];
         let body = rest[end + 3..].trim().to_string();
 
-        let frontmatter: SkillFrontmatter = serde_yaml::from_str(yaml)?;
+        let frontmatter: SkillFrontmatter = match serde_yaml::from_str(yaml) {
+            Ok(frontmatter) => frontmatter,
+            // Skills written for other agents often carry a long unquoted
+            // `description:` containing `: ` (for example "deltas: b.args"),
+            // which strict YAML rejects as a nested mapping. Those tools read
+            // the field as plain text, so do the same rather than dropping
+            // the whole skill.
+            // Only for syntax errors: well-formed YAML with a wrong field type
+            // is a real mistake and stays an error.
+            Err(strict_error) if serde_yaml::from_str::<serde_yaml::Value>(yaml).is_ok() => {
+                anyhow::bail!("invalid skill frontmatter: {strict_error}")
+            }
+            Err(strict_error) => Self::parse_frontmatter_lenient(yaml).ok_or_else(|| {
+                anyhow::anyhow!(
+                    "invalid YAML frontmatter: {strict_error}. Quote values that contain ': ' \
+                     or use a block scalar (description: >-)"
+                )
+            })?,
+        };
 
         Ok((frontmatter, body))
     }
 
+    /// Fallback for frontmatter that is not valid YAML: read the top-level
+    /// `name`, `description` and `allowed-tools` keys as plain text and ignore
+    /// everything else. Returns `None` unless both required keys are present.
+    fn parse_frontmatter_lenient(yaml: &str) -> Option<SkillFrontmatter> {
+        fn top_level_key(line: &str) -> Option<(&str, &str)> {
+            if line.starts_with([' ', '\t', '#', '-']) {
+                return None;
+            }
+            let (key, rest) = line.split_once(':')?;
+            let valid = !key.is_empty()
+                && key
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
+            (valid && (rest.is_empty() || rest.starts_with([' ', '\t']))).then_some((key, rest))
+        }
+        fn unquote(value: &str) -> String {
+            let value = value.trim();
+            for quote in ['"', '\''] {
+                if value.len() >= 2 && value.starts_with(quote) && value.ends_with(quote) {
+                    return value[1..value.len() - 1].to_string();
+                }
+            }
+            value.to_string()
+        }
+
+        let mut entries: Vec<(&str, Vec<&str>)> = Vec::new();
+        for line in yaml.lines() {
+            if let Some((key, rest)) = top_level_key(line) {
+                entries.push((key, vec![rest]));
+            } else if let Some((_, lines)) = entries.last_mut() {
+                lines.push(line);
+            }
+        }
+        let scalar = |key: &str| -> Option<String> {
+            let (_, lines) = entries.iter().find(|(entry, _)| *entry == key)?;
+            let first = lines[0].trim();
+            // Block scalar indicators (`>-`, `|`) carry no text of their own.
+            let head = if first.starts_with(['>', '|']) {
+                ""
+            } else {
+                first
+            };
+            let joined = std::iter::once(head)
+                .chain(lines[1..].iter().map(|line| line.trim()))
+                .filter(|part| !part.is_empty())
+                .collect::<Vec<_>>()
+                .join(" ");
+            let value = unquote(&joined);
+            (!value.is_empty()).then_some(value)
+        };
+
+        let name = scalar("name")?;
+        let description = scalar("description")?;
+        let allowed_tools = entries
+            .iter()
+            .find(|(entry, _)| *entry == "allowed-tools")
+            .and_then(|(_, lines)| {
+                let inline = lines[0]
+                    .trim()
+                    .trim_start_matches('[')
+                    .trim_end_matches(']');
+                if !inline.is_empty() {
+                    return Some(AllowedTools::CommaDelimited(inline.to_string()));
+                }
+                let items: Vec<String> = lines[1..]
+                    .iter()
+                    .filter_map(|line| line.trim().strip_prefix('-'))
+                    .map(unquote)
+                    .filter(|item| !item.is_empty())
+                    .collect();
+                (!items.is_empty()).then_some(AllowedTools::Sequence(items))
+            });
+        Some(SkillFrontmatter {
+            name,
+            description,
+            allowed_tools,
+        })
+    }
+
     /// Get a skill by name
     pub fn get(&self, name: &str) -> Option<&Skill> {
-        self.skills.get(name)
+        self.skills.get(name).map(Arc::as_ref)
     }
 
     /// List all available skills.
@@ -675,7 +801,7 @@ impl SkillRegistry {
     /// system prompt with identical length but different bytes, silently busting
     /// the Anthropic strict-prefix KV cache mid-conversation.
     pub fn list(&self) -> Vec<&Skill> {
-        let mut skills: Vec<&Skill> = self.skills.values().collect();
+        let mut skills: Vec<&Skill> = self.skills.values().map(Arc::as_ref).collect();
         skills.sort_by(|a, b| a.name.cmp(&b.name));
         skills
     }
@@ -683,17 +809,25 @@ impl SkillRegistry {
     /// Reload a specific skill by name
     pub fn reload(&mut self, name: &str) -> Result<bool> {
         // Find the skill's path first
-        let previous = self.skills.get(name).cloned();
+        let path = self.skills.get(name).map(|s| s.path.clone());
 
-        if let Some(previous) = previous {
-            let path = previous.path;
+        if let Some(path) = path {
             if path.exists() {
-                let mut skill = Self::parse_skill_inner(&path)?;
-                if let Some(provenance) = previous.provenance {
-                    skill = Self::parse_skill(&path, provenance.source)?;
-                    skill.provenance.as_mut().unwrap().shadowed_roots = provenance.shadowed_roots;
+                let previous = self.skills.get(name).cloned();
+                let source = previous
+                    .as_ref()
+                    .and_then(|skill| skill.provenance.as_ref())
+                    .map(|provenance| provenance.source)
+                    .unwrap_or(SkillSource::Global);
+                let mut skill = Self::parse_skill(&path, source)?;
+                if let Some(provenance) = skill.provenance.as_mut() {
+                    provenance.shadowed_roots = previous
+                        .and_then(|skill| {
+                            skill.provenance.as_ref().map(|p| p.shadowed_roots.clone())
+                        })
+                        .unwrap_or_default();
                 }
-                self.skills.insert(skill.name.clone(), skill);
+                self.skills.insert(skill.name.clone(), Arc::new(skill));
                 Ok(true)
             } else {
                 // Skill file was deleted
@@ -727,6 +861,7 @@ impl SkillRegistry {
             "reloaded all skills; the skills list in the system prompt may have changed",
         );
         self.skills.clear();
+        self.load_errors.clear();
 
         let mut count = 0;
 
@@ -736,14 +871,12 @@ impl SkillRegistry {
             count += self.load_plugin_skills_from_root(&plugins_root);
         }
 
-        // Keep the same precedence as load_global: plugins < agents < jcode.
+        // Shared `.agents` skills precede explicit Jcode skills in load_global.
         if let Ok(agents_skills) = crate::storage::user_home_path(".agents/skills")
             && agents_skills.exists()
         {
             count += self.load_from_dir_count(&agents_skills, SkillSource::Agents)?;
         }
-
-        // Load from ~/.jcode/skills/ (jcode's own global skills)
         if let Ok(jcode_dir) = crate::storage::jcode_dir() {
             let jcode_skills = jcode_dir.join("skills");
             if jcode_skills.exists() {
@@ -767,10 +900,7 @@ impl SkillRegistry {
 
             if path.is_dir() {
                 let skill_file = path.join("SKILL.md");
-                if skill_file.exists()
-                    && let Ok(skill) = Self::parse_skill(&skill_file, source)
-                {
-                    self.insert_loaded_skill(skill);
+                if skill_file.exists() && self.load_skill_file(&skill_file, source) {
                     count += 1;
                 }
             }
@@ -780,7 +910,27 @@ impl SkillRegistry {
     }
 
     fn insert_loaded_skill(&mut self, skill: Skill) {
-        if let Some(shadowed) = self.skills.get(&skill.name)
+        self.insert_skill(skill);
+    }
+
+    fn insert_skill(&mut self, mut skill: Skill) {
+        if let Some(previous) = self.skills.get(&skill.name)
+            && previous.path != skill.path
+            && let (Some(previous_provenance), Some(provenance)) =
+                (previous.provenance.as_ref(), skill.provenance.as_mut())
+        {
+            let mut roots = previous_provenance.shadowed_roots.clone();
+            roots.push(previous_provenance.source);
+            roots.extend(provenance.shadowed_roots.iter().copied());
+            roots.dedup();
+            provenance.shadowed_roots = roots;
+        }
+        self.insert_shared_skill(Arc::new(skill));
+    }
+
+    fn insert_shared_skill(&mut self, skill: Arc<Skill>) {
+        let previous = self.skills.get(&skill.name).cloned();
+        if let Some(shadowed) = previous.as_ref()
             && shadowed.path != skill.path
         {
             crate::logging::warn(&format!(
@@ -790,7 +940,7 @@ impl SkillRegistry {
                 shadowed.path.display()
             ));
         }
-        self.insert_skill(skill);
+        self.skills.insert(skill.name.clone(), skill);
     }
 
     /// Parse `/skill-name` and `/skill-name prompt...` invocations.
@@ -1033,65 +1183,29 @@ pub fn endorsed_skills() -> &'static [EndorsedSkill] {
     ENDORSED_SKILLS
 }
 
-/// Warn when a skill's folder name differs from its frontmatter `name`
-/// (trimmed, case-sensitive; plugin namespaces compare the last `:` segment).
-fn name_mismatch_warning(name: &str, path: &Path) -> Option<String> {
-    let folder = path.parent()?.file_name()?.to_str()?;
-    let bare = name.trim().rsplit(':').next().unwrap_or("");
-    (bare != folder.trim()).then(|| {
-        format!(
-            "Skill '{}' at '{}': folder name '{}' does not match frontmatter name",
-            name,
-            path.display(),
-            folder
-        )
-    })
-}
-
-pub fn format_skill_info(
-    name: &str,
-    description: &str,
-    metadata: &jcode_protocol::SkillMetadata,
-) -> String {
-    let shadowed = if metadata.source.is_none() {
-        "unknown".into()
-    } else if metadata.shadowed_roots.is_empty() {
-        "none".into()
-    } else {
-        metadata.shadowed_roots.join(", ")
-    };
-    let symlink = metadata
-        .is_symlink
-        .map(|value| value.to_string())
-        .unwrap_or_else(|| "unknown".into());
-    let safe = |text: &str| text.chars().filter(|c| !c.is_control()).collect::<String>();
-    format!(
-        "Skill: {}\nDescription: {}\nSource: {}\nPath: {}\nResolved path: {}\nSymlink: {}\nShadowed roots: {}",
-        safe(name),
-        safe(description),
-        safe(metadata.source.as_deref().unwrap_or("unknown")),
-        safe(metadata.path.as_deref().unwrap_or("unknown")),
-        safe(metadata.resolved_path.as_deref().unwrap_or("unknown")),
-        symlink,
-        safe(&shadowed)
-    )
-}
-
 impl Skill {
     pub fn metadata(&self) -> jcode_protocol::SkillMetadata {
         jcode_protocol::SkillMetadata {
             path: Some(self.path.display().to_string()),
-            source: self.provenance.as_ref().map(|p| p.source.label().into()),
+            source: self
+                .provenance
+                .as_ref()
+                .map(|p| p.source.label().to_string()),
             resolved_path: self
                 .provenance
                 .as_ref()
                 .and_then(|p| p.resolved_path.as_ref())
-                .map(|p| p.display().to_string()),
+                .map(|path| path.display().to_string()),
             is_symlink: self.provenance.as_ref().map(|p| p.is_symlink),
             shadowed_roots: self
                 .provenance
                 .as_ref()
-                .map(|p| p.shadowed_roots.iter().map(|s| s.label().into()).collect())
+                .map(|p| {
+                    p.shadowed_roots
+                        .iter()
+                        .map(|source| source.label().to_string())
+                        .collect()
+                })
                 .unwrap_or_default(),
         }
     }
@@ -1100,7 +1214,6 @@ impl Skill {
         format_skill_info(&self.name, &self.description, &self.metadata())
     }
 
-    /// Non-blocking lint warnings for this skill.
     pub fn warnings(&self) -> Vec<String> {
         name_mismatch_warning(&self.name, &self.path)
             .into_iter()
@@ -1149,6 +1262,48 @@ impl Skill {
     }
 }
 
+fn name_mismatch_warning(name: &str, path: &Path) -> Option<String> {
+    let folder = path.parent()?.file_name()?.to_str()?;
+    let bare = name.trim().rsplit(':').next().unwrap_or("");
+    (bare != folder.trim()).then(|| {
+        format!(
+            "Skill '{}' at '{}': folder name '{}' does not match frontmatter name",
+            name,
+            path.display(),
+            folder
+        )
+    })
+}
+
+pub fn format_skill_info(
+    name: &str,
+    description: &str,
+    metadata: &jcode_protocol::SkillMetadata,
+) -> String {
+    let shadowed = if metadata.source.is_none() {
+        "unknown".to_string()
+    } else if metadata.shadowed_roots.is_empty() {
+        "none".to_string()
+    } else {
+        metadata.shadowed_roots.join(", ")
+    };
+    let symlink = metadata
+        .is_symlink
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "unknown".into());
+    let safe = |text: &str| text.chars().filter(|c| !c.is_control()).collect::<String>();
+    format!(
+        "Skill: {}\nDescription: {}\nSource: {}\nPath: {}\nResolved path: {}\nSymlink: {}\nShadowed roots: {}",
+        safe(name),
+        safe(description),
+        safe(metadata.source.as_deref().unwrap_or("unknown")),
+        safe(metadata.path.as_deref().unwrap_or("unknown")),
+        safe(metadata.resolved_path.as_deref().unwrap_or("unknown")),
+        symlink,
+        safe(&shadowed)
+    )
+}
+
 fn build_skill_search_text(name: &str, description: &str, content: &str) -> String {
     normalize_skill_search_text(&format!("{}\n{}\n{}", name, description, content))
 }
@@ -1173,863 +1328,5 @@ fn normalize_skill_search_text(text: &str) -> String {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn test_skill(name: &str, description: &str, content: &str) -> Skill {
-        Skill {
-            name: name.to_string(),
-            description: description.to_string(),
-            allowed_tools: None,
-            content: content.to_string(),
-            path: PathBuf::from(format!("/tmp/{name}/SKILL.md")),
-            provenance: None,
-            search_text: std::sync::OnceLock::from(build_skill_search_text(
-                name,
-                description,
-                content,
-            )),
-        }
-    }
-
-    fn write_test_skill(root: &Path, scope: &str, name: &str) {
-        let dir = root.join(scope).join("skills").join(name);
-        std::fs::create_dir_all(&dir).expect("create skill dir");
-        std::fs::write(
-            dir.join("SKILL.md"),
-            format!("---\nname: {name}\ndescription: Test skill {name}\n---\n\nUse {name}.\n"),
-        )
-        .expect("write skill");
-    }
-
-    fn write_skill_file(skills_dir: &Path, name: &str, content: &str) -> PathBuf {
-        let dir = skills_dir.join(name);
-        std::fs::create_dir_all(&dir).expect("create skill dir");
-        let path = dir.join("SKILL.md");
-        std::fs::write(&path, content).expect("write skill");
-        path
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn copy_skills_dir_skips_skill_already_imported_from_linked_source() {
-        use std::os::unix::fs::PermissionsExt;
-
-        let temp = tempfile::tempdir().expect("temp dir");
-        let claude = temp.path().join("claude-skills");
-        let skill = claude.join("s");
-        std::fs::create_dir_all(skill.join("sub")).expect("create skill");
-        std::fs::write(
-            skill.join("SKILL.md"),
-            "---\nname: s\ndescription: test skill\n---\nbody\n",
-        )
-        .expect("write skill");
-        let readonly = skill.join("sub").join("obj");
-        std::fs::write(&readonly, "x").expect("write obj");
-        std::fs::set_permissions(&readonly, std::fs::Permissions::from_mode(0o444)).expect("chmod");
-        let codex = temp.path().join("codex-skills");
-        std::os::unix::fs::symlink(&claude, &codex).expect("symlink");
-        let dest = temp.path().join("jcode-skills");
-
-        let first = SkillRegistry::copy_skills_dir(&claude, &dest);
-        assert_eq!((first.copied, first.skipped, first.failed), (1, 0, 0));
-        let second = SkillRegistry::copy_skills_dir(&codex, &dest);
-        assert_eq!((second.copied, second.skipped, second.failed), (0, 1, 0));
-        assert_eq!(
-            std::fs::read_to_string(dest.join("s").join("sub").join("obj")).expect("read obj"),
-            "x"
-        );
-    }
-
-    #[test]
-    fn allowed_tools_accepts_legacy_string_sequence_and_absence() {
-        let temp = tempfile::tempdir().expect("temp dir");
-        let cases = [
-            (
-                "allowed-tools: bash, read, write\n",
-                Some(vec!["bash", "read", "write"]),
-            ),
-            (
-                "allowed-tools:\n  - bash\n  - read\n  - write\n",
-                Some(vec!["bash", "read", "write"]),
-            ),
-            ("", None),
-        ];
-
-        for (index, (allowed_tools, expected)) in cases.into_iter().enumerate() {
-            let path = temp.path().join(format!("skill-{index}.md"));
-            std::fs::write(
-                &path,
-                format!("---\nname: test\ndescription: Test skill\n{allowed_tools}---\n\nBody\n"),
-            )
-            .expect("write skill");
-            let skill = SkillRegistry::parse_skill_inner(&path).expect("parse skill");
-            let expected = expected.map(|tools| {
-                tools
-                    .into_iter()
-                    .map(str::to_string)
-                    .collect::<Vec<String>>()
-            });
-            assert_eq!(skill.allowed_tools, expected);
-        }
-    }
-
-    #[test]
-    fn allowed_tools_rejects_non_string_sequence_values() {
-        let temp = tempfile::tempdir().expect("temp dir");
-        let path = temp.path().join("SKILL.md");
-        std::fs::write(
-            &path,
-            "---\nname: test\ndescription: Test skill\nallowed-tools: [bash, 1]\n---\n\nBody\n",
-        )
-        .expect("write skill");
-
-        assert!(SkillRegistry::parse_skill_inner(&path).is_err());
-    }
-
-    #[test]
-    fn parse_invocation_supports_a_trailing_prompt() {
-        assert_eq!(
-            SkillRegistry::parse_invocation("/frontend-design build a settings page"),
-            Some(SkillInvocation {
-                name: "frontend-design",
-                prompt: Some("build a settings page"),
-            })
-        );
-        assert_eq!(
-            SkillRegistry::parse_invocation("  /frontend-design   \"build a settings page\"  "),
-            Some(SkillInvocation {
-                name: "frontend-design",
-                prompt: Some("build a settings page"),
-            })
-        );
-    }
-
-    #[test]
-    fn parse_invocation_handles_bare_and_incomplete_quoted_prompts_without_blocking() {
-        assert_eq!(
-            SkillRegistry::parse_invocation("/optimization"),
-            Some(SkillInvocation {
-                name: "optimization",
-                prompt: None,
-            })
-        );
-        assert_eq!(
-            SkillRegistry::parse_invocation("/optimization \"make this faster"),
-            Some(SkillInvocation {
-                name: "optimization",
-                prompt: Some("\"make this faster"),
-            })
-        );
-        assert_eq!(SkillRegistry::parse_invocation("/"), None);
-    }
-
-    #[test]
-    fn parse_invocation_rejects_terminal_file_drop_paths() {
-        for input in [
-            "/tmp/screenshot.png",
-            "/Users/example/My\\ File.txt inspect this",
-            "/home/example/project/file.rs",
-            "/.hidden-file",
-            "/network\\share\\file.txt",
-        ] {
-            assert_eq!(
-                SkillRegistry::parse_invocation(input),
-                None,
-                "filesystem path must not parse as a skill invocation: {input}"
-            );
-        }
-    }
-
-    #[test]
-    fn list_is_sorted_by_name_regardless_of_insertion_order() {
-        // The "Available Skills" system-prompt section is built from `list()`.
-        // The backing store is a HashMap (per-instance randomized iteration
-        // order), and `current_skills_snapshot` can hand back a *different*
-        // HashMap instance via its lock-contended `self.skills.clone()` fallback.
-        // If `list()` did not sort, two snapshots of the same skill set could
-        // serialize the section in different orders: a same-length but
-        // different-bytes system prompt that silently busts the KV cache.
-        let names = ["zebra", "alpha", "mango", "beta", "yak"];
-
-        let mut reg_a = SkillRegistry::default();
-        for name in names {
-            reg_a
-                .skills
-                .insert(name.to_string(), test_skill(name, "d", "c"));
-        }
-
-        // Build a second registry with the reverse insertion order to maximize
-        // the chance of a differing HashMap layout.
-        let mut reg_b = SkillRegistry::default();
-        for name in names.iter().rev() {
-            reg_b
-                .skills
-                .insert(name.to_string(), test_skill(name, "d", "c"));
-        }
-
-        let order_a: Vec<&str> = reg_a.list().iter().map(|s| s.name.as_str()).collect();
-        let order_b: Vec<&str> = reg_b.list().iter().map(|s| s.name.as_str()).collect();
-
-        assert_eq!(order_a, vec!["alpha", "beta", "mango", "yak", "zebra"]);
-        assert_eq!(
-            order_a, order_b,
-            "list() ordering must be identical across HashMap instances"
-        );
-    }
-
-    #[test]
-    fn skill_as_memory_entry_formats_invocation_and_prompt() {
-        let skill = test_skill(
-            "firefox-browser",
-            "Control Firefox browser sessions and logged-in pages",
-            "Use this skill when you need to open websites, click buttons, or interact with browser pages.",
-        );
-
-        let entry = skill.as_memory_entry();
-
-        assert_eq!(entry.id, "skill:firefox-browser");
-        assert!(matches!(
-            entry.category,
-            crate::memory::MemoryCategory::Custom(ref name) if name == "Skills"
-        ));
-        assert!(entry.content.contains("/firefox-browser"));
-        assert!(entry.content.contains("# Skill: firefox-browser"));
-        assert_eq!(entry.source.as_deref(), Some("skill_registry"));
-    }
-
-    #[test]
-    fn project_skills_nested_ancestor_nearest_wins_and_no_leak() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let parent = temp.path().join("brown");
-        let repo = parent.join("wholesale");
-        let other = temp.path().join("personal");
-        std::fs::create_dir_all(&repo).unwrap();
-        std::fs::create_dir_all(&other).unwrap();
-        write_test_skill(&parent, ".agents", "anc-only");
-        write_skill_file(
-            &parent.join(".agents/skills/pack/deep"),
-            "leaf",
-            "---\nname: nested\ndescription: far\n---\n",
-        );
-        write_skill_file(
-            &parent.join(".agents/skills"),
-            "dup",
-            "---\nname: dup\ndescription: far\n---\n",
-        );
-        write_skill_file(
-            &repo.join(".agents/skills"),
-            "dup",
-            "---\nname: dup\ndescription: near\n---\n",
-        );
-        let reg = SkillRegistry::load_for_working_dir(Some(&repo)).expect("load");
-        assert!(reg.get("anc-only").is_some());
-        assert!(reg.get("nested").is_some());
-        assert_eq!(reg.get("dup").unwrap().description, "near");
-        let reg = SkillRegistry::load_for_working_dir(Some(&other)).expect("load");
-        assert!(reg.get("anc-only").is_none());
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn project_skills_symlink_cycle_is_safe() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let skills = temp.path().join(".agents/skills");
-        write_skill_file(
-            &skills.join("pack"),
-            "s1",
-            "---\nname: s1\ndescription: d\n---\n",
-        );
-        std::os::unix::fs::symlink(&skills, skills.join("pack/loop")).unwrap();
-        let reg = SkillRegistry::load_for_working_dir(Some(temp.path())).expect("load");
-        assert!(reg.get("s1").is_some());
-    }
-
-    #[test]
-    fn load_for_working_dir_reads_project_local_jcode_skills() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        write_test_skill(temp.path(), ".jcode", "wd-only");
-
-        let registry = SkillRegistry::load_for_working_dir(Some(temp.path())).expect("load skills");
-
-        let skill = registry
-            .get("wd-only")
-            .expect("working-dir local skill should load");
-        assert_eq!(skill.description, "Test skill wd-only");
-        assert!(skill.path.starts_with(temp.path()));
-    }
-
-    #[test]
-    fn load_for_working_dir_reads_project_local_agents_skills() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        write_test_skill(temp.path(), ".agents", "agents-only");
-
-        let registry = SkillRegistry::load_for_working_dir(Some(temp.path())).expect("load skills");
-
-        let skill = registry
-            .get("agents-only")
-            .expect("project-local .agents skill should load");
-        assert_eq!(skill.description, "Test skill agents-only");
-        assert!(skill.path.starts_with(temp.path()));
-    }
-
-    #[test]
-    fn malformed_skill_does_not_block_directory_loaders() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let skills_dir = temp.path().join("skills");
-        write_skill_file(
-            &skills_dir,
-            "valid",
-            "---\nname: valid\ndescription: Valid skill\n---\n\nUse valid.\n",
-        );
-        write_skill_file(
-            &skills_dir,
-            "malformed",
-            "---\nname: malformed\ndescription: Triggers: invalid yaml\n---\n\nBroken.\n",
-        );
-
-        let mut registry = SkillRegistry::default();
-        registry
-            .load_from_dir(&skills_dir)
-            .expect("load skills while skipping malformed file");
-        assert!(registry.contains("valid"));
-        assert!(!registry.contains("malformed"));
-
-        let mut counted_registry = SkillRegistry::default();
-        let count = counted_registry
-            .load_from_dir_count(&skills_dir, SkillSource::Global)
-            .expect("count skills while skipping malformed file");
-        assert_eq!(count, 1);
-        assert!(counted_registry.contains("valid"));
-        assert!(!counted_registry.contains("malformed"));
-    }
-
-    #[test]
-    fn project_overlay_is_session_scoped_and_composes_over_globals() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        write_test_skill(temp.path(), ".jcode", "session-skill");
-
-        // The overlay resolves against the given workspace root, not the
-        // process cwd or a shared registry (issue #457).
-        let overlay = SkillRegistry::load_project_overlay(Some(temp.path())).expect("load overlay");
-        assert!(overlay.get("session-skill").is_some());
-
-        // A different workspace root sees nothing from this project.
-        let other = tempfile::tempdir().expect("tempdir");
-        let other_overlay =
-            SkillRegistry::load_project_overlay(Some(other.path())).expect("load overlay");
-        assert!(other_overlay.get("session-skill").is_none());
-
-        // Effective set = base globals + overlay, with overlay winning on name.
-        let mut base = SkillRegistry::default();
-        base.skills.insert(
-            "session-skill".to_string(),
-            test_skill("session-skill", "global variant", "global body"),
-        );
-        let effective = SkillRegistry::effective_for_working_dir(&base, Some(temp.path()));
-        let skill = effective
-            .get("session-skill")
-            .expect("overlay skill should be present");
-        assert!(
-            skill.path.starts_with(temp.path()),
-            "project-local overlay must win over a same-named global skill"
-        );
-    }
-
-    #[test]
-    fn provenance_detail_sanitizes_paths_without_rewriting_identity() {
-        let mut skill = test_skill("odd\u{1b}name", "line\nnext", "DO NOT ACTIVATE");
-        skill.path = PathBuf::from("/root\n\u{1b}[31m/SKILL.md");
-        let metadata = skill.metadata();
-        assert_eq!(metadata.path.as_deref(), Some("/root\n\u{1b}[31m/SKILL.md"));
-        assert_eq!(metadata.source, None);
-        let text = skill.info();
-        assert!(!text.contains('\u{1b}'));
-        assert!(text.contains("Source: unknown"));
-        assert!(text.contains("Resolved path: unknown"));
-        assert!(!text.contains("DO NOT ACTIVATE"));
-        assert_eq!(skill.name, "odd\u{1b}name");
-        assert_eq!(skill.path, PathBuf::from("/root\n\u{1b}[31m/SKILL.md"));
-    }
-
-    #[test]
-    fn provenance_accumulates_roots_across_overlay_and_reload() {
-        let temp = tempfile::tempdir().unwrap();
-        let plugins = temp.path().join("plugins");
-        write_plugin_skill(&plugins.join("repos/test"), "shared");
-        write_test_skill(temp.path(), ".jcode", "shared");
-        write_test_skill(temp.path(), ".agents", "shared");
-        let mut base = SkillRegistry::default();
-        base.load_plugin_skills_from_root(&plugins);
-        base.load_from_dir_with_source(&temp.path().join(".jcode/skills"), SkillSource::Global)
-            .unwrap();
-        base.load_from_dir_with_source(&temp.path().join(".agents/skills"), SkillSource::Agents)
-            .unwrap();
-        let original = base.get("shared").unwrap();
-        assert_eq!(
-            original.provenance.as_ref().unwrap().source,
-            SkillSource::Agents
-        );
-        assert_eq!(
-            original.provenance.as_ref().unwrap().shadowed_roots,
-            vec![SkillSource::Plugin, SkillSource::Global]
-        );
-        let project = tempfile::tempdir().unwrap();
-        write_test_skill(project.path(), ".jcode", "shared");
-        let mut effective = SkillRegistry::effective_for_working_dir(&base, Some(project.path()));
-        let provenance = effective.get("shared").unwrap().provenance.clone().unwrap();
-        assert_eq!(provenance.source, SkillSource::Project);
-        assert_eq!(
-            provenance.shadowed_roots,
-            vec![
-                SkillSource::Plugin,
-                SkillSource::Global,
-                SkillSource::Agents
-            ]
-        );
-        assert!(effective.reload("shared").unwrap());
-        assert_eq!(
-            effective.get("shared").unwrap().provenance.as_ref(),
-            Some(&provenance)
-        );
-        assert_eq!(
-            base.get("shared")
-                .unwrap()
-                .provenance
-                .as_ref()
-                .unwrap()
-                .source,
-            SkillSource::Agents
-        );
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn provenance_tracks_symlink_ancestors_and_keeps_invocation_path() {
-        let project = tempfile::tempdir().unwrap();
-        let target = tempfile::tempdir().unwrap();
-        write_skill_file(
-            target.path(),
-            "linked",
-            "---\nname: linked\ndescription: linked\n---\nbody",
-        );
-        let root = project.path().join(".jcode");
-        std::fs::create_dir_all(&root).unwrap();
-        std::os::unix::fs::symlink(target.path(), root.join("skills")).unwrap();
-        let registry = SkillRegistry::load_project_overlay(Some(project.path())).unwrap();
-        let skill = registry.get("linked").unwrap();
-        assert_eq!(skill.path, root.join("skills/linked/SKILL.md"));
-        let provenance = skill.provenance.as_ref().unwrap();
-        assert!(provenance.is_symlink);
-        assert_eq!(
-            provenance.resolved_path,
-            Some(
-                target
-                    .path()
-                    .join("linked/SKILL.md")
-                    .canonicalize()
-                    .unwrap()
-            )
-        );
-    }
-
-    #[test]
-    fn reload_global_excludes_project_local_skills() {
-        // chdir is process-global; serialize with other env-sensitive tests.
-        let _env_guard = crate::storage::lock_test_env();
-        let temp = tempfile::tempdir().expect("tempdir");
-        write_test_skill(temp.path(), ".jcode", "session-skill");
-
-        let prev_cwd = std::env::current_dir().expect("cwd");
-        // reload_global must not pick up project-local skills even when the
-        // process cwd contains them (daemon startup cwd independence).
-        std::env::set_current_dir(temp.path()).expect("chdir");
-        let mut registry = SkillRegistry::default();
-        let result = registry.reload_global();
-        std::env::set_current_dir(prev_cwd).expect("restore cwd");
-
-        result.expect("reload skills");
-        assert!(
-            registry.get("session-skill").is_none(),
-            "shared/global reload must never absorb project-local skills"
-        );
-    }
-
-    #[test]
-    fn endorsed_skills_have_unique_nonempty_metadata() {
-        let endorsed = endorsed_skills();
-        assert!(!endorsed.is_empty(), "expected at least one endorsed skill");
-
-        let mut seen = std::collections::HashSet::new();
-        for skill in endorsed {
-            assert!(!skill.name.is_empty(), "endorsed skill name must be set");
-            assert!(
-                !skill.description.is_empty(),
-                "endorsed skill {} needs a description",
-                skill.name
-            );
-            assert!(
-                !skill.category.is_empty(),
-                "endorsed skill {} needs a category",
-                skill.name
-            );
-            assert!(
-                !skill.source.is_empty(),
-                "endorsed skill {} needs a source",
-                skill.name
-            );
-            assert!(
-                !skill.name.starts_with('/'),
-                "endorsed skill name should not include the leading slash"
-            );
-            if let Some(install) = skill.install {
-                assert!(
-                    install.contains(skill.name),
-                    "endorsed skill {} install hint should reference its name",
-                    skill.name
-                );
-            }
-            assert!(
-                seen.insert(skill.name),
-                "duplicate endorsed skill name: {}",
-                skill.name
-            );
-        }
-    }
-
-    #[test]
-    fn endorsed_skills_include_nvidia_cuda_x_catalog() {
-        let endorsed = endorsed_skills();
-        // Spot-check representative NVIDIA CUDA-X skills sourced from the
-        // official NVIDIA/skills catalog.
-        for expected in [
-            "cuopt-numerical-optimization-api-python",
-            "cupynumeric-install",
-            "accelerated-computing-cudf",
-            "cudaq-guide",
-            "tilegym-adding-cutile-kernel",
-        ] {
-            let skill = endorsed
-                .iter()
-                .find(|s| s.name == expected)
-                .unwrap_or_else(|| panic!("expected endorsed NVIDIA skill {expected}"));
-            assert_eq!(skill.category, "NVIDIA CUDA-X");
-            assert!(
-                skill
-                    .install
-                    .is_some_and(|cmd| cmd.contains("nvidia/skills")),
-                "NVIDIA skill {expected} should have an nvidia/skills install hint"
-            );
-        }
-    }
-
-    #[test]
-    fn endorsed_skills_include_anthropic_frontend_design() {
-        let skill = endorsed_skills()
-            .iter()
-            .find(|s| s.name == "frontend-design")
-            .expect("expected endorsed Anthropic frontend-design skill");
-        assert_eq!(skill.category, "Anthropic Design");
-        assert!(
-            skill.source.contains("anthropics/skills"),
-            "frontend-design should be sourced from anthropics/skills"
-        );
-        assert!(
-            skill
-                .install
-                .is_some_and(|cmd| cmd.contains("anthropics/skills")),
-            "frontend-design should have an anthropics/skills install hint"
-        );
-    }
-
-    #[test]
-    fn registry_contains_reports_loaded_skills() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        write_test_skill(temp.path(), ".jcode", "present-skill");
-
-        let registry = SkillRegistry::load_for_working_dir(Some(temp.path())).expect("load skills");
-        assert!(registry.contains("present-skill"));
-        assert!(!registry.contains("missing-skill"));
-    }
-
-    /// Write `SKILL.md` for `name` inside `<plugin_dir>/skills/<name>/`.
-    fn write_plugin_skill(plugin_dir: &Path, name: &str) {
-        write_plugin_skill_with_description(plugin_dir, name, &format!("Plugin skill {name}"));
-    }
-
-    fn write_plugin_skill_with_description(plugin_dir: &Path, name: &str, description: &str) {
-        let dir = plugin_dir.join("skills").join(name);
-        std::fs::create_dir_all(&dir).expect("create plugin skill dir");
-        std::fs::write(
-            dir.join("SKILL.md"),
-            format!("---\nname: {name}\ndescription: {description}\n---\n\nUse {name}.\n"),
-        )
-        .expect("write plugin skill");
-    }
-
-    fn write_installed_plugins_manifest(plugins_root: &Path, install_paths: &[&Path]) {
-        let plugins: serde_json::Map<String, serde_json::Value> = install_paths
-            .iter()
-            .enumerate()
-            .map(|(i, path)| {
-                (
-                    format!("plugin-{i}@test-marketplace"),
-                    serde_json::json!([{ "scope": "user", "installPath": path, "version": "1.0.0" }]),
-                )
-            })
-            .collect();
-        std::fs::write(
-            plugins_root.join("installed_plugins.json"),
-            serde_json::to_string_pretty(&serde_json::json!({
-                "version": 2,
-                "plugins": plugins,
-            }))
-            .expect("serialize manifest"),
-        )
-        .expect("write manifest");
-    }
-
-    #[test]
-    fn plugin_skills_load_from_installed_plugins_manifest() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let plugins_root = temp.path();
-
-        // Mirror the real Claude Code layout:
-        // cache/<marketplace>/<plugin>/<version>/skills/<skill>/SKILL.md
-        let install = plugins_root.join("cache/test-marketplace/vercel/0.40.1");
-        write_plugin_skill(&install, "ai-gateway");
-        // Nested `.claude/skills` variant inside the same install.
-        write_plugin_skill(&install.join(".claude"), "benchmark-agents");
-        write_installed_plugins_manifest(plugins_root, &[&install]);
-
-        let mut registry = SkillRegistry::default();
-        let count = registry.load_plugin_skills_from_root(plugins_root);
-
-        assert_eq!(count, 2);
-        assert!(registry.contains("ai-gateway"));
-        assert!(registry.contains("benchmark-agents"));
-    }
-
-    #[test]
-    fn plugin_skills_fall_back_to_cache_scan_without_manifest() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let plugins_root = temp.path();
-
-        let install = plugins_root.join("cache/test-marketplace/my-plugin/1.0.0");
-        write_plugin_skill(&install, "cache-skill");
-
-        let mut registry = SkillRegistry::default();
-        let count = registry.load_plugin_skills_from_root(plugins_root);
-
-        assert_eq!(count, 1);
-        assert!(registry.contains("cache-skill"));
-    }
-
-    #[test]
-    fn plugin_skills_load_from_repos_layout() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let plugins_root = temp.path();
-
-        let repo = plugins_root.join("repos/owner/my-plugin");
-        write_plugin_skill(&repo, "repo-skill");
-
-        let mut registry = SkillRegistry::default();
-        let count = registry.load_plugin_skills_from_root(plugins_root);
-
-        assert_eq!(count, 1);
-        assert!(registry.contains("repo-skill"));
-    }
-
-    #[test]
-    fn plugin_scan_skips_marketplace_catalog_when_manifest_exists() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let plugins_root = temp.path();
-
-        // Installed plugin listed in the manifest.
-        let install = plugins_root.join("cache/test-marketplace/installed/1.0.0");
-        write_plugin_skill(&install, "installed-skill");
-        write_installed_plugins_manifest(plugins_root, &[&install]);
-
-        // Marketplace catalog entry the user never installed.
-        write_plugin_skill(
-            &plugins_root.join("marketplaces/test-marketplace/plugins/uninstalled"),
-            "uninstalled-skill",
-        );
-        // Cache entry not referenced by the manifest (stale install).
-        write_plugin_skill(
-            &plugins_root.join("cache/test-marketplace/stale/0.1.0"),
-            "stale-skill",
-        );
-
-        let mut registry = SkillRegistry::default();
-        registry.load_plugin_skills_from_root(plugins_root);
-
-        assert!(registry.contains("installed-skill"));
-        assert!(
-            !registry.contains("uninstalled-skill"),
-            "marketplace catalog skills must not load"
-        );
-        assert!(
-            !registry.contains("stale-skill"),
-            "cache entries outside the manifest must not load when a manifest exists"
-        );
-    }
-
-    #[test]
-    fn plugin_scan_respects_depth_bound() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let plugins_root = temp.path();
-
-        // Deeper than PLUGIN_SCAN_MAX_DEPTH below the cache root.
-        let too_deep = plugins_root.join("cache/a/b/c/d/e/f");
-        write_plugin_skill(&too_deep, "too-deep-skill");
-
-        let mut registry = SkillRegistry::default();
-        let count = registry.load_plugin_skills_from_root(plugins_root);
-
-        assert_eq!(count, 0);
-        assert!(!registry.contains("too-deep-skill"));
-    }
-
-    #[test]
-    fn explicit_jcode_skill_wins_over_plugin_skill_with_same_name() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let plugins_root = temp.path().join("plugins");
-
-        let install = plugins_root.join("cache/test-marketplace/my-plugin/1.0.0");
-        write_plugin_skill_with_description(&install, "shared-name", "plugin version");
-
-        // Explicit jcode skill with the same name.
-        write_test_skill(temp.path(), ".jcode", "shared-name");
-
-        // Mirror load ordering: plugins first, then explicit skill dirs, so
-        // the later (explicit) insert wins in the registry map.
-        let mut registry = SkillRegistry::default();
-        registry.load_plugin_skills_from_root(&plugins_root);
-        registry
-            .load_from_dir(&temp.path().join(".jcode/skills"))
-            .expect("load explicit skills");
-
-        let skill = registry.get("shared-name").expect("skill present");
-        assert_eq!(
-            skill.description, "Test skill shared-name",
-            "explicit jcode skill must override the plugin-provided one"
-        );
-    }
-
-    #[test]
-    fn plugin_skill_dirs_empty_for_missing_root() {
-        let temp = tempfile::tempdir().expect("tempdir");
-        let missing = temp.path().join("does-not-exist");
-        assert!(SkillRegistry::plugin_skill_dirs_under(&missing).is_empty());
-    }
-
-    #[test]
-    fn folder_name_mismatch_warns_but_loads() {
-        let dir = tempfile::tempdir().unwrap();
-        for (folder, name) in [("good", "good"), ("folder", "other"), ("ns", "plugin:ns")] {
-            let d = dir.path().join(folder);
-            std::fs::create_dir_all(&d).unwrap();
-            std::fs::write(
-                d.join("SKILL.md"),
-                format!("---\nname: {name}\ndescription: d\n---\nbody\n"),
-            )
-            .unwrap();
-        }
-        let load = |f: &str| {
-            SkillRegistry::parse_skill(&dir.path().join(f).join("SKILL.md"), SkillSource::Global)
-                .unwrap()
-        };
-        assert!(load("good").warnings().is_empty());
-        assert!(load("ns").warnings().is_empty());
-        let bad = load("folder");
-        assert_eq!(bad.name, "other");
-        assert!(bad.warnings()[0].contains("folder name 'folder'"));
-    }
-    #[test]
-    fn project_skill_precedence_covers_all_source_combinations() {
-        let scopes = [".jcode", ".agents", ".claude"];
-        for mask in 1u32..8 {
-            let temp = tempfile::tempdir().expect("tempdir");
-            for (index, scope) in scopes.iter().enumerate() {
-                if mask & (1 << index) != 0 {
-                    write_skill_file(
-                        &temp.path().join(scope).join("skills"),
-                        "demo",
-                        &format!("---\nname: demo\ndescription: from {scope}\n---\n{scope}\n"),
-                    );
-                }
-            }
-            let expected = scopes[mask.trailing_zeros() as usize];
-            let overlay = SkillRegistry::load_project_overlay(Some(temp.path())).unwrap();
-            let skill = overlay.get("demo").unwrap();
-            assert_eq!(skill.content, expected, "source combination {mask}");
-            assert_eq!(
-                skill.path,
-                temp.path().join(expected).join("skills/demo/SKILL.md")
-            );
-
-            let mut global = SkillRegistry::default();
-            global
-                .skills
-                .insert("demo".into(), test_skill("demo", "global", "global"));
-            let effective = SkillRegistry::effective_for_working_dir(&global, Some(temp.path()));
-            assert_eq!(effective.get("demo").unwrap().content, expected);
-            // The combined loader uses the same ordering, even atop globals.
-            global.load_project_local_dirs(Some(temp.path())).unwrap();
-            assert_eq!(global.get("demo").unwrap().content, expected);
-        }
-    }
-
-    #[test]
-    fn global_skill_precedence_is_identical_on_load_and_reload() {
-        let _guard = crate::storage::lock_test_env();
-        struct RestoreHome(Option<std::ffi::OsString>);
-        impl Drop for RestoreHome {
-            fn drop(&mut self) {
-                match self.0.take() {
-                    Some(value) => crate::env::set_var("JCODE_HOME", value),
-                    None => crate::env::remove_var("JCODE_HOME"),
-                }
-            }
-        }
-        let _restore = RestoreHome(std::env::var_os("JCODE_HOME"));
-        let temp = tempfile::tempdir().unwrap();
-        crate::env::set_var("JCODE_HOME", temp.path());
-        let install = temp
-            .path()
-            .join("external/.claude/plugins/cache/test/plugin/1");
-        for name in ["jcode-wins", "agents-wins", "plugin-only"] {
-            write_plugin_skill(&install, name);
-        }
-        for name in ["jcode-wins", "agents-wins"] {
-            write_test_skill(&temp.path().join("external"), ".agents", name);
-        }
-        write_skill_file(
-            &temp.path().join("skills"),
-            "jcode-wins",
-            "---\nname: jcode-wins\ndescription: explicit jcode\n---\nJCODE\n",
-        );
-        let mut registry = SkillRegistry::load_global().unwrap();
-        for reload in [false, true] {
-            if reload {
-                assert_eq!(registry.reload_global().unwrap(), 6);
-            }
-            assert_eq!(registry.get("jcode-wins").unwrap().content, "JCODE");
-            assert_eq!(
-                registry.get("jcode-wins").unwrap().path,
-                temp.path().join("skills/jcode-wins/SKILL.md")
-            );
-            assert_eq!(
-                registry.get("agents-wins").unwrap().path,
-                temp.path()
-                    .join("external/.agents/skills/agents-wins/SKILL.md")
-            );
-            assert_eq!(
-                registry.get("plugin-only").unwrap().path,
-                install.join("skills/plugin-only/SKILL.md")
-            );
-        }
-    }
-
-}
+#[path = "skill_tests.rs"]
+mod tests;

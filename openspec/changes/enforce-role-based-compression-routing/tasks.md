@@ -125,3 +125,10 @@ Scoped TypeSafe final verification, task `910958s5ri`, passed at 21:45 UTC: `scr
 | Avoid silently provisioning the running application | After the test, the parent `TYPESAFE_API_KEY` remained absent and the default `~/.config/jcode/typesafe.env` remained absent. The key was used through the existing injected child environment only. Persistent daemon setup was neither requested nor claimed. |
 
 The scoped TypeSafe feedback loop is closed by observed production-service results. The broader compression-routing goal remains acceptance-blocked by its separate gateway requirements; the two outcomes must not be conflated.
+
+## 7. Upstream v1.0.1 HTTP transport reconciliation
+
+- [ ] 7.1 Compare upstream HTTP compression transport with current Jcode provider/Jev request paths and identify the exact obsolete Jev compression/cache overrides; confirm route/model IDs and complete report/review semantics are unaffected.
+- [ ] 7.2 Remove only superseded Jev-specific overrides. Preserve endpoint-owned inherited defaults; do not introduce role-based compression selection, forced cache bypass, gateway configuration changes, or cross-route substitution.
+- [ ] 7.3 Run focused HTTP transport, Jev/report-completion, review-output and direct-route regression tests; validate both supported wire protocols where applicable.
+- [ ] 7.4 Run strict OpenSpec validation and diff check. Record external gateway acceptance as a separate open gate unless its native applied-plan/receipt evidence is independently provided.
