@@ -876,6 +876,25 @@ impl McpManagementTool {
                 output.push_str(&server_tools.join(", "));
                 output.push('\n');
             }
+            // Counts and identifiers only: refreshed prompt/resource content
+            // is never surfaced here, and failures keep the last-known state.
+            if let Some(st) = manager.notification_status(server).await
+                && (st.prompts.is_some() || st.resources.is_some() || !st.errors.is_empty())
+            {
+                output.push_str(&format!(
+                    "notifications: {} prompts, {} resources, {} refresh errors{}\n",
+                    st.prompts.as_ref().map_or(0, Vec::len),
+                    st.resources.as_ref().map_or(0, Vec::len),
+                    st.errors.len(),
+                    if st.errors.is_empty() {
+                        String::new()
+                    } else {
+                        let mut keys: Vec<&str> = st.errors.keys().map(String::as_str).collect();
+                        keys.sort_unstable();
+                        format!(" ({})", keys.join(", "))
+                    }
+                ));
+            }
             output.push('\n');
         }
         if !servers.is_empty() {

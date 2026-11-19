@@ -572,6 +572,23 @@ impl McpManager {
         None
     }
 
+    /// Notification handling state for one connected server (last-known
+    /// prompts/resources, per-target refresh errors, counters), or `None`
+    /// when it is not connected.
+    pub async fn notification_status(
+        &self,
+        server_name: &str,
+    ) -> Option<super::notifications::NotificationStatus> {
+        if let Some(handle) = self.pool_handles.read().await.get(server_name)
+            && !handle.is_closed()
+        {
+            return Some(handle.notification_status());
+        }
+        let owned = self.owned_clients.read().await;
+        let client = owned.get(server_name)?;
+        (!client.handle().is_closed()).then(|| client.handle().notification_status())
+    }
+
     pub async fn connected_server_scope(&self, name: &str) -> Option<String> {
         if let Some(handle) = self.pool_handles.read().await.get(name)
             && !handle.is_closed()
