@@ -1760,3 +1760,77 @@ impl Provider for OpenRouterSlotProvider {
 
 #[path = "commands/tests/memory_tests.rs"]
 mod memory;
+
+fn write_promote_session(dir: &Path, name: &str, is_debug: bool, age_secs: u64) {
+    let path = dir.join(format!("{name}.json"));
+    std::fs::write(&path, format!(r#"{{"id":"{name}","is_debug":{is_debug}}}"#)).unwrap();
+    let mtime = std::time::SystemTime::now() - std::time::Duration::from_secs(age_secs);
+    std::fs::File::options()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_modified(mtime)
+        .unwrap();
+}
+
+#[test]
+fn promote_session_pick_skips_test_sessions_and_non_sessions() {
+    let dir = tempfile::tempdir().unwrap();
+    write_promote_session(dir.path(), "session_newest_test", true, 1);
+    write_promote_session(dir.path(), "session_real_new", false, 10);
+    write_promote_session(dir.path(), "session_real_old", false, 100);
+    std::fs::write(dir.path().join("coord.json"), r#"{"is_debug":false}"#).unwrap();
+
+    let (id, path) = pick_newest_real_session(dir.path()).expect("a real session");
+    assert_eq!(id, "session_real_new");
+    assert_eq!(path, dir.path().join("session_real_new.json"));
+}
+
+#[test]
+fn promote_session_pick_empty_missing_or_only_test_is_none() {
+    let dir = tempfile::tempdir().unwrap();
+    assert!(pick_newest_real_session(dir.path()).is_none());
+    assert!(pick_newest_real_session(&dir.path().join("absent")).is_none());
+    write_promote_session(dir.path(), "session_only_test", true, 1);
+    assert!(pick_newest_real_session(dir.path()).is_none());
+}
+
+#[test]
+fn promote_resume_check_skipped_by_flag_and_without_session() {
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let flag = rt.block_on(promote_resume_check(Path::new("/nonexistent"), true));
+    assert_eq!(flag.status, "skipped_flag");
+
+    let _guard = crate::storage::lock_test_env();
+    let previous_home = std::env::var_os("JCODE_HOME");
+    let home = tempfile::tempdir().unwrap();
+    crate::env::set_var("JCODE_HOME", home.path());
+    let none = rt.block_on(promote_resume_check(Path::new("/nonexistent"), false));
+    match previous_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    assert_eq!(none.status, "skipped_no_session");
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn promote_resume_check_reports_candidate_exit_status() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let bad = dir.path().join("bad");
+    std::fs::write(&bad, "#!/bin/sh\nexit 134\n").unwrap();
+    std::fs::set_permissions(&bad, std::fs::Permissions::from_mode(0o755)).unwrap();
+    let err = run_candidate_resume_check(
+        &bad,
+        "session_x",
+        dir.path(),
+        std::time::Duration::from_secs(20),
+    )
+    .await
+    .unwrap_err();
+    assert!(err.contains("exited before resume completed"), "{err}");
+    assert!(err.contains("134"), "{err}");
+}

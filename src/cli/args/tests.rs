@@ -192,6 +192,7 @@ fn server_promote_parses_default_and_explicit_version() {
             action: ServerCommand::Promote {
                 version: None,
                 json: true,
+                skip_resume_check: false,
             }
         })
     ));
@@ -204,8 +205,21 @@ fn server_promote_parses_default_and_explicit_version() {
             action: ServerCommand::Promote {
                 version: Some(ref version),
                 json: false,
+                skip_resume_check: false,
             }
         }) if version == "abc1234-dirty-deadbeef"
+    ));
+
+    let skipped = Args::try_parse_from(["jcode", "server", "promote", "--skip-resume-check"])
+        .expect("server promote should accept --skip-resume-check");
+    assert!(matches!(
+        skipped.command,
+        Some(Command::Server {
+            action: ServerCommand::Promote {
+                skip_resume_check: true,
+                ..
+            }
+        })
     ));
 }
 

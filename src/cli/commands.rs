@@ -2251,17 +2251,242 @@ pub async fn run_usage_command(emit_json: bool) -> Result<()> {
     report_info::run_usage_command(emit_json).await
 }
 
+/// Upper bound for the whole promotion resume check (boot + resume + Done).
+const PROMOTE_RESUME_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+/// Newest snapshots inspected while looking for a non-test session.
+const PROMOTE_RESUME_MAX_CANDIDATES: usize = 200;
+
+#[derive(Serialize)]
+struct ServerPromoteResumeCheck {
+    /// passed | failed | skipped_flag | skipped_no_session
+    status: &'static str,
+    detail: String,
+}
+
+/// Newest real (non-test/debug) persisted session under `sessions_dir`, as
+/// `(session_id, snapshot_path)`. Recency is the later mtime of the snapshot and
+/// its journal, since a live session appends to the journal only.
+fn pick_newest_real_session(sessions_dir: &Path) -> Option<(String, PathBuf)> {
+    let mut candidates: Vec<(std::time::SystemTime, String, PathBuf)> =
+        std::fs::read_dir(sessions_dir)
+            .ok()?
+            .flatten()
+            .filter_map(|entry| {
+                let path = entry.path();
+                let name = path.file_name()?.to_str()?;
+                let id = name.strip_suffix(".json")?;
+                if !id.starts_with("session_") {
+                    return None;
+                }
+                let mut mtime = entry.metadata().ok()?.modified().ok()?;
+                let journal = sessions_dir.join(format!("{id}.journal.jsonl"));
+                if let Ok(journal_mtime) = std::fs::metadata(&journal).and_then(|m| m.modified()) {
+                    mtime = mtime.max(journal_mtime);
+                }
+                Some((mtime, id.to_string(), path))
+            })
+            .collect();
+    candidates.sort_by(|a, b| b.0.cmp(&a.0));
+    candidates
+        .into_iter()
+        .take(PROMOTE_RESUME_MAX_CANDIDATES)
+        .find(|(_, _, path)| {
+            let is_debug = std::fs::read(path)
+                .ok()
+                .and_then(|bytes| serde_json::from_slice::<serde_json::Value>(&bytes).ok())
+                .map(|value| value.get("is_debug").and_then(|v| v.as_bool()) == Some(true));
+            // Unreadable snapshots are not a usable test input either.
+            is_debug == Some(false)
+        })
+        .map(|(_, id, path)| (id, path))
+}
+
+fn tail_of_file(path: &Path, max_bytes: usize) -> String {
+    let bytes = std::fs::read(path).unwrap_or_default();
+    let start = bytes.len().saturating_sub(max_bytes);
+    String::from_utf8_lossy(&bytes[start..]).trim().to_string()
+}
+
+/// Boot `binary` on a private socket inside `home` and resume `session_id`
+/// through the real client path, expecting `ServerEvent::Done`. The child is
+/// killed and reaped before returning on every path.
+async fn run_candidate_resume_check(
+    binary: &Path,
+    session_id: &str,
+    home: &Path,
+    timeout: std::time::Duration,
+) -> std::result::Result<(), String> {
+    use crate::protocol::ServerEvent;
+
+    let socket = home.join("s.sock");
+    let log_path = home.join("serve.log");
+    let log = std::fs::File::create(&log_path).map_err(|e| format!("cannot create log: {e}"))?;
+    let log_err = log
+        .try_clone()
+        .map_err(|e| format!("cannot clone log: {e}"))?;
+    let mut child = tokio::process::Command::new(binary)
+        .args(["--no-update", "--socket"])
+        .arg(&socket)
+        .arg("serve")
+        .env_clear()
+        .env("HOME", home)
+        .env("PATH", std::env::var_os("PATH").unwrap_or_default())
+        .env("JCODE_HOME", home)
+        .env("JCODE_TEST_SESSION", "1")
+        .env("JCODE_NON_INTERACTIVE", "1")
+        .stdin(Stdio::null())
+        .stdout(log)
+        .stderr(log_err)
+        .kill_on_drop(true)
+        .spawn()
+        .map_err(|e| format!("cannot spawn candidate {}: {e}", binary.display()))?;
+
+    let exchange = async {
+        let mut client = loop {
+            match crate::server::Client::connect_with_path(socket.clone()).await {
+                Ok(client) => break client,
+                Err(_) => tokio::time::sleep(std::time::Duration::from_millis(100)).await,
+            }
+        };
+        let working_dir = home.to_string_lossy().into_owned();
+        client
+            .subscribe_with_info(
+                Some(working_dir),
+                None,
+                Some(session_id.to_string()),
+                false,
+                true,
+            )
+            .await
+            .map_err(|e| format!("subscribe failed: {e}"))?;
+        let resume_id = client
+            .resume_session_with_options(session_id, false, true)
+            .await
+            .map_err(|e| format!("resume request failed: {e}"))?;
+        loop {
+            match client.read_event().await {
+                Ok(ServerEvent::Done { id }) if id == resume_id => return Ok(()),
+                Ok(ServerEvent::Error { message, .. }) => {
+                    return Err(format!("candidate reported an error: {message}"));
+                }
+                Ok(_) => {}
+                Err(e) => return Err(format!("connection to candidate lost: {e}")),
+            }
+        }
+    };
+
+    let outcome = tokio::select! {
+        result = tokio::time::timeout(timeout, exchange) => match result {
+            Ok(result) => result,
+            Err(_) => Err(format!("no Done event within {}s", timeout.as_secs())),
+        },
+        status = child.wait() => Err(match status {
+            Ok(status) => format!("candidate exited before resume completed ({status})"),
+            Err(e) => format!("candidate wait failed: {e}"),
+        }),
+    };
+    // A crash drops the socket before `wait()` resolves, so give the child a
+    // moment to report how it died and name that in the failure.
+    let exit_note = match outcome {
+        Err(ref reason) if !reason.contains("candidate exited") => {
+            match tokio::time::timeout(std::time::Duration::from_secs(3), child.wait()).await {
+                Ok(Ok(status)) => Some(format!("candidate exited ({status})")),
+                _ => None,
+            }
+        }
+        _ => None,
+    };
+    let _ = child.kill().await;
+    let _ = child.wait().await;
+    let outcome = outcome.map_err(|reason| match exit_note {
+        Some(note) => format!("{reason}; {note}"),
+        None => reason,
+    });
+
+    outcome.map_err(|reason| {
+        let tail = tail_of_file(&log_path, 1500);
+        if tail.is_empty() {
+            reason
+        } else {
+            format!("{reason}\ncandidate log tail:\n{tail}")
+        }
+    })
+}
+
+async fn promote_resume_check(binary: &Path, skip: bool) -> ServerPromoteResumeCheck {
+    if skip {
+        return ServerPromoteResumeCheck {
+            status: "skipped_flag",
+            detail: "resume check skipped by --skip-resume-check".to_string(),
+        };
+    }
+    let Some((session_id, snapshot)) = storage::jcode_dir()
+        .ok()
+        .and_then(|dir| pick_newest_real_session(&dir.join("sessions")))
+    else {
+        return ServerPromoteResumeCheck {
+            status: "skipped_no_session",
+            detail: "no persisted session available for the resume check".to_string(),
+        };
+    };
+    let failed = |detail: String| ServerPromoteResumeCheck {
+        status: "failed",
+        detail,
+    };
+    let tmp = match tempfile::Builder::new().prefix("jcode-promote-").tempdir() {
+        Ok(tmp) => tmp,
+        Err(e) => return failed(format!("cannot create temporary home: {e}")),
+    };
+    let sessions = tmp.path().join("sessions");
+    let copy = (|| -> std::io::Result<()> {
+        std::fs::create_dir_all(&sessions)?;
+        std::fs::copy(&snapshot, sessions.join(format!("{session_id}.json")))?;
+        let journal = snapshot.with_file_name(format!("{session_id}.journal.jsonl"));
+        if journal.exists() {
+            std::fs::copy(
+                &journal,
+                sessions.join(format!("{session_id}.journal.jsonl")),
+            )?;
+        }
+        Ok(())
+    })();
+    if let Err(e) = copy {
+        return failed(format!("cannot copy session {session_id}: {e}"));
+    }
+    // `tmp` is removed on drop, after the child has been reaped above.
+    match run_candidate_resume_check(
+        binary,
+        &session_id,
+        tmp.path(),
+        PROMOTE_RESUME_CHECK_TIMEOUT,
+    )
+    .await
+    {
+        Ok(()) => ServerPromoteResumeCheck {
+            status: "passed",
+            detail: format!("candidate resumed {session_id} and reported Done"),
+        },
+        Err(reason) => failed(format!("candidate failed to resume {session_id}: {reason}")),
+    }
+}
+
 /// Explicitly pin the daemon's shared-server channel to an installed build.
 /// Promotion and reload intentionally remain separate operations: updates may
 /// advance a shared server that tracks stable, but must not overwrite a build
-/// the user deliberately promoted here.
-pub fn run_server_promote_command(version: Option<&str>, emit_json: bool) -> Result<()> {
+/// the user deliberately promoted here. Before repointing, the candidate must
+/// resume a copy of the newest real session in a throwaway home.
+pub async fn run_server_promote_command(
+    version: Option<&str>,
+    skip_resume_check: bool,
+    emit_json: bool,
+) -> Result<()> {
     #[derive(Serialize)]
     struct ServerPromoteReport {
         version: String,
         previous: Option<String>,
         binary: String,
         promoted: bool,
+        resume_check: ServerPromoteResumeCheck,
         detail: String,
     }
 
@@ -2271,8 +2496,35 @@ pub fn run_server_promote_command(version: Option<&str>, emit_json: bool) -> Res
             anyhow::anyhow!("No current version is installed; pass an installed VERSION explicitly")
         })?,
     };
-    let previous = crate::build::promote_version_to_shared_server(&version)?;
     let binary = crate::build::version_binary_path(&version)?;
+    let resume_check = if skip_resume_check {
+        promote_resume_check(&binary, true).await
+    } else if binary.exists() {
+        promote_resume_check(&binary, false).await
+    } else {
+        // Let promote_version_to_shared_server produce its usual not-installed error.
+        promote_resume_check(&binary, true).await
+    };
+    if resume_check.status == "failed" {
+        let report = ServerPromoteReport {
+            version: version.clone(),
+            previous: crate::build::read_shared_server_version().unwrap_or(None),
+            binary: binary.display().to_string(),
+            promoted: false,
+            detail: format!(
+                "promotion refused: {}. shared-server channel unchanged. Pass --skip-resume-check to override.",
+                resume_check.detail
+            ),
+            resume_check,
+        };
+        if emit_json {
+            println!("{}", serde_json::to_string_pretty(&report)?);
+        } else {
+            println!("{}", report.detail);
+        }
+        anyhow::bail!("promotion of {version} refused: resume check failed");
+    }
+    let previous = crate::build::promote_version_to_shared_server(&version)?;
     let promoted = previous.as_deref() != Some(version.as_str());
     let detail = if promoted {
         format!(
@@ -2291,13 +2543,17 @@ pub fn run_server_promote_command(version: Option<&str>, emit_json: bool) -> Res
         previous,
         binary: binary.display().to_string(),
         promoted,
+        resume_check,
         detail,
     };
 
     if emit_json {
         println!("{}", serde_json::to_string_pretty(&report)?);
     } else {
-        println!("{}", report.detail);
+        println!(
+            "{} (resume check: {})",
+            report.detail, report.resume_check.status
+        );
     }
     Ok(())
 }

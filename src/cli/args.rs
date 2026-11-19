@@ -794,7 +794,9 @@ pub(crate) enum ServerCommand {
     /// Pin the shared server channel to an installed version.
     ///
     /// Defaults to the active `current` version. This only selects the daemon's
-    /// binary; run `jcode server reload` separately to apply it.
+    /// binary; run `jcode server reload` separately to apply it. The candidate
+    /// is first booted privately and must resume a copy of the newest real
+    /// session, otherwise promotion is refused.
     Promote {
         /// Installed version to promote (defaults to the current channel)
         version: Option<String>,
@@ -802,6 +804,11 @@ pub(crate) enum ServerCommand {
         /// Emit JSON instead of human-readable text
         #[arg(long)]
         json: bool,
+
+        /// Skip the pre-promotion check that boots the candidate and resumes
+        /// a copy of your newest real session (emergencies only)
+        #[arg(long)]
+        skip_resume_check: bool,
     },
 
     /// Gracefully reload the running background server onto the newest binary.
