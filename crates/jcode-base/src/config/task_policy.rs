@@ -51,8 +51,8 @@ impl Config {
     /// No config migration, cache refresh, provider access or filesystem writes.
     pub fn effective_task_policy() -> anyhow::Result<serde_json::Value> {
         let path = Self::path().ok_or_else(|| anyhow::anyhow!("No config path"))?;
-        let content = match std::fs::read_to_string(&path) {
-            Ok(content) => content,
+        let content = match std::fs::metadata(&path) {
+            Ok(_) => toml::to_string(&Self::read_composed_table(&path)?)?,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
             Err(error) => return Err(error.into()),
         };

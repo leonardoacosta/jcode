@@ -2,16 +2,34 @@ use super::*;
 use crate::storage::jcode_dir;
 use std::path::PathBuf;
 
-type TrustedExternalAuthKey = (
-    Option<PathBuf>,
-    Option<std::time::SystemTime>,
-    Option<u64>,
-    Option<String>,
-);
+type TrustedExternalAuthKey = (super::composition::SourceFingerprint, Option<String>);
 type TrustedExternalAuthLists = std::sync::Arc<(Vec<String>, Vec<String>)>;
 static TRUSTED_EXTERNAL_AUTH_MEMO: std::sync::Mutex<
     Option<(TrustedExternalAuthKey, TrustedExternalAuthLists)>,
 > = std::sync::Mutex::new(None);
+
+/// Mutable leaf at `path` in the root document, through tables, dotted keys
+/// and inline tables alike.
+fn root_leaf_mut<'a>(
+    doc: &'a mut toml_edit::Document,
+    path: &[&str],
+) -> Option<&'a mut toml_edit::Item> {
+    let (leaf, parents) = path.split_last()?;
+    let mut current: &mut dyn toml_edit::TableLike = doc.as_table_mut();
+    for segment in parents {
+        current = current.get_mut(segment)?.as_table_like_mut()?;
+    }
+    current.get_mut(leaf)
+}
+
+/// Replace a leaf value keeping its comments and spacing.
+fn set_root_leaf(item: &mut toml_edit::Item, mut value: toml_edit::Value) -> bool {
+    if let toml_edit::Item::Value(old) = item {
+        *value.decor_mut() = old.decor().clone();
+    }
+    *item = toml_edit::Item::Value(value);
+    true
+}
 
 impl Config {
     /// Persist only the update preference, without baking in environment overrides.
@@ -19,6 +37,13 @@ impl Config {
         let mut config = Self::load_for_update()?;
         config.features.update_channel = channel;
         config.save()
+    }
+
+    /// The root config file followed by the fragments its manifest lists.
+    ///
+    /// Lenient: a broken manifest yields only the root. For edit watchers.
+    pub fn source_paths(root: &std::path::Path) -> Vec<PathBuf> {
+        super::composition::source_paths(root)
     }
 
     /// Get the config file path
@@ -49,7 +74,7 @@ impl Config {
     /// Saving those defaults would destroy the user's existing config. It also
     /// deliberately skips environment overrides so transient process settings
     /// are not baked into the file as a side effect of changing one preference.
-    fn load_for_update() -> anyhow::Result<Self> {
+    pub fn load_for_update() -> anyhow::Result<Self> {
         Ok(Self::load_from_file_strict()?.unwrap_or_default())
     }
 
@@ -65,7 +90,7 @@ impl Config {
     }
 
     /// Load config from file only (no env overrides), preserving parse/read errors.
-    fn load_from_file_strict() -> anyhow::Result<Option<Self>> {
+    pub(crate) fn load_from_file_strict() -> anyhow::Result<Option<Self>> {
         let Some(path) = Self::path() else {
             return Ok(None);
         };
@@ -73,31 +98,47 @@ impl Config {
             return Ok(None);
         }
 
-        let content = std::fs::read_to_string(&path)
-            .map_err(|e| anyhow::anyhow!("Failed to read config file {}: {}", path.display(), e))?;
-        let mut config = toml::from_str::<Self>(&content).map_err(|e| {
-            anyhow::anyhow!("Failed to parse config file {}: {}", path.display(), e)
+        let table = Self::read_composed_table(&path)?;
+        Self::typed_from_table(&path, table).map(Some)
+    }
+
+    /// Deserialize a composed table once, then validate and normalize it.
+    pub(crate) fn typed_from_table(
+        path: &std::path::Path,
+        table: toml::Table,
+    ) -> anyhow::Result<Self> {
+        let mut config = toml::Value::Table(table).try_into::<Self>().map_err(|e| {
+            anyhow::anyhow!(
+                "Failed to parse config file {}",
+                super::composition::describe_typed_error(path, &e)
+            )
         })?;
         config.validate_task_policy()?;
         config.display.apply_legacy_compat();
         // An explicit discovery opt-out is authoritative. Older saves wrote the
         // default endpoint too, so table shape cannot establish user intent.
-        Ok(Some(config))
+        Ok(config)
     }
 
-    /// Save config to file
+    /// Read the root config and its explicit includes as one merged TOML table.
+    ///
+    /// Strict: any unreadable, malformed, unsafe or conflicting source is an
+    /// error naming that source. No partial composition is ever returned.
+    pub(crate) fn read_composed_table(path: &std::path::Path) -> anyhow::Result<toml::Table> {
+        let content = std::fs::read_to_string(path)
+            .map_err(|e| anyhow::anyhow!("Failed to read config file {}: {}", path.display(), e))?;
+        Ok(super::composition::compose(path, &content)?.table)
+    }
+
+    /// Persist this config as sparse root-level overrides.
+    ///
+    /// Only settings that differ from a fresh file-only load (root plus its
+    /// includes, no environment overrides) are written, into the root file,
+    /// preserving comments, the include manifest and unknown keys. Included
+    /// fragments are never modified. Callers should start from
+    /// [`Self::load_for_update`] so environment values are not saved.
     pub fn save(&self) -> anyhow::Result<()> {
-        let path = Self::path().ok_or_else(|| anyhow::anyhow!("No config path"))?;
-
-        // Ensure parent directory exists
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-
-        let content = toml::to_string_pretty(self)?;
-        std::fs::write(&path, content)?;
-        Self::invalidate_cache();
-        Ok(())
+        self.save_sparse()
     }
 
     /// Mark the process-cached config as stale and notify dependent caches.
@@ -452,10 +493,48 @@ impl Config {
     /// Returns `true` when it rewrote the config. Best-effort: errors are
     /// logged and swallowed.
     pub fn migrate_legacy_swarm_spawn_mode_once() -> bool {
+        Self::migrate_once(
+            "swarm-spawn-mode-inline",
+            "swarm_spawn_mode default migration: visible -> inline\n",
+            |cfg| {
+                (cfg.agents.swarm_spawn_mode == SwarmSpawnMode::Visible)
+                    .then(|| cfg.agents.swarm_spawn_mode = SwarmSpawnMode::Inline)
+                    .is_some()
+            },
+            |doc| {
+                let Some(item) = root_leaf_mut(doc, &["agents", "swarm_spawn_mode"]) else {
+                    return false;
+                };
+                let legacy = item
+                    .as_str()
+                    .and_then(SwarmSpawnMode::parse)
+                    .is_some_and(|mode| mode == SwarmSpawnMode::Visible);
+                legacy && set_root_leaf(item, toml_edit::Value::from("inline"))
+            },
+            "Migrated legacy swarm_spawn_mode \"visible\" to \"inline\" in config.toml",
+        )
+    }
+
+    /// Run a once-only migration against the effective file-only config.
+    ///
+    /// `apply` mutates the config and returns whether it changed anything. The
+    /// result is saved as a root override, so a legacy value inherited from an
+    /// included fragment is corrected without rewriting that fragment. When the
+    /// composition does not load, `patch_root` rewrites only the legacy leaf in
+    /// the root file text (as the pre-composition migrations did) and the
+    /// marker stays unwritten unless that patch applied, so a value held by a
+    /// fragment is still migrated once the config loads again.
+    fn migrate_once(
+        marker_name: &str,
+        marker_text: &str,
+        apply: impl FnOnce(&mut Self) -> bool,
+        patch_root: impl FnOnce(&mut toml_edit::Document) -> bool,
+        done_message: &str,
+    ) -> bool {
         let Ok(dir) = jcode_dir() else {
             return false;
         };
-        let marker = dir.join("migrations").join("swarm-spawn-mode-inline");
+        let marker = dir.join("migrations").join(marker_name);
         if marker.exists() {
             return false;
         }
@@ -463,65 +542,48 @@ impl Config {
             if let Some(parent) = marker.parent() {
                 let _ = std::fs::create_dir_all(parent);
             }
-            let _ = std::fs::write(
-                &marker,
-                "swarm_spawn_mode default migration: visible -> inline\n",
-            );
+            let _ = std::fs::write(&marker, marker_text);
         };
-
-        let path = dir.join("config.toml");
-        let Ok(content) = std::fs::read_to_string(&path) else {
+        if !dir.join("config.toml").exists() {
             // No config file (fresh install): nothing to migrate.
             write_marker();
             return false;
+        }
+        let mut cfg = match Self::load_for_update() {
+            Ok(cfg) => cfg,
+            Err(err) => {
+                crate::logging::warn(&format!(
+                    "{marker_name} migration: config does not load, patching root file only: {err}"
+                ));
+                return match Self::patch_root_document(patch_root) {
+                    Ok(true) => {
+                        write_marker();
+                        crate::logging::info(done_message);
+                        true
+                    }
+                    Ok(false) => false,
+                    Err(err) => {
+                        crate::logging::warn(&format!(
+                            "{marker_name} migration failed to write config: {err}"
+                        ));
+                        false
+                    }
+                };
+            }
         };
-
-        let mut changed = false;
-        let migrated: Vec<String> = content
-            .lines()
-            .map(|line| {
-                if changed {
-                    return line.to_string();
-                }
-                let trimmed = line.trim_start();
-                let Some(rest) = trimmed.strip_prefix("swarm_spawn_mode") else {
-                    return line.to_string();
-                };
-                let Some(value) = rest.trim_start().strip_prefix('=') else {
-                    return line.to_string();
-                };
-                let value = value.trim().trim_matches(|c| c == '"' || c == '\'');
-                if matches!(value, "visible" | "headed") {
-                    changed = true;
-                    let indent = &line[..line.len() - trimmed.len()];
-                    format!("{indent}swarm_spawn_mode = \"inline\"")
-                } else {
-                    line.to_string()
-                }
-            })
-            .collect();
-
-        if !changed {
+        if !apply(&mut cfg) {
             write_marker();
             return false;
         }
-
-        let mut new_content = migrated.join("\n");
-        if content.ends_with('\n') {
-            new_content.push('\n');
-        }
-        match std::fs::write(&path, new_content) {
+        match cfg.save() {
             Ok(()) => {
-                Self::invalidate_cache();
                 write_marker();
-                crate::logging::info(
-                    "Migrated legacy swarm_spawn_mode \"visible\" to \"inline\" in config.toml",
-                );
+                crate::logging::info(done_message);
                 true
             }
             Err(err) => {
                 crate::logging::warn(&format!(
-                    "swarm_spawn_mode migration failed to write config: {err}"
+                    "{marker_name} migration failed to write config: {err}"
                 ));
                 false
             }
@@ -540,77 +602,22 @@ impl Config {
     /// Returns `true` when it rewrote the config. Best-effort: errors are
     /// logged and swallowed.
     pub fn migrate_idle_animation_off_once() -> bool {
-        let Ok(dir) = jcode_dir() else {
-            return false;
-        };
-        let marker = dir.join("migrations").join("idle-animation-off");
-        if marker.exists() {
-            return false;
-        }
-        let write_marker = || {
-            if let Some(parent) = marker.parent() {
-                let _ = std::fs::create_dir_all(parent);
-            }
-            let _ = std::fs::write(&marker, "idle_animation forced migration: true -> false\n");
-        };
-
-        let path = dir.join("config.toml");
-        let Ok(content) = std::fs::read_to_string(&path) else {
-            // No config file (fresh install): nothing to migrate.
-            write_marker();
-            return false;
-        };
-
-        let mut changed = false;
-        let migrated: Vec<String> = content
-            .lines()
-            .map(|line| {
-                if changed {
-                    return line.to_string();
-                }
-                let trimmed = line.trim_start();
-                let Some(rest) = trimmed.strip_prefix("idle_animation") else {
-                    return line.to_string();
+        Self::migrate_once(
+            "idle-animation-off",
+            "idle_animation forced migration: true -> false\n",
+            |cfg| {
+                let was_on = cfg.display.idle_animation;
+                cfg.display.idle_animation = false;
+                was_on
+            },
+            |doc| {
+                let Some(item) = root_leaf_mut(doc, &["display", "idle_animation"]) else {
+                    return false;
                 };
-                let Some(value) = rest.trim_start().strip_prefix('=') else {
-                    return line.to_string();
-                };
-                let value = value.split('#').next().unwrap_or("");
-                if value.trim() == "true" {
-                    changed = true;
-                    let indent = &line[..line.len() - trimmed.len()];
-                    format!("{indent}idle_animation = false")
-                } else {
-                    line.to_string()
-                }
-            })
-            .collect();
-
-        if !changed {
-            write_marker();
-            return false;
-        }
-
-        let mut new_content = migrated.join("\n");
-        if content.ends_with('\n') {
-            new_content.push('\n');
-        }
-        match std::fs::write(&path, new_content) {
-            Ok(()) => {
-                Self::invalidate_cache();
-                write_marker();
-                crate::logging::info(
-                    "Migrated idle_animation \"true\" to \"false\" in config.toml",
-                );
-                true
-            }
-            Err(err) => {
-                crate::logging::warn(&format!(
-                    "idle_animation migration failed to write config: {err}"
-                ));
-                false
-            }
-        }
+                item.as_bool() == Some(true) && set_root_leaf(item, toml_edit::Value::from(false))
+            },
+            "Migrated idle_animation \"true\" to \"false\" in config.toml",
+        )
     }
 
     fn normalize_external_auth_source_id(source_id: &str) -> String {
@@ -665,12 +672,8 @@ impl Config {
     /// Memoize the two lists keyed on everything that can change them: the
     /// config path, the file's mtime and length, and the env override.
     fn trusted_external_auth_lists() -> TrustedExternalAuthLists {
-        let path = Self::path();
-        let metadata = path.as_ref().and_then(|path| std::fs::metadata(path).ok());
         let key: TrustedExternalAuthKey = (
-            path,
-            metadata.as_ref().and_then(|meta| meta.modified().ok()),
-            metadata.as_ref().map(std::fs::Metadata::len),
+            super::composition::SourceFingerprint::read(Self::path()),
             std::env::var("JCODE_TRUSTED_EXTERNAL_AUTH_SOURCES").ok(),
         );
         if let Ok(guard) = TRUSTED_EXTERNAL_AUTH_MEMO.lock()
@@ -680,11 +683,21 @@ impl Config {
             return lists.clone();
         }
 
-        let cfg = Self::load();
-        let lists = std::sync::Arc::new((
-            cfg.auth.trusted_external_sources,
-            cfg.auth.trusted_external_source_paths,
-        ));
+        // Authorization reads are strict: a broken source set denies every
+        // external source rather than trusting the UI defaults fallback or an
+        // environment override applied on top of it.
+        let lists = match Self::load_strict() {
+            Ok(cfg) => std::sync::Arc::new((
+                cfg.auth.trusted_external_sources,
+                cfg.auth.trusted_external_source_paths,
+            )),
+            Err(error) => {
+                crate::logging::error(&format!(
+                    "External auth trust denied, config does not load: {error:#}"
+                ));
+                std::sync::Arc::new((Vec::new(), Vec::new()))
+            }
+        };
         if let Ok(mut guard) = TRUSTED_EXTERNAL_AUTH_MEMO.lock() {
             *guard = Some((key, lists.clone()));
         }
@@ -702,20 +715,10 @@ impl Config {
             return false;
         };
 
-        if config()
-            .auth
-            .trusted_external_source_paths
-            .iter()
-            .any(|value| value.trim().eq_ignore_ascii_case(&entry))
-        {
-            return true;
-        }
-
-        // The global config snapshot can be initialized before an auth flow saves
-        // a new path-bound trust decision, or before tests switch JCODE_HOME. Fall
-        // back to a fresh read on cache misses so fast auth probes remain correct
-        // without penalizing the common already-trusted path. The memo re-stats
-        // config.toml, so it is as fresh as a full reload.
+        // Never answer from the throttled global snapshot: a revoked fragment
+        // policy or a broken composition must be observed on the next check.
+        // The memo is keyed on the full source-set content, so it is as fresh
+        // as a full reload and cheap while nothing changed.
         Self::trusted_external_auth_lists()
             .1
             .iter()

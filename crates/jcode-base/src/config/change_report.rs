@@ -83,11 +83,48 @@ impl ConfigChange {
     }
 }
 
+/// Stand-in shown instead of the value of a secret-bearing key.
+const REDACTED: &str = "<redacted>";
+
+const SECRET_KEY_PARTS: &[&str] = &["key", "token", "secret", "password", "auth", "credential"];
+
+/// Whether a single key name looks secret-bearing (`api_key`, `Authorization`).
+fn is_secret_name(name: &str) -> bool {
+    let name = name.to_ascii_lowercase();
+    SECRET_KEY_PARTS.iter().any(|part| name.contains(part))
+}
+
+/// Whether the leaf of a dotted key path is secret-bearing. Only the leaf is
+/// checked so section names such as `keybindings` keep their values visible.
+fn is_secret_key(key: &str) -> bool {
+    is_secret_name(key.rsplit('.').next().unwrap_or(key))
+}
+
+/// Arrays render as compact JSON; mask them when any object key inside names
+/// a secret (`"api_key":`), since the value is no longer attributable to a
+/// visible leaf key.
+fn value_names_secret_key(rendered: &str) -> bool {
+    let Ok(value) = serde_json::from_str::<Value>(rendered) else {
+        return false;
+    };
+    fn walk(value: &Value) -> bool {
+        match value {
+            Value::Object(map) => map
+                .iter()
+                .any(|(key, child)| is_secret_name(key) || walk(child)),
+            Value::Array(items) => items.iter().any(walk),
+            _ => false,
+        }
+    }
+    matches!(value, Value::Array(_)) && walk(&value)
+}
+
 /// Diff two config files' TOML text into a per-key change list.
 ///
 /// Both sides are parsed leniently: a side that fails to parse is treated as
 /// empty, so a change report is still produced for a file that was previously
-/// broken. Returns changes sorted by key.
+/// broken. Returns changes sorted by key. Values of keys named like
+/// key/token/secret/password/auth/credential are replaced by `<redacted>`.
 pub fn diff_toml(before: &str, after: &str) -> Vec<ConfigChange> {
     let before = flatten_toml(before);
     let after = flatten_toml(after);
@@ -103,10 +140,19 @@ pub fn diff_toml(before: &str, after: &str) -> Vec<ConfigChange> {
             if old == new {
                 return None;
             }
+            let mask = |value: Option<&String>| {
+                value.map(|value| {
+                    if is_secret_key(key) || value_names_secret_key(value) {
+                        REDACTED.to_string()
+                    } else {
+                        value.clone()
+                    }
+                })
+            };
             Some(ConfigChange {
                 key: key.clone(),
-                before: old.cloned(),
-                after: new.cloned(),
+                before: mask(old),
+                after: mask(new),
                 liveness: liveness_for_key(key),
             })
         })

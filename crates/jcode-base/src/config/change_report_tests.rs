@@ -127,3 +127,24 @@ fn commonly_edited_sections_are_live() {
         );
     }
 }
+
+#[test]
+fn secret_named_keys_never_echo_values_in_notices() {
+    let before = "[providers.acme]\napi_key = \"sentinel-old-123\"\nbase_url = \"https://a.example\"\n[providers.acme.headers]\nAuthorization = \"Bearer sentinel-hdr\"\n[x]\nlist = [{ token = \"sentinel-arr\" }]\n[keybindings]\nscroll_up = \"ctrl+k\"\n";
+    let after = "[providers.acme]\napi_key = \"sentinel-new-456\"\nbase_url = \"https://b.example\"\n[providers.acme.headers]\nAuthorization = \"Bearer sentinel-hdr2\"\n[x]\nlist = [{ token = \"sentinel-arr2\" }]\n[keybindings]\nscroll_up = \"ctrl+y\"\n";
+    let report = summarize_toml_change(before, after).expect("changed");
+    assert!(!report.contains("sentinel"), "{report}");
+    assert!(report.contains("`providers.acme.api_key`"), "{report}");
+    assert!(
+        report.contains("`providers.acme.headers.Authorization`"),
+        "{report}"
+    );
+    assert!(report.contains("<redacted> -> <redacted>"), "{report}");
+    // Non-secret keys, including ones under a section named like a secret, stay visible.
+    assert!(report.contains("\"https://b.example\""), "{report}");
+    assert!(report.contains("\"ctrl+k\" -> \"ctrl+y\""), "{report}");
+    // A newly set or removed secret still reports that it changed.
+    let added = summarize_toml_change("", "[a]\npassword = \"sentinel-pw\"\n").unwrap();
+    assert!(added.contains("(unset) -> <redacted>"), "{added}");
+    assert!(!added.contains("sentinel"), "{added}");
+}

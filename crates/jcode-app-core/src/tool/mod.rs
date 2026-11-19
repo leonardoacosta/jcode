@@ -1019,6 +1019,17 @@ impl Registry {
             .as_ref()
             .map(|dir| dir.display().to_string());
         // Plan calls never run user executable hooks or hook rewrites.
+        // Broken config composition means hook policy is unknown: deny before
+        // any transformer or gate is skipped as "not configured".
+        if !plan_only && let Some(reason) = crate::hooks::hook_policy_denial() {
+            let mut fields =
+                Self::tool_lifecycle_fields("blocked", name, resolved_name, &input, &ctx);
+            fields.push(("block_reason".to_string(), reason.clone()));
+            crate::logging::event_warn("TOOL_LIFECYCLE", fields);
+            return Err(anyhow::anyhow!(
+                "Tool call blocked by pre_tool hook: {reason}"
+            ));
+        }
         let input = if plan_only {
             input
         } else {

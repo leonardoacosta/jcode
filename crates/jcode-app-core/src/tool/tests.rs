@@ -1105,6 +1105,72 @@ async fn registry_execute_pre_tool_hook_blocks_and_allows() {
     assert!(allowed.is_ok(), "non-matching input should pass the gate");
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn registry_execute_denies_tools_when_config_composition_is_broken() {
+    let _guard = crate::storage::lock_test_env();
+    let provider: Arc<dyn Provider> = Arc::new(MockProvider);
+    let registry = Registry::new(provider).await;
+    let home = tempfile::TempDir::new().expect("home");
+    let work = tempfile::TempDir::new().expect("work");
+    let marker = work.path().join("ran");
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let prev_disabled = std::env::var_os("JCODE_HOOKS_DISABLED");
+    crate::env::remove_var("JCODE_HOOKS_DISABLED");
+    crate::env::set_var("JCODE_HOME", home.path());
+    std::fs::write(
+        home.path().join("config.toml"),
+        "include = [\"config/policy.toml\"]\n",
+    )
+    .expect("root");
+    std::fs::create_dir_all(home.path().join("config")).expect("dir");
+    let fragment = home.path().join("config/policy.toml");
+    // A veto gate lives in the fragment, which is then deleted.
+    std::fs::write(&fragment, "[hooks]\npre_tool = \"false\"\n").expect("fragment");
+    std::fs::remove_file(&fragment).expect("remove fragment");
+    crate::config::invalidate_config_cache();
+
+    let ctx = || ToolContext {
+        session_id: "test-broken-composition".to_string(),
+        message_id: "test".to_string(),
+        tool_call_id: "test".to_string(),
+        working_dir: Some(work.path().to_path_buf()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: ToolExecutionMode::Direct,
+    };
+    let command = format!("touch {}", marker.display());
+    let denied = registry
+        .execute("bash", serde_json::json!({ "command": command }), ctx())
+        .await;
+    let ran_while_broken = marker.exists();
+
+    // Repair: the same call executes on the next check.
+    std::fs::write(&fragment, "[display]\ncentered = true\n").expect("repair");
+    crate::config::invalidate_config_cache();
+    let allowed = registry
+        .execute("bash", serde_json::json!({ "command": command }), ctx())
+        .await;
+
+    match prev_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    if let Some(value) = prev_disabled {
+        crate::env::set_var("JCODE_HOOKS_DISABLED", value);
+    }
+    crate::config::invalidate_config_cache();
+
+    let error = denied.expect_err("broken composition must deny dispatch");
+    assert!(
+        error.to_string().contains("configuration does not load"),
+        "{error}"
+    );
+    assert!(!ran_while_broken, "denied tool must not execute");
+    assert!(allowed.is_ok(), "{allowed:?}");
+    assert!(marker.exists(), "repaired config lets the tool run");
+}
+
 #[tokio::test]
 async fn test_definitions_keep_batch_schema_generic() {
     let provider: Arc<dyn Provider> = Arc::new(MockProvider);

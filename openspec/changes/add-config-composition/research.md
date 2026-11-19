@@ -64,3 +64,53 @@ Acceptance mapping: explicit sources and merge → tasks 1.2–1.3; sparse persi
 ## Scoped planning publication, 2026-11-04 UTC
 
 User explicitly requested committing and syncing proposals, implementation later. Publish only these planning artifacts on owned `docs/config-session-proposals` ref from the current HEAD without switching the primary checkout. This preserves unrelated concurrent changes and satisfies own-branch isolation without moving `main` (remote default remains `dev`). No implementation checkboxes are marked complete, no archive or merge is included. Fresh strict validation and selected dependency checks pass. Historical preflight observations above remain revision-bound; implementation must refresh them.
+
+## Apply inventory (task 1.1), 2026-11-19
+
+Observed by grep over `crates/` (non-test unless noted). Owner = task in tasks.md that handles it.
+
+| Surface | Path | Owner |
+| --- | --- | --- |
+| Strict file load (single root read) | `jcode-base/src/config/config_file.rs` `load_from_file_strict` | 1.2 (now `read_composed_table` + `config/composition.rs`) |
+| Non-strict `Config::load`/`load_from_file` (defaults fallback) | `config_file.rs` | unchanged, strict path shared (1.2, 3.1) |
+| `load_strict` callers | `jcode-app-core/src/overnight.rs:288,323`, `overnight/admission.rs:342` (unattended task policy), `server/runtime_ssh_host.rs:456`, `jcode-base/src/provider_catalog.rs:823`, `tool/config_edit_notice.rs:51` | 3.1 / 3.2 |
+| `effective_task_policy` (read root text directly) | `jcode-base/src/config/task_policy.rs` | 1.2 (now composed) |
+| `Config::save` full-serialize | `config_file.rs:save` | 2.1 |
+| Setters via `load_for_update`+`save` | `config_file.rs` (update_channel, agent model, anthropic ttl, copilot premium, default model/provider, reasoning effort, transport, service tier, display toggles, latex, launch hotkeys, `allow_external_auth_source` and sibling trust setters) | 2.1 |
+| Direct `Config::load()`+`save()` callers | `jcode-base/src/gateway/control.rs:217` (`set_gateway_enabled`), `jcode-tui/src/tui/app/inline_interactive/helpers.rs:103`, `jcode-tui/src/tui/app/commands_colors.rs:254` (`persist`) | 2.1 (use env-applied `load()` baseline; must move to file-only baseline) |
+| Root-only legacy migrations (line rewrites on `config.toml`) | `config_file.rs` `migrate_legacy_swarm_spawn_mode_once`, `migrate_idle_animation_off_once` | 2.1 |
+| Main reload fingerprint (root mtime+len+env) | `jcode-base/src/config.rs` `ConfigCacheFingerprint` | 3.1 |
+| Trusted-auth memo (root mtime+len+env) | `config_file.rs` `trusted_external_auth_lists` / `TRUSTED_EXTERNAL_AUTH_MEMO` | 3.1 |
+| Hook consumers (non-strict `config()`) | `jcode-base/src/hooks.rs` (`hook_commands`, `transform_tool_input`, timeouts), `jcode-app-core/src/tool/mod.rs:1007` | 3.1 (strict deny) |
+| Edit watch/notice (root only) | `jcode-app-core/src/tool/config_edit_notice.rs` `ConfigEditWatch`, tests `config_edit_notice_tests.rs` | 3.2 |
+| Change report (text diff) | `jcode-base/src/config/change_report.rs` | 3.2 |
+| Tests | `jcode-base/src/config_tests.rs`, `config_tests/default_provider.rs`, new `config_composition_tests.rs` | all |
+
+The grep above was incomplete (review M5). Further root-only readers found: `jcode-base/src/auth/router_transfer.rs` routing snippet (now routed through `read_composed_table`, test `routing_config_includes_fragment_held_keys_and_fails_on_broken_sources`), and three that stay root-only as KNOWN LIMITS because `jcode-setup-hints`/`jcode-sdk` do not depend on `jcode-base` (adding that dependency or moving composition is out of scope): `jcode-sdk/src/launch_credential_links.rs:31` (copies root `config.toml` only; an `include` root arrives without its fragments), `jcode-setup-hints/src/lib.rs:328` (`launch_hotkeys`, memoized on root mtime/len) and `jcode-setup-hints/src/macos_terminal.rs:116` (`[terminal] preferred`). Documented in `docs/CONFIG_COMPOSITION.md`.
+
+## Apply evidence (tasks 1.3 to 3.3), 2026-11-19
+
+Observed locally with `JCODE_REMOTE_CARGO=0 scripts/dev_cargo.sh`, disposable `JCODE_HOME` temp dirs only; live `~/.jcode/config.toml` untouched.
+
+| Task | Evidence |
+| --- | --- |
+| 1.3 | `docs/CONFIG_COMPOSITION.md` (syntax, precedence, errors, adopt/downgrade). Examples exercised by `config_composition` tests (`explicit_order_root_wins_and_siblings_survive`, `unsafe_include_syntax_is_rejected`, `shape_conflicts_name_key_and_both_sources`, `split_layout_equals_single_file_and_is_never_discovered_or_rewritten`). |
+| 2.1 | `config/sparse_save.rs`; tests `setter_on_fragment_value_writes_only_a_root_override`, `legacy_single_file_save_is_sparse_and_keeps_comments_and_unknown_tables`, `no_op_save_does_not_write_and_new_file_is_sparse`, `environment_overrides_are_not_persisted_by_setters`, `provider_model_array_override_replaces_whole_array_in_root`, `unrepresentable_removal_of_inherited_value_fails_without_mutation`, `legacy_migrations_use_effective_values_and_never_rewrite_fragments`. Fragments byte-identical asserted. |
+| 2.2 | Atomic replace + drift check. Tests `replacement_keeps_permissions_and_symlink`, `concurrent_fragment_edit_before_replace_is_refused`, `concurrent_root_edit_before_replace_is_refused`, `write_and_replace_failures_preserve_original_bytes_and_permissions`, `invalid_baseline_blocks_save_and_keeps_bytes` (owned-temp cleanup asserted). |
+| 2.3 | Root overrides, manual removal and race limitation documented in `docs/CONFIG_COMPOSITION.md`. Round trip keeping `[tasks]`/`[worktrees]`/unknown tables in the legacy-save test. |
+| 3.1 | `ConfigCacheFingerprint` and trusted-auth memo now key on `SourceFingerprint`; `config_strict()` added; hooks (`hook_commands`, `transform_tool_input`, `run_pre_tool_gate` fail closed) and trust checks deny on composition failure; trust checks no longer answer from the throttled snapshot. Tests `global_cache_sees_equal_length_fragment_edit_membership_and_recovery`, `trust_revocation_in_a_fragment_is_seen_on_the_next_check`, `invalid_composition_denies_trust_hooks_and_task_policy`. Strict callers `overnight*`, `runtime_ssh_host`, `provider_catalog` already use `load_strict` and so compose. |
+| 3.2 | `ConfigEditWatch` snapshots root plus listed fragments (and picks up newly listed ones); notice covers listed fragments, masked edits, invalid fragments (names file, no values). Tests in `config_edit_notice_tests.rs`: `fragment_edit_is_reported_and_broken_fragment_warns`, `config_edit_watch_covers_fragments_and_new_includes`, `masked_fragment_edit_does_not_claim_live_effect`; old syntax-break test wording updated. |
+| 3.3 | Fixture `scratch/applyall/home-config/{split,single}` (nonsecret); test `split_layout_equals_single_file_and_is_never_discovered_or_rewritten` asserts identical typed results, unchanged files, unlisted/`config.d` files ignored. `restart_only_sections_are_labeled_needs_restart`; docs state gateway/acp/launch_hotkeys need restart. |
+
+Gates: `-p jcode-base config` 249 passed 0 failed (after rustfmt); `-p jcode-base hooks` 22 passed; `-p jcode-app-core config_edit_notice` 11 passed; scoped `clippy -p jcode-base -p jcode-app-core --all-targets` no warnings; rustfmt --check clean on touched files; `git diff --check` on owned paths clean; `openspec validate add-config-composition --strict` valid.
+
+Known limits: `tool/mod.rs:1007` sandbox category check still reads the non-strict `config()`; under a broken composition hooks themselves are denied so no hook child runs. Atomic save cannot lock against an editor writing during the final rename.
+
+## Review-fix evidence (M1-M5, m4/m7/m9/m13), 2026-11-19
+
+- M1: `SwarmSpawnMode::Visible` gets `#[serde(alias = "headed")]` (jcode-config-types), and `migrate_once` now falls back to `Config::patch_root_document` (text-level `toml_edit` patch of only the legacy leaf, no compose/typing) when the composed load fails, as the pre-composition line rewrite tolerated. Tests `legacy_headed_spawn_mode_still_migrates_to_inline`, `migrations_tolerate_an_unrelated_composition_failure` (also: unparseable root left untouched, no marker).
+- M2: `hooks::hook_policy_denial()` (strict-config denial reason); `Registry::execute` denies before `transform_tool_input` and the `hook_configured("pre_tool")` skip; `run_pre_tool_gate` shares it. Test `registry_execute_denies_tools_when_config_composition_is_broken` runs `bash` through `Registry::execute` with a deleted policy fragment (side-effect file must not exist), then repairs and confirms the call runs.
+- M3: docs narrowed (load unchanged for no-`include` installs, save is sparse/comment-preserving for all); array-removal-as-empty-override and Option-unset-from-fragment documented. Realistic round-trip test `realistic_legacy_file_round_trip_changes_only_the_requested_leaf` (dotted keys, inline tables, literal strings, CRLF, trailing comments) caught a real defect: `toml_edit` normalized CRLF to LF, rewriting every line; fixed with `keep_line_endings` in `sparse_save.rs`. `legacy_file_without_include_is_untouched_on_non_change_paths` asserts load/strict/no-op save leave bytes and mtime unchanged and compose equals plain parse.
+- M4: `redact_message` replaces quoted, backticked and apostrophe-literal segments (multi-line included); `diff_toml` masks values of leaf keys matching key/token/secret/password/auth/credential. Tests `error_text_redacts_literal_numeric_and_multiline_values`, `secret_named_keys_never_echo_values_in_notices` (jcode-base), `valid_edit_notices_never_echo_secret_values` (app-core). Residual: serde may echo a numeric value inside prose for some error shapes; the test covers bool-expected cases with integer and float tokens.
+- M5: see inventory correction above.
+- m4: test `removing_a_fragment_from_the_manifest_reports_and_deactivates_it`. m7: old `fs::write` also used umask defaults, so new root files keep the default; test `new_root_file_uses_default_permissions_like_the_previous_writer` documents it. m9: `Origins::record` records nested keys of whole-table inserts; test `nested_key_conflicts_name_both_sources`. m13: `winning_keys` compares exact keys against winning sources, read once; test `masking_compares_the_exact_key_not_a_prefix_overlap`.

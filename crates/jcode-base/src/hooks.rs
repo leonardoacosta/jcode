@@ -234,12 +234,51 @@ pub fn client_terminal_env() -> Option<Vec<(String, String)>> {
     }
 }
 
+/// Hook settings, or `None` when the config sources do not compose.
+///
+/// Hook execution is authorization-sensitive: a broken fragment must not fall
+/// back to the UI defaults and run (or silently drop) hooks as if valid, so the
+/// affected operation is denied with a safe source diagnostic.
+fn strict_hooks_config() -> Option<&'static crate::config::HooksConfig> {
+    match crate::config::config_strict() {
+        Ok(config) => Some(&config.hooks),
+        Err(error) => {
+            crate::logging::warn(&format!("Hooks denied, config does not load: {error:#}"));
+            None
+        }
+    }
+}
+
+/// Denial reason when hook policy cannot be determined because the config
+/// sources do not compose, `None` when hooks are suppressed or policy loads.
+///
+/// Tool dispatch must consult this before running a call: with unreadable
+/// policy there is no way to know whether a `pre_tool` gate or input
+/// transformer should have vetoed or rewritten it, so the call fails closed
+/// rather than skipping hooks as "not configured".
+pub fn hook_policy_denial() -> Option<String> {
+    if hooks_suppressed() {
+        return None;
+    }
+    let error = crate::config::config_strict().err()?;
+    crate::logging::warn(&format!(
+        "pre_tool gate denied, config does not load: {error:#}"
+    ));
+    Some(
+        "blocked: jcode configuration does not load, so hook policy cannot be applied. \
+         Fix the config sources and retry."
+            .to_string(),
+    )
+}
+
 /// The configured commands for `event`, in declaration order.
 pub fn hook_commands(event: &str) -> Vec<String> {
     if hooks_suppressed() {
         return Vec::new();
     }
-    let hooks = &crate::config::config().hooks;
+    let Some(hooks) = strict_hooks_config() else {
+        return Vec::new();
+    };
     let raw = match event {
         "turn_start" => hooks.turn_start.as_ref(),
         "turn_end" => hooks.turn_end.as_ref(),
@@ -282,8 +321,10 @@ pub async fn transform_tool_input(
     if hooks_suppressed() {
         return input;
     }
-    let commands: Vec<String> = crate::config::config()
-        .hooks
+    let Some(hooks_config) = strict_hooks_config() else {
+        return input;
+    };
+    let commands: Vec<String> = hooks_config
         .pre_tool_transform
         .as_ref()
         .into_iter()
@@ -303,12 +344,8 @@ pub async fn transform_tool_input(
         event = event.cwd(cwd);
     }
 
-    let timeout = std::time::Duration::from_millis(
-        crate::config::config()
-            .hooks
-            .pre_tool_transform_timeout_ms
-            .max(1),
-    );
+    let timeout =
+        std::time::Duration::from_millis(hooks_config.pre_tool_transform_timeout_ms.max(1));
     let mut current = input;
     for command_line in commands {
         let serialized = current.to_string();
@@ -580,6 +617,11 @@ pub async fn run_pre_tool_gate(
     tool_name: &str,
     tool_input_json: &str,
 ) -> GateOutcome {
+    if let Some(reason) = hook_policy_denial() {
+        let mut denied = GateOutcome::allow();
+        denied.decision = GateDecision::Block { reason };
+        return denied;
+    }
     let command_lines = hook_commands("pre_tool");
     let mut outcome = GateOutcome::allow();
     if command_lines.is_empty() {

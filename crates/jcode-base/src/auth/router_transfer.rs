@@ -80,6 +80,19 @@ pub fn routing_config_snippet(config: &str) -> Result<Option<String>, RouterTran
     Ok(Some(out.to_string()))
 }
 
+/// The effective config text for `root`: the root file merged with the
+/// fragments its `include` manifest lists, so routing keys held by a fragment
+/// travel too. A root without `include` is returned unchanged. A source that
+/// does not compose fails the export instead of silently dropping keys.
+fn effective_config_text(root: &Path, text: &str) -> Result<String, RouterTransferError> {
+    if !text.contains("include") {
+        return Ok(text.to_string());
+    }
+    let table = crate::config::Config::read_composed_table(root)
+        .map_err(|_| RouterTransferError::Malformed)?;
+    toml::to_string(&table).map_err(|_| RouterTransferError::Malformed)
+}
+
 /// Source wins for every allowlisted key: set when present in the snippet,
 /// removed when absent, so routing is identical. Every other key, table and
 /// comment in the destination is preserved.
@@ -309,8 +322,10 @@ pub fn export_at(
                 .iter()
                 .map(|name| (Root::Config, config_dir.join(name), name.clone())),
         );
-    if let Some(config) = read_regular(&jcode_home.join(ROUTING_CONFIG_FILE), ROUTING_CONFIG_FILE)?
-        && let Some(snippet) = routing_config_snippet(&config)?
+    let routing_root = jcode_home.join(ROUTING_CONFIG_FILE);
+    if let Some(config) = read_regular(&routing_root, ROUTING_CONFIG_FILE)?
+        && let Some(snippet) =
+            routing_config_snippet(&effective_config_text(&routing_root, &config)?)?
     {
         files.push(Entry {
             root: Root::Jcode,
@@ -616,6 +631,38 @@ x = 1
         ] {
             assert!(merge_routing_config(evil, Some(cloud)).is_err());
         }
+    }
+
+    #[test]
+    fn routing_config_includes_fragment_held_keys_and_fails_on_broken_sources() {
+        let (_s, src_home, src_config) = dirs();
+        std::fs::create_dir_all(src_home.join("config")).unwrap();
+        std::fs::write(
+            src_home.join(ROUTING_CONFIG_FILE),
+            "include = [\"config/routing.toml\"]\n[provider]\ndefault_provider = \"openai-oauth\"\n",
+        )
+        .unwrap();
+        std::fs::write(
+            src_home.join("config/routing.toml"),
+            "[provider]\ndefault_model = \"openai-oauth:gpt-frag\"\ndefault_provider = \"claude-oauth\"\n[mcp]\nleak = \"no\"\n",
+        )
+        .unwrap();
+        let bundle = export_at(&src_home, &src_config, &env_file_names([])).unwrap();
+        let (_d, dst_home, dst_config) = dirs();
+        import_at(&dst_home, &dst_config, bundle.as_bytes()).unwrap();
+        let merged = std::fs::read_to_string(dst_home.join(ROUTING_CONFIG_FILE)).unwrap();
+        assert!(
+            merged.contains("gpt-frag"),
+            "fragment key travels: {merged}"
+        );
+        assert!(merged.contains("openai-oauth\""), "root wins: {merged}");
+        assert!(
+            !merged.contains("claude-oauth") && !merged.contains("leak"),
+            "{merged}"
+        );
+
+        std::fs::remove_file(src_home.join("config/routing.toml")).unwrap();
+        assert!(export_at(&src_home, &src_config, &env_file_names([])).is_err());
     }
 
     #[test]

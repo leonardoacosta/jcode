@@ -21,7 +21,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
 use std::sync::{LazyLock, RwLock};
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 
 const CONFIG_CACHE_CHECK_INTERVAL: Duration = if cfg!(test) {
     Duration::ZERO
@@ -325,21 +325,16 @@ const CONFIG_ENV_KEYS: &[&str] = &[
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ConfigCacheFingerprint {
     path: Option<PathBuf>,
-    modified: Option<SystemTime>,
-    len: Option<u64>,
+    sources: composition::SourceFingerprint,
     env: Vec<(String, String)>,
 }
 
 impl ConfigCacheFingerprint {
     fn current() -> Self {
         let path = Config::path();
-        let metadata = path.as_ref().and_then(|path| std::fs::metadata(path).ok());
         Self {
+            sources: composition::SourceFingerprint::read(path.clone()),
             path,
-            modified: metadata
-                .as_ref()
-                .and_then(|metadata| metadata.modified().ok()),
-            len: metadata.as_ref().map(std::fs::Metadata::len),
             env: config_env_fingerprint(),
         }
     }
@@ -347,13 +342,16 @@ impl ConfigCacheFingerprint {
 
 struct ConfigCache {
     config: &'static Config,
+    /// Why the last load fell back to defaults, if composition failed.
+    load_error: Option<String>,
     fingerprint: ConfigCacheFingerprint,
     last_checked: Instant,
     force_reload: bool,
 }
 
 static CONFIG_CACHE: LazyLock<RwLock<ConfigCache>> = LazyLock::new(|| {
-    let config = leak_config(Config::load());
+    let (loaded, load_error) = load_for_cache();
+    let config = leak_config(loaded);
     // Fingerprint after the load: applying env overrides may set env vars
     // (e.g. copilot_premium -> JCODE_COPILOT_PREMIUM), and fingerprinting
     // first would guarantee a spurious full reload on the next check.
@@ -366,11 +364,44 @@ static CONFIG_CACHE: LazyLock<RwLock<ConfigCache>> = LazyLock::new(|| {
     populate_context_limits_from_config_ref(config);
     RwLock::new(ConfigCache {
         config,
+        load_error,
         fingerprint,
         last_checked: Instant::now(),
         force_reload: false,
     })
 });
+
+/// Strict load with the existing whole-config defaults fallback.
+///
+/// The failure text (source path and key/line, never values) is retained so
+/// authorization-sensitive consumers can deny instead of trusting the fallback.
+fn load_for_cache() -> (Config, Option<String>) {
+    match Config::load_strict() {
+        Ok(config) => (config, None),
+        Err(error) => {
+            crate::logging::error(&format!("Failed to load config: {error:#}"));
+            let mut config = Config::default();
+            config.apply_env_overrides();
+            (config, Some(format!("{error:#}")))
+        }
+    }
+}
+
+/// The cached config, or the composition error if the sources do not load.
+///
+/// Hook execution uses this so a broken fragment denies the operation rather
+/// than running with a UI-oriented defaults fallback. Honors the normal reload
+/// throttle.
+pub fn config_strict() -> anyhow::Result<&'static Config> {
+    let config = config();
+    let cache = CONFIG_CACHE
+        .read()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    match &cache.load_error {
+        Some(error) => Err(anyhow::anyhow!("{error}")),
+        None => Ok(config),
+    }
+}
 
 fn leak_config(config: Config) -> &'static Config {
     Box::leak(Box::new(config))
@@ -423,7 +454,8 @@ pub fn config() -> &'static Config {
                 &cache.fingerprint,
                 &fingerprint,
             ));
-            let next = Config::load();
+            let (next, load_error) = load_for_cache();
+            cache.load_error = load_error;
             // Direct file edits bypass set_default_model's account-pool sync.
             // Reconcile only a changed default in the same home, so unrelated
             // reloads never undo a deliberate pool ordering change.
@@ -485,11 +517,10 @@ fn describe_config_reload(
             next.path.as_ref().map(|p| p.display().to_string())
         ));
     }
-    if previous.modified != next.modified {
-        parts.push("modified_changed=true".to_string());
-    }
-    if previous.len != next.len {
-        parts.push(format!("len={:?}->{:?}", previous.len, next.len));
+    if previous.path == next.path
+        && let Some(change) = previous.sources.describe_change(&next.sources)
+    {
+        parts.push(change);
     }
     let env_changes = describe_env_changes(&previous.env, &next.env);
     if !env_changes.is_empty() {
@@ -1206,15 +1237,21 @@ impl Default for DictationConfig {
 }
 
 pub mod change_report;
+mod composition;
 mod config_file;
 mod default_file;
 mod display_summary;
 mod env_overrides;
+mod sparse_save;
 mod task_policy;
 
 #[cfg(test)]
 #[path = "config_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "config_composition_tests.rs"]
+mod config_composition;
 
 #[cfg(test)]
 #[path = "config_color_tests.rs"]

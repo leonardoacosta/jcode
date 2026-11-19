@@ -680,6 +680,7 @@ mod agents_defaults;
 #[serde(rename_all = "lowercase")]
 pub enum SwarmSpawnMode {
     /// Open a visible/headed terminal window. This was the historical default.
+    #[serde(alias = "headed")]
     Visible,
     /// Create the worker in-process without opening a terminal window.
     Headless,
