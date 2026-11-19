@@ -1,7 +1,7 @@
 # provider-failure-recovery Specification
 
 ## Purpose
-TBD - created by archiving change classify-provider-auth-failures. Update Purpose after archive.
+Classify provider failures into a shared taxonomy (auth expired, auth revoked, quota exhausted, and others) so runtimes recover or fail with a kind-specific remedy instead of raw error text.
 
 ## Requirements
 

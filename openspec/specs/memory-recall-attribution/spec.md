@@ -1,7 +1,7 @@
 # memory-recall-attribution Specification
 
 ## Purpose
-TBD - created by archiving change add-attributable-memory-recall. Update Purpose after archive.
+Make every memory injected into model context traceable: which memories were injected, from what source and trust level, and how many eligible memories the caps dropped.
 
 ## Requirements
 
