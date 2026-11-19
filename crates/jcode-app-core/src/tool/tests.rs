@@ -1172,6 +1172,123 @@ async fn registry_execute_denies_tools_when_config_composition_is_broken() {
 }
 
 #[tokio::test]
+async fn registry_execute_allows_config_repair_and_reads_while_composition_is_broken() {
+    let _guard = crate::storage::lock_test_env();
+    let provider: Arc<dyn Provider> = Arc::new(MockProvider);
+    let registry = Registry::new(provider).await;
+    let home = tempfile::TempDir::new().expect("home");
+    let work = tempfile::TempDir::new().expect("work");
+    let prev_home = std::env::var_os("JCODE_HOME");
+    let prev_disabled = std::env::var_os("JCODE_HOOKS_DISABLED");
+    crate::env::remove_var("JCODE_HOOKS_DISABLED");
+    crate::env::set_var("JCODE_HOME", home.path());
+    std::fs::create_dir_all(home.path().join("config")).expect("dir");
+    std::fs::write(
+        home.path().join("config.toml"),
+        "include = [\"config/policy.toml\"]\n",
+    )
+    .expect("root");
+    let fragment = home.path().join("config/policy.toml");
+    let marker = work.path().join("ran");
+    let ctx = || ToolContext {
+        session_id: "test-config-repair".to_string(),
+        message_id: "test".to_string(),
+        tool_call_id: "test".to_string(),
+        working_dir: Some(work.path().to_path_buf()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: ToolExecutionMode::Direct,
+    };
+    let touch = serde_json::json!({ "command": format!("touch {}", marker.display()) });
+
+    // Malformed fragment: `edit` of that exact file repairs it, `bash` stays denied.
+    std::fs::write(&fragment, "[hooks\npre_tool = \"false\"\n").expect("broken");
+    crate::config::invalidate_config_cache();
+    let read_broken = registry
+        .execute(
+            "read",
+            serde_json::json!({ "file_path": fragment.display().to_string() }),
+            ctx(),
+        )
+        .await;
+    let bash_broken = registry.execute("bash", touch.clone(), ctx()).await;
+    let unrelated_write = registry
+        .execute(
+            "write",
+            serde_json::json!({
+                "file_path": work.path().join("other.txt").display().to_string(),
+                "content": "x",
+            }),
+            ctx(),
+        )
+        .await;
+    let edited = registry
+        .execute(
+            "edit",
+            serde_json::json!({
+                "file_path": fragment.display().to_string(),
+                "edits": [{ "old_string": "[hooks\npre_tool = \"false\"", "new_string": "[display]\ncentered = true" }],
+            }),
+            ctx(),
+        )
+        .await;
+    let bash_repaired = registry.execute("bash", touch.clone(), ctx()).await;
+
+    // Deleted fragment: `write` recreates it despite the broken composition.
+    let _ = std::fs::remove_file(&marker);
+    std::fs::remove_file(&fragment).expect("remove");
+    crate::config::invalidate_config_cache();
+    let bash_missing = registry.execute("bash", touch.clone(), ctx()).await;
+    let written = registry
+        .execute(
+            "write",
+            serde_json::json!({
+                "file_path": fragment.display().to_string(),
+                "content": "[display]\ncentered = true\n",
+            }),
+            ctx(),
+        )
+        .await;
+    let bash_after_write = registry.execute("bash", touch, ctx()).await;
+
+    match prev_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    if let Some(value) = prev_disabled {
+        crate::env::set_var("JCODE_HOOKS_DISABLED", value);
+    }
+    crate::config::invalidate_config_cache();
+
+    assert!(read_broken.is_ok(), "read is exempt: {read_broken:?}");
+    assert!(
+        bash_broken
+            .expect_err("bash is hook-gated")
+            .to_string()
+            .contains("configuration does not load")
+    );
+    assert!(
+        unrelated_write
+            .expect_err("only config sources are exempt from the deny")
+            .to_string()
+            .contains("configuration does not load")
+    );
+    assert!(edited.is_ok(), "edit of the broken fragment: {edited:?}");
+    assert!(bash_repaired.is_ok(), "{bash_repaired:?}");
+    assert!(
+        bash_missing
+            .expect_err("deleted fragment denies bash")
+            .to_string()
+            .contains("configuration does not load")
+    );
+    assert!(
+        written.is_ok(),
+        "write of the missing fragment: {written:?}"
+    );
+    assert!(bash_after_write.is_ok(), "{bash_after_write:?}");
+}
+
+#[tokio::test]
 async fn test_definitions_keep_batch_schema_generic() {
     let provider: Arc<dyn Provider> = Arc::new(MockProvider);
     let registry = Registry::new(provider).await;

@@ -32,6 +32,15 @@ fn is_active_config_file(path: &Path) -> bool {
     comparable(path) == comparable(&config_path)
 }
 
+/// Whether `path` is the active root config or a fragment its manifest lists.
+///
+/// Lenient (a broken manifest yields just the root), so it still answers while
+/// the config does not load. Tool dispatch uses it to let edits that repair
+/// the config through a fail-closed hook policy.
+pub(super) fn is_config_source_file(path: &Path) -> bool {
+    is_active_config_file(path) || is_active_fragment(path)
+}
+
 /// The fragment listed by the active root manifest that `path` names, if any.
 fn is_active_fragment(path: &Path) -> bool {
     fragment_position(path).is_some()
@@ -92,7 +101,9 @@ pub fn config_edit_notice(path: &Path, before: &str, after: &str) -> Option<Stri
         return Some(format!(
             "\n\nWARNING: the jcode config sources no longer load (after editing {}), so \
              jcode is falling back to default settings and every setting in the root \
-             file and its fragments is being ignored. Fix the error: {error:#}",
+             file and its fragments is being ignored. Hooks and external-auth trust \
+             fail closed until it loads, so hook-gated tool calls are blocked; edits \
+             to the config files themselves still run. Fix the error: {error:#}",
             path.display()
         ));
     }

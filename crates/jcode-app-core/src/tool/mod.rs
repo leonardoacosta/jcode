@@ -245,6 +245,30 @@ pub(crate) fn clear_session_tool_policy(session_id: &str) {
     policies.remove(session_id);
 }
 
+/// Calls that run while hook policy is unknown (config does not load).
+///
+/// Read-only tools cannot change anything, and `edit`/`write` aimed at the root
+/// config or a listed fragment are how a broken config gets repaired. Everything
+/// else, including bash and every other mutating tool, stays denied because a
+/// hidden `pre_tool` gate might have vetoed it.
+fn config_repair_exempt(name: &str, input: &Value, ctx: &ToolContext, custom: bool) -> bool {
+    if custom {
+        return false;
+    }
+    match name {
+        "read" | "agentgrep" | "conversation_search" | "session_search" => true,
+        "edit" | "write" => input
+            .get("file_path")
+            .and_then(Value::as_str)
+            .is_some_and(|path| {
+                config_edit_notice::is_config_source_file(
+                    &ctx.resolve_path(std::path::Path::new(path)),
+                )
+            }),
+        _ => false,
+    }
+}
+
 fn session_tool_policy(session_id: &str) -> Option<SessionToolPolicy> {
     let mut policy = SESSION_TOOL_POLICIES
         .read()
@@ -1021,7 +1045,10 @@ impl Registry {
         // Plan calls never run user executable hooks or hook rewrites.
         // Broken config composition means hook policy is unknown: deny before
         // any transformer or gate is skipped as "not configured".
-        if !plan_only && let Some(reason) = crate::hooks::hook_policy_denial() {
+        if !plan_only
+            && !config_repair_exempt(resolved_name, &input, &ctx, is_custom)
+            && let Some(reason) = crate::hooks::hook_policy_denial()
+        {
             let mut fields =
                 Self::tool_lifecycle_fields("blocked", name, resolved_name, &input, &ctx);
             fields.push(("block_reason".to_string(), reason.clone()));

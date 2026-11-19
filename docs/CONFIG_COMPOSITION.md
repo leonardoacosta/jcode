@@ -106,7 +106,10 @@ any file replacement. Edits made by hand while jcode is saving are not locked.
 Change notices and error messages avoid values. Notices print `<redacted>` for
 the before/after value of any key whose name contains `key`, `token`, `secret`,
 `password`, `auth` or `credential` (and for arrays holding such keys). Parse and
-type errors mask quoted, literal, multi-line and numeric values.
+type errors mask quoted, literal, multi-line and numeric values. `jcode policy`
+uses the same typed, redacted loader and names the failing source file. Masking
+is by key name, so a secret under an unrelated name (for example `cookie` or
+`bearer`) can still print in a notice.
 
 ## Known limits: readers that ignore `include`
 
@@ -119,8 +122,33 @@ that lives only in a fragment is invisible to them until it is also in the root:
   into an instance home. The instance gets no fragments, so a copied root with
   `include` lists files that are absent there and fails to load in that instance.
 
+- `jcode provider add` (`src/cli/commands/provider_setup.rs`) edits the root
+  `config.toml` as raw text with a plain write: it does not follow `include`,
+  does not check for source drift and checks "profile already exists" against the
+  root only. A profile defined only in a fragment is not seen as existing; the
+  root entry wins on load. It never modifies a fragment.
+- The SSH host `/config view` and `/config set` commands
+  (`server/runtime_ssh_host.rs`) read and re-render the root only
+  (`toml::to_string_pretty`, so root comments are dropped) and show no
+  fragment-only values. Root overrides win on load, so `set` stays safe.
+
 The router bundle export (`auth/router_transfer.rs`) does follow `include`, and
 fails the export rather than dropping keys when a source does not compose.
+
+## Broken composition and tool calls
+
+If the sources stop loading, hooks and external-auth trust fail closed (a UI
+defaults fallback never grants permission or runs hooks). For tool dispatch this
+means calls are blocked only when hook policy could be hiding in the broken
+config: the root has an `include` or a `[hooks]` table. A root with neither is
+unaffected by an unrelated error elsewhere. Even then, `read`, `agentgrep`,
+`conversation_search` and `session_search` run, and `edit`/`write` of the root
+or a listed fragment run so the agent can repair the file. `bash` and every
+other mutating tool stay blocked until the config loads. `JCODE_HOOKS_DISABLED=1`
+(set inside hook children) suppresses hooks and this denial entirely.
+
+The check rides the normal reload throttle, so a source broken by something other
+than a tool edit can keep running hooks for up to 500 ms.
 
 ## Reload and edit feedback
 

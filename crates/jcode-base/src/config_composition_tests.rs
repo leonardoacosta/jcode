@@ -601,6 +601,34 @@ fn new_root_file_uses_default_permissions_like_the_previous_writer() {
     assert_eq!(mode, umask_default);
 }
 
+/// The replacement temp file must never be group/world readable, even for an
+/// instant, when the original is 0600 and may hold inline keys.
+#[cfg(unix)]
+#[test]
+fn replacement_temp_file_is_created_0600() {
+    use std::os::unix::fs::PermissionsExt;
+    let home = Home::new();
+    home.write("config.toml", "[display]\ncentered = false\n");
+    std::fs::set_permissions(home.root(), std::fs::Permissions::from_mode(0o600)).unwrap();
+    let observed = std::sync::Arc::new(std::sync::Mutex::new(None));
+    let seen = observed.clone();
+    let dir = home.dir.path().to_path_buf();
+    set_fault(TestFault::AfterCreate(Box::new(move || {
+        let temp = std::fs::read_dir(&dir)
+            .unwrap()
+            .flatten()
+            .find(|e| e.file_name().to_string_lossy().contains("jcode-tmp"))
+            .expect("temp file present before replace");
+        *seen.lock().unwrap() = Some(temp.metadata().unwrap().permissions().mode() & 0o777);
+    })));
+    // Widen the umask so a default-mode create would visibly be 0644/0666.
+    let prev = unsafe { libc::umask(0o000) };
+    let result = Config::set_display_centered(true);
+    unsafe { libc::umask(prev) };
+    result.unwrap();
+    assert_eq!(*observed.lock().unwrap(), Some(0o600));
+}
+
 #[test]
 fn legacy_single_file_save_is_sparse_and_keeps_comments_and_unknown_tables() {
     let home = Home::new();
@@ -1015,6 +1043,54 @@ fn invalid_composition_denies_trust_hooks_and_task_policy() {
     home.write("config/policy.toml", "[hooks]\npre_tool = \"true\"\n");
     assert!(!crate::hooks::hook_commands("pre_tool").is_empty());
     assert!(Config::effective_task_policy().is_ok());
+}
+
+/// `jcode policy` must not echo a bad value from any source, and must name the
+/// source file rather than a line of re-serialized text.
+#[test]
+fn policy_report_errors_redact_values_and_name_the_source() {
+    let home = Home::new();
+    home.write("config.toml", "include = [\"config/providers.toml\"]\n");
+    home.write(
+        "config/providers.toml",
+        "[providers.x]\napi_key = 987654321\n",
+    );
+    let error = format!(
+        "{:#}",
+        Config::effective_task_policy().expect_err("bad type")
+    );
+    assert!(!error.contains("987654321"), "{error}");
+    assert!(!error.contains("api_key = "), "{error}");
+    assert!(error.contains("config.toml"), "{error}");
+
+    // A valid composed table still reports.
+    home.write("config/providers.toml", "[tasks]\nmax_attempts = 2\n");
+    let report = Config::effective_task_policy().unwrap();
+    assert_eq!(report["tasks"]["max_attempts"], 2);
+}
+
+/// A broken config with no way to hide hooks must not deny hook-less installs.
+#[test]
+fn unrelated_config_error_without_include_or_hooks_does_not_deny_tool_dispatch() {
+    let home = Home::new();
+    let prev = std::env::var_os("JCODE_HOOKS_DISABLED");
+    crate::env::remove_var("JCODE_HOOKS_DISABLED");
+    home.write("config.toml", "[display]\ncentered = \"not a bool\"\n");
+    assert!(crate::config::config_strict().is_err());
+    assert!(crate::hooks::hook_policy_denial().is_none());
+    assert!(crate::hooks::hook_commands("pre_tool").is_empty());
+
+    // An include (or a hooks table) means a hook could be hidden: still denied.
+    home.write("config.toml", "include = [\"missing.toml\"]\n");
+    assert!(crate::hooks::hook_policy_denial().is_some());
+    home.write(
+        "config.toml",
+        "[hooks]\npre_tool = \"true\"\n[display]\ncentered = 3\n",
+    );
+    assert!(crate::hooks::hook_policy_denial().is_some());
+    if let Some(prev) = prev {
+        crate::env::set_var("JCODE_HOOKS_DISABLED", prev);
+    }
 }
 
 const SPLIT_ROOT: &str = "# Nonsecret split-layout fixture (disposable JCODE_HOME).\ninclude = [\"config/ui.toml\", \"config/hooks.toml\"]\n\n[display]\ncentered = false\n";

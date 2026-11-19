@@ -159,6 +159,8 @@ fn apply_remove(
 pub(super) enum TestFault {
     /// Run once after the baseline is read, before the replace-time drift check.
     BeforeReplace(Box<dyn FnOnce() + Send>),
+    /// Run once right after the temporary file is created, before any content.
+    AfterCreate(Box<dyn FnOnce() + Send>),
     /// Fail the final rename.
     FailReplace,
     /// Fail writing the temporary file.
@@ -206,13 +208,26 @@ fn replace_atomically(
     ));
     let temp = TempFile(temp_path);
     {
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
+        let mut options = std::fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        // An existing file may hold inline API keys: never create its replacement
+        // wider than 0600 (its exact mode is copied once content is written). A
+        // brand-new root keeps the previous writer's umask-default mode.
+        #[cfg(unix)]
+        if target.exists() {
+            std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+        }
+        let mut file = options
             .open(&temp.0)
             .map_err(|e| anyhow::anyhow!("Cannot create temporary config file: {e}"))?;
         #[cfg(test)]
         let mut fault = take_fault();
+        #[cfg(test)]
+        if let Some(TestFault::AfterCreate(hook)) =
+            fault.take_if(|f| matches!(f, TestFault::AfterCreate(_)))
+        {
+            hook();
+        }
         #[cfg(test)]
         if matches!(fault, Some(TestFault::FailWrite)) {
             anyhow::bail!("Cannot write temporary config file: injected failure");

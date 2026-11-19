@@ -114,3 +114,18 @@ Known limits: `tool/mod.rs:1007` sandbox category check still reads the non-stri
 - M4: `redact_message` replaces quoted, backticked and apostrophe-literal segments (multi-line included); `diff_toml` masks values of leaf keys matching key/token/secret/password/auth/credential. Tests `error_text_redacts_literal_numeric_and_multiline_values`, `secret_named_keys_never_echo_values_in_notices` (jcode-base), `valid_edit_notices_never_echo_secret_values` (app-core). Residual: serde may echo a numeric value inside prose for some error shapes; the test covers bool-expected cases with integer and float tokens.
 - M5: see inventory correction above.
 - m4: test `removing_a_fragment_from_the_manifest_reports_and_deactivates_it`. m7: old `fs::write` also used umask defaults, so new root files keep the default; test `new_root_file_uses_default_permissions_like_the_previous_writer` documents it. m9: `Origins::record` records nested keys of whole-table inserts; test `nested_key_conflicts_name_both_sources`. m13: `winning_keys` compares exact keys against winning sources, read once; test `masking_compares_the_exact_key_not_a_prefix_overlap`.
+
+## Caller inventory addendum (config-comp-fix2, 2026-11-19)
+
+Root-only surfaces found by review 2 (m5) that were missing from the 1.1 table. Both stay root-only on purpose and are recorded as known limits in `docs/CONFIG_COMPOSITION.md`; neither can grant authority or lose fragment data (root overrides win, fragments are never written):
+
+| Surface | Path | Disposition |
+| --- | --- | --- |
+| `jcode provider add` raw-text root edit | `src/cli/commands/provider_setup.rs:192-230` | Known limit: plain `fs::write`, no drift check, "exists" check reads the root only. Not wired to `load_for_update` because it preserves root text/comments verbatim. |
+| SSH host `/config view` / `/config set` | `server/runtime_ssh_host.rs:226-300` | Known limit: root only, `toml::to_string_pretty` re-render, no fragment values shown. |
+
+## Review 2 fixes (N1, N2, m2, m5), 2026-11-19
+
+- N1: `Registry::execute` no longer denies every tool on a broken load. `hook_policy_denial` returns `None` unless the root has `include` or `hooks` (or cannot be judged), and tool dispatch exempts `read`, `agentgrep`, `conversation_search`, `session_search` and `edit`/`write` whose resolved path is the root config or a listed fragment. `strict_hooks_config` applies the same rule. Tests: `registry_execute_allows_config_repair_and_reads_while_composition_is_broken`, `registry_execute_denies_tools_when_config_composition_is_broken` (app-core), `unrelated_config_error_without_include_or_hooks_does_not_deny_tool_dispatch` (base). Edit notice wording now states hooks fail closed.
+- N2: `effective_task_policy` and `policy_from_toml` build the typed config via `typed_from_table` / `describe_parse_error` (redacted, path-labelled). Test `policy_report_errors_redact_values_and_name_the_source`.
+- m2: temp file for an existing root is created 0600. Test `replacement_temp_file_is_created_0600`.

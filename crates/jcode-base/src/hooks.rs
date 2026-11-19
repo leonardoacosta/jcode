@@ -242,6 +242,9 @@ pub fn client_terminal_env() -> Option<Vec<(String, String)>> {
 fn strict_hooks_config() -> Option<&'static crate::config::HooksConfig> {
     match crate::config::config_strict() {
         Ok(config) => Some(&config.hooks),
+        // Nothing in the root could declare or include hooks, so the defaults
+        // fallback (plus environment hook overrides) is the whole hook policy.
+        Err(_) if !broken_config_may_hide_hooks() => Some(&crate::config::config().hooks),
         Err(error) => {
             crate::logging::warn(&format!("Hooks denied, config does not load: {error:#}"));
             None
@@ -249,18 +252,46 @@ fn strict_hooks_config() -> Option<&'static crate::config::HooksConfig> {
     }
 }
 
-/// Denial reason when hook policy cannot be determined because the config
-/// sources do not compose, `None` when hooks are suppressed or policy loads.
+/// Whether the root `config.toml` could declare hooks or include fragments
+/// that do, so a failed load leaves hook policy unknown.
 ///
-/// Tool dispatch must consult this before running a call: with unreadable
+/// A readable root with neither an `include` nor a `hooks` key cannot hide a
+/// hook, however broken some other setting is. An unparseable root is judged
+/// by its text (an escape could spell either key), an unreadable one is unknown.
+fn broken_config_may_hide_hooks() -> bool {
+    let Some(root) = crate::config::Config::path() else {
+        return false;
+    };
+    let bytes = match std::fs::read(&root) {
+        Ok(bytes) => bytes,
+        Err(error) => return error.kind() != std::io::ErrorKind::NotFound,
+    };
+    let Ok(text) = std::str::from_utf8(&bytes) else {
+        return true;
+    };
+    match text.parse::<toml::Table>() {
+        Ok(table) => table.contains_key("include") || table.contains_key("hooks"),
+        Err(_) => text.contains("include") || text.contains("hooks") || text.contains('\\'),
+    }
+}
+
+/// Denial reason when hook policy cannot be determined because the config
+/// sources do not compose, `None` when hooks are suppressed, policy loads, or
+/// the broken config cannot be hiding any hook (no `include` or `hooks`).
+///
+/// Tool dispatch consults this before running a hook-gated call: with unreadable
 /// policy there is no way to know whether a `pre_tool` gate or input
 /// transformer should have vetoed or rewritten it, so the call fails closed
-/// rather than skipping hooks as "not configured".
+/// rather than skipping hooks as "not configured". Callers exempt the read-only
+/// and config-repair operations themselves.
 pub fn hook_policy_denial() -> Option<String> {
     if hooks_suppressed() {
         return None;
     }
     let error = crate::config::config_strict().err()?;
+    if !broken_config_may_hide_hooks() {
+        return None;
+    }
     crate::logging::warn(&format!(
         "pre_tool gate denied, config does not load: {error:#}"
     ));

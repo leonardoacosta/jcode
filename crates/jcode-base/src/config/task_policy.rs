@@ -1,4 +1,5 @@
 use super::*;
+use std::path::Path;
 
 impl Config {
     pub(crate) fn validate_task_policy(&self) -> anyhow::Result<()> {
@@ -21,9 +22,18 @@ impl Config {
                 "Project task/worktree/setup policy is unsupported; repository content cannot grant user authority"
             );
         }
-        let config: Self = toml::from_str(content)?;
-        config.validate_task_policy()?;
-        let table: toml::Table = toml::from_str(content)?;
+        let table: toml::Table = content.parse().map_err(|e: toml::de::Error| {
+            anyhow::anyhow!(
+                "Failed to parse config file {}",
+                super::composition::describe_parse_error(Path::new(source), content, &e)
+            )
+        })?;
+        Self::policy_from_table(table, source)
+    }
+
+    /// Typed, redacted policy report for an already composed table.
+    fn policy_from_table(table: toml::Table, source: &str) -> anyhow::Result<serde_json::Value> {
+        let config = Self::typed_from_table(Path::new(source), table.clone())?;
         let mut sources = BTreeMap::new();
         for (section, value) in [
             ("tasks", serde_json::to_value(&config.tasks)?),
@@ -51,12 +61,12 @@ impl Config {
     /// No config migration, cache refresh, provider access or filesystem writes.
     pub fn effective_task_policy() -> anyhow::Result<serde_json::Value> {
         let path = Self::path().ok_or_else(|| anyhow::anyhow!("No config path"))?;
-        let content = match std::fs::metadata(&path) {
-            Ok(_) => toml::to_string(&Self::read_composed_table(&path)?)?,
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => String::new(),
+        let table = match std::fs::metadata(&path) {
+            Ok(_) => Self::read_composed_table(&path)?,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => toml::Table::new(),
             Err(error) => return Err(error.into()),
         };
-        Self::policy_from_toml(&content, &path.display().to_string(), None)
+        Self::policy_from_table(table, &path.display().to_string())
     }
 }
 
