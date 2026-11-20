@@ -43,6 +43,14 @@ pub fn has_pending_work() -> bool {
     }
     directives::directives_unreadable_or_pending()
 }
+/// Whether any unpaused recurring schedule exists. An unreadable store counts
+/// as yes: it is not evidence that nothing is scheduled.
+pub fn has_active_recurring() -> bool {
+    match recurring::RecurringStore::open_default().and_then(|store| store.list()) {
+        Ok(all) => all.iter().any(|schedule| !schedule.paused),
+        Err(_) => true,
+    }
+}
 #[cfg(test)]
 pub(crate) use prompt::format_duration_rough;
 pub use prompt::{

@@ -553,7 +553,8 @@ pub fn control_reader_version() -> u32 {
 pub use self::util::{MANAGED_CLOUD_LIVE_RELOAD_MARKER, ServerIdentity};
 use self::util::{
     debug_control_allowed, embedding_idle_unload_secs, git_common_dir_for, reload_exec_target,
-    startup_headless_recovery_test_delay, swarm_id_for_dir, swarm_id_for_session,
+    startup_headless_recovery_test_delay, supervised_by_service_manager, swarm_id_for_dir,
+    swarm_id_for_session,
 };
 
 mod file_activity;
@@ -1510,7 +1511,11 @@ impl Server {
             }
         });
 
-        match lifecycle::IdleExit::for_scope(temporary_server_policy) {
+        match lifecycle::IdleExit::for_scope(
+            temporary_server_policy,
+            supervised_by_service_manager(),
+            debug_control_allowed(),
+        ) {
             lifecycle::IdleExit::After(policy) => lifecycle::spawn_temporary_lifecycle_monitor(
                 Arc::clone(&self.client_count),
                 Arc::clone(&self.sessions),
@@ -1520,9 +1525,9 @@ impl Server {
                 self.identity.name.clone(),
                 policy,
             ),
-            // The shared daemon stays resident whatever its idle time.
+            // A supervised or debug-controlled server stays resident.
             lifecycle::IdleExit::Never => {
-                crate::logging::info("Shared server is resident; idle exit is disabled.");
+                crate::logging::info("Server is resident; idle exit is disabled.");
             }
         }
     }

@@ -67,17 +67,41 @@ pub(crate) fn begin_shutdown() {
     ADMISSION.set_stopping(true);
 }
 
-/// How a server scope handles idleness. The shared daemon never idle-exits;
-/// scheduled and ambient work run inside it and `Restart=always` turns every
-/// idle exit into churn. Only a temporary server retires itself.
+/// Idle timeout for an unsupervised, non-temporary server (self-dev,
+/// auto-spawned). The same 5 minutes as before the resident-daemon change.
+pub(crate) const UNSUPERVISED_IDLE_SECS: u64 = 300;
+
+/// How a server scope handles idleness.
+///
+/// * A temporary server retires itself on owner exit or idle.
+/// * A server whose lifetime a service manager owns stays resident: scheduled
+///   and ambient work run inside it and `Restart=always` turns every idle exit
+///   into churn.
+/// * A server with debug control enabled stays resident so a debugging session
+///   is not pulled out from under the developer.
+/// * Any other server (self-dev, auto-spawned) idle-exits after
+///   [`UNSUPERVISED_IDLE_SECS`] with no clients and no work, so stale servers
+///   do not pile up. Pending scheduled work, running background tasks and
+///   active recurring schedules all count as work.
 pub(crate) enum IdleExit {
     Never,
     After(TemporaryServerPolicy),
 }
 
 impl IdleExit {
-    pub(crate) fn for_scope(policy: Option<TemporaryServerPolicy>) -> Self {
-        policy.map_or(Self::Never, Self::After)
+    pub(crate) fn for_scope(
+        policy: Option<TemporaryServerPolicy>,
+        supervised: bool,
+        debug_control: bool,
+    ) -> Self {
+        match policy {
+            Some(policy) => Self::After(policy),
+            None if supervised || debug_control => Self::Never,
+            None => Self::After(TemporaryServerPolicy {
+                owner_pid: None,
+                idle_timeout_secs: UNSUPERVISED_IDLE_SECS,
+            }),
+        }
     }
 }
 
@@ -99,6 +123,9 @@ pub(crate) struct WorkPresence {
     pub(crate) ambient_pending: bool,
     /// Background tasks still `Running`.
     pub(crate) background_running: bool,
+    /// An unpaused recurring schedule exists. Only counted for servers that
+    /// run the scheduler, so an idle exit cannot silently drop its firings.
+    pub(crate) recurring_active: bool,
 }
 
 impl WorkPresence {
@@ -106,6 +133,7 @@ impl WorkPresence {
         super::idle_monitor_should_start(self.clients, self.live_headless_worker)
             && !self.ambient_pending
             && !self.background_running
+            && !self.recurring_active
     }
 }
 
@@ -113,6 +141,7 @@ async fn gather_work_presence(
     client_count: &RwLock<usize>,
     sessions: &super::SessionAgents,
     swarm_state: &super::SwarmState,
+    runs_scheduler: bool,
 ) -> WorkPresence {
     let ambient_pending = tokio::task::spawn_blocking(crate::ambient::has_pending_work)
         .await
@@ -124,6 +153,10 @@ async fn gather_work_presence(
         live_headless_worker: super::has_live_headless_worker(sessions, swarm_state).await,
         ambient_pending,
         background_running,
+        recurring_active: runs_scheduler
+            && tokio::task::spawn_blocking(crate::ambient::has_active_recurring)
+                .await
+                .unwrap_or(true),
     }
 }
 
@@ -274,7 +307,14 @@ pub(crate) fn spawn_temporary_lifecycle_monitor(
                 shutdown_temporary_server(&server_name, &socket_path, &debug_socket_path).await;
             }
 
-            let presence = gather_work_presence(&client_count, &sessions, &swarm_state).await;
+            let presence = gather_work_presence(
+                &client_count,
+                &sessions,
+                &swarm_state,
+                // A temporary server never runs the recurring scheduler.
+                !temporary_server_enabled(),
+            )
+            .await;
             if presence.idle() {
                 if idle_since.is_none() {
                     idle_since = Some(Instant::now());

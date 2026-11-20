@@ -29,13 +29,27 @@ mod resident_lifecycle {
     }
 
     #[test]
-    fn shared_scope_never_idle_exits_and_temporary_scope_does() {
-        // The shared daemon has no temporary policy, so it has no idle exit
-        // at any idle duration; there is no timeout to pass.
-        assert!(matches!(IdleExit::for_scope(None), IdleExit::Never));
+    fn idle_exit_follows_who_owns_the_servers_lifetime() {
+        // Supervised (the shared daemon) and debug-controlled servers stay.
         assert!(matches!(
-            IdleExit::for_scope(Some(temp_policy(None))),
+            IdleExit::for_scope(None, true, false),
+            IdleExit::Never
+        ));
+        assert!(matches!(
+            IdleExit::for_scope(None, false, true),
+            IdleExit::Never
+        ));
+        // A temporary server uses its own policy even if also supervised.
+        assert!(matches!(
+            IdleExit::for_scope(Some(temp_policy(None)), true, false),
             IdleExit::After(policy) if policy.idle_timeout_secs == 60
+        ));
+        // Self-dev and auto-spawned servers idle-exit again after 5 minutes.
+        assert!(matches!(
+            IdleExit::for_scope(None, false, false),
+            IdleExit::After(policy)
+                if policy.idle_timeout_secs == super::super::lifecycle::UNSUPERVISED_IDLE_SECS
+                    && policy.owner_pid.is_none()
         ));
     }
 
@@ -57,6 +71,10 @@ mod resident_lifecycle {
             },
             WorkPresence {
                 background_running: true,
+                ..Default::default()
+            },
+            WorkPresence {
+                recurring_active: true,
                 ..Default::default()
             },
         ] {
