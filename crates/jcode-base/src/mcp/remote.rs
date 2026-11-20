@@ -127,7 +127,9 @@ impl RemoteState {
         if self.static_auth {
             return false;
         }
-        match oauth::token_after_unauthorized(self.url.as_str(), failed.as_deref()).await {
+        match oauth::token_after_unauthorized(&self.name, self.url.as_str(), failed.as_deref())
+            .await
+        {
             Ok(Some(token)) if Some(&token) != failed.as_ref() => {
                 *self.bearer.write().unwrap_or_else(|p| p.into_inner()) = Some(token);
                 true
@@ -469,7 +471,7 @@ pub(super) async fn start(
     let bearer = if static_auth {
         None
     } else {
-        oauth::access_token(url.as_str())
+        oauth::access_token(name, url.as_str())
             .await
             .unwrap_or_else(|err| {
                 crate::logging::warn(&format!(

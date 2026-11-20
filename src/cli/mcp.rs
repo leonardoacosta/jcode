@@ -54,7 +54,11 @@ fn server_rows(config: &McpConfig) -> Result<Vec<Value>> {
         .map(|name| {
             let server = &config.servers[name];
             let stored = if server.is_remote() && !static_auth(server) {
-                server.url.as_deref().map(oauth::status).transpose()?
+                server
+                    .url
+                    .as_deref()
+                    .map(|url| oauth::status(name, url))
+                    .transpose()?
             } else {
                 None
             };
@@ -179,7 +183,7 @@ pub(crate) async fn run(action: McpCommand) -> Result<()> {
                 oauth::BrowserMode::Open
             };
             eprintln!("Discovering OAuth configuration for MCP server '{name}'...");
-            oauth::login(url, mode, |url| {
+            oauth::login(&name, url, mode, |url| {
                 eprintln!("Open this URL to authorize MCP access:\n{url}\nWaiting for the browser callback (up to five minutes). Keep this command running.");
                 if no_browser {
                     eprintln!("The callback must reach this machine's loopback listener. Over SSH, forward the callback port shown in redirect_uri or run login on the browser's machine.");
@@ -192,7 +196,7 @@ pub(crate) async fn run(action: McpCommand) -> Result<()> {
         McpCommand::Import { .. } => unreachable!("handled above"),
         McpCommand::Logout { server: name } => {
             let (_, url) = remote_server(&config, &name)?;
-            let removed = oauth::logout(url)?;
+            let removed = oauth::logout(&name, url)?;
             println!(
                 "{} for MCP server '{name}'.",
                 if removed {

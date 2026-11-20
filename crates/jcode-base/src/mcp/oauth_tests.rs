@@ -194,7 +194,7 @@ fn seed(resource: &str, entry: StoredOAuth) {
     let file = open_store_lock(&path).unwrap();
     file.try_lock().unwrap();
     let mut store = load_store_at(&path).unwrap();
-    let key = canonical_resource(resource);
+    let key = scoped_key("test", resource);
     store.servers.insert(key.clone(), entry);
     advance_generation(&mut store, &key).unwrap();
     save_store_at(&path, &store).unwrap();
@@ -503,7 +503,7 @@ async fn browser_login(auth_url: String, inject_bad_callbacks: bool) -> Result<(
 async fn do_login(fixture: &Fixture, inject_bad_callbacks: bool) -> Result<()> {
     let (sender, receiver) = tokio::sync::oneshot::channel();
     let resource = fixture.resource();
-    let login = login(&resource, BrowserMode::Print, move |auth_url| {
+    let login = login("test", &resource, BrowserMode::Print, move |auth_url| {
         let auth_url = auth_url.to_string();
         tokio::spawn(async move {
             let _ = sender.send(browser_login(auth_url, inject_bad_callbacks).await);
@@ -725,9 +725,9 @@ async fn localhost_full_login_pkce_callback_401_refresh_rotation_and_logout() {
     do_login(&fixture, true).await.unwrap();
     assert_eq!(fixture.state.lock().unwrap().code_exchanges, 1);
     let resource = fixture.resource();
-    assert!(status(&resource).unwrap().logged_in);
+    assert!(status("test", &resource).unwrap().logged_in);
     assert_eq!(
-        access_token(&resource).await.unwrap().as_deref(),
+        access_token("test", &resource).await.unwrap().as_deref(),
         Some("access-0")
     );
     let rejected = http()
@@ -740,8 +740,8 @@ async fn localhost_full_login_pkce_callback_401_refresh_rotation_and_logout() {
         .unwrap();
     assert_eq!(rejected.status(), reqwest::StatusCode::UNAUTHORIZED);
     let (left, right) = tokio::join!(
-        token_after_unauthorized(&resource, Some("access-0")),
-        token_after_unauthorized(&resource, Some("access-0")),
+        token_after_unauthorized("test", &resource, Some("access-0")),
+        token_after_unauthorized("test", &resource, Some("access-0")),
     );
     assert_eq!(left.unwrap().as_deref(), Some("access-1"));
     assert_eq!(right.unwrap().as_deref(), Some("access-1"));
@@ -751,7 +751,7 @@ async fn localhost_full_login_pkce_callback_401_refresh_rotation_and_logout() {
         "401 must force exactly one refresh despite future expiry"
     );
     assert_eq!(
-        stored(&resource).unwrap().refresh_token.as_deref(),
+        stored("test", &resource).unwrap().refresh_token.as_deref(),
         Some("refresh-1")
     );
     assert_eq!(
@@ -766,22 +766,22 @@ async fn localhost_full_login_pkce_callback_401_refresh_rotation_and_logout() {
             .status(),
         reqwest::StatusCode::OK
     );
-    let mut entry = stored(&resource).unwrap();
+    let mut entry = stored("test", &resource).unwrap();
     entry.expires_at = Some(now_secs() - 100);
     seed(&resource, entry);
     assert_eq!(
-        access_token(&resource).await.unwrap().as_deref(),
+        access_token("test", &resource).await.unwrap().as_deref(),
         Some("access-2")
     );
     assert_eq!(fixture.state.lock().unwrap().refresh_count, 2);
     assert_eq!(
-        stored(&resource).unwrap().refresh_token.as_deref(),
+        stored("test", &resource).unwrap().refresh_token.as_deref(),
         Some("refresh-2")
     );
-    assert!(logout(&resource).unwrap());
-    assert!(!logout(&resource).unwrap());
-    assert_eq!(access_token(&resource).await.unwrap(), None);
-    assert!(!status(&resource).unwrap().logged_in);
+    assert!(logout("test", &resource).unwrap());
+    assert!(!logout("test", &resource).unwrap());
+    assert_eq!(access_token("test", &resource).await.unwrap(), None);
+    assert!(!status("test", &resource).unwrap().logged_in);
     let bytes = std::fs::read_to_string(sandbox.path()).unwrap();
     assert!(!bytes.contains("access-"));
     assert!(!bytes.contains("refresh-"));
@@ -833,7 +833,10 @@ async fn localhost_well_known_fallback_and_oidc_path_append() {
     ];
     assert_eq!(&paths[..expected.len()], &expected);
     assert_eq!(
-        stored(&fixture.resource()).unwrap().scope.as_deref(),
+        stored("test", &fixture.resource())
+            .unwrap()
+            .scope
+            .as_deref(),
         Some("read")
     );
     let authorize = state
@@ -913,7 +916,7 @@ async fn localhost_redirects_and_provider_errors_do_not_leak_credentials() {
     ] {
         let fixture = Fixture::new(options).await;
         fixture.seed(false);
-        let error = token_after_unauthorized(&fixture.resource(), Some("access-0"))
+        let error = token_after_unauthorized("test", &fixture.resource(), Some("access-0"))
             .await
             .unwrap_err();
         let text = format!("{error:#}");
@@ -921,7 +924,10 @@ async fn localhost_redirects_and_provider_errors_do_not_leak_credentials() {
             assert!(!text.contains(secret), "{text}");
         }
         assert_eq!(
-            stored(&fixture.resource()).unwrap().access_token.as_deref(),
+            stored("test", &fixture.resource())
+                .unwrap()
+                .access_token
+                .as_deref(),
             Some("access-0")
         );
         assert!(
@@ -946,21 +952,21 @@ async fn refresh_preserves_omitted_refresh_token_and_never_retries_same_rejected
     .await;
     fixture.seed(false);
     assert_eq!(
-        token_after_unauthorized(&fixture.resource(), Some("access-0"))
+        token_after_unauthorized("test", &fixture.resource(), Some("access-0"))
             .await
             .unwrap()
             .as_deref(),
         Some("access-1")
     );
     assert_eq!(
-        stored(&fixture.resource())
+        stored("test", &fixture.resource())
             .unwrap()
             .refresh_token
             .as_deref(),
         Some("refresh-0")
     );
     assert_eq!(
-        token_after_unauthorized(&fixture.resource(), Some("access-1"))
+        token_after_unauthorized("test", &fixture.resource(), Some("access-1"))
             .await
             .unwrap()
             .as_deref(),
@@ -973,7 +979,7 @@ async fn refresh_preserves_omitted_refresh_token_and_never_retries_same_rejected
     .await;
     fixture.seed(false);
     assert_eq!(
-        token_after_unauthorized(&fixture.resource(), Some("access-0"))
+        token_after_unauthorized("test", &fixture.resource(), Some("access-0"))
             .await
             .unwrap(),
         None
@@ -988,9 +994,9 @@ async fn expired_unrefreshable_token_is_not_returned_and_new_login_is_picked_up(
     let mut entry = fixture.entry(true);
     entry.refresh_token = None;
     seed(&resource, entry);
-    assert_eq!(access_token(&resource).await.unwrap(), None);
+    assert_eq!(access_token("test", &resource).await.unwrap(), None);
     assert_eq!(
-        token_after_unauthorized(&resource, Some("access-0"))
+        token_after_unauthorized("test", &resource, Some("access-0"))
             .await
             .unwrap(),
         None
@@ -999,7 +1005,7 @@ async fn expired_unrefreshable_token_is_not_returned_and_new_login_is_picked_up(
     entry.access_token = Some("new-login-token".into());
     seed(&resource, entry);
     assert_eq!(
-        token_after_unauthorized(&resource, Some("access-0"))
+        token_after_unauthorized("test", &resource, Some("access-0"))
             .await
             .unwrap()
             .as_deref(),
@@ -1019,10 +1025,9 @@ async fn logout_during_refresh_does_not_block_or_resurrect_credentials() {
     fixture.seed(false);
     let resource = fixture.resource();
     let refresh_resource = resource.clone();
-    let refresh =
-        tokio::spawn(
-            async move { token_after_unauthorized(&refresh_resource, Some("access-0")).await },
-        );
+    let refresh = tokio::spawn(async move {
+        token_after_unauthorized("test", &refresh_resource, Some("access-0")).await
+    });
     tokio::time::timeout(Duration::from_secs(2), async {
         while fixture.state.lock().unwrap().refresh_count == 0 {
             tokio::task::yield_now().await;
@@ -1031,12 +1036,12 @@ async fn logout_during_refresh_does_not_block_or_resurrect_credentials() {
     .await
     .unwrap();
     assert!(
-        logout(&resource).unwrap(),
+        logout("test", &resource).unwrap(),
         "store transaction lock must not span network I/O"
     );
     assert_eq!(refresh.await.unwrap().unwrap(), None);
-    assert!(stored(&resource).is_none());
-    assert!(!status(&resource).unwrap().logged_in);
+    assert!(stored("test", &resource).is_none());
+    assert!(!status("test", &resource).unwrap().logged_in);
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -1050,10 +1055,9 @@ async fn newer_login_during_refresh_is_not_overwritten() {
     fixture.seed(false);
     let resource = fixture.resource();
     let refresh_resource = resource.clone();
-    let refresh =
-        tokio::spawn(
-            async move { token_after_unauthorized(&refresh_resource, Some("access-0")).await },
-        );
+    let refresh = tokio::spawn(async move {
+        token_after_unauthorized("test", &refresh_resource, Some("access-0")).await
+    });
     tokio::time::timeout(Duration::from_secs(2), async {
         while fixture.state.lock().unwrap().refresh_count == 0 {
             tokio::task::yield_now().await;
@@ -1070,7 +1074,7 @@ async fn newer_login_during_refresh_is_not_overwritten() {
         Some("new-login-access")
     );
     assert_eq!(
-        stored(&resource).unwrap().refresh_token.as_deref(),
+        stored("test", &resource).unwrap().refresh_token.as_deref(),
         Some("new-login-refresh")
     );
 }
@@ -1085,15 +1089,108 @@ async fn exact_validated_metadata_resource_is_preserved_in_grants() {
     .await;
     do_login(&fixture, false).await.unwrap();
     assert_eq!(
-        stored(&fixture.resource()).unwrap().resource,
+        stored("test", &fixture.resource()).unwrap().resource,
         Some(format!("{}/mcp/", fixture.origin))
     );
     assert_eq!(
-        token_after_unauthorized(&fixture.resource(), Some("access-0"))
+        token_after_unauthorized("test", &fixture.resource(), Some("access-0"))
             .await
             .unwrap()
             .as_deref(),
         Some("access-1")
+    );
+}
+
+fn insert_at(key: &str, token: &str) {
+    let path = store_path().unwrap();
+    let mut store = load_store_at(&path).unwrap();
+    store.servers.insert(
+        key.to_string(),
+        StoredOAuth {
+            client_id: "c".into(),
+            token_endpoint: "https://mcp.example/token".into(),
+            access_token: Some(token.into()),
+            ..Default::default()
+        },
+    );
+    save_store_at(&path, &store).unwrap();
+}
+
+fn global_mcp(servers: &[&str], url: &str) {
+    let servers: serde_json::Map<String, Value> = servers
+        .iter()
+        .map(|name| (name.to_string(), serde_json::json!({ "url": url })))
+        .collect();
+    let path = crate::storage::jcode_dir().unwrap().join("mcp.json");
+    std::fs::write(path, serde_json::json!({ "servers": servers }).to_string()).unwrap();
+}
+
+#[tokio::test]
+async fn accounts_on_one_url_are_isolated_by_server_name() {
+    let _sandbox = Sandbox::new();
+    let url = "https://mcp.example/mcp";
+    global_mcp(&["linear-personal", "linear-priceless"], url);
+    insert_at(&scoped_key("linear-personal", url), "personal-token");
+    insert_at(&scoped_key("linear-priceless", url), "priceless-token");
+    assert_eq!(
+        access_token("linear-personal", url)
+            .await
+            .unwrap()
+            .as_deref(),
+        Some("personal-token")
+    );
+    assert_eq!(
+        access_token("linear-priceless", url)
+            .await
+            .unwrap()
+            .as_deref(),
+        Some("priceless-token")
+    );
+    assert!(logout("linear-personal", url).unwrap());
+    assert_eq!(access_token("linear-personal", url).await.unwrap(), None);
+    assert_eq!(
+        access_token("linear-priceless", url)
+            .await
+            .unwrap()
+            .as_deref(),
+        Some("priceless-token"),
+        "logging one account out keeps the other"
+    );
+    assert!(!status("other", url).unwrap().logged_in);
+}
+
+#[tokio::test]
+async fn legacy_url_entry_belongs_only_to_the_sole_server_with_that_url() {
+    let _sandbox = Sandbox::new();
+    let url = "https://mcp.example/mcp";
+    insert_at(&canonical_resource(url), "legacy-token");
+
+    global_mcp(&["Linear"], url);
+    assert_eq!(
+        access_token("Linear", url).await.unwrap().as_deref(),
+        Some("legacy-token"),
+        "existing sign-in keeps working after the key change"
+    );
+    assert_eq!(access_token("other", url).await.unwrap(), None);
+
+    global_mcp(&["Linear", "linear-priceless"], url);
+    for server in ["Linear", "linear-priceless"] {
+        assert_eq!(
+            access_token(server, url).await.unwrap(),
+            None,
+            "{server}: an unowned legacy token is never assumed"
+        );
+    }
+
+    // Logout retires the owned legacy entry so it cannot reappear.
+    global_mcp(&["Linear"], url);
+    assert!(logout("Linear", url).unwrap());
+    assert_eq!(access_token("Linear", url).await.unwrap(), None);
+    assert!(
+        !load_store()
+            .unwrap()
+            .servers
+            .contains_key(&canonical_resource(url))
     );
 }
 
@@ -1102,10 +1199,10 @@ fn corrupt_store_is_not_silently_overwritten_or_exposed() {
     let sandbox = Sandbox::new();
     let bytes = b"{malformed TOP-SECRET";
     std::fs::write(sandbox.path(), bytes).unwrap();
-    let error = logout("https://mcp.example/mcp").unwrap_err();
+    let error = logout("test", "https://mcp.example/mcp").unwrap_err();
     assert!(!format!("{error:#}").contains("TOP-SECRET"));
     assert_eq!(std::fs::read(sandbox.path()).unwrap(), bytes);
-    assert!(status("https://mcp.example/mcp").is_err());
+    assert!(status("test", "https://mcp.example/mcp").is_err());
 }
 
 #[cfg(unix)]
@@ -1133,7 +1230,7 @@ fn store_rejects_symlinks_hardlinks_and_repairs_legacy_mode() {
         0o600
     );
     symlink(sandbox.path(), sandbox.path().with_extension("lock")).unwrap();
-    assert!(logout("https://mcp.example").is_err());
+    assert!(logout("test", "https://mcp.example").is_err());
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -1143,7 +1240,7 @@ async fn cross_process_lock_contends_and_releases_without_blocking_runtime() {
     first.try_lock().unwrap();
     let second = open_store_lock(&sandbox.path()).unwrap();
     assert!(matches!(second.try_lock(), Err(TryLockError::WouldBlock)));
-    assert!(logout("https://mcp.example").is_err());
+    assert!(logout("test", "https://mcp.example").is_err());
     let path = sandbox.path();
     let pending = lock_store(&path);
     tokio::pin!(pending);

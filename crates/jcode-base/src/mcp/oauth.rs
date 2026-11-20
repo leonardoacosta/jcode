@@ -318,15 +318,59 @@ async fn wait_lock(file: File) -> Result<File> {
     Ok(file)
 }
 
-fn checked_stored(url: &str) -> Result<Option<StoredOAuth>> {
+/// Store key for one configured server's credentials. Accounts are per server
+/// name: two servers with the same URL (e.g. two Linear workspaces on
+/// `mcp.linear.app`) must never share or overwrite each other's tokens.
+/// `#` cannot occur in a canonical resource, so the key is unambiguous.
+fn scoped_key(server: &str, url: &str) -> String {
+    format!("{}#server={}", canonical_resource(url), server.trim())
+}
+
+/// Key to read and update for `server`. Entries written before per-server keys
+/// are stored under the bare URL; such an entry still belongs to `server` only
+/// when it is the sole server in `~/.jcode/mcp.json` with that URL. Otherwise
+/// it is ignored, so one account's token is never used for another.
+fn effective_key(store: &Store, server: &str, url: &str) -> String {
+    let scoped = scoped_key(server, url);
+    if store.servers.contains_key(&scoped) {
+        return scoped;
+    }
+    owned_legacy_key(store, server, url).unwrap_or(scoped)
+}
+
+/// The bare-URL entry, when it exists and belongs to `server`.
+fn owned_legacy_key(store: &Store, server: &str, url: &str) -> Option<String> {
+    let legacy = canonical_resource(url);
+    (store.servers.contains_key(&legacy)
+        && sole_global_server_for(url).as_deref() == Some(server.trim()))
+    .then_some(legacy)
+}
+
+fn sole_global_server_for(url: &str) -> Option<String> {
+    let path = crate::storage::jcode_dir().ok()?.join("mcp.json");
+    let config = super::McpConfig::load_from_file(&path).ok()?;
+    let target = canonical_resource(url);
+    let mut names = config.servers.iter().filter(|(_, server)| {
+        server
+            .url
+            .as_deref()
+            .is_some_and(|u| canonical_resource(u) == target)
+    });
+    let (name, _) = names.next()?;
+    names.next().is_none().then(|| name.trim().to_string())
+}
+
+fn checked_stored(server: &str, url: &str) -> Result<Option<StoredOAuth>> {
     validate_mcp_url(url)?;
-    Ok(load_store()?.servers.get(&canonical_resource(url)).cloned())
+    let store = load_store()?;
+    let key = effective_key(&store, server, url);
+    Ok(store.servers.get(&key).cloned())
 }
 
 /// Compatibility accessor. Use `status` when a malformed/unreadable store must
 /// be distinguished from being logged out. Never print this object's fields.
-pub fn stored(url: &str) -> Option<StoredOAuth> {
-    match checked_stored(url) {
+pub fn stored(server: &str, url: &str) -> Option<StoredOAuth> {
+    match checked_stored(server, url) {
         Ok(entry) => entry,
         Err(_) => {
             // Do not log URL or store contents, both may contain credentials.
@@ -338,8 +382,8 @@ pub fn stored(url: &str) -> Option<StoredOAuth> {
     }
 }
 
-pub fn status(url: &str) -> Result<OAuthStatus> {
-    let Some(entry) = checked_stored(url)? else {
+pub fn status(server: &str, url: &str) -> Result<OAuthStatus> {
+    let Some(entry) = checked_stored(server, url)? else {
         return Ok(OAuthStatus::default());
     };
     Ok(OAuthStatus {
@@ -353,16 +397,24 @@ pub fn status(url: &str) -> Result<OAuthStatus> {
 /// Forget stored credentials. Local deletion does not revoke provider tokens.
 /// A concurrent refresh/login causes a retryable error, never credential
 /// resurrection or blocking a single-threaded async runtime on its own refresh.
-pub fn logout(url: &str) -> Result<bool> {
+pub fn logout(server: &str, url: &str) -> Result<bool> {
     validate_mcp_url(url)?;
     let path = store_path()?;
     let file = open_store_lock(&path)?;
     file.try_lock()
         .map_err(|_| anyhow::anyhow!("OAuth credential store is busy; retry logout"))?;
     let mut store = load_store_at(&path)?;
-    let key = canonical_resource(url);
-    let removed = store.servers.remove(&key).is_some();
-    advance_generation(&mut store, &key)?;
+    // Forget both this server's entry and a legacy one it owns, so the legacy
+    // token cannot reappear after logout.
+    let mut removed = false;
+    let keys = [
+        Some(scoped_key(server, url)),
+        owned_legacy_key(&store, server, url),
+    ];
+    for key in keys.into_iter().flatten() {
+        removed |= store.servers.remove(&key).is_some();
+        advance_generation(&mut store, &key)?;
+    }
     // Also removes a legacy backup even when the primary has no such entry.
     save_store_at(&path, &store)?;
     Ok(removed)
@@ -384,15 +436,15 @@ fn is_fresh(entry: &StoredOAuth) -> bool {
 
 /// Current token, refreshing when near expiry. Known-expired credentials are
 /// never returned without a successful refresh. Never opens a browser.
-pub async fn access_token(url: &str) -> Result<Option<String>> {
-    let Some(entry) = checked_stored(url)? else {
+pub async fn access_token(server: &str, url: &str) -> Result<Option<String>> {
+    let Some(entry) = checked_stored(server, url)? else {
         return Ok(None);
     };
     if is_fresh(&entry) {
         return Ok(entry.access_token);
     }
     if entry.refresh_token.is_some() {
-        return refresh(url, RefreshReason::Expired).await;
+        return refresh(server, url, RefreshReason::Expired).await;
     }
     Ok(entry
         .access_token
@@ -402,8 +454,17 @@ pub async fn access_token(url: &str) -> Result<Option<String>> {
 /// A 401 overrides the expiry hint. Under the cross-process lock, reuse a token
 /// only if it differs from the rejected one and is fresh, otherwise force a
 /// refresh. `Ok(None)` means login is needed. Never retries the rejected token.
-pub async fn token_after_unauthorized(url: &str, failed: Option<&str>) -> Result<Option<String>> {
-    refresh(url, RefreshReason::Rejected(failed.map(str::to_owned))).await
+pub async fn token_after_unauthorized(
+    server: &str,
+    url: &str,
+    failed: Option<&str>,
+) -> Result<Option<String>> {
+    refresh(
+        server,
+        url,
+        RefreshReason::Rejected(failed.map(str::to_owned)),
+    )
+    .await
 }
 
 enum RefreshReason {
@@ -525,13 +586,13 @@ async fn post_token(
         .map_err(|_| anyhow::anyhow!("OAuth token endpoint returned invalid JSON"))
 }
 
-async fn refresh(url: &str, reason: RefreshReason) -> Result<Option<String>> {
+async fn refresh(server: &str, url: &str, reason: RefreshReason) -> Result<Option<String>> {
     validate_mcp_url(url)?;
-    if checked_stored(url)?.is_none() {
+    if checked_stored(server, url)?.is_none() {
         return Ok(None);
     }
     let path = store_path()?;
-    let key = canonical_resource(url);
+    let key = effective_key(&load_store_at(&path)?, server, url);
     // Only async refreshers take this per-resource lock. Sync logout never
     // waits on it, and the transaction lock is not held over network I/O.
     let _refresh_guard = lock_refresh(&path, &key).await?;
@@ -1077,10 +1138,17 @@ async fn wait_for_callback(
 /// Explicit interactive login. `on_url` receives the authorization URL once it
 /// is ready, even in `Print` mode. Only this API can open a browser. The supplied
 /// URL contains state, so callers must show it intentionally, not log it.
-pub async fn login(mcp_url: &str, browser: BrowserMode, on_url: impl FnOnce(&str)) -> Result<()> {
+/// Sign `server` in. Credentials are stored under that server name only, so
+/// several accounts on one URL coexist.
+pub async fn login(
+    server: &str,
+    mcp_url: &str,
+    browser: BrowserMode,
+    on_url: impl FnOnce(&str),
+) -> Result<()> {
     validate_mcp_url(mcp_url)?;
     let path = store_path()?;
-    let key = canonical_resource(mcp_url);
+    let key = scoped_key(server, mcp_url);
     let initial_generation = generation(&load_store_at(&path)?, &key);
     let discovery = discover(mcp_url).await?;
     let listener = crate::auth::oauth::bind_callback_listener(0)
@@ -1174,6 +1242,11 @@ pub async fn login(mcp_url: &str, browser: BrowserMode, on_url: impl FnOnce(&str
     let mut store = load_store_at(&path)?;
     if generation(&store, &key) != initial_generation {
         bail!("OAuth login was superseded by logout or a newer login; retry login");
+    }
+    // A new login replaces this server's legacy bare-URL entry.
+    if let Some(legacy) = owned_legacy_key(&store, server, mcp_url) {
+        store.servers.remove(&legacy);
+        advance_generation(&mut store, &legacy)?;
     }
     store.servers.insert(key.clone(), entry);
     advance_generation(&mut store, &key)?;

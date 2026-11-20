@@ -810,8 +810,27 @@ impl McpManagementTool {
                 )
             })?;
         validate_remote_url(url)?;
+        // Credentials are stored per server name. A bare `url` maps to the one
+        // configured server with that URL; with none or several, no account is
+        // assumed.
+        let server_name = match params.server.as_deref() {
+            Some(name) => name.to_string(),
+            None => {
+                let target = crate::mcp::oauth::canonical_resource(url);
+                let manager = self.manager.read().await;
+                let mut names = manager.config().servers.iter().filter(|(_, s)| {
+                    s.url
+                        .as_deref()
+                        .is_some_and(|u| crate::mcp::oauth::canonical_resource(u) == target)
+                });
+                match (names.next(), names.next()) {
+                    (Some((name, _)), None) => name.clone(),
+                    _ => String::new(),
+                }
+            }
+        };
         if params.action == "logout" {
-            let removed = crate::mcp::oauth::logout(url)?;
+            let removed = crate::mcp::oauth::logout(&server_name, url)?;
             return Ok(ToolOutput::new(format!("{}. Static headers and existing connections are unchanged. This only forgets local OAuth credentials, not server-side authorization. Disconnect/reconnect active servers to stop using the old token.",
                 if removed { "Removed local OAuth credentials" } else { "No local OAuth credentials stored" }))
                 .with_title("MCP: OAuth logout"));
@@ -827,7 +846,7 @@ impl McpManagementTool {
             });
         let status = if static_auth {
             "Static Authorization header configured (takes precedence over OAuth)"
-        } else if crate::mcp::oauth::status(url)?.logged_in {
+        } else if crate::mcp::oauth::status(&server_name, url)?.logged_in {
             "OAuth credentials stored (not a connection or token-validity check)"
         } else {
             "No OAuth credentials stored. To sign in, run `jcode mcp login <configured-server>` in a terminal."

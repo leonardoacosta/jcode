@@ -128,9 +128,10 @@ async fn remote_management_status_and_logout_use_local_store_only() {
     let _sandbox = crate::auth::test_sandbox::AuthTestSandbox::new().unwrap();
     let url = "https://example.com/mcp";
     let store_path = crate::storage::jcode_dir().unwrap().join("mcp-oauth.json");
+    let key = format!("{url}#server=remote");
     crate::storage::write_json_secret(
         &store_path,
-        &json!({"version": 1, "servers": {url: {
+        &json!({"version": 1, "servers": {key: {
             "client_id": "test", "token_endpoint": "http://127.0.0.1:1/token",
             "access_token": "secret-access", "refresh_token": "secret-refresh", "expires_at": 1,
             "resource": url
@@ -151,7 +152,7 @@ async fn remote_management_status_and_logout_use_local_store_only() {
         .unwrap();
     assert!(logout.output.contains("Removed local OAuth credentials"));
     assert!(logout.output.contains("existing connections are unchanged"));
-    assert!(crate::mcp::oauth::stored(url).is_none());
+    assert!(crate::mcp::oauth::stored("remote", url).is_none());
     let again = tool
         .execute(json!({"action": "logout", "url": url}), context())
         .await
