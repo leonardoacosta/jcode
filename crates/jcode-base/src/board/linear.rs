@@ -165,6 +165,7 @@ impl LinearMcpProvider {
     /// All in-scope raw issues across pages. Truncation is an error.
     async fn scoped_issues(&self, scope: &BoardScope) -> Result<Vec<RawIssue>, BoardError> {
         let mut out = Vec::new();
+        let mut other_team = 0usize;
         let mut cursor: Option<String> = None;
         for _ in 0..MAX_PAGES {
             let text = self
@@ -176,11 +177,23 @@ impl LinearMcpProvider {
                 .await?;
             let (items, next) = parse_issue_page(&text)?;
             for issue in items {
+                if issue.team.as_deref().is_some_and(|t| t != scope.team) {
+                    other_team += 1;
+                }
                 if issue.in_scope(scope)? {
                     out.push(issue);
                 }
             }
             match next {
+                None if out.is_empty() && other_team > 0 => {
+                    // Fail closed, but say why: a binding written as a team key
+                    // or name matches no `teamId`, which would otherwise read
+                    // as an empty board.
+                    return Err(BoardError::Provider(format!(
+                        "{other_team} issues came back but none belong to the bound team; \
+                         the binding's `team` must be the Linear team id (uuid), not its key or name"
+                    )));
+                }
                 None => return Ok(out),
                 Some(next) if cursor.as_deref() == Some(next.as_str()) => {
                     return Err(BoardError::Provider("issue cursor did not advance".into()));

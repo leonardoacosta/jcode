@@ -132,9 +132,26 @@ impl BoardBinding {
             out.push(format!(
                 "{label}: board `team` is empty; the board is refused"
             ));
+        } else if self.backend_kind() == Some(BoardBackend::Linear)
+            && !looks_like_uuid(self.team_id())
+        {
+            out.push(format!(
+                "{label}: Linear board `team` {:?} is not a team id (uuid); a team key or name selects no issues",
+                self.team_id()
+            ));
         }
         out
     }
+}
+
+/// `8-4-4-4-12` hex, the shape of a Linear team id.
+fn looks_like_uuid(text: &str) -> bool {
+    let parts: Vec<&str> = text.split('-').collect();
+    parts.len() == 5
+        && [8, 4, 4, 4, 12]
+            .iter()
+            .zip(&parts)
+            .all(|(len, part)| part.len() == *len && part.chars().all(|c| c.is_ascii_hexdigit()))
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

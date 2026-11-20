@@ -155,3 +155,23 @@ fn board_binding_warns_on_unknown_backend_and_missing_team() {
     assert!(warnings.iter().any(|w| w.contains("`team`")));
     assert_eq!(BoardBackend::parse("none"), None);
 }
+
+#[test]
+fn linear_board_team_must_look_like_a_team_id() {
+    let rule = |backend: &str, team: &str| -> Vec<String> {
+        let config: WorkspacesConfig = serde_json::from_value(serde_json::json!({
+            "rules": [{"name": "w", "origin": "github.com/a/**",
+                       "board": {"backend": backend, "team": team}}]
+        }))
+        .unwrap();
+        config.warnings()
+    };
+    for bad in ["PRICE", "Priceless", "a465c3cf"] {
+        let w = rule("linear", bad);
+        assert_eq!(w.len(), 1, "{bad}: {w:?}");
+        assert!(w[0].contains("not a team id"), "{w:?}");
+    }
+    assert!(rule("linear", "a465c3cf-3a11-4b7a-a2a0-439a489281f5").is_empty());
+    // ADO team identifiers have no such shape rule.
+    assert!(rule("ado", "Brown Project").is_empty());
+}

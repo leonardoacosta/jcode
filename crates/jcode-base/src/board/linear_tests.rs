@@ -770,9 +770,10 @@ async fn real_capture_issues_resolve_to_column_ids_and_page_on_the_top_level_cur
 }
 
 #[tokio::test]
-async fn real_capture_with_a_team_key_binding_fails_closed() {
+async fn real_capture_with_a_team_key_binding_fails_closed_and_says_why() {
     // The real issue carries a team uuid (`teamId`) and a display name (`team`).
-    // A binding written as the key or the display name must not select issues.
+    // A binding written as the key or the display name must not select issues,
+    // and the board must say what is wrong instead of showing an empty board.
     for team in ["PRICE", "Priceless"] {
         let fake = Arc::new(Fake::default());
         fake.statuses
@@ -786,7 +787,18 @@ async fn real_capture_with_a_team_key_binding_fails_closed() {
             team: team.into(),
             ..scope()
         };
-        let issues = provider(&fake).issues(&scope).await.unwrap();
-        assert!(issues.is_empty(), "{team}: {issues:?}");
+        let error = provider(&fake).issues(&scope).await.unwrap_err();
+        let text = error.to_string();
+        assert!(text.contains("team id (uuid)"), "{team}: {text}");
     }
+}
+
+#[tokio::test]
+async fn a_genuinely_empty_team_is_still_an_empty_board_not_an_error() {
+    let fake = Arc::new(Fake::default());
+    fake.issues
+        .lock()
+        .unwrap()
+        .push_back(Ok(issues_page("", None)));
+    assert!(provider(&fake).issues(&scope()).await.unwrap().is_empty());
 }
