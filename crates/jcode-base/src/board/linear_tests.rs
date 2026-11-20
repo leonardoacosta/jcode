@@ -703,6 +703,22 @@ async fn real_capture_states_come_in_type_order_and_keep_duplicate_type_provider
     // triage, backlog, unstarted (Ready, Todo), started (In Review, In Progress),
     // completed, then the terminal types. Same-type states keep the order the
     // provider listed them.
+    let kinds: Vec<_> = states.iter().map(|s| s.kind.as_str()).collect();
+    assert_eq!(
+        kinds,
+        [
+            "triage",
+            "backlog",
+            "unstarted",
+            "unstarted",
+            "started",
+            "started",
+            "completed",
+            "canceled",
+            "duplicate"
+        ],
+        "{kinds:?}"
+    );
     assert_eq!(
         names,
         [

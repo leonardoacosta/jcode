@@ -22,6 +22,7 @@ fn state(id: &str, name: &str, position: f64) -> WorkflowState {
         id: id.into(),
         name: name.into(),
         position,
+        kind: String::new(),
     }
 }
 
@@ -415,4 +416,98 @@ fn board_glue_a_workspace_scoped_linear_server_is_refused() {
         panic!("workspace-scoped server must be refused")
     };
     assert!(why.contains("workspace-scoped"), "{why}");
+}
+
+async fn verdict_for(live: &str, set_result: Option<BoardError>) -> (MoveVerdict, String) {
+    let dir = tempfile::tempdir().unwrap();
+    let audit = AuditLog::open(&dir.path().join("a.jsonl")).unwrap();
+    let fake = Fake::default();
+    *fake.live_state.lock().unwrap() = live.into();
+    *fake.set_result.lock().unwrap() = set_result;
+    let current = || Ok::<_, BoardUnavailable>(scope(BoardBackend::Linear));
+    run_move_verdict(
+        &change(scope(BoardBackend::Linear)),
+        &fake,
+        &audit,
+        &current,
+    )
+    .await
+}
+
+#[tokio::test]
+async fn board_glue_verdict_moved_only_when_applied() {
+    assert_eq!(verdict_for("todo", None).await.0, MoveVerdict::Moved);
+}
+
+#[tokio::test]
+async fn board_glue_verdict_not_moved_when_nothing_was_written() {
+    // Remote conflict, definitive provider failure.
+    assert_eq!(
+        verdict_for("someone-else", None).await.0,
+        MoveVerdict::NotMoved
+    );
+    let failed = verdict_for("todo", Some(BoardError::Provider("denied".into()))).await;
+    assert_eq!(failed.0, MoveVerdict::NotMoved, "{failed:?}");
+}
+
+#[tokio::test]
+async fn board_glue_verdict_unknown_when_the_write_may_have_landed() {
+    // The fake leaves the live state at "todo" after an uncertain error, so the
+    // reconcile read says "not applied yet": still unknown, never "not moved".
+    let (verdict, text) = verdict_for("todo", Some(BoardError::Uncertain("timeout".into()))).await;
+    assert_eq!(verdict, MoveVerdict::Unknown, "{text}");
+}
+
+#[test]
+fn board_glue_move_done_event_reaches_the_overlay_and_rolls_back_a_failure() {
+    let mut app = crate::tui::app::tests::create_test_app();
+    let data = BoardData {
+        scope_label: "s".into(),
+        read_only: false,
+        columns: vec![
+            BoardColumn {
+                id: "a".into(),
+                name: "A".into(),
+                kind: "unstarted".into(),
+                issues: vec![BoardIssue {
+                    id: "1".into(),
+                    identifier: "T-1".into(),
+                    title: "t".into(),
+                }],
+            },
+            BoardColumn {
+                id: "b".into(),
+                name: "B".into(),
+                kind: "started".into(),
+                issues: vec![],
+            },
+        ],
+    };
+    app.open_board_overlay(BoardLoad::Ready(data));
+    app.board.generation = 1;
+    let cell = app.board_overlay.as_ref().unwrap();
+    for code in [
+        crossterm::event::KeyCode::Char('m'),
+        crossterm::event::KeyCode::Enter,
+        crossterm::event::KeyCode::Char('y'),
+    ] {
+        cell.borrow_mut()
+            .handle_key(code, crossterm::event::KeyModifiers::NONE);
+    }
+    let tx = app.board_sender();
+    tx.send(BoardEvent {
+        generation: 1,
+        kind: BoardEventKind::MoveDone {
+            verdict: MoveVerdict::NotMoved,
+            text: "not moved: audit log unavailable".into(),
+            fresh: None,
+        },
+    })
+    .unwrap();
+    assert!(app.poll_board());
+    let shown = format!("{:?}", app.board_overlay.as_ref().unwrap().borrow());
+    assert!(
+        shown.contains("not moved: audit log unavailable"),
+        "{shown}"
+    );
 }

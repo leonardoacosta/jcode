@@ -11,6 +11,9 @@ pub struct WorkflowState {
     pub id: String,
     pub name: String,
     pub position: f64,
+    /// Provider status type (`triage`, `backlog`, `unstarted`, `started`,
+    /// `completed`, `canceled`, `duplicate`), lowercase. Empty when unknown.
+    pub kind: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

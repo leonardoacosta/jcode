@@ -420,6 +420,7 @@ fn parse_states(text: &str, team: &str) -> Result<Vec<WorkflowState>, BoardError
         name: String,
         position: Option<f64>,
         rank: Option<f64>,
+        kind: String,
     }
     let mut rows = Vec::new();
     for item in list {
@@ -440,6 +441,9 @@ fn parse_states(text: &str, team: &str) -> Result<Vec<WorkflowState>, BoardError
             name,
             position: map.get("position").and_then(Value::as_f64),
             rank: str_field(map, "type").and_then(|t| type_rank(&t)),
+            kind: str_field(map, "type")
+                .map(|t| t.to_ascii_lowercase())
+                .unwrap_or_default(),
         });
     }
     // Provider order: `position` when every state has it, else the state
@@ -461,6 +465,7 @@ fn parse_states(text: &str, team: &str) -> Result<Vec<WorkflowState>, BoardError
             },
             id: row.id,
             name: row.name,
+            kind: row.kind,
         })
         .collect();
     sort_states(&mut states);

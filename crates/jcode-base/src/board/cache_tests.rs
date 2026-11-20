@@ -9,6 +9,7 @@ fn snap(tag: &str) -> BoardSnapshot {
             id: tag.into(),
             name: tag.into(),
             position: 0.0,
+            kind: String::new(),
         }],
         issues: vec![],
     }

@@ -13,7 +13,7 @@ use crate::board::{
     execute, provider_for, reconcile, resolve_board,
 };
 use crate::tui::board_overlay::{
-    BoardAction, BoardColumn, BoardData, BoardIssue, BoardLoad, MoveRequest,
+    BoardAction, BoardColumn, BoardData, BoardIssue, BoardLoad, MoveRequest, MoveVerdict,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -39,6 +39,12 @@ pub(super) enum BoardEventKind {
         load: BoardLoad,
         /// One-row result of a move, shown after the board reloads.
         notice: Option<String>,
+    },
+    /// A move finished. `fresh` is the re-read board when that read worked.
+    MoveDone {
+        verdict: MoveVerdict,
+        text: String,
+        fresh: Option<BoardLoad>,
     },
 }
 
@@ -183,6 +189,7 @@ pub(super) fn to_board_load(scope: &BoardScope, snapshot: &BoardSnapshot) -> Boa
         .map(|state| BoardColumn {
             id: state.id.clone(),
             name: state.name.clone(),
+            kind: state.kind.clone(),
             issues: Vec::new(),
         })
         .collect();
@@ -202,6 +209,7 @@ pub(super) fn to_board_load(scope: &BoardScope, snapshot: &BoardSnapshot) -> Boa
         columns.push(BoardColumn {
             id: String::new(),
             name: "Other".into(),
+            kind: String::new(),
             issues: other,
         });
     }
@@ -242,31 +250,57 @@ pub(super) fn describe_change(outcome: &ChangeOutcome) -> String {
     }
 }
 
-/// Run one confirmed move to completion: execute, then, if the result is
-/// unknown, one read-only reconcile that records what really happened. Never
-/// retries the write.
+/// [`run_move_verdict`] without the verdict, for tests that only read the text.
+#[cfg(test)]
 pub(super) async fn run_move(
     request: &StatusChangeRequest,
     provider: &dyn BoardProvider,
     audit: &AuditLog,
     current_scope: &(dyn Fn() -> Result<BoardScope, crate::board::BoardUnavailable> + Sync),
 ) -> String {
+    run_move_verdict(request, provider, audit, current_scope)
+        .await
+        .1
+}
+
+/// Run one confirmed move to completion: execute, then, if the result is
+/// unknown, one read-only reconcile that records what really happened. Never
+/// retries the write. The verdict tells the overlay whether to keep or undo
+/// the optimistic card.
+pub(super) async fn run_move_verdict(
+    request: &StatusChangeRequest,
+    provider: &dyn BoardProvider,
+    audit: &AuditLog,
+    current_scope: &(dyn Fn() -> Result<BoardScope, crate::board::BoardUnavailable> + Sync),
+) -> (MoveVerdict, String) {
     // The synthetic "Other" column (empty id) holds issues in a state the board
     // has no column for. It is display-only: moving from it has no verifiable
     // prior state and moving to it names no state, so neither is ever sent.
     if request.expected_prior_state.is_empty() || request.requested_state.is_empty() {
-        return "not moved: the Other column is display-only".into();
+        return (
+            MoveVerdict::NotMoved,
+            "not moved: the Other column is display-only".into(),
+        );
     }
     // Confirmation::confirm refuses read-only scopes, so an ADO move can never
     // reach a provider or the audit log.
     let confirmation = match Confirmation::confirm(request) {
         Ok(confirmation) => confirmation,
-        Err(why) => return format!("not moved: {why}"),
+        Err(why) => return (MoveVerdict::NotMoved, format!("not moved: {why}")),
     };
     let outcome = execute(request, confirmation, provider, audit, current_scope).await;
     let mut text = describe_change(&outcome);
+    let mut verdict = match &outcome {
+        ChangeOutcome::Applied { .. } => MoveVerdict::Moved,
+        ChangeOutcome::Uncertain { .. } => MoveVerdict::Unknown,
+        _ => MoveVerdict::NotMoved,
+    };
     if let ChangeOutcome::Uncertain { pending, .. } = &outcome {
         let (result, audit_error) = reconcile(pending, provider, audit).await;
+        verdict = match &result {
+            ReconcileOutcome::Applied => MoveVerdict::Moved,
+            _ => MoveVerdict::Unknown,
+        };
         text = match result {
             ReconcileOutcome::Applied => "moved (confirmed by re-reading the issue)".into(),
             ReconcileOutcome::NotApplied => {
@@ -281,7 +315,7 @@ pub(super) async fn run_move(
             text.push_str(&format!("; audit outcome not recorded ({error})"));
         }
     }
-    text
+    (verdict, text)
 }
 
 impl App {
@@ -339,6 +373,15 @@ impl App {
                     self.board.runtime = Some(*runtime);
                     self.spawn_board_load(false);
                 }
+                BoardEventKind::MoveDone {
+                    verdict,
+                    text,
+                    fresh,
+                } => {
+                    if let Some(cell) = self.board_overlay.as_ref() {
+                        cell.borrow_mut().finish_move(verdict, &text, fresh);
+                    }
+                }
                 BoardEventKind::Loaded { load, notice } => {
                     self.update_board_overlay(load);
                     if let (Some(notice), Some(cell)) = (notice, self.board_overlay.as_ref()) {
@@ -359,13 +402,16 @@ impl App {
             Some(BoardAction::Confirmed(request)) => {
                 // Without a runtime there is nothing to write through; never
                 // leave the overlay on Loading.
+                // The overlay already shows the card in its new status; the
+                // result either keeps it or undoes it.
                 if self.board.runtime.is_some() {
-                    self.update_board_overlay(BoardLoad::Loading);
                     self.spawn_board_move(request);
-                } else {
-                    self.update_board_overlay(BoardLoad::Error(
-                        "board is not ready; nothing was moved".into(),
-                    ));
+                } else if let Some(cell) = self.board_overlay.as_ref() {
+                    cell.borrow_mut().finish_move(
+                        MoveVerdict::NotMoved,
+                        "board is not ready; nothing was moved",
+                        None,
+                    );
                 }
                 changed = true;
             }
@@ -398,37 +444,54 @@ impl App {
             // again right before dispatch. Resolving may run git, so the whole
             // move runs on a blocking thread, where the closure can call the
             // resolver directly and block_on drives the async provider calls.
-            let notice = match AuditLog::open_default() {
+            let (verdict, text) = match AuditLog::open_default() {
                 Ok(audit) => {
                     let handle = tokio::runtime::Handle::current();
                     let (provider, cwd) = (Arc::clone(&provider), cwd.clone());
                     tokio::task::spawn_blocking(move || {
                         let current = || resolve_board(&cwd);
-                        handle.block_on(run_move(&change, provider.as_ref(), &audit, &current))
+                        handle.block_on(run_move_verdict(
+                            &change,
+                            provider.as_ref(),
+                            &audit,
+                            &current,
+                        ))
                     })
                     .await
-                    .unwrap_or_else(|error| format!("not moved: board task failed ({error})"))
+                    .unwrap_or_else(|error| {
+                        (
+                            MoveVerdict::Unknown,
+                            format!("board task failed ({error}); the move may have happened"),
+                        )
+                    })
                 }
-                Err(error) => format!("not moved: audit log unavailable ({error})"),
+                Err(error) => (
+                    MoveVerdict::NotMoved,
+                    format!("not moved: audit log unavailable ({error})"),
+                ),
             };
             // After a world change the open-time binding no longer describes
             // this repository: do not read through it again.
-            let load = if notice.contains(WORLD_CHANGED_MARK) {
-                BoardLoad::Unavailable(
+            let fresh = if text.contains(WORLD_CHANGED_MARK) {
+                Some(BoardLoad::Unavailable(
                     "the repository's world changed; reopen /board to use its current binding"
                         .into(),
-                )
+                ))
             } else {
-                match cache.load(&scope, &auth, provider.as_ref(), true).await {
-                    Ok(snapshot) => to_board_load(&scope, &snapshot),
-                    Err(error) => error_to_load(&error),
-                }
+                // A failed re-read is not shown as the board: the overlay
+                // falls back to the verdict so the board stays usable.
+                cache
+                    .load(&scope, &auth, provider.as_ref(), true)
+                    .await
+                    .ok()
+                    .map(|snapshot| to_board_load(&scope, &snapshot))
             };
             let _ = tx.send(BoardEvent {
                 generation,
-                kind: BoardEventKind::Loaded {
-                    load,
-                    notice: Some(notice),
+                kind: BoardEventKind::MoveDone {
+                    verdict,
+                    text,
+                    fresh,
                 },
             });
         });

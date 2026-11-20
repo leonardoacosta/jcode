@@ -17,6 +17,7 @@ const MUTED: Color = Color::Rgb(140, 146, 163);
 const MUTED_DARK: Color = Color::Rgb(100, 106, 122);
 const WARN: Color = Color::Rgb(230, 190, 90);
 const ERROR: Color = Color::Rgb(230, 110, 110);
+const GOOD: Color = Color::Rgb(130, 200, 140);
 
 /// Row of the state tab strip.
 const TAB_ROW: u16 = 2;
@@ -51,6 +52,9 @@ pub struct BoardData {
 pub struct BoardColumn {
     pub id: String,
     pub name: String,
+    /// Provider status type, lowercase (`triage`, `backlog`, `unstarted`,
+    /// `started`, `completed`, `canceled`, `duplicate`). Empty when unknown.
+    pub kind: String,
     pub issues: Vec<BoardIssue>,
 }
 
@@ -66,6 +70,17 @@ pub struct MoveRequest {
     pub issue_id: String,
     pub from_column_id: String,
     pub to_column_id: String,
+}
+
+/// How a requested move ended, as far as the tracker can tell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MoveVerdict {
+    /// The tracker applied it.
+    Moved,
+    /// Nothing was written (refused, conflict, failure): undo the optimistic card.
+    NotMoved,
+    /// The write may or may not have landed: keep the card, mark it unconfirmed.
+    Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -92,6 +107,15 @@ enum Mode {
     Confirm(PendingMove),
 }
 
+/// A move already shown on the board while the tracker call is in flight.
+#[derive(Debug)]
+struct InFlight {
+    identifier: String,
+    to_name: String,
+    /// The board as it was before the optimistic update.
+    rollback: BoardData,
+}
+
 #[derive(Debug)]
 pub struct BoardOverlay {
     load: BoardLoad,
@@ -99,6 +123,8 @@ pub struct BoardOverlay {
     row: usize,
     mode: Mode,
     notice: Option<String>,
+    notice_ok: bool,
+    in_flight: Option<InFlight>,
     /// Column id last shown on a board, kept across Loading/error states so a
     /// refresh returns to the same column.
     anchor: Option<String>,
@@ -112,6 +138,8 @@ impl BoardOverlay {
             row: 0,
             mode: Mode::Browse,
             notice: None,
+            notice_ok: false,
+            in_flight: None,
             anchor: None,
         };
         overlay.set_load(load);
@@ -122,6 +150,39 @@ impl BoardOverlay {
     /// `set_load` or key press clears it.
     pub fn set_notice(&mut self, text: impl Into<String>) {
         self.notice = Some(text.into());
+        self.notice_ok = false;
+    }
+
+    /// The tracker call for an optimistic move finished. `fresh` is the
+    /// re-read board when it succeeded and is the truth. Without it, the
+    /// verdict decides: undo a move known not to have happened, keep one that
+    /// happened or may have.
+    pub fn finish_move(&mut self, verdict: MoveVerdict, text: &str, fresh: Option<BoardLoad>) {
+        let flight = self.in_flight.take();
+        let label = flight.as_ref().map(|f| clean(&f.identifier));
+        let with_label = |t: &str| match &label {
+            Some(l) => format!("{l}: {t}"),
+            None => t.to_string(),
+        };
+        let ok = verdict == MoveVerdict::Moved;
+        let notice = match fresh {
+            Some(load) => {
+                self.set_load(load);
+                with_label(text)
+            }
+            None => match (verdict, flight) {
+                (MoveVerdict::NotMoved, Some(f)) => {
+                    self.set_load(BoardLoad::Ready(f.rollback));
+                    with_label(text)
+                }
+                (MoveVerdict::Unknown, _) => {
+                    with_label(&format!("{text}; shown as moved, unconfirmed"))
+                }
+                _ => with_label(&format!("{text}; board not refreshed, press r")),
+            },
+        };
+        self.notice = Some(notice);
+        self.notice_ok = ok;
     }
 
     /// Replace the displayed state. Any move in progress is dropped (its
@@ -138,6 +199,7 @@ impl BoardOverlay {
         self.load = load;
         self.mode = Mode::Browse;
         self.notice = None;
+        self.in_flight = None;
         let anchored = self.anchor.as_ref().and_then(|id| {
             self.board()
                 .and_then(|d| d.columns.iter().position(|c| &c.id == id))
@@ -188,6 +250,11 @@ impl BoardOverlay {
     fn handle_browse_key(&mut self, code: KeyCode) -> BoardAction {
         match code {
             KeyCode::Esc => return BoardAction::Close,
+            KeyCode::Char('r') if self.in_flight.is_some() => {
+                self.notice = Some("a move is in progress".to_string());
+                self.notice_ok = false;
+                return BoardAction::None;
+            }
             KeyCode::Char('r') => return BoardAction::Refresh,
             _ => {}
         }
@@ -209,6 +276,10 @@ impl BoardOverlay {
     }
 
     fn start_move(&mut self, read_only: bool) {
+        if self.in_flight.is_some() {
+            self.notice = Some("a move is in progress".to_string());
+            return;
+        }
         if read_only {
             self.notice = Some(READ_ONLY_NOTICE.to_string());
             return;
@@ -223,26 +294,19 @@ impl BoardOverlay {
         }
         // The synthetic "Other" column (empty id) is display-only: it has no
         // workflow state to move from or to.
-        let movable: Vec<usize> = self
-            .board()
-            .map(|d| {
-                d.columns
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, c)| !c.id.is_empty())
-                    .map(|(i, _)| i)
-                    .collect()
-            })
-            .unwrap_or_default();
-        if !movable.contains(&self.col) {
+        let Some(data) = self.board() else { return };
+        if data.columns[self.col].id.is_empty() {
             self.notice = Some("Other column is display-only".to_string());
             return;
         }
-        let Some(to) = movable
-            .iter()
+        let order = picker_order(data);
+        let Some(at) = order.iter().position(|i| *i == self.col) else {
+            return;
+        };
+        let Some(to) = order
+            .get(at + 1)
+            .or_else(|| at.checked_sub(1).and_then(|p| order.get(p)))
             .copied()
-            .find(|i| *i > self.col)
-            .or_else(|| movable.iter().rev().copied().find(|i| *i < self.col))
         else {
             self.notice = Some("no other column to move to".to_string());
             return;
@@ -255,24 +319,25 @@ impl BoardOverlay {
     }
 
     fn handle_moving_key(&mut self, code: KeyCode, mut pending: PendingMove) -> BoardAction {
-        let columns = self.board().map_or(0, |d| d.columns.len());
         match code {
             KeyCode::Esc => self.mode = Mode::Browse,
-            KeyCode::Left | KeyCode::Char('h') => {
-                let board = self.board();
-                let movable = |i: usize| {
-                    board.is_some_and(|d| d.columns.get(i).is_some_and(|c| !c.id.is_empty()))
-                };
-                pending.to = step_target(pending.to, pending.from, columns, false, &movable);
-                self.mode = Mode::Moving(pending);
-            }
-            KeyCode::Right | KeyCode::Char('l') => {
-                let board = self.board();
-                let movable = |i: usize| {
-                    board.is_some_and(|d| d.columns.get(i).is_some_and(|c| !c.id.is_empty()))
-                };
-                pending.to = step_target(pending.to, pending.from, columns, true, &movable);
-                self.mode = Mode::Moving(pending);
+            KeyCode::Up | KeyCode::Char('k') | KeyCode::Down | KeyCode::Char('j') => {
+                let forward = matches!(code, KeyCode::Down | KeyCode::Char('j'));
+                if let Some(data) = self.board() {
+                    let targets: Vec<usize> = picker_order(data)
+                        .into_iter()
+                        .filter(|i| *i != pending.from)
+                        .collect();
+                    if let Some(at) = targets.iter().position(|i| *i == pending.to) {
+                        let next = if forward {
+                            (at + 1).min(targets.len() - 1)
+                        } else {
+                            at.saturating_sub(1)
+                        };
+                        pending.to = targets[next];
+                        self.mode = Mode::Moving(pending);
+                    }
+                }
             }
             KeyCode::Enter => {
                 // Defensive: a read-only board never reaches a confirm prompt.
@@ -293,7 +358,7 @@ impl BoardOverlay {
         match code {
             KeyCode::Char('y') => {
                 self.mode = Mode::Browse;
-                self.move_request(pending)
+                self.begin_move(pending)
                     .map_or(BoardAction::None, BoardAction::Confirmed)
             }
             KeyCode::Char('n') | KeyCode::Esc => {
@@ -302,6 +367,28 @@ impl BoardOverlay {
             }
             _ => BoardAction::None,
         }
+    }
+
+    /// Show the move on the board at once and remember how to undo it. The
+    /// caller then performs the tracker call and reports back through
+    /// [`BoardOverlay::finish_move`].
+    fn begin_move(&mut self, pending: PendingMove) -> Option<MoveRequest> {
+        let request = self.move_request(pending)?;
+        let rollback = self.board()?.clone();
+        let BoardLoad::Ready(data) = &mut self.load else {
+            return None;
+        };
+        let issue = data.columns[pending.from].issues.remove(pending.issue);
+        let flight = InFlight {
+            identifier: issue.identifier.clone(),
+            to_name: data.columns[pending.to].name.clone(),
+            rollback,
+        };
+        data.columns[pending.to].issues.insert(0, issue);
+        self.in_flight = Some(flight);
+        self.notice = None;
+        self.clamp_selection();
+        Some(request)
     }
 
     fn move_request(&self, pending: PendingMove) -> Option<MoveRequest> {
@@ -394,20 +481,27 @@ impl BoardOverlay {
             }
             Mode::Moving(p) => {
                 let data = self.board()?;
-                let text = format!("Moving: target {}", clean(&data.columns.get(p.to)?.name));
+                let text = format!("Move to: {}", clean(&data.columns.get(p.to)?.name));
                 Some((text, Style::default().fg(ACCENT)))
             }
-            Mode::Browse => self
-                .notice
-                .as_ref()
-                .map(|n| (clean(n), Style::default().fg(WARN))),
+            Mode::Browse => match (&self.in_flight, &self.notice) {
+                (_, Some(n)) => {
+                    let color = if self.notice_ok { GOOD } else { WARN };
+                    Some((clean(n), Style::default().fg(color)))
+                }
+                (Some(f), None) => Some((
+                    format!("Moving {} to {}…", clean(&f.identifier), clean(&f.to_name)),
+                    Style::default().fg(ACCENT),
+                )),
+                (None, None) => None,
+            },
         }
     }
 
     fn hints(&self) -> String {
         match self.mode {
             Mode::Confirm(_) => "y confirm  n cancel".to_string(),
-            Mode::Moving(_) => "Left/Right target  Enter move  Esc cancel".to_string(),
+            Mode::Moving(_) => "Up/Down choose status  Enter select  Esc cancel".to_string(),
             Mode::Browse => match self.board() {
                 Some(d) if d.read_only => {
                     "Arrows move  r refresh  read-only  Esc close".to_string()
@@ -451,11 +545,11 @@ impl BoardOverlay {
             Style::default().fg(MUTED),
         );
 
-        let target = match self.mode {
-            Mode::Moving(p) | Mode::Confirm(p) => Some(p),
-            Mode::Browse => None,
-        };
-        self.render_tabs(buf, area, data, target.map(|p| p.to));
+        if let Mode::Moving(p) | Mode::Confirm(p) = self.mode {
+            render_picker(buf, area, data, p, body_h);
+            return;
+        }
+        self.render_tabs(buf, area, data);
 
         let Some(column) = data.columns.get(self.col) else {
             return;
@@ -512,7 +606,7 @@ impl BoardOverlay {
 
     /// One row of state tabs, each `Name (count)`. The strip scrolls so the
     /// selected tab is always visible; `‹`/`›` mark hidden tabs.
-    fn render_tabs(&self, buf: &mut Buffer, area: Rect, data: &BoardData, target: Option<usize>) {
+    fn render_tabs(&self, buf: &mut Buffer, area: Rect, data: &BoardData) {
         let width = area.width as usize;
         let labels: Vec<String> = data
             .columns
@@ -537,9 +631,6 @@ impl BoardOverlay {
             }
             if idx == self.col {
                 style = Style::default().fg(ACCENT).bg(SELECTED_BG).bold();
-            }
-            if target == Some(idx) {
-                style = Style::default().fg(Color::White).bg(TARGET_BG).bold();
             }
             let cell = Rect::new(area.x + x as u16, area.y, (width - x) as u16, area.height);
             let text = truncate_cells(label, width - x);
@@ -566,29 +657,107 @@ fn has_issues(data: &BoardData) -> bool {
     data.columns.iter().any(|c| !c.issues.is_empty())
 }
 
-/// Next target column in a direction, never landing on the source and
-/// clamped to the board edges.
-fn step_target(
-    current: usize,
-    source: usize,
-    columns: usize,
-    forward: bool,
-    allowed: &dyn Fn(usize) -> bool,
-) -> usize {
-    let mut next = current;
-    loop {
-        let candidate = if forward {
-            (next + 1).min(columns.saturating_sub(1))
-        } else {
-            next.saturating_sub(1)
-        };
-        if candidate == next {
-            return current;
+/// Sort key of a status type: the order groups appear in the move dialog.
+fn kind_rank(kind: &str) -> u8 {
+    match kind {
+        "triage" => 0,
+        "backlog" => 1,
+        "unstarted" => 2,
+        "started" => 3,
+        "completed" => 4,
+        "canceled" | "cancelled" | "duplicate" => 5,
+        _ => 6,
+    }
+}
+
+fn kind_label(kind: &str) -> &'static str {
+    match kind_rank(kind) {
+        0 => "Triage",
+        1 => "Backlog",
+        2 => "Unstarted",
+        3 => "Started",
+        4 => "Completed",
+        5 => "Canceled",
+        _ => "Other statuses",
+    }
+}
+
+/// Real columns (never the synthetic "Other") in the order the move dialog
+/// lists them: by status type, then provider order.
+fn picker_order(data: &BoardData) -> Vec<usize> {
+    let mut order: Vec<usize> = (0..data.columns.len())
+        .filter(|i| !data.columns[*i].id.is_empty())
+        .collect();
+    order.sort_by_key(|i| (kind_rank(&data.columns[*i].kind), *i));
+    order
+}
+
+/// The move dialog: statuses grouped by type, the target highlighted and the
+/// issue's current status shown dim. Replaces the tab strip and table.
+fn render_picker(buf: &mut Buffer, area: Rect, data: &BoardData, p: PendingMove, body_h: u16) {
+    let issue = data.columns.get(p.from).and_then(|c| c.issues.get(p.issue));
+    let head = match issue {
+        Some(i) => format!("Move {}  {}", clean(&i.identifier), clean(&i.title)),
+        None => "Move issue".to_string(),
+    };
+    put_filled(
+        buf,
+        area,
+        2,
+        &head,
+        Style::default().fg(Color::White).bold(),
+    );
+    enum Line {
+        Group(&'static str),
+        Status(usize),
+    }
+    let mut lines = Vec::new();
+    let mut last = None;
+    for idx in picker_order(data) {
+        let label = kind_label(&data.columns[idx].kind);
+        if last != Some(label) {
+            lines.push(Line::Group(label));
+            last = Some(label);
         }
-        if candidate != source && allowed(candidate) {
-            return candidate;
+        lines.push(Line::Status(idx));
+    }
+    let selected = lines
+        .iter()
+        .position(|l| matches!(l, Line::Status(i) if *i == p.to))
+        .unwrap_or(0);
+    let top = (selected + 1).saturating_sub(body_h as usize);
+    for (n, line) in lines.iter().enumerate().skip(top).take(body_h as usize) {
+        let y = TOP_ROWS - 1 + (n - top) as u16;
+        match line {
+            Line::Group(label) => put(
+                buf,
+                area,
+                y,
+                &label.to_uppercase(),
+                Style::default().fg(MUTED_DARK),
+            ),
+            Line::Status(idx) => {
+                let column = &data.columns[*idx];
+                let name = clean(&column.name);
+                let count = column.issues.len();
+                if *idx == p.from {
+                    let text = format!("    {name} ({count})  current");
+                    put(buf, area, y, &text, Style::default().fg(MUTED_DARK));
+                } else if *idx == p.to {
+                    let text = format!("  > {name} ({count})");
+                    put_filled(
+                        buf,
+                        area,
+                        y,
+                        &text,
+                        Style::default().fg(Color::White).bg(TARGET_BG).bold(),
+                    );
+                } else {
+                    let text = format!("    {name} ({count})");
+                    put(buf, area, y, &text, Style::default().fg(MUTED));
+                }
+            }
         }
-        next = candidate;
     }
 }
 

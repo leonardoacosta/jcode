@@ -12,9 +12,20 @@ fn issue(id: &str, title: &str) -> BoardIssue {
 }
 
 fn column(id: &str, name: &str, issues: Vec<BoardIssue>) -> BoardColumn {
+    let kind = match id {
+        "c-todo" => "unstarted",
+        "c-prog" => "started",
+        "c-done" => "completed",
+        _ => "",
+    };
+    kind_column(id, name, kind, issues)
+}
+
+fn kind_column(id: &str, name: &str, kind: &str, issues: Vec<BoardIssue>) -> BoardColumn {
     BoardColumn {
         id: id.to_string(),
         name: name.to_string(),
+        kind: kind.to_string(),
         issues,
     }
 }
@@ -291,8 +302,8 @@ fn board_overlay_move_flow_confirms_once() {
     let mut o = ready(false);
     assert_eq!(ch(&mut o, 'm'), BoardAction::None);
     assert!(matches!(o.mode, Mode::Moving(_)));
-    key(&mut o, KeyCode::Right); // skip past In Progress to Done
-    key(&mut o, KeyCode::Left); // and back
+    key(&mut o, KeyCode::Down); // In Progress -> Done
+    key(&mut o, KeyCode::Up); // and back
     assert_eq!(key(&mut o, KeyCode::Enter), BoardAction::None);
     let t = text(&o, 80, 10);
     assert!(
@@ -320,19 +331,87 @@ fn board_overlay_move_flow_confirms_once() {
 }
 
 #[test]
+fn board_overlay_move_dialog_groups_statuses_by_type_in_order() {
+    let mut d = data(false);
+    d.columns = vec![
+        kind_column("c-done", "Done", "completed", vec![]),
+        kind_column("c-ready", "Ready", "unstarted", vec![issue("T-1", "a")]),
+        kind_column("c-triage", "Triage", "triage", vec![]),
+        kind_column("c-dup", "Duplicate", "duplicate", vec![]),
+        kind_column("c-prog", "In Progress", "started", vec![]),
+        kind_column("c-back", "Backlog", "backlog", vec![]),
+        kind_column("c-canc", "Canceled", "canceled", vec![]),
+        kind_column("c-todo", "Todo", "unstarted", vec![]),
+    ];
+    let mut o = BoardOverlay::new(BoardLoad::Ready(d));
+    ch(&mut o, 'l'); // Ready is the second tab
+    ch(&mut o, 'm');
+    let r = rows(&o, 60, 24);
+    // Group headers are whole uppercase rows; statuses start after the indent.
+    let at = |needle: &str| {
+        r.iter()
+            .position(|l| l.trim() == needle || l.trim().starts_with(&format!("{needle} (")))
+            .or_else(|| {
+                r.iter()
+                    .position(|l| l.trim().starts_with(&format!("> {needle} (")))
+            })
+            .unwrap_or(999)
+    };
+    let order = [
+        "TRIAGE",
+        "Triage",
+        "BACKLOG",
+        "Backlog",
+        "UNSTARTED",
+        "Ready",
+        "Todo",
+        "STARTED",
+        "In Progress",
+        "COMPLETED",
+        "Done",
+        "CANCELED",
+        // Same group keeps the provider order (Duplicate was listed first).
+        "Duplicate",
+        "Canceled",
+    ];
+    let rows_at: Vec<_> = order.iter().map(|n| at(n)).collect();
+    assert!(
+        rows_at.windows(2).all(|w| w[0] < w[1]),
+        "{rows_at:?}\n{r:#?}"
+    );
+    assert!(r[2].contains("Move T-1"), "{:?}", r[2]);
+    let ready = r.iter().find(|l| l.contains("Ready")).unwrap();
+    assert!(ready.contains("current"), "own status marked: {ready:?}");
+}
+
+#[test]
+fn board_overlay_move_dialog_never_offers_the_current_status_or_other() {
+    let mut o = with_other();
+    ch(&mut o, 'm');
+    for _ in 0..8 {
+        let Mode::Moving(p) = o.mode else { panic!() };
+        assert_ne!(p.to, p.from);
+        assert!(!o.board().unwrap().columns[p.to].id.is_empty());
+        key(&mut o, KeyCode::Down);
+    }
+    let r = text(&o, 60, 14);
+    assert!(!r.contains("Other ("), "{r}");
+}
+
+#[test]
 fn board_overlay_move_target_never_the_source() {
     let mut o = ready(false);
     key(&mut o, KeyCode::Right); // select In Progress
     ch(&mut o, 'm');
     let Mode::Moving(p) = o.mode else { panic!() };
     assert_ne!(p.to, p.from);
-    // Walk left then right across the source: never lands on it.
     for code in [
-        KeyCode::Left,
-        KeyCode::Left,
-        KeyCode::Right,
-        KeyCode::Right,
-        KeyCode::Right,
+        KeyCode::Up,
+        KeyCode::Up,
+        KeyCode::Down,
+        KeyCode::Down,
+        KeyCode::Down,
+        KeyCode::Down,
     ] {
         key(&mut o, code);
         let Mode::Moving(p) = o.mode else { panic!() };
@@ -449,7 +528,10 @@ fn board_overlay_narrow_widths_keep_one_row_per_chrome_line() {
     }
     // The confirm line is one row, truncated with an ellipsis at 20 cells.
     let r = rows(&o, 20, 8);
-    let confirm: Vec<_> = r.iter().filter(|l| l.contains("Move")).collect();
+    let confirm: Vec<_> = r
+        .iter()
+        .filter(|l| l.starts_with("Move TEAM-1 from"))
+        .collect();
     assert_eq!(confirm.len(), 1, "{r:?}");
     assert!(confirm[0].contains('…'), "{confirm:?}");
     assert!(
@@ -602,7 +684,7 @@ fn board_overlay_other_column_is_never_a_move_target() {
     key(&mut o, KeyCode::Right);
     ch(&mut o, 'm');
     for _ in 0..4 {
-        key(&mut o, KeyCode::Right);
+        key(&mut o, KeyCode::Down);
     }
     key(&mut o, KeyCode::Enter);
     match ch(&mut o, 'y') {
@@ -614,5 +696,129 @@ fn board_overlay_other_column_is_never_a_move_target() {
             assert_eq!(m.to_column_id, "c-done");
         }
         other => panic!("expected a confirmed move, got {other:?}"),
+    }
+}
+
+// ---- optimistic move -------------------------------------------------------
+
+fn confirmed_move(o: &mut BoardOverlay) -> MoveRequest {
+    ch(o, 'm');
+    key(o, KeyCode::Enter);
+    match ch(o, 'y') {
+        BoardAction::Confirmed(m) => m,
+        other => panic!("expected a confirmed move, got {other:?}"),
+    }
+}
+
+fn names_in(o: &BoardOverlay, col: usize) -> Vec<String> {
+    o.board().unwrap().columns[col]
+        .issues
+        .iter()
+        .map(|i| i.identifier.clone())
+        .collect()
+}
+
+#[test]
+fn board_overlay_confirm_moves_the_card_at_once_and_shows_progress() {
+    let mut o = ready(false);
+    confirmed_move(&mut o);
+    assert_eq!(names_in(&o, 0), ["TEAM-2"]);
+    assert_eq!(names_in(&o, 1), ["TEAM-1", "TEAM-3"]);
+    let t = text(&o, 80, 12);
+    assert!(t.contains("Moving TEAM-1 to In Progress…"), "{t}");
+    assert!(t.contains("In Progress (2)"), "{t}");
+}
+
+#[test]
+fn board_overlay_failed_move_puts_the_card_back_with_the_reason() {
+    let mut o = ready(false);
+    confirmed_move(&mut o);
+    o.finish_move(
+        MoveVerdict::NotMoved,
+        "not moved: cannot read live state",
+        None,
+    );
+    assert_eq!(names_in(&o, 0), ["TEAM-1", "TEAM-2"]);
+    assert_eq!(names_in(&o, 1), ["TEAM-3"]);
+    let t = text(&o, 90, 12);
+    assert!(
+        t.contains("TEAM-1: not moved: cannot read live state"),
+        "{t}"
+    );
+    assert!(!t.contains("Moving TEAM-1"), "{t}");
+}
+
+#[test]
+fn board_overlay_unknown_result_keeps_the_card_and_says_unconfirmed() {
+    let mut o = ready(false);
+    confirmed_move(&mut o);
+    o.finish_move(MoveVerdict::Unknown, "move result unknown: timeout", None);
+    assert_eq!(names_in(&o, 1), ["TEAM-1", "TEAM-3"], "never rolled back");
+    let t = text(&o, 100, 12);
+    assert!(t.contains("unconfirmed"), "{t}");
+}
+
+#[test]
+fn board_overlay_success_adopts_the_fresh_board() {
+    let mut o = ready(false);
+    confirmed_move(&mut o);
+    let mut fresh = data(false);
+    let moved = fresh.columns[0].issues.remove(0);
+    fresh.columns[1].issues.push(moved);
+    o.finish_move(MoveVerdict::Moved, "moved", Some(BoardLoad::Ready(fresh)));
+    assert_eq!(names_in(&o, 1), ["TEAM-3", "TEAM-1"], "tracker order wins");
+    assert!(o.in_flight.is_none());
+    let t = text(&o, 80, 12);
+    assert!(t.contains("TEAM-1: moved"), "{t}");
+}
+
+#[test]
+fn board_overlay_success_without_a_fresh_read_keeps_the_card_and_hints_refresh() {
+    let mut o = ready(false);
+    confirmed_move(&mut o);
+    o.finish_move(MoveVerdict::Moved, "moved", None);
+    assert_eq!(names_in(&o, 1), ["TEAM-1", "TEAM-3"]);
+    assert!(text(&o, 90, 12).contains("press r"));
+}
+
+#[test]
+fn board_overlay_a_second_move_waits_for_the_first() {
+    let mut o = ready(false);
+    confirmed_move(&mut o);
+    ch(&mut o, 'm');
+    assert!(matches!(o.mode, Mode::Browse));
+    assert!(text(&o, 80, 12).contains("in progress"));
+    assert_eq!(ch(&mut o, 'r'), BoardAction::None, "no refresh mid-move");
+    o.finish_move(MoveVerdict::Moved, "moved", None);
+    assert_eq!(ch(&mut o, 'r'), BoardAction::Refresh);
+}
+
+#[test]
+fn board_overlay_set_load_clears_a_stale_in_flight_move() {
+    let mut o = ready(false);
+    confirmed_move(&mut o);
+    o.set_load(BoardLoad::Ready(data(false)));
+    assert!(o.in_flight.is_none());
+    o.finish_move(MoveVerdict::NotMoved, "late", None);
+    assert_eq!(
+        names_in(&o, 0),
+        ["TEAM-1", "TEAM-2"],
+        "late rollback is a no-op"
+    );
+}
+
+#[test]
+fn board_overlay_status_rows_stay_single_row_at_narrow_widths_during_a_move() {
+    let mut o = ready(false);
+    ch(&mut o, 'm');
+    for w in [1u16, 5, 12, 20, 40] {
+        for h in [1u16, 4, 6, 12] {
+            assert_rows_fit(&o, w, h);
+        }
+    }
+    key(&mut o, KeyCode::Enter);
+    ch(&mut o, 'y');
+    for w in [1u16, 5, 12, 20, 40] {
+        assert_rows_fit(&o, w, 8);
     }
 }

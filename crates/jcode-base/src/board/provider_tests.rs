@@ -7,6 +7,7 @@ fn state(id: &str, position: f64) -> WorkflowState {
         id: id.into(),
         name: id.into(),
         position,
+        kind: String::new(),
     }
 }
 
