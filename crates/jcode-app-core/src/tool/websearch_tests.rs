@@ -510,6 +510,35 @@ fn parses_bing_html_results() {
 }
 
 #[test]
+fn parses_bing_ck_redirect_results() {
+    // Current keyless Bing HTML wraps every organic link in a /ck/a redirect
+    // carrying the target as u=a1<base64url>; the old filter dropped them all.
+    let html = r#"
+            <li class="b_algo" data-id iid=SERP.5322>
+              <h2><a target="_blank" href="https://www.bing.com/ck/a?!&amp;&amp;p=867c51JmltdHM9MTc5NTEzMjgwMA&amp;ptn=3&amp;ver=2&amp;hsh=4&amp;u=a1aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvU3lzdGVtZA&amp;ntb=1">systemd - Wikipedia</a></h2>
+              <div class="b_caption"><p>systemd is a software suite.</p></div>
+            </li>
+            <li class="b_algo"><h2><a href="https://www.bing.com/ck/a?!&amp;&amp;p=00ff&amp;ptn=3&amp;ntb=1">no target</a></h2></li>
+            <li class="b_algo">
+              <h2><a href="https://www.bing.com/ck/a?!&amp;&amp;p=069c&amp;u=a1aHR0cHM6Ly9zeXN0ZW1kLmlvLw&amp;ntb=1">System and Service Manager</a></h2>
+              <div class="b_caption"><p>Home page.</p></div>
+            </li>
+        "#;
+
+    let results = parse_bing_html_results(html, 10);
+    let urls: Vec<_> = results.iter().map(|r| r.url.as_str()).collect();
+    assert_eq!(
+        urls,
+        [
+            "https://en.wikipedia.org/wiki/Systemd",
+            "https://systemd.io/"
+        ]
+    );
+    assert_eq!(results[0].title, "systemd - Wikipedia");
+    assert_eq!(results[0].snippet, "systemd is a software suite.");
+}
+
+#[test]
 fn parses_bing_api_results() {
     let response: BingApiResponse = serde_json::from_value(json!({
         "webPages": {

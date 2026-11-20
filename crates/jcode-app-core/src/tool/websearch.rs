@@ -791,7 +791,7 @@ fn parse_bing_html_results(html: &str, max_results: usize) -> Vec<SearchResult> 
         let Some(link) = link_re.captures(&block[1]) else {
             continue;
         };
-        let url = html_decode(&link[1]);
+        let url = decode_bing_url(&html_decode(&link[1]));
         if !url.starts_with("http") || url.contains("bing.com") {
             continue;
         }
@@ -878,6 +878,22 @@ fn detect_anti_bot_page(html: &str) -> Option<&'static str> {
         }
     }
     None
+}
+
+fn decode_bing_url(url: &str) -> String {
+    // Bing wraps organic results as bing.com/ck/a?...&u=a1<base64url(target)>.
+    // Ads and other Bing-internal links have no such target and stay as-is,
+    // so the caller's bing.com filter still drops them.
+    use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+    if !url.contains("bing.com/ck/a") {
+        return url.to_string();
+    }
+    url.split(['?', '&'])
+        .find_map(|param| param.strip_prefix("u=a1"))
+        .and_then(|encoded| URL_SAFE_NO_PAD.decode(encoded.trim_end_matches('=')).ok())
+        .and_then(|bytes| String::from_utf8(bytes).ok())
+        .filter(|target| target.starts_with("http"))
+        .unwrap_or_else(|| url.to_string())
 }
 
 fn decode_ddg_url(url: &str) -> String {
