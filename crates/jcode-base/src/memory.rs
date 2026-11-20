@@ -27,6 +27,8 @@ mod activity;
 mod cache;
 #[path = "memory/pending.rs"]
 mod pending;
+mod retention;
+pub use retention::{PurgeCandidate, PurgeFilter, PurgeReport, age_cutoff};
 #[path = "memory_prompt.rs"]
 mod prompt_support;
 
@@ -327,6 +329,9 @@ impl MemoryManager {
             return Ok(false);
         }
 
+        let Some(graph_path) = self.project_memory_path()? else {
+            return Ok(false);
+        };
         let legacy: LegacyNotesFile = storage::read_json(&path)?;
         if legacy.entries.is_empty() {
             return Ok(false);
@@ -334,7 +339,10 @@ impl MemoryManager {
 
         let mut changed = false;
         for note in legacy.entries {
-            if graph.memories.contains_key(&note.id) {
+            // A purged note must not return on the next load.
+            if graph.memories.contains_key(&note.id)
+                || self.purged_in(&graph_path, &note.id, note.created_at)
+            {
                 continue;
             }
 
@@ -1397,9 +1405,14 @@ impl MemoryManager {
     /// Save project memories as a MemoryGraph
     pub fn save_project_graph(&self, graph: &MemoryGraph) -> Result<()> {
         if let Some(path) = self.project_memory_path()? {
-            storage::write_json(&path, graph)?;
+            // Serialize with purge and drop purged ids, so a snapshot loaded
+            // before a purge cannot resurrect what it removed. If the lock
+            // cannot be taken the save still proceeds: only purge refuses.
+            let _guard = self.lock_graphs().ok();
+            let graph = self.without_purged(graph, &path);
+            storage::write_json(&path, graph.as_ref())?;
             if !self.test_mode {
-                cache_graph(path, graph);
+                cache_graph(path, graph.as_ref());
             }
         }
         Ok(())
@@ -1408,9 +1421,12 @@ impl MemoryManager {
     /// Save global memories as a MemoryGraph
     pub fn save_global_graph(&self, graph: &MemoryGraph) -> Result<()> {
         let path = self.global_memory_path()?;
-        storage::write_json(&path, graph)?;
+        // Same guard as the project save: serialize with purge, drop purged ids.
+        let _guard = self.lock_graphs().ok();
+        let graph = self.without_purged(graph, &path);
+        storage::write_json(&path, graph.as_ref())?;
         if !self.test_mode {
-            cache_graph(path, graph);
+            cache_graph(path, graph.as_ref());
         }
         Ok(())
     }

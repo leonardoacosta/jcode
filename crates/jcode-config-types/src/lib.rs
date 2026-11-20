@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 mod display;
 mod update_policy;
 pub use update_policy::{CrossProviderFailoverMode, UpdateChannel};
+mod memory;
+pub use memory::{MemoryConfig, MemoryRetentionConfig};
 mod menubar;
 mod power;
 mod session;

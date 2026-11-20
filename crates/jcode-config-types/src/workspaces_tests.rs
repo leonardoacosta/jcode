@@ -175,3 +175,29 @@ fn linear_board_team_must_look_like_a_team_id() {
     // ADO team identifiers have no such shape rule.
     assert!(rule("ado", "Brown Project").is_empty());
 }
+
+#[test]
+fn memory_retention_is_off_by_default_and_zero_age_never_deletes() {
+    let default = crate::MemoryRetentionConfig::default();
+    assert!(!default.enabled && !default.auto_purge);
+    assert!(!default.auto_purge_active());
+    let on = crate::MemoryRetentionConfig {
+        enabled: true,
+        auto_purge: true,
+        inactive_max_age_days: 30,
+    };
+    assert!(on.auto_purge_active());
+    let enabled_only = crate::MemoryRetentionConfig {
+        auto_purge: false,
+        ..on.clone()
+    };
+    assert!(
+        !enabled_only.auto_purge_active(),
+        "enabled alone is not auto"
+    );
+    let zero_age = crate::MemoryRetentionConfig {
+        inactive_max_age_days: 0,
+        ..on
+    };
+    assert!(!zero_age.auto_purge_active(), "zero days is refused");
+}

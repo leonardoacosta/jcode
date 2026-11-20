@@ -192,6 +192,34 @@ pub(crate) enum MemoryCommand {
         /// Filter by tag
         #[arg(short, long)]
         tag: Option<String>,
+
+        /// Only memories that are no longer active (superseded)
+        #[arg(long)]
+        inactive: bool,
+
+        /// Only memories last updated at least this many days ago
+        #[arg(long, value_name = "DAYS")]
+        older_than: Option<u64>,
+    },
+
+    /// Remove memories matching a filter. Reports matches and deletes nothing
+    /// unless --apply is given
+    Purge {
+        /// Scope (project, global, all)
+        #[arg(short, long, default_value = "all")]
+        scope: String,
+
+        /// Only memories that are no longer active (superseded)
+        #[arg(long)]
+        inactive: bool,
+
+        /// Only memories last updated at least this many days ago
+        #[arg(long, value_name = "DAYS")]
+        older_than: Option<u64>,
+
+        /// Actually delete. Without this the command only lists matches
+        #[arg(long)]
+        apply: bool,
     },
 
     /// Search memories by query

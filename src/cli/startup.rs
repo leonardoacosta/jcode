@@ -69,6 +69,14 @@ pub async fn run() -> Result<()> {
         .name("jcode-session-retention-gc".to_string())
         .spawn(crate::session::retention::auto_gc_on_startup)
         .ok();
+    // Opt-in memory retention: no-op unless [memory.retention] enabled && auto_purge.
+    std::thread::Builder::new()
+        .name("jcode-memory-retention".to_string())
+        .spawn(|| {
+            let policy = crate::config::config().memory.retention.clone();
+            crate::memory::MemoryManager::new().auto_purge(&policy);
+        })
+        .ok();
     // Record which binary actually launched. Stale copies earlier on PATH (or a
     // shortcut pinned to an old install) otherwise look identical to the
     // updated launcher in logs, and keep re-offering the same update (#1626).

@@ -154,7 +154,7 @@ fn jev_project_write_without_scope_fails_instead_of_silently_losing_memory() {
     });
 }
 
-fn with_temp_home<F, T>(f: F) -> T
+pub(crate) fn with_temp_home<F, T>(f: F) -> T
 where
     F: FnOnce(&Path) -> T,
 {

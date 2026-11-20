@@ -4,7 +4,28 @@ use super::*;
 
 pub(super) fn map_memory_subcommand(subcmd: MemoryCommand) -> commands::MemorySubcommand {
     match subcmd {
-        MemoryCommand::List { scope, tag } => commands::MemorySubcommand::List { scope, tag },
+        MemoryCommand::List {
+            scope,
+            tag,
+            inactive,
+            older_than,
+        } => commands::MemorySubcommand::List {
+            scope,
+            tag,
+            inactive,
+            older_than,
+        },
+        MemoryCommand::Purge {
+            scope,
+            inactive,
+            older_than,
+            apply,
+        } => commands::MemorySubcommand::Purge {
+            scope,
+            inactive,
+            older_than,
+            apply,
+        },
         MemoryCommand::Search { query, semantic } => {
             commands::MemorySubcommand::Search { query, semantic }
         }

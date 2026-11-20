@@ -1654,6 +1654,14 @@ pub enum MemorySubcommand {
     List {
         scope: String,
         tag: Option<String>,
+        inactive: bool,
+        older_than: Option<u64>,
+    },
+    Purge {
+        scope: String,
+        inactive: bool,
+        older_than: Option<u64>,
+        apply: bool,
     },
     Search {
         query: String,
@@ -1670,6 +1678,15 @@ pub enum MemorySubcommand {
     },
     Stats,
     ClearTest,
+}
+
+fn parse_memory_scope(scope: &str) -> Result<memory::MemoryScope> {
+    match scope {
+        "project" => Ok(memory::MemoryScope::Project),
+        "global" => Ok(memory::MemoryScope::Global),
+        "all" => Ok(memory::MemoryScope::All),
+        other => anyhow::bail!("unknown scope `{other}` (expected project, global or all)"),
+    }
 }
 
 pub async fn run_memory_command(cmd: MemorySubcommand) -> Result<()> {
@@ -1691,7 +1708,61 @@ async fn run_memory_command_for_dir(
     };
 
     match cmd {
-        MemorySubcommand::List { scope, tag } => {
+        MemorySubcommand::Purge {
+            scope,
+            inactive,
+            older_than,
+            apply,
+        } => {
+            let scope = parse_memory_scope(&scope)?;
+            let filter = memory::PurgeFilter {
+                inactive_only: inactive,
+                older_than_days: older_than,
+                ..memory::PurgeFilter::new(scope)
+            };
+            anyhow::ensure!(
+                filter.is_narrowed(),
+                "refusing to purge without a filter: pass --inactive and/or --older-than <days>"
+            );
+            let report = if apply {
+                manager.purge_apply(&filter)?
+            } else {
+                memory::PurgeReport {
+                    matched: manager.purge_candidates(&filter)?,
+                    removed: 0,
+                }
+            };
+            if report.matched.is_empty() {
+                println!("No memories match. Nothing to purge.");
+            } else {
+                let verb = if apply { "Purged" } else { "Would purge" };
+                println!("{verb} {} memories:\n", report.matched.len());
+                for hit in &report.matched {
+                    println!(
+                        "- {} [{}] {}\n  id: {} ({} days old, {})",
+                        match hit.scope {
+                            memory::MemoryScope::Project => "project",
+                            _ => "global",
+                        },
+                        hit.category,
+                        hit.preview,
+                        hit.id,
+                        hit.age_days,
+                        if hit.active { "active" } else { "inactive" }
+                    );
+                }
+                if !apply {
+                    println!("\nDry run: nothing was deleted. Re-run with --apply to delete.");
+                }
+            }
+        }
+
+        MemorySubcommand::List {
+            scope,
+            tag,
+            inactive,
+            older_than,
+        } => {
             let mut all_memories: Vec<MemoryEntry> = Vec::new();
 
             if (scope == "all" || scope == "project")
@@ -1707,6 +1778,13 @@ async fn run_memory_command_for_dir(
 
             if let Some(tag_filter) = tag {
                 all_memories.retain(|m| m.tags.contains(&tag_filter));
+            }
+            if inactive {
+                all_memories.retain(|m| !m.active);
+            }
+            if let Some(days) = older_than {
+                let cutoff = memory::age_cutoff(chrono::Utc::now(), days);
+                all_memories.retain(|m| cutoff.is_some_and(|c| m.updated_at <= c));
             }
 
             all_memories.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
@@ -1861,12 +1939,25 @@ async fn run_memory_command_for_dir(
                     manager.remember_project(entry)
                 };
 
-                result.map_err(|error| {
+                let stored_id = result.map_err(|error| {
                     anyhow::anyhow!(
                         "failed to durably import memory {entry_id} into {scope} scope: {error}"
                     )
                 })?;
-                imported += 1;
+                // A purge tombstone drops that exact version on save. Count only
+                // what is really stored.
+                let stored = if scope == "global" {
+                    manager.load_global_graph()
+                } else {
+                    manager.load_project_graph()
+                }
+                .is_ok_and(|graph| graph.get_memory(&stored_id).is_some());
+                if stored {
+                    imported += 1;
+                } else {
+                    skipped += 1;
+                    eprintln!("Skipped {entry_id}: it was purged and this is the purged version");
+                }
             }
 
             println!("Imported {} memories ({} skipped)", imported, skipped);

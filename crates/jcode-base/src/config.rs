@@ -9,7 +9,7 @@ pub use jcode_config_types::{
     CustomWebSearchConfig, CustomWebSearchMethod, DiagramDisplayMode, DiagramPanePosition,
     DiffDisplayMode, DisplayConfig, FeatureConfig, GatewayConfig, HookCommands, HookEntry,
     HooksConfig, KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
-    MarkdownSpacingMode, MenubarConfig, NamedProviderAuth, NamedProviderConfig,
+    MarkdownSpacingMode, MemoryConfig, MenubarConfig, NamedProviderAuth, NamedProviderConfig,
     NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig, NotificationsConfig,
     PowerConfig, ProviderConfig, ReasoningDisplayMode, ResumeOpenElsewhere, ResumeTimeMode,
     SafetyConfig, SessionConfig, SessionPickerResumeAction, SessionRetentionConfig, SessionsConfig,
@@ -720,6 +720,9 @@ pub struct Config {
 
     /// On-disk session store policy (`[sessions.retention]`).
     pub sessions: SessionsConfig,
+
+    /// Stored-memory policy (`[memory.retention]`), off by default.
+    pub memory: MemoryConfig,
 
     /// Daemon behavior for autonomous wake requests.
     pub server: ServerConfig,

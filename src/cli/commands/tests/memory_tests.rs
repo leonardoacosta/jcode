@@ -115,3 +115,100 @@ async fn memory_cli_semantic_requires_jev_but_keyword_search_remains_local() {
         .await
         .expect("an empty project must not leak another project's candidates");
 }
+
+async fn seed_for_purge(temp: &tempfile::TempDir) -> std::path::PathBuf {
+    crate::env::set_var("JCODE_HOME", temp.path().join("home"));
+    let project = temp.path().join("project");
+    std::fs::create_dir_all(&project).expect("create project");
+    let manager = crate::memory::MemoryManager::new();
+    for (text, days, active) in [
+        ("cli keep active", 400, true),
+        ("cli old inactive", 200, false),
+        ("cli new inactive", 1, false),
+    ] {
+        let mut entry =
+            crate::memory::MemoryEntry::new(crate::memory::MemoryCategory::Fact, text.to_string());
+        entry.updated_at = chrono::Utc::now() - chrono::Duration::days(days);
+        entry.active = active;
+        manager.upsert_global_memory(entry).expect("seed");
+    }
+    project
+}
+
+fn purge(inactive: bool, older_than: Option<u64>, apply: bool) -> MemorySubcommand {
+    MemorySubcommand::Purge {
+        scope: "all".into(),
+        inactive,
+        older_than,
+        apply,
+    }
+}
+
+fn stored() -> Vec<String> {
+    let mut all: Vec<String> = crate::memory::MemoryManager::new()
+        .list_all()
+        .expect("list")
+        .into_iter()
+        .map(|e| e.content)
+        .collect();
+    all.sort();
+    all
+}
+
+#[tokio::test]
+async fn memory_cli_purge_is_a_dry_run_unless_apply_is_given() {
+    let _guard = crate::storage::lock_test_env();
+    let _saved = SavedEnv::capture(&["JCODE_HOME"]);
+    let temp = tempfile::tempdir().expect("temp dir");
+    let project = seed_for_purge(&temp).await;
+    run_memory_command_for_dir(purge(true, Some(30), false), Some(project))
+        .await
+        .expect("dry run");
+    assert_eq!(stored().len(), 3, "a dry run deletes nothing");
+}
+
+#[tokio::test]
+async fn memory_cli_purge_apply_removes_only_what_the_filters_match() {
+    let _guard = crate::storage::lock_test_env();
+    let _saved = SavedEnv::capture(&["JCODE_HOME"]);
+    let temp = tempfile::tempdir().expect("temp dir");
+    let project = seed_for_purge(&temp).await;
+    run_memory_command_for_dir(purge(true, Some(30), true), Some(project))
+        .await
+        .expect("apply");
+    assert_eq!(stored(), ["cli keep active", "cli new inactive"]);
+}
+
+#[tokio::test]
+async fn memory_cli_purge_without_a_filter_is_refused_even_with_apply() {
+    let _guard = crate::storage::lock_test_env();
+    let _saved = SavedEnv::capture(&["JCODE_HOME"]);
+    let temp = tempfile::tempdir().expect("temp dir");
+    let project = seed_for_purge(&temp).await;
+    let error = run_memory_command_for_dir(purge(false, None, true), Some(project))
+        .await
+        .expect_err("must refuse");
+    assert!(error.to_string().contains("without a filter"), "{error}");
+    assert_eq!(stored().len(), 3);
+}
+
+#[tokio::test]
+async fn memory_cli_purge_rejects_an_unknown_scope() {
+    let _guard = crate::storage::lock_test_env();
+    let _saved = SavedEnv::capture(&["JCODE_HOME"]);
+    let temp = tempfile::tempdir().expect("temp dir");
+    let project = seed_for_purge(&temp).await;
+    let error = run_memory_command_for_dir(
+        MemorySubcommand::Purge {
+            scope: "everything".into(),
+            inactive: true,
+            older_than: None,
+            apply: true,
+        },
+        Some(project),
+    )
+    .await
+    .expect_err("unknown scope");
+    assert!(error.to_string().contains("unknown scope"), "{error}");
+    assert_eq!(stored().len(), 3);
+}
