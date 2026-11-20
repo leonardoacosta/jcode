@@ -420,6 +420,10 @@ pub(super) async fn spawn_swarm_agent(
     soft_interrupt_queues: &SessionInterruptQueues,
     client_connections: &ClientConnections,
 ) -> anyhow::Result<String> {
+    anyhow::ensure!(
+        !super::lifecycle::shutting_down(),
+        "Server is shutting down or reloading and is not admitting new workers"
+    );
     // An overnight run's `max_agents` cap (and its cancellation) governs spawns.
     let _overnight_spawn_gate = crate::overnight::worker_spawn_gate(req_session_id).await;
     if _overnight_spawn_gate.is_some() {

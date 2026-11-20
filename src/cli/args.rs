@@ -828,6 +828,15 @@ pub(crate) enum ServerCommand {
         json: bool,
     },
 
+    /// Show live servers, connected clients and per-server uptime.
+    ///
+    /// Stale registry entries are dropped first, so only live servers count.
+    Status {
+        /// Emit JSON instead of human-readable text
+        #[arg(long)]
+        json: bool,
+    },
+
     /// Stop the running background server and clear its socket.
     ///
     /// Prefer `server reload` after an upgrade; it preserves live sessions.

@@ -2092,6 +2092,10 @@ pub(super) fn handle_info_command(app: &mut App, trimmed: &str) -> bool {
         return true;
     }
 
+    if super::server_status::handle_servers_command(app, trimmed) {
+        return true;
+    }
+
     if trimmed == "/info" {
         let version = jcode_build_meta::version();
         let terminal_size = crossterm::terminal::size()

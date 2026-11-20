@@ -1092,6 +1092,19 @@ impl BackgroundTaskManager {
         paths.len()
     }
 
+    /// Whether any task is still `Running`. A task directory that exists but
+    /// cannot be read counts as running: unknown is not idle.
+    pub async fn has_running_tasks(&self) -> bool {
+        match fs::read_dir(&self.output_dir).await {
+            Err(error) if error.kind() != std::io::ErrorKind::NotFound => return true,
+            _ => {}
+        }
+        self.list()
+            .await
+            .iter()
+            .any(|task| task.status == BackgroundTaskStatus::Running)
+    }
+
     /// List all tasks (both running and completed from disk)
     pub async fn list(&self) -> Vec<TaskStatusFile> {
         let mut results = Vec::new();

@@ -16,6 +16,26 @@ pub use directives::{
 };
 pub use manager::AmbientManager;
 pub use persistence::{AmbientLock, RecoveryReport, ScheduledQueue, Settlement};
+
+/// Whether persisted ambient work is waiting: a pending or in-flight scheduled
+/// item, or an unconsumed directive. Reads the existing durable state, so a
+/// server never keeps a second ledger of its own work. State that exists but
+/// cannot be read counts as work: an unreadable queue is not an empty one.
+pub fn has_pending_work() -> bool {
+    let Ok(queue_path) = paths::queue_path() else {
+        return true;
+    };
+    if queue_path.exists() {
+        if crate::storage::read_json::<Vec<serde_json::Value>>(&queue_path).is_err() {
+            return true;
+        }
+        let queue = ScheduledQueue::load(queue_path);
+        if !queue.is_empty() || !queue.in_flight().is_empty() {
+            return true;
+        }
+    }
+    directives::directives_unreadable_or_pending()
+}
 #[cfg(test)]
 pub(crate) use prompt::format_duration_rough;
 pub use prompt::{

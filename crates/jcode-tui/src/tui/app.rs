@@ -118,6 +118,7 @@ mod shortcut_hints;
 mod slash_command_parser;
 mod spinner_ticker;
 mod split_view;
+mod server_status;
 mod state_ui;
 mod state_ui_input_helpers;
 mod update_rehearsal;

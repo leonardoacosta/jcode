@@ -228,6 +228,11 @@ pub(super) async fn await_reload_signal(
             continue;
         }
 
+        // Past the compatibility floor the reload goes ahead: stop admitting
+        // new work while this process is replaced. Work already persisted is
+        // recovered or reattached by the replacement.
+        super::lifecycle::begin_shutdown();
+
         persist_reload_recovery_intents(
             &signal.request_id,
             &swarm_members,

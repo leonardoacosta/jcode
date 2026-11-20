@@ -38,7 +38,9 @@ fn stale_reason(item: &ScheduledItem) -> Option<String> {
         ScheduleTarget::Spawn { parent_session_id } => parent_session_id,
     };
     if let Err(error) = control.runnable(target) {
-        return Some(format!("target session '{target}' is not runnable: {error:#}"));
+        return Some(format!(
+            "target session '{target}' is not runnable: {error:#}"
+        ));
     }
     let origin = item.delivery.origin_generation?;
     if *target != item.created_by_session {
@@ -670,6 +672,12 @@ impl AmbientRunnerHandle {
         ambient_tools::init_safety_system(Arc::clone(&self.inner.safety));
 
         loop {
+            // A stopping server claims nothing: queued items stay on disk for
+            // the next process instead of being dispatched and then dropped.
+            if crate::server::shutting_down() {
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                continue;
+            }
             // Check state
             let state = { self.inner.state.read().await.clone() };
 

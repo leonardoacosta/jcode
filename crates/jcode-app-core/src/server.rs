@@ -522,6 +522,12 @@ pub use self::reload_state::{
 use self::reload_state::{clear_reload_marker_if_stale_for_pid, publish_reload_socket_ready};
 
 pub use self::lifecycle::configure_temporary_server;
+
+/// Whether this server is stopping or reloading and refuses new work.
+pub fn shutting_down() -> bool {
+    lifecycle::shutting_down()
+}
+
 #[cfg(unix)]
 pub use self::socket::server_start_matches_existing_server;
 #[cfg(unix)]
@@ -546,8 +552,7 @@ pub fn control_reader_version() -> u32 {
 pub use self::util::{MANAGED_CLOUD_LIVE_RELOAD_MARKER, ServerIdentity};
 use self::util::{
     debug_control_allowed, embedding_idle_unload_secs, git_common_dir_for, reload_exec_target,
-    startup_headless_recovery_test_delay, supervised_by_service_manager, swarm_id_for_dir,
-    swarm_id_for_session,
+    startup_headless_recovery_test_delay, swarm_id_for_dir, swarm_id_for_session,
 };
 
 mod file_activity;
@@ -571,9 +576,6 @@ mod queue_tests;
 
 #[cfg(test)]
 mod file_activity_tests;
-
-/// Idle timeout for the shared server when no clients are connected (5 minutes)
-const IDLE_TIMEOUT_SECS: u64 = 300;
 
 /// How often to check whether the embedding model can be unloaded. Keep this
 /// comfortably below the default idle threshold so reclamation is prompt and
@@ -779,6 +781,7 @@ impl Server {
             pid: std::process::id(),
             started_at: chrono::Utc::now().to_rfc3339(),
             sessions: Vec::new(),
+            clients: None,
         }
     }
 
@@ -936,7 +939,7 @@ impl Server {
             .await;
         });
 
-        // On SIGTERM: log, unregister, let in-flight session saves finish, exit.
+        // On SIGTERM: stop admitting work, unregister, let in-flight session saves finish, exit.
         #[cfg(unix)]
         {
             let sigterm_server_name = self.identity.name.clone();
@@ -960,8 +963,15 @@ impl Server {
                             name: name.to_string(),
                         },
                     );
+                    // Refuse new work before anything else; pending scheduled
+                    // and background work stays on disk for the restarted
+                    // daemon's recovery.
+                    lifecycle::begin_shutdown();
                     let _ = crate::registry::unregister_server(&sigterm_server_name).await;
-                    lifecycle::drain_session_saves_before_exit().await;
+                    // An incomplete drain is logged by the drain itself and the
+                    // journal is kept for recovery; the exit stays clean so a
+                    // service manager does not record a failed stop.
+                    let _ = lifecycle::drain_session_saves_before_exit().await;
                     std::process::exit(0);
                 }
             });
@@ -1486,8 +1496,21 @@ impl Server {
             });
         }
 
-        if let Some(policy) = temporary_server_policy {
-            lifecycle::spawn_temporary_lifecycle_monitor(
+        // Publish the connected-client count for `jcode server status` and the
+        // TUI. The write is skipped while the count is unchanged.
+        let published_clients = Arc::clone(&self.client_count);
+        let published_name = self.identity.name.clone();
+        tokio::spawn(async move {
+            let mut tick = tokio::time::interval(std::time::Duration::from_secs(5));
+            loop {
+                tick.tick().await;
+                let count = *published_clients.read().await;
+                let _ = crate::registry::update_client_count(&published_name, count).await;
+            }
+        });
+
+        match lifecycle::IdleExit::for_scope(temporary_server_policy) {
+            lifecycle::IdleExit::After(policy) => lifecycle::spawn_temporary_lifecycle_monitor(
                 Arc::clone(&self.client_count),
                 Arc::clone(&self.sessions),
                 self.swarm_state.clone(),
@@ -1495,57 +1518,11 @@ impl Server {
                 self.debug_socket_path.clone(),
                 self.identity.name.clone(),
                 policy,
-            );
-        } else if debug_control_allowed() {
-            crate::logging::info("Debug control enabled; idle timeout monitor disabled.");
-        } else if supervised_by_service_manager() {
-            crate::logging::info("Supervised by a service manager; idle timeout monitor disabled.");
-        } else {
-            let idle_client_count = Arc::clone(&self.client_count);
-            let idle_sessions = Arc::clone(&self.sessions);
-            let idle_swarm_state = self.swarm_state.clone();
-            let idle_server_name = self.identity.name.clone();
-            tokio::spawn(async move {
-                let mut idle_since: Option<std::time::Instant> = None;
-                let mut check_interval = tokio::time::interval(std::time::Duration::from_secs(10));
-
-                loop {
-                    check_interval.tick().await;
-
-                    let count = *idle_client_count.read().await;
-                    let has_live_headless_worker =
-                        has_live_headless_worker(&idle_sessions, &idle_swarm_state).await;
-
-                    if idle_monitor_should_start(count, has_live_headless_worker) {
-                        // No clients connected
-                        if idle_since.is_none() {
-                            idle_since = Some(std::time::Instant::now());
-                            crate::logging::info(&format!(
-                                "No clients connected. Server will exit after {} minutes of idle.",
-                                IDLE_TIMEOUT_SECS / 60
-                            ));
-                        }
-
-                        if let Some(since) = idle_since {
-                            let idle_duration = since.elapsed().as_secs();
-                            if idle_duration >= IDLE_TIMEOUT_SECS {
-                                crate::logging::info(&format!(
-                                    "Server idle for {} minutes with no clients. Shutting down.",
-                                    idle_duration / 60
-                                ));
-                                let _ = crate::registry::unregister_server(&idle_server_name).await;
-                                std::process::exit(EXIT_IDLE_TIMEOUT);
-                            }
-                        }
-                    } else {
-                        // Clients connected - reset idle timer
-                        if idle_since.is_some() {
-                            crate::logging::info("Client connected. Idle timer cancelled.");
-                        }
-                        idle_since = None;
-                    }
-                }
-            });
+            ),
+            // The shared daemon stays resident whatever its idle time.
+            lifecycle::IdleExit::Never => {
+                crate::logging::info("Shared server is resident; idle exit is disabled.");
+            }
         }
     }
 

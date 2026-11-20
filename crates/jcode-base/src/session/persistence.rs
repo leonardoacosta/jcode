@@ -32,9 +32,13 @@ static SAVES_IN_FLIGHT: std::sync::RwLock<()> = std::sync::RwLock::new(());
 /// keep new saves from starting. Call right before exiting the process.
 /// Returns `true` when all in-flight saves finished in time.
 pub fn drain_saves_for_shutdown(timeout: std::time::Duration) -> bool {
+    drain_saves_on(&SAVES_IN_FLIGHT, timeout)
+}
+
+fn drain_saves_on(lock: &std::sync::RwLock<()>, timeout: std::time::Duration) -> bool {
     let deadline = Instant::now() + timeout;
     loop {
-        match SAVES_IN_FLIGHT.try_write() {
+        match lock.try_write() {
             Ok(guard) => {
                 // Leak the guard: saves stay blocked until the process exits.
                 std::mem::forget(guard);
@@ -889,6 +893,23 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn drain_reports_an_in_flight_save_instead_of_claiming_it_finished() {
+        let lock = std::sync::RwLock::new(());
+        let held = lock.read().unwrap();
+        let started = Instant::now();
+        assert!(
+            !drain_saves_on(&lock, std::time::Duration::from_millis(60)),
+            "a save still running at the bound is reported incomplete"
+        );
+        assert!(started.elapsed() >= std::time::Duration::from_millis(60));
+        drop(held);
+        assert!(
+            drain_saves_on(&lock, std::time::Duration::from_millis(60)),
+            "the drain completes once the save finishes"
+        );
+    }
+
     use super::*;
     use crate::message::{ContentBlock, Role};
 

@@ -2607,6 +2607,19 @@ fn validate_server_reload_report(report: &ServerReloadReport) -> Result<()> {
     Ok(())
 }
 
+/// `jcode server status`: live servers, connected clients, uptime per server.
+pub async fn run_server_status_command(emit_json: bool) -> Result<()> {
+    let status = crate::registry::server_status().await?;
+    if emit_json {
+        println!("{}", serde_json::to_string(&status)?);
+        return Ok(());
+    }
+    for line in crate::registry::server_status_lines(&status) {
+        println!("{line}");
+    }
+    Ok(())
+}
+
 /// Gracefully reload the running background server onto the newest binary.
 ///
 /// This is the preferred upgrade path (issue #291): instead of killing the

@@ -423,3 +423,55 @@ fn legacy_queue_file_without_delivery_fields_loads_pending_and_claims() {
     assert_eq!(claimed[0].id, "legacy-1");
     assert_eq!(ScheduledQueue::load(path).in_flight().len(), 1);
 }
+
+/// Server lifecycle asks the durable queue whether work is waiting. It reads
+/// the existing state, never a second ledger, and unreadable state is work.
+#[test]
+fn has_pending_work_reads_the_durable_queue_and_directives() {
+    let _guard = crate::storage::lock_test_env();
+    let temp = tempfile::tempdir().expect("isolated home");
+    let previous = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", temp.path());
+    let outcome = std::panic::catch_unwind(|| {
+        assert!(!crate::ambient::has_pending_work(), "empty queue is idle");
+
+        let mut queue = ScheduledQueue::load(crate::ambient::paths::queue_path().unwrap());
+        queue.push(item("pending-one", 60));
+        assert!(crate::ambient::has_pending_work(), "a pending item is work");
+
+        let queue = ScheduledQueue::load(crate::ambient::paths::queue_path().unwrap());
+        let id = queue.items()[0].id.clone();
+        let mut queue = queue;
+        queue.cancel(&id).unwrap();
+        assert!(
+            !crate::ambient::has_pending_work(),
+            "cancelled work is gone"
+        );
+
+        // Unreadable is not empty: a corrupt queue or directives file keeps
+        // the server alive instead of reading as idle.
+        let queue_path = crate::ambient::paths::queue_path().unwrap();
+        std::fs::write(&queue_path, "{ not json").unwrap();
+        assert!(
+            crate::ambient::has_pending_work(),
+            "a corrupt queue file counts as work"
+        );
+        std::fs::remove_file(&queue_path).unwrap();
+        assert!(!crate::ambient::has_pending_work());
+        let directives = crate::ambient::paths::ambient_dir()
+            .unwrap()
+            .join("directives.json");
+        std::fs::write(&directives, "garbage").unwrap();
+        assert!(
+            crate::ambient::has_pending_work(),
+            "a corrupt directives file counts as work"
+        );
+    });
+    match previous {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    if let Err(panic) = outcome {
+        std::panic::resume_unwind(panic);
+    }
+}

@@ -36,6 +36,10 @@ pub struct ServerInfo {
     /// Session names currently on this server
     #[serde(default)]
     pub sessions: Vec<String>,
+    /// Connected client count last published by the server. `None` for
+    /// entries written by older builds, shown as unavailable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clients: Option<usize>,
 }
 
 impl ServerInfo {
@@ -228,6 +232,107 @@ pub async fn list_servers() -> Result<Vec<ServerInfo>> {
     let mut registry = ServerRegistry::load().await?;
     registry.cleanup_stale().await?;
     Ok(registry.servers_by_time().into_iter().cloned().collect())
+}
+
+/// Publish the connected-client count for `name`. A missing entry is left
+/// alone so a server never re-registers itself by accident.
+pub async fn update_client_count(name: &str, clients: usize) -> Result<()> {
+    let mut registry = ServerRegistry::load().await?;
+    match registry.servers.get_mut(name) {
+        Some(info) if info.clients != Some(clients) => info.clients = Some(clients),
+        _ => return Ok(()),
+    }
+    registry.save().await
+}
+
+/// One live server as shown by the CLI and TUI status views.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ServerStatusRow {
+    pub name: String,
+    pub pid: u32,
+    pub version: String,
+    /// `None` when `started_at` is invalid or in the future.
+    pub uptime_secs: Option<u64>,
+    /// `None` when the server has not published a count.
+    pub clients: Option<usize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ServerStatus {
+    pub live_servers: usize,
+    /// Sum over servers that published a count; `None` if none did.
+    pub connected_clients: Option<usize>,
+    pub servers: Vec<ServerStatusRow>,
+}
+
+/// Uptime from an RFC 3339 `started_at`, or `None` if it is unparsable or
+/// later than `now`.
+pub fn uptime_secs(started_at: &str, now: chrono::DateTime<chrono::Utc>) -> Option<u64> {
+    let started = chrono::DateTime::parse_from_rfc3339(started_at).ok()?;
+    u64::try_from(now.signed_duration_since(started).num_seconds()).ok()
+}
+
+/// Compact uptime such as `45s`, `7m`, `3h 12m` or `2d 4h`.
+pub fn format_uptime(secs: u64) -> String {
+    let (days, hours, mins) = (secs / 86_400, secs % 86_400 / 3_600, secs % 3_600 / 60);
+    match (days, hours, mins) {
+        (0, 0, 0) => format!("{secs}s"),
+        (0, 0, m) => format!("{m}m"),
+        (0, h, m) => format!("{h}h {m}m"),
+        (d, h, _) => format!("{d}d {h}h"),
+    }
+}
+
+pub fn server_status_from(
+    servers: &[ServerInfo],
+    now: chrono::DateTime<chrono::Utc>,
+) -> ServerStatus {
+    let rows: Vec<ServerStatusRow> = servers
+        .iter()
+        .map(|info| ServerStatusRow {
+            name: info.name.clone(),
+            pid: info.pid,
+            version: info.version.clone(),
+            uptime_secs: uptime_secs(&info.started_at, now),
+            clients: info.clients,
+        })
+        .collect();
+    let published: Vec<usize> = rows.iter().filter_map(|row| row.clients).collect();
+    ServerStatus {
+        live_servers: rows.len(),
+        connected_clients: (!published.is_empty()).then(|| published.iter().sum()),
+        servers: rows,
+    }
+}
+
+/// Display lines shared by the CLI and TUI: a summary, then one per server.
+pub fn server_status_lines(status: &ServerStatus) -> Vec<String> {
+    let label = |count: Option<usize>| count.map_or_else(|| "n/a".to_string(), |n| n.to_string());
+    let mut lines = vec![format!(
+        "Servers: {}  Clients: {}",
+        status.live_servers,
+        label(status.connected_clients)
+    )];
+    for server in &status.servers {
+        lines.push(format!(
+            "{}  pid {}  up {}  clients {}",
+            server.name,
+            server.pid,
+            server
+                .uptime_secs
+                .map_or_else(|| "n/a".to_string(), format_uptime),
+            label(server.clients)
+        ));
+    }
+    lines
+}
+
+/// Live servers only: goes through `list_servers`, which drops dead entries.
+pub async fn server_status() -> Result<ServerStatus> {
+    Ok(server_status_from(
+        &list_servers().await?,
+        chrono::Utc::now(),
+    ))
 }
 
 /// Best-effort sync lookup for a server by socket path.

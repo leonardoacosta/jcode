@@ -70,6 +70,17 @@ pub fn take_pending_directives() -> Vec<UserDirective> {
     pending
 }
 
+/// Unconsumed directives, or a directives file that exists but is unreadable.
+pub(super) fn directives_unreadable_or_pending() -> bool {
+    let Ok(path) = directives_path() else {
+        return true;
+    };
+    if path.exists() && storage::read_json::<Vec<UserDirective>>(&path).is_err() {
+        return true;
+    }
+    has_pending_directives()
+}
+
 /// Check if there are any unconsumed directives.
 pub fn has_pending_directives() -> bool {
     load_directives().iter().any(|d| !d.consumed)

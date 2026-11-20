@@ -1579,3 +1579,25 @@ async fn stall_arm_and_disarm_racing_finalize_yield_one_completion_and_terminal_
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn has_running_tasks_treats_an_unreadable_directory_as_running() {
+    let temp = tempfile::tempdir().unwrap();
+    let manager = BackgroundTaskManager::with_output_dir(temp.path().join("tasks"));
+    assert!(
+        !manager.has_running_tasks().await,
+        "an empty directory is idle"
+    );
+
+    // A path that exists but is not a directory cannot be listed: unknown is
+    // not idle, so a server never idle-exits on a read failure.
+    let not_a_dir = temp.path().join("file");
+    std::fs::write(&not_a_dir, "x").unwrap();
+    let broken = BackgroundTaskManager::with_output_dir(not_a_dir);
+    assert!(broken.has_running_tasks().await);
+
+    // A directory that was never created is a clean "no tasks".
+    let missing = BackgroundTaskManager::with_output_dir(temp.path().join("gone"));
+    std::fs::remove_dir_all(temp.path().join("gone")).unwrap();
+    assert!(!missing.has_running_tasks().await);
+}

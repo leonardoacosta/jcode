@@ -214,6 +214,7 @@ const REGISTERED_COMMANDS: &[RegisteredCommand] = &[
     ),
     RegisteredCommand::public("/changelog", "Show recent changes in this build"),
     RegisteredCommand::public("/info", "Show session info and tokens"),
+    RegisteredCommand::public("/servers", "Show live servers, clients and uptime"),
     RegisteredCommand::public(
         "/reset",
         "Review and confirm an OpenAI or Claude usage limit reset",

@@ -11,18 +11,119 @@ const TEMP_IDLE_SECS_ENV: &str = "JCODE_TEMP_SERVER_IDLE_SECS";
 const DEFAULT_TEMP_IDLE_SECS: u64 = 30 * 60;
 const TEMP_SERVER_EXIT_CODE: i32 = super::EXIT_IDLE_TIMEOUT;
 
+/// How long shutdown waits for an in-flight session save.
+const SAVE_DRAIN_BOUND: Duration = Duration::from_secs(5);
+
 /// Wait (bounded) for an in-flight session save before the process exits.
 /// Exiting between a checkpoint's snapshot write and journal delete used to
-/// duplicate history on the next load (#1632).
-pub(crate) async fn drain_session_saves_before_exit() {
-    crate::logging::info("Server received SIGTERM, shutting down gracefully");
-    let drained = tokio::task::spawn_blocking(|| {
-        crate::session::drain_saves_for_shutdown(Duration::from_secs(5))
-    })
-    .await
-    .unwrap_or(false);
+/// duplicate history on the next load (#1632). Returns whether the drain
+/// finished; an incomplete drain is logged as incomplete and never reported as
+/// complete.
+pub(crate) async fn drain_session_saves_before_exit() -> bool {
+    crate::logging::info("Server stopping: no new work admitted, draining session saves");
+    begin_shutdown();
+    let drained =
+        tokio::task::spawn_blocking(|| crate::session::drain_saves_for_shutdown(SAVE_DRAIN_BOUND))
+            .await
+            .unwrap_or(false);
     if !drained {
-        crate::logging::warn("Shutdown: a session save was still running after 5s; exiting anyway");
+        crate::logging::warn(&format!(
+            "Shutdown: a session save was still running after {}s; exiting with the save incomplete (recovery keeps its journal)",
+            SAVE_DRAIN_BOUND.as_secs()
+        ));
+    }
+    drained
+}
+
+/// Whether new work is admitted. One process-wide instance gates the real
+/// server; tests use their own so they never touch it.
+#[derive(Default)]
+pub(crate) struct Admission(std::sync::atomic::AtomicBool);
+
+impl Admission {
+    const fn new() -> Self {
+        Self(std::sync::atomic::AtomicBool::new(false))
+    }
+
+    pub(crate) fn stopping(&self) -> bool {
+        self.0.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    pub(crate) fn set_stopping(&self, stopping: bool) {
+        self.0.store(stopping, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+static ADMISSION: Admission = Admission::new();
+
+/// Whether this process is stopping or reloading. New work is refused from the
+/// moment this is set; persisted work stays for the next process to recover.
+pub(crate) fn shutting_down() -> bool {
+    ADMISSION.stopping()
+}
+
+/// Stop admitting new work. Idempotent.
+pub(crate) fn begin_shutdown() {
+    ADMISSION.set_stopping(true);
+}
+
+/// How a server scope handles idleness. The shared daemon never idle-exits;
+/// scheduled and ambient work run inside it and `Restart=always` turns every
+/// idle exit into churn. Only a temporary server retires itself.
+pub(crate) enum IdleExit {
+    Never,
+    After(TemporaryServerPolicy),
+}
+
+impl IdleExit {
+    pub(crate) fn for_scope(policy: Option<TemporaryServerPolicy>) -> Self {
+        policy.map_or(Self::Never, Self::After)
+    }
+}
+
+/// Whether the recorded owner of a temporary server is gone. A server never
+/// treats itself as its own dead owner.
+pub(crate) fn owner_exited(policy: &TemporaryServerPolicy, alive: impl Fn(u32) -> bool) -> bool {
+    policy
+        .owner_pid
+        .is_some_and(|owner| owner != std::process::id() && !alive(owner))
+}
+
+/// Everything that must keep a server alive, gathered so the decision is one
+/// pure function. Durable state is read, never copied.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub(crate) struct WorkPresence {
+    pub(crate) clients: usize,
+    pub(crate) live_headless_worker: bool,
+    /// Pending or in-flight scheduled items, or unconsumed directives.
+    pub(crate) ambient_pending: bool,
+    /// Background tasks still `Running`.
+    pub(crate) background_running: bool,
+}
+
+impl WorkPresence {
+    pub(crate) fn idle(&self) -> bool {
+        super::idle_monitor_should_start(self.clients, self.live_headless_worker)
+            && !self.ambient_pending
+            && !self.background_running
+    }
+}
+
+async fn gather_work_presence(
+    client_count: &RwLock<usize>,
+    sessions: &super::SessionAgents,
+    swarm_state: &super::SwarmState,
+) -> WorkPresence {
+    let ambient_pending = tokio::task::spawn_blocking(crate::ambient::has_pending_work)
+        .await
+        // An unreadable answer is not "no work".
+        .unwrap_or(true);
+    let background_running = crate::background::global().has_running_tasks().await;
+    WorkPresence {
+        clients: *client_count.read().await,
+        live_headless_worker: super::has_live_headless_worker(sessions, swarm_state).await,
+        ambient_pending,
+        background_running,
     }
 }
 
@@ -165,21 +266,16 @@ pub(crate) fn spawn_temporary_lifecycle_monitor(
         loop {
             check_interval.tick().await;
 
-            if let Some(owner_pid) = policy.owner_pid
-                && owner_pid != std::process::id()
-                && !process_alive(owner_pid)
-            {
+            if owner_exited(&policy, process_alive) {
                 crate::logging::info(&format!(
-                    "Temporary server owner pid {} is gone. Shutting down.",
-                    owner_pid
+                    "Temporary server owner pid {:?} is gone. Shutting down.",
+                    policy.owner_pid
                 ));
                 shutdown_temporary_server(&server_name, &socket_path, &debug_socket_path).await;
             }
 
-            let count = *client_count.read().await;
-            let has_live_headless_worker =
-                super::has_live_headless_worker(&sessions, &swarm_state).await;
-            if super::idle_monitor_should_start(count, has_live_headless_worker) {
+            let presence = gather_work_presence(&client_count, &sessions, &swarm_state).await;
+            if presence.idle() {
                 if idle_since.is_none() {
                     idle_since = Some(Instant::now());
                     crate::logging::info(&format!(
@@ -214,6 +310,10 @@ async fn shutdown_temporary_server(
     socket_path: &Path,
     debug_socket_path: &Path,
 ) -> ! {
+    // Same orderly path as SIGTERM: refuse new work and drain saves first.
+    // Pending scheduled/background work is persisted and recovered by the
+    // next server, so it is never marked complete here.
+    drain_session_saves_before_exit().await;
     let _ = crate::registry::unregister_server(server_name).await;
     crate::transport::remove_socket(socket_path);
     crate::transport::remove_socket(debug_socket_path);
