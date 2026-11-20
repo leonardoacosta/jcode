@@ -26,3 +26,14 @@
 - Original repair acceptance left installed/shared daemon, launcher, config, commits, publication, and archive untouched.
 - 2026-11-03 baseline checkpoint: user authorized committing pending work and non-force synchronization before new worktrees. Fresh coordinated task `169918s4ds` passed 41 bash tests, 68 registry tests (1 ignored), the Subscribe contention regression, 17 pool tests and the real stdio integration test. Strict OpenSpec validation and `git diff --check` passed.
 - Broader gates remain failed, not hidden by aggregate shell status: task `0156004ab0` exposed configured-model spawn assumptions, project-skill discovery in the nominal empty-skill test, remote-status request-count drift and pre-existing workspace rustfmt differences. Provider suite rerun `169918s4ds` passed 198 tests but failed Azure retry fixture Content-Length parsing and the stalled-response fixture connection reset; the pending provider diff adds only an ignored review driver and was not executed. Full-suite or formatting success is not claimed. No archive or installed-runtime acceptance is added by this checkpoint.
+
+## Closeout (2026-11-20)
+
+Fresh gates on current HEAD (`scratch/applyall/close-mcp-gate.log`):
+- `cargo test -p jcode-base --lib -- mcp::pool`: 18 passed, 0 failed.
+- `handle_subscribe_returns_session_id_with_cached_mcp_and_blocked_health`: 1 passed.
+- `tool::tests::cached_mcp_registration_returns_while_shared_health_is_blocked`: passed.
+- `client_session` lifecycle suite: 47 passed, 0 failed.
+- `openspec validate fix-mcp-health-blocked-session-bootstrap --strict`: valid.
+
+Disclosed, not part of this change: the `tool::tests` run is 85 passed, 1 failed. `tool_parameter_descriptions_stay_under_token_cap` fails on four `schedule` tool parameter descriptions (`action`, `cron`, `schedule_id`, `token_cap`) over the 25-token cap. The `schedule` tool is outside this change and the failure matches the "parameter-description cap" failure already listed in the earlier evidence. Not fixed here. Installed-runtime acceptance was accepted from the 2026-11-03 isolated daemon run and was not repeated.
