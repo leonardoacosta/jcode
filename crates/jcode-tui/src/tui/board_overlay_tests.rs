@@ -155,19 +155,55 @@ fn board_overlay_no_stale_columns_after_loading_or_error() {
 }
 
 #[test]
-fn board_overlay_columns_render_left_to_right_in_order_with_issues() {
+fn board_overlay_tabs_show_states_in_order_with_count_badges() {
     let o = ready(false);
     let r = rows(&o, 60, 10);
-    let head = &r[2];
-    let todo = head.find("Todo").unwrap();
-    let prog = head.find("In Progress").unwrap();
-    let done = head.find("Done").unwrap();
-    assert!(todo < prog && prog < done, "{head}");
-    // Issues sit under their own column.
-    let first_issue_row = &r[3];
-    assert!(first_issue_row.find("TEAM-1").unwrap() < first_issue_row.find("TEAM-3").unwrap());
-    assert!(r[4].contains("TEAM-2"));
-    assert!(head.contains("Todo (2)"));
+    let tabs = &r[2];
+    let todo = tabs.find("Todo (2)").unwrap();
+    let prog = tabs.find("In Progress (1)").unwrap();
+    let done = tabs.find("Done (0)").unwrap();
+    assert!(todo < prog && prog < done, "{tabs}");
+}
+
+#[test]
+fn board_overlay_table_lists_only_the_selected_state_with_full_titles() {
+    let mut o = ready(false);
+    let r = rows(&o, 60, 10);
+    assert!(r[3].contains("ID") && r[3].contains("TITLE"), "{:?}", r[3]);
+    assert!(
+        r[4].contains("> TEAM-1") && r[4].contains("First"),
+        "{:?}",
+        r[4]
+    );
+    assert!(r[5].contains("TEAM-2") && r[5].contains("Second"));
+    assert!(!text(&o, 60, 10).contains("TEAM-3"), "other state hidden");
+    ch(&mut o, 'l');
+    let t = text(&o, 60, 10);
+    assert!(t.contains("TEAM-3") && t.contains("Third"), "{t}");
+    assert!(!t.contains("TEAM-1"));
+}
+
+#[test]
+fn board_overlay_long_title_gets_the_whole_row() {
+    let mut d = data(false);
+    d.columns[0].issues[0].title = "Reconcile the usage budget accounting across providers".into();
+    let o = BoardOverlay::new(BoardLoad::Ready(d));
+    let r = rows(&o, 80, 10);
+    assert!(
+        r[4].contains("Reconcile the usage budget accounting across providers"),
+        "{:?}",
+        r[4]
+    );
+}
+
+#[test]
+fn board_overlay_empty_state_says_so_under_its_tab() {
+    let mut o = ready(false);
+    ch(&mut o, 'l');
+    ch(&mut o, 'l');
+    let r = rows(&o, 60, 10);
+    assert!(r[2].contains("Done (0)"));
+    assert!(r[4].contains("No issues in this state"), "{:?}", r[4]);
 }
 
 #[test]
@@ -463,9 +499,9 @@ fn board_overlay_long_titles_truncate_by_cells() {
         assert_rows_fit(&o, w, 10);
     }
     let r = rows(&o, 60, 10);
-    assert!(r[3].contains('…'), "{:?}", r[3]);
-    // CJK row: a wide char is never split across the cut (no half cell glyph).
     assert!(r[4].contains('…'), "{:?}", r[4]);
+    // CJK row: a wide char is never split across the cut (no half cell glyph).
+    assert!(r[5].contains('…'), "{:?}", r[5]);
     ch(&mut o, 'l');
     assert_rows_fit(&o, 20, 10);
 }
@@ -491,11 +527,11 @@ fn board_overlay_control_chars_cannot_break_rows() {
     let o = BoardOverlay::new(BoardLoad::Ready(d));
     let r = rows(&o, 120, 10);
     assert!(r[1].contains("scope next"));
-    assert!(r[3].contains("line1 line2 tab"));
+    assert!(r[4].contains("line1 line2 tab"));
 }
 
 #[test]
-fn board_overlay_pages_columns_on_narrow_widths_and_follows_selection() {
+fn board_overlay_tab_strip_scrolls_to_keep_the_selected_tab_visible() {
     let mut o = ready(false);
     let r = rows(&o, 20, 10);
     assert!(r[2].contains("Todo"));
@@ -504,6 +540,10 @@ fn board_overlay_pages_columns_on_narrow_widths_and_follows_selection() {
     ch(&mut o, 'l');
     let r = rows(&o, 20, 10);
     assert!(r[2].contains("Done"), "{:?}", r[2]);
+    assert!(r[2].starts_with('‹'), "hidden tabs to the left: {:?}", r[2]);
+    for w in [1u16, 2, 5, 8, 12, 20, 40] {
+        assert_rows_fit(&o, w, 10);
+    }
 }
 
 #[test]

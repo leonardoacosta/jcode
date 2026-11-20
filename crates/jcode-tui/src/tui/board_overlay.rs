@@ -1,4 +1,5 @@
-//! World issue board: a pure-presentation Kanban overlay.
+//! World issue board: a pure-presentation overlay with one tab per workflow
+//! state (count badge) and a table of that state's issues.
 //!
 //! The overlay owns no tracker logic. A caller hands it a [`BoardLoad`] and
 //! reads back [`BoardAction`]s (close, refresh, confirmed move). Every chrome
@@ -17,10 +18,12 @@ const MUTED_DARK: Color = Color::Rgb(100, 106, 122);
 const WARN: Color = Color::Rgb(230, 190, 90);
 const ERROR: Color = Color::Rgb(230, 110, 110);
 
-/// Narrowest column the layout aims for before it pages columns instead.
-const MIN_COLUMN_CELLS: usize = 14;
-/// Rows used by chrome above the body (title, scope, column headers).
-const TOP_ROWS: u16 = 3;
+/// Row of the state tab strip.
+const TAB_ROW: u16 = 2;
+/// Widest identifier column in the issue table.
+const MAX_ID_CELLS: usize = 14;
+/// Rows used by chrome above the body (title, scope, tabs, table header).
+const TOP_ROWS: u16 = 4;
 /// Rows used by chrome below the body (status line, hints).
 const BOTTOM_ROWS: u16 = 2;
 
@@ -416,7 +419,7 @@ impl BoardOverlay {
     }
 
     fn render_body(&self, buf: &mut Buffer, area: Rect, body_h: u16) {
-        // Rows 1 (scope) and 2 (column headers / state message).
+        // Rows 1 (scope) and 2 (tabs / state message).
         let (message, style) = match &self.load {
             BoardLoad::Loading => (Some("Loading issue board...".to_string()), MUTED),
             BoardLoad::Empty => (Some("No issues on this board".to_string()), MUTED),
@@ -448,65 +451,113 @@ impl BoardOverlay {
             Style::default().fg(MUTED),
         );
 
-        let width = area.width as usize;
-        let n = data.columns.len();
-        let visible = (width / MIN_COLUMN_CELLS).clamp(1, n);
-        let start = (self.col / visible) * visible;
-        let col_w = width / visible;
-        let top = (self.row + 1).saturating_sub(body_h as usize);
         let target = match self.mode {
             Mode::Moving(p) | Mode::Confirm(p) => Some(p),
             Mode::Browse => None,
         };
+        self.render_tabs(buf, area, data, target.map(|p| p.to));
 
-        for (slot, idx) in (start..(start + visible).min(n)).enumerate() {
-            let column = &data.columns[idx];
-            let x = area.x + (slot * col_w) as u16;
-            let outer = if slot + 1 == visible {
-                width - slot * col_w
+        let Some(column) = data.columns.get(self.col) else {
+            return;
+        };
+        let id_w = column
+            .issues
+            .iter()
+            .map(|i| clean(&i.identifier).width())
+            .max()
+            .unwrap_or(0)
+            .clamp(2, MAX_ID_CELLS);
+        let header = format!("  {}  TITLE", pad_cells("ID", id_w));
+        put_filled(
+            buf,
+            area,
+            TAB_ROW + 1,
+            &header,
+            Style::default().fg(MUTED_DARK),
+        );
+        if column.issues.is_empty() {
+            put(
+                buf,
+                area,
+                TOP_ROWS,
+                "No issues in this state",
+                Style::default().fg(MUTED),
+            );
+            return;
+        }
+        let top = (self.row + 1).saturating_sub(body_h as usize);
+        for (i, issue) in column
+            .issues
+            .iter()
+            .enumerate()
+            .skip(top)
+            .take(body_h as usize)
+        {
+            let y = TOP_ROWS + (i - top) as u16;
+            let selected = i == self.row;
+            let marker = if selected { "> " } else { "  " };
+            let text = format!(
+                "{marker}{}  {}",
+                pad_cells(&truncate_cells(&clean(&issue.identifier), id_w), id_w),
+                clean(&issue.title)
+            );
+            let style = if selected {
+                Style::default().fg(Color::White).bg(SELECTED_BG)
             } else {
-                col_w
+                Style::default().fg(MUTED)
             };
-            // Keep one gap cell between columns when several are visible.
-            let inner = if visible > 1 && slot + 1 < visible {
-                outer.saturating_sub(1)
-            } else {
-                outer
-            };
-            let cell = Rect::new(x, area.y, inner as u16, area.height);
+            put_filled(buf, area, y, &text, style);
+        }
+    }
 
-            let mut head_style = Style::default().fg(Color::White).bold();
+    /// One row of state tabs, each `Name (count)`. The strip scrolls so the
+    /// selected tab is always visible; `‹`/`›` mark hidden tabs.
+    fn render_tabs(&self, buf: &mut Buffer, area: Rect, data: &BoardData, target: Option<usize>) {
+        let width = area.width as usize;
+        let labels: Vec<String> = data
+            .columns
+            .iter()
+            .map(|c| format!(" {} ({}) ", clean(&c.name), c.issues.len()))
+            .collect();
+        let widths: Vec<usize> = labels.iter().map(|l| l.width()).collect();
+        // First tab to draw: the earliest start from which the selected tab
+        // still fits within the width.
+        let mut start = 0;
+        while start < self.col && widths[start..=self.col].iter().sum::<usize>() > width {
+            start += 1;
+        }
+        let mut x = 0usize;
+        for (idx, label) in labels.iter().enumerate().skip(start) {
+            if x >= width {
+                break;
+            }
+            let mut style = Style::default().fg(MUTED);
+            if data.columns[idx].issues.is_empty() {
+                style = Style::default().fg(MUTED_DARK);
+            }
             if idx == self.col {
-                head_style = head_style.bg(SELECTED_BG).fg(ACCENT);
+                style = Style::default().fg(ACCENT).bg(SELECTED_BG).bold();
             }
-            if target.is_some_and(|p| p.to == idx) {
-                head_style = head_style.bg(TARGET_BG).fg(Color::White);
+            if target == Some(idx) {
+                style = Style::default().fg(Color::White).bg(TARGET_BG).bold();
             }
-            let head = format!("{} ({})", clean(&column.name), column.issues.len());
-            put_filled(buf, cell, 2, &head, head_style);
-
-            for (i, issue) in column
-                .issues
-                .iter()
-                .enumerate()
-                .skip(top)
-                .take(body_h as usize)
-            {
-                let y = TOP_ROWS + (i - top) as u16;
-                let selected = idx == self.col && i == self.row;
-                let marker = if selected { "> " } else { "  " };
-                let text = format!(
-                    "{marker}{} {}",
-                    clean(&issue.identifier),
-                    clean(&issue.title)
-                );
-                let style = if selected {
-                    Style::default().fg(Color::White).bg(SELECTED_BG)
-                } else {
-                    Style::default().fg(MUTED)
-                };
-                put_filled(buf, cell, y, &text, style);
-            }
+            let cell = Rect::new(area.x + x as u16, area.y, (width - x) as u16, area.height);
+            let text = truncate_cells(label, width - x);
+            let drawn = text.width();
+            buf.set_stringn(cell.x, cell.y + TAB_ROW, &text, cell.width as usize, style);
+            x += drawn;
+        }
+        if start > 0 {
+            buf.set_stringn(area.x, area.y + TAB_ROW, "‹", 1, Style::default().fg(WARN));
+        }
+        if x >= width && start + 1 < labels.len() && widths[start..].iter().sum::<usize>() > width {
+            buf.set_stringn(
+                area.x + area.width - 1,
+                area.y + TAB_ROW,
+                "›",
+                1,
+                Style::default().fg(WARN),
+            );
         }
     }
 }
@@ -568,6 +619,12 @@ fn truncate_cells(text: &str, width: usize) -> String {
     }
     out.push('…');
     out
+}
+
+/// Pad with spaces to `width` terminal cells (no truncation).
+fn pad_cells(text: &str, width: usize) -> String {
+    let used = text.width();
+    format!("{text}{}", " ".repeat(width.saturating_sub(used)))
 }
 
 /// Draw one truncated row at `y` within `area`.
