@@ -679,6 +679,41 @@ fn real_scope() -> BoardScope {
     }
 }
 
+/// The real `list_issues` item carries the team name as a string beside
+/// `teamId`; the label uses it, the scope check still uses the id.
+#[tokio::test]
+async fn real_capture_issues_carry_the_team_display_name() {
+    let fake = Arc::new(Fake::default());
+    fake.statuses
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_STATUSES.into()));
+    let mut page: serde_json::Value = serde_json::from_str(REAL_ISSUES).unwrap();
+    page["hasNextPage"] = serde_json::json!(false);
+    fake.issues.lock().unwrap().push_back(Ok(page.to_string()));
+    let got = provider(&fake).issues(&real_scope()).await.unwrap();
+    assert!(!got.is_empty());
+    assert!(
+        got.iter()
+            .all(|i| i.team_name.as_deref() == Some("Priceless")),
+        "{:?}",
+        got.iter().map(|i| &i.team_name).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn team_display_name_reads_object_and_string_shapes_but_never_the_id() {
+    let object = json!({"team": {"id": "t-1", "name": "Core"}});
+    let string = json!({"team": "Core", "teamId": "t-1"});
+    let id_only = json!({"team": "t-1", "teamId": "t-1"});
+    let object_no_name = json!({"team": {"id": "t-1"}});
+    let name = |v: &Value| team_display_name(v.as_object().unwrap(), Some("t-1"));
+    assert_eq!(name(&object).as_deref(), Some("Core"));
+    assert_eq!(name(&string).as_deref(), Some("Core"));
+    assert_eq!(name(&id_only), None);
+    assert_eq!(name(&object_no_name), None);
+}
+
 #[tokio::test]
 async fn real_capture_states_come_in_type_order_and_keep_duplicate_type_provider_order() {
     let fake = Arc::new(Fake::default());

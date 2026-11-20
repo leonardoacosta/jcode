@@ -214,10 +214,36 @@ pub(super) fn to_board_load(scope: &BoardScope, snapshot: &BoardSnapshot) -> Boa
         });
     }
     BoardLoad::Ready(BoardData {
-        scope_label: scope.scope_label(),
+        scope_label: scope_label(scope, snapshot),
         read_only: scope.read_only(),
         columns,
     })
+}
+
+/// `Linear · Priceless (PRICE) · team-wide` when the issues carry the team's
+/// display name, else the id-based [`BoardScope::scope_label`]. The key is the
+/// identifier prefix, shown only when every issue shares it.
+pub(super) fn scope_label(scope: &BoardScope, snapshot: &BoardSnapshot) -> String {
+    let Some(name) = snapshot.issues.iter().find_map(|i| i.team_name.clone()) else {
+        return scope.scope_label();
+    };
+    let mut prefixes = snapshot
+        .issues
+        .iter()
+        .map(|i| i.identifier.split_once('-').map(|(key, _)| key));
+    let key = match prefixes.next().flatten() {
+        Some(first) if !first.is_empty() && prefixes.all(|p| p == Some(first)) => Some(first),
+        _ => None,
+    };
+    let team = match key {
+        Some(key) if key != name => format!("{name} ({key})"),
+        _ => name,
+    };
+    let where_ = match &scope.project {
+        Some(project) => format!("project {project}"),
+        None => "team-wide".to_string(),
+    };
+    format!("{} · {team} · {where_}", scope.backend.label())
 }
 
 pub(super) fn error_to_load(error: &BoardError) -> BoardLoad {

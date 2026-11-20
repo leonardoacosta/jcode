@@ -22,6 +22,9 @@ pub struct BoardIssue {
     pub identifier: String,
     pub title: String,
     pub state_id: String,
+    /// Team display name when the provider reported one. Labels only; scope
+    /// checks always use the team id.
+    pub team_name: Option<String>,
 }
 
 /// Why a provider call did not succeed. None of these switches provider,

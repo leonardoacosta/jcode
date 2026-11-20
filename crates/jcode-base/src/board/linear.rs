@@ -284,6 +284,7 @@ impl LinearMcpProvider {
                     identifier: issue.identifier,
                     title: issue.title,
                     state_id,
+                    team_name: issue.team_name,
                 })
             })
             .collect()
@@ -388,6 +389,8 @@ struct RawIssue {
     state_id: Option<String>,
     state_name: Option<String>,
     team: Option<String>,
+    /// Display name of the team, for labels only. Never used for scoping.
+    team_name: Option<String>,
     project: Option<String>,
 }
 
@@ -562,15 +565,29 @@ fn parse_issue_item(item: &Value) -> Result<RawIssue, BoardError> {
         Some(Value::String(name)) => (str_field(map, "stateId"), Some(name.trim().to_string())),
         _ => (str_field(map, "stateId"), None),
     };
+    let team = nested_id(map, "team", "teamId");
     Ok(RawIssue {
         identifier: str_field(map, "identifier").unwrap_or_else(|| id.clone()),
         title: str_field(map, "title").unwrap_or_default(),
         id,
         state_id,
         state_name,
-        team: nested_id(map, "team", "teamId"),
+        team_name: team_display_name(map, team.as_deref()),
+        team,
         project: nested_id(map, "project", "projectId"),
     })
+}
+
+/// The team's display name: `team.name` when `team` is an object, or `team`
+/// itself when it is a string beside a separate `teamId` (the real
+/// `list_issues` shape). A string equal to the team id is not a name.
+fn team_display_name(map: &Map<String, Value>, team_id: Option<&str>) -> Option<String> {
+    let name = match map.get("team")? {
+        Value::Object(team) => str_field(team, "name"),
+        Value::String(_) => str_field(map, "team"),
+        _ => None,
+    }?;
+    (Some(name.as_str()) != team_id).then_some(name)
 }
 
 /// The cursor of the next page, `None` only when the response positively says

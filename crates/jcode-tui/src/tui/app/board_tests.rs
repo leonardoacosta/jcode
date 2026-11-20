@@ -32,7 +32,67 @@ fn issue(id: &str, state_id: &str) -> CoreIssue {
         identifier: format!("T-{id}"),
         title: format!("title {id}"),
         state_id: state_id.into(),
+        team_name: None,
     }
+}
+
+fn named(identifier: &str, team_name: Option<&str>) -> CoreIssue {
+    CoreIssue {
+        identifier: identifier.into(),
+        team_name: team_name.map(Into::into),
+        ..issue(identifier, "a")
+    }
+}
+
+fn label_of(scope: &BoardScope, issues: Vec<CoreIssue>) -> String {
+    let snapshot = BoardSnapshot {
+        states: vec![state("a", "Todo", 1.0)],
+        issues,
+    };
+    scope_label(scope, &snapshot)
+}
+
+#[test]
+fn board_glue_label_shows_team_name_and_shared_key() {
+    let linear = scope(BoardBackend::Linear);
+    let label = label_of(
+        &linear,
+        vec![
+            named("PRICE-16", Some("Priceless")),
+            named("PRICE-10", Some("Priceless")),
+        ],
+    );
+    assert_eq!(label, "Linear · Priceless (PRICE) · team-wide");
+    assert!(!label.contains("team-1"), "no team id once a name is known");
+
+    let mut project = linear.clone();
+    project.project = Some("proj-1".into());
+    assert_eq!(
+        label_of(&project, vec![named("PRICE-1", Some("Priceless"))]),
+        "Linear · Priceless (PRICE) · project proj-1"
+    );
+}
+
+#[test]
+fn board_glue_label_drops_a_key_the_issues_do_not_share() {
+    let label = label_of(
+        &scope(BoardBackend::Linear),
+        vec![
+            named("PRICE-1", Some("Priceless")),
+            named("OLD-2", Some("Priceless")),
+        ],
+    );
+    assert_eq!(label, "Linear · Priceless · team-wide");
+}
+
+#[test]
+fn board_glue_label_falls_back_to_the_team_id_without_a_name() {
+    let linear = scope(BoardBackend::Linear);
+    assert_eq!(
+        label_of(&linear, vec![named("PRICE-1", None)]),
+        linear.scope_label()
+    );
+    assert_eq!(label_of(&linear, vec![]), linear.scope_label());
 }
 
 #[derive(Default)]
