@@ -64,6 +64,7 @@ pub fn register_active_turn(session_id: &str, signal: InterruptSignal) -> Active
         "TURN_CANCEL_REGISTERED session={} active_turns={}",
         session_id, active
     ));
+    crate::ambient::recurring_runs::turn_started(session_id);
     ActiveTurnGuard {
         session_id: session_id.to_string(),
         token,
@@ -134,6 +135,7 @@ pub fn rename_active_turns(old_session_id: &str, new_session_id: &str) {
 
 impl Drop for ActiveTurnGuard {
     fn drop(&mut self) {
+        let mut current: Option<String> = None;
         let remaining = match ACTIVE_TURNS.lock() {
             Ok(mut map) => {
                 // Remove by token across every session bucket: the turn may
@@ -143,11 +145,17 @@ impl Drop for ActiveTurnGuard {
                 // entry behind would let a finished turn's signal be fired by
                 // a later cancel.
                 let mut remaining = 0usize;
+                // The bucket this turn is in NOW, which differs from
+                // `self.session_id` after a rename.
+                current = map
+                    .iter()
+                    .find(|(_, entries)| entries.iter().any(|(token, _)| *token == self.token))
+                    .map(|(id, _)| id.clone());
                 map.retain(|_, entries| {
                     entries.retain(|(token, _)| *token != self.token);
                     !entries.is_empty()
                 });
-                if let Some(entries) = map.get(&self.session_id) {
+                if let Some(entries) = map.get(current.as_deref().unwrap_or(&self.session_id)) {
                     remaining = entries.len();
                 }
                 remaining
@@ -163,6 +171,10 @@ impl Drop for ActiveTurnGuard {
             "TURN_CANCEL_UNREGISTERED session={} active_turns={}",
             self.session_id, remaining
         ));
+        crate::ambient::recurring_runs::turn_ended(
+            current.as_deref().unwrap_or(&self.session_id),
+            remaining,
+        );
     }
 }
 

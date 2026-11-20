@@ -808,8 +808,8 @@ impl Tool for ScheduleTool {
                 },
                 "catch_up_limit": { "type": "integer", "description": "Positive. Required for missed_policy=catch-up." },
                 "max_active": { "type": "integer", "description": "Per-schedule active run limit (default 1)." },
-                "token_cap": { "type": "integer", "description": "Token cap. Needs an authoritative budget source; otherwise runs report budget_unavailable and do not start." },
-                "spend_cap_usd": { "type": "number", "description": "Spend cap, same enforcement rule as token_cap." },
+                "token_cap": { "type": "integer", "description": "Token cap per schedule (input+output+cache-creation), enforced from provider usage; reaching it cancels the run. One response may overshoot." },
+                "spend_cap_usd": { "type": "number", "description": "Spend cap. Not enforceable today: the schedule reports budget_unavailable and does not start." },
                 "count": { "type": "integer", "description": "Occurrences to preview (default 5, max 50)." },
                 "task": {
                     "type": "string",
@@ -1156,6 +1156,22 @@ impl ScheduleTool {
                 if !recent.is_empty() {
                     summary.push_str(&format!("\n  recent: {}", recent.join(", ")));
                 }
+                let runs: Vec<String> = schedule
+                    .runs
+                    .iter()
+                    .rev()
+                    .take(5)
+                    .map(|r| {
+                        let state = serde_json::to_value(r.state)
+                            .ok()
+                            .and_then(|v| v.as_str().map(str::to_string))
+                            .unwrap_or_default();
+                        format!("{} {state}", r.started_at.format("%m-%d %H:%M"))
+                    })
+                    .collect();
+                if !runs.is_empty() {
+                    summary.push_str(&format!("\n  runs: {}", runs.join(", ")));
+                }
             }
             summary.push('\n');
         }
@@ -1378,10 +1394,10 @@ fn describe_recurring(schedule: &crate::ambient::recurring::Schedule) -> String 
             schedule.spend_used_usd
         ));
     }
-    if schedule.has_cap() {
-        line.push_str(
-            " | caps need an authoritative budget source, else runs report budget_unavailable",
-        );
+    if schedule.spend_cap_usd.is_some() {
+        line.push_str(" | spend caps cannot be enforced (no price or reservation source): runs report budget_unavailable and do not start");
+    } else if schedule.token_cap.is_some() {
+        line.push_str(" | token cap enforced from provider usage; one response may overshoot");
     }
     line
 }
@@ -1396,6 +1412,11 @@ fn format_next_occurrences(schedule: &crate::ambient::recurring::Schedule, n: us
         ));
     }
     out
+}
+
+/// Wake the runner from a non-async hook (turn end).
+pub(crate) fn wake_schedule_runner() {
+    nudge_schedule_runner();
 }
 
 pub(super) fn nudge_schedule_runner() {

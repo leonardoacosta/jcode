@@ -117,6 +117,12 @@ pub(crate) fn observe_stream_usage(
     if input.is_none() && output.is_none() && cache_read.is_none() && cache_creation.is_none() {
         return;
     }
+    // Recurring-schedule token caps share this per-response signal.
+    crate::ambient::recurring_runs::observe_usage(
+        event_id,
+        session_id,
+        [input, output, cache_read, cache_creation],
+    );
     let Some(run) = owning_run(session_id) else {
         return;
     };

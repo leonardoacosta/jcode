@@ -66,6 +66,54 @@ pub struct OccurrenceRecord {
     pub state: OccurrenceState,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RunState {
+    /// Delivered; its turn has not ended.
+    Running,
+    /// A cap fired the turn cancel signals; owned turns are still draining.
+    Stopping,
+    Completed,
+    /// Stopped by a cap and confirmed: every owned turn has ended.
+    LimitStopped,
+    /// The process died or the run timed out before a completion signal. The
+    /// work may or may not have finished. Never redelivered. Also what a state
+    /// written by a newer build reads as, so one new value cannot make the
+    /// whole store unreadable.
+    Unknown,
+}
+
+impl<'de> Deserialize<'de> for RunState {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let text = String::deserialize(deserializer)?;
+        Ok(match text.as_str() {
+            "running" => Self::Running,
+            "stopping" => Self::Stopping,
+            "completed" => Self::Completed,
+            "limit_stopped" => Self::LimitStopped,
+            _ => Self::Unknown,
+        })
+    }
+}
+
+impl RunState {
+    pub fn active(self) -> bool {
+        matches!(self, Self::Running | Self::Stopping)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RunRecord {
+    pub key: String,
+    pub session_id: String,
+    pub state: RunState,
+    pub started_at: DateTime<Utc>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub finished_at: Option<DateTime<Utc>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UsageEvent {
     pub event_id: String,
@@ -101,6 +149,9 @@ pub struct Schedule {
     pub spend_used_usd: f64,
     #[serde(default)]
     pub usage: Vec<UsageEvent>,
+    /// Delivered occurrences and how their runs ended. Bounded.
+    #[serde(default)]
+    pub runs: Vec<RunRecord>,
 }
 
 /// Parameters for a new schedule, already parsed from tool input.
@@ -173,7 +224,10 @@ impl RecurringStore {
     }
 
     /// Lock a stable sidecar inode, reload, mutate, write only if changed.
-    fn transact<T>(&self, update: impl FnOnce(&mut Vec<Schedule>) -> Result<T>) -> Result<T> {
+    pub(super) fn transact<T>(
+        &self,
+        update: impl FnOnce(&mut Vec<Schedule>) -> Result<T>,
+    ) -> Result<T> {
         if let Some(parent) = self.path.parent() {
             storage::ensure_dir(parent)?;
         }
@@ -221,6 +275,7 @@ impl RecurringStore {
             tokens_used: 0,
             spend_used_usd: 0.0,
             usage: Vec::new(),
+            runs: Vec::new(),
         };
         let stored = schedule.clone();
         self.transact(move |all| {
@@ -314,6 +369,27 @@ impl Schedule {
 /// source and any capped schedule fails closed as `budget_unavailable`.
 pub trait BudgetSource {
     fn enforces(&self, schedule: &Schedule) -> bool;
+}
+
+/// Production source. Token caps are enforced from the provider's own usage
+/// report after every response (see `recurring_runs::observe_usage`), and a
+/// breach fires the run's turn cancel signals, so one response can overshoot.
+/// A spend cap has no authoritative price or reservation source on this path,
+/// so a schedule with one reports `budget_unavailable` and does not start.
+pub struct ProviderUsageBudget;
+
+impl BudgetSource for ProviderUsageBudget {
+    fn enforces(&self, schedule: &Schedule) -> bool {
+        // Turns are observable only for a session target. A spawn target
+        // finishes its turn before delivery returns and an ambient target has
+        // no turn signal, so a cap there could never be counted: fail closed.
+        schedule.spend_cap_usd.is_none()
+            && (schedule.token_cap.is_none()
+                || matches!(
+                    schedule.template.target,
+                    super::ScheduleTarget::Session { .. }
+                ))
+    }
 }
 
 pub struct NoHardEnforcement;
@@ -544,12 +620,18 @@ pub fn tick(
             .filter(|item| live(item))
             .map(|item| item.id.clone())
             .collect();
+        super::recurring_runs::expire_stale_runs(all, now);
+        // Active = delivery in flight (queue Pending or Dispatched) plus runs
+        // whose turn has not ended. The two sets are disjoint: a run starts
+        // once its delivery is acknowledged.
         let mut global_active = live_keys.iter().filter(|k| k.starts_with("cron:")).count();
         let mut active: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
         for schedule in all.iter() {
             let prefix = format!("cron:{}:", schedule.id);
-            let count = live_keys.iter().filter(|k| k.starts_with(&prefix)).count();
-            active.insert(schedule.id.clone(), count);
+            let queued = live_keys.iter().filter(|k| k.starts_with(&prefix)).count();
+            let running = schedule.runs.iter().filter(|r| r.state.active()).count();
+            global_active += running;
+            active.insert(schedule.id.clone(), queued + running);
         }
         let mut order: Vec<(DateTime<Utc>, usize, usize)> = Vec::new();
         for (si, schedule) in all.iter().enumerate() {
@@ -617,3 +699,7 @@ pub fn tick(
 #[cfg(test)]
 #[path = "recurring_tests.rs"]
 mod recurring_tests;
+
+#[cfg(test)]
+#[path = "recurring_runs_tests.rs"]
+mod recurring_runs_tests;

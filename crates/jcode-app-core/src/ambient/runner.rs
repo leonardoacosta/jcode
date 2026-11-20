@@ -580,6 +580,7 @@ impl AmbientRunnerHandle {
         items: Vec<ScheduledItem>,
     ) {
         for item in items {
+            let dispatch_began = crate::ambient::recurring_runs::begin_dispatch(&item);
             let outcome = match stale_reason(&item) {
                 Some(note) => {
                     logging::info(&format!(
@@ -606,8 +607,30 @@ impl AmbientRunnerHandle {
             };
             // A failed settle leaves the item `dispatched`; the next startup
             // recovery marks it `uncertain`. Never redeliver on that path.
+            let acked_target = match &outcome {
+                Settlement::Acked { target, .. } => Some(target.clone()),
+                _ => {
+                    crate::ambient::recurring_runs::forget_dispatch(&item.id);
+                    None
+                }
+            };
             match AmbientManager::new().and_then(|mut mgr| mgr.settle(&item.id, outcome)) {
-                Ok(_) => {}
+                Ok(_) => {
+                    // An acknowledged recurring delivery starts a tracked run:
+                    // acceptance is not completion.
+                    if let Some(target) = acked_target
+                        && let Err(error) = crate::ambient::recurring_runs::note_delivered(
+                            &item.id,
+                            &target,
+                            dispatch_began,
+                        )
+                    {
+                        logging::warn(&format!(
+                            "Ambient runner: could not track run {}: {error:#}",
+                            item.id
+                        ));
+                    }
+                }
                 Err(e) => logging::error(&format!(
                     "Ambient runner: failed to record outcome of scheduled item {}: {e:#}",
                     item.id
@@ -630,7 +653,7 @@ impl AmbientRunnerHandle {
                 crate::ambient::queue_file_path()?,
                 Utc::now(),
                 config().ambient.scheduled_max_active.max(1),
-                &crate::ambient::recurring::NoHardEnforcement,
+                &crate::ambient::recurring::ProviderUsageBudget,
             )
         })();
         match result {
@@ -658,6 +681,17 @@ impl AmbientRunnerHandle {
         }
         logging::info("Ambient runner: starting background loop");
         runner_mcp_wake::install();
+
+        // Runs this server never tracked cannot be known to have finished.
+        match crate::ambient::recurring_runs::recover_on_startup() {
+            Ok(0) => {}
+            Ok(n) => logging::warn(&format!(
+                "Ambient runner: {n} recurring run(s) had no completion signal before restart; marked unknown, never redelivered"
+            )),
+            Err(e) => logging::error(&format!(
+                "Ambient runner: recurring run recovery failed: {e:#}"
+            )),
+        }
 
         // Mark (never deliver) scheduled items the previous run left unresolved.
         match AmbientManager::new().and_then(|mut mgr| mgr.recover_scheduled_runs()) {

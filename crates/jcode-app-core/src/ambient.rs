@@ -10,6 +10,7 @@ mod paths;
 mod persistence;
 mod prompt;
 pub mod recurring;
+pub(crate) mod recurring_runs;
 pub mod runner;
 pub mod scheduler;
 
