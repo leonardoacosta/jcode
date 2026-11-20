@@ -38,6 +38,11 @@ const SSE_ENDPOINT_TIMEOUT: Duration = Duration::from_secs(30);
 const TRANSPORT_ERROR_CODE: i64 = -32000;
 const MAX_RESPONSE_BYTES: usize = 8 * 1024 * 1024;
 const MAX_ERROR_BYTES: usize = 8 * 1024;
+/// How long the server may take to start a `subscriptions/listen` response.
+const LISTEN_HEADER_TIMEOUT: Duration = Duration::from_secs(30);
+/// A listen stream with no byte (keepalive comments included) for this long is
+/// treated as dead and reopened.
+const LISTEN_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
 const MAX_CONCURRENT_REQUESTS: usize = 32;
 
 /// Shared state for one remote connection.
@@ -61,6 +66,8 @@ pub(super) struct RemoteState {
     request_timeout: Duration,
     /// Receives server-originated notifications (opted-in servers only).
     inbound: super::notifications::InboundSlot,
+    /// `x-mcp-header` annotations per tool (modern HTTP `tools/call`).
+    header_specs: super::header_params::HeaderSpecs,
     /// Set when the server rejected the Streamable HTTP `initialize` POST in a
     /// way that indicates a legacy SSE-only server (400/404/405).
     fallback_to_sse: AtomicBool,
@@ -77,6 +84,14 @@ impl RemoteState {
             .unwrap_or_else(|p| p.into_inner())
             .as_ref()
             .map(|token| format!("Bearer {token}"))
+    }
+
+    fn is_modern(&self) -> bool {
+        self.protocol_version
+            .read()
+            .unwrap_or_else(|p| p.into_inner())
+            .as_deref()
+            == Some(super::notifications::MODERN_VERSION)
     }
 
     fn request(&self, method: reqwest::Method, url: reqwest::Url) -> reqwest::RequestBuilder {
@@ -323,12 +338,19 @@ impl RemoteConnection {
         self.state.fallback_to_sse.load(Ordering::SeqCst)
     }
 
-    pub(super) fn set_protocol_version(&self, version: &str) {
+    pub(super) fn set_protocol_version(&self, version: Option<&str>) {
         *self
             .state
             .protocol_version
             .write()
-            .unwrap_or_else(|p| p.into_inner()) = Some(version.to_string());
+            .unwrap_or_else(|p| p.into_inner()) = version.map(str::to_string);
+    }
+
+    /// `subscriptions/listen` over this connection's HTTP endpoint.
+    pub(super) fn listen_transport(&self) -> HttpListen {
+        HttpListen {
+            state: Arc::clone(&self.state),
+        }
     }
 
     /// Terminate the session (best effort) and stop background tasks.
@@ -415,6 +437,10 @@ fn build_static_headers(config: &McpServerConfig) -> Result<(HeaderMap, bool)> {
 
 /// Start a remote transport. The caller still has to run the MCP
 /// `initialize` handshake over the returned handle channels.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "each argument is a distinct shared handle the transport must own"
+)]
 pub(super) async fn start(
     name: &str,
     config: &McpServerConfig,
@@ -423,6 +449,7 @@ pub(super) async fn start(
     pending: Pending,
     closed: Arc<AtomicBool>,
     inbound: super::notifications::InboundSlot,
+    header_specs: super::header_params::HeaderSpecs,
 ) -> Result<RemoteConnection> {
     let raw_url = config
         .url
@@ -466,12 +493,16 @@ pub(super) async fn start(
         stop: Notify::new(),
         request_timeout: super::client::request_timeout_for(config),
         inbound,
+        header_specs,
         fallback_to_sse: AtomicBool::new(false),
         // Even custom headers (not just Authorization) can contain credentials.
         // Never follow a redirect with them to a server-selected destination.
         client: reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .connect_timeout(Duration::from_secs(10))
+            // A half-open connection (NAT drop, suspend) must not hold a
+            // long-lived listen stream open forever.
+            .tcp_keepalive(Duration::from_secs(30))
             .build()
             .context("build MCP HTTP client")?,
     });
@@ -605,13 +636,58 @@ async fn send_post(
     url: reqwest::Url,
     body: &str,
 ) -> reqwest::Result<reqwest::Response> {
-    state
+    let mut builder = state
         .request(reqwest::Method::POST, url)
         .header(CONTENT_TYPE, "application/json")
-        .header(ACCEPT, "application/json, text/event-stream")
-        .body(body.to_string())
-        .send()
-        .await
+        .header(ACCEPT, "application/json, text/event-stream");
+    if state.is_modern() {
+        for (name, value) in modern_request_headers(body, &state.header_specs) {
+            builder = builder.header(name, value);
+        }
+    }
+    builder.body(body.to_string()).send().await
+}
+
+/// `Mcp-Method`, `Mcp-Name` and `Mcp-Param-*` for a 2026-07-28 POST. A
+/// mismatch with the body is rejected by the server (`-32020`), so all of them
+/// come from the body itself.
+fn modern_request_headers(
+    body: &str,
+    specs: &super::header_params::HeaderSpecs,
+) -> Vec<(HeaderName, HeaderValue)> {
+    let value: Value = serde_json::from_str(body).unwrap_or(Value::Null);
+    let mut headers = Vec::new();
+    let Some(method) = value.get("method").and_then(Value::as_str) else {
+        return headers;
+    };
+    if let Ok(v) = HeaderValue::from_str(method) {
+        headers.push((HeaderName::from_static("mcp-method"), v));
+    }
+    let name_field = match method {
+        "tools/call" | "prompts/get" => Some("name"),
+        "resources/read" => Some("uri"),
+        _ => None,
+    };
+    if let Some(field) = name_field
+        && let Some(name) = value
+            .pointer(&format!("/params/{field}"))
+            .and_then(Value::as_str)
+        && let Ok(v) = HeaderValue::from_str(&super::header_params::encode_header_value(name))
+    {
+        headers.push((HeaderName::from_static("mcp-name"), v));
+    }
+    if method == "tools/call"
+        && let Some(tool) = value.pointer("/params/name").and_then(Value::as_str)
+    {
+        let specs = specs.read().unwrap_or_else(|p| p.into_inner());
+        if let Some(params) = specs.get(tool) {
+            headers.extend(super::header_params::param_headers(
+                params,
+                value.pointer("/params/arguments"),
+            ));
+        }
+    }
+    headers
 }
 
 async fn streamable_post_inner(
@@ -679,6 +755,21 @@ async fn streamable_post_inner(
         let text = read_body(response, MAX_ERROR_BYTES)
             .await
             .map_err(|error| format!("MCP HTTP {status} error body could not be read: {error}"))?;
+        // A recognized modern JSON-RPC error body (UnsupportedProtocolVersion,
+        // HeaderMismatch) is an answer, not a transport failure: hand it to the
+        // waiter so era detection can see the code.
+        if let Some(id) = info.id
+            && let Ok(mut value) = serde_json::from_str::<Value>(&text)
+            && value
+                .pointer("/error/code")
+                .and_then(Value::as_i64)
+                .is_some_and(super::listen::is_modern_error_code)
+        {
+            value["id"] = Value::from(id);
+            value["jsonrpc"] = Value::from("2.0");
+            state.dispatch(value).await;
+            return Ok(());
+        }
         return Err(format!(
             "MCP server '{}' returned HTTP {}: {}",
             state.name,
@@ -954,6 +1045,137 @@ async fn sse_post_inner(
         ));
     }
     Ok(()) // JSON-RPC replies arrive exclusively on the legacy SSE stream.
+}
+
+// ---------------------------------------------------------------------------
+// subscriptions/listen (2026-07-28)
+// ---------------------------------------------------------------------------
+
+/// A long-lived `subscriptions/listen` response stream over HTTP. Closing the
+/// stream (dropping it) is the cancellation signal.
+pub(super) struct HttpListen {
+    state: Arc<RemoteState>,
+}
+
+#[async_trait::async_trait]
+impl super::notifications::ListenTransport for HttpListen {
+    async fn open_listen(
+        &self,
+        _id: u64,
+        request: Value,
+    ) -> Result<futures::stream::BoxStream<'static, Result<Value>>> {
+        let body = request.to_string();
+        let state = &self.state;
+        let failed = state.bearer_token();
+        let mut response = tokio::time::timeout(
+            LISTEN_HEADER_TIMEOUT,
+            send_post(state, state.url.clone(), &body),
+        )
+        .await
+        .map_err(|_| anyhow::anyhow!("listen request timed out waiting for response headers"))?
+        .map_err(|err| anyhow::anyhow!("listen request failed: {}", err.without_url()))?;
+        if response.status() == StatusCode::UNAUTHORIZED
+            && state.recover_from_unauthorized(failed).await
+        {
+            response = send_post(state, state.url.clone(), &body)
+                .await
+                .map_err(|err| anyhow::anyhow!("listen request failed: {}", err.without_url()))?;
+        }
+        let status = response.status();
+        if status == StatusCode::UNAUTHORIZED {
+            return Err(super::notifications::ListenRejected(state.unauthorized_message()).into());
+        }
+        if !status.is_success() {
+            let body = read_body(response, MAX_ERROR_BYTES)
+                .await
+                .unwrap_or_default();
+            let text = format!(
+                "subscriptions/listen returned HTTP {status}: {}",
+                snippet(&body)
+            );
+            // 4xx other than timeout and rate limiting is a refusal that a
+            // retry cannot change. 5xx, 408 and 429 are transient.
+            let refusal = status.is_client_error()
+                && status != StatusCode::REQUEST_TIMEOUT
+                && status != StatusCode::TOO_MANY_REQUESTS;
+            return Err(if refusal {
+                super::notifications::ListenRejected(text).into()
+            } else {
+                anyhow::anyhow!(text)
+            });
+        }
+        let content_type = response
+            .headers()
+            .get(CONTENT_TYPE)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        if !content_type.starts_with("text/event-stream") {
+            bail!("subscriptions/listen did not return an event stream");
+        }
+        struct Live {
+            bytes: futures::stream::BoxStream<'static, reqwest::Result<bytes::Bytes>>,
+            parser: SseParser,
+            queued: std::collections::VecDeque<Value>,
+        }
+        let live = Live {
+            bytes: response.bytes_stream().boxed(),
+            parser: SseParser::default(),
+            queued: Default::default(),
+        };
+        Ok(futures::stream::unfold(live, |mut live| async move {
+            loop {
+                if let Some(value) = live.queued.pop_front() {
+                    return Some((Ok(value), live));
+                }
+                // The stream stays open indefinitely, so there is no total
+                // size cap. The parser bounds each event and line instead.
+                // Keepalive comments count as bytes, so a quiet but healthy
+                // stream never trips this. A dead one ends as abrupt.
+                let next = match tokio::time::timeout(LISTEN_IDLE_TIMEOUT, live.bytes.next()).await
+                {
+                    Ok(next) => next?,
+                    Err(_) => {
+                        return Some((
+                            Err(anyhow::anyhow!("listen stream idle for too long")),
+                            live,
+                        ));
+                    }
+                };
+                let chunk = match next {
+                    Ok(chunk) => chunk,
+                    Err(err) => {
+                        return Some((
+                            Err(anyhow::anyhow!(
+                                "listen stream failed: {}",
+                                err.without_url()
+                            )),
+                            live,
+                        ));
+                    }
+                };
+                let events = match live.parser.push(&chunk) {
+                    Ok(events) => events,
+                    Err(err) => return Some((Err(err), live)),
+                };
+                for event in events {
+                    if event
+                        .event
+                        .as_deref()
+                        .is_none_or(|kind| kind.is_empty() || kind == "message")
+                        && let Ok(value) = serde_json::from_str::<Value>(&event.data)
+                    {
+                        live.queued.push_back(value);
+                    }
+                }
+            }
+        })
+        .boxed())
+    }
+
+    async fn cancel_listen(&self, _id: u64) {
+        // Dropping the stream closed the connection; HTTP has no cancel message.
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -471,6 +471,15 @@ impl NotificationSession {
         self.active_classes.contains(&class)
     }
 
+    pub fn is_acked(&self) -> bool {
+        self.acked
+    }
+
+    /// Modern: the acknowledgment honored at least one requested filter.
+    pub fn honored_any(&self) -> bool {
+        self.acked && (!self.active_classes.is_empty() || !self.active_uris.is_empty())
+    }
+
     /// Whether updates for `uri` are currently subscribed.
     pub fn uri_active(&self, uri: &str) -> bool {
         self.active_uris.contains(uri)
@@ -771,8 +780,26 @@ pub enum ListenEnd {
     /// Transport dropped without a completion result. Caller should reconnect
     /// and call [`NotificationEngine::reconcile`].
     Abrupt,
+    /// Transient failure (connect error, 5xx, timeout). Retry with backoff.
     Failed(String),
+    /// The server answered the request with a deterministic refusal (a
+    /// JSON-RPC error or an HTTP 4xx). Retrying cannot help: the supervisor
+    /// records the reason and stops.
+    Rejected(String),
 }
+
+/// Error a [`ListenTransport`] returns from `open_listen` for a deterministic
+/// refusal, as opposed to a transport failure.
+#[derive(Debug)]
+pub struct ListenRejected(pub String);
+
+impl std::fmt::Display for ListenRejected {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for ListenRejected {}
 
 // ---------------------------------------------------------------------------
 // Wake routing
@@ -992,6 +1019,39 @@ impl<B: McpBackend> NotificationEngine<B> {
 
     pub fn plan(&self) -> &NotificationPlan {
         &self.plan
+    }
+
+    /// Whether the last `subscriptions/listen` was acknowledged with at least
+    /// one honored filter. False means the server has nothing to listen to.
+    pub fn listen_honored(&self) -> bool {
+        self.session.honored_any()
+    }
+
+    /// Copy of the observable status (for hosts and tests).
+    pub fn status_snapshot(&self) -> NotificationStatus {
+        self.with_status(|s| s.clone())
+    }
+
+    /// Whether the last `subscriptions/listen` was acknowledged at all.
+    pub fn listen_acked(&self) -> bool {
+        self.session.is_acked()
+    }
+
+    fn note_listen_error(&self, text: &str) {
+        let text: String = text.chars().take(MAX_ERROR_CHARS).collect();
+        self.with_status(|s| {
+            s.errors.insert("listen".to_string(), text);
+        });
+    }
+
+    /// Record that a feature cannot be used on this connection.
+    pub fn mark_inactive(&self, what: &str, reason: &'static str) {
+        self.with_status(|s| {
+            s.inactive.push(Inactive {
+                what: what.to_string(),
+                reason,
+            })
+        });
     }
 
     fn with_status<T>(&self, f: impl FnOnce(&mut NotificationStatus) -> T) -> T {
@@ -1268,7 +1328,15 @@ impl<B: McpBackend> NotificationEngine<B> {
         });
         let mut stream = match transport.open_listen(id, request).await {
             Ok(stream) => stream,
-            Err(error) => return ListenEnd::Failed(truncate_error(&error)),
+            Err(error) => {
+                let text = truncate_error(&error);
+                self.note_listen_error(&text);
+                return if error.downcast_ref::<ListenRejected>().is_some() {
+                    ListenEnd::Rejected(text)
+                } else {
+                    ListenEnd::Failed(text)
+                };
+            }
         };
         loop {
             tokio::select! {
@@ -1282,21 +1350,40 @@ impl<B: McpBackend> NotificationEngine<B> {
                     self.flush_wakes(Instant::now());
                 }
                 item = stream.next() => match item {
-                    None | Some(Err(_)) => return ListenEnd::Abrupt,
+                    None | Some(Err(_)) => {
+                        // The stream is gone. Tell the server (stdio keeps the
+                        // subscription alive otherwise) before a new one opens.
+                        transport.cancel_listen(id).await;
+                        self.note_listen_error("listen stream closed without a completion");
+                        return ListenEnd::Abrupt;
+                    }
                     Some(Ok(value)) => {
                         if value.get("method").and_then(Value::as_str) == Some(ACK_METHOD) {
                             // Subscribed now: re-read to close any gap before the ack.
                             if self.ingest(value, Instant::now()) == Ingest::Acknowledged {
+                                self.with_status(|s| { s.errors.remove("listen"); });
                                 self.reconcile().await;
                             }
                             continue;
                         }
                         if value.get("id") == Some(&Value::from(id)) {
-                            return if value.get("result").is_some() {
-                                ListenEnd::Graceful
-                            } else {
-                                ListenEnd::Failed("subscriptions/listen failed".into())
-                            };
+                            if value.get("result").is_some() {
+                                return ListenEnd::Graceful;
+                            }
+                            let code = value.pointer("/error/code").and_then(Value::as_i64);
+                            let message = value
+                                .pointer("/error/message")
+                                .and_then(Value::as_str)
+                                .unwrap_or("no message");
+                            let text: String = format!(
+                                "subscriptions/listen refused (code {}): {message}",
+                                code.map_or("?".to_string(), |c| c.to_string())
+                            )
+                            .chars()
+                            .take(MAX_ERROR_CHARS)
+                            .collect();
+                            self.note_listen_error(&text);
+                            return ListenEnd::Rejected(text);
                         }
                         self.ingest(value, Instant::now());
                         self.drain().await;

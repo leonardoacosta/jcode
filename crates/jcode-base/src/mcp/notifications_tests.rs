@@ -1106,9 +1106,10 @@ async fn listen_server_error_response_fails() {
         )],
         false,
     );
+    // A JSON-RPC error answer is a deterministic refusal that keeps its code.
     assert!(matches!(
         e.run_listen(&t, 5, &Notify::new()).await,
-        ListenEnd::Failed(_)
+        ListenEnd::Rejected(m) if m.contains("-32601") && m.contains("nope")
     ));
 }
 

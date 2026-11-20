@@ -36,6 +36,14 @@ pub struct McpHandle {
     notify_status: super::notifications::SharedNotificationStatus,
     /// Protocol version the server selected during `initialize`.
     negotiated_version: Arc<std::sync::RwLock<String>>,
+    /// Set only by a successful `server/discover` probe. A legacy server that
+    /// merely names 2026-07-28 in `initialize` must not switch the client to
+    /// per-request metadata.
+    modern: Arc<AtomicBool>,
+    /// `x-mcp-header` annotations per tool, for modern Streamable HTTP.
+    header_specs: super::header_params::HeaderSpecs,
+    /// Whether this connection mirrors `x-mcp-header` values (HTTP only).
+    mirrors_headers: bool,
 }
 
 /// Removes waiters on timeout, send failure and cancellation of the caller.
@@ -61,6 +69,10 @@ impl Drop for PendingRequest {
 /// Default reply timeout when a server config does not set `timeout_secs`.
 pub const DEFAULT_MCP_REQUEST_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
+/// How long a `server/discover` probe may take before the server is treated as
+/// legacy. Short on purpose: a legacy server may never answer it.
+const MODERN_PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
+
 /// A separate budget for the complete remote connection, including OAuth refresh.
 const REMOTE_MCP_HANDSHAKE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
@@ -76,6 +88,61 @@ pub fn request_timeout_for(config: &McpServerConfig) -> std::time::Duration {
 impl McpHandle {
     /// Send a request and wait for response
     pub async fn request(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse> {
+        // 2026-07-28 has no handshake: every request carries its own metadata.
+        let params = if self.is_modern() {
+            super::listen::with_modern_meta(params)
+        } else {
+            params
+        };
+        let response = self.request_raw(method, params).await?;
+        if let Some(err) = &response.error {
+            anyhow::bail!("MCP error {}: {}", err.code, err.message);
+        }
+        Ok(response)
+    }
+
+    /// Modern Streamable HTTP only: record `x-mcp-header` annotations and drop
+    /// tools whose annotations are invalid (spec: such a tool MUST be excluded
+    /// from the catalog, with a warning). Elsewhere the catalog is unchanged.
+    fn apply_header_annotations(&self, tools: Vec<McpToolDef>) -> Vec<McpToolDef> {
+        if !(self.mirrors_headers && self.is_modern()) {
+            return tools;
+        }
+        let mut specs = std::collections::HashMap::new();
+        let kept = tools
+            .into_iter()
+            .filter(
+                |tool| match super::header_params::extract(&tool.input_schema) {
+                    Ok(params) => {
+                        if !params.is_empty() {
+                            specs.insert(tool.name.clone(), params);
+                        }
+                        true
+                    }
+                    Err(reason) => {
+                        crate::logging::warn(&format!(
+                            "MCP [{}]: excluding tool '{}': {reason}",
+                            self.name, tool.name
+                        ));
+                        false
+                    }
+                },
+            )
+            .collect();
+        *self
+            .header_specs
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = specs;
+        kept
+    }
+
+    /// Whether the server selected the 2026-07-28 (sessionless) revision.
+    pub(crate) fn is_modern(&self) -> bool {
+        self.modern.load(Ordering::SeqCst)
+    }
+
+    /// `request` without metadata injection (the era probe sends its own).
+    async fn request_raw(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse> {
         let id = self.request_id.fetch_add(1, Ordering::SeqCst);
         let request = JsonRpcRequest::new(id, method, params);
 
@@ -102,10 +169,6 @@ impl McpHandle {
             "Request timeout after {}s (raise `timeout_secs` for MCP server '{}' if its tools legitimately run longer)",
             self.request_timeout.as_secs(), self.name
         ))??;
-
-        if let Some(err) = &response.error {
-            anyhow::bail!("MCP error {}: {}", err.code, err.message);
-        }
 
         Ok(response)
     }
@@ -212,6 +275,7 @@ impl McpHandle {
                     params = Some(serde_json::json!({"cursor": cursor}));
                 }
                 None => {
+                    let tools = self.apply_header_annotations(tools);
                     *self
                         .tools
                         .write()
@@ -245,6 +309,10 @@ pub struct McpClient {
     /// Notification pump for opted-in servers. Dies with the client, so a
     /// reconnect (a new client) re-establishes subscriptions and reconciles.
     notify_task: Option<tokio::task::JoinHandle<()>>,
+    /// Routes the active stdio `subscriptions/listen` stream out of shared stdout.
+    listen_route: super::listen::ListenRoute,
+    /// Stops the listen supervisor on a graceful shutdown.
+    listen_cancel: Arc<tokio::sync::Notify>,
 }
 
 /// What actually carries the JSON-RPC messages for a client.
@@ -390,6 +458,8 @@ impl McpClient {
         let reader_name = name.clone();
         let inbound_slot = super::notifications::InboundSlot::default();
         let reader_inbound = inbound_slot.clone();
+        let listen_route = super::listen::ListenRoute::default();
+        let reader_route = listen_route.clone();
         let mut reader = BufReader::new(stdout);
         tokio::spawn(async move {
             let mut line = String::new();
@@ -401,7 +471,14 @@ impl McpClient {
                         break;
                     }
                     Ok(_) => {
-                        if let Ok(value) = serde_json::from_str::<Value>(&line)
+                        let parsed = serde_json::from_str::<Value>(&line).ok();
+                        if reader_route.is_open()
+                            && parsed.as_ref().is_some_and(|v| reader_route.offer(v))
+                        {
+                            // Belongs to the active subscriptions/listen stream.
+                            continue;
+                        }
+                        if let Some(value) = parsed
                             && value.get("result").is_none()
                             && value.get("error").is_none()
                             && value.get("method").is_some()
@@ -435,18 +512,29 @@ impl McpClient {
                     }
                 }
             }
+            reader_route.close();
             // Server can never reply now: drop in-flight senders, fail later requests fast.
             let mut pending = pending_clone.lock().await;
             closed_clone.store(true, Ordering::SeqCst);
             pending.clear();
         });
 
-        let handle = Self::new_handle(&name, config, pending, closed, writer_tx, inbound_slot);
+        let handle = Self::new_handle(
+            &name,
+            config,
+            pending,
+            closed,
+            writer_tx,
+            inbound_slot,
+            false,
+        );
 
         let mut client = Self {
             handle,
             backend: Backend::Stdio(child),
             notify_task: None,
+            listen_route,
+            listen_cancel: Arc::default(),
         };
 
         if let Err(err) = client.initialize().await {
@@ -486,6 +574,7 @@ impl McpClient {
         closed: Arc<AtomicBool>,
         writer_tx: mpsc::Sender<String>,
         inbound_slot: super::notifications::InboundSlot,
+        mirrors_headers: bool,
     ) -> McpHandle {
         McpHandle {
             name: name.to_string(),
@@ -502,6 +591,9 @@ impl McpClient {
             inbound: inbound_slot,
             notify_status: Default::default(),
             negotiated_version: Arc::default(),
+            modern: Arc::default(),
+            header_specs: Arc::default(),
+            mirrors_headers,
         }
     }
 
@@ -563,6 +655,7 @@ impl McpClient {
         let closed = Arc::new(AtomicBool::new(false));
         let (writer_tx, writer_rx) = mpsc::channel::<String>(32);
         let inbound_slot = super::notifications::InboundSlot::default();
+        let header_specs = super::header_params::HeaderSpecs::default();
         let connection = super::remote::start(
             name,
             config,
@@ -571,15 +664,22 @@ impl McpClient {
             Arc::clone(&pending),
             Arc::clone(&closed),
             inbound_slot.clone(),
+            Arc::clone(&header_specs),
         )
         .await
         .map_err(|err| (err, false))?;
 
-        let handle = Self::new_handle(name, config, pending, closed, writer_tx, inbound_slot);
+        let handle = Self::new_handle(name, config, pending, closed, writer_tx, inbound_slot, true);
+        let handle = McpHandle {
+            header_specs,
+            ..handle
+        };
         let mut client = Self {
             handle,
             backend: Backend::Remote(connection),
             notify_task: None,
+            listen_route: Default::default(),
+            listen_cancel: Arc::default(),
         };
 
         if let Err(err) = client.initialize().await {
@@ -619,18 +719,53 @@ impl McpClient {
             .unwrap_or_else(|p| p.into_inner())
             .clone();
         let caps = self.handle.capabilities();
-        // Neither built-in transport holds a `subscriptions/listen` stream.
+        let modern = self.handle.is_modern();
         let engine = super::notifications::NotificationEngine::new(
             self.handle.name.clone(),
             self.handle.clone(),
             cfg,
             &version,
             &caps,
-            false,
+            modern,
             Arc::clone(&self.handle.notify_status),
         );
+        if modern {
+            self.start_listen(engine);
+            return;
+        }
         let (rx, dropped) = self.handle.inbound.install();
         self.notify_task = Some(tokio::spawn(engine.run_pump(rx, dropped)));
+    }
+
+    /// 2026-07-28: keep one `subscriptions/listen` stream open for the life of
+    /// the client. The supervisor reconnects with backoff after an abrupt
+    /// close and stops, with a recorded reason, when the server honors nothing.
+    fn start_listen(&mut self, mut engine: super::notifications::NotificationEngine<McpHandle>) {
+        let transport: Box<dyn super::notifications::ListenTransport> = match &self.backend {
+            Backend::Stdio(_) => Box::new(super::listen::StdioListen {
+                writer_tx: self.handle.writer_tx.clone(),
+                route: self.listen_route.clone(),
+            }),
+            Backend::Remote(connection) => Box::new(connection.listen_transport()),
+        };
+        let handle = self.handle.clone();
+        let cancel = Arc::clone(&self.listen_cancel);
+        self.notify_task = Some(tokio::spawn(async move {
+            let ids = Arc::clone(&handle.request_id);
+            let stopped = super::listen::supervise(
+                &mut engine,
+                transport.as_ref(),
+                || ids.fetch_add(1, Ordering::SeqCst),
+                || handle.is_closed(),
+                &cancel,
+                &super::listen::ListenPolicy::default(),
+            )
+            .await;
+            crate::logging::info(&format!(
+                "MCP [{}]: subscriptions/listen stopped: {stopped:?}",
+                handle.name
+            ));
+        }));
     }
 
     /// Get a shareable handle to this client
@@ -638,8 +773,105 @@ impl McpClient {
         self.handle.clone()
     }
 
+    /// Detect a 2026-07-28 server with `server/discover` (spec: stdio and HTTP
+    /// backward compatibility). Only servers that opted in to notifications
+    /// are probed: every other server keeps today's exact handshake, so a
+    /// legacy server that mishandles pre-`initialize` requests is never
+    /// exposed to this change.
+    ///
+    /// Returns true when the server is modern and fully set up. Any other
+    /// answer (error, timeout, no 2026-07-28 in `supportedVersions`) means
+    /// legacy, and the caller runs `initialize`. The fallback is never keyed to
+    /// one error code.
+    async fn probe_modern(&mut self) -> Result<bool> {
+        if self.handle.notify_cfg.is_none() {
+            return Ok(false);
+        }
+        if let Backend::Remote(connection) = &self.backend {
+            if connection.is_legacy() {
+                return Ok(false);
+            }
+            connection.set_protocol_version(Some(super::notifications::MODERN_VERSION));
+        }
+        let params = serde_json::json!({"_meta": super::listen::request_meta()});
+        let probe = tokio::time::timeout(
+            MODERN_PROBE_TIMEOUT.min(self.handle.request_timeout),
+            self.handle.request_raw("server/discover", Some(params)),
+        )
+        .await;
+        let modern = match probe {
+            Ok(Ok(response)) => match (&response.result, &response.error) {
+                (Some(result), None) if super::listen::discover_is_modern(result) => {
+                    Some(result.clone())
+                }
+                (_, Some(error)) if super::listen::is_modern_error_code(error.code) => {
+                    // A recognized modern error proves the server is modern:
+                    // spec says do NOT fall back to `initialize`. jcode only
+                    // speaks 2026-07-28, so there is no other version to retry.
+                    anyhow::bail!(
+                        "MCP server '{}' speaks 2026-07-28 but refused it (code {}: {})",
+                        self.handle.name,
+                        error.code,
+                        error.message
+                    );
+                }
+                _ => None,
+            },
+            // `request_raw` surfaces a modern error body as an error response
+            // above; a transport failure or timeout means legacy.
+            _ => None,
+        };
+        let Some(result) = modern else {
+            if let Backend::Remote(connection) = &self.backend {
+                connection.set_protocol_version(None);
+            }
+            crate::logging::info(&format!(
+                "MCP [{}]: server/discover did not report 2026-07-28; using initialize",
+                self.handle.name
+            ));
+            return Ok(false);
+        };
+        let capabilities: ServerCapabilities = result
+            .get("capabilities")
+            .cloned()
+            .and_then(|caps| serde_json::from_value(caps).ok())
+            .unwrap_or_default();
+        let server_info = result
+            .pointer(&format!(
+                "/_meta/{}",
+                super::listen::META_SERVER_INFO.replace('/', "~1")
+            ))
+            .cloned()
+            .and_then(|info| serde_json::from_value::<ServerInfo>(info).ok());
+        *self
+            .handle
+            .negotiated_version
+            .write()
+            .unwrap_or_else(|p| p.into_inner()) = super::notifications::MODERN_VERSION.to_string();
+        *self
+            .handle
+            .capabilities
+            .write()
+            .unwrap_or_else(|p| p.into_inner()) = capabilities;
+        *self
+            .handle
+            .server_info
+            .write()
+            .unwrap_or_else(|p| p.into_inner()) = server_info;
+        self.handle.modern.store(true, Ordering::SeqCst);
+        crate::logging::info(&format!(
+            "MCP [{}]: server/discover reports 2026-07-28; skipping initialize",
+            self.handle.name
+        ));
+        // No `initialize`, no `notifications/initialized`: the revision is sessionless.
+        Ok(true)
+    }
+
     /// Initialize the MCP connection
     async fn initialize(&mut self) -> Result<()> {
+        if self.probe_modern().await? {
+            return Ok(());
+        }
         // Remote servers get the newest revision we speak; older servers
         // answer with the version they support, which is fine because jcode
         // only uses methods common to every revision.
@@ -683,7 +915,7 @@ impl McpClient {
                         init_result.protocol_version
                     );
                 }
-                connection.set_protocol_version(&init_result.protocol_version);
+                connection.set_protocol_version(Some(&init_result.protocol_version));
             }
             *self
                 .handle
@@ -726,6 +958,19 @@ impl McpClient {
 
     /// Shutdown the server
     pub async fn shutdown(&mut self) {
+        // Let the listen supervisor send its cancellation (stdio) or close its
+        // stream (HTTP) before the transport goes away. Bounded, so a stuck
+        // supervisor cannot delay shutdown.
+        self.listen_cancel.notify_one();
+        if let Some(task) = self.notify_task.take() {
+            let mut task = task;
+            if tokio::time::timeout(std::time::Duration::from_secs(2), &mut task)
+                .await
+                .is_err()
+            {
+                task.abort();
+            }
+        }
         match &mut self.backend {
             Backend::Stdio(child) => {
                 let _ = self
@@ -955,6 +1200,9 @@ done
 while IFS= read -r line; do
   id=$(printf '%s' "$line" | sed -n 's/.*"id":\([0-9][0-9]*\).*/\1/p')
   case "$line" in
+    *'"server/discover"'*)
+      printf '{"jsonrpc":"2.0","id":%s,"error":{"code":-32601,"message":"Method not found"}}\n' "$id"
+      ;;
     *'"initialize"'*)
       printf '{"jsonrpc":"2.0","method":"notifications/tools/list_changed","id":%s,"result":{"protocolVersion":"2024-11-05","capabilities":{},"serverInfo":{"name":"stray","version":"0"}}}\n' "$id"
       ;;

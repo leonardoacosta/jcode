@@ -86,6 +86,7 @@ fn test_tool_description() {
     let tool = create_test_tool();
     assert!(tool.description().contains("MCP"));
     assert!(tool.description().contains("Model Context Protocol"));
+    assert!(tool.description().contains("UNTRUSTED_MCP_CONTENT"));
 }
 
 #[test]
@@ -109,6 +110,17 @@ fn test_parameters_schema() {
             .unwrap()
             .contains(&json!("call"))
     );
+    for action in ["resources", "read", "prompts", "prompt"] {
+        assert!(
+            schema["properties"]["action"]["enum"]
+                .as_array()
+                .unwrap()
+                .contains(&json!(action)),
+            "{action}"
+        );
+    }
+    assert!(schema["properties"]["uri"].is_object());
+    assert!(schema["properties"]["name"].is_object());
     assert_eq!(
         schema["properties"]["arguments"]["additionalProperties"],
         true
@@ -481,6 +493,9 @@ async fn test_unknown_action() {
 
     let result = tool.execute(input, ctx).await.unwrap();
     assert!(result.output.contains("Unknown action"));
+    for action in ["resources", "read", "prompts", "prompt"] {
+        assert!(result.output.contains(&format!("'{action}'")), "{action}");
+    }
 }
 
 #[tokio::test]

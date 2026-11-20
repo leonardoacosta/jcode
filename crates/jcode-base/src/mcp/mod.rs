@@ -7,12 +7,15 @@
 
 pub mod budget;
 mod client;
+mod header_params;
+mod listen;
 mod manager;
 pub mod notifications;
 pub mod oauth;
 pub mod pool;
 mod protocol;
 mod remote;
+pub mod resources;
 pub mod schema_cache;
 mod tool;
 
@@ -22,6 +25,10 @@ pub use client::{
 pub use manager::McpManager;
 pub use pool::{SharedMcpPool, get_shared_pool, init_shared_pool};
 pub use protocol::*;
+pub use resources::{
+    Listing, PromptArgumentInfo, PromptInfo, PromptMessage, PromptResult, ResourceContent,
+    ResourceInfo, ResourceRead,
+};
 pub use schema_cache::{McpSchemaCache, fingerprint_config};
 pub use tool::{
     McpTool, create_mcp_tools, create_mcp_tools_from_cached, create_mcp_tools_from_cached_many,

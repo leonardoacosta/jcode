@@ -7,6 +7,7 @@
 use super::client::{McpClient, McpHandle};
 use super::pool::SharedMcpPool;
 use super::protocol::{McpConfig, McpServerConfig, McpToolDef, ToolCallResult};
+use super::resources::{Listing, PromptInfo, PromptResult, ResourceInfo, ResourceRead};
 use anyhow::{Context, Result};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
@@ -749,6 +750,83 @@ impl McpManager {
         }
 
         anyhow::bail!("MCP server '{}' not connected", server)
+    }
+
+    /// Open, non-closed handle for `server`, pooled first then owned.
+    async fn live_handle(&self, server: &str) -> Option<McpHandle> {
+        if let Some(handle) = self.pool_handles.read().await.get(server)
+            && !handle.is_closed()
+        {
+            return Some(handle.clone());
+        }
+        let clients = self.owned_clients.read().await;
+        clients
+            .get(server)
+            .map(McpClient::handle)
+            .filter(|handle| !handle.is_closed())
+    }
+
+    /// Resolve a live handle the way `call_tool` does: reuse a connected one,
+    /// else connect a configured, in-scope server (bounded by
+    /// `CONNECT_ON_CALL_TIMEOUT`). A closed handle is never reused, so a
+    /// request is never replayed on a dead connection.
+    async fn handle_for_request(&self, server: &str, what: &str) -> Result<McpHandle> {
+        if let Some(handle) = self.live_handle(server).await {
+            return Ok(handle);
+        }
+        let Some(config) = self.config.servers.get(server).cloned() else {
+            anyhow::bail!("MCP server '{}' not connected", server);
+        };
+        if !config.in_workspace(self.project_dir.as_deref()) {
+            anyhow::bail!("MCP server '{server}' is out of scope for this workspace");
+        }
+        match tokio::time::timeout(CONNECT_ON_CALL_TIMEOUT, self.connect(server, &config)).await {
+            Ok(Ok(())) => self.live_handle(server).await.ok_or_else(|| {
+                anyhow::anyhow!("MCP server '{server}' connected but exposed no handle for {what}")
+            }),
+            Ok(Err(err)) => anyhow::bail!("MCP server '{server}' failed to connect: {err:#}"),
+            Err(_) => anyhow::bail!(
+                "MCP server '{server}' did not connect within {}s; {what} is unavailable right now",
+                CONNECT_ON_CALL_TIMEOUT.as_secs()
+            ),
+        }
+    }
+
+    /// `resources/list` on `server` (connect-on-first-use like `call_tool`).
+    pub async fn list_resources(&self, server: &str) -> Result<Listing<ResourceInfo>> {
+        self.handle_for_request(server, "resources/list")
+            .await?
+            .list_resources()
+            .await
+    }
+
+    /// `resources/read` on `server`. Always a fresh request, never cached.
+    pub async fn read_resource(&self, server: &str, uri: &str) -> Result<ResourceRead> {
+        self.handle_for_request(server, "resources/read")
+            .await?
+            .read_resource(uri)
+            .await
+    }
+
+    /// `prompts/list` on `server`.
+    pub async fn list_prompts(&self, server: &str) -> Result<Listing<PromptInfo>> {
+        self.handle_for_request(server, "prompts/list")
+            .await?
+            .list_prompts()
+            .await
+    }
+
+    /// `prompts/get` on `server`.
+    pub async fn get_prompt(
+        &self,
+        server: &str,
+        name: &str,
+        arguments: &BTreeMap<String, String>,
+    ) -> Result<PromptResult> {
+        self.handle_for_request(server, "prompts/get")
+            .await?
+            .get_prompt(name, arguments)
+            .await
     }
 
     /// Ensure a configured server is connected, bounded by `timeout`. No-op if
