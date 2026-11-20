@@ -208,3 +208,72 @@ async fn item_from_a_newer_generation_than_the_revocation_still_delivers() {
     let (state, attempts) = history_state(&id);
     assert_eq!(state, ItemState::Delivered, "{:?}", attempts[0].note);
 }
+
+#[tokio::test]
+async fn cron_runner_loop_admits_delivers_once_and_skips_temporary_servers() {
+    use crate::ambient::recurring::{MissedPolicy, NewSchedule, RecurringStore};
+    let _guard = crate::storage::lock_test_env();
+    let temp = tempfile::tempdir().expect("tempdir");
+    let _home = EnvVarGuard::set_path("JCODE_HOME", temp.path());
+    let _runtime = EnvVarGuard::set_path("JCODE_RUNTIME_DIR", temp.path());
+    let streaming = StreamingTestProvider::default();
+    streaming.queue_response(vec![
+        StreamEvent::TextDelta("Done.".to_string()),
+        StreamEvent::MessageEnd { stop_reason: None },
+    ]);
+    let provider: Arc<dyn Provider> = Arc::new(streaming);
+    let mut session =
+        Session::create_with_id("session_cron_target".into(), None, Some("Cron".into()));
+    session.save().expect("save session");
+
+    let store = RecurringStore::open_default().unwrap();
+    let schedule = store
+        .create(
+            NewSchedule {
+                name: None,
+                cron: "* * * * *".into(),
+                zone: "UTC".into(),
+                missed: MissedPolicy::RunOnce,
+                max_active: 1,
+                token_cap: None,
+                spend_cap_usd: None,
+                template: request_for(&session.id),
+            },
+            chrono::Utc::now() - chrono::Duration::minutes(3),
+        )
+        .unwrap();
+    let runner = AmbientRunnerHandle::new(Arc::new(crate::safety::SafetySystem::new()));
+
+    // A temporary server never runs recurring schedules.
+    crate::env::set_var("JCODE_TEMP_SERVER", "1");
+    assert!(runner.tick_recurring_schedules().is_none());
+    crate::env::remove_var("JCODE_TEMP_SERVER");
+    assert!(AmbientManager::new().unwrap().queue().items().is_empty());
+
+    // The shared daemon admits the occurrence through the one queue.
+    assert!(runner.tick_recurring_schedules().is_some());
+    let mut mgr = AmbientManager::new().unwrap();
+    let claimed = mgr.take_ready_direct_items();
+    assert_eq!(claimed.len(), 1);
+    let key = claimed[0].id.clone();
+    assert!(key.starts_with(&format!("cron:{}:", schedule.id)));
+    runner.deliver_ready_direct_items(&provider, claimed).await;
+    let (state, _) = history_state(&key);
+    assert_eq!(state, ItemState::Delivered, "delivery, not task success");
+
+    // A later pass (and a restarted store) never re-creates the same key.
+    runner.tick_recurring_schedules();
+    let reopened = RecurringStore::open_default().unwrap();
+    let kept = reopened.get(&schedule.id).unwrap().unwrap();
+    assert_eq!(kept.occurrences.iter().filter(|o| o.key == key).count(), 1);
+    let mgr = AmbientManager::new().unwrap();
+    let in_queue = mgr
+        .queue()
+        .items()
+        .iter()
+        .chain(mgr.queue().in_flight())
+        .chain(mgr.queue().recent_history(usize::MAX))
+        .filter(|item| item.id == key)
+        .count();
+    assert_eq!(in_queue, 1);
+}

@@ -708,3 +708,121 @@ async fn schedule_list_shows_delivered_and_uncertain_and_retry_warns_of_prior_ef
     assert_eq!(kept.delivery.state, crate::ambient::ItemState::Cancelled);
     assert_eq!(kept.delivery.attempts.len(), 2);
 }
+
+fn cron_ctx() -> ToolContext {
+    ToolContext {
+        session_id: "origin_session".to_string(),
+        message_id: "msg_1".to_string(),
+        tool_call_id: "call_1".to_string(),
+        working_dir: None,
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: crate::tool::ToolExecutionMode::Direct,
+    }
+}
+
+#[tokio::test]
+#[expect(
+    clippy::await_holding_lock,
+    reason = "test intentionally serializes process-wide JCODE_HOME/env state across async tool execution"
+)]
+async fn cron_schedule_tool_controls_and_preview_are_persisted_or_read_only() {
+    let _guard = crate::storage::lock_test_env();
+    let temp = tempfile::tempdir().expect("tempdir");
+    let prev_home = std::env::var_os("JCODE_HOME");
+    crate::env::set_var("JCODE_HOME", temp.path());
+    let tool = ScheduleTool::new();
+    let run = |input: Value| {
+        let tool = &tool;
+        async move { tool.execute(input, cron_ctx()).await }
+    };
+    let store = || crate::ambient::recurring::RecurringStore::open_default().unwrap();
+
+    // Invalid definitions persist nothing.
+    for bad in [
+        json!({"task": "t", "cron": "61 * * * *", "timezone": "UTC", "missed_policy": "skip"}),
+        json!({"task": "t", "cron": "0 9 * * *", "timezone": "Nope/Zone", "missed_policy": "skip"}),
+        json!({"task": "t", "cron": "0 9 * * *", "timezone": "UTC"}),
+        json!({"task": "t", "cron": "0 9 * * *", "missed_policy": "skip"}),
+        json!({"task": "t", "cron": "0 9 * * *", "timezone": "UTC", "missed_policy": "catch-up"}),
+        json!({"task": "t", "cron": "0 9 * * *", "timezone": "UTC", "missed_policy": "skip", "max_active": 0}),
+        json!({"task": "t", "cron": "0 9 * * *", "timezone": "UTC", "missed_policy": "skip", "wake_in_minutes": 5}),
+    ] {
+        assert!(run(bad).await.is_err());
+    }
+    assert!(store().list().unwrap().is_empty());
+
+    let created = run(json!({
+        "task": "nightly build", "cron": "30 2 * * *", "timezone": "America/New_York",
+        "missed_policy": "run-once", "name": "nightly", "spend_cap_usd": 5.0
+    }))
+    .await
+    .expect("create recurring");
+    let id = store().list().unwrap()[0].id.clone();
+    assert!(created.output.contains(&id));
+    assert!(created.output.contains("America/New_York"));
+    assert!(created.output.contains("budget_unavailable"));
+
+    // Preview is read-only: store bytes and queue are unchanged.
+    let snapshot = std::fs::read(temp.path().join("ambient/schedules.json")).unwrap();
+    let preview = run(json!({"action": "preview", "schedule_id": id, "count": 3}))
+        .await
+        .unwrap();
+    assert_eq!(preview.output.matches("next ").count(), 3);
+    let ad_hoc = run(json!({"action": "preview", "cron": "*/5 * * * *", "timezone": "UTC"}))
+        .await
+        .unwrap();
+    assert_eq!(ad_hoc.output.matches("UTC").count(), 5 + 1);
+    assert_eq!(
+        std::fs::read(temp.path().join("ambient/schedules.json")).unwrap(),
+        snapshot
+    );
+    assert!(AmbientManager::new().unwrap().queue().items().is_empty());
+
+    // Pause and resume persist and are reflected in list.
+    run(json!({"action": "pause", "schedule_id": id}))
+        .await
+        .unwrap();
+    assert!(store().get(&id).unwrap().unwrap().paused);
+    assert!(
+        run(json!({"action": "list"}))
+            .await
+            .unwrap()
+            .output
+            .contains("paused")
+    );
+    run(json!({"action": "resume", "schedule_id": id}))
+        .await
+        .unwrap();
+    assert!(!store().get(&id).unwrap().unwrap().paused);
+    assert!(
+        run(json!({"action": "pause", "schedule_id": "cron_missing"}))
+            .await
+            .is_err()
+    );
+
+    // Recurring-only fields on a one-shot create are rejected, not ignored.
+    assert!(
+        run(json!({"task": "x", "wake_in_minutes": 5, "max_active": 3}))
+            .await
+            .is_err()
+    );
+    // Legacy one-shot behavior is untouched.
+    run(json!({"task": "once", "wake_in_minutes": 5}))
+        .await
+        .unwrap();
+    assert_eq!(AmbientManager::new().unwrap().queue().items().len(), 1);
+    assert_eq!(store().list().unwrap().len(), 1);
+
+    // Cancel by recurring id removes the definition.
+    run(json!({"action": "cancel", "schedule_id": id}))
+        .await
+        .unwrap();
+    assert!(store().list().unwrap().is_empty());
+
+    if let Some(prev) = prev_home {
+        crate::env::set_var("JCODE_HOME", prev);
+    } else {
+        crate::env::remove_var("JCODE_HOME");
+    }
+}

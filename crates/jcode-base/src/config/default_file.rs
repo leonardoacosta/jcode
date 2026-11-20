@@ -859,6 +859,8 @@ proactive_work = true
 work_branch_prefix = "ambient/"
 # Show ambient cycle in a terminal window (default: true)
 # visible = true
+# Global cap on active recurring (cron) scheduled runs (default: 4)
+# scheduled_max_active = 4
 
 [gateway]
 # Enable WebSocket gateway for iOS/web clients

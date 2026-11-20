@@ -750,6 +750,25 @@ struct ScheduleToolInput {
     success_criteria: Option<String>,
     #[serde(default)]
     target: Option<String>,
+    // Recurring (cron) schedules.
+    #[serde(default)]
+    cron: Option<String>,
+    #[serde(default)]
+    timezone: Option<String>,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    missed_policy: Option<String>,
+    #[serde(default)]
+    catch_up_limit: Option<u32>,
+    #[serde(default)]
+    max_active: Option<u32>,
+    #[serde(default)]
+    token_cap: Option<u64>,
+    #[serde(default)]
+    spend_cap_usd: Option<f64>,
+    #[serde(default)]
+    count: Option<usize>,
 }
 
 #[async_trait]
@@ -769,13 +788,29 @@ impl Tool for ScheduleTool {
                 "intent": super::intent_schema_property(),
                 "action": {
                     "type": "string",
-                    "enum": ["create", "list", "cancel", "retry"],
-                    "description": "Defaults to create. retry re-queues an uncertain or missed task; it may already have run."
+                    "enum": ["create", "list", "cancel", "retry", "pause", "resume", "preview"],
+                    "description": "Defaults to create. retry re-queues an uncertain or missed task; it may already have run. pause/resume/preview act on a recurring schedule."
                 },
                 "schedule_id": {
                     "type": "string",
-                    "description": "Scheduled task ID. Required for action=cancel and action=retry."
+                    "description": "Scheduled task ID. Required for cancel, retry, pause and resume; preview takes it or cron+timezone. A recurring id starts with cron_."
                 },
+                "cron": {
+                    "type": "string",
+                    "description": "Recurring: five-field cron (minute hour day-of-month month day-of-week; *, N, A-B, A,B, */S). With create it needs timezone and replaces wake_in_minutes/wake_at."
+                },
+                "timezone": { "type": "string", "description": "IANA zone for cron, e.g. America/New_York. Required with cron." },
+                "name": { "type": "string" },
+                "missed_policy": {
+                    "type": "string",
+                    "enum": ["skip", "run-once", "catch-up"],
+                    "description": "Required with cron. What to do with occurrences missed during downtime or a pause."
+                },
+                "catch_up_limit": { "type": "integer", "description": "Positive. Required for missed_policy=catch-up." },
+                "max_active": { "type": "integer", "description": "Per-schedule active run limit (default 1)." },
+                "token_cap": { "type": "integer", "description": "Token cap. Needs an authoritative budget source; otherwise runs report budget_unavailable and do not start." },
+                "spend_cap_usd": { "type": "number", "description": "Spend cap, same enforcement rule as token_cap." },
+                "count": { "type": "integer", "description": "Occurrences to preview (default 5, max 50)." },
                 "task": {
                     "type": "string",
                     "description": "Task. Required for action=create."
@@ -812,8 +847,11 @@ impl Tool for ScheduleTool {
             "list" => self.execute_list().await,
             "cancel" => self.execute_cancel(params).await,
             "retry" => self.execute_retry(params).await,
+            "pause" => self.execute_pause_resume(params, true).await,
+            "resume" => self.execute_pause_resume(params, false).await,
+            "preview" => self.execute_preview(params).await,
             other => anyhow::bail!(
-                "Invalid action '{}'. Expected one of: create, list, cancel, retry",
+                "Invalid action '{}'. Expected one of: create, list, cancel, retry, pause, resume, preview",
                 other
             ),
         }
@@ -831,7 +869,22 @@ impl ScheduleTool {
             .clone()
             .ok_or_else(|| anyhow::anyhow!("task is required for action=create"))?;
 
-        if params.wake_in_minutes.is_none() && params.wake_at.is_none() {
+        if params.cron.is_some() {
+            if params.wake_in_minutes.is_some() || params.wake_at.is_some() {
+                anyhow::bail!("cron cannot be combined with wake_in_minutes or wake_at");
+            }
+        } else if params.timezone.is_some()
+            || params.name.is_some()
+            || params.missed_policy.is_some()
+            || params.catch_up_limit.is_some()
+            || params.max_active.is_some()
+            || params.token_cap.is_some()
+            || params.spend_cap_usd.is_some()
+        {
+            anyhow::bail!(
+                "timezone, name, missed_policy, catch_up_limit, max_active, token_cap and spend_cap_usd apply only to a recurring schedule (set cron)"
+            );
+        } else if params.wake_in_minutes.is_none() && params.wake_at.is_none() {
             anyhow::bail!(
                 "Either wake_in_minutes or wake_at is required. \
                  This tool is for scheduling future tasks."
@@ -896,6 +949,10 @@ impl ScheduleTool {
             },
         };
 
+        if params.cron.is_some() {
+            return self.create_recurring(&params, request, &task, &target_summary);
+        }
+
         let mut manager = AmbientManager::new()?;
         let id = manager.schedule(request)?;
         nudge_schedule_runner();
@@ -923,23 +980,190 @@ impl ScheduleTool {
         Ok(ToolOutput::new(summary).with_title(format!("scheduled: {}", task)))
     }
 
+    fn create_recurring(
+        &self,
+        params: &ScheduleToolInput,
+        template: ScheduleRequest,
+        task: &str,
+        target_summary: &str,
+    ) -> Result<ToolOutput> {
+        use crate::ambient::recurring::{MissedPolicy, NewSchedule, RecurringStore};
+        let missed = match params.missed_policy.as_deref() {
+            Some("skip") => MissedPolicy::Skip,
+            Some("run-once") => MissedPolicy::RunOnce,
+            Some("catch-up") => MissedPolicy::CatchUp {
+                limit: params
+                    .catch_up_limit
+                    .ok_or_else(|| anyhow::anyhow!("catch_up_limit is required for catch-up"))?,
+            },
+            Some(other) => anyhow::bail!(
+                "Invalid missed_policy '{other}'. Expected one of: skip, run-once, catch-up"
+            ),
+            None => anyhow::bail!("missed_policy is required for a recurring schedule"),
+        };
+        if params.catch_up_limit.is_some() && !matches!(missed, MissedPolicy::CatchUp { .. }) {
+            anyhow::bail!("catch_up_limit only applies to missed_policy=catch-up");
+        }
+        let zone = params
+            .timezone
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("timezone (an IANA zone) is required with cron"))?;
+        let store = RecurringStore::open_default()?;
+        let schedule = store.create(
+            NewSchedule {
+                name: params.name.clone(),
+                cron: params.cron.clone().unwrap_or_default(),
+                zone,
+                missed,
+                max_active: params.max_active.unwrap_or(1),
+                token_cap: params.token_cap,
+                spend_cap_usd: params.spend_cap_usd,
+                template,
+            },
+            Utc::now(),
+        )?;
+        nudge_schedule_runner();
+        let next = format_next_occurrences(&schedule, 1);
+        Ok(ToolOutput::new(format!(
+            "Scheduled recurring task '{task}' (id: {})\n{}\nTarget: {target_summary}{next}",
+            schedule.id,
+            describe_recurring(&schedule)
+        ))
+        .with_title(format!("recurring: {task}")))
+    }
+
+    async fn execute_pause_resume(
+        &self,
+        params: ScheduleToolInput,
+        paused: bool,
+    ) -> Result<ToolOutput> {
+        let verb = if paused { "pause" } else { "resume" };
+        let id = params
+            .schedule_id
+            .as_deref()
+            .ok_or_else(|| anyhow::anyhow!("schedule_id is required for action={verb}"))?;
+        let store = crate::ambient::recurring::RecurringStore::open_default()?;
+        let schedule = store.set_paused(id, paused)?;
+        nudge_schedule_runner();
+        let note = if paused {
+            "New occurrences are not admitted. Runs already delivered are not stopped."
+        } else {
+            "Occurrences missed while paused follow the missed-run policy on the next pass."
+        };
+        Ok(ToolOutput::new(format!(
+            "{} recurring schedule {id}. {note}\n{}",
+            if paused { "Paused" } else { "Resumed" },
+            describe_recurring(&schedule)
+        ))
+        .with_title(format!("{verb}: {id}")))
+    }
+
+    /// Read-only: never touches the store or the queue.
+    async fn execute_preview(&self, params: ScheduleToolInput) -> Result<ToolOutput> {
+        use crate::ambient::cron::{CronExpr, next_occurrences, parse_zone};
+        let count = params
+            .count
+            .unwrap_or(5)
+            .clamp(1, crate::ambient::recurring::MAX_PREVIEW);
+        let text = if let Some(id) = params.schedule_id.as_deref() {
+            let store = crate::ambient::recurring::RecurringStore::open_default()?;
+            let schedule = store
+                .get(id)?
+                .ok_or_else(|| anyhow::anyhow!("no recurring schedule '{id}'"))?;
+            format!(
+                "{}{}",
+                describe_recurring(&schedule),
+                format_next_occurrences(&schedule, count)
+            )
+        } else {
+            let expr = CronExpr::parse(params.cron.as_deref().ok_or_else(|| {
+                anyhow::anyhow!("preview needs schedule_id, or cron and timezone")
+            })?)?;
+            let zone = parse_zone(
+                params
+                    .timezone
+                    .as_deref()
+                    .ok_or_else(|| anyhow::anyhow!("timezone is required with cron"))?,
+            )?;
+            let mut out = format!("Preview of '{}' in {}:", expr.as_str(), zone.name());
+            for occ in next_occurrences(&expr, zone, Utc::now(), None, count) {
+                out.push_str(&format!(
+                    "\n- {} local | {} UTC",
+                    occ.local.format("%Y-%m-%d %H:%M"),
+                    occ.at.format("%Y-%m-%d %H:%M")
+                ));
+            }
+            out
+        };
+        Ok(ToolOutput::new(text).with_title("schedule preview"))
+    }
+
     async fn execute_list(&self) -> Result<ToolOutput> {
+        let recurring = crate::ambient::recurring::RecurringStore::open_default()
+            .and_then(|store| store.list())?;
         let manager = AmbientManager::new()?;
+        let manager_queue_state = |key: &str| -> String {
+            let queue = manager.queue();
+            queue
+                .items()
+                .iter()
+                .chain(queue.in_flight())
+                .chain(queue.recent_history(usize::MAX))
+                .find(|item| item.id == key)
+                .and_then(|item| serde_json::to_value(item.delivery.state).ok())
+                .and_then(|v| v.as_str().map(str::to_string))
+                .unwrap_or_else(|| "not in queue".to_string())
+        };
         let queue = manager.queue();
         let mut items: Vec<&ScheduledItem> =
             queue.items().iter().chain(queue.in_flight()).collect();
         items.sort_by_key(|item| item.scheduled_for);
         let history = queue.recent_history(SCHEDULE_HISTORY_LIMIT);
 
-        if items.is_empty() && history.is_empty() {
+        if items.is_empty() && history.is_empty() && recurring.is_empty() {
             return Ok(ToolOutput::new("No scheduled tasks."));
         }
 
-        let mut summary = if items.is_empty() {
+        let mut summary = String::new();
+        if !recurring.is_empty() {
+            summary.push_str(&format!("{} recurring schedule(s):", recurring.len()));
+            for schedule in &recurring {
+                summary.push_str(&format!(
+                    "\n- {}{}",
+                    schedule.id,
+                    format_next_occurrences(schedule, 1)
+                ));
+                summary.push_str(&format!("\n  {}", describe_recurring(schedule)));
+                let recent: Vec<String> = schedule
+                    .occurrences
+                    .iter()
+                    .rev()
+                    .take(5)
+                    .map(|o| {
+                        let mut state = serde_json::to_value(o.state)
+                            .ok()
+                            .and_then(|v| v.as_str().map(str::to_string))
+                            .unwrap_or_default();
+                        // An enqueued occurrence's outcome is its queue
+                        // delivery state, which is acceptance, not task success.
+                        if o.state == crate::ambient::recurring::OccurrenceState::Enqueued {
+                            let queue = manager_queue_state(&o.key);
+                            state = format!("enqueued ({queue})");
+                        }
+                        format!("{} {state}", o.local.format("%m-%d %H:%M"))
+                    })
+                    .collect();
+                if !recent.is_empty() {
+                    summary.push_str(&format!("\n  recent: {}", recent.join(", ")));
+                }
+            }
+            summary.push('\n');
+        }
+        summary.push_str(&if items.is_empty() {
             "No pending scheduled tasks.".to_string()
         } else {
             format!("{} scheduled task(s):", items.len())
-        };
+        });
         for item in items {
             summary.push('\n');
             summary.push_str(&format_scheduled_item(item));
@@ -992,11 +1216,42 @@ impl ScheduleTool {
         Ok(ToolOutput::new(message).with_title(format!("retry: {}", item.id)))
     }
 
+    /// Remove a recurring definition and cancel its still-pending occurrences.
+    /// Delivered or uncertain history is kept.
+    fn cancel_recurring(&self, id: &str) -> Result<ToolOutput> {
+        let store = crate::ambient::recurring::RecurringStore::open_default()?;
+        if store.remove(id)?.is_none() {
+            anyhow::bail!("No recurring schedule found with id '{id}'");
+        }
+        let mut manager = AmbientManager::new()?;
+        let prefix = format!("cron:{id}:");
+        let pending: Vec<String> = manager
+            .queue()
+            .items()
+            .iter()
+            .filter(|item| item.id.starts_with(&prefix))
+            .map(|item| item.id.clone())
+            .collect();
+        for key in &pending {
+            manager.cancel_schedule(key)?;
+        }
+        nudge_schedule_runner();
+        Ok(ToolOutput::new(format!(
+            "Cancelled recurring schedule {id}; {} pending occurrence(s) cancelled. Already delivered runs are not stopped.",
+            pending.len()
+        ))
+        .with_title(format!("cancelled: {id}")))
+    }
+
     async fn execute_cancel(&self, params: ScheduleToolInput) -> Result<ToolOutput> {
         let id = params
             .schedule_id
             .as_deref()
             .ok_or_else(|| anyhow::anyhow!("schedule_id is required for action=cancel"))?;
+
+        if id.starts_with("cron_") {
+            return self.cancel_recurring(id);
+        }
 
         let mut manager = AmbientManager::new()?;
         let Some(item) = manager.cancel_schedule(id)? else {
@@ -1098,6 +1353,49 @@ fn format_scheduled_item(item: &ScheduledItem) -> String {
         format_schedule_target(&item.target),
         item.task_description.as_deref().unwrap_or(&item.context)
     )
+}
+
+fn describe_recurring(schedule: &crate::ambient::recurring::Schedule) -> String {
+    use crate::ambient::recurring::MissedPolicy;
+    let missed = match schedule.missed {
+        MissedPolicy::Skip => "skip".to_string(),
+        MissedPolicy::RunOnce => "run-once".to_string(),
+        MissedPolicy::CatchUp { limit } => format!("catch-up({limit})"),
+    };
+    let mut line = format!(
+        "cron '{}' in {} | policy {missed} | max_active {} | {}",
+        schedule.cron,
+        schedule.zone,
+        schedule.max_active,
+        if schedule.paused { "paused" } else { "active" }
+    );
+    if let Some(cap) = schedule.token_cap {
+        line.push_str(&format!(" | tokens {}/{cap}", schedule.tokens_used));
+    }
+    if let Some(cap) = schedule.spend_cap_usd {
+        line.push_str(&format!(
+            " | spend ${:.2}/${cap:.2}",
+            schedule.spend_used_usd
+        ));
+    }
+    if schedule.has_cap() {
+        line.push_str(
+            " | caps need an authoritative budget source, else runs report budget_unavailable",
+        );
+    }
+    line
+}
+
+fn format_next_occurrences(schedule: &crate::ambient::recurring::Schedule, n: usize) -> String {
+    let mut out = String::new();
+    for occ in schedule.upcoming(Utc::now(), n) {
+        out.push_str(&format!(
+            "\n  next {} local | {} UTC",
+            occ.local.format("%Y-%m-%d %H:%M"),
+            occ.at.format("%Y-%m-%d %H:%M")
+        ));
+    }
+    out
 }
 
 pub(super) fn nudge_schedule_runner() {

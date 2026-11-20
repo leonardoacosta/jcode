@@ -1395,6 +1395,8 @@ pub struct AmbientConfig {
     pub work_branch_prefix: String,
     /// Show ambient cycle in a terminal window (default: true)
     pub visible: bool,
+    /// Global cap on active recurring (cron) scheduled runs (default: 4)
+    pub scheduled_max_active: u32,
 }
 
 impl Default for AmbientConfig {
@@ -1411,6 +1413,7 @@ impl Default for AmbientConfig {
             proactive_work: true,
             work_branch_prefix: "ambient/".to_string(),
             visible: true,
+            scheduled_max_active: 4,
         }
     }
 }

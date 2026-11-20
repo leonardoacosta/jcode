@@ -3,11 +3,13 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
+pub mod cron;
 mod directives;
 mod manager;
 mod paths;
 mod persistence;
 mod prompt;
+pub mod recurring;
 pub mod runner;
 pub mod scheduler;
 
@@ -15,6 +17,11 @@ pub use directives::{
     UserDirective, add_directive, has_pending_directives, load_directives, take_pending_directives,
 };
 pub use manager::AmbientManager;
+
+/// Path of the one-shot schedule queue, for the recurring scheduler.
+pub(crate) fn queue_file_path() -> anyhow::Result<std::path::PathBuf> {
+    paths::queue_path()
+}
 pub use persistence::{AmbientLock, RecoveryReport, ScheduledQueue, Settlement};
 
 /// Whether persisted ambient work is waiting: a pending or in-flight scheduled

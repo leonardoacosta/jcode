@@ -522,6 +522,7 @@ pub use self::reload_state::{
 use self::reload_state::{clear_reload_marker_if_stale_for_pid, publish_reload_socket_ready};
 
 pub use self::lifecycle::configure_temporary_server;
+pub(crate) use self::lifecycle::temporary_server_enabled;
 
 /// Whether this server is stopping or reloading and refuses new work.
 pub fn shutting_down() -> bool {

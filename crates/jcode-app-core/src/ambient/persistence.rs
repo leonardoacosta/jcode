@@ -278,6 +278,19 @@ impl ScheduledQueue {
         })
     }
 
+    /// Push unless an item with this id exists in any state. Checked under the
+    /// queue lock, so two passes can never both add the same occurrence.
+    /// Returns whether the item was added.
+    pub fn try_push_unique(&mut self, item: ScheduledItem) -> Result<bool> {
+        self.transact(|items| {
+            if items.iter().any(|existing| existing.id == item.id) {
+                return Ok(false);
+            }
+            items.push(item);
+            Ok(true)
+        })
+    }
+
     pub fn push(&mut self, item: ScheduledItem) {
         if let Err(error) = self.try_push(item) {
             crate::logging::warn(&format!("Failed to persist scheduled item: {error:#}"));

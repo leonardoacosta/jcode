@@ -616,6 +616,40 @@ impl AmbientRunnerHandle {
         }
     }
 
+    /// One recurring-schedule pass. Returns the next instant a cron occurrence
+    /// is due, so the loop wakes for it. Failures are logged and skipped: a
+    /// broken definition must never stop the runner.
+    fn tick_recurring_schedules(&self) -> Option<chrono::DateTime<Utc>> {
+        if crate::server::temporary_server_enabled() {
+            return None;
+        }
+        let result = (|| {
+            let store = crate::ambient::recurring::RecurringStore::open_default()?;
+            crate::ambient::recurring::tick(
+                &store,
+                crate::ambient::queue_file_path()?,
+                Utc::now(),
+                config().ambient.scheduled_max_active.max(1),
+                &crate::ambient::recurring::NoHardEnforcement,
+            )
+        })();
+        match result {
+            Ok(report) => {
+                if report.enqueued > 0 {
+                    logging::info(&format!(
+                        "Ambient runner: admitted {} recurring occurrence(s), {} waiting",
+                        report.enqueued, report.waiting
+                    ));
+                }
+                report.next_due
+            }
+            Err(error) => {
+                logging::warn(&format!("Ambient runner: recurring tick failed: {error:#}"));
+                None
+            }
+        }
+    }
+
     /// Start the background ambient loop. Call from a tokio::spawn.
     pub async fn run_loop(self, provider: Arc<dyn Provider>) {
         {
@@ -678,6 +712,11 @@ impl AmbientRunnerHandle {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
                 continue;
             }
+            // Recurring (cron) schedules are decided and admitted here, by the
+            // one scheduler owner, before any "user session active" pause so
+            // an occurrence is never starved into "missed". A temporary server
+            // never runs them.
+            let cron_next_due = self.tick_recurring_schedules();
             // Check state
             let state = { self.inner.state.read().await.clone() };
 
@@ -696,10 +735,13 @@ impl AmbientRunnerHandle {
                     };
                     drop(s);
 
-                    // Sleep until nudged or 60s
+                    // Sleep until nudged, the next cron occurrence, or 60s
+                    let pause_secs = cron_next_due
+                        .map(|next| (next - Utc::now()).num_seconds().clamp(1, 60) as u64)
+                        .unwrap_or(60);
                     tokio::select! {
                         _ = self.inner.wake_notify.notified() => {},
-                        _ = tokio::time::sleep(std::time::Duration::from_secs(60)) => {},
+                        _ = tokio::time::sleep(std::time::Duration::from_secs(pause_secs)) => {},
                     }
                     continue;
                 }
@@ -759,9 +801,17 @@ impl AmbientRunnerHandle {
                 }
             };
 
+            let delivered_cron = ready_direct_items
+                .iter()
+                .any(|item| item.id.starts_with("cron:"));
             if !ready_direct_items.is_empty() {
                 self.deliver_ready_direct_items(&provider, ready_direct_items)
                     .await;
+            }
+            let next_direct_due = [next_direct_due, cron_next_due].into_iter().flatten().min();
+            if delivered_cron {
+                // A delivery released capacity: admit waiting occurrences now.
+                self.inner.wake_notify.notify_one();
             }
 
             if !should_run {
