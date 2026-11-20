@@ -50,6 +50,7 @@ pub mod github;
 pub mod gmail;
 pub mod goal;
 pub mod google_calendar;
+pub mod hindsight_memory_scope;
 pub mod hooks;
 pub mod id;
 pub mod image_normalize;

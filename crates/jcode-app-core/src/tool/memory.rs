@@ -54,6 +54,110 @@ impl MemoryTool {
     }
 }
 
+/// Remote Hindsight actions. Failures are returned as text so the model sees
+/// exactly what happened; nothing falls back to local memory.
+async fn hindsight_action(
+    source: &str,
+    input: &MemoryInput,
+    ctx: &ToolContext,
+) -> Result<ToolOutput> {
+    use crate::hindsight_memory_scope as hs;
+    if source != "hindsight" {
+        anyhow::bail!("Unknown source: {source}. Use hindsight or omit source");
+    }
+    let dir = ctx.working_dir.clone().unwrap_or_default();
+    let token = crate::server::session_control::current_token()
+        .filter(|token| token.session_id == ctx.session_id);
+    let generation = token.as_ref().map_or(0, |token| token.generation);
+    let scope = match hs::resolve_scope_for_dir(&dir, &ctx.session_id, generation) {
+        Ok(scope) => scope,
+        Err(err) => return Ok(ToolOutput::new(err.to_string())),
+    };
+    let client = match hs::HindsightClient::with_env() {
+        Ok(client) => client,
+        Err(err) => return Ok(ToolOutput::new(err.to_string())),
+    };
+    let cancel = hs::CancelToken::new();
+    let world_unchanged = hs::still_current_for_dir(&dir);
+    // A revoked or superseded session generation also discards the result.
+    let current = move |epoch: &hs::ScopeEpoch| {
+        world_unchanged(epoch) && token.as_ref().is_none_or(|token| token.reserve().is_ok())
+    };
+    let world = input.world.as_deref();
+    let text = match input.action.as_str() {
+        "recall" | "search" => {
+            let query = input
+                .query
+                .as_deref()
+                .ok_or_else(|| anyhow::anyhow!("query required"))?;
+            match client.recall(&scope, query, world, &cancel, &current).await {
+                Ok(outcome) => {
+                    let items: Vec<_> = outcome
+                        .memories
+                        .iter()
+                        .map(|m| m.to_injected_item())
+                        .collect();
+                    crate::memory::add_event(
+                        crate::memory_types::MemoryEventKind::MemoryInjected {
+                            count: items.len(),
+                            prompt_chars: items.iter().map(|i| i.content.len()).sum(),
+                            age_ms: 0,
+                            preview: query.chars().take(60).collect(),
+                            items,
+                            dropped: outcome.omitted,
+                        },
+                    );
+                    hs::render_recall(&scope, query, &outcome)
+                }
+                Err(err) => err.to_string(),
+            }
+        }
+        "remember" => {
+            let content = input
+                .content
+                .as_deref()
+                .ok_or_else(|| anyhow::anyhow!("content required"))?;
+            // Explicit remember is a user-directed write, gated by the world's
+            // `explicit` retain scope. Stable identity: session + tool call.
+            match client
+                .retain(
+                    &scope,
+                    "explicit",
+                    content,
+                    (Some(&ctx.session_id), Some(&ctx.tool_call_id)),
+                    &cancel,
+                    &current,
+                )
+                .await
+            {
+                Ok(report) => report.summary(),
+                Err(err) => err.to_string(),
+            }
+        }
+        "forget" => {
+            let id = input
+                .id
+                .as_deref()
+                .ok_or_else(|| anyhow::anyhow!("id required"))?;
+            let memory = hs::RecalledMemory {
+                id: id.to_string(),
+                text: String::new(),
+                kind: None,
+                time: None,
+                document_id: None,
+                world: world.unwrap_or(scope.world()).to_string(),
+                bank: scope.bank.clone(),
+            };
+            match client.forget(&scope, &memory, &cancel, &current).await {
+                Ok(outcome) => outcome.message(id),
+                Err(err) => format!("{err}. The memory is still active; it was not forgotten."),
+            }
+        }
+        other => anyhow::bail!("Action {other} does not support source=hindsight"),
+    };
+    Ok(ToolOutput::new(text))
+}
+
 #[derive(Debug, Deserialize)]
 struct MemoryInput {
     action: String,
@@ -87,6 +191,14 @@ struct MemoryInput {
     /// For recall action: retrieval mode
     #[serde(default)]
     mode: Option<String>,
+    /// `hindsight` routes recall, remember and forget to the current world's
+    /// remote Hindsight bank. Absent: local memory, unchanged.
+    #[serde(default)]
+    source: Option<String>,
+    /// With `source=hindsight`: the world the caller believes it is asking.
+    /// Any world other than the verified current one is refused.
+    #[serde(default)]
+    world: Option<String>,
 }
 
 #[async_trait]
@@ -120,7 +232,9 @@ impl Tool for MemoryTool {
                 "scope": { "type": "string", "enum": ["project", "global", "all"] },
                 "from_id": { "type": "string" },
                 "to_id": { "type": "string" },
-                "limit": { "type": "integer", "minimum": 0, "description": "Max results for recall, search, or list. Zero returns no results. Recall defaults to 10." }
+                "limit": { "type": "integer", "minimum": 0, "description": "Max results for recall, search, or list. Zero returns no results. Recall defaults to 10." },
+                "source": { "type": "string", "enum": ["hindsight"], "description": "Use the current world's remote Hindsight bank for recall, remember or forget." },
+                "world": { "type": "string", "description": "With source=hindsight: expected world; other worlds are refused." }
             },
             "required": ["action"]
         })
@@ -134,6 +248,10 @@ impl Tool for MemoryTool {
         let action_label = input.action.clone();
         let session_id = ctx.session_id.clone();
         let manager = self.scoped_manager(&ctx);
+
+        if let Some(source) = input.source.as_deref() {
+            return hindsight_action(source, &input, &ctx).await;
+        }
 
         match input.action.as_str() {
             "remember" => {
@@ -620,6 +738,41 @@ mod tests {
             assert!(!output.contains("[mem "), "{output}");
             assert!(!output.contains("omitted"), "{output}");
         }
+    }
+
+    /// `source=hindsight` in a world with no verified route is denied as text,
+    /// never contacts a server, and never falls back to local memory.
+    #[tokio::test]
+    async fn hindsight_memory_scope_tool_denies_unknown_world_without_local_fallback() {
+        let _guard = crate::storage::lock_test_env();
+        let home = tempfile::tempdir().unwrap();
+        let _env = OfflineEnv::new(home.path());
+        let project = tempfile::tempdir().unwrap();
+        let tool = MemoryTool::new();
+        let ctx = || test_ctx(Some(project.path().to_path_buf()));
+        tool.execute(
+            json!({"action":"remember", "content":"local-only-probe", "scope":"global"}),
+            ctx(),
+        )
+        .await
+        .unwrap();
+        for input in [
+            json!({"action":"recall", "query":"local-only-probe", "source":"hindsight"}),
+            json!({"action":"remember", "content":"x", "source":"hindsight"}),
+            json!({"action":"forget", "id":"m1", "source":"hindsight"}),
+        ] {
+            let out = tool.execute(input, ctx()).await.unwrap().output;
+            assert!(out.contains("Hindsight denied"), "{out}");
+            assert!(!out.contains("local-only-probe"), "{out}");
+        }
+        assert!(
+            tool.execute(
+                json!({"action":"recall","query":"q","source":"other"}),
+                ctx()
+            )
+            .await
+            .is_err()
+        );
     }
 
     #[tokio::test]

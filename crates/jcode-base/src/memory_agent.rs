@@ -86,6 +86,17 @@ fn manager_for_working_dir(working_dir: Option<&str>) -> MemoryManager {
 }
 
 async fn run_final_extraction(transcript: String, session_id: String, working_dir: Option<String>) {
+    // Opt-in per world and data scope; a no-op otherwise. Independent of the
+    // local extraction below and never changes local memory behavior.
+    if let Some(status) = crate::hindsight_memory_scope::retain_final_transcript(
+        &transcript,
+        &session_id,
+        working_dir.as_deref(),
+    )
+    .await
+    {
+        crate::logging::info(&status);
+    }
     // Extraction is optional. Its model/credentials never gate recall.
     if !memory::memory_llm_judge_available() {
         return;
@@ -181,6 +192,7 @@ impl MemoryAgent {
 
     fn reset(&mut self) {
         self.sessions.clear();
+        crate::hindsight_memory_scope::forget_session_worlds();
         memory::clear_all_pending_memory();
         memory::clear_all_injected_memories();
         if let Ok(mut stats) = MEMORY_AGENT_STATS.lock() {
@@ -203,6 +215,11 @@ impl MemoryAgent {
                     if timestamp.elapsed() > Duration::from_secs(120) {
                         continue;
                     }
+                    // Pin the session's world on first sight, for the final retain.
+                    crate::hindsight_memory_scope::record_session_world(
+                        &session_id,
+                        working_dir.as_deref(),
+                    );
                     let ss = self.sessions.entry(session_id.clone()).or_default();
                     // None is meaningful: never retain another project's scope.
                     if ss.working_dir != working_dir {

@@ -88,6 +88,8 @@ pub struct WorkspaceRule {
     pub swarm_model: Option<String>,
     /// Role-slot models for this workspace (`[workspaces.rules.roles]`).
     pub roles: AgentRoleModels,
+    /// Remote Hindsight memory route for this world (`[workspaces.rules.hindsight]`).
+    pub hindsight: Option<crate::HindsightRoute>,
 }
 
 impl WorkspaceRule {
@@ -141,6 +143,9 @@ impl WorkspaceRule {
             out.push(format!(
                 "{label}: unknown tracker {value:?} (expected linear, ado, or none); its hints are skipped"
             ));
+        }
+        if let Some(route) = &self.hindsight {
+            out.extend(route.warnings(&label));
         }
         let legacy = self.hooks.pre_tool_transform.is_some()
             || self.hooks.turn_start.is_some()
