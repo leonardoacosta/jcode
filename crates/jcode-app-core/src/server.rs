@@ -912,6 +912,13 @@ impl Server {
             background_tasks::reattach_background_tasks_on_startup().await;
         });
 
+        // Overnight runs whose supervisor died with the previous process:
+        // cancel, report, interrupt or resume under current policy.
+        let overnight_provider = Arc::clone(&self.provider);
+        tokio::spawn(async move {
+            crate::overnight::restart::reconcile_on_startup(overnight_provider).await;
+        });
+
         // Spawn reload monitor (event-driven via in-process channel).
         // In the unified server design, self-dev sessions share the main server,
         // so the shared server must always listen for reload signals.

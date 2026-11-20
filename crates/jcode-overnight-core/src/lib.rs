@@ -51,6 +51,9 @@ pub enum OvernightRunStatus {
     Failed,
     /// Legacy manifests may carry this status; it is terminal.
     Blocked,
+    /// The supervisor died (restart or crash) and the run could not be safely
+    /// resumed. Terminal; the event log carries the blocking reason.
+    Interrupted,
     /// Any status string this build does not recognise. Terminal.
     #[serde(other)]
     Unknown,
@@ -70,6 +73,7 @@ impl OvernightRunStatus {
             Self::Completed => "completed",
             Self::Failed => "failed",
             Self::Blocked => "blocked",
+            Self::Interrupted => "interrupted",
             Self::Unknown => "unknown",
         }
     }
@@ -126,6 +130,14 @@ pub struct OvernightManifest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub limit_breach: Option<LimitBreach>,
     pub process_id: u32,
+    /// OS start time of `process_id`, so a reused pid is not mistaken for the
+    /// supervisor. Absent on legacy manifests and where unavailable.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supervisor_start_time: Option<u64>,
+    /// When this supervisor took ownership (start or restart resume). Owner
+    /// liveness is decided by pid plus start time, not by this stamp.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub heartbeat_at: Option<DateTime<Utc>>,
     pub run_dir: PathBuf,
     pub events_path: PathBuf,
     pub human_log_path: PathBuf,
@@ -1079,5 +1091,7 @@ mod status_tests {
         assert_eq!(parse("running"), OvernightRunStatus::Running);
         assert_eq!(OvernightRunStatus::Blocked.label(), "blocked");
         assert_eq!(OvernightRunStatus::Unknown.label(), "unknown");
+        assert_eq!(OvernightRunStatus::Interrupted.label(), "interrupted");
+        assert!(OvernightRunStatus::Interrupted.is_terminal());
     }
 }

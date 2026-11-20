@@ -670,6 +670,7 @@ fn overnight_status_label(status: &OvernightRunStatus) -> &'static str {
         OvernightRunStatus::Completed => "completed",
         OvernightRunStatus::Failed => "failed",
         OvernightRunStatus::Blocked => "blocked",
+        OvernightRunStatus::Interrupted => "interrupted",
         OvernightRunStatus::Unknown => "unknown",
     }
 }
@@ -800,6 +801,8 @@ mod tests {
             stop_settlement: None,
             limit_breach: None,
             process_id: 1,
+            supervisor_start_time: None,
+            heartbeat_at: None,
             run_dir: PathBuf::from("/tmp/overnight_test"),
             events_path: PathBuf::from("/tmp/overnight_test/events.jsonl"),
             human_log_path: PathBuf::from("/tmp/overnight_test/run.log"),

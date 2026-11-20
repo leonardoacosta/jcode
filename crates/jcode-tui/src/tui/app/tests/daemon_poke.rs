@@ -5,6 +5,11 @@ fn daemon_poke_preserves_explicit_local_overnight_campaign() {
     with_temp_jcode_home(|| {
         let mut app = create_test_app();
         app.is_remote = true;
+        // The remote path supervises with a real local provider, so the
+        // selected route needs usable auth for the preflight to admit it.
+        crate::env::set_var("OPENROUTER_API_KEY", "test-key");
+        crate::auth::AuthStatus::invalidate_cache();
+        app.session.provider_key = Some("openrouter".into());
         // Explicit campaigns remain independent of ordinary todo auto-poke.
         app.auto_poke_default_on = false;
         app.auto_poke_incomplete_todos = false;

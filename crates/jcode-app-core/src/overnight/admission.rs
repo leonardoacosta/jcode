@@ -303,6 +303,7 @@ pub(super) fn save_manifest_at(path: &Path, proposed: &OvernightManifest) -> Res
                 OvernightRunStatus::Completed
                     | OvernightRunStatus::Failed
                     | OvernightRunStatus::Cancelled
+                    | OvernightRunStatus::Interrupted
             ) {
                 merged.status = current.status.clone();
                 merged.completed_at = current.completed_at;

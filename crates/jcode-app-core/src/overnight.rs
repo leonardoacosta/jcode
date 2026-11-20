@@ -31,7 +31,7 @@ pub use jcode_overnight_core::{
 
 use admission_gate::{
     SignalWatch, Step, StepFlags, Wait, active_cards, block_on_reasons, block_run,
-    decide_and_record, next_boundary, next_step, route_auth_block,
+    decide_and_record, next_boundary, next_step, resolved_route_auth_block, route_auth_block,
 };
 use jcode_overnight_core::AdmissionVerdict;
 
@@ -41,6 +41,7 @@ const LONG_TURN_NOTICE_INTERVAL: Duration = Duration::from_secs(30 * 60);
 mod admission;
 mod admission_gate;
 mod enforce;
+pub mod restart;
 mod usage;
 pub use admission::{
     TaskAttemptClaim, restart_task_attempt, restart_task_attempt_with_provider, start_task_attempt,
@@ -126,7 +127,7 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
         anyhow::bail!(reason);
     }
     if options.use_current_session
-        && let Some(reasons) = route_auth_block(
+        && let Some(reasons) = resolved_route_auth_block(
             options.provider.name(),
             options.parent_session.provider_key.as_deref(),
             options.parent_session.route_api_method.as_deref(),
@@ -208,6 +209,8 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
         stop_settlement: None,
         limit_breach: None,
         process_id: std::process::id(),
+        supervisor_start_time: crate::platform::process_start_time(std::process::id()),
+        heartbeat_at: Some(started_at),
         run_dir,
         events_path,
         human_log_path,
@@ -1293,6 +1296,8 @@ mod tests {
             stop_settlement: None,
             limit_breach: None,
             process_id: 123,
+            supervisor_start_time: None,
+            heartbeat_at: None,
             run_dir: run_dir.clone(),
             events_path: run_dir.join("events.jsonl"),
             human_log_path: run_dir.join("run.log"),

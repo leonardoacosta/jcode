@@ -69,6 +69,19 @@ pub(super) fn route_auth_block(
     classify_route_auth(descriptor.id, state)
 }
 
+/// Like [`route_auth_block`] but only for a route that resolves to a login
+/// provider. A visible current-session run has no unattended supervisor, so an
+/// unclassified route (custom profile) is not refused at start; supervised runs
+/// still block it in their loop.
+pub(super) fn resolved_route_auth_block(
+    provider_name: &str,
+    provider_key: Option<&str>,
+    route_api_method: Option<&str>,
+) -> Option<Vec<String>> {
+    resolve_route(provider_name, provider_key, route_api_method)?;
+    route_auth_block(provider_name, provider_key, route_api_method)
+}
+
 /// Record the blocked admission decision, then end the run via [`block_run`].
 pub(super) async fn block_on_reasons(
     manifest: &OvernightManifest,
@@ -649,6 +662,9 @@ mod tests {
         assert!(route_auth_block(ROUTE, None, None).is_none());
         let unknown = route_auth_block("synthetic-route", None, None).unwrap();
         assert!(unknown[0].starts_with("unclassified"), "{unknown:?}");
+        // The visible start path does not refuse a custom, unclassified route.
+        assert!(resolved_route_auth_block("synthetic-route", None, None).is_none());
+        assert!(resolved_route_auth_block("OpenAI", None, Some("openai-api-key")).is_some());
     }
 
     #[test]

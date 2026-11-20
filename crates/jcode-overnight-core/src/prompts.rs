@@ -10,6 +10,7 @@ pub(crate) fn overnight_phase(manifest: &OvernightManifest, now: DateTime<Utc>) 
         OvernightRunStatus::Cancelled => "cancelled",
         OvernightRunStatus::Failed => "failed",
         OvernightRunStatus::Blocked => "blocked",
+        OvernightRunStatus::Interrupted => "interrupted",
         OvernightRunStatus::Unknown => "unknown",
         OvernightRunStatus::CancelRequested => "cancelling",
         OvernightRunStatus::Running => {

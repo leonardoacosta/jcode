@@ -89,6 +89,11 @@ fn test_overnight_start_queues_remote_turn_without_stuck_sending() {
     with_temp_jcode_home(|| {
         let mut app = create_test_app();
         app.is_remote = true;
+        // The remote path supervises with a real local provider, so the
+        // selected route needs usable auth for the preflight to admit it.
+        crate::env::set_var("OPENROUTER_API_KEY", "test-key");
+        crate::auth::AuthStatus::invalidate_cache();
+        app.session.provider_key = Some("openrouter".into());
         assert!(super::commands::handle_session_command(
             &mut app,
             "/overnight 1m hi"
