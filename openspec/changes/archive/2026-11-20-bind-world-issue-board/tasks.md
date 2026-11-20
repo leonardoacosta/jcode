@@ -49,4 +49,13 @@ All tasks are implementation work and remain unchecked during proposal authoring
 
 ## 5. Known limits and review record
 
-- [x] 5.1 Known limits: the Linear MCP response shapes are unverified (no live call was authorized): every parser fixture is an assumed shape, and unparseable or team-less output fails the read instead of showing a board. Linear idempotency for `save_issue` is unverified, so an uncertain write is never retried and is only reconciled by a read. No ADO adapter exists, so ADO boards show "unavailable". Each move costs several scoped `list_issues` scans and `list_issues` has no state filter, so a large team can hit the 2000-issue cap and show an error instead of a truncated board. The board cache lives only while the overlay is open. A pending uncertain operation is in memory only; a crash leaves an intent with no outcome line.
+- [x] 5.1 Known limits (superseded in part by the acceptance note below): the Linear MCP response shapes are unverified (no live call was authorized): every parser fixture is an assumed shape, and unparseable or team-less output fails the read instead of showing a board. Linear idempotency for `save_issue` is unverified, so an uncertain write is never retried and is only reconciled by a read. No ADO adapter exists, so ADO boards show "unavailable". Each move costs several scoped `list_issues` scans and `list_issues` has no state filter, so a large team can hit the 2000-issue cap and show an error instead of a truncated board. The board cache lives only while the overlay is open. A pending uncertain operation is in memory only; a crash leaves an intent with no outcome line.
+
+## Acceptance (2026-11-20, user-approved)
+
+Accepted as passed by the user after a live read-only run.
+
+- Verified live: one authorized read-only capture of Linear `list_issue_statuses` and `list_issues` (and `list_teams`) replaced the assumed shapes. Fixtures: `crates/jcode-base/src/board/fixtures/linear_list_issue_statuses.json`, `linear_list_issues.json`. Parser fixes and real-fixture tests are in `a67f17d33`. R2 (live response shape) is closed.
+- Verified live: `/board` in a real repo (`~/dev/personal/homelab`) resolved the world from the `[[workspaces.rules]]` origin rule, read the Priceless team board through the Linear MCP, and showed all workflow states with counts. The tabbed view with an issue table (`503966a7c`) was accepted by the user in that run.
+- Team binding must be the team uuid. A team key or display name selects nothing and fails closed (test `real_capture_with_a_team_key_binding_fails_closed`).
+- Still not verified: a live `m` move (`save_issue`), its idempotency, and the uncertain-write reconcile path against real Linear. No live write was authorized or run. All other limits in 5.1 stand.
