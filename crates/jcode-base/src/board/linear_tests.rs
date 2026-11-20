@@ -671,3 +671,106 @@ fn pre_send_manager_failures_are_definitive_not_uncertain() {
         "connection reset while reading the reply"
     ));
 }
+
+// ---- captured shapes -------------------------------------------------------
+// One read-only capture from the real Linear MCP (list_issue_statuses and
+// list_issues for a team), descriptions trimmed. These replace the earlier
+// "assumed shape" guesses as the reference shape.
+
+const REAL_STATUSES: &str = include_str!("fixtures/linear_list_issue_statuses.json");
+const REAL_ISSUES: &str = include_str!("fixtures/linear_list_issues.json");
+const REAL_TEAM_ID: &str = "a465c3cf-3a11-4b7a-a2a0-439a489281f5";
+
+fn real_scope() -> BoardScope {
+    BoardScope {
+        team: REAL_TEAM_ID.into(),
+        ..scope()
+    }
+}
+
+#[tokio::test]
+async fn real_capture_states_come_in_type_order_and_keep_duplicate_type_provider_order() {
+    let fake = Arc::new(Fake::default());
+    fake.statuses
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_STATUSES.into()));
+    let states = provider(&fake)
+        .workflow_states(&real_scope())
+        .await
+        .unwrap();
+    let names: Vec<_> = states.iter().map(|s| s.name.as_str()).collect();
+    // triage, backlog, unstarted (Ready, Todo), started (In Review, In Progress),
+    // completed, then the terminal types. Same-type states keep the order the
+    // provider listed them.
+    assert_eq!(
+        names,
+        [
+            "Triage",
+            "Backlog",
+            "Ready",
+            "Todo",
+            "In Review",
+            "In Progress",
+            "Done",
+            "Canceled",
+            "Duplicate"
+        ],
+        "{names:?}"
+    );
+}
+
+#[tokio::test]
+async fn real_capture_issues_resolve_to_column_ids_and_page_on_the_top_level_cursor() {
+    let fake = Arc::new(Fake::default());
+    fake.statuses
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_STATUSES.into()));
+    // Page 1 says hasNextPage with a cursor; page 2 is the same capture
+    // without the flag so the read ends.
+    let mut last: serde_json::Value = serde_json::from_str(REAL_ISSUES).unwrap();
+    last["hasNextPage"] = serde_json::json!(false);
+    fake.issues
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_ISSUES.into()));
+    fake.issues.lock().unwrap().push_back(Ok(last.to_string()));
+    let issues = provider(&fake).issues(&real_scope()).await.unwrap();
+    assert_eq!(issues.len(), 10, "two pages of five");
+    let calls = fake.calls();
+    let second = calls
+        .iter()
+        .filter(|c| c.1 == "list_issues")
+        .nth(1)
+        .unwrap();
+    assert_eq!(second.2["cursor"], "4f6d0ab8-fb97-4a6c-b1f8-861603d042eb");
+    // Each issue's column id is a real workflow-state id, found by the state
+    // NAME because the real issue carries `status`/`statusType` strings only.
+    let todo = issues.iter().find(|i| i.identifier == "PRICE-58").unwrap();
+    assert_eq!(todo.state_id, "9681f608-8b08-44c3-8744-3f38fcdf5092");
+    let triage = issues.iter().find(|i| i.identifier == "PRICE-60").unwrap();
+    assert_eq!(triage.state_id, "37af9304-9868-4748-bbd6-4216267afb32");
+}
+
+#[tokio::test]
+async fn real_capture_with_a_team_key_binding_fails_closed() {
+    // The real issue carries a team uuid (`teamId`) and a display name (`team`).
+    // A binding written as the key or the display name must not select issues.
+    for team in ["PRICE", "Priceless"] {
+        let fake = Arc::new(Fake::default());
+        fake.statuses
+            .lock()
+            .unwrap()
+            .push_back(Ok(REAL_STATUSES.into()));
+        let mut last: serde_json::Value = serde_json::from_str(REAL_ISSUES).unwrap();
+        last["hasNextPage"] = serde_json::json!(false);
+        fake.issues.lock().unwrap().push_back(Ok(last.to_string()));
+        let scope = BoardScope {
+            team: team.into(),
+            ..scope()
+        };
+        let issues = provider(&fake).issues(&scope).await.unwrap();
+        assert!(issues.is_empty(), "{team}: {issues:?}");
+    }
+}

@@ -453,7 +453,9 @@ fn parse_states(text: &str, team: &str) -> Result<Vec<WorkflowState>, BoardError
             position: if by_position {
                 row.position.unwrap_or_default()
             } else if by_rank {
-                row.rank.unwrap_or_default()
+                // Same-type states (for example two `started` columns) keep the
+                // order the provider listed them.
+                row.rank.unwrap_or_default() + (index as f64) / 1000.0
             } else {
                 index as f64
             },
@@ -473,6 +475,9 @@ fn type_rank(kind: &str) -> Option<f64> {
         "started" => 3.0,
         "completed" => 4.0,
         "canceled" | "cancelled" => 5.0,
+        // Seen in a real capture: a closed state that is neither completed nor
+        // canceled. It sorts with the other terminal states.
+        "duplicate" => 6.0,
         _ => return None,
     })
 }
