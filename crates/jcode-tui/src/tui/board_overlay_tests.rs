@@ -82,6 +82,12 @@ fn text(o: &BoardOverlay, w: u16, h: u16) -> String {
     rows(o, w, h).join("\n")
 }
 
+/// A row's content without the frame border, selection marker or status dot.
+fn bare(row: &str) -> &str {
+    row.trim_matches(|c: char| c == '│' || c == '╭' || c == '╮' || c.is_whitespace())
+        .trim_start_matches(['▸', '●', ' '])
+}
+
 /// Visible content of a row with trailing blanks removed.
 fn trimmed(row: &str) -> &str {
     row.trim_end()
@@ -182,7 +188,7 @@ fn board_overlay_table_lists_only_the_selected_state_with_full_titles() {
     let r = rows(&o, 60, 10);
     assert!(r[3].contains("ID") && r[3].contains("TITLE"), "{:?}", r[3]);
     assert!(
-        r[4].contains("> TEAM-1") && r[4].contains("First"),
+        r[4].contains("▸ TEAM-1") && r[4].contains("First"),
         "{:?}",
         r[4]
     );
@@ -350,11 +356,7 @@ fn board_overlay_move_dialog_groups_statuses_by_type_in_order() {
     // Group headers are whole uppercase rows; statuses start after the indent.
     let at = |needle: &str| {
         r.iter()
-            .position(|l| l.trim() == needle || l.trim().starts_with(&format!("{needle} (")))
-            .or_else(|| {
-                r.iter()
-                    .position(|l| l.trim().starts_with(&format!("> {needle} (")))
-            })
+            .position(|l| bare(l) == needle || bare(l).starts_with(&format!("{needle} (")))
             .unwrap_or(999)
     };
     let order = [
@@ -644,7 +646,7 @@ fn board_overlay_selected_issue_scrolls_into_view() {
         ch(&mut o, 'j');
     }
     let t = text(&o, 40, 10);
-    assert!(t.contains("> N-25"), "{t}");
+    assert!(t.contains("▸ N-25"), "{t}");
     assert!(!t.contains("N-0 "));
 }
 
@@ -821,4 +823,315 @@ fn board_overlay_status_rows_stay_single_row_at_narrow_widths_during_a_move() {
     for w in [1u16, 5, 12, 20, 40] {
         assert_rows_fit(&o, w, 8);
     }
+}
+
+// ---- palette styling ---------------------------------------------------------
+
+use jcode_tui_style::{Palette, Role, role_color, set_palette};
+
+fn render_buf(o: &BoardOverlay, w: u16, h: u16) -> Buffer {
+    let mut terminal = Terminal::new(TestBackend::new(w, h)).unwrap();
+    terminal.draw(|f| o.render(f)).unwrap();
+    terminal.backend().buffer().clone()
+}
+
+/// Column of the first cell of `needle` on buffer row `y`.
+fn col_of(buf: &Buffer, y: u16, needle: &str) -> u16 {
+    let row: Vec<&str> = (0..buf.area.width).map(|x| buf[(x, y)].symbol()).collect();
+    let first = needle.chars().next().unwrap().to_string();
+    (0..row.len())
+        .find(|&x| row[x] == first && row[x..].concat().starts_with(needle))
+        .unwrap_or_else(|| panic!("{needle:?} not on row {y}: {row:?}")) as u16
+}
+
+/// Serialize palette access and restore the default palette afterwards.
+struct PaletteGuard(#[allow(dead_code)] std::sync::MutexGuard<'static, ()>);
+
+impl PaletteGuard {
+    fn new() -> Self {
+        let guard = crate::storage::lock_test_env();
+        set_palette(Palette::default());
+        Self(guard)
+    }
+}
+
+impl Drop for PaletteGuard {
+    fn drop(&mut self) {
+        set_palette(Palette::default());
+    }
+}
+
+#[test]
+fn board_overlay_selected_tab_and_row_use_the_accent_and_selection_roles() {
+    let _g = PaletteGuard::new();
+    let o = ready(false);
+    let buf = render_buf(&o, 60, 12);
+    let accent = jcode_tui_style::theme::accent_color();
+
+    let tab = &buf[(col_of(&buf, 2, "Todo"), 2)];
+    assert_eq!(tab.fg, accent);
+    assert!(tab.modifier.contains(Modifier::BOLD | Modifier::UNDERLINED));
+    // Unselected tabs are not accent-colored and not underlined.
+    let other = &buf[(col_of(&buf, 2, "In Progress"), 2)];
+    assert_ne!(other.fg, accent);
+    assert!(!other.modifier.contains(Modifier::UNDERLINED));
+
+    let marker = &buf[(col_of(&buf, 4, "▸"), 4)];
+    assert_eq!(marker.fg, accent);
+    let selection = role_color(Role::SelectionBg);
+    for x in 2..58 {
+        assert_eq!(buf[(x, 4)].bg, selection, "selected row fill at x={x}");
+    }
+    // The unselected row keeps the panel background.
+    assert_ne!(buf[(5, 5)].bg, selection);
+    // Identifier and title use their own roles.
+    let id = &buf[(col_of(&buf, 4, "TEAM-1"), 4)];
+    assert_eq!(id.fg, jcode_tui_style::theme::file_link_color());
+    let title = &buf[(col_of(&buf, 4, "First"), 4)];
+    assert_eq!(title.fg, jcode_tui_style::theme::ai_text());
+}
+
+#[test]
+fn board_overlay_frame_uses_the_border_role_and_embeds_title_and_hints() {
+    let _g = PaletteGuard::new();
+    let o = ready(false);
+    let buf = render_buf(&o, 60, 12);
+    assert_eq!(buf[(0, 0)].symbol(), "╭");
+    assert_eq!(buf[(0, 0)].fg, role_color(Role::Border));
+    assert_eq!(buf[(59, 11)].symbol(), "╯");
+    let r = rows(&o, 60, 12);
+    assert!(r[0].contains("◆ Issue board"), "{:?}", r[0]);
+    assert!(
+        r[0].trim_end_matches(['─', '╮'])
+            .trim_end()
+            .ends_with("1/3"),
+        "{:?}",
+        r[0]
+    );
+    assert!(r[11].contains("↑↓ move · m move status"), "{:?}", r[11]);
+    let title = &buf[(col_of(&buf, 0, "Issue"), 0)];
+    assert_eq!(title.fg, jcode_tui_style::theme::accent_color());
+    let key = &buf[(col_of(&buf, 11, "↑↓"), 11)];
+    assert_eq!(key.fg, jcode_tui_style::theme::accent_color());
+    let label = &buf[(col_of(&buf, 11, "move status"), 11)];
+    assert_eq!(label.fg, jcode_tui_style::theme::dim_color());
+}
+
+#[test]
+fn board_overlay_read_only_hints_keep_read_only() {
+    let _g = PaletteGuard::new();
+    let o = ready(true);
+    assert!(rows(&o, 80, 12)[11].contains("read-only"));
+}
+
+#[test]
+fn board_overlay_configured_accent_is_used() {
+    let _g = PaletteGuard::new();
+    let o = ready(false);
+    let default_accent = jcode_tui_style::theme::accent_color();
+    let mut palette = Palette::default();
+    palette.set(Role::Accent, (250, 40, 200));
+    set_palette(palette);
+    // Accessors return role defaults; the per-frame display pass maps them
+    // onto the configured palette, as the real draw path does.
+    let mut buf = render_buf(&o, 60, 12);
+    jcode_tui_style::adapt_buffer_for_display(&mut buf);
+    let want = Palette::from_pairs([("accent", "#fa28c8")])
+        .0
+        .color(Role::Accent);
+    assert_ne!(want, default_accent);
+    assert_eq!(buf[(col_of(&buf, 2, "Todo"), 2)].fg, want);
+    assert_eq!(buf[(col_of(&buf, 4, "▸"), 4)].fg, want);
+    assert_eq!(buf[(col_of(&buf, 0, "Issue"), 0)].fg, want);
+}
+
+#[test]
+fn board_overlay_move_target_row_uses_accent_and_selection_fill() {
+    let _g = PaletteGuard::new();
+    let mut o = ready(false);
+    ch(&mut o, 'm');
+    let buf = render_buf(&o, 60, 16);
+    let accent = jcode_tui_style::theme::accent_color();
+    let y = (0..16)
+        .find(|&y| {
+            let row: String = (0..60).map(|x| buf[(x, y)].symbol()).collect();
+            row.contains("▸ ● In Progress")
+        })
+        .expect("target row");
+    assert_eq!(buf[(col_of(&buf, y, "▸"), y)].fg, accent);
+    let name = &buf[(col_of(&buf, y, "In Progress"), y)];
+    assert_eq!(name.fg, accent);
+    assert!(name.modifier.contains(Modifier::BOLD));
+    assert_eq!(buf[(30, y)].bg, role_color(Role::SelectionBg));
+    // Group header is dim and the current status says so.
+    let group = (0..16)
+        .find(|&y| {
+            (0..60)
+                .map(|x| buf[(x, y)].symbol())
+                .collect::<String>()
+                .contains("UNSTARTED")
+        })
+        .expect("group header");
+    assert_eq!(
+        buf[(col_of(&buf, group, "UNSTARTED"), group)].fg,
+        jcode_tui_style::theme::dim_color()
+    );
+    let r = rows(&o, 60, 16);
+    assert!(r.iter().any(|l| l.contains("Todo (2)  current")), "{r:#?}");
+}
+
+#[test]
+fn board_overlay_status_line_colors_follow_roles() {
+    let _g = PaletteGuard::new();
+    let mut o = ready(true);
+    ch(&mut o, 'm'); // read-only notice
+    let buf = render_buf(&o, 70, 12);
+    assert_eq!(buf[(2, 10)].fg, role_color(Role::Warning));
+
+    let mut o = ready(false);
+    confirmed_move(&mut o);
+    let buf = render_buf(&o, 70, 12);
+    assert_eq!(buf[(2, 10)].fg, jcode_tui_style::theme::accent_color());
+    o.finish_move(
+        MoveVerdict::Moved,
+        "moved",
+        Some(BoardLoad::Ready(data(false))),
+    );
+    let buf = render_buf(&o, 70, 12);
+    assert_eq!(buf[(2, 10)].fg, role_color(Role::Success));
+
+    let mut o = ready(false);
+    ch(&mut o, 'm');
+    key(&mut o, KeyCode::Enter);
+    let buf = render_buf(&o, 70, 12);
+    assert_eq!(buf[(2, 10)].fg, role_color(Role::Warning));
+    assert!(buf[(2, 10)].modifier.contains(Modifier::BOLD));
+
+    let o = BoardOverlay::new(BoardLoad::Error("boom".into()));
+    let buf = render_buf(&o, 70, 12);
+    assert_eq!(buf[(2, 2)].fg, role_color(Role::Error));
+}
+
+#[test]
+fn board_overlay_status_kind_dot_colors() {
+    let _g = PaletteGuard::new();
+    use jcode_tui_style::theme::{dim_color, pending_color, queued_color};
+    let expected = [
+        ("triage", pending_color()),
+        ("backlog", dim_color()),
+        ("unstarted", role_color(Role::Info)),
+        ("started", queued_color()),
+        ("completed", role_color(Role::Success)),
+        ("canceled", dim_color()),
+        ("cancelled", dim_color()),
+        ("duplicate", dim_color()),
+        ("", dim_color()),
+        ("whatever", dim_color()),
+    ];
+    for (kind, color) in expected {
+        assert_eq!(kind_dot_color(kind), color, "{kind}");
+    }
+    // Rendered tab dots: after the border and one space of padding.
+    let mut d = data(false);
+    d.columns[2].issues.push(issue("TEAM-4", "x"));
+    let o = BoardOverlay::new(BoardLoad::Ready(d));
+    let buf = render_buf(&o, 70, 12);
+    for (name, kind) in [
+        ("Todo", "unstarted"),
+        ("In Progress", "started"),
+        ("Done", "completed"),
+    ] {
+        let x = col_of(&buf, 2, name) - 2;
+        assert_eq!(buf[(x, 2)].symbol(), "●", "{name}");
+        assert_eq!(buf[(x, 2)].fg, kind_dot_color(kind), "{name}");
+    }
+}
+
+#[test]
+fn board_overlay_tab_width_counts_the_dot() {
+    // " ● Todo (2) " is 12 cells; at width 12 the strip fits only Todo and the
+    // scroll arrow appears, at 11 the label itself is cut with an ellipsis.
+    let o = ready(false);
+    let r = rows(&o, 12, 10);
+    assert!(r[2].contains("● Todo (2)"), "{:?}", r[2]);
+    assert!(r[2].ends_with('›'), "{:?}", r[2]);
+    assert_rows_fit(&o, 11, 10);
+}
+
+#[test]
+fn board_overlay_small_areas_fall_back_to_the_frameless_layout() {
+    let _g = PaletteGuard::new();
+    let o = ready(false);
+    // Framed when large enough.
+    assert!(rows(&o, 24, MIN_FRAME_HEIGHT)[0].starts_with('╭'));
+    // Too narrow or too short: no border glyphs, title on row 0.
+    for (w, h) in [
+        (23u16, 12u16),
+        (20, 12),
+        (40, MIN_FRAME_HEIGHT - 1),
+        (40, 6),
+        (40, 3),
+    ] {
+        let r = rows(&o, w, h);
+        assert!(r[0].starts_with("Issue board"), "{w}x{h}: {:?}", r[0]);
+        assert!(
+            !r.iter().any(|l| l.contains(['╭', '╮', '╰', '╯', '│'])),
+            "{w}x{h}: {r:?}"
+        );
+    }
+    // Short-height fallback still shows hints, or the status when present.
+    let r = rows(&o, 40, 3);
+    assert!(r[2].contains("Esc") || r[2].contains('…'), "{:?}", r[2]);
+    let mut o = ready(true);
+    ch(&mut o, 'm');
+    let r = rows(&o, 40, 3);
+    assert!(r[2].contains("read-only"), "{:?}", r[2]);
+}
+
+#[test]
+fn board_overlay_no_row_wraps_or_overflows_at_any_size() {
+    let _g = PaletteGuard::new();
+    let mut long = data(false);
+    long.scope_label = "scope ".repeat(30);
+    long.columns[0].issues[0].title = "日本語のとても長いタイトルです".repeat(6);
+    long.columns[0].issues[1].identifier = "VERYLONGIDENTIFIER-12345".into();
+    let mut overlays = vec![
+        BoardOverlay::new(BoardLoad::Ready(long.clone())),
+        ready(true),
+        BoardOverlay::new(BoardLoad::Error("e ".repeat(60))),
+        BoardOverlay::new(BoardLoad::Loading),
+    ];
+    let mut moving = BoardOverlay::new(BoardLoad::Ready(long));
+    ch(&mut moving, 'm');
+    let mut confirm = ready(false);
+    ch(&mut confirm, 'm');
+    key(&mut confirm, KeyCode::Enter);
+    overlays.push(moving);
+    overlays.push(confirm);
+    for o in &overlays {
+        for w in [20u16, 40, 80] {
+            for h in [1u16, 2, 3, 5, 6, 8, 9, 10, 12, 20, 40] {
+                let r = rows(o, w, h);
+                assert_eq!(r.len(), h as usize);
+                for (y, row) in r.iter().enumerate() {
+                    assert!(!row.contains('\n'), "{w}x{h} row {y}");
+                    assert!(
+                        unicode_width::UnicodeWidthStr::width(row.as_str()) <= w as usize,
+                        "{w}x{h} row {y}: {row:?}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn board_overlay_tab_overflow_markers_are_dim() {
+    let _g = PaletteGuard::new();
+    let mut o = ready(false);
+    ch(&mut o, 'l');
+    ch(&mut o, 'l');
+    let buf = render_buf(&o, 20, 10);
+    assert_eq!(buf[(0, 2)].symbol(), "‹");
+    assert_eq!(buf[(0, 2)].fg, jcode_tui_style::theme::dim_color());
 }

@@ -6,27 +6,69 @@
 //! row is a single visual row truncated by Unicode display-cell width.
 
 use crossterm::event::{KeyCode, KeyModifiers};
-use ratatui::{prelude::*, widgets::Clear};
+use jcode_tui_style::{
+    Role, rgb, role_color,
+    theme::{accent_color, ai_text, dim_color, file_link_color, pending_color, queued_color},
+};
+use ratatui::{
+    prelude::*,
+    widgets::{Block, BorderType, Borders, Clear},
+};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
-
-const PANEL_BG: Color = Color::Rgb(24, 28, 40);
-const ACCENT: Color = Color::Rgb(120, 140, 190);
-const SELECTED_BG: Color = Color::Rgb(38, 42, 56);
-const TARGET_BG: Color = Color::Rgb(60, 78, 120);
-const MUTED: Color = Color::Rgb(140, 146, 163);
-const MUTED_DARK: Color = Color::Rgb(100, 106, 122);
-const WARN: Color = Color::Rgb(230, 190, 90);
-const ERROR: Color = Color::Rgb(230, 110, 110);
-const GOOD: Color = Color::Rgb(130, 200, 140);
 
 /// Row of the state tab strip.
 const TAB_ROW: u16 = 2;
 /// Widest identifier column in the issue table.
 const MAX_ID_CELLS: usize = 14;
 /// Rows used by chrome above the body (title, scope, tabs, table header).
+/// When framed, row 0 is the top border carrying the title.
 const TOP_ROWS: u16 = 4;
-/// Rows used by chrome below the body (status line, hints).
+/// Rows used by chrome below the body (status line, hints). When framed, the
+/// last row is the bottom border carrying the hints.
 const BOTTOM_ROWS: u16 = 2;
+/// Narrower areas skip the border and use the frameless layout.
+const MIN_FRAME_WIDTH: u16 = 24;
+/// Shorter areas skip the border (frame plus at least three body rows).
+const MIN_FRAME_HEIGHT: u16 = TOP_ROWS + BOTTOM_ROWS + 3;
+
+/// A run of text with one style. A row is a list of these.
+type Seg = (String, Style);
+
+fn panel_bg() -> Color {
+    rgb(18, 18, 26)
+}
+
+fn seg(text: impl Into<String>, style: Style) -> Seg {
+    (text.into(), style)
+}
+
+fn dim() -> Style {
+    Style::default().fg(dim_color())
+}
+
+fn accent() -> Style {
+    Style::default().fg(accent_color())
+}
+
+fn selection_bg() -> Color {
+    role_color(Role::SelectionBg)
+}
+
+/// Color of the status-kind dot shown before a state name.
+fn kind_dot_color(kind: &str) -> Color {
+    match kind {
+        "triage" => pending_color(),
+        "unstarted" => role_color(Role::Info),
+        "started" => queued_color(),
+        "completed" => role_color(Role::Success),
+        // backlog, canceled, cancelled, duplicate and unknown kinds
+        _ => dim_color(),
+    }
+}
+
+fn kind_dot(kind: &str) -> Seg {
+    seg("●", Style::default().fg(kind_dot_color(kind)))
+}
 
 pub const READ_ONLY_NOTICE: &str = "read-only: ADO boards cannot change status";
 
@@ -416,54 +458,98 @@ impl BoardOverlay {
             return;
         }
         Clear.render(area, buf);
-        buf.set_style(area, Style::default().bg(PANEL_BG));
+        buf.set_style(area, Style::default().bg(panel_bg()));
 
-        let h = area.height;
+        let framed = area.width >= MIN_FRAME_WIDTH && area.height >= MIN_FRAME_HEIGHT;
+        // Row numbers below are relative to `content`. Framed, its first and
+        // last rows are the border rows (title and hints); its columns exclude
+        // the side borders plus one padding column on each side. Frameless,
+        // it is the whole area.
+        let content = if framed {
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(role_color(Role::Border)))
+                .style(Style::default().bg(panel_bg()))
+                .render(area, buf);
+            Rect::new(area.x + 2, area.y, area.width - 4, area.height)
+        } else {
+            area
+        };
+
+        let h = content.height;
         let full = h >= TOP_ROWS + BOTTOM_ROWS;
-        put(
-            buf,
-            area,
-            0,
-            &self.title(),
-            Style::default().fg(Color::White).bold(),
-        );
+        if framed {
+            self.render_frame_title(buf, content);
+        } else {
+            put(buf, content, 0, &self.title(), accent().bold());
+        }
 
         if full {
-            self.render_body(buf, area, h - TOP_ROWS - BOTTOM_ROWS);
+            self.render_body(buf, content, h - TOP_ROWS - BOTTOM_ROWS);
         }
         // On terminals too short for the full layout the last row carries the
         // status line when there is one, otherwise the hints.
         let status = self.status_line();
         if full {
             if let Some((text, style)) = &status {
-                put(buf, area, h - 2, text, *style);
+                put(buf, content, h - 2, text, *style);
             }
-            put(
-                buf,
-                area,
-                h - 1,
-                &self.hints(),
-                Style::default().fg(MUTED_DARK),
-            );
+            self.render_hints(buf, content, h - 1, framed);
         } else if h > 1 {
             match &status {
-                Some((text, style)) => put(buf, area, h - 1, text, *style),
-                None => put(
-                    buf,
-                    area,
-                    h - 1,
-                    &self.hints(),
-                    Style::default().fg(MUTED_DARK),
-                ),
+                Some((text, style)) => put(buf, content, h - 1, text, *style),
+                None => self.render_hints(buf, content, h - 1, false),
             }
         }
     }
 
+    /// Frameless title row text.
     fn title(&self) -> String {
         match self.board() {
             Some(d) => format!("Issue board [{}/{}]", self.col + 1, d.columns.len()),
             None => "Issue board".to_string(),
         }
+    }
+
+    /// Title and column position embedded in the top border row.
+    fn render_frame_title(&self, buf: &mut Buffer, content: Rect) {
+        let width = content.width as usize;
+        let title = seg(" ◆ Issue board ", accent().bold());
+        let position = self
+            .board()
+            .map(|d| format!(" {}/{} ", self.col + 1, d.columns.len()));
+        let right_w = position.as_ref().map_or(0, |p| p.width());
+        let right = position.filter(|_| title.0.width() + right_w <= width);
+        let used = title.0.width().min(width);
+        put_segs(buf, content.x, content.y, width, &[title]);
+        if let Some(p) = right {
+            let x = content.x + (width - p.width()) as u16;
+            if (x - content.x) as usize >= used {
+                put_segs(buf, x, content.y, p.width(), &[seg(p, dim())]);
+            }
+        }
+    }
+
+    fn render_hints(&self, buf: &mut Buffer, content: Rect, y: u16, framed: bool) {
+        let mut segs: Vec<Seg> = Vec::new();
+        if framed {
+            segs.push(seg(" ", Style::default()));
+        }
+        for (i, (key, label)) in self.hints().iter().enumerate() {
+            if i > 0 {
+                segs.push(seg(" · ", dim()));
+            }
+            if !key.is_empty() {
+                segs.push(seg(*key, accent().bold()));
+                segs.push(seg(" ", dim()));
+            }
+            segs.push(seg(*label, dim()));
+        }
+        if framed {
+            segs.push(seg(" ", Style::default()));
+        }
+        put_segs(buf, content.x, content.y + y, content.width as usize, &segs);
     }
 
     fn status_line(&self) -> Option<(String, Style)> {
@@ -477,73 +563,86 @@ impl BoardOverlay {
                     clean(&data.columns[p.from].name),
                     clean(&data.columns[p.to].name)
                 );
-                Some((text, Style::default().fg(WARN).bold()))
+                Some((text, Style::default().fg(role_color(Role::Warning)).bold()))
             }
             Mode::Moving(p) => {
                 let data = self.board()?;
                 let text = format!("Move to: {}", clean(&data.columns.get(p.to)?.name));
-                Some((text, Style::default().fg(ACCENT)))
+                Some((text, accent()))
             }
             Mode::Browse => match (&self.in_flight, &self.notice) {
                 (_, Some(n)) => {
-                    let color = if self.notice_ok { GOOD } else { WARN };
-                    Some((clean(n), Style::default().fg(color)))
+                    let role = if self.notice_ok {
+                        Role::Success
+                    } else {
+                        Role::Warning
+                    };
+                    Some((clean(n), Style::default().fg(role_color(role))))
                 }
                 (Some(f), None) => Some((
                     format!("Moving {} to {}…", clean(&f.identifier), clean(&f.to_name)),
-                    Style::default().fg(ACCENT),
+                    accent(),
                 )),
                 (None, None) => None,
             },
         }
     }
 
-    fn hints(&self) -> String {
+    /// `(key, label)` pairs; an empty key is a plain label.
+    fn hints(&self) -> Vec<(&'static str, &'static str)> {
         match self.mode {
-            Mode::Confirm(_) => "y confirm  n cancel".to_string(),
-            Mode::Moving(_) => "Up/Down choose status  Enter select  Esc cancel".to_string(),
+            Mode::Confirm(_) => vec![("y", "confirm"), ("n", "cancel")],
+            Mode::Moving(_) => vec![
+                ("↑↓", "choose status"),
+                ("Enter", "select"),
+                ("Esc", "cancel"),
+            ],
             Mode::Browse => match self.board() {
-                Some(d) if d.read_only => {
-                    "Arrows move  r refresh  read-only  Esc close".to_string()
-                }
-                Some(_) => "Arrows move  m move  r refresh  Esc close".to_string(),
-                None => "r refresh  Esc close".to_string(),
+                Some(d) if d.read_only => vec![
+                    ("←→", "state"),
+                    ("↑↓", "move"),
+                    ("r", "refresh"),
+                    ("", "read-only"),
+                    ("Esc", "close"),
+                ],
+                Some(_) => vec![
+                    ("←→", "state"),
+                    ("↑↓", "move"),
+                    ("m", "move status"),
+                    ("r", "refresh"),
+                    ("Esc", "close"),
+                ],
+                None => vec![("r", "refresh"), ("Esc", "close")],
             },
         }
     }
 
     fn render_body(&self, buf: &mut Buffer, area: Rect, body_h: u16) {
         // Rows 1 (scope) and 2 (tabs / state message).
-        let (message, style) = match &self.load {
-            BoardLoad::Loading => (Some("Loading issue board...".to_string()), MUTED),
-            BoardLoad::Empty => (Some("No issues on this board".to_string()), MUTED),
-            BoardLoad::Unavailable(r) => (Some(format!("Board unavailable: {}", clean(r))), WARN),
-            BoardLoad::Unauthorized(r) => (Some(format!("Not authorized: {}", clean(r))), WARN),
-            BoardLoad::Error(r) => (Some(format!("Board query failed: {}", clean(r))), ERROR),
-            BoardLoad::Ready(d) if !has_issues(d) => {
-                put(
-                    buf,
-                    area,
-                    1,
-                    &clean(&d.scope_label),
-                    Style::default().fg(MUTED),
-                );
-                (Some("No issues on this board".to_string()), MUTED)
+        let warning = role_color(Role::Warning);
+        let (message, color) = match &self.load {
+            BoardLoad::Loading => (Some("Loading issue board...".to_string()), dim_color()),
+            BoardLoad::Empty => (Some("No issues on this board".to_string()), dim_color()),
+            BoardLoad::Unavailable(r) => {
+                (Some(format!("Board unavailable: {}", clean(r))), warning)
             }
-            BoardLoad::Ready(_) => (None, MUTED),
+            BoardLoad::Unauthorized(r) => (Some(format!("Not authorized: {}", clean(r))), warning),
+            BoardLoad::Error(r) => (
+                Some(format!("Board query failed: {}", clean(r))),
+                role_color(Role::Error),
+            ),
+            BoardLoad::Ready(d) if !has_issues(d) => {
+                put(buf, area, 1, &clean(&d.scope_label), dim());
+                (Some("No issues on this board".to_string()), dim_color())
+            }
+            BoardLoad::Ready(_) => (None, dim_color()),
         };
         if let Some(text) = message {
-            put(buf, area, 2, &text, Style::default().fg(style));
+            put(buf, area, 2, &text, Style::default().fg(color));
             return;
         }
         let Some(data) = self.board() else { return };
-        put(
-            buf,
-            area,
-            1,
-            &clean(&data.scope_label),
-            Style::default().fg(MUTED),
-        );
+        put(buf, area, 1, &clean(&data.scope_label), dim());
 
         if let Mode::Moving(p) | Mode::Confirm(p) = self.mode {
             render_picker(buf, area, data, p, body_h);
@@ -562,21 +661,9 @@ impl BoardOverlay {
             .unwrap_or(0)
             .clamp(2, MAX_ID_CELLS);
         let header = format!("  {}  TITLE", pad_cells("ID", id_w));
-        put_filled(
-            buf,
-            area,
-            TAB_ROW + 1,
-            &header,
-            Style::default().fg(MUTED_DARK),
-        );
+        put_filled(buf, area, TAB_ROW + 1, &header, dim());
         if column.issues.is_empty() {
-            put(
-                buf,
-                area,
-                TOP_ROWS,
-                "No issues in this state",
-                Style::default().fg(MUTED),
-            );
+            put(buf, area, TOP_ROWS, "No issues in this state", dim());
             return;
         }
         let top = (self.row + 1).saturating_sub(body_h as usize);
@@ -589,68 +676,75 @@ impl BoardOverlay {
         {
             let y = TOP_ROWS + (i - top) as u16;
             let selected = i == self.row;
-            let marker = if selected { "> " } else { "  " };
-            let text = format!(
-                "{marker}{}  {}",
-                pad_cells(&truncate_cells(&clean(&issue.identifier), id_w), id_w),
-                clean(&issue.title)
-            );
-            let style = if selected {
-                Style::default().fg(Color::White).bg(SELECTED_BG)
-            } else {
-                Style::default().fg(MUTED)
-            };
-            put_filled(buf, area, y, &text, style);
+            let segs = [
+                if selected {
+                    seg("▸ ", accent())
+                } else {
+                    seg("  ", Style::default())
+                },
+                seg(
+                    pad_cells(&truncate_cells(&clean(&issue.identifier), id_w), id_w),
+                    Style::default().fg(file_link_color()),
+                ),
+                seg("  ", Style::default()),
+                seg(clean(&issue.title), Style::default().fg(ai_text())),
+            ];
+            let fill = selected.then(|| Style::default().bg(selection_bg()));
+            put_row(buf, area, y, &segs, fill);
         }
     }
 
-    /// One row of state tabs, each `Name (count)`. The strip scrolls so the
+    /// One row of state tabs, each `● Name (count)`. The strip scrolls so the
     /// selected tab is always visible; `‹`/`›` mark hidden tabs.
     fn render_tabs(&self, buf: &mut Buffer, area: Rect, data: &BoardData) {
         let width = area.width as usize;
-        let labels: Vec<String> = data
+        let tabs: Vec<Vec<Seg>> = data
             .columns
             .iter()
-            .map(|c| format!(" {} ({}) ", clean(&c.name), c.issues.len()))
+            .enumerate()
+            .map(|(idx, c)| tab_segs(c, idx == self.col))
             .collect();
-        let widths: Vec<usize> = labels.iter().map(|l| l.width()).collect();
+        let widths: Vec<usize> = tabs.iter().map(|t| segs_width(t)).collect();
         // First tab to draw: the earliest start from which the selected tab
         // still fits within the width.
         let mut start = 0;
         while start < self.col && widths[start..=self.col].iter().sum::<usize>() > width {
             start += 1;
         }
+        let y = area.y + TAB_ROW;
         let mut x = 0usize;
-        for (idx, label) in labels.iter().enumerate().skip(start) {
+        for tab in tabs.iter().skip(start) {
             if x >= width {
                 break;
             }
-            let mut style = Style::default().fg(MUTED);
-            if data.columns[idx].issues.is_empty() {
-                style = Style::default().fg(MUTED_DARK);
-            }
-            if idx == self.col {
-                style = Style::default().fg(ACCENT).bg(SELECTED_BG).bold();
-            }
-            let cell = Rect::new(area.x + x as u16, area.y, (width - x) as u16, area.height);
-            let text = truncate_cells(label, width - x);
-            let drawn = text.width();
-            buf.set_stringn(cell.x, cell.y + TAB_ROW, &text, cell.width as usize, style);
-            x += drawn;
+            x += put_segs(buf, area.x + x as u16, y, width - x, tab);
         }
         if start > 0 {
-            buf.set_stringn(area.x, area.y + TAB_ROW, "‹", 1, Style::default().fg(WARN));
+            buf.set_stringn(area.x, y, "‹", 1, dim());
         }
-        if x >= width && start + 1 < labels.len() && widths[start..].iter().sum::<usize>() > width {
-            buf.set_stringn(
-                area.x + area.width - 1,
-                area.y + TAB_ROW,
-                "›",
-                1,
-                Style::default().fg(WARN),
-            );
+        if x >= width && start + 1 < tabs.len() && widths[start..].iter().sum::<usize>() > width {
+            buf.set_stringn(area.x + area.width - 1, y, "›", 1, dim());
         }
     }
+}
+
+/// One tab label: ` ● Name (count) `. Only the name is highlighted when
+/// selected, so the dot keeps the status-kind color.
+fn tab_segs(column: &BoardColumn, selected: bool) -> Vec<Seg> {
+    let name_style = if selected {
+        accent().bold().underlined()
+    } else if column.issues.is_empty() {
+        dim()
+    } else {
+        Style::default().fg(ai_text())
+    };
+    vec![
+        seg(" ", Style::default()),
+        kind_dot(&column.kind),
+        seg(" ", Style::default()),
+        seg(clean(&column.name), name_style),
+        seg(format!(" ({}) ", column.issues.len()), dim()),
+    ]
 }
 
 fn has_issues(data: &BoardData) -> bool {
@@ -696,17 +790,19 @@ fn picker_order(data: &BoardData) -> Vec<usize> {
 /// issue's current status shown dim. Replaces the tab strip and table.
 fn render_picker(buf: &mut Buffer, area: Rect, data: &BoardData, p: PendingMove, body_h: u16) {
     let issue = data.columns.get(p.from).and_then(|c| c.issues.get(p.issue));
+    let head_style = Style::default().fg(ai_text()).bold();
     let head = match issue {
-        Some(i) => format!("Move {}  {}", clean(&i.identifier), clean(&i.title)),
-        None => "Move issue".to_string(),
+        Some(i) => vec![
+            seg("Move ", head_style),
+            seg(
+                clean(&i.identifier),
+                Style::default().fg(file_link_color()).bold(),
+            ),
+            seg(format!("  {}", clean(&i.title)), head_style),
+        ],
+        None => vec![seg("Move issue", head_style)],
     };
-    put_filled(
-        buf,
-        area,
-        2,
-        &head,
-        Style::default().fg(Color::White).bold(),
-    );
+    put_row(buf, area, 2, &head, Some(Style::default()));
     enum Line {
         Group(&'static str),
         Status(usize),
@@ -726,35 +822,44 @@ fn render_picker(buf: &mut Buffer, area: Rect, data: &BoardData, p: PendingMove,
         .position(|l| matches!(l, Line::Status(i) if *i == p.to))
         .unwrap_or(0);
     let top = (selected + 1).saturating_sub(body_h as usize);
+    let plain = Style::default();
     for (n, line) in lines.iter().enumerate().skip(top).take(body_h as usize) {
         let y = TOP_ROWS - 1 + (n - top) as u16;
         match line {
-            Line::Group(label) => put(
-                buf,
-                area,
-                y,
-                &label.to_uppercase(),
-                Style::default().fg(MUTED_DARK),
-            ),
+            Line::Group(label) => put(buf, area, y, &label.to_uppercase(), dim()),
             Line::Status(idx) => {
                 let column = &data.columns[*idx];
                 let name = clean(&column.name);
                 let count = column.issues.len();
+                let dot = kind_dot(&column.kind);
                 if *idx == p.from {
-                    let text = format!("    {name} ({count})  current");
-                    put(buf, area, y, &text, Style::default().fg(MUTED_DARK));
+                    let segs = [
+                        seg("    ", plain),
+                        dot,
+                        seg(format!(" {name} ({count})  current"), dim()),
+                    ];
+                    put_row(buf, area, y, &segs, None);
                 } else if *idx == p.to {
-                    let text = format!("  > {name} ({count})");
-                    put_filled(
-                        buf,
-                        area,
-                        y,
-                        &text,
-                        Style::default().fg(Color::White).bg(TARGET_BG).bold(),
-                    );
+                    let segs = [
+                        seg("  ", plain),
+                        seg("▸", accent()),
+                        seg(" ", plain),
+                        dot,
+                        seg(" ", plain),
+                        seg(name, accent().bold()),
+                        seg(format!(" ({count})"), Style::default().fg(ai_text())),
+                    ];
+                    let fill = Style::default().bg(selection_bg());
+                    put_row(buf, area, y, &segs, Some(fill));
                 } else {
-                    let text = format!("    {name} ({count})");
-                    put(buf, area, y, &text, Style::default().fg(MUTED));
+                    let segs = [
+                        seg("    ", plain),
+                        dot,
+                        seg(" ", plain),
+                        seg(name, Style::default().fg(ai_text())),
+                        seg(format!(" ({count})"), dim()),
+                    ];
+                    put_row(buf, area, y, &segs, None);
                 }
             }
         }
@@ -796,22 +901,66 @@ fn pad_cells(text: &str, width: usize) -> String {
     format!("{text}{}", " ".repeat(width.saturating_sub(used)))
 }
 
-/// Draw one truncated row at `y` within `area`.
-fn put(buf: &mut Buffer, area: Rect, y: u16, text: &str, style: Style) {
-    if y >= area.height {
+fn segs_width(segs: &[Seg]) -> usize {
+    segs.iter().map(|(t, _)| t.width()).sum()
+}
+
+/// Draw styled runs at `(x, y)` within `width` cells. When the runs do not
+/// fit, the tail is cut and replaced by `…` in the style of the last run
+/// drawn. Returns the cells used.
+fn put_segs(buf: &mut Buffer, x: u16, y: u16, width: usize, segs: &[Seg]) -> usize {
+    if width == 0 {
+        return 0;
+    }
+    let cut = segs_width(segs) > width;
+    let limit = if cut { width - 1 } else { width };
+    let mut used = 0;
+    let mut last_style = Style::default();
+    for (text, style) in segs {
+        if used >= limit {
+            break;
+        }
+        let mut part = String::new();
+        let mut part_w = 0;
+        for ch in text.chars() {
+            let w = ch.width().unwrap_or(0);
+            if used + part_w + w > limit {
+                break;
+            }
+            part_w += w;
+            part.push(ch);
+        }
+        buf.set_stringn(x + used as u16, y, &part, part_w, *style);
+        used += part_w;
+        last_style = *style;
+    }
+    if cut {
+        buf.set_stringn(x + used as u16, y, "…", 1, last_style);
+        used += 1;
+    }
+    used
+}
+
+/// Draw one row of styled runs at `y` within `area`, optionally filling the
+/// whole row with `fill` first.
+fn put_row(buf: &mut Buffer, area: Rect, y: u16, segs: &[Seg], fill: Option<Style>) {
+    if y >= area.height || area.width == 0 {
         return;
     }
-    let text = truncate_cells(text, area.width as usize);
-    buf.set_stringn(area.x, area.y + y, &text, area.width as usize, style);
+    if let Some(fill) = fill {
+        buf.set_style(Rect::new(area.x, area.y + y, area.width, 1), fill);
+    }
+    put_segs(buf, area.x, area.y + y, area.width as usize, segs);
+}
+
+/// Draw one truncated row at `y` within `area`.
+fn put(buf: &mut Buffer, area: Rect, y: u16, text: &str, style: Style) {
+    put_row(buf, area, y, &[seg(text, style)], None);
 }
 
 /// Like [`put`], but also paints the background across the whole cell width.
 fn put_filled(buf: &mut Buffer, area: Rect, y: u16, text: &str, style: Style) {
-    if y >= area.height || area.width == 0 {
-        return;
-    }
-    buf.set_style(Rect::new(area.x, area.y + y, area.width, 1), style);
-    put(buf, area, y, text, style);
+    put_row(buf, area, y, &[seg(text, style)], Some(style));
 }
 
 #[cfg(test)]
