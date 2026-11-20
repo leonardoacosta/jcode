@@ -51,6 +51,19 @@ pub fn header_session_color() -> Color {
     crate::palette::role_color(crate::palette::Role::HeaderSession)
 }
 
+/// Readable low-emphasis text (labels, counts, key hints) on the dark overlay
+/// panel `bg`.
+///
+/// `dim_color()` is a separator shade: about 2.3:1 on a dark panel, too faint
+/// for text a user must read. This blends the *active* palette's text color
+/// toward `bg` (about 5:1 on `rgb(18, 18, 26)`). It reads the active palette
+/// rather than the role default because the per-frame override remap only
+/// matches exact role defaults, which a blended shade never is.
+pub fn secondary_text(bg: Color) -> Color {
+    let text = crate::palette::palette().color(crate::palette::Role::AiText);
+    blend_color(bg, text, 0.6)
+}
+
 /// Success / additions accent.
 pub fn success_color() -> Color {
     crate::palette::role_color(crate::palette::Role::Success)
@@ -268,6 +281,32 @@ pub fn animated_tool_color(elapsed: f32, enable_decorative_animations: bool) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn luminance(c: Color) -> f64 {
+        let (r, g, b) = color_to_floats(c, (0.0, 0.0, 0.0));
+        let lin = |v: f32| {
+            let v = f64::from(v) / 255.0;
+            if v <= 0.03928 {
+                v / 12.92
+            } else {
+                ((v + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+    }
+
+    /// WCAG AA for normal text on the overlay panel, which `dim_color()` fails.
+    #[test]
+    fn secondary_text_is_readable_on_the_overlay_panel() {
+        let bg = Color::Rgb(18, 18, 26);
+        let fg = secondary_text(bg);
+        let (hi, lo) = (luminance(fg), luminance(bg));
+        let ratio = (hi + 0.05) / (lo + 0.05);
+        assert!(
+            ratio >= 4.5,
+            "secondary text contrast {ratio:.2} < 4.5 ({fg:?})"
+        );
+    }
 
     fn default_spinner_child(test: &str) -> bool {
         if std::env::var("JCODE_TEST_DEFAULT_SPINNER_CHILD").as_deref() == Ok(test) {

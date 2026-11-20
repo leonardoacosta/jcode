@@ -8,7 +8,10 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 use jcode_tui_style::{
     Role, rgb, role_color,
-    theme::{accent_color, ai_text, dim_color, file_link_color, pending_color, queued_color},
+    theme::{
+        accent_color, ai_text, dim_color, file_link_color, pending_color, queued_color,
+        secondary_text,
+    },
 };
 use ratatui::{
     prelude::*,
@@ -42,8 +45,9 @@ fn seg(text: impl Into<String>, style: Style) -> Seg {
     (text.into(), style)
 }
 
+/// Readable low-emphasis text: labels, counts, hints, the scope row.
 fn dim() -> Style {
-    Style::default().fg(dim_color())
+    Style::default().fg(secondary_text(panel_bg()))
 }
 
 fn accent() -> Style {
@@ -620,9 +624,10 @@ impl BoardOverlay {
     fn render_body(&self, buf: &mut Buffer, area: Rect, body_h: u16) {
         // Rows 1 (scope) and 2 (tabs / state message).
         let warning = role_color(Role::Warning);
+        let muted = secondary_text(panel_bg());
         let (message, color) = match &self.load {
-            BoardLoad::Loading => (Some("Loading issue board...".to_string()), dim_color()),
-            BoardLoad::Empty => (Some("No issues on this board".to_string()), dim_color()),
+            BoardLoad::Loading => (Some("Loading issue board...".to_string()), muted),
+            BoardLoad::Empty => (Some("No issues on this board".to_string()), muted),
             BoardLoad::Unavailable(r) => {
                 (Some(format!("Board unavailable: {}", clean(r))), warning)
             }
@@ -633,9 +638,9 @@ impl BoardOverlay {
             ),
             BoardLoad::Ready(d) if !has_issues(d) => {
                 put(buf, area, 1, &clean(&d.scope_label), dim());
-                (Some("No issues on this board".to_string()), dim_color())
+                (Some("No issues on this board".to_string()), muted)
             }
-            BoardLoad::Ready(_) => (None, dim_color()),
+            BoardLoad::Ready(_) => (None, muted),
         };
         if let Some(text) = message {
             put(buf, area, 2, &text, Style::default().fg(color));

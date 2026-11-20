@@ -3,6 +3,11 @@ use ratatui::{Terminal, backend::TestBackend};
 
 const NO: KeyModifiers = KeyModifiers::NONE;
 
+/// Readable low-emphasis text color on the board panel.
+fn secondary() -> Color {
+    jcode_tui_style::theme::secondary_text(panel_bg())
+}
+
 fn issue(id: &str, title: &str) -> BoardIssue {
     BoardIssue {
         id: format!("id-{id}"),
@@ -914,7 +919,7 @@ fn board_overlay_frame_uses_the_border_role_and_embeds_title_and_hints() {
     let key = &buf[(col_of(&buf, 11, "↑↓"), 11)];
     assert_eq!(key.fg, jcode_tui_style::theme::accent_color());
     let label = &buf[(col_of(&buf, 11, "move status"), 11)];
-    assert_eq!(label.fg, jcode_tui_style::theme::dim_color());
+    assert_eq!(label.fg, secondary());
 }
 
 #[test]
@@ -974,7 +979,7 @@ fn board_overlay_move_target_row_uses_accent_and_selection_fill() {
         .expect("group header");
     assert_eq!(
         buf[(col_of(&buf, group, "UNSTARTED"), group)].fg,
-        jcode_tui_style::theme::dim_color()
+        secondary()
     );
     let r = rows(&o, 60, 16);
     assert!(r.iter().any(|l| l.contains("Todo (2)  current")), "{r:#?}");
@@ -1133,5 +1138,5 @@ fn board_overlay_tab_overflow_markers_are_dim() {
     ch(&mut o, 'l');
     let buf = render_buf(&o, 20, 10);
     assert_eq!(buf[(0, 2)].symbol(), "‹");
-    assert_eq!(buf[(0, 2)].fg, jcode_tui_style::theme::dim_color());
+    assert_eq!(buf[(0, 2)].fg, secondary());
 }
