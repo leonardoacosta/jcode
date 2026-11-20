@@ -21,18 +21,25 @@ pub use jcode_overnight_core::{
     ResourceSnapshot, StopSettlement, UsageLimitSnapshot, UsageProjection, UsageProviderSnapshot,
     build_continuation_prompt, build_coordinator_prompt, build_final_wrapup_prompt,
     build_handoff_ready_prompt, build_morning_report_prompt, build_post_wake_continuation_prompt,
-    build_progress_card_from_parts, build_review_html, build_visible_current_session_prompt,
-    event_class, format_log_markdown_from_events, format_minutes,
-    format_status_markdown_from_summary, format_status_markdown_with_stale, git_summary,
-    html_escape, overnight_usage, parse_duration, parse_overnight_command, preflight_summary,
-    prompt_event_summary, render_task_cards_html, resource_summary, summarize_task_cards_slice,
-    task_card_title, task_card_validated, task_status_bucket,
+    build_progress_card_from_parts, build_review_html, build_signal_prompt,
+    build_visible_current_session_prompt, event_class, format_log_markdown_from_events,
+    format_minutes, format_status_markdown_from_summary, format_status_markdown_with_stale,
+    git_summary, html_escape, overnight_usage, parse_duration, parse_overnight_command,
+    preflight_summary, prompt_event_summary, render_task_cards_html, resource_summary,
+    summarize_task_cards_slice, task_card_title, task_card_validated, task_status_bucket,
 };
+
+use admission_gate::{
+    SignalWatch, Step, StepFlags, Wait, active_cards, block_on_reasons, block_run,
+    decide_and_record, next_boundary, next_step, route_auth_block,
+};
+use jcode_overnight_core::AdmissionVerdict;
 
 const RESOURCE_SAMPLE_INTERVAL: Duration = Duration::from_secs(5 * 60);
 const LONG_TURN_NOTICE_INTERVAL: Duration = Duration::from_secs(30 * 60);
 
 mod admission;
+mod admission_gate;
 mod enforce;
 mod usage;
 pub use admission::{
@@ -117,6 +124,18 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
         && let Some(reason) = visible_mode_limit_rejection(&options.limits)
     {
         anyhow::bail!(reason);
+    }
+    if options.use_current_session
+        && let Some(reasons) = route_auth_block(
+            options.provider.name(),
+            options.parent_session.provider_key.as_deref(),
+            options.parent_session.route_api_method.as_deref(),
+        )
+    {
+        anyhow::bail!(
+            "Overnight blocked: selected provider route has no usable auth. {}",
+            reasons.join("; ")
+        );
     }
     let run_id = crate::id::new_id("overnight");
     let started_at = Utc::now();
@@ -338,6 +357,19 @@ async fn run_supervisor(
     if manifest.task_admission.is_some() {
         ensure_task_dispatch(&manifest, &crate::config::Config::load_strict()?.tasks)?;
     }
+    // Only the explicitly selected route is checked: no other account is
+    // probed and no route is substituted.
+    // A cancel requested at launch wins over a preflight block.
+    if let Some(cause) = enforce::pending_stop(&load_manifest(&manifest.run_id)?, None) {
+        return enforce::stop_until_settled(&load_manifest(&manifest.run_id)?, cause).await;
+    }
+    if let Some(reasons) = route_auth_block(
+        provider.name(),
+        child.provider_key.as_deref(),
+        child.route_api_method.as_deref(),
+    ) {
+        return block_on_reasons(&manifest, &reasons).await;
+    }
     record_event(
         &manifest,
         "preflight_started",
@@ -362,10 +394,14 @@ async fn run_supervisor(
 
     let _usage_run = usage::register_run(&manifest);
     let mut agent = Agent::new_with_session(provider, registry, child, None);
+    let mut watch = SignalWatch::new(&manifest.coordinator_session_id);
+    let mut seen_cards: Option<String> = None;
+    let mut last_waiting = false;
     let mut next_prompt = build_coordinator_prompt(&manifest, &preflight);
-    let mut handoff_notice_sent = false;
-    let mut morning_report_prompt_sent = false;
-    let mut final_wrapup_prompt_sent = false;
+    let mut flags = StepFlags::default();
+    let mut first_turn = true;
+    let mut boundary: Option<&'static str> = None;
+    let mut pending_signal: Option<String> = None;
 
     loop {
         let current = load_manifest(&manifest.run_id)?;
@@ -375,24 +411,12 @@ async fn run_supervisor(
             enforce::stop_until_settled(&current, cause).await?;
             break;
         }
-        if current.task_admission.is_some() {
-            // A file/snapshot is not an attempt reservation or a spend enforcer.
-            // Keep this path closed until the evidence-aware executor owns both.
-            // Token/time limits below only stop a run; they never authorize it.
-            let policy = crate::config::Config::load_strict()?.tasks;
-            let decision = revalidate_task_admission(&current, &policy).expect("snapshot checked");
-            record_event(
-                &current,
-                "task_admission",
-                decision.reasons.join("; "),
-                serde_json::to_value(&decision)?,
-                true,
-            )?;
-            ensure_task_dispatch(&current, &policy)?;
-        }
 
         let now = Utc::now();
-        if !handoff_notice_sent && now >= current.handoff_ready_at && now < current.target_wake_at {
+        if !flags.handoff_notice_sent
+            && now >= current.handoff_ready_at
+            && now < current.target_wake_at
+        {
             record_event(
                 &current,
                 "handoff_ready_notice",
@@ -401,8 +425,63 @@ async fn run_supervisor(
                 true,
             )?;
             next_prompt = build_handoff_ready_prompt(&current);
-            handoff_notice_sent = true;
+            flags.handoff_notice_sent = true;
+            boundary = Some("handoff_ready");
         }
+
+        // Admission: every turn needs recorded evidence. Task policy is
+        // revalidated deterministically on every pass, signal or not.
+        let drained = watch.drain(agent.soft_interrupt_count());
+        let signal = pending_signal.take().or(drained);
+        let (decision, _digest) = decide_and_record(
+            &current,
+            first_turn,
+            boundary,
+            signal.as_deref(),
+            seen_cards.as_deref(),
+            last_waiting,
+        )?;
+        last_waiting = decision.verdict == AdmissionVerdict::Waiting;
+        match decision.verdict {
+            AdmissionVerdict::Blocked => {
+                // `record_decision` above already logged the blocked verdict.
+                block_run(&current, &[decision.reason]).await?;
+                break;
+            }
+            AdmissionVerdict::Waiting => {
+                match watch
+                    .wait(&agent, &current, next_boundary(&current, &flags, now))
+                    .await
+                {
+                    // Stop and rescan fall through to the loop top, which
+                    // re-checks stops and re-scans durable state.
+                    Wait::Stop | Wait::Rescan => {}
+                    Wait::Signal(signal) => pending_signal = Some(signal),
+                    Wait::Boundary => {
+                        match next_step(&load_manifest(&manifest.run_id)?, &mut flags).await? {
+                            Step::Done => break,
+                            Step::Prompt(prompt, due) => {
+                                next_prompt = prompt;
+                                boundary = due;
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
+            AdmissionVerdict::Admitted => {}
+        }
+        if let (Some(signal), None, false) = (signal.as_deref(), boundary, first_turn) {
+            next_prompt = build_signal_prompt(signal, &current);
+        }
+        if current.task_admission.is_some() {
+            // A file/snapshot is not an attempt reservation or a spend enforcer.
+            // Keep this path closed until the evidence-aware executor owns both.
+            // Token/time limits below only stop a run; they never authorize it.
+            let policy = crate::config::Config::load_strict()?.tasks;
+            ensure_task_dispatch(&current, &policy)?;
+        }
+        first_turn = false;
 
         record_event(
             &current,
@@ -431,72 +510,34 @@ async fn run_supervisor(
         render_review_html(&after_turn)?;
 
         let after_turn = load_manifest(&manifest.run_id)?;
+        // Cards as the turn left them are the baseline: only a later change is
+        // new evidence, so a still-running card never re-admits a turn.
+        seen_cards = Some(active_cards(&after_turn).1);
         if let Some(cause) = enforce::pending_stop(&after_turn, None) {
             enforce::stop_until_settled(&after_turn, cause).await?;
             break;
         }
-
-        let now = Utc::now();
-        if now >= after_turn.target_wake_at {
-            if !morning_report_prompt_sent && after_turn.morning_report_posted_at.is_none() {
-                let mut updated = after_turn.clone();
-                updated.morning_report_posted_at = Some(now);
-                save_manifest(&updated)?;
-                record_event(
-                    &updated,
-                    "morning_report_requested",
-                    "Target wake time reached; requesting morning report".to_string(),
-                    json!({ "target_wake_at": updated.target_wake_at }),
-                    true,
-                )?;
-                next_prompt = build_morning_report_prompt(&updated);
-                morning_report_prompt_sent = true;
-                continue;
+        match next_step(&after_turn, &mut flags).await? {
+            Step::Done => break,
+            Step::Prompt(prompt, due) => {
+                next_prompt = prompt;
+                boundary = due;
             }
-
-            if now < after_turn.post_wake_grace_until {
-                record_event(
-                    &after_turn,
-                    "post_wake_continuation",
-                    "Morning report is posted; allowing bounded post-wake continuation".to_string(),
-                    json!({ "post_wake_grace_until": after_turn.post_wake_grace_until }),
-                    true,
-                )?;
-                next_prompt = build_post_wake_continuation_prompt(&after_turn);
-                continue;
-            }
-
-            if !final_wrapup_prompt_sent {
-                record_event(
-                    &after_turn,
-                    "post_wake_grace_expired",
-                    "Post-wake grace window expired; requesting final wrap-up".to_string(),
-                    json!({ "post_wake_grace_until": after_turn.post_wake_grace_until }),
-                    true,
-                )?;
-                next_prompt = build_final_wrapup_prompt(&after_turn);
-                final_wrapup_prompt_sent = true;
-                continue;
-            }
-
-            mark_completed(
-                &after_turn,
-                OvernightRunStatus::Completed,
-                "Morning report turn completed",
-            )
-            .await?;
-            break;
         }
-
-        next_prompt = build_continuation_prompt(&after_turn);
     }
 
     Ok(())
 }
 
 async fn gather_preflight(manifest: &OvernightManifest) -> OvernightPreflight {
-    let usage_reports = crate::usage::fetch_all_provider_usage().await;
-    let usage = build_usage_projection(&usage_reports, manifest);
+    // Admission inspects only the selected route's auth. Querying every
+    // connected provider's usage would probe unrelated accounts, so the
+    // preflight carries no all-provider usage fetch.
+    let mut usage = build_usage_projection(&[], manifest);
+    usage.notes.push(
+        "Usage was not queried at preflight: only the selected route is inspected, never other accounts."
+            .to_string(),
+    );
     let resources = gather_resource_snapshot(manifest.working_dir.as_deref().map(Path::new));
     let git = gather_git_snapshot(manifest.working_dir.as_deref().map(Path::new));
     OvernightPreflight {
@@ -576,7 +617,7 @@ fn build_usage_projection(
     } else {
         notes.push("Projection uses provider usage percentages plus a conservative overnight burn-rate heuristic.".to_string());
     }
-    notes.push("This is a warning only; the run starts regardless and should adapt concurrency conservatively.".to_string());
+    notes.push("Usage is advisory evidence only: it never authorizes dispatch. Admission is decided by the selected route's auth and the deterministic task policy.".to_string());
 
     UsageProjection {
         captured_at: Utc::now(),

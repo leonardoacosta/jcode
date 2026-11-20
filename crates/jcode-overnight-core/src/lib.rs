@@ -5,6 +5,8 @@ use std::path::PathBuf;
 
 pub const OVERNIGHT_VERSION: u32 = 1;
 
+mod admission;
+pub use admission::{AdmissionEvent, AdmissionInput, AdmissionVerdict, TaskGate, decide_admission};
 mod limits;
 pub use limits::{
     DEFAULT_MAX_AGENTS, LimitBreach, LimitKind, OvernightLimits, RunTokenUsage, StopSettlement,
@@ -1032,7 +1034,7 @@ mod prompts;
 pub use prompts::{
     build_continuation_prompt, build_coordinator_prompt, build_final_wrapup_prompt,
     build_handoff_ready_prompt, build_morning_report_prompt, build_post_wake_continuation_prompt,
-    build_visible_current_session_prompt, prompt_event_summary,
+    build_signal_prompt, build_visible_current_session_prompt, prompt_event_summary,
 };
 use prompts::{next_prompt_label, overnight_phase, relative_time, time_relation_to_target};
 

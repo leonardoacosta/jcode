@@ -114,7 +114,7 @@ Operating contract:
 - You own the run. Spawn swarm/helper agents only if the expected value exceeds usage/resource cost. The server enforces these run limits and refuses or stops work beyond them: {limits}. Helpers should implement scoped, verifiable changes with clear file ownership. Do not spawn reviewer, auditor, or verifier agents. Verify helper work yourself.
 - Be aware of RAM/load/battery, especially around compiles, browser automation, indexing, and full test suites. Do not run multiple heavy activities at once unless resources are clearly healthy.
 - Do not wait for the user. If you need user judgment/credentials/taste, record it and switch to another useful task.
-- Continue finding useful verified work until the target wake/report time unless usage/resources make that unreasonable.
+- Work only on eligible, authorized, verifiable tasks. When none remain, say so and end the turn: the supervisor waits for a worker/background completion, a user message or the wake boundary instead of issuing another turn. Do not poll or re-check unchanged state.
 
 Review/log requirements:
 - Keep `{review_notes}` updated as you work.
@@ -132,7 +132,7 @@ Initial steps:
 3. Pick the highest-confidence bounded task.
 4. Prove/reproduce before fixing.
 5. Validate and update review notes.
-6. If done early, repeat discovery and continue.
+6. If done early and no eligible authorized task remains, report that and end the turn.
 "#,
         limits = manifest.limits.summary(),
         run_id = manifest.run_id,
@@ -215,8 +215,15 @@ pub fn build_continuation_prompt(manifest: &OvernightManifest) -> String {
         .num_minutes()
         .max(0) as u32;
     format!(
-        "Overnight continuation: there is about {} remaining until the target wake/report time. If your current task is complete, run another discovery/scoring pass and choose another high-confidence, verifiable task. If you are stuck, record why in `{}` and the relevant task-card JSON, then switch to a smaller bounded task. Update review notes and task cards before continuing.",
+        "Overnight continuation: there is about {} remaining until the target wake/report time. If your current task is complete and another eligible, authorized task remains, continue with it. If none remains, report that and end the turn; do not re-run discovery on unchanged state. If you are stuck, record why in `{}` and the relevant task-card JSON, then switch to a smaller bounded task. Update review notes and task cards before continuing.",
         format_minutes(remaining),
+        manifest.review_notes_path.display()
+    )
+}
+
+pub fn build_signal_prompt(signal: &str, manifest: &OvernightManifest) -> String {
+    format!(
+        "Overnight signal `{signal}` arrived. Handle what it reports, then continue only with eligible, authorized, verifiable tasks. Update `{}` and task-card JSON. If no eligible task remains, say so and end the turn; the supervisor waits for the next signal or the wake boundary.",
         manifest.review_notes_path.display()
     )
 }

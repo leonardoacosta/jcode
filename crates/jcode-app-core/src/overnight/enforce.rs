@@ -22,9 +22,9 @@ use std::collections::{BTreeMap, HashSet};
 use std::sync::LazyLock;
 
 #[cfg(not(test))]
-const STOP_POLL_INTERVAL: Duration = Duration::from_secs(1);
+pub(super) const STOP_POLL_INTERVAL: Duration = Duration::from_secs(1);
 #[cfg(test)]
-const STOP_POLL_INTERVAL: Duration = Duration::from_millis(25);
+pub(super) const STOP_POLL_INTERVAL: Duration = Duration::from_millis(25);
 /// How long an aborted turn may wind down on its own before it is dropped.
 #[cfg(not(test))]
 const TURN_ABORT_GRACE: Duration = Duration::from_secs(5);
@@ -37,13 +37,13 @@ const SETTLE_DEADLINE: Duration = Duration::from_secs(25);
 const SETTLE_DEADLINE: Duration = Duration::from_millis(300);
 
 /// Re-settle attempts after an unresolved stop, and the wait between them.
-const RESETTLE_ATTEMPTS: usize = 5;
+pub(super) const RESETTLE_ATTEMPTS: usize = 5;
 #[cfg(not(test))]
-const RESETTLE_INTERVAL: Duration = Duration::from_secs(60);
+pub(super) const RESETTLE_INTERVAL: Duration = Duration::from_secs(60);
 #[cfg(test)]
-const RESETTLE_INTERVAL: Duration = Duration::from_millis(50);
+pub(super) const RESETTLE_INTERVAL: Duration = Duration::from_millis(50);
 /// Consecutive unreadable-manifest polls before the failure is recorded.
-const UNREADABLE_POLLS_BEFORE_RECORD: u32 = 5;
+pub(super) const UNREADABLE_POLLS_BEFORE_RECORD: u32 = 5;
 /// Real seconds counted per elapsed turn second. Tests compress a "minute" to
 /// one second so a hung turn can be interrupted on the time limit quickly.
 #[cfg(not(test))]
