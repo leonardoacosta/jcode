@@ -212,7 +212,7 @@ pub(super) fn handle_mcp_command(app: &mut App, trimmed: &str) -> bool {
     true
 }
 
-fn start_login(app: &mut App, config: &McpConfig, name: &str) {
+pub(super) fn start_login(app: &mut App, config: &McpConfig, name: &str) {
     let Some(server) = config.servers.get(name) else {
         app.push_display_message(DisplayMessage::error(format!(
             "MCP server '{name}' is not configured."
@@ -240,12 +240,13 @@ fn start_login(app: &mut App, config: &McpConfig, name: &str) {
                 crate::bus::UiActivity::auth(session_id.clone(), message, None::<String>),
             ));
         };
-        let result = crate::mcp::oauth::login(&url, crate::mcp::oauth::BrowserMode::Open, |auth| {
-            publish(format!(
-                "Open this URL to authorize MCP server '{name}':\n{auth}"
-            ));
-        })
-        .await;
+        let result =
+            crate::mcp::oauth::login(&name, &url, crate::mcp::oauth::BrowserMode::Open, |auth| {
+                publish(format!(
+                    "Open this URL to authorize MCP server '{name}':\n{auth}"
+                ));
+            })
+            .await;
         publish(match result {
             Ok(()) => {
                 format!("Logged in to MCP server '{name}'. Reconnect it to use the credentials.")
@@ -253,6 +254,39 @@ fn start_login(app: &mut App, config: &McpConfig, name: &str) {
             Err(error) => format!("MCP login failed for '{name}': {error:#}"),
         });
     });
+}
+
+/// Forget `name`'s stored OAuth credentials only. Other accounts on the same
+/// URL keep theirs.
+pub(super) fn logout(app: &mut App, config: &McpConfig, name: &str) {
+    let url = match config.servers.get(name) {
+        Some(server) => server.url.clone().filter(|_| server.is_remote()),
+        None => {
+            app.push_display_message(DisplayMessage::error(format!(
+                "MCP server '{name}' is not configured."
+            )));
+            return;
+        }
+    };
+    let Some(url) = url else {
+        app.push_display_message(DisplayMessage::error(format!(
+            "MCP server '{name}' uses stdio; it has no OAuth credentials to forget."
+        )));
+        return;
+    };
+    match crate::mcp::oauth::logout(name, &url) {
+        Ok(removed) => app.push_display_message(DisplayMessage::system(format!(
+            "{} for MCP server '{name}'. This does not revoke the token at the provider.",
+            if removed {
+                "Removed local OAuth credentials"
+            } else {
+                "No local OAuth credentials stored"
+            }
+        ))),
+        Err(error) => app.push_display_message(DisplayMessage::error(format!(
+            "MCP logout failed for '{name}': {error:#}"
+        ))),
+    }
 }
 
 #[cfg(test)]

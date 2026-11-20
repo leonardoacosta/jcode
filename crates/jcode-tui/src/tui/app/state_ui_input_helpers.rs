@@ -197,7 +197,10 @@ const REGISTERED_COMMANDS: &[RegisteredCommand] = &[
         "List instruction files loaded into the prompt",
     ),
     RegisteredCommand::public("/mcp", "Show MCP servers; /mcp login <server> for OAuth"),
-    RegisteredCommand::public("/board", "Issue board for this repository's verified world"),
+    RegisteredCommand::public(
+        "/board",
+        "Issue board for this repository's verified world; /board login|logout for its account",
+    ),
     RegisteredCommand::public(
         "/tools",
         "List native and connected MCP tools; /tools [query]",

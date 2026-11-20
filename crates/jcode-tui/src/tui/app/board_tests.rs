@@ -453,6 +453,53 @@ fn board_glue_command_without_a_working_directory_shows_no_board_and_queries_not
 }
 
 #[test]
+fn board_glue_login_and_logout_refuse_without_a_verified_world() {
+    for cmd in ["/board login", "/board logout"] {
+        let mut app = crate::tui::app::tests::create_test_app();
+        app.session.working_dir = None;
+        let before = app.display_messages().len();
+        assert!(handle_board_command(&mut app, cmd));
+        assert!(app.board_overlay.is_none(), "{cmd} opens no board");
+        let text = &app.display_messages()[before..]
+            .iter()
+            .map(|m| m.content.clone())
+            .collect::<String>();
+        assert!(text.contains("No board account"), "{cmd}: {text}");
+        assert!(!text.contains("OAuth login"), "{cmd}: no login started");
+    }
+    let mut app = crate::tui::app::tests::create_test_app();
+    let before = app.display_messages().len();
+    assert!(handle_board_command(&mut app, "/board nope"));
+    assert!(
+        app.display_messages()[before]
+            .content
+            .contains("/board login")
+    );
+}
+
+#[test]
+fn board_glue_unauthorized_leads_with_the_login_hint() {
+    let BoardLoad::Unauthorized(text) = error_to_load(&BoardError::Unauthorized("HTTP 401".into()))
+    else {
+        panic!("unauthorized maps to Unauthorized")
+    };
+    assert!(text.starts_with("run /board login"), "{text}");
+    assert!(text.contains("HTTP 401"), "{text}");
+}
+
+#[test]
+fn board_glue_label_names_a_non_default_account() {
+    let mut s = scope(BoardBackend::Linear);
+    assert!(!label_of(&s, vec![named("PRICE-1", Some("Priceless"))]).contains("via"));
+    s.server = "linear-priceless".into();
+    assert_eq!(
+        label_of(&s, vec![named("PRICE-1", Some("Priceless"))]),
+        "Linear · Priceless (PRICE) · team-wide · via linear-priceless"
+    );
+    assert!(label_of(&s, vec![named("PRICE-1", None)]).ends_with(" · via linear-priceless"));
+}
+
+#[test]
 fn board_glue_confirmed_move_without_a_runtime_never_sticks_on_loading() {
     let mut app = crate::tui::app::tests::create_test_app();
     app.open_board_overlay(BoardLoad::Empty);

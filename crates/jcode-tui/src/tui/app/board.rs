@@ -73,9 +73,22 @@ pub(super) fn handle_board_command(app: &mut App, trimmed: &str) -> bool {
     if !rest.is_empty() && !rest.starts_with(char::is_whitespace) {
         return false;
     }
-    if !rest.trim().is_empty() {
-        app.push_display_message(super::DisplayMessage::error("Usage: /board"));
-        return true;
+    match rest.trim() {
+        "" => {}
+        "login" => {
+            board_account(app, AccountAction::Login);
+            return true;
+        }
+        "logout" => {
+            board_account(app, AccountAction::Logout);
+            return true;
+        }
+        _ => {
+            app.push_display_message(super::DisplayMessage::error(
+                "Usage: /board | /board login | /board logout",
+            ));
+            return true;
+        }
     }
     // No session working directory means no verified repository: no board.
     // The process cwd is never a substitute (a remote session's repository is
@@ -114,6 +127,84 @@ pub(super) fn handle_board_command(app: &mut App, trimmed: &str) -> bool {
         let _ = tx.send(BoardEvent { generation, kind });
     });
     true
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AccountAction {
+    Login,
+    Logout,
+}
+
+/// `/board login|logout`: act on the account of this world's board only, i.e.
+/// the MCP server its binding names. Each world can bind its own server, so
+/// several Linear accounts (one server each) never touch each other.
+fn board_account(app: &mut App, action: AccountAction) {
+    let error = |app: &mut App, text: String| {
+        app.push_display_message(super::DisplayMessage::error(text));
+    };
+    let Some(cwd) = app.session.working_dir.clone().map(PathBuf::from) else {
+        return error(
+            app,
+            "No board account: this session has no working directory, so its world cannot be verified.".into(),
+        );
+    };
+    // Runs on the UI thread: an explicit one-shot command, and resolving is a
+    // few local git reads.
+    let scope = match resolve_board(&cwd) {
+        Ok(scope) => scope,
+        Err(why) => return error(app, format!("No board account: {why}.")),
+    };
+    if scope.backend != crate::board::BoardBackend::Linear {
+        return error(
+            app,
+            format!(
+                "The {} board has no /board login; it uses its own credentials.",
+                scope.backend.label()
+            ),
+        );
+    }
+    let config = crate::mcp::McpConfig::load_for_dir(Some(&cwd));
+    if let Err(load) = check_board_server(&scope, &config) {
+        let why = match load {
+            BoardLoad::Unavailable(why) => why,
+            other => format!("{other:?}"),
+        };
+        return error(app, format!("No board account: {why}."));
+    }
+    let name = scope.server.as_str();
+    let server = &config.servers[name];
+    if !server.is_remote() {
+        return error(
+            app,
+            format!(
+                "Board account '{name}' runs a local command with its own credentials; /board login applies to remote OAuth servers. Set its \"url\" to https://mcp.linear.app/mcp to sign in here."
+            ),
+        );
+    }
+    if server
+        .headers
+        .keys()
+        .any(|key| key.eq_ignore_ascii_case("authorization"))
+    {
+        return error(
+            app,
+            format!(
+                "Board account '{name}' has a static Authorization header, which takes precedence over OAuth. Remove it to use /board login."
+            ),
+        );
+    }
+    // A loaded runtime holds a connection with the old credentials.
+    app.board.runtime = None;
+    match action {
+        AccountAction::Login => {
+            app.push_display_message(super::DisplayMessage::system(format!(
+                "Board account for world '{}': MCP server '{name}'. After signing in, run /board again.",
+                scope.world
+            )));
+            super::commands_mcp::start_login(app, &config, name);
+        }
+        AccountAction::Logout => super::commands_mcp::logout(app, &config, name),
+    }
 }
 
 /// The board reads and writes through this MCP server, so a repository must
@@ -225,7 +316,7 @@ pub(super) fn to_board_load(scope: &BoardScope, snapshot: &BoardSnapshot) -> Boa
 /// identifier prefix, shown only when every issue shares it.
 pub(super) fn scope_label(scope: &BoardScope, snapshot: &BoardSnapshot) -> String {
     let Some(name) = snapshot.issues.iter().find_map(|i| i.team_name.clone()) else {
-        return scope.scope_label();
+        return format!("{}{}", scope.scope_label(), account_suffix(scope));
     };
     let mut prefixes = snapshot
         .issues
@@ -243,12 +334,29 @@ pub(super) fn scope_label(scope: &BoardScope, snapshot: &BoardSnapshot) -> Strin
         Some(project) => format!("project {project}"),
         None => "team-wide".to_string(),
     };
-    format!("{} · {team} · {where_}", scope.backend.label())
+    format!(
+        "{} · {team} · {where_}{}",
+        scope.backend.label(),
+        account_suffix(scope)
+    )
+}
+
+/// ` · via <server>` when the board is bound to a non-default MCP server, so
+/// the user can see which account the board reads through.
+fn account_suffix(scope: &BoardScope) -> String {
+    if scope.server == jcode_config_types::DEFAULT_BOARD_SERVER {
+        String::new()
+    } else {
+        format!(" · via {}", scope.server)
+    }
 }
 
 pub(super) fn error_to_load(error: &BoardError) -> BoardLoad {
     match error {
-        BoardError::Unauthorized(text) => BoardLoad::Unauthorized(text.clone()),
+        // The hint leads: the row truncates, and the raw error can be long.
+        BoardError::Unauthorized(text) => {
+            BoardLoad::Unauthorized(format!("run /board login · {text}"))
+        }
         BoardError::Unavailable(text) => BoardLoad::Unavailable(text.clone()),
         BoardError::Provider(text) | BoardError::Uncertain(text) => BoardLoad::Error(text.clone()),
     }
