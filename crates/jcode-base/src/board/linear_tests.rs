@@ -12,6 +12,7 @@ struct Fake {
     calls: Mutex<Vec<(String, String, Value)>>,
     statuses: Mutex<VecDeque<Reply>>,
     issues: Mutex<VecDeque<Reply>>,
+    get: Mutex<VecDeque<Reply>>,
     save: Mutex<VecDeque<Reply>>,
 }
 
@@ -34,6 +35,7 @@ impl McpCaller for Fake {
         let queue = match tool {
             "list_issue_statuses" => &self.statuses,
             "list_issues" => &self.issues,
+            "get_issue" => &self.get,
             "save_issue" => &self.save,
             other => panic!("tool outside the allowlist: {other}"),
         };
@@ -326,10 +328,7 @@ async fn auth_failures_map_to_unauthorized() {
 #[tokio::test]
 async fn save_issue_sends_exactly_id_and_state_after_scope_check() {
     let fake = Arc::new(Fake::default());
-    fake.issues
-        .lock()
-        .unwrap()
-        .push_back(Ok(issues_page(ISSUE_A, None)));
+    fake.get.lock().unwrap().push_back(Ok(ISSUE_A.to_string()));
     fake.statuses
         .lock()
         .unwrap()
@@ -342,7 +341,7 @@ async fn save_issue_sends_exactly_id_and_state_after_scope_check() {
     let calls = fake.calls();
     assert_eq!(
         fake.tools(),
-        ["list_issues", "list_issue_statuses", "save_issue"]
+        ["get_issue", "list_issue_statuses", "save_issue"]
     );
     assert_eq!(calls[2].2, json!({"id":"i-a","state":"s-prog"}));
 }
@@ -370,33 +369,43 @@ fn save_issue_arg_keys_are_exactly_id_and_state() {
 
 #[test]
 fn tool_names_are_the_fixed_allowlist() {
-    let all = [Tool::ListIssueStatuses, Tool::ListIssues, Tool::SaveIssue];
+    let all = [
+        Tool::ListIssueStatuses,
+        Tool::ListIssues,
+        Tool::GetIssue,
+        Tool::SaveIssue,
+    ];
     let names: Vec<_> = all.iter().map(|t| t.name()).collect();
-    assert_eq!(names, ["list_issue_statuses", "list_issues", "save_issue"]);
+    assert_eq!(
+        names,
+        [
+            "list_issue_statuses",
+            "list_issues",
+            "get_issue",
+            "save_issue"
+        ]
+    );
 }
 
 #[tokio::test]
 async fn save_refuses_issue_outside_scope_without_writing() {
     let fake = Arc::new(Fake::default());
-    fake.issues
+    fake.get
         .lock()
         .unwrap()
-        .push_back(Ok(issues_page(ISSUE_OTHER_TEAM, None)));
+        .push_back(Ok(ISSUE_OTHER_TEAM.to_string()));
     let err = provider(&fake)
         .set_issue_state(&scope(), "i-brown", "s-prog")
         .await
         .unwrap_err();
     assert!(matches!(err, BoardError::Provider(_)));
-    assert_eq!(fake.tools(), ["list_issues"]);
+    assert_eq!(fake.tools(), ["get_issue"]);
 }
 
 #[tokio::test]
 async fn write_transport_failure_is_uncertain_and_tool_error_is_provider() {
     let fake = Arc::new(Fake::default());
-    fake.issues
-        .lock()
-        .unwrap()
-        .push_back(Ok(issues_page(ISSUE_A, None)));
+    fake.get.lock().unwrap().push_back(Ok(ISSUE_A.to_string()));
     fake.statuses
         .lock()
         .unwrap()
@@ -412,10 +421,7 @@ async fn write_transport_failure_is_uncertain_and_tool_error_is_provider() {
         Err(BoardError::Uncertain(_))
     ));
     let fake = Arc::new(Fake::default());
-    fake.issues
-        .lock()
-        .unwrap()
-        .push_back(Ok(issues_page(ISSUE_A, None)));
+    fake.get.lock().unwrap().push_back(Ok(ISSUE_A.to_string()));
     fake.statuses
         .lock()
         .unwrap()
@@ -431,10 +437,7 @@ async fn write_transport_failure_is_uncertain_and_tool_error_is_provider() {
         Err(BoardError::Provider(_))
     ));
     let fake = Arc::new(Fake::default());
-    fake.issues
-        .lock()
-        .unwrap()
-        .push_back(Ok(issues_page(ISSUE_A, None)));
+    fake.get.lock().unwrap().push_back(Ok(ISSUE_A.to_string()));
     fake.statuses
         .lock()
         .unwrap()
@@ -454,19 +457,13 @@ async fn write_transport_failure_is_uncertain_and_tool_error_is_provider() {
 #[tokio::test]
 async fn issue_state_reads_live_state_inside_scope_only() {
     let fake = Arc::new(Fake::default());
-    fake.issues
-        .lock()
-        .unwrap()
-        .push_back(Ok(issues_page(ISSUE_A, None)));
+    fake.get.lock().unwrap().push_back(Ok(ISSUE_A.to_string()));
     assert_eq!(
         provider(&fake).issue_state(&scope(), "i-a").await.unwrap(),
         "s-todo"
     );
     let fake = Arc::new(Fake::default());
-    fake.issues
-        .lock()
-        .unwrap()
-        .push_back(Ok(issues_page(ISSUE_A, None)));
+    fake.get.lock().unwrap().push_back(Ok(ISSUE_A.to_string()));
     assert!(
         provider(&fake)
             .issue_state(&scope(), "missing")
@@ -575,10 +572,7 @@ fn unauthorized_status_codes_match_whole_tokens_only() {
 #[tokio::test]
 async fn issue_id_containing_401_is_not_unauthorized_on_write() {
     let fake = Arc::new(Fake::default());
-    fake.issues
-        .lock()
-        .unwrap()
-        .push_back(Ok(issues_page(ISSUE_A, None)));
+    fake.get.lock().unwrap().push_back(Ok(ISSUE_A.to_string()));
     fake.statuses
         .lock()
         .unwrap()
@@ -598,10 +592,7 @@ async fn issue_id_containing_401_is_not_unauthorized_on_write() {
 #[tokio::test]
 async fn set_issue_state_refuses_a_state_outside_the_workflow_without_writing() {
     let fake = Arc::new(Fake::default());
-    fake.issues
-        .lock()
-        .unwrap()
-        .push_back(Ok(issues_page(ISSUE_A, None)));
+    fake.get.lock().unwrap().push_back(Ok(ISSUE_A.to_string()));
     fake.statuses
         .lock()
         .unwrap()
@@ -611,7 +602,7 @@ async fn set_issue_state_refuses_a_state_outside_the_workflow_without_writing() 
         .await
         .unwrap_err();
     assert!(matches!(err, BoardError::Provider(_)), "{err:?}");
-    assert_eq!(fake.tools(), ["list_issues", "list_issue_statuses"]);
+    assert_eq!(fake.tools(), ["get_issue", "list_issue_statuses"]);
 }
 
 /// `McpManagerCaller::call`'s result handling, with a fake `ToolCallResult`.
@@ -801,4 +792,108 @@ async fn a_genuinely_empty_team_is_still_an_empty_board_not_an_error() {
         .unwrap()
         .push_back(Ok(issues_page("", None)));
     assert!(provider(&fake).issues(&scope()).await.unwrap().is_empty());
+}
+
+const REAL_GET_ISSUE: &str = include_str!("fixtures/linear_get_issue.json");
+
+#[tokio::test]
+async fn real_capture_get_issue_resolves_the_live_state_in_one_read() {
+    let fake = Arc::new(Fake::default());
+    fake.get
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_GET_ISSUE.into()));
+    fake.statuses
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_STATUSES.into()));
+    let state = provider(&fake)
+        .issue_state(&real_scope(), "PRICE-60")
+        .await
+        .unwrap();
+    // The issue carries only `status: "Canceled"`; the id comes from the
+    // workflow states.
+    assert_eq!(state, "79437ee2-a24f-4e9b-8893-a3e83b371e6d");
+    assert_eq!(fake.tools(), ["get_issue", "list_issue_statuses"]);
+    assert_eq!(fake.calls()[0].2, json!({"id": "PRICE-60"}));
+}
+
+#[tokio::test]
+async fn get_issue_of_another_team_is_not_returned() {
+    let fake = Arc::new(Fake::default());
+    fake.get
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_GET_ISSUE.into()));
+    let err = provider(&fake)
+        .issue_state(&scope(), "PRICE-60") // binding team-1, issue is another team
+        .await
+        .unwrap_err();
+    assert!(
+        err.to_string().contains("not in the bound board scope"),
+        "{err}"
+    );
+    assert_eq!(fake.tools(), ["get_issue"], "no workflow read, no write");
+}
+
+#[tokio::test]
+async fn get_issue_answering_for_a_different_issue_is_refused() {
+    let fake = Arc::new(Fake::default());
+    fake.get
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_GET_ISSUE.into()));
+    let err = provider(&fake)
+        .issue_state(&real_scope(), "PRICE-1")
+        .await
+        .unwrap_err();
+    assert!(err.to_string().contains("different issue"), "{err}");
+}
+
+#[tokio::test]
+async fn get_issue_in_a_project_outside_the_binding_is_refused() {
+    let fake = Arc::new(Fake::default());
+    fake.get
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_GET_ISSUE.into()));
+    let scope = BoardScope {
+        project: Some("some-other-project".into()),
+        ..real_scope()
+    };
+    let err = provider(&fake)
+        .issue_state(&scope, "PRICE-60")
+        .await
+        .unwrap_err();
+    assert!(
+        err.to_string().contains("not in the bound board scope"),
+        "{err}"
+    );
+}
+
+#[tokio::test]
+async fn a_move_now_costs_get_issue_and_one_status_read_before_the_write() {
+    let fake = Arc::new(Fake::default());
+    fake.get
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_GET_ISSUE.into()));
+    fake.statuses
+        .lock()
+        .unwrap()
+        .push_back(Ok(REAL_STATUSES.into()));
+    fake.save.lock().unwrap().push_back(Ok("{}".into()));
+    provider(&fake)
+        .set_issue_state(
+            &real_scope(),
+            "PRICE-60",
+            "37af9304-9868-4748-bbd6-4216267afb32",
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        fake.tools(),
+        ["get_issue", "list_issue_statuses", "save_issue"],
+        "no list_issues scan on the write path"
+    );
 }

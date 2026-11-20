@@ -1,15 +1,17 @@
 //! Linear over an MCP server, behind a Rust-side allowlist.
 //!
 //! This is the only place that names MCP tools. The provider can call exactly
-//! three tools (`list_issue_statuses`, `list_issues`, `save_issue`); the tool
+//! four tools (`list_issue_statuses`, `list_issues`, `get_issue`,
+//! `save_issue`); only `save_issue` writes. The allowlist limits this board
+//! provider only, not jcode's general MCP access. The tool
 //! name is a private enum, never a caller-supplied string, and `save_issue`
 //! arguments are built from an issue id and a state id only, so a label,
 //! assignee, comment or description cannot be expressed.
 //!
-//! UNVERIFIED: the real Linear MCP response shapes and `save_issue`'s
-//! idempotency contract were not confirmed (no live calls are allowed in this
-//! work). The parser is therefore tolerant about shape but strict about
-//! meaning: anything it cannot read is `BoardError::Provider`, never a partial
+//! Verified against one real capture each of `list_issue_statuses`,
+//! `list_issues`, `get_issue` and `list_teams` (fixtures under `fixtures/`).
+//! UNVERIFIED: `save_issue`'s idempotency contract. The parser is tolerant
+//! about shape but strict about meaning: anything it cannot read is `BoardError::Provider`, never a partial
 //! result. Scope is enforced twice: ids from the binding go into the request,
 //! and every returned issue is re-checked client-side (an issue whose team, or
 //! bound project, is absent or different is dropped), so a connection that can
@@ -91,6 +93,7 @@ fn tool_result_text(result: crate::mcp::ToolCallResult) -> anyhow::Result<String
 enum Tool {
     ListIssueStatuses,
     ListIssues,
+    GetIssue,
     SaveIssue,
 }
 
@@ -99,6 +102,7 @@ impl Tool {
         match self {
             Self::ListIssueStatuses => "list_issue_statuses",
             Self::ListIssues => "list_issues",
+            Self::GetIssue => "get_issue",
             Self::SaveIssue => "save_issue",
         }
     }
@@ -119,6 +123,11 @@ fn list_issues_args(scope: &BoardScope, cursor: Option<&str>) -> Value {
         args.insert("cursor".into(), json!(cursor));
     }
     Value::Object(args)
+}
+
+/// Exactly `{id}`: one issue by identifier. A read, never a write.
+fn get_issue_args(issue_id: &str) -> Value {
+    json!({ "id": issue_id })
 }
 
 /// Exactly `{id, state}`. No other key can be produced.
@@ -206,6 +215,31 @@ impl LinearMcpProvider {
         )))
     }
 
+    /// One issue by id through `get_issue`, then the same scope check a list
+    /// read gets: an issue of another team or project is "not found", never
+    /// returned.
+    async fn scoped_issue(
+        &self,
+        scope: &BoardScope,
+        issue_id: &str,
+    ) -> Result<RawIssue, BoardError> {
+        let text = self
+            .read(scope, Tool::GetIssue, get_issue_args(issue_id))
+            .await?;
+        let issue = parse_single_issue(&text)?;
+        if issue.id != issue_id && issue.identifier != issue_id {
+            return Err(BoardError::Provider(
+                "issue read returned a different issue than requested".into(),
+            ));
+        }
+        if !issue.in_scope(scope)? {
+            return Err(BoardError::Provider(
+                "issue is not in the bound board scope".into(),
+            ));
+        }
+        Ok(issue)
+    }
+
     async fn resolve(
         &self,
         scope: &BoardScope,
@@ -216,6 +250,14 @@ impl LinearMcpProvider {
         } else {
             Vec::new()
         };
+        self.resolve_with(&states, raw)
+    }
+
+    fn resolve_with(
+        &self,
+        states: &[WorkflowState],
+        raw: Vec<RawIssue>,
+    ) -> Result<Vec<BoardIssue>, BoardError> {
         raw.into_iter()
             .map(|issue| {
                 let state_id = match (&issue.state_id, &issue.state_name) {
@@ -263,13 +305,7 @@ impl BoardProvider for LinearMcpProvider {
     }
 
     async fn issue_state(&self, scope: &BoardScope, issue_id: &str) -> Result<String, BoardError> {
-        // No single-issue tool is allowlisted: look the issue up inside the
-        // bound scope, so an issue of another team or project is not found.
-        let raw = self.scoped_issues(scope).await?;
-        let issue = raw
-            .into_iter()
-            .find(|i| i.id == issue_id)
-            .ok_or_else(|| BoardError::Provider("issue is not in the bound board scope".into()))?;
+        let issue = self.scoped_issue(scope, issue_id).await?;
         let mut resolved = self.resolve(scope, vec![issue]).await?;
         Ok(resolved.remove(0).state_id)
     }
@@ -283,15 +319,14 @@ impl BoardProvider for LinearMcpProvider {
         issue_id: &str,
         state_id: &str,
     ) -> Result<(), BoardError> {
-        self.issue_state(scope, issue_id).await?;
-        // The target must be a column of this team's workflow, so a state id
+        // The issue must be inside the bound scope before anything else is read.
+        let issue = self.scoped_issue(scope, issue_id).await?;
+        // One workflow read serves both the issue's state name and the check
+        // that the target is a column of this team's workflow, so a state id
         // from another team (or a made-up one) never reaches `save_issue`.
-        if !self
-            .workflow_states(scope)
-            .await?
-            .iter()
-            .any(|state| state.id == state_id)
-        {
+        let states = self.workflow_states(scope).await?;
+        self.resolve_with(&states, vec![issue])?;
+        if !states.iter().any(|state| state.id == state_id) {
             return Err(BoardError::Provider(
                 "requested state is not in the team workflow".into(),
             ));
@@ -505,28 +540,37 @@ fn parse_issue_page(text: &str) -> Result<(Vec<RawIssue>, Option<String>), Board
     let list = items(&value, &["issues"])?;
     let mut out = Vec::with_capacity(list.len());
     for item in list {
-        let map = item
-            .as_object()
-            .ok_or_else(|| BoardError::Provider("issue is not an object".into()))?;
-        let id =
-            str_field(map, "id").ok_or_else(|| BoardError::Provider("issue has no id".into()))?;
-        let (state_id, state_name) = match map.get("state").or_else(|| map.get("status")) {
-            Some(Value::Object(state)) => (str_field(state, "id"), str_field(state, "name")),
-            Some(Value::String(name)) => (str_field(map, "stateId"), Some(name.trim().to_string())),
-            _ => (str_field(map, "stateId"), None),
-        };
-        out.push(RawIssue {
-            identifier: str_field(map, "identifier").unwrap_or_else(|| id.clone()),
-            title: str_field(map, "title").unwrap_or_default(),
-            id,
-            state_id,
-            state_name,
-            team: nested_id(map, "team", "teamId"),
-            project: nested_id(map, "project", "projectId"),
-        });
+        out.push(parse_issue_item(item)?);
     }
     let next = next_cursor(&value, out.len())?;
     Ok((out, next))
+}
+
+/// `get_issue` answers with one flat issue object, the same shape as a
+/// `list_issues` item.
+fn parse_single_issue(text: &str) -> Result<RawIssue, BoardError> {
+    parse_issue_item(&parse_json(text)?)
+}
+
+fn parse_issue_item(item: &Value) -> Result<RawIssue, BoardError> {
+    let map = item
+        .as_object()
+        .ok_or_else(|| BoardError::Provider("issue is not an object".into()))?;
+    let id = str_field(map, "id").ok_or_else(|| BoardError::Provider("issue has no id".into()))?;
+    let (state_id, state_name) = match map.get("state").or_else(|| map.get("status")) {
+        Some(Value::Object(state)) => (str_field(state, "id"), str_field(state, "name")),
+        Some(Value::String(name)) => (str_field(map, "stateId"), Some(name.trim().to_string())),
+        _ => (str_field(map, "stateId"), None),
+    };
+    Ok(RawIssue {
+        identifier: str_field(map, "identifier").unwrap_or_else(|| id.clone()),
+        title: str_field(map, "title").unwrap_or_default(),
+        id,
+        state_id,
+        state_name,
+        team: nested_id(map, "team", "teamId"),
+        project: nested_id(map, "project", "projectId"),
+    })
 }
 
 /// The cursor of the next page, `None` only when the response positively says
