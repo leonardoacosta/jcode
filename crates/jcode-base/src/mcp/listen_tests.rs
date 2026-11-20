@@ -24,7 +24,7 @@ fn complete(id: u64) -> Value {
 
 #[test]
 fn modern_meta_is_added_to_params_and_keeps_existing_fields() {
-    let with = with_modern_meta(Some(json!({"cursor":"c"}))).unwrap();
+    let with = with_modern_meta(Some(json!({"cursor":"c"})), false).unwrap();
     assert_eq!(with["cursor"], "c");
     assert_eq!(with["_meta"][META_VERSION], MODERN_VERSION);
     assert_eq!(
@@ -32,18 +32,29 @@ fn modern_meta_is_added_to_params_and_keeps_existing_fields() {
         "jcode"
     );
     assert_eq!(
-        with_modern_meta(None).unwrap()["_meta"][META_VERSION],
+        with_modern_meta(None, false).unwrap()["_meta"][META_VERSION],
         MODERN_VERSION
     );
     // A non-object cannot carry metadata; it is not mangled.
-    assert_eq!(with_modern_meta(Some(json!([1]))), Some(json!([1])));
+    assert_eq!(with_modern_meta(Some(json!([1])), false), Some(json!([1])));
 }
 
 #[test]
 fn modern_meta_merges_with_an_existing_meta_object() {
-    let with = with_modern_meta(Some(json!({"_meta":{"progressToken":"p"}}))).unwrap();
+    let with = with_modern_meta(Some(json!({"_meta":{"progressToken":"p"}})), false).unwrap();
     assert_eq!(with["_meta"]["progressToken"], "p");
     assert_eq!(with["_meta"][META_VERSION], MODERN_VERSION);
+}
+
+#[test]
+fn tasks_extension_is_declared_in_client_capabilities_only_when_asked() {
+    let on = request_meta(true);
+    assert_eq!(
+        on["io.modelcontextprotocol/clientCapabilities"]["extensions"]["io.modelcontextprotocol/tasks"],
+        json!({})
+    );
+    let off = request_meta(false);
+    assert_eq!(off["io.modelcontextprotocol/clientCapabilities"], json!({}));
 }
 
 #[test]

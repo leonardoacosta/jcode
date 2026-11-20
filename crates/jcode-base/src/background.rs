@@ -25,9 +25,10 @@ mod stall_watchdog;
 
 pub use model::{
     BackgroundCleanupResult, BackgroundTaskEventKind, BackgroundTaskEventRecord,
-    BackgroundTaskInfo, BackgroundTaskWaitReason, BackgroundTaskWaitResult,
-    RunningBackgroundProgress, TaskResult, TaskStatusFile, format_progress_display,
-    format_progress_summary, render_progress_bar,
+    BackgroundTaskInfo, BackgroundTaskWaitReason, BackgroundTaskWaitResult, MCP_TASK_INPUT_CAP,
+    MCP_TASK_RESULT_CAP, McpRemoteState, McpTaskFinish, McpTaskRecord, RunningBackgroundProgress,
+    TaskResult, TaskStatusFile, bound_json, cell_width, format_progress_display,
+    format_progress_summary, render_progress_bar, truncate_cells,
 };
 use model::{
     EXIT_MARKER_PREFIX, RunningTask, normalize_delivery, progress_equivalent,
@@ -568,6 +569,7 @@ impl BackgroundTaskManager {
             pid_start_time: crate::platform::process_start_time(pid),
             owner_generation: current_owner_generation(session_id),
             stall_wake_seconds: None,
+            mcp_task: None,
         };
         self.write_status_file(&info.status_file, &status).await;
         Self::publish_task_started_activity(
@@ -577,6 +579,146 @@ impl BackgroundTaskManager {
             session_id,
             notify,
         );
+    }
+
+    /// Persist a new MCP task record as a `Running` background task.
+    ///
+    /// The status file is written before anything else and a write failure is
+    /// returned, so the caller never exposes a task handle that was not
+    /// persisted. The record has no in-process owner (`owner_pid` and
+    /// `owner_instance` are `None`), so orphan reconciliation never fails it:
+    /// the remote server, not this process, owns the work. A record whose
+    /// remote status is already terminal is finalized immediately.
+    pub async fn register_mcp_task(
+        &self,
+        record: McpTaskRecord,
+        session_id: &str,
+        notify: bool,
+        wake: bool,
+    ) -> Result<BackgroundTaskInfo> {
+        let (notify, wake) = normalize_delivery(notify, wake);
+        let info = self.reserve_task_info();
+        let tool_name = record.kind_label();
+        let mut status = TaskStatusFile {
+            task_id: info.task_id.clone(),
+            tool_name: tool_name.clone(),
+            display_name: None,
+            session_id: session_id.to_string(),
+            status: BackgroundTaskStatus::Running,
+            exit_code: None,
+            error: None,
+            started_at: Utc::now().to_rfc3339(),
+            completed_at: None,
+            duration_secs: None,
+            pid: None,
+            owner_pid: None,
+            owner_instance: None,
+            detached: false,
+            notify,
+            wake,
+            progress: None,
+            event_history: Vec::new(),
+            pid_start_time: None,
+            owner_generation: current_owner_generation(session_id),
+            stall_wake_seconds: None,
+            mcp_task: Some(record),
+        };
+        fs::create_dir_all(&self.output_dir).await?;
+        let json = serde_json::to_string_pretty(&status)?;
+        write_atomic(&info.status_file, &json).await?;
+        Self::publish_task_started_activity(&info.task_id, &tool_name, None, session_id, notify);
+        if let Some(finish) = status.mcp_task.as_ref().and_then(McpTaskRecord::finish) {
+            let _guard = self.progress_updates.lock().await;
+            let _finalizing = self.finalize_lock.lock().await;
+            self.finalize_mcp_status(&mut status, finish).await?;
+        }
+        Ok(info)
+    }
+
+    /// Read-modify-write the MCP part of a task record.
+    ///
+    /// `update` returns whether it changed the record; unchanged records are
+    /// not rewritten. A remote terminal status (or expiry / not-found) also
+    /// finalizes the background-task status once and publishes its completion
+    /// like any other task. Records that are already terminal, or that carry
+    /// no MCP task, are returned untouched. Returns `Ok(None)` for an unknown
+    /// task and an error when the new state cannot be persisted.
+    pub async fn update_mcp_task<F>(
+        &self,
+        task_id: &str,
+        update: F,
+    ) -> Result<Option<TaskStatusFile>>
+    where
+        F: FnOnce(&mut McpTaskRecord) -> bool,
+    {
+        let _status_guard = self.progress_updates.lock().await;
+        let _finalizing = self.finalize_lock.lock().await;
+        let Some(mut status) = self.read_status_file(&self.status_path_for(task_id)).await else {
+            return Ok(None);
+        };
+        let Some(record) = status.mcp_task.as_mut() else {
+            return Ok(Some(status));
+        };
+        if status.status != BackgroundTaskStatus::Running || !update(record) {
+            return Ok(Some(status));
+        }
+        match record.finish() {
+            Some(finish) => self.finalize_mcp_status(&mut status, finish).await?,
+            None => {
+                let json = serde_json::to_string_pretty(&status)?;
+                write_atomic(&self.status_path_for(task_id), &json).await?;
+            }
+        }
+        Ok(Some(status))
+    }
+
+    /// Move an MCP record to its terminal background status, persist it and
+    /// publish the completion. Callers hold `progress_updates` and
+    /// `finalize_lock`.
+    async fn finalize_mcp_status(
+        &self,
+        status: &mut TaskStatusFile,
+        finish: McpTaskFinish,
+    ) -> Result<()> {
+        let completed_at = Utc::now();
+        let duration_secs = Self::status_duration_secs(&status.started_at, completed_at);
+        status.status = finish.status.clone();
+        status.exit_code = None;
+        status.error = finish.error.clone();
+        status.completed_at = Some(completed_at.to_rfc3339());
+        status.duration_secs = duration_secs;
+        push_task_event(
+            status,
+            terminal_event_record(finish.status.clone(), None, finish.error.as_deref()),
+        );
+        let output_path = self.output_path_for(&status.task_id);
+        if let Err(error) = fs::write(&output_path, &finish.output).await {
+            crate::logging::warn(&format!(
+                "Cannot write MCP task output {}: {error}",
+                output_path.display()
+            ));
+        }
+        let json = serde_json::to_string_pretty(&*status)?;
+        write_atomic(&self.status_path_for(&status.task_id), &json).await?;
+        let output_preview = if finish.output.len() > 500 {
+            format!("{}...", crate::util::truncate_str(&finish.output, 500))
+        } else {
+            finish.output
+        };
+        Bus::global().publish(BusEvent::BackgroundTaskCompleted(BackgroundTaskCompleted {
+            task_id: status.task_id.clone(),
+            tool_name: status.tool_name.clone(),
+            display_name: status.display_name.clone(),
+            session_id: status.session_id.clone(),
+            status: finish.status,
+            exit_code: None,
+            output_preview,
+            output_file: output_path,
+            duration_secs: duration_secs.unwrap_or_default(),
+            notify: status.notify,
+            wake: status.wake,
+        }));
+        Ok(())
     }
 
     /// Spawn a background task
@@ -643,6 +785,7 @@ impl BackgroundTaskManager {
             pid_start_time: None,
             owner_generation: current_owner_generation(session_id),
             stall_wake_seconds: None,
+            mcp_task: None,
         };
         let owner_generation = initial_status.owner_generation;
         if let Ok(json) = serde_json::to_string_pretty(&initial_status) {
@@ -724,6 +867,7 @@ impl BackgroundTaskManager {
                 pid_start_time: None,
                 owner_generation,
                 stall_wake_seconds: None,
+                mcp_task: None,
             };
             push_task_event(
                 &mut final_status,
@@ -871,6 +1015,7 @@ impl BackgroundTaskManager {
             pid_start_time: None,
             owner_generation: current_owner_generation(session_id),
             stall_wake_seconds: None,
+            mcp_task: None,
         };
         let owner_generation = initial_status.owner_generation;
         if let Ok(json) = serde_json::to_string_pretty(&initial_status) {
@@ -960,6 +1105,7 @@ impl BackgroundTaskManager {
                 pid_start_time: None,
                 owner_generation,
                 stall_wake_seconds: None,
+                mcp_task: None,
             };
             push_task_event(
                 &mut final_status,
@@ -1495,6 +1641,7 @@ impl BackgroundTaskManager {
                 pid_start_time: None,
                 owner_generation: task.owner_generation,
                 stall_wake_seconds: None,
+                mcp_task: None,
             };
             let event_status = final_status.status.clone();
             let event_exit_code = final_status.exit_code;
@@ -1633,6 +1780,7 @@ impl BackgroundTaskManager {
                 pid_start_time: None,
                 owner_generation: task.owner_generation,
                 stall_wake_seconds: None,
+                mcp_task: None,
             };
             push_task_event(
                 &mut final_status,
@@ -1774,11 +1922,29 @@ impl Default for BackgroundTaskManager {
 }
 
 /// Global singleton for background task manager
-static BACKGROUND_MANAGER: std::sync::OnceLock<BackgroundTaskManager> = std::sync::OnceLock::new();
+static BACKGROUND_MANAGER: std::sync::OnceLock<Arc<BackgroundTaskManager>> =
+    std::sync::OnceLock::new();
 
 /// Get the global background task manager
 pub fn global() -> &'static BackgroundTaskManager {
-    BACKGROUND_MANAGER.get_or_init(BackgroundTaskManager::new)
+    global_arc()
+}
+
+/// The global manager as a shared handle, for owners that outlive a borrow
+/// (for example the MCP task tracker's polling tasks).
+pub fn global_arc() -> &'static Arc<BackgroundTaskManager> {
+    BACKGROUND_MANAGER.get_or_init(|| Arc::new(BackgroundTaskManager::new()))
+}
+
+/// Write `contents` to `path` through a temp file and rename, so a crash
+/// mid-write never leaves a torn record. The MCP task record is the only copy
+/// of an out-of-process job's remote id.
+async fn write_atomic(path: &std::path::Path, contents: &str) -> std::io::Result<()> {
+    let mut tmp = path.as_os_str().to_owned();
+    tmp.push(".tmp");
+    let tmp = std::path::PathBuf::from(tmp);
+    fs::write(&tmp, contents).await?;
+    fs::rename(&tmp, path).await
 }
 
 #[cfg(test)]

@@ -72,7 +72,13 @@ impl Tool for McpTool {
         let accept_large_output = take_accept_large_output(&mut input);
         let manager = self.manager.read().await;
         let result = manager
-            .call_tool(&self.server_name, &self.tool_def.name, input)
+            .call_tool_tracked(
+                &self.server_name,
+                &self.tool_def.name,
+                input,
+                &ctx.session_id,
+                &ctx.tool_call_id,
+            )
             .await?;
 
         // Convert MCP content blocks to output string

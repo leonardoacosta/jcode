@@ -36,22 +36,28 @@ const META_SUBSCRIPTION_ID: &str = "io.modelcontextprotocol/subscriptionId";
 /// stdout reader that also carries ordinary responses.
 const STDIO_LISTEN_BUFFER: usize = 256;
 
-/// The `_meta` object every 2026-07-28 request carries.
-pub(super) fn request_meta() -> Value {
+/// The `_meta` object every 2026-07-28 request carries. `tasks` declares the
+/// Tasks extension in the per-request client capabilities.
+pub(super) fn request_meta(tasks: bool) -> Value {
+    let caps = if tasks {
+        json!({"extensions": {super::tasks::TASKS_EXTENSION: {}}})
+    } else {
+        json!({})
+    };
     json!({
         META_VERSION: MODERN_VERSION,
         META_CLIENT_INFO: {
             "name": "jcode",
             "version": jcode_build_meta::pkg_version(),
         },
-        META_CLIENT_CAPS: {},
+        META_CLIENT_CAPS: caps,
     })
 }
 
 /// Add the modern `_meta` to request params, keeping any other `_meta` keys
 /// (for example a progress token). Non-object params are left alone.
-pub(super) fn with_modern_meta(params: Option<Value>) -> Option<Value> {
-    let ours = request_meta();
+pub(super) fn with_modern_meta(params: Option<Value>, tasks: bool) -> Option<Value> {
+    let ours = request_meta(tasks);
     match params {
         None => Some(json!({ "_meta": ours })),
         Some(Value::Object(mut map)) => {

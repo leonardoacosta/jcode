@@ -59,6 +59,7 @@ pub const MODERN_VERSION: &str = "2026-07-28";
 
 const SUBSCRIPTION_ID_KEY: &str = "io.modelcontextprotocol/subscriptionId";
 const ACK_METHOD: &str = "notifications/subscriptions/acknowledged";
+const TASKS_METHOD: &str = "notifications/tasks";
 const MAX_URI_BYTES: usize = 2048;
 const MAX_LIST_PAGES: usize = 64;
 const MAX_LIST_ITEMS: usize = 5_000;
@@ -431,6 +432,8 @@ pub struct NotificationSession {
     listen_id: Option<u64>,
     requested: Option<Value>,
     acked: bool,
+    /// Task ids the server agreed to send `notifications/tasks` for.
+    task_ids: HashSet<String>,
 }
 
 impl NotificationSession {
@@ -446,6 +449,7 @@ impl NotificationSession {
             listen_id: None,
             requested: plan.listen_filter.clone(),
             acked: false,
+            task_ids: HashSet::new(),
         }
     }
 
@@ -465,6 +469,43 @@ impl NotificationSession {
         self.acked = false;
         self.active_classes.clear();
         self.active_uris.clear();
+        self.task_ids.clear();
+    }
+
+    /// Replace the requested filter for the next `begin_listen` (task ids
+    /// change as tasks start and finish).
+    pub fn set_requested(&mut self, requested: Option<Value>) {
+        self.requested = requested;
+    }
+
+    /// Whether a task id was acknowledged for `notifications/tasks`.
+    pub fn task_id_active(&self, task_id: &str) -> bool {
+        self.task_ids.contains(task_id)
+    }
+
+    /// Validate a `notifications/tasks`: modern era, acknowledged, correlated
+    /// to this subscription and naming an acknowledged task id. Returns the
+    /// task id. The rest of the payload is never read here (hint only).
+    pub fn accept_task_hint(&self, msg: &Value) -> std::result::Result<String, Rejection> {
+        if self.era != Some(Era::Modern) || !self.acked {
+            return Err(Rejection::NotNegotiated);
+        }
+        let params = msg
+            .get("params")
+            .and_then(Value::as_object)
+            .ok_or(Rejection::Malformed)?;
+        let sub = params.get("_meta").and_then(|m| m.get(SUBSCRIPTION_ID_KEY));
+        if !self.subscription_matches(sub) {
+            return Err(Rejection::WrongSubscription);
+        }
+        let id = params
+            .get("taskId")
+            .and_then(Value::as_str)
+            .ok_or(Rejection::Malformed)?;
+        if !self.task_ids.contains(id) {
+            return Err(Rejection::UnconfiguredResource);
+        }
+        Ok(id.to_string())
     }
 
     pub fn is_active(&self, class: NotificationClass) -> bool {
@@ -477,7 +518,10 @@ impl NotificationSession {
 
     /// Modern: the acknowledgment honored at least one requested filter.
     pub fn honored_any(&self) -> bool {
-        self.acked && (!self.active_classes.is_empty() || !self.active_uris.is_empty())
+        self.acked
+            && (!self.active_classes.is_empty()
+                || !self.active_uris.is_empty()
+                || !self.task_ids.is_empty())
     }
 
     /// Whether updates for `uri` are currently subscribed.
@@ -555,6 +599,18 @@ impl NotificationSession {
             if !self.active_uris.is_empty() {
                 self.active_classes
                     .insert(NotificationClass::ResourceUpdated);
+            }
+        }
+        if let Some(requested_ids) = requested.get("taskIds").and_then(Value::as_array) {
+            let acked_ids: HashSet<&str> = ack
+                .get("taskIds")
+                .and_then(Value::as_array)
+                .map(|items| items.iter().filter_map(Value::as_str).collect())
+                .unwrap_or_default();
+            for id in requested_ids.iter().filter_map(Value::as_str) {
+                if acked_ids.contains(id) {
+                    self.task_ids.insert(id.to_string());
+                }
             }
         }
         self.acked = true;
@@ -1116,6 +1172,19 @@ impl<B: McpBackend> NotificationEngine<B> {
                 Err(reason) => self.reject(reason, &msg),
             };
         }
+        if msg.get("method").and_then(Value::as_str) == Some(TASKS_METHOD) {
+            return match self.session.accept_task_hint(&msg) {
+                Ok(task_id) => {
+                    // A hint, never state: the tracker answers it with tasks/get.
+                    if let Some(sink) = super::tasks::task_hint_sink() {
+                        sink.hint(&self.server, &task_id);
+                    }
+                    self.with_status(|s| s.counters.accepted += 1);
+                    Ingest::Acknowledged
+                }
+                Err(reason) => self.reject(reason, &msg),
+            };
+        }
         let event = match self.session.accept(&msg) {
             Ok(event) => event,
             Err(reason) => return self.reject(reason, &msg),
@@ -1306,9 +1375,20 @@ impl<B: McpBackend> NotificationEngine<B> {
         id: u64,
         cancel: &Notify,
     ) -> ListenEnd {
-        let Some(filter) = self.plan.listen_filter.clone() else {
+        let Some(mut filter) = self.plan.listen_filter.clone() else {
             return ListenEnd::Unsupported;
         };
+        let mut declares_tasks = false;
+        if let Some(sink) = super::tasks::task_hint_sink() {
+            let ids = sink.tracked_task_ids(&self.server);
+            if !ids.is_empty()
+                && let Some(map) = filter.as_object_mut()
+            {
+                map.insert("taskIds".to_string(), json!(ids));
+                declares_tasks = true;
+            }
+        }
+        self.session.set_requested(Some(filter.clone()));
         self.session.begin_listen(id);
         let request = json!({
             "jsonrpc": "2.0",
@@ -1321,7 +1401,11 @@ impl<B: McpBackend> NotificationEngine<B> {
                         "name": "jcode",
                         "version": jcode_build_meta::pkg_version(),
                     },
-                    "io.modelcontextprotocol/clientCapabilities": {},
+                    "io.modelcontextprotocol/clientCapabilities": if declares_tasks {
+                        json!({"extensions": {super::tasks::TASKS_EXTENSION: {}}})
+                    } else {
+                        json!({})
+                    },
                 },
                 "notifications": filter,
             }

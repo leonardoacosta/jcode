@@ -904,6 +904,7 @@ impl Server {
         // which leaves phantom entries in `bg list` and blocks `bg wait`
         // until timeout. Detached tasks are untouched (they survive reloads
         // and reconcile via their real pid).
+        let mcp_pool_cell = Arc::clone(&self.mcp_pool);
         tokio::spawn(async move {
             let reconciled = crate::background::global().reconcile_orphaned_tasks().await;
             if reconciled > 0 {
@@ -915,6 +916,8 @@ impl Server {
             // Detached tasks do survive reloads: reattach the live ones and
             // finalize the rest exactly once.
             background_tasks::reattach_background_tasks_on_startup().await;
+            let pool = get_shared_mcp_pool(&mcp_pool_cell).await;
+            background_tasks::start_mcp_task_tracking(pool).await;
         });
 
         // Overnight runs whose supervisor died with the previous process:

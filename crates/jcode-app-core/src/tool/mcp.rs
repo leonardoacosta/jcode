@@ -434,7 +434,13 @@ impl Tool for McpCallTool {
 
         let manager = self.manager.read().await;
         let result = manager
-            .call_tool(&params.server, &params.tool, params.arguments)
+            .call_tool_tracked(
+                &params.server,
+                &params.tool,
+                params.arguments,
+                &ctx.session_id,
+                &ctx.tool_call_id,
+            )
             .await?;
         drop(manager);
 
@@ -572,6 +578,7 @@ fn connection_config(
         workspaces: Vec::new(),
         lazy: None,
         notifications: None,
+        tasks: false,
     })
 }
 

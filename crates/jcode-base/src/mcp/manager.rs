@@ -26,6 +26,16 @@ type OwnedConnecting = Arc<Mutex<HashMap<String, OwnedConnectionSender>>>;
 /// Meter a completed tool call for partner-discovery provenance. No-op for
 /// servers without discovery provenance (the overwhelmingly common case) and
 /// whenever `sponsors.enabled` is false. Counts only; never content.
+fn meter_outcome(server: &str, result: &Result<super::tasks::CallOutcome>) {
+    let is_error = match result {
+        Ok(super::tasks::CallOutcome::Complete(res)) => res.is_error,
+        Ok(super::tasks::CallOutcome::Task(_)) => false,
+        Err(_) => true,
+    };
+    crate::sponsors::provenance::on_tool_call(server, is_error);
+}
+
+#[allow(dead_code, reason = "kept for callers that meter plain results")]
 fn meter_provenance_call(server: &str, result: &Result<ToolCallResult>) {
     let is_error = match result {
         Ok(res) => res.is_error,
@@ -117,6 +127,53 @@ impl Drop for OwnedConnectionAttemptGuard {
                 ))));
             }
         });
+    }
+}
+
+/// Server-supplied task id, safe to show: short and printable ASCII only.
+fn bounded_task_id(id: &str) -> String {
+    id.chars().filter(char::is_ascii_graphic).take(64).collect()
+}
+
+/// Resolves configured servers for task polling and cancellation, backed by a
+/// dedicated manager (pool handles when shared, otherwise owned clients). Only
+/// servers opted in with `tasks = true` in global config resolve.
+pub struct ManagerTaskSource {
+    manager: Arc<McpManager>,
+}
+
+impl ManagerTaskSource {
+    pub fn new(manager: Arc<McpManager>) -> Self {
+        Self { manager }
+    }
+}
+
+#[async_trait::async_trait]
+impl super::tasks::TaskSource for ManagerTaskSource {
+    async fn resolve(
+        &self,
+        server: &str,
+    ) -> std::result::Result<super::tasks::ResolvedTaskServer, super::tasks::ResolveError> {
+        use super::tasks::{ResolveError, ResolvedTaskServer};
+        let manager = &self.manager;
+        let Some(config) = manager.config.servers.get(server) else {
+            return Err(ResolveError::Unknown);
+        };
+        // Opted in, shared (so one daemon-wide process owns the task) and not
+        // disabled. Workspace scope applied when the task was created; the
+        // stored identity binds the task to that server from here on.
+        if !config.tasks || !config.shared || !config.is_enabled() {
+            return Err(ResolveError::Unknown);
+        }
+        let handle = manager
+            .handle_for_request_unscoped(server, "task polling")
+            .await
+            .map_err(|error| ResolveError::Unavailable(format!("{error:#}")))?;
+        let identity = handle.identity().to_string();
+        Ok(ResolvedTaskServer {
+            identity,
+            remote: Arc::new(handle),
+        })
     }
 }
 
@@ -679,14 +736,57 @@ impl McpManager {
         tool: &str,
         arguments: serde_json::Value,
     ) -> Result<ToolCallResult> {
+        // No tracker behind this entry point: never declare the Tasks
+        // extension, so a server answers synchronously.
+        match self
+            .call_tool_outcome_with(server, tool, arguments, false)
+            .await?
+        {
+            super::tasks::CallOutcome::Complete(result) => Ok(result),
+            super::tasks::CallOutcome::Task(_) => anyhow::bail!(
+                "MCP server '{server}' returned a task handle to a caller that did not accept tasks"
+            ),
+        }
+    }
+
+    /// `tools/call` that may answer with a task handle (only for servers that
+    /// opted in to the Tasks extension and advertised it). Connects on first
+    /// use like [`Self::call_tool`] and never replays a call on a closed handle.
+    pub async fn call_tool_outcome(
+        &self,
+        server: &str,
+        tool: &str,
+        arguments: serde_json::Value,
+    ) -> Result<super::tasks::CallOutcome> {
+        self.call_tool_outcome_with(server, tool, arguments, true)
+            .await
+    }
+
+    async fn call_tool_outcome_with(
+        &self,
+        server: &str,
+        tool: &str,
+        arguments: serde_json::Value,
+        accept_tasks: bool,
+    ) -> Result<super::tasks::CallOutcome> {
+        let call = |handle: McpHandle, tool: String, arguments: serde_json::Value| async move {
+            if accept_tasks {
+                handle.call_tool_outcome(&tool, arguments).await
+            } else {
+                handle
+                    .call_tool(&tool, arguments)
+                    .await
+                    .map(super::tasks::CallOutcome::Complete)
+            }
+        };
         // Fast path: already connected via pool handle.
         {
             let handles = self.pool_handles.read().await;
             if let Some(handle) = handles.get(server)
                 && !handle.is_closed()
             {
-                let result = handle.call_tool(tool, arguments).await;
-                meter_provenance_call(server, &result);
+                let result = call(handle.clone(), tool.to_string(), arguments).await;
+                meter_outcome(server, &result);
                 return result;
             }
         }
@@ -696,8 +796,8 @@ impl McpManager {
             if let Some(client) = clients.get(server)
                 && !client.handle().is_closed()
             {
-                let result = client.call_tool(tool, arguments).await;
-                meter_provenance_call(server, &result);
+                let result = call(client.handle(), tool.to_string(), arguments).await;
+                meter_outcome(server, &result);
                 return result;
             }
         }
@@ -719,8 +819,8 @@ impl McpManager {
                         if let Some(handle) = handles.get(server)
                             && !handle.is_closed()
                         {
-                            let result = handle.call_tool(tool, arguments).await;
-                            meter_provenance_call(server, &result);
+                            let result = call(handle.clone(), tool.to_string(), arguments).await;
+                            meter_outcome(server, &result);
                             return result;
                         }
                     }
@@ -728,8 +828,8 @@ impl McpManager {
                     if let Some(client) = clients.get(server)
                         && !client.handle().is_closed()
                     {
-                        let result = client.call_tool(tool, arguments).await;
-                        meter_provenance_call(server, &result);
+                        let result = call(client.handle(), tool.to_string(), arguments).await;
+                        meter_outcome(server, &result);
                         return result;
                     }
                     anyhow::bail!(
@@ -750,6 +850,83 @@ impl McpManager {
         }
 
         anyhow::bail!("MCP server '{}' not connected", server)
+    }
+
+    /// `tools/call` for a session. A server that opted in to Tasks may answer
+    /// with a task handle; it is persisted as a background task FIRST and the
+    /// model gets a short jcode-authored note with the background task id. The
+    /// note holds no server text, and the original call is never replayed. If
+    /// the handle cannot be persisted or no tracker runs, this is an error that
+    /// names the remote task id (the work started, but jcode does not track it).
+    pub async fn call_tool_tracked(
+        &self,
+        server: &str,
+        tool: &str,
+        arguments: serde_json::Value,
+        session_id: &str,
+        tool_call_id: &str,
+    ) -> Result<ToolCallResult> {
+        self.call_tool_with_tracker(
+            super::task_tracker::McpTaskTracker::global(),
+            server,
+            tool,
+            arguments,
+            session_id,
+            tool_call_id,
+        )
+        .await
+    }
+
+    pub(super) async fn call_tool_with_tracker(
+        &self,
+        tracker: Option<super::task_tracker::McpTaskTracker>,
+        server: &str,
+        tool: &str,
+        arguments: serde_json::Value,
+        session_id: &str,
+        tool_call_id: &str,
+    ) -> Result<ToolCallResult> {
+        let accept_tasks = tracker.is_some();
+        match self
+            .call_tool_outcome_with(server, tool, arguments, accept_tasks)
+            .await?
+        {
+            super::tasks::CallOutcome::Complete(result) => Ok(result),
+            super::tasks::CallOutcome::Task(task) => {
+                let Some(tracker) = tracker else {
+                    anyhow::bail!(
+                        "MCP server '{server}' started task {} for '{tool}' but the MCP task tracker is not running, so it is not tracked",
+                        bounded_task_id(&task.task_id)
+                    );
+                };
+                let identity = match self.live_handle(server).await {
+                    Some(handle) => handle.identity().to_string(),
+                    None => anyhow::bail!(
+                        "MCP server '{server}' started task {} for '{tool}' but its connection closed before it could be tracked",
+                        bounded_task_id(&task.task_id)
+                    ),
+                };
+                let remote_id = bounded_task_id(&task.task_id);
+                let background_id = tracker
+                    .register(task, server, &identity, tool, session_id, tool_call_id)
+                    .await
+                    .map_err(|error| {
+                        anyhow::anyhow!(
+                            "MCP server '{server}' started task {remote_id} for '{tool}' but it could not be tracked: {error:#}"
+                        )
+                    })?;
+                Ok(ToolCallResult {
+                    content: vec![super::protocol::ContentBlock::Text {
+                        text: format!(
+                            "MCP tool '{tool}' on '{server}' is running as background task {background_id}. \
+                             Use bg action=status task_id={background_id} to check it, or bg action=cancel to ask the server to stop it. \
+                             The result is not available yet."
+                        ),
+                    }],
+                    is_error: false,
+                })
+            }
+        }
     }
 
     /// Open, non-closed handle for `server`, pooled first then owned.
@@ -774,12 +951,24 @@ impl McpManager {
         if let Some(handle) = self.live_handle(server).await {
             return Ok(handle);
         }
+        if let Some(config) = self.config.servers.get(server)
+            && !config.in_workspace(self.project_dir.as_deref())
+        {
+            anyhow::bail!("MCP server '{server}' is out of scope for this workspace");
+        }
+        self.handle_for_request_unscoped(server, what).await
+    }
+
+    /// As [`Self::handle_for_request`] without the workspace check. Used to
+    /// poll a task that was created in scope: the daemon-wide tracker has no
+    /// project directory, and the stored identity already binds the task.
+    async fn handle_for_request_unscoped(&self, server: &str, what: &str) -> Result<McpHandle> {
+        if let Some(handle) = self.live_handle(server).await {
+            return Ok(handle);
+        }
         let Some(config) = self.config.servers.get(server).cloned() else {
             anyhow::bail!("MCP server '{}' not connected", server);
         };
-        if !config.in_workspace(self.project_dir.as_deref()) {
-            anyhow::bail!("MCP server '{server}' is out of scope for this workspace");
-        }
         match tokio::time::timeout(CONNECT_ON_CALL_TIMEOUT, self.connect(server, &config)).await {
             Ok(Ok(())) => self.live_handle(server).await.ok_or_else(|| {
                 anyhow::anyhow!("MCP server '{server}' connected but exposed no handle for {what}")
@@ -1095,6 +1284,7 @@ mod tests {
                 workspaces: Vec::new(),
                 lazy: None,
                 notifications: None,
+                tasks: false,
             },
         );
         let manager = McpManager::with_config(config);
@@ -1135,6 +1325,7 @@ mod tests {
                 workspaces: Vec::new(),
                 lazy: None,
                 notifications: None,
+                tasks: false,
             },
         );
         let manager = McpManager::with_config(config);
@@ -1252,6 +1443,7 @@ done
                 workspaces: Vec::new(),
                 lazy: None,
                 notifications: None,
+                tasks: false,
             },
         );
         let config = config
@@ -1446,6 +1638,7 @@ done
                 workspaces: Vec::new(),
                 lazy: None,
                 notifications: None,
+                tasks: false,
             },
         );
         let manager = McpManager::with_config(config.clone());
@@ -1510,6 +1703,7 @@ done
         let server = McpServerConfig {
             lazy: Some(true),
             notifications: None,
+            tasks: false,
             timeout_secs: Some(1),
             ..crate::mcp::client::tests::fake_server_config()
         };

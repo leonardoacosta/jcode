@@ -36,6 +36,14 @@ pub struct McpHandle {
     notify_status: super::notifications::SharedNotificationStatus,
     /// Protocol version the server selected during `initialize`.
     negotiated_version: Arc<std::sync::RwLock<String>>,
+    /// The server config opted in to the Tasks extension. Never set for a
+    /// non-shared server: a session-owned process cannot be polled later by the
+    /// daemon-wide tracker, which would reach a different process.
+    tasks_opt_in: bool,
+    /// Fingerprint of the config this connection was made from. Task records
+    /// store it, and the tracker compares against it, so a config edit or
+    /// reload cannot send a saved task id to a different endpoint.
+    identity: Arc<str>,
     /// Set only by a successful `server/discover` probe. A legacy server that
     /// merely names 2026-07-28 in `initialize` must not switch the client to
     /// per-request metadata.
@@ -88,15 +96,41 @@ pub fn request_timeout_for(config: &McpServerConfig) -> std::time::Duration {
 impl McpHandle {
     /// Send a request and wait for response
     pub async fn request(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse> {
+        self.request_with(method, params, false).await
+    }
+
+    /// `request`, optionally declaring the Tasks extension. Only a call whose
+    /// caller can track a returned handle passes `accept_tasks`; every other
+    /// request omits the capability so a server never starts work that nobody
+    /// follows.
+    async fn request_with(
+        &self,
+        method: &str,
+        params: Option<Value>,
+        accept_tasks: bool,
+    ) -> Result<JsonRpcResponse> {
         // 2026-07-28 has no handshake: every request carries its own metadata.
         let params = if self.is_modern() {
-            super::listen::with_modern_meta(params)
+            super::listen::with_modern_meta(params, accept_tasks && self.advertises_tasks())
         } else {
             params
         };
         let response = self.request_raw(method, params).await?;
         if let Some(err) = &response.error {
             anyhow::bail!("MCP error {}: {}", err.code, err.message);
+        }
+        if method != "tools/call"
+            && response
+                .result
+                .as_ref()
+                .and_then(|r| r.get("resultType"))
+                .and_then(Value::as_str)
+                == Some("task")
+        {
+            anyhow::bail!(
+                "MCP server '{}' answered {method} with a task handle, which only tools/call may return",
+                self.name
+            );
         }
         Ok(response)
     }
@@ -141,6 +175,20 @@ impl McpHandle {
         self.modern.load(Ordering::SeqCst)
     }
 
+    /// Whether this connection may use the Tasks extension: the config opted
+    /// in, the server is on the 2026-07-28 revision, and it advertised the
+    /// extension in `server/discover`. Without all three, a server must never
+    /// answer with a task handle.
+    pub(crate) fn advertises_tasks(&self) -> bool {
+        self.tasks_opt_in
+            && self.is_modern()
+            && self
+                .capabilities
+                .read()
+                .unwrap_or_else(|p| p.into_inner())
+                .supports_tasks()
+    }
+
     /// `request` without metadata injection (the era probe sends its own).
     async fn request_raw(&self, method: &str, params: Option<Value>) -> Result<JsonRpcResponse> {
         let id = self.request_id.fetch_add(1, Ordering::SeqCst);
@@ -175,6 +223,35 @@ impl McpHandle {
 
     /// Call a tool
     pub async fn call_tool(&self, name: &str, arguments: Value) -> Result<ToolCallResult> {
+        // This caller cannot track tasks, so it never declares the extension
+        // and a conforming server answers synchronously.
+        match self.call_tool_with(name, arguments, false).await? {
+            super::tasks::CallOutcome::Complete(result) => Ok(result),
+            super::tasks::CallOutcome::Task(_) => anyhow::bail!(
+                "MCP server '{}' returned a task handle to a caller that did not accept tasks",
+                self.name,
+            ),
+        }
+    }
+
+    /// `tools/call` that may return a task handle. A handle is accepted only
+    /// when this connection negotiated the extension; otherwise it is a
+    /// protocol error and is never polled (spec: a server must not return one
+    /// to a client that did not declare the capability).
+    pub async fn call_tool_outcome(
+        &self,
+        name: &str,
+        arguments: Value,
+    ) -> Result<super::tasks::CallOutcome> {
+        self.call_tool_with(name, arguments, true).await
+    }
+
+    async fn call_tool_with(
+        &self,
+        name: &str,
+        arguments: Value,
+        accept_tasks: bool,
+    ) -> Result<super::tasks::CallOutcome> {
         let arguments = if arguments.is_null() {
             Value::Object(serde_json::Map::new())
         } else {
@@ -186,13 +263,27 @@ impl McpHandle {
         };
 
         let response = self
-            .request("tools/call", Some(serde_json::to_value(params)?))
+            .request_with(
+                "tools/call",
+                Some(serde_json::to_value(params)?),
+                accept_tasks,
+            )
             .await?;
 
         let result = response.result.context("No result from tool call")?;
+        if result.get("resultType").and_then(Value::as_str) == Some("task") {
+            if !(accept_tasks && self.advertises_tasks()) {
+                anyhow::bail!(
+                    "MCP server '{}' returned a task handle that this call did not negotiate",
+                    self.name
+                );
+            }
+            return Ok(super::tasks::CallOutcome::Task(
+                super::tasks::parse_task(&result).context("invalid MCP task handle")?,
+            ));
+        }
         let tool_result: ToolCallResult = serde_json::from_value(result)?;
-
-        Ok(tool_result)
+        Ok(super::tasks::CallOutcome::Complete(tool_result))
     }
 
     /// Whether the transport can no longer deliver replies. Closed handles
@@ -286,6 +377,57 @@ impl McpHandle {
         }
 
         unreachable!("the last page either completes or returns the page-limit error")
+    }
+}
+
+#[async_trait::async_trait]
+impl super::tasks::TaskRemote for McpHandle {
+    async fn get_task(&self, task_id: &str) -> Result<super::tasks::TaskPoll> {
+        if !self.advertises_tasks() {
+            anyhow::bail!("MCP server '{}' did not negotiate Tasks", self.name);
+        }
+        let response = self
+            .request_raw("tasks/get", self.task_params(task_id))
+            .await?;
+        if let Some(err) = &response.error {
+            // -32602: unknown or expired task id. A fact about the task, not a
+            // transport failure.
+            if err.code == -32602 {
+                return Ok(super::tasks::TaskPoll::NotFound(err.message.clone()));
+            }
+            anyhow::bail!("MCP error {}: {}", err.code, err.message);
+        }
+        let result = response.result.context("tasks/get returned no result")?;
+        Ok(super::tasks::TaskPoll::Task(
+            super::tasks::parse_task(&result).context("invalid tasks/get result")?,
+        ))
+    }
+
+    async fn cancel_task(&self, task_id: &str) -> Result<()> {
+        if !self.advertises_tasks() {
+            anyhow::bail!("MCP server '{}' did not negotiate Tasks", self.name);
+        }
+        let response = self
+            .request_raw("tasks/cancel", self.task_params(task_id))
+            .await?;
+        if let Some(err) = &response.error {
+            anyhow::bail!("MCP error {}: {}", err.code, err.message);
+        }
+        Ok(())
+    }
+}
+
+impl McpHandle {
+    /// Identity of the config this connection was made from.
+    pub(crate) fn identity(&self) -> &str {
+        &self.identity
+    }
+
+    /// Params for `tasks/*`: the task id plus the modern metadata. These go
+    /// through `request_raw` so the id is the only caller-supplied field and
+    /// the capability declaration is always present.
+    fn task_params(&self, task_id: &str) -> Option<Value> {
+        super::listen::with_modern_meta(Some(serde_json::json!({"taskId": task_id})), true)
     }
 }
 
@@ -591,6 +733,8 @@ impl McpClient {
             inbound: inbound_slot,
             notify_status: Default::default(),
             negotiated_version: Arc::default(),
+            tasks_opt_in: config.tasks && config.shared,
+            identity: super::tasks::server_identity(name, config).into(),
             modern: Arc::default(),
             header_specs: Arc::default(),
             mirrors_headers,
@@ -752,19 +896,53 @@ impl McpClient {
         let cancel = Arc::clone(&self.listen_cancel);
         self.notify_task = Some(tokio::spawn(async move {
             let ids = Arc::clone(&handle.request_id);
-            let stopped = super::listen::supervise(
-                &mut engine,
-                transport.as_ref(),
-                || ids.fetch_add(1, Ordering::SeqCst),
-                || handle.is_closed(),
-                &cancel,
-                &super::listen::ListenPolicy::default(),
-            )
-            .await;
-            crate::logging::info(&format!(
-                "MCP [{}]: subscriptions/listen stopped: {stopped:?}",
-                handle.name
-            ));
+            loop {
+                // Task ids ride in the listen filter, so a change in the
+                // tracked set reopens the stream with the new filter. The
+                // restart goes through the normal cancel path, so a stdio
+                // subscription is cancelled on the server first.
+                let changed = super::tasks::task_hint_sink().map(|sink| sink.changed());
+                let run_cancel = Arc::new(tokio::sync::Notify::new());
+                let restart = Arc::new(AtomicBool::new(false));
+                let forwarder = {
+                    let (run_cancel, restart, cancel) = (
+                        Arc::clone(&run_cancel),
+                        Arc::clone(&restart),
+                        Arc::clone(&cancel),
+                    );
+                    tokio::spawn(async move {
+                        let changed_wait = async {
+                            match &changed {
+                                Some(n) => n.notified().await,
+                                None => std::future::pending::<()>().await,
+                            }
+                        };
+                        tokio::select! {
+                            _ = changed_wait => restart.store(true, Ordering::SeqCst),
+                            _ = cancel.notified() => {}
+                        }
+                        run_cancel.notify_one();
+                    })
+                };
+                let stopped = super::listen::supervise(
+                    &mut engine,
+                    transport.as_ref(),
+                    || ids.fetch_add(1, Ordering::SeqCst),
+                    || handle.is_closed(),
+                    &run_cancel,
+                    &super::listen::ListenPolicy::default(),
+                )
+                .await;
+                forwarder.abort();
+                if stopped == super::listen::Stopped::Done && restart.load(Ordering::SeqCst) {
+                    continue;
+                }
+                crate::logging::info(&format!(
+                    "MCP [{}]: subscriptions/listen stopped: {stopped:?}",
+                    handle.name
+                ));
+                break;
+            }
         }));
     }
 
@@ -784,7 +962,7 @@ impl McpClient {
     /// legacy, and the caller runs `initialize`. The fallback is never keyed to
     /// one error code.
     async fn probe_modern(&mut self) -> Result<bool> {
-        if self.handle.notify_cfg.is_none() {
+        if self.handle.notify_cfg.is_none() && !self.handle.tasks_opt_in {
             return Ok(false);
         }
         if let Backend::Remote(connection) = &self.backend {
@@ -793,7 +971,7 @@ impl McpClient {
             }
             connection.set_protocol_version(Some(super::notifications::MODERN_VERSION));
         }
-        let params = serde_json::json!({"_meta": super::listen::request_meta()});
+        let params = serde_json::json!({"_meta": super::listen::request_meta(false)});
         let probe = tokio::time::timeout(
             MODERN_PROBE_TIMEOUT.min(self.handle.request_timeout),
             self.handle.request_raw("server/discover", Some(params)),
@@ -1190,6 +1368,7 @@ done
             workspaces: Vec::new(),
             lazy: None,
             notifications: None,
+            tasks: false,
         }
     }
 

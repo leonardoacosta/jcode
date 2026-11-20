@@ -1304,3 +1304,18 @@ fn sse_parser_bounds_partial_lines_accumulated_events_and_chunk_output() {
     let mut parser = SseParser::default();
     assert!(parser.push(&b"data\n\n".repeat(4097)).is_err());
 }
+
+#[test]
+fn tasks_requests_carry_the_task_id_as_mcp_name() {
+    let specs: crate::mcp::header_params::HeaderSpecs = Default::default();
+    for method in ["tasks/get", "tasks/cancel", "tasks/update"] {
+        let body =
+            json!({"jsonrpc":"2.0","id":1,"method":method,"params":{"taskId":"t-9"}}).to_string();
+        let headers = modern_request_headers(&body, &specs);
+        let name = headers
+            .iter()
+            .find(|(k, _)| k.as_str() == "mcp-name")
+            .unwrap_or_else(|| panic!("{method} lacks Mcp-Name"));
+        assert_eq!(name.1, "t-9", "{method}");
+    }
+}

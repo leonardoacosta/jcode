@@ -1056,6 +1056,7 @@ fn write_generation_bound_task(task_id: &str, session_id: &str, generation: Opti
         progress: None,
         event_history: Vec::new(),
         stall_wake_seconds: None,
+        mcp_task: None,
         pid_start_time: None,
         owner_generation: generation,
     };

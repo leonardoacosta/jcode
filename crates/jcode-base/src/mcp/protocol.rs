@@ -100,6 +100,18 @@ pub struct ServerCapabilities {
     pub resources: Option<ResourcesCapability>,
     #[serde(default)]
     pub prompts: Option<PromptsCapability>,
+    /// 2026-07-28 protocol extensions the server supports, by identifier.
+    #[serde(default)]
+    pub extensions: Option<std::collections::HashMap<String, Value>>,
+}
+
+impl ServerCapabilities {
+    /// Whether the server advertised the Tasks extension.
+    pub fn supports_tasks(&self) -> bool {
+        self.extensions
+            .as_ref()
+            .is_some_and(|ext| ext.contains_key(super::tasks::TASKS_EXTENSION))
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
@@ -251,6 +263,12 @@ pub struct McpServerConfig {
     /// jcode opens no subscription and ignores server notifications.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub notifications: Option<super::notifications::McpNotificationConfig>,
+    /// Opt in to the MCP Tasks extension (`io.modelcontextprotocol/tasks`):
+    /// the server may answer `tools/call` with a task handle that jcode tracks
+    /// as a background task. Off by default, and honored only from global
+    /// config for the same reason as `notifications`.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub tasks: bool,
 }
 
 impl McpServerConfig {
@@ -754,6 +772,7 @@ impl McpConfig {
                             workspaces: Vec::new(),
                             lazy: None,
                             notifications: None,
+                            tasks: false,
                         },
                     );
                 }
@@ -879,6 +898,13 @@ impl McpConfig {
                 crate::logging::warn(&format!(
                     "MCP: ignoring `notifications` for server '{shown}' in project-local {source}; \
                      refresh and wake opt-in is honored only from global config"
+                ));
+            }
+            if std::mem::take(&mut server.tasks) {
+                let shown: String = name.chars().filter(|c| !c.is_control()).take(64).collect();
+                crate::logging::warn(&format!(
+                    "MCP: ignoring `tasks` for server '{shown}' in project-local {source}; \
+                     the Tasks extension is honored only from global config"
                 ));
             }
         }

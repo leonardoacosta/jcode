@@ -17,12 +17,14 @@ mod protocol;
 mod remote;
 pub mod resources;
 pub mod schema_cache;
+pub mod task_tracker;
+pub mod tasks;
 mod tool;
 
 pub use client::{
     DEFAULT_MCP_REQUEST_TIMEOUT, McpClient, McpHandle, interactive_connect, request_timeout_for,
 };
-pub use manager::McpManager;
+pub use manager::{ManagerTaskSource, McpManager};
 pub use pool::{SharedMcpPool, get_shared_pool, init_shared_pool};
 pub use protocol::*;
 pub use resources::{

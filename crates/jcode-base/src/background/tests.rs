@@ -608,6 +608,7 @@ fn running_status_fixture(task_id: &str, session_id: &str) -> TaskStatusFile {
         progress: None,
         event_history: Vec::new(),
         stall_wake_seconds: None,
+        mcp_task: None,
         pid_start_time: None,
         owner_generation: None,
     }

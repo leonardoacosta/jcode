@@ -109,6 +109,344 @@ pub struct TaskStatusFile {
     /// this long with no new output bytes and no progress events.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stall_wake_seconds: Option<u64>,
+    /// Present when this record tracks a remote MCP task (Tasks extension,
+    /// 2026-07-28). The record stays `Running` while the remote task is
+    /// nonterminal; it never carries credentials, only a server name and an
+    /// opaque identity fingerprint.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mcp_task: Option<McpTaskRecord>,
+}
+
+/// Local condition of an MCP task, independent of the remote status.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(tag = "state", content = "reason", rename_all = "snake_case")]
+pub enum McpRemoteState {
+    /// The remote task is being tracked and the server answered last time.
+    Tracking,
+    /// Last poll failed in transport; the last known state is kept.
+    RemoteUnavailable(String),
+    /// The saved server is unknown or now resolves to a different identity.
+    /// Automatic polling stopped and nothing was sent to any server.
+    Unresolved(String),
+    /// The task TTL elapsed locally before a terminal state was retrieved.
+    Expired,
+    /// The server no longer knows the task id (unknown or expired remotely).
+    NotFound,
+}
+
+/// Durable state of one MCP task, stored inside the background-task record.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct McpTaskRecord {
+    pub server: String,
+    /// Opaque fingerprint of the server endpoint and authorization context.
+    pub identity: String,
+    pub remote_task_id: String,
+    pub tool: String,
+    pub tool_call_id: String,
+    pub remote_status: crate::mcp::tasks::RemoteStatus,
+    #[serde(default)]
+    pub status_message: Option<String>,
+    pub created_at: String,
+    pub last_updated_at: String,
+    #[serde(default)]
+    pub ttl_ms: Option<u64>,
+    #[serde(default)]
+    pub poll_interval_ms: Option<u64>,
+    /// Local expiry: `created_at + ttl_ms`. `None` when the server set no TTL.
+    #[serde(default)]
+    pub expires_at: Option<String>,
+    #[serde(default)]
+    pub cancel_requested: bool,
+    /// Set when the last `tasks/cancel` request failed or its reply was lost.
+    #[serde(default)]
+    pub cancel_error: Option<String>,
+    /// Inlined result (bounded; a string with `result_truncated` when cut).
+    #[serde(default)]
+    pub result: Option<serde_json::Value>,
+    #[serde(default)]
+    pub result_truncated: bool,
+    /// Inlined JSON-RPC error of a failed task (bounded).
+    #[serde(default)]
+    pub error: Option<serde_json::Value>,
+    /// Outstanding input requests (bounded, untrusted, never answered).
+    #[serde(default)]
+    pub input_requests: Option<serde_json::Value>,
+    pub remote_state: McpRemoteState,
+}
+
+/// How a finished MCP task is recorded in the background-task status.
+#[derive(Debug, Clone, PartialEq)]
+pub struct McpTaskFinish {
+    pub status: BackgroundTaskStatus,
+    pub error: Option<String>,
+    /// Text for the task output file (also the notification preview).
+    pub output: String,
+}
+
+/// Cap for inlined result or error text kept in a status file.
+pub const MCP_TASK_RESULT_CAP: usize = 64 * 1024;
+/// Cap for the stored `input_requests` summary.
+pub const MCP_TASK_INPUT_CAP: usize = 8 * 1024;
+/// Longest server error text copied into the task status and notifications.
+pub const MCP_TASK_ERROR_CELLS: usize = 300;
+
+/// Bound a JSON value: kept as is when its compact form fits, otherwise
+/// replaced by the cut compact text. Returns `(value, truncated)`.
+pub fn bound_json(value: &serde_json::Value, cap: usize) -> (serde_json::Value, bool) {
+    let text = value.to_string();
+    if text.len() <= cap {
+        return (value.clone(), false);
+    }
+    (
+        serde_json::Value::String(crate::util::truncate_str(&text, cap).to_string()),
+        true,
+    )
+}
+
+/// Single-line, control-free copy of untrusted text.
+/// Unicode bidirectional override and isolate controls, which can reorder
+/// displayed text.
+fn is_bidi_control(c: char) -> bool {
+    matches!(c, '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}' | '\u{200E}' | '\u{200F}')
+}
+
+fn one_line(text: &str) -> String {
+    text.chars()
+        .filter(|c| !is_bidi_control(*c))
+        .map(|c| if c.is_control() { ' ' } else { c })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// Display width of `text` in terminal cells.
+pub fn cell_width(text: &str) -> usize {
+    use jcode_render_core::{ColumnWidth, WidthMeasure};
+    ColumnWidth.measure(text)
+}
+
+/// Truncate to at most `max_cells` terminal cells, ending in `…` when cut.
+/// Counts Unicode display cells, not chars, so UI rows never wrap.
+pub fn truncate_cells(text: &str, max_cells: usize) -> String {
+    use jcode_render_core::{ColumnWidth, WidthMeasure};
+    let measure = ColumnWidth;
+    if measure.measure(text) <= max_cells {
+        return text.to_string();
+    }
+    if max_cells == 0 {
+        return String::new();
+    }
+    let budget = max_cells - 1;
+    let mut out = String::new();
+    let mut used = 0;
+    for ch in text.chars() {
+        let w = measure.measure_char(ch);
+        if used + w > budget {
+            break;
+        }
+        used += w;
+        out.push(ch);
+    }
+    out.push('…');
+    out
+}
+
+/// Readable text of a `CallToolResult`, falling back to its JSON.
+fn result_text(result: &serde_json::Value) -> String {
+    let texts: Vec<&str> = result
+        .get("content")
+        .and_then(|content| content.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| item.get("text").and_then(|text| text.as_str()))
+                .collect()
+        })
+        .unwrap_or_default();
+    if texts.is_empty() {
+        match result {
+            serde_json::Value::String(text) => text.clone(),
+            other => other.to_string(),
+        }
+    } else {
+        texts.join("\n")
+    }
+}
+
+impl McpTaskRecord {
+    /// The background-task outcome implied by this record, or `None` while the
+    /// remote task is still being tracked. A remote terminal status always
+    /// wins. Expiry and not-found end tracking as `Lost` (outcome unknown,
+    /// never a success and never a failure).
+    pub fn finish(&self) -> Option<McpTaskFinish> {
+        use crate::mcp::tasks::RemoteStatus as S;
+        match self.remote_status {
+            S::Completed => Some(McpTaskFinish {
+                status: BackgroundTaskStatus::Completed,
+                error: None,
+                output: self.result.as_ref().map(result_text).unwrap_or_default(),
+            }),
+            S::Failed => {
+                let message = self
+                    .error
+                    .as_ref()
+                    .and_then(|error| error.get("message"))
+                    .and_then(|message| message.as_str())
+                    .map(one_line)
+                    .or_else(|| {
+                        self.error
+                            .as_ref()
+                            .map(|error| one_line(&error.to_string()))
+                    })
+                    .map(|text| truncate_cells(&text, MCP_TASK_ERROR_CELLS))
+                    .unwrap_or_else(|| "MCP task failed".to_string());
+                Some(McpTaskFinish {
+                    status: BackgroundTaskStatus::Failed,
+                    output: format!("MCP task failed: {message}"),
+                    error: Some(message),
+                })
+            }
+            S::Cancelled => Some(McpTaskFinish {
+                status: BackgroundTaskStatus::Failed,
+                error: Some("Cancelled by remote".to_string()),
+                output: "MCP task cancelled by the server".to_string(),
+            }),
+            S::Working | S::InputRequired => {
+                let reason = match self.remote_state {
+                    McpRemoteState::Expired => "MCP task expired before its result was retrieved",
+                    McpRemoteState::NotFound => {
+                        "MCP task is unknown to the server (expired or the server restarted)"
+                    }
+                    _ => return None,
+                };
+                let text = format!(
+                    "{reason} (last remote status: {})",
+                    self.remote_status.as_str()
+                );
+                Some(McpTaskFinish {
+                    status: BackgroundTaskStatus::Lost,
+                    error: Some(text.clone()),
+                    output: text,
+                })
+            }
+        }
+    }
+
+    /// Task kind shown in listings: `mcp:<server>:<tool>`.
+    pub fn kind_label(&self) -> String {
+        let clean = |text: &str| -> String {
+            one_line(text)
+                .chars()
+                .filter(|c| *c != '`' && !is_bidi_control(*c))
+                .collect()
+        };
+        format!("mcp:{}:{}", clean(&self.server), clean(&self.tool))
+    }
+
+    /// Compact remote-state label. Distinguishes cancellation requested from
+    /// confirmed, and never claims cancellation worked when the server
+    /// reported another terminal state. Single line, untrusted text bounded.
+    pub fn state_label(&self) -> String {
+        use crate::mcp::tasks::RemoteStatus as S;
+        let status = self.remote_status.as_str();
+        match &self.remote_state {
+            McpRemoteState::Unresolved(reason) => {
+                format!("unresolved: {}", truncate_cells(&one_line(reason), 60))
+            }
+            McpRemoteState::Expired => format!("expired (last {status})"),
+            McpRemoteState::NotFound => format!("expired/not found (last {status})"),
+            state => {
+                let unavailable = match state {
+                    McpRemoteState::RemoteUnavailable(reason) => {
+                        format!(
+                            ", remote unavailable: {}",
+                            truncate_cells(&one_line(reason), 40)
+                        )
+                    }
+                    _ => String::new(),
+                };
+                match (self.remote_status, self.cancel_requested) {
+                    (S::Cancelled, true) => "cancelled (confirmed)".to_string(),
+                    (S::Completed | S::Failed, true) => {
+                        format!("{status} (cancellation requested, server finished first)")
+                    }
+                    (_, true) if self.cancel_error.is_some() => {
+                        format!("{status}, cancellation requested (unacknowledged){unavailable}")
+                    }
+                    (_, true) => format!("{status}, cancellation requested{unavailable}"),
+                    _ => format!("{status}{unavailable}"),
+                }
+            }
+        }
+    }
+
+    /// Short state for table cells (at most 12 cells), e.g. `cancel-req`.
+    pub fn short_state(&self) -> &'static str {
+        use crate::mcp::tasks::RemoteStatus as S;
+        match &self.remote_state {
+            McpRemoteState::Unresolved(_) => "unresolved",
+            McpRemoteState::Expired => "expired",
+            McpRemoteState::NotFound => "not-found",
+            McpRemoteState::RemoteUnavailable(_) => "unavailable",
+            McpRemoteState::Tracking => match (self.remote_status, self.cancel_requested) {
+                (S::Cancelled, _) => "cancelled",
+                (S::Completed, _) => "completed",
+                (S::Failed, _) => "failed",
+                (_, true) => "cancel-req",
+                (S::InputRequired, false) => "input-req",
+                (S::Working, false) => "working",
+            },
+        }
+    }
+
+    /// Detail lines for task status output. Each line is single-line text.
+    pub fn detail_lines(&self) -> Vec<String> {
+        let mut lines = vec![
+            format!("MCP task: {}", self.kind_label()),
+            format!("Remote task id: {}", one_line(&self.remote_task_id)),
+            format!("Remote state: {}", self.state_label()),
+        ];
+        if let Some(message) = self.status_message.as_deref().filter(|m| !m.is_empty()) {
+            lines.push(format!(
+                "Remote message: {}",
+                truncate_cells(&one_line(message), 200)
+            ));
+        }
+        if let Some(expires) = self.expires_at.as_deref() {
+            lines.push(format!("Expires: {expires}"));
+        }
+        if let Some(error) = self.cancel_error.as_deref() {
+            lines.push(format!(
+                "Cancel request error: {}",
+                truncate_cells(&one_line(error), 200)
+            ));
+        }
+        if let Some(input) = self.input_requests.as_ref() {
+            lines.push(format!(
+                "Input required (untrusted, not answered): {}",
+                truncate_cells(&one_line(&input.to_string()), 300)
+            ));
+        }
+        if let Some(result) = self.result.as_ref() {
+            let suffix = if self.result_truncated {
+                " (truncated)"
+            } else {
+                ""
+            };
+            lines.push(format!(
+                "Result{suffix}: {}",
+                truncate_cells(&one_line(&result.to_string()), 300)
+            ));
+        }
+        if let Some(error) = self.error.as_ref() {
+            lines.push(format!(
+                "Remote error: {}",
+                truncate_cells(&one_line(&error.to_string()), 300)
+            ));
+        }
+        lines
+    }
 }
 
 fn default_true() -> bool {
@@ -158,7 +496,9 @@ fn terminal_event_kind(
     match status {
         BackgroundTaskStatus::Completed => BackgroundTaskEventKind::Completed,
         BackgroundTaskStatus::Superseded => BackgroundTaskEventKind::Superseded,
-        BackgroundTaskStatus::Failed if error == Some("Cancelled by user") => {
+        BackgroundTaskStatus::Failed
+            if matches!(error, Some("Cancelled by user" | "Cancelled by remote")) =>
+        {
             BackgroundTaskEventKind::Cancelled
         }
         BackgroundTaskStatus::Failed => BackgroundTaskEventKind::Failed,

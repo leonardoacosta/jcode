@@ -810,6 +810,27 @@ pub(super) async fn dispatch_ui_activity(
     }
 }
 
+/// Start durable MCP task tracking: install the process-wide tracker (used by
+/// `bg cancel` and the call path), subscribe it to `notifications/tasks`
+/// hints, and resume every persisted nonterminal remote task. Persisted tasks
+/// are polled, never re-called.
+pub(super) async fn start_mcp_task_tracking(pool: Arc<crate::mcp::SharedMcpPool>) {
+    use crate::mcp::{ManagerTaskSource, McpManager, task_tracker::McpTaskTracker};
+    let manager = Arc::new(McpManager::with_shared_pool(pool, "mcp-tasks".to_string()));
+    let tracker = McpTaskTracker::new(
+        Arc::new(ManagerTaskSource::new(manager)),
+        crate::background::global_arc().clone(),
+    );
+    if !McpTaskTracker::install_global(tracker.clone()) {
+        return;
+    }
+    crate::mcp::tasks::set_task_hint_sink(Some(Arc::new(tracker.clone())));
+    let resumed = tracker.resume_all().await;
+    if resumed > 0 {
+        crate::logging::info(&format!("Resumed tracking {resumed} remote MCP task(s)"));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -837,6 +858,7 @@ mod tests {
             progress: None,
             event_history: Vec::new(),
             stall_wake_seconds: None,
+            mcp_task: None,
             pid_start_time: None,
             owner_generation: generation,
         };

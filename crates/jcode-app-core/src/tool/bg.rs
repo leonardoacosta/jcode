@@ -167,6 +167,17 @@ fn status_label(status: &BackgroundTaskStatus) -> &'static str {
     }
 }
 
+/// STATUS cell of `bg list`. MCP tasks show their remote state (for example
+/// `cancel-req` or `unavailable`) while the record is still running.
+fn list_status_cell(task: &background::TaskStatusFile) -> String {
+    match task.mcp_task.as_ref() {
+        Some(mcp) if task.status == BackgroundTaskStatus::Running => {
+            crate::background::truncate_cells(mcp.short_state(), 12)
+        }
+        _ => status_label(&task.status).to_string(),
+    }
+}
+
 fn is_terminal(status: &BackgroundTaskStatus) -> bool {
     !matches!(status, BackgroundTaskStatus::Running)
 }
@@ -256,6 +267,7 @@ fn task_metadata(
         "detached": task.detached,
         "progress": task.progress,
         "event_history": task.event_history,
+        "mcp_task": task.mcp_task,
         "output_file": manager.output_path_for(&task.task_id).to_string_lossy(),
         "status_file": manager.status_path_for(&task.task_id).to_string_lossy(),
     })
@@ -298,6 +310,12 @@ fn format_task_details(task: &background::TaskStatusFile) -> String {
     }
     output.push_str(&format!("Notify: {}\n", task.notify));
     output.push_str(&format!("Wake: {}\n", task.wake));
+    if let Some(mcp) = task.mcp_task.as_ref() {
+        for line in mcp.detail_lines() {
+            output.push_str(&line);
+            output.push('\n');
+        }
+    }
     if let Some(error) = task.error.as_ref() {
         output.push_str(&format!("Error: {}\n", error));
     }
@@ -515,6 +533,47 @@ async fn wait_many_polling(
     }
 }
 
+/// Cancel a remote MCP task through the tracker. The result states what the
+/// server reported: a request is not a cancellation until confirmed.
+async fn cancel_mcp_task(task_id: &str) -> Result<ToolOutput> {
+    use crate::mcp::task_tracker::{CancelOutcome, McpTaskTracker};
+    let tracker = McpTaskTracker::global().ok_or_else(|| {
+        anyhow::anyhow!("MCP task tracker is not running; cannot cancel {task_id}")
+    })?;
+    let (message, confirmed) = match tracker.cancel(task_id).await? {
+        CancelOutcome::Confirmed => (
+            format!("Task {task_id} cancelled (confirmed by the server)."),
+            true,
+        ),
+        CancelOutcome::ServerFinished(status) => (
+            format!(
+                "Cancellation requested for {task_id}, but the server reported {} first. The server's outcome is kept; the cancellation did not stop it.",
+                status.as_str()
+            ),
+            false,
+        ),
+        CancelOutcome::Requested => (
+            format!("Cancellation requested for {task_id}. Not confirmed yet; polling continues."),
+            false,
+        ),
+        CancelOutcome::AbandonedLocally => (
+            format!(
+                "Task {task_id} could not be matched to its MCP server (not configured, or it changed), so nothing was sent. The local record was closed as lost; the remote task, if it exists, was NOT cancelled."
+            ),
+            false,
+        ),
+        CancelOutcome::Unacknowledged(reason) => (
+            format!(
+                "Cancellation request for {task_id} was not acknowledged ({reason}). Still unconfirmed; polling continues."
+            ),
+            false,
+        ),
+    };
+    Ok(ToolOutput::new(message)
+        .with_title(format!("bg cancel {task_id}"))
+        .with_metadata(json!({"task_id": task_id, "cancelled": confirmed, "mcp_task": true})))
+}
+
 #[async_trait]
 impl Tool for BgTool {
     fn name(&self) -> &str {
@@ -603,9 +662,17 @@ impl Tool for BgTool {
                     output.push_str(&format!(
                         "{:<12} {:<28} {:<10} {:<12} {:<10} {:<28} {}\n",
                         task.task_id,
-                        crate::util::truncate_str(&display_name, 28),
-                        task.tool_name,
-                        status_label(&task.status),
+                        if task.mcp_task.is_some() {
+                            crate::background::truncate_cells(&display_name, 28)
+                        } else {
+                            crate::util::truncate_str(&display_name, 28).to_string()
+                        },
+                        if task.mcp_task.is_some() {
+                            "mcp"
+                        } else {
+                            task.tool_name.as_str()
+                        },
+                        list_status_cell(task),
                         duration,
                         crate::util::truncate_str(&progress, 28),
                         &task.session_id[..8.min(task.session_id.len())]
@@ -686,6 +753,11 @@ impl Tool for BgTool {
                 let task_id = resolve_task_ids(manager, &ctx, &params, "cancel", false)
                     .await?
                     .remove(0);
+                if let Some(task) = manager.status(&task_id).await
+                    && task.mcp_task.is_some()
+                {
+                    return cancel_mcp_task(&task_id).await;
+                }
                 let grace = Duration::from_millis(params.graceful_timeout_ms.unwrap_or(400));
                 match manager.cancel_with_grace(&task_id, grace).await? {
                     true => Ok(ToolOutput::new(format!("Task {} cancelled.", task_id))
@@ -982,6 +1054,119 @@ mod tests {
         manager.cancel(&task.task_id).await.unwrap();
     }
 
+    fn mcp_status(
+        status: BackgroundTaskStatus,
+        mutate: impl FnOnce(&mut background::McpTaskRecord),
+    ) -> background::TaskStatusFile {
+        let mut record = background::McpTaskRecord {
+            server: "srv".into(),
+            identity: "fp".into(),
+            remote_task_id: "remote-1".into(),
+            tool: "build".into(),
+            tool_call_id: "call-1".into(),
+            remote_status: crate::mcp::tasks::RemoteStatus::Working,
+            status_message: None,
+            created_at: "2026-01-01T00:00:00Z".into(),
+            last_updated_at: "2026-01-01T00:00:01Z".into(),
+            ttl_ms: None,
+            poll_interval_ms: None,
+            expires_at: None,
+            cancel_requested: false,
+            cancel_error: None,
+            result: None,
+            result_truncated: false,
+            error: None,
+            input_requests: None,
+            remote_state: background::McpRemoteState::Tracking,
+        };
+        mutate(&mut record);
+        background::TaskStatusFile {
+            task_id: "abc123".into(),
+            tool_name: record.kind_label(),
+            display_name: None,
+            session_id: "session-1".into(),
+            status,
+            exit_code: None,
+            error: None,
+            started_at: "2026-01-01T00:00:00Z".into(),
+            completed_at: None,
+            duration_secs: None,
+            pid: None,
+            pid_start_time: None,
+            owner_generation: None,
+            owner_pid: None,
+            owner_instance: None,
+            detached: false,
+            notify: true,
+            wake: false,
+            progress: None,
+            event_history: Vec::new(),
+            stall_wake_seconds: None,
+            mcp_task: Some(record),
+        }
+    }
+
+    #[test]
+    fn mcp_task_tracking_status_and_list_show_remote_state() {
+        use crate::mcp::tasks::RemoteStatus;
+        let running = mcp_status(BackgroundTaskStatus::Running, |_| {});
+        assert_eq!(list_status_cell(&running), "working");
+        let details = format_task_details(&running);
+        assert!(details.contains("MCP task: mcp:srv:build\n"), "{details}");
+        assert!(details.contains("Remote state: working\n"), "{details}");
+
+        let requested = mcp_status(BackgroundTaskStatus::Running, |r| r.cancel_requested = true);
+        assert_eq!(list_status_cell(&requested), "cancel-req");
+        assert!(format_task_details(&requested).contains("cancellation requested"));
+
+        let unavailable = mcp_status(BackgroundTaskStatus::Running, |r| {
+            r.remote_state = background::McpRemoteState::RemoteUnavailable("reset".into());
+        });
+        assert_eq!(list_status_cell(&unavailable), "unavailable");
+        let unresolved = mcp_status(BackgroundTaskStatus::Running, |r| {
+            r.remote_state = background::McpRemoteState::Unresolved("identity changed".into());
+        });
+        assert_eq!(list_status_cell(&unresolved), "unresolved");
+
+        let input = mcp_status(BackgroundTaskStatus::Running, |r| {
+            r.remote_status = RemoteStatus::InputRequired;
+            r.input_requests = Some(json!({"q": "pick one"}));
+        });
+        assert_eq!(list_status_cell(&input), "input-req");
+        assert!(format_task_details(&input).contains("Input required (untrusted, not answered)"));
+
+        // Terminal records use the ordinary status word.
+        let done = mcp_status(BackgroundTaskStatus::Completed, |r| {
+            r.remote_status = RemoteStatus::Completed;
+            r.result = Some(json!({"content": [{"type": "text", "text": "built"}]}));
+        });
+        assert_eq!(list_status_cell(&done), "completed");
+        assert!(format_task_details(&done).contains("Result: "));
+        let metadata = task_metadata(
+            &background::BackgroundTaskManager::with_output_dir(
+                tempfile::tempdir().unwrap().path().into(),
+            ),
+            &done,
+        );
+        assert_eq!(metadata["mcp_task"]["remote_task_id"], "remote-1");
+    }
+
+    #[test]
+    fn mcp_task_tracking_list_cells_fit_their_columns() {
+        let measure = crate::background::cell_width;
+        let long = mcp_status(BackgroundTaskStatus::Running, |r| {
+            r.server = "サーバー".repeat(10);
+            r.remote_state = background::McpRemoteState::RemoteUnavailable("x".repeat(500));
+        });
+        assert!(measure(&list_status_cell(&long)) <= 12);
+        let name = crate::background::truncate_cells(&long.tool_name, 28);
+        assert!(measure(&name) <= 28, "{name}");
+        assert!(name.ends_with('…'));
+        for line in format_task_details(&long).lines() {
+            assert!(!line.contains('\n'));
+        }
+    }
+
     #[test]
     fn status_filter_schema_is_a_typed_enum_and_arrays_still_parse() -> Result<()> {
         let schema = BgTool::new().parameters_schema();
@@ -1045,6 +1230,7 @@ mod tests {
             progress: None,
             event_history: Vec::new(),
             stall_wake_seconds: None,
+            mcp_task: None,
             pid_start_time: None,
             owner_generation: None,
         };
