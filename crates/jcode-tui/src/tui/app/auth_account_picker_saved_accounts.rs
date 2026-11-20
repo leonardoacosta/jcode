@@ -179,6 +179,46 @@ fn saved_login_entry(
 }
 
 impl App {
+    /// Open the world issue board overlay in the given load state.
+    pub(crate) fn open_board_overlay(&mut self, load: crate::tui::board_overlay::BoardLoad) {
+        self.pending_board_action = None;
+        self.board_overlay = Some(RefCell::new(crate::tui::board_overlay::BoardOverlay::new(
+            load,
+        )));
+    }
+
+    /// Replace the board state (e.g. from a background task). No-op when the
+    /// overlay was closed meanwhile, so late results never reopen it.
+    pub(crate) fn update_board_overlay(&mut self, load: crate::tui::board_overlay::BoardLoad) {
+        if let Some(cell) = self.board_overlay.as_ref() {
+            cell.borrow_mut().set_load(load);
+        }
+    }
+
+    /// Take the pending Refresh or Confirmed move raised by the overlay.
+    pub(crate) fn take_board_action(&mut self) -> Option<crate::tui::board_overlay::BoardAction> {
+        self.pending_board_action.take()
+    }
+
+    pub(crate) fn handle_board_overlay_key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
+        use crate::tui::board_overlay::BoardAction;
+
+        let Some(cell) = self.board_overlay.as_ref() else {
+            return;
+        };
+        let action = cell.borrow_mut().handle_key(code, modifiers);
+        match action {
+            BoardAction::None => {}
+            BoardAction::Close => {
+                self.board_overlay = None;
+                self.pending_board_action = None;
+            }
+            action @ (BoardAction::Refresh | BoardAction::Confirmed(_)) => {
+                self.pending_board_action = Some(action);
+            }
+        }
+    }
+
     pub(crate) fn handle_login_picker_key(
         &mut self,
         code: KeyCode,

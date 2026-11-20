@@ -159,6 +159,21 @@ pub fn match_rule<'a>(rules: &'a WorkspacesConfig, origin: &str) -> Option<&'a W
     })
 }
 
+/// Every rule (config order) whose `origin` glob matches `origin`. Callers
+/// that must not guess between overlapping rules (issue boards) use this
+/// instead of [`match_rule`]'s first-match-wins.
+pub fn matching_rules<'a>(rules: &'a WorkspacesConfig, origin: &str) -> Vec<&'a WorkspaceRule> {
+    rules
+        .rules
+        .iter()
+        .filter(|rule| {
+            !rule.name.trim().is_empty()
+                && !rule.origin.trim().is_empty()
+                && glob_matches(&rule.origin, origin)
+        })
+        .collect()
+}
+
 // ------------------------------------------------------------ repo facts
 
 /// What the checkout says about itself. `origin` is already credential-free.

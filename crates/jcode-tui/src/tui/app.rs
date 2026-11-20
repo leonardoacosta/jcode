@@ -60,6 +60,7 @@ pub enum AppRuntimeMode {
 mod auth;
 mod auth_account_picker_saved_accounts;
 mod auth_remote;
+mod board;
 mod cache_diagnostics;
 mod catchup;
 mod commands;
@@ -1932,6 +1933,11 @@ pub struct App {
     catchup_return_stack: Vec<String>,
     pending_catchup_resume: Option<PendingCatchupResume>,
     in_flight_catchup_resume: Option<PendingCatchupResume>,
+    /// World issue board overlay (None = not visible)
+    board_overlay: Option<RefCell<super::board_overlay::BoardOverlay>>,
+    /// Last refresh/move action raised by the board overlay, awaiting the driver
+    pending_board_action: Option<super::board_overlay::BoardAction>,
+    board: board::BoardState,
     /// Login picker overlay (None = not visible)
     login_picker_overlay: Option<RefCell<super::login_picker::LoginPicker>>,
     /// Account picker overlay (None = not visible)

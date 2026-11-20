@@ -22,6 +22,7 @@ pub mod account_login;
 pub mod applets;
 pub mod auth;
 pub mod background;
+pub mod board;
 pub mod browser;
 pub mod browser_detect;
 pub mod bus;

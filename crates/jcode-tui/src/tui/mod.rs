@@ -47,6 +47,7 @@ pub use jcode_terminal_image::display as image;
 #[path = "tui_text_filter.rs"]
 mod text_filter;
 
+pub mod board_overlay;
 mod focus_carryover;
 pub mod info_widget;
 mod info_widget_layout;
@@ -1196,6 +1197,10 @@ pub trait TuiState {
     }
     /// Session picker overlay for /resume command
     fn session_picker_overlay(&self) -> Option<&std::cell::RefCell<session_picker::SessionPicker>>;
+    /// World issue board overlay
+    fn board_overlay(&self) -> Option<&std::cell::RefCell<board_overlay::BoardOverlay>> {
+        None
+    }
     /// Login picker overlay for /login command
     fn login_picker_overlay(&self) -> Option<&std::cell::RefCell<login_picker::LoginPicker>>;
     /// Account picker overlay for /account command

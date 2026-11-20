@@ -74,6 +74,7 @@ include!("tests/issue_699_ctrl_d_delete.rs");
 include!("tests/issue_832_remote_ctrl_k.rs");
 include!("tests/voice_input.rs");
 include!("tests/issue_998_model_status_overlay.rs");
+include!("tests/board_overlay_wiring.rs");
 include!("tests/issue_1685_bounded_auto_resume.rs");
 include!("tests/held_retry_dispatch.rs");
 include!("tests/spinner_slash_commands.rs");

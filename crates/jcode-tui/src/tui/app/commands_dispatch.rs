@@ -298,6 +298,7 @@ fn dispatch_single_local_command(app: &mut App, trimmed: &str) -> bool {
         || app.handle_usage_reset_command(trimmed)
         || super::commands::handle_usage_command(app, trimmed)
         || super::commands_mcp::handle_mcp_command(app, trimmed)
+        || super::board::handle_board_command(app, trimmed)
         || super::productivity::handle_productivity_command(app, trimmed)
         || super::commands::handle_feedback_command(app, trimmed)
         || super::commands::handle_telemetry_command(app, trimmed)

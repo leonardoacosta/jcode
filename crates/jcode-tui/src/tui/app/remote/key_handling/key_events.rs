@@ -27,6 +27,13 @@ pub(super) async fn handle_remote_key_internal(
     let mut modifiers = modifiers;
     ctrl_bracket_fallback_to_esc(&mut code, &mut modifiers);
 
+    // The board overlay owns every key while open, ahead of failover and
+    // onboarding prompts, so Esc closes the board instead of cancelling them.
+    if app.board_overlay.is_some() {
+        app.handle_board_overlay_key(code, modifiers);
+        return Ok(());
+    }
+
     if app.handle_key_during_provider_failover(code) {
         return Ok(());
     }

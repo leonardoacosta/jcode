@@ -1446,6 +1446,9 @@ impl App {
             }
             finish_mouse_event!(false, "session_picker_overlay");
         }
+        if self.board_overlay.is_some() {
+            finish_mouse_event!(false, "board_overlay");
+        }
         if let Some(ref picker_cell) = self.login_picker_overlay {
             picker_cell.borrow_mut().handle_overlay_mouse(mouse);
             finish_mouse_event!(false, "login_picker_overlay");

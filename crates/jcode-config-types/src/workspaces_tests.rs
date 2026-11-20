@@ -123,3 +123,35 @@ fn has_lifecycle_entries_is_per_event() {
     assert!(!config.has_lifecycle_entries("Stop"));
     assert!(!WorkspacesConfig::default().has_lifecycle_entries("PreToolUse"));
 }
+
+#[test]
+fn board_binding_parses_and_defaults() {
+    let r = rule(serde_json::json!({
+        "name": "personal", "origin": "github.com/me/**", "tracker": "linear",
+        "board": {"backend": "Linear", "team": " team-id ", "project": "p1"}
+    }));
+    let board = r.board.expect("board");
+    assert_eq!(board.backend_kind(), Some(BoardBackend::Linear));
+    assert_eq!(board.team_id(), "team-id");
+    assert_eq!(board.project_id(), Some("p1"));
+    assert_eq!(board.server_name(), "Linear");
+    assert!(
+        rule(serde_json::json!({"name": "n", "origin": "o"}))
+            .board
+            .is_none()
+    );
+}
+
+#[test]
+fn board_binding_warns_on_unknown_backend_and_missing_team() {
+    let config: WorkspacesConfig = serde_json::from_value(serde_json::json!({
+        "rules": [{"name": "w", "origin": "github.com/a/**",
+                   "board": {"backend": "jira", "team": " "}}]
+    }))
+    .unwrap();
+    let warnings = config.warnings();
+    assert_eq!(warnings.len(), 2, "{warnings:?}");
+    assert!(warnings.iter().any(|w| w.contains("jira")));
+    assert!(warnings.iter().any(|w| w.contains("`team`")));
+    assert_eq!(BoardBackend::parse("none"), None);
+}

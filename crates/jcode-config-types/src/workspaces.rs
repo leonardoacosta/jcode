@@ -34,6 +34,109 @@ impl Tracker {
     }
 }
 
+/// Backend of a world's issue board.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum BoardBackend {
+    Linear,
+    Ado,
+}
+
+impl BoardBackend {
+    /// Only `linear` and `ado` name a board backend. `none` is a tracker
+    /// value, not a board.
+    pub fn parse(value: &str) -> Option<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "linear" => Some(Self::Linear),
+            "ado" => Some(Self::Ado),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Linear => "linear",
+            Self::Ado => "ado",
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Linear => "Linear",
+            Self::Ado => "ADO",
+        }
+    }
+
+    pub fn tracker(self) -> Tracker {
+        match self {
+            Self::Linear => Tracker::Linear,
+            Self::Ado => Tracker::Ado,
+        }
+    }
+}
+
+/// Default MCP server name that carries the Linear tools.
+pub const DEFAULT_BOARD_SERVER: &str = "Linear";
+
+/// `[workspaces.rules.board]`: the issue board of one world.
+///
+/// Lives only in the user's global config, like the rest of a workspace rule.
+/// Holds stable identifiers and an MCP server name, never credentials.
+/// Display names must not be used for `team` or `project`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct BoardBinding {
+    /// `linear` or `ado`.
+    pub backend: String,
+    /// Stable team identifier. Required: there is no default team.
+    pub team: String,
+    /// Optional stable project identifier narrowing the team board.
+    pub project: Option<String>,
+    /// MCP server name carrying the tools (default `Linear`).
+    pub server: Option<String>,
+}
+
+impl BoardBinding {
+    pub fn backend_kind(&self) -> Option<BoardBackend> {
+        BoardBackend::parse(&self.backend)
+    }
+
+    pub fn team_id(&self) -> &str {
+        self.team.trim()
+    }
+
+    pub fn project_id(&self) -> Option<&str> {
+        self.project
+            .as_deref()
+            .map(str::trim)
+            .filter(|p| !p.is_empty())
+    }
+
+    pub fn server_name(&self) -> &str {
+        self.server
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or(DEFAULT_BOARD_SERVER)
+    }
+
+    /// Problems that make this binding unusable (the board refuses it).
+    pub fn warnings(&self, label: &str) -> Vec<String> {
+        let mut out = Vec::new();
+        if self.backend_kind().is_none() {
+            out.push(format!(
+                "{label}: unknown board backend {:?} (expected linear or ado); the board is refused",
+                self.backend.trim()
+            ));
+        }
+        if self.team_id().is_empty() {
+            out.push(format!(
+                "{label}: board `team` is empty; the board is refused"
+            ));
+        }
+        out
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct WorkspacesConfig {
@@ -90,6 +193,8 @@ pub struct WorkspaceRule {
     pub roles: AgentRoleModels,
     /// Remote Hindsight memory route for this world (`[workspaces.rules.hindsight]`).
     pub hindsight: Option<crate::HindsightRoute>,
+    /// Issue board for this world (`[workspaces.rules.board]`).
+    pub board: Option<BoardBinding>,
 }
 
 impl WorkspaceRule {
@@ -146,6 +251,9 @@ impl WorkspaceRule {
         }
         if let Some(route) = &self.hindsight {
             out.extend(route.warnings(&label));
+        }
+        if let Some(board) = &self.board {
+            out.extend(board.warnings(&label));
         }
         let legacy = self.hooks.pre_tool_transform.is_some()
             || self.hooks.turn_start.is_some()

@@ -341,6 +341,11 @@ use paste_guard::load_dropped_image;
 pub(crate) use paste_guard::tiny_png_bytes_for_test;
 
 pub(super) fn handle_paste(app: &mut App, text: String) {
+    // The board overlay has no text field: a paste must not reach the hidden
+    // composer behind it.
+    if app.board_overlay.is_some() {
+        return;
+    }
     if app.append_ssh_login_input(&text) {
         return;
     }
@@ -606,6 +611,11 @@ impl App {
         result: ClipboardPasteCompleted,
     ) -> bool {
         if self.active_client_session_id() != Some(result.session_id.as_str()) {
+            return false;
+        }
+        // A finished clipboard read must not land in the composer hidden behind
+        // the board overlay.
+        if self.board_overlay.is_some() {
             return false;
         }
 
@@ -2820,6 +2830,11 @@ pub(super) fn handle_modal_key(
 
     if app.session_picker_overlay.is_some() {
         app.handle_session_picker_key(code, modifiers)?;
+        return Ok(true);
+    }
+
+    if app.board_overlay.is_some() {
+        app.handle_board_overlay_key(code, modifiers);
         return Ok(true);
     }
 
