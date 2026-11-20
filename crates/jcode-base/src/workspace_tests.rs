@@ -233,19 +233,28 @@ fn identity_hit_mismatch_unset_and_cache_reuse() {
 
     // Unset: reported, never invented.
     assert_eq!(resolve(&repo).unwrap().identity(), Identity::Missing);
-    assert_eq!(badge(&repo, true).as_deref(), Some("ws:brown ?id"));
+    assert_eq!(
+        badge(&repo, true).as_deref(),
+        Some("ws: brown · brown-repo: tracker:ado ?id")
+    );
 
     // A global config edit invalidates the cache.
     std::fs::write(&global, "[user]\n\temail = other@example.com\n").unwrap();
     assert_eq!(resolve(&repo).unwrap().identity(), Identity::Mismatch);
-    assert_eq!(badge(&repo, true).as_deref(), Some("ws:brown !id"));
+    assert_eq!(
+        badge(&repo, true).as_deref(),
+        Some("ws: brown · brown-repo: tracker:ado !id")
+    );
     let prompt = prompt_block(&repo, None).unwrap();
     assert!(prompt.contains("differs from this workspace's expected_email"));
 
     // Repo-local config wins over the global one, and also invalidates.
     git(&repo, &["config", "user.email", "ME@brown.example"]);
     assert_eq!(resolve(&repo).unwrap().identity(), Identity::Match);
-    assert_eq!(badge(&repo, true).as_deref(), Some("ws:brown"));
+    assert_eq!(
+        badge(&repo, true).as_deref(),
+        Some("ws: brown · brown-repo: tracker:ado")
+    );
 
     // Neither config file changed: no git process at all.
     let before = git_spawn_count();
@@ -268,7 +277,10 @@ fn rule_without_expected_email_has_no_identity_marker() {
     let env = Env::new(RULES);
     let repo = env.repo("p", Some("git@github.com:me/thing.git"));
     assert_eq!(resolve(&repo).unwrap().identity(), Identity::NotChecked);
-    assert_eq!(badge(&repo, true).as_deref(), Some("ws:personal"));
+    assert_eq!(
+        badge(&repo, true).as_deref(),
+        Some("ws: personal · p: tracker:linear")
+    );
 }
 
 #[test]
@@ -472,7 +484,7 @@ fn nonblocking_probe_never_blocks_and_converges() {
         }
         std::thread::sleep(std::time::Duration::from_millis(25));
     }
-    assert_eq!(seen.as_deref(), Some("ws:personal"));
+    assert_eq!(seen.as_deref(), Some("ws: personal · r: tracker:linear"));
 }
 
 #[cfg(unix)]
@@ -607,11 +619,17 @@ fn badge_cache_serves_repeat_frames_without_reprobing() {
     // Warm the facts so the cached badge has a value.
     assert!(resolve(&repo).is_some());
     BADGES.lock().unwrap().clear();
-    assert_eq!(badge_cached(&repo).as_deref(), Some("ws:personal"));
+    assert_eq!(
+        badge_cached(&repo).as_deref(),
+        Some("ws: personal · r: tracker:linear")
+    );
     // Remove the repo: within the TTL the frame still reads the cached string
     // and does no filesystem work.
     std::fs::remove_dir_all(repo.join(".git")).unwrap();
-    assert_eq!(badge_cached(&repo).as_deref(), Some("ws:personal"));
+    assert_eq!(
+        badge_cached(&repo).as_deref(),
+        Some("ws: personal · r: tracker:linear")
+    );
     BADGES.lock().unwrap().clear();
     assert_eq!(badge_cached(&repo), None);
 }

@@ -625,9 +625,7 @@ use layout_support::{
 };
 #[cfg(test)]
 pub(crate) use status_support::calculate_input_lines;
-use status_support::{
-    format_status_for_debug, is_running_stable_release, semver, shorten_model_name,
-};
+use status_support::{format_status_for_debug, is_running_stable_release, semver};
 use theme_support::{
     accent_color, activity_indicator, activity_indicator_frame_index, ai_color, ai_text,
     asap_color, blend_color, dim_color, file_link_color, header_icon_color, header_name_color,

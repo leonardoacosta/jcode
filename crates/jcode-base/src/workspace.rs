@@ -508,12 +508,21 @@ pub fn resolve(dir: &Path) -> Option<Resolved> {
     resolve_with(dir, true)
 }
 
-/// Header badge text (`ws:brown`, plus ` !id` on identity mismatch or ` ?id`
+/// Header row text (`ws: brown · repo: tracker:ado`, plus ` !id` on identity mismatch or ` ?id`
 /// when `user.email` is unset). `None` for unknown workspaces. With
 /// `block == false` git never runs on the calling thread.
 pub fn badge(dir: &Path, block: bool) -> Option<String> {
     let resolved = resolve_with(dir, block)?;
-    let mut text = format!("ws:{}", truncate_chars(resolved.name(), NAME_LIMIT));
+    let mut text = format!("ws: {}", truncate_chars(resolved.name(), NAME_LIMIT));
+    if let Some(repo) = resolved.facts.root.file_name() {
+        let repo = truncate_chars(&repo.to_string_lossy(), NAME_LIMIT);
+        text.push_str(&format!(" · {repo}:"));
+    }
+    match resolved.rule.tracker_kind() {
+        Ok(Some(Tracker::Linear)) => text.push_str(" tracker:linear"),
+        Ok(Some(Tracker::Ado)) => text.push_str(" tracker:ado"),
+        _ => {}
+    }
     match resolved.identity() {
         Identity::Mismatch => text.push_str(" !id"),
         Identity::Missing => text.push_str(" ?id"),

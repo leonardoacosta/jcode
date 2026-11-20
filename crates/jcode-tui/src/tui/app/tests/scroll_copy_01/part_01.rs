@@ -1325,8 +1325,13 @@ fn retained_frame_row_matches_the_rendered_screen() {
     let scroll = crate::tui::ui::last_resolved_chat_scroll();
     assert!(scroll > 0, "fixture must be scrolled into history");
     let frame = crate::tui::ui::last_chat_frame().expect("frame published after a render");
+    // Short headers leave blank centering rows at the top of the view, so
+    // compare the first rows that carry text on both sides, row for row.
+    let first_text_row = (scroll..frame.wrapped_plain_line_count())
+        .find(|&row| frame.wrapped_plain_line(row).is_some_and(|t| !t.trim().is_empty()))
+        .expect("resolved row is in range");
     let top_row = frame
-        .wrapped_plain_line(scroll)
+        .wrapped_plain_line(first_text_row)
         .expect("resolved row is in range")
         .trim()
         .to_string();
@@ -1334,11 +1339,14 @@ fn retained_frame_row_matches_the_rendered_screen() {
     let area = crate::tui::ui::last_layout_snapshot()
         .expect("layout snapshot")
         .messages_area;
-    let first_chat_line = buffer_to_text(&terminal)
+    let first_chat_line: String = buffer_to_text(&terminal)
         .lines()
-        .skip(area.y as usize)
-        .find(|line| !line.trim().is_empty())
+        .nth(area.y as usize + (first_text_row - scroll))
         .unwrap_or("")
+        .chars()
+        .skip(area.x as usize)
+        .take(area.width.saturating_sub(1) as usize)
+        .collect::<String>()
         .trim()
         .to_string();
 

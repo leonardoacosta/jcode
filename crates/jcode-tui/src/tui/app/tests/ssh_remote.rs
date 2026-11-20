@@ -312,18 +312,18 @@ fn ssh_remote_header_guides_remote_login_and_hides_local_scheduler() {
             })
             .collect::<Vec<_>>()
             .join("\n");
-        assert!(
-            text.contains("/login to authenticate on test-remote"),
-            "{text}"
-        );
-        assert!(!text.contains("/login to add provider"), "{text}");
+        // The header carries no credential inventory at all, local or remote.
+        assert!(!text.contains("/login"), "{text}");
         assert!(
             !text.contains('○'),
             "must not claim an empty remote credential inventory: {text}"
         );
         assert_eq!(crate::tui::TuiState::provider_model(&app), "remote-model");
         assert_eq!(crate::tui::TuiState::provider_name(&app), "remote-provider");
-        assert!(text.contains("/remote-only-skill"), "{text}");
+        assert_eq!(
+            crate::tui::TuiState::available_skills(&app),
+            vec!["remote-only-skill".to_string()]
+        );
         app.remote_skills.clear();
         assert!(crate::tui::TuiState::available_skills(&app).is_empty());
         assert!(super::helpers::gather_ambient_info(false).is_none());

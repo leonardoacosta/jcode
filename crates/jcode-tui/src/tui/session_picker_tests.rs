@@ -1664,7 +1664,7 @@ fn test_preview_transcript_omits_picker_metadata() {
         "{text}"
     );
     assert!(
-        text.contains("client: Metadata-monkey"),
+        text.contains(jcode_build_meta::semver()),
         "the real startup header belongs to the scrolling transcript"
     );
     for metadata in ["metadata-video-title", "▶ Active"] {

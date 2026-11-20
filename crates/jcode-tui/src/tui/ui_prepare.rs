@@ -1024,7 +1024,7 @@ pub(in crate::tui) fn header_prep_signature(app: &dyn TuiState, width: u16) -> u
     // the header on the very next frame instead of waiting out the TTL, which
     // is what lets the TTL itself be sized for slow background drift.
     crate::auth::auth_status_generation().hash(&mut hasher);
-    header::account_router_generation().hash(&mut hasher);
+    crate::tui::header_facts::generation().hash(&mut hasher);
     app.startup_oauth_account_label().hash(&mut hasher);
     // The goal badge renders the focused side-panel page title when a goal
     // page is focused; keying on it keeps focus changes instant.

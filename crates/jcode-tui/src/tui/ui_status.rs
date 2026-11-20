@@ -68,37 +68,6 @@ pub(crate) fn calculate_input_lines(input: &str, line_width: usize) -> usize {
     total_lines.max(1)
 }
 
-pub(super) fn shorten_model_name(model: &str) -> String {
-    if model.contains('/') {
-        return model.to_string();
-    }
-    if model.contains("opus") {
-        if model.contains("4-5") || model.contains("4.5") {
-            return "claude4.5opus".to_string();
-        }
-        return "claudeopus".to_string();
-    }
-    if model.contains("sonnet") {
-        if model.contains("3-5") || model.contains("3.5") {
-            return "claude3.5sonnet".to_string();
-        }
-        return "claudesonnet".to_string();
-    }
-    if model.contains("haiku") {
-        return "claudehaiku".to_string();
-    }
-    if model.starts_with("gpt-5") {
-        return model.replace("gpt-", "gpt").replace("-", "");
-    }
-    if model.starts_with("gpt-4") {
-        return model.replace("gpt-", "").replace("-", "");
-    }
-    if model.starts_with("gpt-3") {
-        return "gpt3.5".to_string();
-    }
-    model.split('-').take(3).collect::<Vec<_>>().join("")
-}
-
 pub(super) fn format_status_for_debug(app: &dyn TuiState) -> String {
     match app.status() {
         ProcessingStatus::Idle => {

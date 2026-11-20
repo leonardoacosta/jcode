@@ -20,7 +20,7 @@ fn first_prompt_preserves_welcome_header_spacing() {
             // Track a persistent header row, not the first nonblank screen row.
             let header_y = welcome
                 .lines()
-                .position(|line| line.contains("/model to switch"))
+                .position(|line| line.contains(jcode_build_meta::semver()))
                 .unwrap();
             assert!(header_y > 0, "header is below the top: {welcome}");
 
@@ -33,7 +33,7 @@ fn first_prompt_preserves_welcome_header_spacing() {
             assert_eq!(
                 submitted
                     .lines()
-                    .position(|line| line.contains("/model to switch")),
+                    .position(|line| line.contains(jcode_build_meta::semver())),
                 Some(header_y),
                 "submitting must not jump the transcript to the top ({width}x{height} centered={centered}):\nWELCOME:\n{welcome}\nSUBMITTED:\n{submitted}"
             );

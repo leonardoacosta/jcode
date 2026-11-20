@@ -16,18 +16,6 @@ fn ssh_account_header_uses_daemon_identity() {
             crate::tui::TuiState::startup_oauth_account_label(&app).as_deref(),
             Some("remote-work")
         );
-        let (persistent, secondary) = crate::tui::ui::header::build_header_sections(&app, 120);
-        let text = persistent
-            .iter()
-            .chain(secondary.iter())
-            .flat_map(|line| line.spans.iter())
-            .map(|span| span.content.as_ref())
-            .collect::<String>();
-        assert!(
-            text.contains("> "),
-            "daemon account must be selected: {text}"
-        );
-        assert!(text.contains("Account router on test-remote"), "{text}");
         crate::usage::clear_remote_account_usage();
         // Missing daemon identity must not fall back to host-local credentials.
         app.remote_provider_oauth_account_label = None;
