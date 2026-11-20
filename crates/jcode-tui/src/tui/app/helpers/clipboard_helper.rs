@@ -65,22 +65,28 @@ pub(crate) fn copy_via_clipboard_helper(program: &str, args: &[&str], text: &str
 /// ordinary coreutils instead of real clipboard tools so they pass on headless
 /// CI: what matters is the contract (writes stdin, does not block on a
 /// long-lived owner, reports failure for a nonzero exit or a missing binary).
+///
+/// Each test takes the env lock: `ordering_tests` swap `PATH` for a stub
+/// directory, and a spawn of `cat` or `sleep` racing that swap finds nothing.
 #[cfg(all(test, not(any(windows, target_os = "macos"))))]
 mod tests {
     use super::copy_via_clipboard_helper;
 
     #[test]
     fn helper_that_exits_successfully_counts_as_a_copy() {
+        let _lock = crate::storage::lock_test_env();
         assert!(copy_via_clipboard_helper("cat", &[], "hello"));
     }
 
     #[test]
     fn helper_that_exits_nonzero_falls_through() {
+        let _lock = crate::storage::lock_test_env();
         assert!(!copy_via_clipboard_helper("false", &[], "hello"));
     }
 
     #[test]
     fn missing_helper_binary_falls_through() {
+        let _lock = crate::storage::lock_test_env();
         assert!(!copy_via_clipboard_helper(
             "jcode-nonexistent-clipboard-helper",
             &[],
@@ -92,6 +98,7 @@ mod tests {
     /// and must not block the UI thread for its whole lifetime.
     #[test]
     fn long_lived_helper_counts_as_a_copy_without_blocking() {
+        let _lock = crate::storage::lock_test_env();
         let start = std::time::Instant::now();
         assert!(copy_via_clipboard_helper("sleep", &["30"], "hello"));
         assert!(
