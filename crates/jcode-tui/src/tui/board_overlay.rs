@@ -74,7 +74,7 @@ fn kind_dot(kind: &str) -> Seg {
     seg("●", Style::default().fg(kind_dot_color(kind)))
 }
 
-pub const READ_ONLY_NOTICE: &str = "read-only: ADO boards cannot change status";
+pub const READ_ONLY_NOTICE: &str = "read-only: this board cannot change status";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BoardLoad {

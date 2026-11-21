@@ -2,7 +2,9 @@
 //! MCP server or network is contacted.
 
 use super::*;
-use crate::board::{BoardBackend, BoardIssue as CoreIssue, BoardUnavailable, ScopeOrigin, WorkflowState};
+use crate::board::{
+    BoardBackend, BoardIssue as CoreIssue, BoardUnavailable, CacheKey, ScopeOrigin, WorkflowState,
+};
 use async_trait::async_trait;
 use std::sync::Mutex;
 
@@ -436,45 +438,534 @@ fn board_glue_paste_does_not_reach_the_composer_while_the_board_is_open() {
     );
 }
 
+/// Disposable JCODE_HOME holding a global config and global MCP servers,
+/// serialized on the shared test-env lock.
+struct Env {
+    _guard: std::sync::MutexGuard<'static, ()>,
+    _home: tempfile::TempDir,
+    prev: Vec<(&'static str, Option<std::ffi::OsString>)>,
+}
+
+impl Env {
+    fn new(config_toml: &str, mcp_json: &str) -> Self {
+        let guard = crate::storage::lock_test_env();
+        let home = tempfile::TempDir::new().unwrap();
+        std::fs::write(home.path().join("config.toml"), config_toml).unwrap();
+        std::fs::write(home.path().join("mcp.json"), mcp_json).unwrap();
+        let mut prev = Vec::new();
+        for (key, value) in [
+            ("JCODE_HOME", Some(home.path().as_os_str())),
+            ("JCODE_DISABLE_CLAUDE_MCP", Some(std::ffi::OsStr::new("1"))),
+        ] {
+            prev.push((key, std::env::var_os(key)));
+            match value {
+                Some(value) => crate::env::set_var(key, value),
+                None => crate::env::remove_var(key),
+            }
+        }
+        crate::config::Config::invalidate_cache();
+        Self {
+            _guard: guard,
+            _home: home,
+            prev,
+        }
+    }
+}
+
+impl Drop for Env {
+    fn drop(&mut self) {
+        for (key, value) in self.prev.drain(..).rev() {
+            match value {
+                Some(value) => crate::env::set_var(key, value),
+                None => crate::env::remove_var(key),
+            }
+        }
+        crate::config::Config::invalidate_cache();
+    }
+}
+
+const RULES: &str = r#"
+[[workspaces.rules]]
+name = "personal"
+origin = "github.com/me/**"
+tracker = "linear"
+[workspaces.rules.board]
+backend = "linear"
+team = "team-personal"
+
+[[workspaces.rules]]
+name = "priceless"
+origin = "github.com/priceless/**"
+tracker = "linear"
+[workspaces.rules.board]
+backend = "linear"
+team = "team-priceless"
+server = "LinearAlt"
+
+[[workspaces.rules]]
+name = "brown"
+origin = "dev.azure.com/brown/**"
+tracker = "ado"
+[workspaces.rules.board]
+backend = "ado"
+team = "brown-team"
+"#;
+
+const SERVERS: &str = r#"{"mcpServers": {
+  "Linear": {"url": "https://mcp.example.test/personal"},
+  "LinearAlt": {"url": "https://mcp.example.test/priceless"}
+}}"#;
+
+fn target_scope(target: &str) -> BoardScope {
+    let Ok(BoardRuntime::One(board)) = prepare_runtime(None, Some(target.into())) else {
+        panic!("{target} should open one board")
+    };
+    board.scope
+}
+
 #[test]
-fn board_glue_command_without_a_working_directory_shows_no_board_and_queries_nothing() {
-    let mut app = crate::tui::app::tests::create_test_app();
-    app.session.working_dir = None;
-    let generation = app.board.generation;
-    assert!(handle_board_command(&mut app, "/board"));
-    assert!(app.board_overlay.is_some());
-    assert!(app.board.runtime.is_none());
-    assert_eq!(app.board.generation, generation, "no fetch was started");
-    let shown = format!("{:?}", app.board_overlay.as_ref().unwrap().borrow());
-    assert!(shown.contains("no working directory"), "{shown}");
-    assert!(
-        !handle_board_command(&mut app, "/boardx"),
-        "not our command"
+fn board_command_parses_targets_login_and_logout() {
+    use BoardCommand::*;
+    assert_eq!(parse_board_command(""), Open(None));
+    assert_eq!(
+        parse_board_command(" personal/t1 "),
+        Open(Some("personal/t1"))
+    );
+    assert_eq!(
+        parse_board_command(" login"),
+        Account(AccountAction::Login, None)
+    );
+    assert_eq!(
+        parse_board_command(" login Linear"),
+        Account(AccountAction::Login, Some("Linear"))
+    );
+    assert_eq!(
+        parse_board_command(" logout priceless"),
+        Account(AccountAction::Logout, Some("priceless"))
+    );
+    assert_eq!(parse_board_command(" a b"), Usage);
+    assert_eq!(parse_board_command(" login a b"), Usage);
+}
+
+#[test]
+fn board_glue_a_named_world_opens_without_a_cwd_and_writable_only_when_configured() {
+    let _env = Env::new(RULES, SERVERS);
+    let bound = target_scope("personal");
+    assert!(!bound.read_only(), "the configured board is writable");
+    assert_eq!(bound.canonical_root, None);
+    assert_eq!(bound.server, "Linear");
+    assert!(!target_scope("personal/team-personal").read_only());
+    let other = target_scope("personal/some-other-team");
+    assert!(other.read_only() && other.is_discovered(), "{other:?}");
+    assert_eq!(other.server, "Linear");
+    // Another world's account is used for that world.
+    assert_eq!(target_scope("priceless").server, "LinearAlt");
+    let Err(BoardLoad::Unavailable(why)) = prepare_runtime(None, Some("nope".into())) else {
+        panic!("unknown world must be refused")
+    };
+    assert!(why.contains("nope"), "{why}");
+}
+
+#[test]
+fn board_glue_a_named_board_is_reverified_by_name_before_a_write() {
+    let _env = Env::new(RULES, SERVERS);
+    let bound = target_scope("personal");
+    // Same scope: allowed. Cwd is ignored for a scope without a root.
+    assert_eq!(
+        current_scope(Some(Path::new("/nowhere")), &bound),
+        Ok(bound.clone())
+    );
+    assert_eq!(current_scope(None, &bound), Ok(bound.clone()));
+    // A discovered scope never equals a configured one, so no write passes.
+    let mut moved = bound.clone();
+    moved.team = "team-other".into();
+    assert_ne!(current_scope(None, &moved), Ok(bound));
+    // A rooted scope cannot be verified without a directory.
+    let mut rooted = target_scope("personal");
+    rooted.canonical_root = Some(PathBuf::from("/r"));
+    assert_eq!(
+        current_scope(None, &rooted),
+        Err(BoardUnavailable::UnknownWorld)
     );
 }
 
 #[test]
-fn board_glue_login_and_logout_refuse_without_a_verified_world() {
-    for cmd in ["/board login", "/board logout"] {
-        let mut app = crate::tui::app::tests::create_test_app();
-        app.session.working_dir = None;
-        let before = app.display_messages().len();
-        assert!(handle_board_command(&mut app, cmd));
-        assert!(app.board_overlay.is_none(), "{cmd} opens no board");
-        let text = &app.display_messages()[before..]
-            .iter()
-            .map(|m| m.content.clone())
-            .collect::<String>();
-        assert!(text.contains("No board account"), "{cmd}: {text}");
-        assert!(!text.contains("OAuth login"), "{cmd}: no login started");
+fn board_glue_no_world_builds_the_all_accounts_runtime_and_other_refusals_stay() {
+    let _env = Env::new(RULES, SERVERS);
+    // No cwd.
+    let Ok(BoardRuntime::All(all)) = prepare_runtime(None, None) else {
+        panic!("no cwd opens the all-accounts view")
+    };
+    let servers: Vec<&str> = all.accounts.iter().map(|a| a.server.as_str()).collect();
+    assert_eq!(
+        servers,
+        ["Linear", "LinearAlt"],
+        "ADO world is not an account"
+    );
+    assert!(all.accounts.iter().all(|a| a.gate.is_ok()));
+    // A directory in no world, same.
+    let dir = tempfile::TempDir::new().unwrap();
+    assert!(matches!(
+        prepare_runtime(Some(dir.path().into()), None),
+        Ok(BoardRuntime::All(_))
+    ));
+}
+
+#[test]
+fn board_glue_the_all_accounts_view_is_not_opened_when_no_account_exists() {
+    let _env = Env::new("", "{}");
+    let Err(BoardLoad::Unavailable(why)) = prepare_runtime(None, None) else {
+        panic!("no accounts, no board")
+    };
+    assert!(why.contains("no board account"), "{why}");
+}
+
+/// Answers `list_teams` per server and `list_issues`/`list_issue_statuses`
+/// per team, or fails a whole server.
+struct FakeLinear {
+    teams: Vec<(&'static str, Result<&'static str, &'static str>)>,
+}
+
+const STATUSES: &str = r#"[{"id":"s-back","type":"backlog","name":"Backlog"},{"id":"s-todo","type":"unstarted","name":"Todo"},{"id":"s-done","type":"completed","name":"Done"},{"id":"s-dup","type":"duplicate","name":"Duplicate"}]"#;
+
+fn issues_json(team_id: &str, key: &str, rows: &[(&str, &str)]) -> String {
+    let items: Vec<String> = rows
+        .iter()
+        .map(|(n, status)| {
+            format!(
+                r#"{{"id":"{key}-{n}","title":"t{n}","status":"{status}","teamId":"{team_id}","team":"{key} team"}}"#
+            )
+        })
+        .collect();
+    format!(r#"{{"issues":[{}],"hasNextPage":false}}"#, items.join(","))
+}
+
+#[async_trait]
+impl crate::board::McpCaller for FakeLinear {
+    async fn call(
+        &self,
+        server: &str,
+        tool: &str,
+        args: serde_json::Value,
+    ) -> anyhow::Result<String> {
+        let Some((_, teams)) = self.teams.iter().find(|(name, _)| *name == server) else {
+            anyhow::bail!("unknown server {server}")
+        };
+        let teams = teams.map_err(|why| anyhow::anyhow!("{why}"))?;
+        match tool {
+            "list_teams" => Ok(teams.to_string()),
+            "list_issue_statuses" => Ok(STATUSES.to_string()),
+            "list_issues" => {
+                let team = args["team"].as_str().unwrap();
+                Ok(match team {
+                    "team-personal" => issues_json(team, "PER", &[("1", "Todo"), ("2", "Done")]),
+                    "team-extra" => {
+                        issues_json(team, "EXT", &[("1", "Backlog"), ("2", "Duplicate")])
+                    }
+                    _ => issues_json(team, "ALT", &[("7", "Todo")]),
+                })
+            }
+            other => anyhow::bail!("unexpected tool {other}"),
+        }
     }
+}
+
+fn account(server: &str, bindings: Vec<BoardScope>) -> AllAccount {
+    AllAccount {
+        server: server.into(),
+        auth: format!("auth:{server}"),
+        gate: Ok(()),
+        bindings,
+    }
+}
+
+fn all_boards_with(
+    accounts: Vec<AllAccount>,
+    teams: Vec<(&'static str, Result<&'static str, &'static str>)>,
+) -> AllBoards {
+    AllBoards {
+        accounts,
+        provider: Arc::new(LinearMcpProvider::new(Arc::new(FakeLinear { teams }))),
+        cache: BoardCache::new(CACHE_TTL),
+    }
+}
+
+fn cards(data: &BoardData, kind: &str) -> Vec<String> {
+    data.columns
+        .iter()
+        .filter(|c| c.kind == kind)
+        .flat_map(|c| {
+            c.issues
+                .iter()
+                .map(|i| format!("{} {}", i.identifier, i.title))
+        })
+        .collect()
+}
+
+#[tokio::test]
+async fn board_glue_all_accounts_groups_by_state_kind_with_account_and_team_labels() {
+    let mut bound = scope(BoardBackend::Linear);
+    bound.team = "team-personal".into();
+    bound.server = "Linear".into();
+    let all = all_boards_with(
+        vec![
+            account("Linear", vec![bound]),
+            account("LinearAlt", Vec::new()),
+        ],
+        vec![
+            (
+                "Linear",
+                Ok(
+                    r#"[{"id":"team-personal","key":"PER","name":"Personal"},{"id":"team-extra","key":"EXT","name":"Extra"}]"#,
+                ),
+            ),
+            (
+                "LinearAlt",
+                Ok(r#"[{"id":"team-alt","key":"ALT","name":"Alt"}]"#),
+            ),
+        ],
+    );
+    let (load, notice) = load_all(&all, false).await;
+    assert_eq!(notice, None);
+    let BoardLoad::Ready(data) = load else {
+        panic!("expected a board, got {load:?}")
+    };
+    assert_eq!(data.scope_label, "All accounts · read-only");
+    assert!(data.read_only);
+    let kinds: Vec<&str> = data.columns.iter().map(|c| c.kind.as_str()).collect();
+    assert_eq!(
+        kinds,
+        [
+            "backlog",
+            "unstarted",
+            "started",
+            "completed",
+            "canceled",
+            ""
+        ],
+        "fixed order, unknown kinds in a trailing Other"
+    );
+    assert_eq!(cards(&data, "backlog"), ["EXT-1 [Linear] t1"]);
+    assert_eq!(
+        cards(&data, "unstarted"),
+        ["PER-1 [Linear] t1", "ALT-7 [LinearAlt] t7"]
+    );
+    assert_eq!(cards(&data, "completed"), ["PER-2 [Linear] t2"]);
+    assert_eq!(data.columns.last().unwrap().name, "Other");
+    assert_eq!(cards(&data, ""), ["EXT-2 [Linear] t2"]);
+}
+
+#[tokio::test]
+async fn board_glue_all_accounts_omits_the_account_label_for_a_single_account() {
+    let all = all_boards_with(
+        vec![account("Linear", Vec::new())],
+        vec![(
+            "Linear",
+            Ok(r#"[{"id":"team-extra","key":"EXT","name":"Extra"}]"#),
+        )],
+    );
+    let (BoardLoad::Ready(data), None) = load_all(&all, false).await else {
+        panic!("expected a board")
+    };
+    assert_eq!(cards(&data, "backlog"), ["EXT-1 t1"]);
+}
+
+#[tokio::test]
+async fn board_glue_all_accounts_uses_the_configured_scope_once_and_discovered_for_the_rest() {
+    // The seen scopes tell which origin each team was read with.
+    let mut bound = scope(BoardBackend::Linear);
+    bound.team = "team-personal".into();
+    let all = all_boards_with(
+        vec![account("Linear", vec![bound])],
+        vec![(
+            "Linear",
+            Ok(
+                r#"[{"id":"team-personal","key":"PER","name":"P"},{"id":"team-extra","key":"EXT","name":"E"}]"#,
+            ),
+        )],
+    );
+    let _ = load_all(&all, false).await;
+    let configured = CacheKey::new(
+        &BoardScope {
+            team: "team-personal".into(),
+            ..scope(BoardBackend::Linear)
+        },
+        "auth:Linear",
+    );
+    assert!(
+        all.cache.get(&configured).is_some(),
+        "bound team: configured"
+    );
+    let discovered = CacheKey::new(
+        &BoardScope {
+            origin: ScopeOrigin::Discovered,
+            world: String::new(),
+            team: "team-extra".into(),
+            canonical_root: None,
+            ..scope(BoardBackend::Linear)
+        },
+        "auth:Linear",
+    );
+    assert!(
+        all.cache.get(&discovered).is_some(),
+        "other team: discovered"
+    );
+}
+
+#[tokio::test]
+async fn board_glue_all_accounts_a_failing_account_gets_a_login_notice_and_hides_no_one() {
+    let all = all_boards_with(
+        vec![
+            account("Linear", Vec::new()),
+            account("LinearAlt", Vec::new()),
+        ],
+        vec![
+            ("Linear", Err("HTTP 401 unauthorized")),
+            (
+                "LinearAlt",
+                Ok(r#"[{"id":"team-alt","key":"ALT","name":"Alt"}]"#),
+            ),
+        ],
+    );
+    let (load, notice) = load_all(&all, false).await;
+    let BoardLoad::Ready(data) = load else {
+        panic!("the other account still shows: {load:?}")
+    };
+    assert_eq!(cards(&data, "unstarted"), ["ALT-7 [LinearAlt] t7"]);
+    assert_eq!(notice.as_deref(), Some("Linear: run /board login Linear"));
+}
+
+#[tokio::test]
+async fn board_glue_all_accounts_unparseable_teams_are_a_notice_not_a_panic() {
+    let all = all_boards_with(
+        vec![account("Linear", Vec::new())],
+        vec![("Linear", Ok("this is not json"))],
+    );
+    let (load, notice) = load_all(&all, false).await;
+    assert!(
+        matches!(&load, BoardLoad::Error(text) if text.contains("Linear:")),
+        "{load:?}"
+    );
+    assert_eq!(notice, None);
+    // Every account unauthorized is the login state.
+    let all = all_boards_with(
+        vec![account("Linear", Vec::new())],
+        vec![("Linear", Err("401"))],
+    );
+    let (load, _) = load_all(&all, false).await;
+    assert!(
+        matches!(&load, BoardLoad::Unauthorized(text) if text.contains("run /board login Linear")),
+        "{load:?}"
+    );
+}
+
+#[tokio::test]
+async fn board_glue_all_accounts_a_gated_account_is_a_notice() {
+    let mut gated = account("Linear", Vec::new());
+    gated.gate = Err("MCP server 'Linear' is not configured".into());
+    let all = all_boards_with(
+        vec![gated, account("LinearAlt", Vec::new())],
+        vec![(
+            "LinearAlt",
+            Ok(r#"[{"id":"team-alt","key":"ALT","name":"Alt"}]"#),
+        )],
+    );
+    let (load, notice) = load_all(&all, false).await;
+    assert!(matches!(load, BoardLoad::Ready(_)));
+    assert!(
+        notice
+            .unwrap()
+            .starts_with("Linear: MCP server 'Linear' is not configured")
+    );
+}
+
+fn messages_since(app: &crate::tui::app::App, before: usize) -> String {
+    app.display_messages()[before..]
+        .iter()
+        .map(|m| m.content.clone())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+#[test]
+fn board_glue_login_and_logout_refuse_what_they_cannot_resolve() {
+    let _env = Env::new(RULES, SERVERS);
+    // ADO world has no /board login.
     let mut app = crate::tui::app::tests::create_test_app();
     let before = app.display_messages().len();
-    assert!(handle_board_command(&mut app, "/board nope"));
+    assert!(handle_board_command(&mut app, "/board login brown"));
+    let text = messages_since(&app, before);
+    assert!(text.contains("no /board login"), "{text}");
+    // Unknown name.
+    let before = app.display_messages().len();
+    assert!(handle_board_command(&mut app, "/board login nope"));
+    let text = messages_since(&app, before);
     assert!(
-        app.display_messages()[before]
-            .content
-            .contains("/board login")
+        text.contains("neither a board account nor a configured world"),
+        "{text}"
+    );
+    assert!(app.board_overlay.is_none());
+    // Too many words.
+    let before = app.display_messages().len();
+    assert!(handle_board_command(&mut app, "/board nope nope"));
+    assert!(messages_since(&app, before).contains("/board login"));
+}
+
+#[test]
+fn board_glue_logout_outside_a_world_lists_accounts_and_needs_a_name() {
+    let _env = Env::new(RULES, SERVERS);
+    let mut app = crate::tui::app::tests::create_test_app();
+    app.session.working_dir = None;
+    let before = app.display_messages().len();
+    assert!(handle_board_command(&mut app, "/board logout"));
+    let text = messages_since(&app, before);
+    assert!(text.contains("Name the account"), "{text}");
+    assert!(text.contains("Linear, LinearAlt"), "{text}");
+    assert!(
+        !text.contains("Removed local OAuth") && !text.contains("No local OAuth"),
+        "{text}"
+    );
+}
+
+#[test]
+fn board_glue_login_with_no_cwd_starts_a_login_for_each_tokenless_account() {
+    let _env = Env::new(RULES, SERVERS);
+    let mut app = crate::tui::app::tests::create_test_app();
+    app.session.working_dir = None;
+    let before = app.display_messages().len();
+    assert!(handle_board_command(&mut app, "/board login"));
+    // Sync test: no async runtime, so each start reports it instead of
+    // opening a browser. One report per account proves one start each.
+    let text = messages_since(&app, before);
+    // Identical consecutive messages merge into one with a count.
+    assert_eq!(text, "No async runtime for MCP login. [×2]", "{text}");
+    // A world name resolves to its account and says which.
+    let before = app.display_messages().len();
+    assert!(handle_board_command(&mut app, "/board login priceless"));
+    let text = messages_since(&app, before);
+    assert!(
+        text.contains("world 'priceless': MCP server 'LinearAlt'"),
+        "{text}"
+    );
+}
+
+#[test]
+fn board_glue_command_without_a_working_directory_opens_the_all_accounts_view() {
+    let _env = Env::new(RULES, SERVERS);
+    let mut app = crate::tui::app::tests::create_test_app();
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let _enter = runtime.enter();
+    app.session.working_dir = None;
+    let generation = app.board.generation;
+    assert!(handle_board_command(&mut app, "/board"));
+    assert!(app.board_overlay.is_some());
+    assert!(
+        app.board.generation > generation,
+        "a fetch started: no cwd is the all-accounts view"
+    );
+    assert!(
+        !handle_board_command(&mut app, "/boardx"),
+        "not our command"
     );
 }
 

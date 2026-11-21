@@ -8,14 +8,15 @@
 
 use super::App;
 use crate::board::{
-    AuditLog, BoardCache, BoardError, BoardProvider, BoardScope, BoardSnapshot, ChangeOutcome,
-    Confirmation, LinearMcpProvider, McpManagerCaller, ReconcileOutcome, StatusChangeRequest,
-    execute, provider_for, reconcile, resolve_board,
+    AuditLog, BoardAccount, BoardBackend, BoardCache, BoardError, BoardProvider, BoardScope,
+    BoardSnapshot, BoardUnavailable, ChangeOutcome, Confirmation, LinearMcpProvider,
+    McpManagerCaller, ReconcileOutcome, ScopeOrigin, StatusChangeRequest, Team, board_accounts,
+    execute, provider_for, reconcile, resolve_board, resolve_world,
 };
 use crate::tui::board_overlay::{
     BoardAction, BoardColumn, BoardData, BoardIssue, BoardLoad, MoveRequest, MoveVerdict,
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::time::Duration;
@@ -50,12 +51,37 @@ pub(super) enum BoardEventKind {
 
 /// Everything `/board` keeps between key presses. Built off the UI thread
 /// because resolving the world may run git.
-pub(super) struct BoardRuntime {
+pub(super) enum BoardRuntime {
+    /// One world-bound (or named) board.
+    One(OneBoard),
+    /// Read-only view over every configured account.
+    All(Arc<AllBoards>),
+}
+
+pub(super) struct OneBoard {
     scope: BoardScope,
     provider: Arc<dyn BoardProvider>,
     cache: Arc<BoardCache>,
     auth: String,
-    cwd: PathBuf,
+    /// Directory the world was verified from. `None` for a board opened by
+    /// name, which re-verifies by name instead.
+    cwd: Option<PathBuf>,
+}
+
+/// One account of the all-accounts view.
+pub(super) struct AllAccount {
+    server: String,
+    auth: String,
+    /// Why the account cannot be read (server missing, not global, ...).
+    gate: Result<(), String>,
+    /// Configured scopes of the worlds bound to this account.
+    bindings: Vec<BoardScope>,
+}
+
+pub(super) struct AllBoards {
+    accounts: Vec<AllAccount>,
+    provider: Arc<LinearMcpProvider>,
+    cache: BoardCache,
 }
 
 #[derive(Default)]
@@ -66,6 +92,30 @@ pub(super) struct BoardState {
     events: Option<(Sender<BoardEvent>, Receiver<BoardEvent>)>,
 }
 
+/// What `/board ...` asks for.
+#[derive(Debug, PartialEq, Eq)]
+enum BoardCommand<'a> {
+    /// Open the board: the cwd's world, or a named target.
+    Open(Option<&'a str>),
+    Account(AccountAction, Option<&'a str>),
+    Usage,
+}
+
+const USAGE: &str = "Usage: /board [world[/team[/project]]] | /board login [account|world] | /board logout [account|world]";
+
+fn parse_board_command(rest: &str) -> BoardCommand<'_> {
+    let words: Vec<&str> = rest.split_whitespace().collect();
+    match words.as_slice() {
+        [] => BoardCommand::Open(None),
+        ["login"] => BoardCommand::Account(AccountAction::Login, None),
+        ["login", name] => BoardCommand::Account(AccountAction::Login, Some(name)),
+        ["logout"] => BoardCommand::Account(AccountAction::Logout, None),
+        ["logout", name] => BoardCommand::Account(AccountAction::Logout, Some(name)),
+        [target] => BoardCommand::Open(Some(target)),
+        _ => BoardCommand::Usage,
+    }
+}
+
 pub(super) fn handle_board_command(app: &mut App, trimmed: &str) -> bool {
     let Some(rest) = trimmed.strip_prefix("/board") else {
         return false;
@@ -73,33 +123,22 @@ pub(super) fn handle_board_command(app: &mut App, trimmed: &str) -> bool {
     if !rest.is_empty() && !rest.starts_with(char::is_whitespace) {
         return false;
     }
-    match rest.trim() {
-        "" => {}
-        "login" => {
-            board_account(app, AccountAction::Login);
+    let target = match parse_board_command(rest) {
+        BoardCommand::Open(target) => target.map(str::to_string),
+        BoardCommand::Account(action, name) => {
+            board_account(app, action, name);
             return true;
         }
-        "logout" => {
-            board_account(app, AccountAction::Logout);
+        BoardCommand::Usage => {
+            app.push_display_message(super::DisplayMessage::error(USAGE));
             return true;
         }
-        _ => {
-            app.push_display_message(super::DisplayMessage::error(
-                "Usage: /board | /board login | /board logout",
-            ));
-            return true;
-        }
-    }
-    // No session working directory means no verified repository: no board.
-    // The process cwd is never a substitute (a remote session's repository is
-    // not this client's).
-    let Some(cwd) = app.session.working_dir.clone().map(PathBuf::from) else {
-        app.board.runtime = None;
-        app.open_board_overlay(BoardLoad::Unavailable(
-            "this session has no working directory, so its world cannot be verified".into(),
-        ));
-        return true;
     };
+    // The session working directory is the only directory that counts: the
+    // process cwd is never a substitute (a remote session's repository is
+    // not this client's). Without one there is no world to verify, so the
+    // board falls back to the read-only all-accounts view.
+    let cwd = app.session.working_dir.clone().map(PathBuf::from);
     let Ok(handle) = tokio::runtime::Handle::try_current() else {
         app.open_board_overlay(BoardLoad::Error("no async runtime".into()));
         return true;
@@ -115,7 +154,7 @@ pub(super) fn handle_board_command(app: &mut App, trimmed: &str) -> bool {
     handle.spawn(async move {
         // resolve_board may run git and read config files: keep it off the UI
         // thread and off the async workers.
-        let built = tokio::task::spawn_blocking(move || prepare_runtime(cwd)).await;
+        let built = tokio::task::spawn_blocking(move || prepare_runtime(cwd, target)).await;
         let kind = match built {
             Ok(Ok(runtime)) => BoardEventKind::Ready(Box::new(runtime)),
             Ok(Err(load)) => BoardEventKind::Loaded { load, notice: None },
@@ -135,75 +174,147 @@ enum AccountAction {
     Logout,
 }
 
-/// `/board login|logout`: act on the account of this world's board only, i.e.
-/// the MCP server its binding names. Each world can bind its own server, so
-/// several Linear accounts (one server each) never touch each other.
-fn board_account(app: &mut App, action: AccountAction) {
+/// `/board login|logout [name]`. `name` is an account (an MCP server) or a
+/// world. Without a name, a world directory acts on its own world's account;
+/// anywhere else login starts for every account without a token, and logout
+/// asks for a name.
+fn board_account(app: &mut App, action: AccountAction, name: Option<&str>) {
     let error = |app: &mut App, text: String| {
         app.push_display_message(super::DisplayMessage::error(text));
     };
-    let Some(cwd) = app.session.working_dir.clone().map(PathBuf::from) else {
-        return error(
-            app,
-            "No board account: this session has no working directory, so its world cannot be verified.".into(),
-        );
-    };
+    let cwd = app.session.working_dir.clone().map(PathBuf::from);
     // Runs on the UI thread: an explicit one-shot command, and resolving is a
     // few local git reads.
-    let scope = match resolve_board(&cwd) {
-        Ok(scope) => scope,
-        Err(why) => return error(app, format!("No board account: {why}.")),
+    let (server, world) = match name {
+        Some(name) => match account_or_world(name) {
+            Ok(found) => found,
+            Err(why) => return error(app, format!("No board account: {why}.")),
+        },
+        None => match cwd.as_deref().map(resolve_board) {
+            Some(Ok(scope)) => match linear_server(&scope) {
+                Ok(server) => (server, Some(scope.world)),
+                Err(why) => return error(app, why),
+            },
+            Some(Err(BoardUnavailable::UnknownWorld)) | None => {
+                return outside_world_accounts(app, action, cwd.as_deref());
+            }
+            Some(Err(why)) => return error(app, format!("No board account: {why}.")),
+        },
     };
-    if scope.backend != crate::board::BoardBackend::Linear {
-        return error(
-            app,
-            format!(
-                "The {} board has no /board login; it uses its own credentials.",
-                scope.backend.label()
-            ),
-        );
+    let config = crate::mcp::McpConfig::load_for_dir(cwd.as_deref());
+    login_server(app, &config, action, &server, world.as_deref());
+}
+
+/// The Linear server of a scope; ADO boards have no `/board login`.
+fn linear_server(scope: &BoardScope) -> Result<String, String> {
+    if scope.backend != BoardBackend::Linear {
+        return Err(format!(
+            "The {} board has no /board login; it uses its own credentials.",
+            scope.backend.label()
+        ));
     }
-    let config = crate::mcp::McpConfig::load_for_dir(Some(&cwd));
-    if let Err(load) = check_board_server(&scope, &config) {
+    Ok(scope.server.clone())
+}
+
+/// An account (server) name, else a world name, as `(server, world)`.
+fn account_or_world(name: &str) -> Result<(String, Option<String>), String> {
+    let accounts = board_accounts().map_err(|why| why.to_string());
+    if let Ok(accounts) = &accounts
+        && let Some(account) = accounts.iter().find(|a| a.server == name)
+    {
+        return Ok((account.server.clone(), None));
+    }
+    match resolve_world(name) {
+        Ok(scope) => linear_server(&scope).map(|server| (server, Some(scope.world))),
+        Err(BoardUnavailable::UnknownWorldName { .. }) => Err(match accounts {
+            Ok(_) => format!("'{name}' is neither a board account nor a configured world"),
+            Err(why) => why,
+        }),
+        Err(why) => Err(why.to_string()),
+    }
+}
+
+/// No verified world: every account without a token gets a login, one after
+/// another. Logout has no safe default here, so it lists the accounts.
+fn outside_world_accounts(app: &mut App, action: AccountAction, cwd: Option<&Path>) {
+    let accounts = match board_accounts() {
+        Ok(accounts) if !accounts.is_empty() => accounts,
+        Ok(_) => {
+            return app.push_display_message(super::DisplayMessage::error(
+                "No board accounts: this directory is not in a configured world and no board account is configured.",
+            ));
+        }
+        Err(why) => {
+            return app.push_display_message(super::DisplayMessage::error(format!(
+                "No board account: {why}."
+            )));
+        }
+    };
+    let names: Vec<&str> = accounts.iter().map(|a| a.server.as_str()).collect();
+    if action == AccountAction::Logout {
+        return app.push_display_message(super::DisplayMessage::error(format!(
+            "Name the account to log out: /board logout <account>. Accounts: {}.",
+            names.join(", ")
+        )));
+    }
+    let config = crate::mcp::McpConfig::load_for_dir(cwd);
+    let mut started = 0;
+    for account in &accounts {
+        let signed_in = config
+            .servers
+            .get(&account.server)
+            .and_then(|s| s.url.as_deref().map(|url| (&account.server, url)))
+            .is_some_and(|(server, url)| {
+                crate::mcp::oauth::status(server, url).is_ok_and(|status| status.logged_in)
+            });
+        if signed_in {
+            continue;
+        }
+        started += 1;
+        login_server(app, &config, action, &account.server, None);
+    }
+    if started == 0 {
+        app.push_display_message(super::DisplayMessage::system(format!(
+            "All board accounts already have credentials: {}. Use /board login <account> to sign in again.",
+            names.join(", ")
+        )));
+    }
+}
+
+/// Log one board account in or out. A loaded runtime holds a connection with
+/// the old credentials, so it is dropped.
+fn login_server(
+    app: &mut App,
+    config: &crate::mcp::McpConfig,
+    action: AccountAction,
+    name: &str,
+    world: Option<&str>,
+) {
+    if let Err(load) = check_server(name, config) {
         let why = match load {
             BoardLoad::Unavailable(why) => why,
             other => format!("{other:?}"),
         };
-        return error(app, format!("No board account: {why}."));
+        return app.push_display_message(super::DisplayMessage::error(format!(
+            "No board account: {why}."
+        )));
     }
-    let name = scope.server.as_str();
-    let server = &config.servers[name];
-    if !server.is_remote() {
-        return error(
-            app,
-            format!(
-                "Board account '{name}' runs a local command with its own credentials; /board login applies to remote OAuth servers. Set its \"url\" to https://mcp.linear.app/mcp to sign in here."
-            ),
-        );
+    if !config.servers[name].is_remote() {
+        return app.push_display_message(super::DisplayMessage::error(format!(
+            "Board account '{name}' runs a local command with its own credentials; /board login applies to remote OAuth servers. Set its \"url\" to https://mcp.linear.app/mcp to sign in here."
+        )));
     }
-    if server
-        .headers
-        .keys()
-        .any(|key| key.eq_ignore_ascii_case("authorization"))
-    {
-        return error(
-            app,
-            format!(
-                "Board account '{name}' has a static Authorization header, which takes precedence over OAuth. Remove it to use /board login."
-            ),
-        );
-    }
-    // A loaded runtime holds a connection with the old credentials.
     app.board.runtime = None;
     match action {
         AccountAction::Login => {
-            app.push_display_message(super::DisplayMessage::system(format!(
-                "Board account for world '{}': MCP server '{name}'. After signing in, run /board again.",
-                scope.world
-            )));
-            super::commands_mcp::start_login(app, &config, name);
+            if let Some(world) = world {
+                app.push_display_message(super::DisplayMessage::system(format!(
+                    "Board account for world '{world}': MCP server '{name}'. After signing in, run /board again."
+                )));
+            }
+            super::commands_mcp::start_login(app, config, name);
         }
-        AccountAction::Logout => super::commands_mcp::logout(app, &config, name),
+        AccountAction::Logout => super::commands_mcp::logout(app, config, name),
     }
 }
 
@@ -214,41 +325,62 @@ pub(super) fn check_board_server(
     scope: &BoardScope,
     config: &crate::mcp::McpConfig,
 ) -> Result<(), BoardLoad> {
-    if scope.backend != crate::board::BoardBackend::Linear {
+    if scope.backend != BoardBackend::Linear {
         return Ok(());
     }
+    check_server(&scope.server, config)
+}
+
+fn check_server(server: &str, config: &crate::mcp::McpConfig) -> Result<(), BoardLoad> {
     // The board's manager has no project directory, so a server limited to
     // `workspaces` would always read as out of scope. Say so instead.
     if config
         .servers
-        .get(&scope.server)
+        .get(server)
         .is_some_and(|server| !server.workspaces.is_empty())
     {
         return Err(BoardLoad::Unavailable(format!(
-            "MCP server '{}' is limited to specific workspaces; the board cannot use a workspace-scoped server",
-            scope.server
+            "MCP server '{server}' is limited to specific workspaces; the board cannot use a workspace-scoped server"
         )));
     }
-    match config.server_scope(&scope.server) {
+    match config.server_scope(server) {
         Some("global") => Ok(()),
         Some(other) => Err(BoardLoad::Unavailable(format!(
-            "MCP server '{}' comes from {other} config; the board only uses a server from your global config",
-            scope.server
+            "MCP server '{server}' comes from {other} config; the board only uses a server from your global config"
         ))),
         None => Err(BoardLoad::Unavailable(format!(
-            "MCP server '{}' is not configured",
-            scope.server
+            "MCP server '{server}' is not configured"
         ))),
     }
 }
 
-/// Resolve the world and build the provider. Every refusal is returned as the
-/// state to show; nothing is queried and no other binding is tried.
-fn prepare_runtime(cwd: PathBuf) -> Result<BoardRuntime, BoardLoad> {
-    let scope = resolve_board(&cwd).map_err(|why| BoardLoad::Unavailable(why.to_string()))?;
+/// Resolve what to show and build the provider. Every refusal is returned as
+/// the state to show; nothing is queried and no other binding is tried.
+///
+/// A `target` is resolved by name and never from `cwd`. Otherwise the cwd's
+/// world is used; a directory in no world (or no directory at all) gets the
+/// read-only all-accounts view. Any other refusal (identity, ambiguity,
+/// Brown/Azure) is shown as is.
+fn prepare_runtime(
+    cwd: Option<PathBuf>,
+    target: Option<String>,
+) -> Result<BoardRuntime, BoardLoad> {
+    let unavailable = |why: BoardUnavailable| BoardLoad::Unavailable(why.to_string());
+    if let Some(target) = target {
+        let scope = resolve_world(&target).map_err(unavailable)?;
+        return one_board(scope, None);
+    }
+    match cwd.as_deref().map(resolve_board) {
+        Some(Ok(scope)) => one_board(scope, cwd),
+        Some(Err(BoardUnavailable::UnknownWorld)) | None => all_boards(cwd.as_deref()),
+        Some(Err(why)) => Err(unavailable(why)),
+    }
+}
+
+fn one_board(scope: BoardScope, cwd: Option<PathBuf>) -> Result<BoardRuntime, BoardLoad> {
     // One config load feeds both the provider and the cache identity, so the
     // identity always describes the server actually used.
-    let config = crate::mcp::McpConfig::load_for_dir(Some(&cwd));
+    let config = crate::mcp::McpConfig::load_for_dir(cwd.as_deref());
     check_board_server(&scope, &config)?;
     let auth = match config.servers.get(&scope.server) {
         Some(server) => crate::board::auth_identity(&scope.server, server),
@@ -259,13 +391,251 @@ fn prepare_runtime(cwd: PathBuf) -> Result<BoardRuntime, BoardLoad> {
         manager,
     ))));
     let provider = provider_for(&scope, linear);
-    Ok(BoardRuntime {
+    Ok(BoardRuntime::One(OneBoard {
         scope,
         provider,
         cache: Arc::new(BoardCache::new(CACHE_TTL)),
         auth,
         cwd,
-    })
+    }))
+}
+
+fn all_boards(cwd: Option<&Path>) -> Result<BoardRuntime, BoardLoad> {
+    let accounts = board_accounts().map_err(|why| BoardLoad::Unavailable(why.to_string()))?;
+    if accounts.is_empty() {
+        return Err(BoardLoad::Unavailable(
+            "this directory is not in a configured world and no board account is configured".into(),
+        ));
+    }
+    let config = crate::mcp::McpConfig::load_for_dir(cwd);
+    let accounts = accounts
+        .into_iter()
+        .map(|account: BoardAccount| AllAccount {
+            auth: match config.servers.get(&account.server) {
+                Some(server) => crate::board::auth_identity(&account.server, server),
+                None => format!("unconfigured:{}", account.server),
+            },
+            gate: check_server(&account.server, &config).map_err(|load| match load {
+                BoardLoad::Unavailable(why) => why,
+                other => format!("{other:?}"),
+            }),
+            bindings: account
+                .worlds
+                .iter()
+                .filter_map(|world| resolve_world(world).ok())
+                .filter(|scope| scope.backend == BoardBackend::Linear)
+                .collect(),
+            server: account.server,
+        })
+        .collect();
+    let manager = Arc::new(crate::mcp::McpManager::with_config(config));
+    let provider = Arc::new(LinearMcpProvider::new(Arc::new(McpManagerCaller::new(
+        manager,
+    ))));
+    Ok(BoardRuntime::All(Arc::new(AllBoards {
+        accounts,
+        provider,
+        cache: BoardCache::new(CACHE_TTL),
+    })))
+}
+
+const ALL_LABEL: &str = "All accounts · read-only";
+/// Column order of the all-accounts view. Other kinds (triage, duplicate,
+/// unknown) land in a trailing "Other" column.
+const ALL_KINDS: [(&str, &str); 5] = [
+    ("backlog", "Backlog"),
+    ("unstarted", "Unstarted"),
+    ("started", "Started"),
+    ("completed", "Completed"),
+    ("canceled", "Canceled"),
+];
+
+/// One readable team of the all-accounts view.
+struct Part {
+    snapshot: Arc<BoardSnapshot>,
+    /// Team key (`PRICE`), empty when the provider gave none.
+    key: String,
+}
+
+/// Read every account's teams. A failing account adds a notice and never
+/// hides the others. Returns the board and the notice to show over it.
+async fn load_all(all: &AllBoards, refresh: bool) -> (BoardLoad, Option<String>) {
+    let per_account = futures::future::join_all(
+        all.accounts
+            .iter()
+            .map(|account| load_account(all, account, refresh)),
+    )
+    .await;
+    let mut parts = Vec::new();
+    let mut notices = Vec::new();
+    for (account_parts, account_notices) in per_account {
+        parts.push(account_parts);
+        notices.extend(account_notices);
+    }
+    let multi = all.accounts.len() > 1;
+    let mut columns: Vec<BoardColumn> = ALL_KINDS
+        .iter()
+        .map(|(kind, name)| BoardColumn {
+            id: (*kind).into(),
+            name: (*name).into(),
+            kind: (*kind).into(),
+            issues: Vec::new(),
+        })
+        .collect();
+    let mut other = Vec::new();
+    let mut total = 0;
+    for (account, account_parts) in all.accounts.iter().zip(&parts) {
+        for part in account_parts {
+            for issue in &part.snapshot.issues {
+                total += 1;
+                let kind = part
+                    .snapshot
+                    .states
+                    .iter()
+                    .find(|s| s.id == issue.state_id)
+                    .map(|s| s.kind.as_str())
+                    .unwrap_or("");
+                let card = BoardIssue {
+                    id: issue.id.clone(),
+                    // Normally `KEY-12` already; label the card when it is not.
+                    identifier: match part.key.as_str() {
+                        key if key.is_empty()
+                            || issue.identifier.starts_with(&format!("{key}-")) =>
+                        {
+                            issue.identifier.clone()
+                        }
+                        key => format!("{key} {}", issue.identifier),
+                    },
+                    title: if multi {
+                        format!("[{}] {}", account.server, issue.title)
+                    } else {
+                        issue.title.clone()
+                    },
+                };
+                match columns.iter_mut().find(|c| c.kind == kind) {
+                    Some(column) => column.issues.push(card),
+                    None => other.push(card),
+                }
+            }
+        }
+    }
+    if !other.is_empty() {
+        columns.push(BoardColumn {
+            id: String::new(),
+            name: "Other".into(),
+            kind: String::new(),
+            issues: other,
+        });
+    }
+    let notice = (!notices.is_empty()).then(|| notices.join("; "));
+    if total > 0 {
+        let load = BoardLoad::Ready(BoardData {
+            scope_label: ALL_LABEL.into(),
+            read_only: true,
+            columns,
+        });
+        return (load, notice);
+    }
+    let load = match notice {
+        None => BoardLoad::Empty,
+        Some(text) if notices.iter().all(|n| n.contains("run /board login")) => {
+            BoardLoad::Unauthorized(text)
+        }
+        Some(text) => BoardLoad::Error(text),
+    };
+    (load, None)
+}
+
+async fn load_account(
+    all: &AllBoards,
+    account: &AllAccount,
+    refresh: bool,
+) -> (Vec<Part>, Vec<String>) {
+    let server = account.server.as_str();
+    let mut notices = Vec::new();
+    if let Err(why) = &account.gate {
+        notices.push(format!("{server}: {why}"));
+        return (Vec::new(), notices);
+    }
+    let teams: Vec<Team> = match all.provider.teams(server).await {
+        Ok(teams) => teams,
+        Err(error) => {
+            notices.push(account_notice(server, &error));
+            return (Vec::new(), notices);
+        }
+    };
+    let loads = teams.iter().map(|team| async move {
+        // A team a world binds keeps its configured scope; every other team
+        // is discovered, so nothing shows twice and nothing unbound is writable.
+        let scope = match account.bindings.iter().find(|b| b.team == team.id) {
+            Some(binding) => binding.clone(),
+            None => BoardScope {
+                origin: ScopeOrigin::Discovered,
+                world: String::new(),
+                backend: BoardBackend::Linear,
+                team: team.id.clone(),
+                project: None,
+                server: server.to_string(),
+                canonical_root: None,
+            },
+        };
+        let loaded = all
+            .cache
+            .load(&scope, &account.auth, all.provider.as_ref(), refresh)
+            .await;
+        (team, loaded)
+    });
+    let mut parts = Vec::new();
+    for (team, loaded) in futures::future::join_all(loads).await {
+        match loaded {
+            Ok(snapshot) => parts.push(Part {
+                snapshot,
+                key: team.key.clone(),
+            }),
+            Err(error) => {
+                let name = if team.key.is_empty() {
+                    &team.name
+                } else {
+                    &team.key
+                };
+                notices.push(match error {
+                    BoardError::Unauthorized(_) => account_notice(server, &error),
+                    other => format!("{server}/{name}: {other}"),
+                });
+            }
+        }
+    }
+    (parts, notices)
+}
+
+fn account_notice(server: &str, error: &BoardError) -> String {
+    match error {
+        BoardError::Unauthorized(_) => format!("{server}: run /board login {server}"),
+        other => format!("{server}: {other}"),
+    }
+}
+
+/// Re-verify the scope right before a write. A scope with a repository root
+/// is verified from the directory; one opened by name has no root and is
+/// re-resolved by `world[/team[/project]]`.
+fn current_scope(
+    cwd: Option<&Path>,
+    expected: &BoardScope,
+) -> Result<BoardScope, BoardUnavailable> {
+    match (&expected.canonical_root, cwd) {
+        (Some(_), Some(cwd)) => resolve_board(cwd),
+        (Some(_), None) => Err(BoardUnavailable::UnknownWorld),
+        (None, _) => {
+            let mut target = expected.world.clone();
+            target.push('/');
+            target.push_str(&expected.team);
+            if let Some(project) = &expected.project {
+                target.push('/');
+                target.push_str(project);
+            }
+            resolve_world(&target)
+        }
+    }
 }
 
 /// Columns in provider order. An issue whose state is not a known column goes
@@ -455,27 +825,39 @@ pub(super) async fn run_move_verdict(
 impl App {
     /// Fetch the board off the UI thread and deliver it on the next tick.
     fn spawn_board_load(&mut self, refresh: bool) {
-        let Some(runtime) = self.board.runtime.as_ref() else {
-            return;
-        };
-        let (scope, provider, cache, auth) = (
-            runtime.scope.clone(),
-            Arc::clone(&runtime.provider),
-            Arc::clone(&runtime.cache),
-            runtime.auth.clone(),
-        );
         let generation = self.board.generation;
         let tx = self.board_sender();
-        tokio::spawn(async move {
-            let load = match cache.load(&scope, &auth, provider.as_ref(), refresh).await {
-                Ok(snapshot) => to_board_load(&scope, &snapshot),
-                Err(error) => error_to_load(&error),
-            };
-            let _ = tx.send(BoardEvent {
-                generation,
-                kind: BoardEventKind::Loaded { load, notice: None },
-            });
-        });
+        match self.board.runtime.as_ref() {
+            Some(BoardRuntime::One(runtime)) => {
+                let (scope, provider, cache, auth) = (
+                    runtime.scope.clone(),
+                    Arc::clone(&runtime.provider),
+                    Arc::clone(&runtime.cache),
+                    runtime.auth.clone(),
+                );
+                tokio::spawn(async move {
+                    let load = match cache.load(&scope, &auth, provider.as_ref(), refresh).await {
+                        Ok(snapshot) => to_board_load(&scope, &snapshot),
+                        Err(error) => error_to_load(&error),
+                    };
+                    let _ = tx.send(BoardEvent {
+                        generation,
+                        kind: BoardEventKind::Loaded { load, notice: None },
+                    });
+                });
+            }
+            Some(BoardRuntime::All(all)) => {
+                let all = Arc::clone(all);
+                tokio::spawn(async move {
+                    let (load, notice) = load_all(&all, refresh).await;
+                    let _ = tx.send(BoardEvent {
+                        generation,
+                        kind: BoardEventKind::Loaded { load, notice },
+                    });
+                });
+            }
+            None => {}
+        }
     }
 
     fn board_sender(&mut self) -> Sender<BoardEvent> {
@@ -538,7 +920,7 @@ impl App {
                 // leave the overlay on Loading.
                 // The overlay already shows the card in its new status; the
                 // result either keeps it or undoes it.
-                if self.board.runtime.is_some() {
+                if matches!(self.board.runtime, Some(BoardRuntime::One(_))) {
                     self.spawn_board_move(request);
                 } else if let Some(cell) = self.board_overlay.as_ref() {
                     cell.borrow_mut().finish_move(
@@ -555,7 +937,8 @@ impl App {
     }
 
     fn spawn_board_move(&mut self, request: MoveRequest) {
-        let Some(runtime) = self.board.runtime.as_ref() else {
+        // The all-accounts view is read-only and never offers a confirmation.
+        let Some(BoardRuntime::One(runtime)) = self.board.runtime.as_ref() else {
             return;
         };
         let change = StatusChangeRequest {
@@ -581,9 +964,10 @@ impl App {
             let (verdict, text) = match AuditLog::open_default() {
                 Ok(audit) => {
                     let handle = tokio::runtime::Handle::current();
-                    let (provider, cwd) = (Arc::clone(&provider), cwd.clone());
+                    let (provider, cwd, expected) =
+                        (Arc::clone(&provider), cwd.clone(), change.scope.clone());
                     tokio::task::spawn_blocking(move || {
-                        let current = || resolve_board(&cwd);
+                        let current = || current_scope(cwd.as_deref(), &expected);
                         handle.block_on(run_move_verdict(
                             &change,
                             provider.as_ref(),
@@ -631,7 +1015,6 @@ impl App {
         });
     }
 }
-
 #[cfg(test)]
 #[path = "board_tests.rs"]
 mod board_tests;
