@@ -1,16 +1,18 @@
 //! Linear over an MCP server, behind a Rust-side allowlist.
 //!
 //! This is the only place that names MCP tools. The provider can call exactly
-//! four tools (`list_issue_statuses`, `list_issues`, `get_issue`,
-//! `save_issue`); only `save_issue` writes. The allowlist limits this board
+//! five tools (`list_issue_statuses`, `list_issues`, `get_issue`,
+//! `list_teams`, `save_issue`); only `save_issue` writes. The allowlist limits this board
 //! provider only, not jcode's general MCP access. The tool
 //! name is a private enum, never a caller-supplied string, and `save_issue`
 //! arguments are built from an issue id and a state id only, so a label,
 //! assignee, comment or description cannot be expressed.
 //!
 //! Verified against one real capture each of `list_issue_statuses`,
-//! `list_issues`, `get_issue` and `list_teams` (fixtures under `fixtures/`).
-//! UNVERIFIED: `save_issue`'s idempotency contract. The parser is tolerant
+//! `list_issues` and `get_issue` (fixtures under `fixtures/`).
+//! UNVERIFIED: `list_teams` (only a synthetic fixture,
+//! `fixtures/linear_list_teams_synthetic.json`, exists; the parser is
+//! tolerant) and `save_issue`'s idempotency contract. The parser is tolerant
 //! about shape but strict about meaning: anything it cannot read is `BoardError::Provider`, never a partial
 //! result. Scope is enforced twice: ids from the binding go into the request,
 //! and every returned issue is re-checked client-side (an issue whose team, or
@@ -94,6 +96,7 @@ enum Tool {
     ListIssueStatuses,
     ListIssues,
     GetIssue,
+    ListTeams,
     SaveIssue,
 }
 
@@ -103,6 +106,7 @@ impl Tool {
             Self::ListIssueStatuses => "list_issue_statuses",
             Self::ListIssues => "list_issues",
             Self::GetIssue => "get_issue",
+            Self::ListTeams => "list_teams",
             Self::SaveIssue => "save_issue",
         }
     }
@@ -135,6 +139,15 @@ fn save_issue_args(issue_id: &str, state_id: &str) -> Value {
     json!({ "id": issue_id, "state": state_id })
 }
 
+/// A team visible to the connected Linear account.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Team {
+    /// Stable id. This is what a board scope binds, never `key` or `name`.
+    pub id: String,
+    pub key: String,
+    pub name: String,
+}
+
 pub struct LinearMcpProvider {
     caller: Arc<dyn McpCaller>,
 }
@@ -159,16 +172,29 @@ impl LinearMcpProvider {
         tool: Tool,
         args: Value,
     ) -> Result<String, BoardError> {
-        self.call(scope, tool, args).await.map_err(|error| {
-            let text = format!("{error:#}");
-            if looks_unauthorized(&text) {
-                BoardError::Unauthorized(text)
-            } else if error.downcast_ref::<ToolError>().is_some() {
-                BoardError::Provider(text)
-            } else {
-                BoardError::Unavailable(text)
-            }
-        })
+        self.read_on(&scope.server, tool, args).await
+    }
+
+    /// Teams the account behind `server` can see. Read-only; one call.
+    pub async fn teams(&self, server: &str) -> Result<Vec<Team>, BoardError> {
+        let text = self.read_on(server, Tool::ListTeams, json!({})).await?;
+        parse_teams(&text)
+    }
+
+    async fn read_on(&self, server: &str, tool: Tool, args: Value) -> Result<String, BoardError> {
+        self.caller
+            .call(server, tool.name(), args)
+            .await
+            .map_err(|error| {
+                let text = format!("{error:#}");
+                if looks_unauthorized(&text) {
+                    BoardError::Unauthorized(text)
+                } else if error.downcast_ref::<ToolError>().is_some() {
+                    BoardError::Provider(text)
+                } else {
+                    BoardError::Unavailable(text)
+                }
+            })
     }
 
     /// All in-scope raw issues across pages. Truncation is an error.
@@ -461,6 +487,26 @@ fn nested_id(map: &Map<String, Value>, object_key: &str, scalar_key: &str) -> Op
         .and_then(Value::as_object)
         .and_then(|o| str_field(o, "id"))
         .or_else(|| str_field(map, scalar_key))
+}
+
+/// Tolerant: a top-level array or an object holding `teams`, `nodes` or
+/// `items`. Every row needs an `id`; `key` and `name` default to empty.
+fn parse_teams(text: &str) -> Result<Vec<Team>, BoardError> {
+    let value = parse_json(text)?;
+    let list = items(&value, &["teams", "items"])?;
+    list.iter()
+        .map(|item| {
+            let map = item
+                .as_object()
+                .ok_or_else(|| BoardError::Provider("team is not an object".into()))?;
+            Ok(Team {
+                id: str_field(map, "id")
+                    .ok_or_else(|| BoardError::Provider("team has no id".into()))?,
+                key: str_field(map, "key").unwrap_or_default(),
+                name: str_field(map, "name").unwrap_or_default(),
+            })
+        })
+        .collect()
 }
 
 fn parse_states(text: &str, team: &str) -> Result<Vec<WorkflowState>, BoardError> {

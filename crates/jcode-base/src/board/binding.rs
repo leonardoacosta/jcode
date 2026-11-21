@@ -8,13 +8,26 @@
 
 use crate::workspace::{self, Identity, RepoFacts};
 use jcode_config_types::{BoardBackend, BoardBinding, Tracker, WorkspaceRule, WorkspacesConfig};
+use std::collections::HashMap;
 use std::fmt;
 use std::path::{Path, PathBuf};
+
+/// How a scope was obtained.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScopeOrigin {
+    /// A configured world binding (world + team, optionally project).
+    Configured { world: String },
+    /// Reachable on a configured account's server but not bound by any
+    /// world rule. Read-only: never written.
+    Discovered,
+}
 
 /// A verified world plus the explicit board binding it owns.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoardScope {
-    /// Workspace rule name (verified world).
+    /// Where the scope came from. `Discovered` scopes are read-only.
+    pub origin: ScopeOrigin,
+    /// Workspace rule name (verified world). Empty for `Discovered`.
     pub world: String,
     pub backend: BoardBackend,
     /// Stable team id. Never a display name.
@@ -23,14 +36,19 @@ pub struct BoardScope {
     pub project: Option<String>,
     /// MCP server name that carries the backend's tools.
     pub server: String,
-    /// Canonical repository root the world was verified from.
-    pub canonical_root: PathBuf,
+    /// Canonical repository root the world was verified from. `None` when the
+    /// scope was resolved by name, not from a directory.
+    pub canonical_root: Option<PathBuf>,
 }
 
 impl BoardScope {
-    /// ADO boards are read-only in this version.
+    /// ADO boards and discovered (unconfigured) scopes are read-only.
     pub fn read_only(&self) -> bool {
-        self.backend == BoardBackend::Ado
+        self.backend == BoardBackend::Ado || self.origin == ScopeOrigin::Discovered
+    }
+
+    pub fn is_discovered(&self) -> bool {
+        self.origin == ScopeOrigin::Discovered
     }
 
     /// One-row scope label: `Linear · <team> · team-wide` or
@@ -84,6 +102,10 @@ pub enum BoardUnavailable {
     AzureHostRequiresAdo {
         world: String,
     },
+    /// No workspace rule has this name (resolution by world name).
+    UnknownWorldName {
+        name: String,
+    },
 }
 
 impl fmt::Display for BoardUnavailable {
@@ -125,6 +147,9 @@ impl fmt::Display for BoardUnavailable {
                 f,
                 "Azure DevOps repositories require an ADO board (world {world:?})"
             ),
+            Self::UnknownWorldName { name } => {
+                write!(f, "no configured world named {name:?}")
+            }
         }
     }
 }
@@ -199,18 +224,21 @@ fn same_world(a: &WorkspaceRule, b: &WorkspaceRule) -> bool {
         && expected_email(a) == expected_email(b)
 }
 
-fn scope_for(
+/// Config-only checks of a rule's board binding: no repository, identity or
+/// directory involved. Returns the binding and its backend.
+pub(super) fn validate_binding(
     rule: &WorkspaceRule,
-    facts: &RepoFacts,
-    origin: &str,
-) -> Result<BoardScope, BoardUnavailable> {
+) -> Result<(&BoardBinding, BoardBackend), BoardUnavailable> {
+    validate_binding_for(rule, None)
+}
+
+/// [`validate_binding`] plus, when `origin` is known, the Azure host check
+/// (kept between the Brown and tracker checks so refusal order is stable).
+fn validate_binding_for<'a>(
+    rule: &'a WorkspaceRule,
+    origin: Option<&str>,
+) -> Result<(&'a BoardBinding, BoardBackend), BoardUnavailable> {
     let world = rule.name.trim().to_string();
-    if matches!(
-        workspace::identity_of(rule, facts),
-        Identity::Mismatch | Identity::Missing
-    ) {
-        return Err(BoardUnavailable::IdentityUnverified { world });
-    }
     let binding: &BoardBinding =
         rule.board
             .as_ref()
@@ -233,7 +261,7 @@ fn scope_for(
     if brown && backend == BoardBackend::Linear {
         return Err(BoardUnavailable::BrownRequiresAdo { world });
     }
-    if backend == BoardBackend::Linear && is_azure_devops_origin(origin) {
+    if backend == BoardBackend::Linear && origin.is_some_and(is_azure_devops_origin) {
         return Err(BoardUnavailable::AzureHostRequiresAdo { world });
     }
     if let Some(tracker) = tracker
@@ -245,14 +273,152 @@ fn scope_for(
             backend,
         });
     }
+    Ok((binding, backend))
+}
+
+fn scope_for(
+    rule: &WorkspaceRule,
+    facts: &RepoFacts,
+    origin: &str,
+) -> Result<BoardScope, BoardUnavailable> {
+    let world = rule.name.trim().to_string();
+    if matches!(
+        workspace::identity_of(rule, facts),
+        Identity::Mismatch | Identity::Missing
+    ) {
+        return Err(BoardUnavailable::IdentityUnverified { world });
+    }
+    let (binding, backend) = validate_binding_for(rule, Some(origin))?;
     Ok(BoardScope {
+        origin: ScopeOrigin::Configured {
+            world: world.clone(),
+        },
         world,
         backend,
         team: binding.team_id().to_string(),
         project: binding.project_id().map(str::to_string),
         server: binding.server_name().to_string(),
-        canonical_root: facts.root.clone(),
+        canonical_root: Some(facts.root.clone()),
     })
+}
+
+/// Resolve a board by name, with no directory: `world`, `world/team` or
+/// `world/team/project`. Uses the strict global config. Blocking-free.
+pub fn resolve_world(target: &str) -> Result<BoardScope, BoardUnavailable> {
+    let config = crate::config::config_strict()
+        .map_err(|error| BoardUnavailable::InvalidConfig(format!("{error:#}")))?;
+    resolve_world_from(&config.workspaces, target)
+}
+
+/// Pure [`resolve_world`] over already-loaded rules. The world name is
+/// case-insensitive. A team (and project, if the binding has one) equal to
+/// the binding yields the configured scope; anything else yields a
+/// read-only discovered scope on the world's server. No identity check: no
+/// repository is involved, and the result never has a root.
+pub fn resolve_world_from(
+    rules: &WorkspacesConfig,
+    target: &str,
+) -> Result<BoardScope, BoardUnavailable> {
+    let mut parts = target.trim().splitn(3, '/').map(str::trim);
+    let name = parts.next().unwrap_or("");
+    let team = parts.next().filter(|t| !t.is_empty());
+    let project = parts.next().filter(|p| !p.is_empty());
+    let matching: Vec<&WorkspaceRule> = rules
+        .rules
+        .iter()
+        .filter(|rule| !name.is_empty() && rule.name.trim().eq_ignore_ascii_case(name))
+        .collect();
+    let Some(first) = matching.first().copied() else {
+        return Err(BoardUnavailable::UnknownWorldName {
+            name: name.to_string(),
+        });
+    };
+    if matching.iter().any(|other| !same_world(first, other)) {
+        return Err(BoardUnavailable::Ambiguous {
+            worlds: matching.iter().map(|r| r.name.trim().to_string()).collect(),
+        });
+    }
+    let (binding, backend) = validate_binding(first)?;
+    let world = first.name.trim().to_string();
+    let (team, project) = match team {
+        None => (
+            binding.team_id().to_string(),
+            binding.project_id().map(str::to_string),
+        ),
+        Some(team) => (team.to_string(), project.map(str::to_string)),
+    };
+    let configured = team == binding.team_id() && project.as_deref() == binding.project_id();
+    let (world, origin) = if configured {
+        (world.clone(), ScopeOrigin::Configured { world })
+    } else {
+        (String::new(), ScopeOrigin::Discovered)
+    };
+    Ok(BoardScope {
+        world,
+        origin,
+        backend,
+        team,
+        project,
+        server: binding.server_name().to_string(),
+        canonical_root: None,
+    })
+}
+
+/// One board account: an MCP server that carries a backend's tools, and the
+/// worlds whose bindings use it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BoardAccount {
+    pub server: String,
+    pub backend: BoardBackend,
+    /// Worlds bound to this server. Empty for servers listed only in
+    /// `[board] accounts`.
+    pub worlds: Vec<String>,
+}
+
+/// Accounts from the strict global config. See [`board_accounts_from`].
+pub fn board_accounts() -> Result<Vec<BoardAccount>, BoardUnavailable> {
+    let config = crate::config::config_strict()
+        .map_err(|error| BoardUnavailable::InvalidConfig(format!("{error:#}")))?;
+    Ok(board_accounts_from(
+        &config.workspaces,
+        &config.board.accounts,
+    ))
+}
+
+/// Linear servers of valid world bindings in config order, then the extra
+/// `accounts` entries, deduplicated case-sensitively by server name.
+pub fn board_accounts_from(rules: &WorkspacesConfig, accounts: &[String]) -> Vec<BoardAccount> {
+    let mut out: Vec<BoardAccount> = Vec::new();
+    let mut index: HashMap<String, usize> = HashMap::new();
+    for rule in &rules.rules {
+        let Ok((binding, BoardBackend::Linear)) = validate_binding(rule) else {
+            continue;
+        };
+        let server = binding.server_name().to_string();
+        let world = rule.name.trim().to_string();
+        let at = *index.entry(server.clone()).or_insert_with(|| {
+            out.push(BoardAccount {
+                server,
+                backend: BoardBackend::Linear,
+                worlds: Vec::new(),
+            });
+            out.len() - 1
+        });
+        if !out[at].worlds.contains(&world) {
+            out[at].worlds.push(world);
+        }
+    }
+    for server in accounts.iter().map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        if !index.contains_key(server) {
+            index.insert(server.to_string(), out.len());
+            out.push(BoardAccount {
+                server: server.to_string(),
+                backend: BoardBackend::Linear,
+                worlds: Vec::new(),
+            });
+        }
+    }
+    out
 }
 
 #[cfg(test)]

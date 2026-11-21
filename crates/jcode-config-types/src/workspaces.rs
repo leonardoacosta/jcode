@@ -154,6 +154,16 @@ fn looks_like_uuid(text: &str) -> bool {
             .all(|(len, part)| part.len() == *len && part.chars().all(|c| c.is_ascii_hexdigit()))
 }
 
+/// Top-level `[board]`: board settings that belong to no single world.
+/// Global config only, like `[workspaces]`.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct BoardConfig {
+    /// Extra MCP server names to offer as board accounts, beyond the servers
+    /// of the worlds' Linear bindings (for example `["Linear"]`).
+    pub accounts: Vec<String>,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct WorkspacesConfig {

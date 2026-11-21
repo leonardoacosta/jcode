@@ -53,7 +53,7 @@ fn openspec_row_absent_without_openspec_dir_and_spawns_nothing() {
 
 #[test]
 fn linear_text_lists_open_states_in_board_order() {
-    use crate::board::{BoardBackend, BoardIssue, BoardScope, BoardSnapshot, WorkflowState};
+    use crate::board::{BoardBackend, BoardIssue, BoardScope, BoardSnapshot, ScopeOrigin, WorkflowState};
     let state = |id: &str, name: &str, kind: &str| WorkflowState {
         id: id.into(),
         name: name.into(),
@@ -68,12 +68,15 @@ fn linear_text_lists_open_states_in_board_order() {
         team_name: Some("Jcode".into()),
     };
     let scope = BoardScope {
+        origin: ScopeOrigin::Configured {
+            world: "personal".into(),
+        },
         world: "personal".into(),
         backend: BoardBackend::Linear,
         team: "team-id".into(),
         project: None,
         server: "linear".into(),
-        canonical_root: PathBuf::new(),
+        canonical_root: None,
     };
     let snapshot = BoardSnapshot {
         states: vec![

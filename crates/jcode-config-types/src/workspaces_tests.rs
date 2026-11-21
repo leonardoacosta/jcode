@@ -201,3 +201,11 @@ fn memory_retention_is_off_by_default_and_zero_age_never_deletes() {
     };
     assert!(!zero_age.auto_purge_active(), "zero days is refused");
 }
+
+#[test]
+fn board_config_parses_accounts_and_defaults_empty() {
+    assert!(BoardConfig::default().accounts.is_empty());
+    let config: BoardConfig =
+        serde_json::from_value(serde_json::json!({"accounts": ["Linear", "Other"]})).unwrap();
+    assert_eq!(config.accounts, ["Linear", "Other"]);
+}

@@ -16,14 +16,17 @@ mod provider;
 pub use audit::{
     AuditEvent, AuditLog, AuditResult, ConfirmationRecord, IntentRecord, OutcomeRecord,
 };
-pub use binding::{BoardScope, BoardUnavailable, resolve_board, resolve_board_from};
+pub use binding::{
+    BoardAccount, BoardScope, BoardUnavailable, ScopeOrigin, board_accounts, board_accounts_from,
+    resolve_board, resolve_board_from, resolve_world, resolve_world_from,
+};
 pub use cache::{BoardCache, BoardSnapshot, CacheKey, auth_identity};
 pub use change::{
     ChangeOutcome, Confirmation, PendingOp, ReconcileOutcome, Refusal, StatusChangeRequest,
     execute, reconcile,
 };
 pub use jcode_config_types::BoardBackend;
-pub use linear::{LinearMcpProvider, McpCaller, McpManagerCaller, ToolError};
+pub use linear::{LinearMcpProvider, McpCaller, McpManagerCaller, Team, ToolError};
 pub use provider::{
     AdoUnavailableProvider, BoardError, BoardIssue, BoardProvider, WorkflowState, provider_for,
 };
@@ -31,11 +34,12 @@ pub use provider::{
 #[cfg(test)]
 pub(crate) fn test_scope(backend: BoardBackend) -> BoardScope {
     BoardScope {
+        origin: ScopeOrigin::Configured { world: "w".into() },
         world: "w".into(),
         backend,
         team: "team-1".into(),
         project: None,
         server: "Linear".into(),
-        canonical_root: std::path::PathBuf::from("/r"),
+        canonical_root: Some(std::path::PathBuf::from("/r")),
     }
 }

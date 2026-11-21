@@ -5,17 +5,17 @@
 
 pub use jcode_config_types::{
     AdmissionDecision, AdmissionState, AgentRoleModels, AgentsConfig, AmbientConfig, AuthConfig,
-    AutoJudgeConfig, AutoReviewConfig, CompactionConfig, CompactionMode, CrossProviderFailoverMode,
-    CustomWebSearchConfig, CustomWebSearchMethod, DiagramDisplayMode, DiagramPanePosition,
-    DiffDisplayMode, DisplayConfig, FeatureConfig, GatewayConfig, HookCommands, HookEntry,
-    HooksConfig, KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry, LaunchHotkeysConfig,
-    MarkdownSpacingMode, MemoryConfig, MenubarConfig, NamedProviderAuth, NamedProviderConfig,
-    NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig, NotificationsConfig,
-    PowerConfig, ProviderConfig, ReasoningDisplayMode, ResumeOpenElsewhere, ResumeTimeMode,
-    SafetyConfig, SessionConfig, SessionPickerResumeAction, SessionRetentionConfig, SessionsConfig,
-    SponsorsConfig, SwarmConfig, SwarmSpawnMode, TaskAdmissionSnapshot, TaskAuthorization,
-    TasksConfig, TerminalConfig, UpdateChannel, WebSearchConfig, WebSearchEngine, WorkspaceRule,
-    WorkspacesConfig, WorktreesConfig,
+    AutoJudgeConfig, AutoReviewConfig, BoardConfig, CompactionConfig, CompactionMode,
+    CrossProviderFailoverMode, CustomWebSearchConfig, CustomWebSearchMethod, DiagramDisplayMode,
+    DiagramPanePosition, DiffDisplayMode, DisplayConfig, FeatureConfig, GatewayConfig,
+    HookCommands, HookEntry, HooksConfig, KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry,
+    LaunchHotkeysConfig, MarkdownSpacingMode, MemoryConfig, MenubarConfig, NamedProviderAuth,
+    NamedProviderConfig, NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig,
+    NotificationsConfig, PowerConfig, ProviderConfig, ReasoningDisplayMode, ResumeOpenElsewhere,
+    ResumeTimeMode, SafetyConfig, SessionConfig, SessionPickerResumeAction, SessionRetentionConfig,
+    SessionsConfig, SponsorsConfig, SwarmConfig, SwarmSpawnMode, TaskAdmissionSnapshot,
+    TaskAuthorization, TasksConfig, TerminalConfig, UpdateChannel, WebSearchConfig,
+    WebSearchEngine, WorkspaceRule, WorkspacesConfig, WorktreesConfig,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
@@ -784,6 +784,9 @@ pub struct Config {
     /// Origin-matched workspace rules (`[[workspaces.rules]]`): hints, hooks and
     /// swarm model overrides. Global config only; project files never add rules.
     pub workspaces: WorkspacesConfig,
+
+    /// Board accounts (`[board] accounts = [...]`). Global config only.
+    pub board: BoardConfig,
 
     /// Ambient mode configuration
     pub ambient: AmbientConfig,

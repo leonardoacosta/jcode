@@ -190,7 +190,7 @@ async fn confirmation_must_match_every_bound_field() {
         ("project", Box::new(|r| r.scope.project = Some("p".into()))),
         (
             "root",
-            Box::new(|r| r.scope.canonical_root = "/elsewhere".into()),
+            Box::new(|r| r.scope.canonical_root = Some("/elsewhere".into())),
         ),
     ];
     for (name, change) in mutate {
@@ -227,7 +227,7 @@ async fn world_changed_refuses_without_contacting_provider() {
             ..test_scope(BoardBackend::Linear)
         }),
         Ok(BoardScope {
-            canonical_root: "/moved".into(),
+            canonical_root: Some("/moved".into()),
             ..test_scope(BoardBackend::Linear)
         }),
         Ok(BoardScope {
@@ -462,4 +462,22 @@ async fn world_change_between_audit_and_dispatch_refuses_and_records_the_outcome
     assert!(fake.writes().is_empty(), "nothing was dispatched");
     assert_eq!(calls.load(Ordering::SeqCst), 2, "rechecked twice");
     assert_eq!(lines(&log).len(), 2, "intent and a failed outcome");
+}
+
+#[tokio::test]
+async fn discovered_scope_is_refused_before_confirmation_with_no_audit_or_provider_call() {
+    use super::super::binding::ScopeOrigin;
+    let (_d, log) = audit();
+    let fake = Fake::default();
+    let mut req = request();
+    req.scope.origin = ScopeOrigin::Discovered;
+    req.scope.world = String::new();
+    assert_eq!(Confirmation::confirm(&req), Err(Refusal::NotConfigured));
+    let c = Confirmation::confirm(&request()).unwrap();
+    let scope = req.scope.clone();
+    let out = execute(&req, c, &fake, &log, &|| Ok(scope.clone())).await;
+    assert_eq!(out, ChangeOutcome::Refused(Refusal::NotConfigured));
+    assert!(Refusal::NotConfigured.to_string().contains("read-only"));
+    assert_eq!(fake.total_calls(), 0);
+    assert!(lines(&log).is_empty());
 }

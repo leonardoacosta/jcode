@@ -13,6 +13,7 @@ struct Fake {
     statuses: Mutex<VecDeque<Reply>>,
     issues: Mutex<VecDeque<Reply>>,
     get: Mutex<VecDeque<Reply>>,
+    teams: Mutex<VecDeque<Reply>>,
     save: Mutex<VecDeque<Reply>>,
 }
 
@@ -36,6 +37,7 @@ impl McpCaller for Fake {
             "list_issue_statuses" => &self.statuses,
             "list_issues" => &self.issues,
             "get_issue" => &self.get,
+            "list_teams" => &self.teams,
             "save_issue" => &self.save,
             other => panic!("tool outside the allowlist: {other}"),
         };
@@ -373,6 +375,7 @@ fn tool_names_are_the_fixed_allowlist() {
         Tool::ListIssueStatuses,
         Tool::ListIssues,
         Tool::GetIssue,
+        Tool::ListTeams,
         Tool::SaveIssue,
     ];
     let names: Vec<_> = all.iter().map(|t| t.name()).collect();
@@ -382,6 +385,7 @@ fn tool_names_are_the_fixed_allowlist() {
             "list_issue_statuses",
             "list_issues",
             "get_issue",
+            "list_teams",
             "save_issue"
         ]
     );
@@ -931,4 +935,63 @@ async fn a_move_now_costs_get_issue_and_one_status_read_before_the_write() {
         ["get_issue", "list_issue_statuses", "save_issue"],
         "no list_issues scan on the write path"
     );
+}
+
+// UNVERIFIED shape: no real `list_teams` capture exists.
+const SYNTHETIC_TEAMS: &str = include_str!("fixtures/linear_list_teams_synthetic.json");
+
+#[tokio::test]
+async fn teams_parses_array_and_wrapped_shapes_on_the_given_server() {
+    for body in [
+        SYNTHETIC_TEAMS.to_string(),
+        format!(r#"{{"teams":{SYNTHETIC_TEAMS}}}"#),
+        format!(r#"{{"nodes":{SYNTHETIC_TEAMS}}}"#),
+        format!(r#"{{"items":{SYNTHETIC_TEAMS}}}"#),
+    ] {
+        let fake = Arc::new(Fake::default());
+        fake.teams.lock().unwrap().push_back(Ok(body));
+        let teams = provider(&fake).teams("Other").await.unwrap();
+        assert_eq!(teams.len(), 2);
+        assert_eq!(
+            (
+                teams[1].id.as_str(),
+                teams[1].key.as_str(),
+                teams[1].name.as_str()
+            ),
+            ("00000000-0000-4000-8000-000000000002", "BBB", "Beta")
+        );
+        assert_eq!(
+            fake.calls(),
+            [("Other".into(), "list_teams".into(), json!({}))]
+        );
+    }
+}
+
+#[tokio::test]
+async fn teams_rejects_rows_without_id_and_non_json() {
+    for body in [
+        r#"[{"key":"A","name":"a"}]"#,
+        r#"["x"]"#,
+        "not json",
+        r#"{"other":[]}"#,
+    ] {
+        let fake = Arc::new(Fake::default());
+        fake.teams.lock().unwrap().push_back(Ok(body.into()));
+        assert!(
+            matches!(
+                provider(&fake).teams("Linear").await,
+                Err(BoardError::Provider(_))
+            ),
+            "{body}"
+        );
+    }
+    let fake = Arc::new(Fake::default());
+    fake.teams
+        .lock()
+        .unwrap()
+        .push_back(Err(anyhow::anyhow!("401 unauthorized")));
+    assert!(matches!(
+        provider(&fake).teams("Linear").await,
+        Err(BoardError::Unauthorized(_))
+    ));
 }

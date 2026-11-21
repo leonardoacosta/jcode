@@ -2,18 +2,19 @@
 //! MCP server or network is contacted.
 
 use super::*;
-use crate::board::{BoardBackend, BoardIssue as CoreIssue, BoardUnavailable, WorkflowState};
+use crate::board::{BoardBackend, BoardIssue as CoreIssue, BoardUnavailable, ScopeOrigin, WorkflowState};
 use async_trait::async_trait;
 use std::sync::Mutex;
 
 fn scope(backend: BoardBackend) -> BoardScope {
     BoardScope {
+        origin: ScopeOrigin::Configured { world: "w".into() },
         world: "w".into(),
         backend,
         team: "team-1".into(),
         project: None,
         server: "Linear".into(),
-        canonical_root: PathBuf::from("/r"),
+        canonical_root: Some(PathBuf::from("/r")),
     }
 }
 

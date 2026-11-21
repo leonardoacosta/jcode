@@ -1,7 +1,7 @@
 //! The one allowed write: change an issue's workflow state.
 //!
 //! Order inside [`execute`] (every step before dispatch fails closed):
-//! 1. ADO scope: refused, before anything else. No audit record, no provider
+//! 1. ADO or discovered (unconfigured) scope: refused, before anything else. No audit record, no provider
 //!    call. ([`Confirmation::confirm`] refuses it too, so an ADO change can
 //!    never even reach a confirmation.)
 //! 2. The confirmation must match the request exactly.
@@ -23,7 +23,7 @@
 use super::audit::{
     AuditEvent, AuditLog, AuditResult, ConfirmationRecord, IntentRecord, OutcomeRecord,
 };
-use super::binding::{BoardScope, BoardUnavailable};
+use super::binding::{BoardScope, BoardUnavailable, ScopeOrigin};
 use super::provider::{BoardError, BoardProvider};
 use std::fmt;
 
@@ -41,6 +41,8 @@ pub struct StatusChangeRequest {
 pub enum Refusal {
     /// ADO boards are read-only in this version.
     ReadOnly,
+    /// A scope that no workspace rule binds (reached by browsing teams).
+    NotConfigured,
     /// The confirmation was given for a different change.
     ConfirmationMismatch,
     /// Requested state equals the expected prior state.
@@ -56,6 +58,7 @@ impl fmt::Display for Refusal {
             Self::ConfirmationMismatch => {
                 write!(f, "confirmation does not match this status change")
             }
+            Self::NotConfigured => write!(f, "not a configured world/team/project; read-only"),
             Self::NoChange => write!(f, "issue is already expected to be in that state"),
             Self::WorldChanged(Some(why)) => write!(f, "world changed before write: {why}"),
             Self::WorldChanged(None) => write!(f, "world changed before write"),
@@ -97,6 +100,9 @@ impl Confirmation {
 }
 
 fn precheck(request: &StatusChangeRequest) -> Result<(), Refusal> {
+    if request.scope.origin == ScopeOrigin::Discovered {
+        return Err(Refusal::NotConfigured);
+    }
     if request.scope.read_only() {
         return Err(Refusal::ReadOnly);
     }

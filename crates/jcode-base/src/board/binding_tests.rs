@@ -184,7 +184,7 @@ fn personal_and_priceless_linear_resolve_with_canonical_root() {
     assert_eq!(scope.project, None);
     assert_eq!(scope.server, "Linear");
     assert!(!scope.read_only());
-    assert_eq!(scope.canonical_root, dir.canonicalize().unwrap());
+    assert_eq!(scope.canonical_root, Some(dir.canonicalize().unwrap()));
     assert_eq!(scope.scope_label(), "Linear · team-personal · team-wide");
 
     let scope = resolve_ok(&env, "pl", "https://github.com/priceless/y");
@@ -204,7 +204,7 @@ fn subdirectory_resolves_to_repository_root() {
     let sub = dir.join("a/b");
     std::fs::create_dir_all(&sub).unwrap();
     let scope = resolve_board(&sub).unwrap();
-    assert_eq!(scope.canonical_root, dir.canonicalize().unwrap());
+    assert_eq!(scope.canonical_root, Some(dir.canonicalize().unwrap()));
 }
 
 #[cfg(unix)]
@@ -217,7 +217,7 @@ fn symlink_path_resolves_to_same_canonical_root() {
     let via_link = resolve_board(&link).unwrap();
     let direct = resolve_board(&dir).unwrap();
     assert_eq!(via_link, direct);
-    assert_eq!(via_link.canonical_root, dir.canonicalize().unwrap());
+    assert_eq!(via_link.canonical_root, Some(dir.canonicalize().unwrap()));
 }
 
 #[test]
@@ -242,7 +242,7 @@ fn worktree_path_resolves_through_its_own_origin() {
     let scope = resolve_board(&wt).unwrap();
     assert_eq!(scope.world, "personal");
     assert_eq!(scope.team, "team-personal");
-    assert_eq!(scope.canonical_root, wt.canonicalize().unwrap());
+    assert_eq!(scope.canonical_root, Some(wt.canonicalize().unwrap()));
 }
 
 #[test]
@@ -505,4 +505,132 @@ team = "t"
     git(&dir, &["config", "user.email", "me@example.com"]);
     crate::config::Config::invalidate_cache();
     assert_eq!(resolve_board(&dir).unwrap().team, "t");
+}
+
+fn rules(json: serde_json::Value) -> WorkspacesConfig {
+    serde_json::from_value(serde_json::json!({ "rules": json })).unwrap()
+}
+
+fn world_rules() -> WorkspacesConfig {
+    rules(serde_json::json!([
+        {"name": "Personal", "origin": "github.com/p/**",
+         "board": {"backend": "linear", "team": "team-p"}},
+        {"name": "priceless", "origin": "github.com/pl/**",
+         "board": {"backend": "linear", "team": "team-pl", "project": "proj-pl", "server": "Linear2"}},
+        {"name": "brown", "origin": "dev.azure.com/b/**", "tracker": "ado",
+         "board": {"backend": "ado", "team": "team-b"}},
+        {"name": "bad", "origin": "github.com/bad/**",
+         "board": {"backend": "linear", "team": " "}},
+        {"name": "amb", "origin": "x/a/**", "board": {"backend": "linear", "team": "a"}},
+        {"name": "amb", "origin": "x/b/**", "board": {"backend": "linear", "team": "b"}},
+    ]))
+}
+
+#[test]
+fn resolve_world_bound_team_is_configured_without_root() {
+    let r = world_rules();
+    for target in ["personal", "PERSONAL", "Personal/team-p", " personal "] {
+        let s = resolve_world_from(&r, target).unwrap();
+        assert_eq!(s.world, "Personal", "{target}");
+        assert_eq!(
+            s.origin,
+            ScopeOrigin::Configured {
+                world: "Personal".into()
+            }
+        );
+        assert_eq!(s.team, "team-p");
+        assert_eq!(s.canonical_root, None);
+        assert!(!s.read_only());
+    }
+    let s = resolve_world_from(&r, "priceless").unwrap();
+    assert_eq!(s.project.as_deref(), Some("proj-pl"));
+    assert_eq!(s.server, "Linear2");
+    let s = resolve_world_from(&r, "priceless/team-pl/proj-pl").unwrap();
+    assert!(!s.read_only());
+}
+
+#[test]
+fn resolve_world_other_team_or_project_is_discovered_read_only() {
+    let r = world_rules();
+    for target in [
+        "personal/team-x",
+        "personal/team-p/some-project",
+        "priceless/team-pl",
+        "priceless/team-pl/other",
+        "priceless/team-x/proj-pl",
+    ] {
+        let s = resolve_world_from(&r, target).unwrap();
+        assert_eq!(s.origin, ScopeOrigin::Discovered, "{target}");
+        assert_eq!(s.world, "", "{target}");
+        assert!(s.read_only(), "{target}");
+        assert_eq!(s.canonical_root, None);
+    }
+    let s = resolve_world_from(&r, "priceless/team-x/p9").unwrap();
+    assert_eq!(
+        (s.team.as_str(), s.project.as_deref(), s.server.as_str()),
+        ("team-x", Some("p9"), "Linear2")
+    );
+}
+
+#[test]
+fn resolve_world_refuses_unknown_invalid_and_ambiguous() {
+    let r = world_rules();
+    assert_eq!(
+        resolve_world_from(&r, "nope"),
+        Err(BoardUnavailable::UnknownWorldName {
+            name: "nope".into()
+        })
+    );
+    assert!(matches!(
+        resolve_world_from(&r, ""),
+        Err(BoardUnavailable::UnknownWorldName { .. })
+    ));
+    assert!(matches!(
+        resolve_world_from(&r, "bad"),
+        Err(BoardUnavailable::MissingTeam { .. })
+    ));
+    assert!(matches!(
+        resolve_world_from(&r, "amb"),
+        Err(BoardUnavailable::Ambiguous { .. })
+    ));
+    // ADO worlds still resolve (read-only by backend).
+    assert!(resolve_world_from(&r, "brown").unwrap().read_only());
+}
+
+#[test]
+fn board_accounts_lists_linear_servers_then_extras_deduped() {
+    let r = rules(serde_json::json!([
+        {"name": "a", "origin": "x/a/**", "board": {"backend": "linear", "team": "t"}},
+        {"name": "b", "origin": "x/b/**", "board": {"backend": "linear", "team": "t", "server": "Other"}},
+        {"name": "c", "origin": "x/c/**", "board": {"backend": "linear", "team": "t"}},
+        {"name": "d", "origin": "x/d/**", "tracker": "ado", "board": {"backend": "ado", "team": "t", "server": "Ado"}},
+        {"name": "e", "origin": "x/e/**", "board": {"backend": "linear", "team": ""}},
+    ]));
+    let extras = [
+        "Linear".to_string(),
+        "Third".into(),
+        "linear".into(),
+        " ".into(),
+        "Third".into(),
+    ];
+    let got = board_accounts_from(&r, &extras);
+    let view: Vec<(&str, Vec<&str>)> = got
+        .iter()
+        .map(|a| {
+            (
+                a.server.as_str(),
+                a.worlds.iter().map(String::as_str).collect(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        view,
+        vec![
+            ("Linear", vec!["a", "c"]),
+            ("Other", vec!["b"]),
+            ("Third", vec![]),
+            ("linear", vec![]),
+        ]
+    );
+    assert!(got.iter().all(|a| a.backend == BoardBackend::Linear));
 }
