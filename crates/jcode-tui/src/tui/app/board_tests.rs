@@ -912,6 +912,20 @@ fn board_glue_login_and_logout_refuse_what_they_cannot_resolve() {
 }
 
 #[test]
+fn board_glue_login_refuses_a_static_authorization_header() {
+    let servers = r#"{"mcpServers": {
+  "Linear": {"url": "https://mcp.example.test/personal", "headers": {"Authorization": "Bearer x"}},
+  "LinearAlt": {"url": "https://mcp.example.test/priceless"}
+}}"#;
+    let _env = Env::new(RULES, servers);
+    let mut app = crate::tui::app::tests::create_test_app();
+    let before = app.display_messages().len();
+    assert!(handle_board_command(&mut app, "/board login Linear"));
+    let text = messages_since(&app, before);
+    assert!(text.contains("static Authorization header"), "{text}");
+}
+
+#[test]
 fn board_glue_logout_outside_a_world_lists_accounts_and_needs_a_name() {
     let _env = Env::new(RULES, SERVERS);
     let mut app = crate::tui::app::tests::create_test_app();

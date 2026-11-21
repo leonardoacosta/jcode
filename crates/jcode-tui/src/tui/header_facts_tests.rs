@@ -53,7 +53,9 @@ fn openspec_row_absent_without_openspec_dir_and_spawns_nothing() {
 
 #[test]
 fn linear_text_lists_open_states_in_board_order() {
-    use crate::board::{BoardBackend, BoardIssue, BoardScope, BoardSnapshot, ScopeOrigin, WorkflowState};
+    use crate::board::{
+        BoardBackend, BoardIssue, BoardScope, BoardSnapshot, ScopeOrigin, WorkflowState,
+    };
     let state = |id: &str, name: &str, kind: &str| WorkflowState {
         id: id.into(),
         name: name.into(),

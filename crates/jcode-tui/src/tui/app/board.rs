@@ -304,6 +304,15 @@ fn login_server(
             "Board account '{name}' runs a local command with its own credentials; /board login applies to remote OAuth servers. Set its \"url\" to https://mcp.linear.app/mcp to sign in here."
         )));
     }
+    if config.servers[name]
+        .headers
+        .keys()
+        .any(|key| key.eq_ignore_ascii_case("authorization"))
+    {
+        return app.push_display_message(super::DisplayMessage::error(format!(
+            "Board account '{name}' has a static Authorization header, which takes precedence over OAuth. Remove it to use /board login."
+        )));
+    }
     app.board.runtime = None;
     match action {
         AccountAction::Login => {
@@ -567,7 +576,13 @@ async fn load_account(
     let loads = teams.iter().map(|team| async move {
         // A team a world binds keeps its configured scope; every other team
         // is discovered, so nothing shows twice and nothing unbound is writable.
-        let scope = match account.bindings.iter().find(|b| b.team == team.id) {
+        // A project-bound binding would hide the rest of the team, so only a
+        // team-wide binding is reused.
+        let scope = match account
+            .bindings
+            .iter()
+            .find(|b| b.team == team.id && b.project.is_none())
+        {
             Some(binding) => binding.clone(),
             None => BoardScope {
                 origin: ScopeOrigin::Discovered,
