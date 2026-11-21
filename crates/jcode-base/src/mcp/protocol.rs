@@ -874,8 +874,16 @@ impl McpConfig {
     /// same-named servers from earlier ones.
     fn load_project_locals(project_root: &std::path::Path) -> Self {
         let mut merged = Self::default();
+        // In the home directory, `.jcode/mcp.json` IS the global file. Reading
+        // it again here would relabel every global server as project-scoped.
+        let global = crate::storage::jcode_dir()
+            .ok()
+            .and_then(|dir| dir.join("mcp.json").canonicalize().ok());
         for relative in [".jcode/mcp.json", ".mcp.json", ".claude/mcp.json"] {
             let path = project_root.join(relative);
+            if global.is_some() && path.canonicalize().ok() == global {
+                continue;
+            }
             if path.exists()
                 && let Ok(mut config) = Self::load_from_file(&path)
             {

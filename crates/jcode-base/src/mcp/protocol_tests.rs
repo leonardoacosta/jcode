@@ -439,6 +439,32 @@ fn load_for_dir_expands_the_winning_merged_definition() {
 }
 
 #[test]
+fn load_for_dir_home_does_not_relabel_global_jcode_mcp_as_project() {
+    let _guard = crate::storage::lock_test_env();
+    let previous_home = std::env::var_os("JCODE_HOME");
+    let user_home = tempfile::tempdir().expect("user home");
+    let jcode_home = user_home.path().join(".jcode");
+    std::fs::create_dir_all(&jcode_home).unwrap();
+    crate::env::set_var("JCODE_HOME", &jcode_home);
+    std::fs::write(
+        jcode_home.join("mcp.json"),
+        r#"{"mcpServers":{"srv":{"command":"global-bin"}}}"#,
+    )
+    .unwrap();
+
+    let result = std::panic::catch_unwind(|| {
+        let config = McpConfig::load_for_dir(Some(user_home.path()));
+        assert_eq!(config.server_scope("srv"), Some("global"));
+    });
+
+    match previous_home {
+        Some(value) => crate::env::set_var("JCODE_HOME", value),
+        None => crate::env::remove_var("JCODE_HOME"),
+    }
+    result.expect("home dir keeps global scope");
+}
+
+#[test]
 fn expanded_values_invalidate_schema_cache_fingerprint() {
     let raw = r#"{"mcpServers":{"srv":{"command":"node","args":["${SCRIPT}"],"env":{"TOKEN":"${TOKEN}"}}}}"#;
     let mut first: McpConfig = serde_json::from_str(raw).unwrap();
