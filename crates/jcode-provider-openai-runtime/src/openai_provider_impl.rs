@@ -965,6 +965,13 @@ impl Provider for OpenAIProvider {
         self.available_models_for_switching()
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        // Without a cached catalog the list is only the current model.
+        self.is_browser_only()
+            || jcode_base::provider::cached_openai_model_ids_for_scope(&self.catalog_scope())
+                .is_some()
+    }
+
     fn model_capabilities_need_refresh(&self) -> bool {
         if self.is_browser_only()
             || !self

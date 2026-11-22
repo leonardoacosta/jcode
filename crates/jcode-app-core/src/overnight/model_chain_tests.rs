@@ -585,6 +585,7 @@ fn visible_run_advances_a_bare_provider_and_blocks_on_exhaustion() {
 
 /// Catalog-backed route: until `loaded` is set, the model list is only the
 /// current model. `refresh_model_catalog` loads it when `refresh_ok`.
+#[derive(Clone)]
 struct CatalogProvider {
     loaded: Arc<std::sync::atomic::AtomicBool>,
     refresh_ok: bool,
@@ -649,11 +650,16 @@ impl Provider for CatalogProvider {
     }
 }
 
+fn route_models_for(provider: &(impl Provider + Clone + 'static)) -> RouteModels {
+    let provider: Arc<dyn Provider> = Arc::new(provider.clone());
+    route_models(&provider)
+}
+
 #[test]
 fn cold_catalog_that_stays_cold_keeps_full_chains_and_notes_it() {
     let config = OvernightConfig::default();
     let provider = CatalogProvider::new(false, &[]);
-    let routes = route_models(&provider);
+    let routes = route_models_for(&provider);
     assert!(routes.served.is_empty(), "unknown, not the current model");
     let reason = routes.unfiltered_reason.clone().unwrap();
     assert!(reason.contains("route catalog unavailable; chains unfiltered"));
@@ -674,7 +680,7 @@ fn cold_catalog_that_stays_cold_keeps_full_chains_and_notes_it() {
 fn cold_catalog_that_loads_after_refresh_filters_normally() {
     let config = OvernightConfig::default();
     let provider = CatalogProvider::new(true, &["gpt-6-sol", "claude-sonnet-5.5", "gpt-6-luna"]);
-    let routes = route_models(&provider);
+    let routes = route_models_for(&provider);
     assert_eq!(routes.unfiltered_reason, None);
     assert_eq!(routes.served.len(), 3);
     let plan = plan(&config, &routes).unwrap();
@@ -692,7 +698,7 @@ fn warm_or_catalogless_route_never_refreshes() {
     provider
         .loaded
         .store(true, std::sync::atomic::Ordering::SeqCst);
-    let routes = route_models(&provider);
+    let routes = route_models_for(&provider);
     assert_eq!(routes.served, ["claude-sonnet-5.5"]);
     assert_eq!(
         provider.refreshes.load(std::sync::atomic::Ordering::SeqCst),
@@ -701,7 +707,7 @@ fn warm_or_catalogless_route_never_refreshes() {
 
     // Default `model_list_is_authoritative` is true: static-list routes skip the refresh.
     let fixed = ChainProvider::new("m1", &[], &["m1", "m2"], "");
-    assert_eq!(route_models(&fixed).served, ["m1", "m2"]);
+    assert_eq!(route_models_for(&fixed).served, ["m1", "m2"]);
 }
 
 #[test]
@@ -961,4 +967,43 @@ fn preflight_event_notes_a_refreshed_catalog() {
     );
     assert!(event.summary.contains("dropped (not served by route)"));
     assert!(!event.summary.contains("unfiltered"));
+}
+
+/// A refresh that blocks its thread synchronously (no await point) must not
+/// hold the start path past the timeout.
+#[test]
+fn bounded_refresh_gives_up_on_a_synchronously_blocking_refresh() {
+    #[derive(Clone)]
+    struct Blocking;
+    #[async_trait]
+    impl Provider for Blocking {
+        async fn complete(
+            &self,
+            _: &[Message],
+            _: &[ToolDefinition],
+            _: &str,
+            _: Option<&str>,
+        ) -> Result<crate::provider::EventStream> {
+            anyhow::bail!("unused")
+        }
+        fn name(&self) -> &str {
+            "blocking"
+        }
+        fn model(&self) -> String {
+            "m".into()
+        }
+        async fn refresh_model_catalog(
+            &self,
+        ) -> Result<jcode_provider_core::ModelCatalogRefreshSummary> {
+            std::thread::sleep(std::time::Duration::from_secs(5));
+            Ok(Default::default())
+        }
+        fn fork(&self) -> Arc<dyn Provider> {
+            Arc::new(self.clone())
+        }
+    }
+    let started = std::time::Instant::now();
+    let result = refresh_catalog_bounded(Arc::new(Blocking), std::time::Duration::from_millis(200));
+    assert!(started.elapsed() < std::time::Duration::from_secs(2));
+    assert!(result.unwrap_err().contains("timed out"));
 }

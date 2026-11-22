@@ -399,6 +399,13 @@ impl Provider for GeminiProvider {
         self.available_models_display()
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        self.fetched_models
+            .read()
+            .map(|models| !models.is_empty())
+            .unwrap_or(false)
+    }
+
     fn model_routes(&self) -> Vec<jcode_provider_core::ModelRoute> {
         self.available_models_display()
             .into_iter()

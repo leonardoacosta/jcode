@@ -654,6 +654,13 @@ impl Provider for CursorCliProvider {
         self.available_models_display()
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        self.fetched_models
+            .read()
+            .map(|models| !models.is_empty())
+            .unwrap_or(false)
+    }
+
     fn available_models_display(&self) -> Vec<String> {
         let dynamic = self
             .fetched_models

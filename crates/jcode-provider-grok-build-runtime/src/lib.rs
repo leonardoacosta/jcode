@@ -223,6 +223,10 @@ impl Provider for GrokBuildProvider {
         self.available_models_display()
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        self.inner.model_list_is_authoritative()
+    }
+
     fn model_routes(&self) -> Vec<ModelRoute> {
         self.available_models_display()
             .into_iter()

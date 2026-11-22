@@ -380,3 +380,31 @@ async fn oauth_account_binding_survives_global_switch_refresh_and_fork() {
         "removed pinned account must not use cached bearer"
     );
 }
+
+#[tokio::test]
+async fn model_list_is_authoritative_only_once_the_account_catalog_is_cached() {
+    let _lock = jcode_base::storage::lock_test_env();
+    let _sandbox = AccountSandbox::new();
+    let label = save_account("catalog-account", "access", "refresh", "catalog-id");
+    let provider =
+        OpenAIProvider::new(jcode_base::auth::codex::load_credentials_for_account(&label).unwrap());
+    provider.set_oauth_account(Some(&label)).unwrap();
+
+    // Cold: the switching list is the current model plus the web model, which
+    // is a placeholder, not this account's catalog.
+    assert!(!provider.model_list_is_authoritative());
+
+    jcode_base::provider::persist_openai_model_catalog_for_scope(
+        &provider.catalog_scope(),
+        &jcode_base::provider::OpenAIModelCatalog {
+            available_models: vec!["gpt-6-sol".into(), "gpt-6-luna".into()],
+            ..Default::default()
+        },
+    );
+    assert!(provider.model_list_is_authoritative());
+    assert!(
+        provider
+            .available_models_for_switching()
+            .contains(&"gpt-6-luna".to_string())
+    );
+}

@@ -141,7 +141,7 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
         );
     }
     // Chain models the route does not serve are dropped; an empty chain blocks.
-    let route = model_chain::route_models(options.provider.as_ref());
+    let route = model_chain::route_models(&options.provider);
     // A route with no model list at all (fixed single-model providers) cannot
     // be checked or switched; only routes that list models, or whose catalog
     // could not be loaded, are held to the chain.

@@ -1,3 +1,4 @@
+mod catalog_authority;
 mod catalog_discovery;
 use super::*;
 mod catalog_memo;

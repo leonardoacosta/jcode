@@ -1065,3 +1065,20 @@ fn ensure_state_replaces_oauth_cache_when_switching_to_api_key() {
         );
     });
 }
+
+#[test]
+fn model_list_is_authoritative_only_after_models_were_fetched() {
+    let _guard = jcode_base::storage::lock_test_env();
+    let temp = tempfile::TempDir::new().expect("tempdir");
+    let _home = EnvVarGuard::set_path("JCODE_HOME", temp.path());
+    jcode_base::config::Config::invalidate_cache();
+
+    let provider = GeminiProvider::new();
+    // Cold: the display list is just the current model.
+    assert!(!provider.model_list_is_authoritative());
+    assert_eq!(provider.available_models_for_switching().len(), 1);
+
+    *provider.fetched_models.write().unwrap() =
+        vec!["gemini-3-pro".into(), "gemini-3-flash".into()];
+    assert!(provider.model_list_is_authoritative());
+}

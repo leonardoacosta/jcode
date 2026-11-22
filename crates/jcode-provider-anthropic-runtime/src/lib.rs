@@ -1630,6 +1630,17 @@ impl Provider for AnthropicProvider {
         self.available_models_for_switching()
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        // `known_anthropic_model_ids` falls back to a static list when neither
+        // route has a cached catalog; that list is not the account's own.
+        [false, true].into_iter().any(|oauth| {
+            jcode_base::provider::cached_anthropic_model_ids_for_scope(
+                &jcode_base::provider::anthropic_catalog_scope_for_route(oauth),
+            )
+            .is_some()
+        })
+    }
+
     fn reasoning_effort(&self) -> Option<String> {
         let model = self.model();
         if !Self::model_supports_reasoning_effort(&model) {

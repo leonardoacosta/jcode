@@ -192,18 +192,20 @@ pub(crate) struct RouteModels {
 /// is not loaded gets one bounded refresh; if that does not produce a real
 /// list, `served` is empty (unknown) so `filter_served` keeps every chain
 /// model instead of shrinking the chains to the current model.
-pub(crate) fn route_models(provider: &dyn Provider) -> RouteModels {
-    route_models_with(provider, refresh_catalog_bounded)
+pub(crate) fn route_models(provider: &Arc<dyn Provider>) -> RouteModels {
+    route_models_with(provider.as_ref(), || {
+        refresh_catalog_bounded(Arc::clone(provider), CATALOG_REFRESH_TIMEOUT)
+    })
 }
 
 fn route_models_with(
     provider: &dyn Provider,
-    refresh: impl FnOnce(&dyn Provider) -> std::result::Result<(), String>,
+    refresh: impl FnOnce() -> std::result::Result<(), String>,
 ) -> RouteModels {
     let mut failure = None;
     let refreshed = !provider.model_list_is_authoritative();
     if refreshed {
-        failure = refresh(provider).err();
+        failure = refresh().err();
     }
     if provider.model_list_is_authoritative() {
         return RouteModels {
@@ -222,36 +224,41 @@ fn route_models_with(
     }
 }
 
-/// Run `refresh_model_catalog` on a scratch runtime in a scoped thread, so the
-/// synchronous start path works from any caller (TUI thread, current-thread
-/// or multi-thread tokio) and the wait is bounded.
-fn refresh_catalog_bounded(provider: &dyn Provider) -> std::result::Result<(), String> {
-    std::thread::scope(|scope| {
-        scope
-            .spawn(|| {
-                let runtime = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .map_err(|error| error.to_string())?;
-                runtime.block_on(async {
-                    match tokio::time::timeout(
-                        CATALOG_REFRESH_TIMEOUT,
-                        provider.refresh_model_catalog(),
-                    )
-                    .await
-                    {
-                        Ok(Ok(_)) => Ok(()),
-                        Ok(Err(error)) => Err(format!("{error:#}")),
-                        Err(_) => Err(format!(
-                            "timed out after {}s",
-                            CATALOG_REFRESH_TIMEOUT.as_secs()
-                        )),
-                    }
-                })
-            })
-            .join()
-            .unwrap_or_else(|_| Err("catalog refresh panicked".to_string()))
-    })
+/// Run `refresh_model_catalog` on its own detached thread and runtime, and wait
+/// at most `timeout` for the result. The wait is a channel timeout, not a
+/// future timeout, so a refresh that blocks its thread synchronously (file or
+/// process IO inside an async fn) still cannot hold up the start; the stray
+/// thread finishes or stays blocked on its own and is never joined.
+fn refresh_catalog_bounded(
+    provider: Arc<dyn Provider>,
+    timeout: std::time::Duration,
+) -> std::result::Result<(), String> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::Builder::new()
+        .name("overnight-catalog-refresh".into())
+        .spawn(move || {
+            let result = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .map_err(|error| error.to_string())
+                .and_then(|runtime| {
+                    runtime
+                        .block_on(provider.refresh_model_catalog())
+                        .map(|_| ())
+                        .map_err(|error| format!("{error:#}"))
+                });
+            let _ = tx.send(result);
+        })
+        .map_err(|error| error.to_string())?;
+    match rx.recv_timeout(timeout) {
+        Ok(result) => result,
+        Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+            Err(format!("timed out after {}s", timeout.as_secs()))
+        }
+        Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+            Err("catalog refresh panicked".to_string())
+        }
+    }
 }
 
 /// Filter both chains against the route. `Err` carries the block reasons when

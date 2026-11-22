@@ -1419,6 +1419,15 @@ impl Provider for BedrockProvider {
         self.all_display_models()
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        // The static known-model list is always present; only a fetched
+        // catalog says what this account can use.
+        self.fetched_models
+            .read()
+            .map(|models| !models.is_empty())
+            .unwrap_or(false)
+    }
+
     fn model_routes(&self) -> Vec<ModelRoute> {
         let legacy_models = self
             .legacy_models

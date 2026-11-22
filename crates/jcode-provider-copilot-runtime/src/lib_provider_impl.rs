@@ -133,6 +133,13 @@ impl Provider for CopilotApiProvider {
         self.available_models_display()
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        self.fetched_models
+            .read()
+            .map(|models| !models.is_empty())
+            .unwrap_or(false)
+    }
+
     async fn prefetch_models(&self) -> Result<()> {
         let grace_ms = Self::startup_prefetch_grace_ms();
         if self.created_at.elapsed().as_millis() < u128::from(grace_ms) {

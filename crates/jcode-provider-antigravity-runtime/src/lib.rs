@@ -938,6 +938,10 @@ impl Provider for AntigravityProvider {
         self.available_models_display()
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        !self.fetched_catalog().is_empty()
+    }
+
     fn model_routes(&self) -> Vec<jcode_provider_core::ModelRoute> {
         let catalog = self.fetched_catalog();
         if !catalog.is_empty() {

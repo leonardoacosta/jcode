@@ -2297,11 +2297,32 @@ impl Provider for MultiProvider {
     }
 
     fn model_list_is_authoritative(&self) -> bool {
+        // Same provider `available_models_for_switching` reads for each route.
         match self.active_provider() {
+            ActiveProvider::Claude => self
+                .anthropic_provider()
+                .is_none_or(|p| p.model_list_is_authoritative()),
+            ActiveProvider::OpenAI => self
+                .openai_provider()
+                .is_none_or(|p| p.model_list_is_authoritative()),
+            ActiveProvider::Copilot => self
+                .copilot_provider()
+                .is_none_or(|p| p.model_list_is_authoritative()),
+            ActiveProvider::Antigravity => self
+                .antigravity_provider()
+                .is_none_or(|p| p.model_list_is_authoritative()),
+            ActiveProvider::Gemini => self
+                .gemini_provider()
+                .is_none_or(|p| p.model_list_is_authoritative()),
+            ActiveProvider::Cursor => self
+                .cursor_provider()
+                .is_none_or(|p| p.model_list_is_authoritative()),
+            ActiveProvider::Bedrock => self
+                .bedrock_provider()
+                .is_none_or(|p| p.model_list_is_authoritative()),
             ActiveProvider::OpenRouter => self
                 .active_openrouter_execution_provider()
-                .is_none_or(|openrouter| openrouter.model_list_is_authoritative()),
-            _ => true,
+                .is_none_or(|p| p.model_list_is_authoritative()),
         }
     }
 
