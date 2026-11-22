@@ -2,7 +2,7 @@
 
 ### Requirement: Coordinator tool allowlist
 
-While an overnight run is active, its coordinator session SHALL be allowed only: `swarm`, `todo`, `schedule`, `bg`, `read`, `agentgrep`, `conversation_search`, `session_search`, `batch`, MCP tools, `edit` and `write` whose target path ends in `.md`, and `bash` whose command is read-only. Every other tool call SHALL be denied before execution. `batch` members SHALL be checked against the same rules. The allowlist SHALL be removed when the run ends.
+While an overnight run is active, its coordinator session SHALL be allowed only: `swarm`, `todo`, `schedule`, `bg`, `read`, `agentgrep`, `conversation_search`, `session_search`, `batch`, MCP tools, `edit` and `write` whose target path ends in `.md` or lies inside the run's own directory (run bookkeeping: task cards, issue drafts, validation output), and `bash` whose command is read-only. Every other tool call SHALL be denied before execution. `batch` members SHALL be checked against the same rules. The allowlist SHALL be removed when the run ends.
 
 #### Scenario: Code edit denied
 - **WHEN** the coordinator calls `edit` on `src/main.rs`
@@ -11,6 +11,10 @@ While an overnight run is active, its coordinator session SHALL be allowed only:
 #### Scenario: Markdown edit allowed
 - **WHEN** the coordinator calls `edit` or `write` on `notes/plan.md`
 - **THEN** the call runs
+
+#### Scenario: Run bookkeeping allowed
+- **WHEN** the coordinator calls `write` on `<run_dir>/task-cards/x.json`
+- **THEN** the call runs, but `<run_dir>/../escape.rs` and a `.json` outside the run directory are denied
 
 #### Scenario: Patch tool denied
 - **WHEN** the coordinator calls `apply_patch`

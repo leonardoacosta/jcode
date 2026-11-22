@@ -110,6 +110,17 @@ pub(crate) fn enforce(
     let Err(reason) = allows(tool, input, resolve) else {
         return Ok(());
     };
+    // Run bookkeeping (task cards, issue drafts, validation output) lives in
+    // the run directory and the prompts tell the coordinator to maintain it.
+    if let Some(manifest) = manifest.as_ref()
+        && matches!(tool, "edit" | "write")
+        && input
+            .get("file_path")
+            .and_then(Value::as_str)
+            .is_some_and(|path| inside_run_dir(&manifest.run_id, &resolve(Path::new(path))))
+    {
+        return Ok(());
+    }
     if let Some(manifest) = manifest {
         let _ = crate::overnight::record_event(
             &manifest,
@@ -122,6 +133,43 @@ pub(crate) fn enforce(
     Err(format!(
         "Tool '{tool}' denied for the overnight coordinator: {reason}. {DELEGATION_HINT}"
     ))
+}
+
+/// Collapse `.` and `..` lexically, then resolve symlinks on the longest
+/// existing ancestor so a not-yet-created file is still placed correctly.
+fn canonical_lossy(path: &Path) -> PathBuf {
+    use std::path::Component;
+    let mut normal = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::ParentDir => {
+                normal.pop();
+            }
+            Component::CurDir => {}
+            other => normal.push(other.as_os_str()),
+        }
+    }
+    let mut existing = normal.clone();
+    let mut tail: Vec<std::ffi::OsString> = Vec::new();
+    while !existing.exists() {
+        match existing.file_name() {
+            Some(name) => tail.push(name.to_os_string()),
+            None => break,
+        }
+        if !existing.pop() {
+            break;
+        }
+    }
+    let mut out = std::fs::canonicalize(&existing).unwrap_or(existing);
+    out.extend(tail.iter().rev());
+    out
+}
+
+fn inside_run_dir(run_id: &str, path: &Path) -> bool {
+    let Ok(run_dir) = crate::overnight::run_dir(run_id) else {
+        return false;
+    };
+    canonical_lossy(path).starts_with(canonical_lossy(&run_dir))
 }
 
 /// Pure allowlist check for a coordinator tool call.

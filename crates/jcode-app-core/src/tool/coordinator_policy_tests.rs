@@ -294,3 +294,57 @@ fn unrelated_session_unrestricted() {
         .is_ok()
     );
 }
+
+#[test]
+fn run_bookkeeping_allowed_but_escapes_denied() {
+    use jcode_overnight_core::OvernightRunStatus::Running;
+    let _home = Home::new();
+    let session = format!("coord-{}", uuid::Uuid::new_v4());
+    let run = format!("run-{}", uuid::Uuid::new_v4());
+    write_run(&session, &run, Running);
+    install_for_overnight(&session, &run);
+    let run_dir = crate::overnight::run_dir(&run).unwrap();
+    std::fs::create_dir_all(run_dir.join("task-cards")).unwrap();
+    let call =
+        |tool: &str, path: &Path| enforce(&session, tool, &json!({"file_path": path}), false, &id);
+
+    for tool in ["edit", "write"] {
+        // Existing and not-yet-created files inside the run dir.
+        assert!(call(tool, &run_dir.join("task-cards/x.json")).is_ok());
+        assert!(call(tool, &run_dir.join("validation/new/out.txt")).is_ok());
+        // Escapes and unrelated paths.
+        assert!(call(tool, &run_dir.join("../escape.rs")).is_err());
+        assert!(call(tool, &run_dir.join("task-cards/../../escape.json")).is_err());
+        assert!(call(tool, &run_dir.parent().unwrap().join("other-run/x.json")).is_err());
+        assert!(call(tool, Path::new("/tmp/outside.json")).is_err());
+        // Markdown stays allowed anywhere.
+        assert!(call(tool, Path::new("/tmp/outside.md")).is_ok());
+    }
+    // Bookkeeping exemption is edit/write only.
+    assert!(
+        enforce(
+            &session,
+            "apply_patch",
+            &json!({"file_path": run_dir.join("a.json")}),
+            false,
+            &id
+        )
+        .is_err()
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn symlink_out_of_run_dir_denied() {
+    use jcode_overnight_core::OvernightRunStatus::Running;
+    let _home = Home::new();
+    let session = format!("coord-{}", uuid::Uuid::new_v4());
+    let run = format!("run-{}", uuid::Uuid::new_v4());
+    write_run(&session, &run, Running);
+    install_for_overnight(&session, &run);
+    let run_dir = crate::overnight::run_dir(&run).unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    std::os::unix::fs::symlink(outside.path(), run_dir.join("link")).unwrap();
+    let path = run_dir.join("link/x.json");
+    assert!(enforce(&session, "write", &json!({"file_path": path}), false, &id).is_err());
+}
