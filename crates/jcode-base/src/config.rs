@@ -11,7 +11,7 @@ pub use jcode_config_types::{
     HookCommands, HookEntry, HooksConfig, KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry,
     LaunchHotkeysConfig, MarkdownSpacingMode, MemoryConfig, MenubarConfig, NamedProviderAuth,
     NamedProviderConfig, NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig,
-    NotificationsConfig, PowerConfig, ProviderConfig, ReasoningDisplayMode, ResumeOpenElsewhere,
+    NotificationsConfig, OvernightConfig, PowerConfig, ProviderConfig, ReasoningDisplayMode, ResumeOpenElsewhere,
     ResumeTimeMode, SafetyConfig, SessionConfig, SessionPickerResumeAction, SessionRetentionConfig,
     SessionsConfig, SponsorsConfig, SwarmConfig, SwarmSpawnMode, TaskAdmissionSnapshot,
     TaskAuthorization, TasksConfig, TerminalConfig, UpdateChannel, WebSearchConfig,
@@ -701,6 +701,20 @@ mod cloud_config_tests {
         }
         assert!(toml::from_str::<Config>("[cloud]\nlocal_access_seconds = -1").is_err());
     }
+
+    #[test]
+    fn overnight_chains_default_and_override_from_toml() {
+        let config: Config = toml::from_str("").unwrap();
+        assert_eq!(config.overnight, OvernightConfig::default());
+        assert_eq!(config.overnight.coordinator_model_chain.len(), 6);
+        assert_eq!(config.overnight.worker_model_chain.len(), 4);
+        let config: Config = toml::from_str(
+            "[overnight]\ncoordinator_model_chain = [\"m1\"]\nworker_model_chain = [\"w1\", \"w2\"]",
+        )
+        .unwrap();
+        assert_eq!(config.overnight.coordinator_model_chain, ["m1"]);
+        assert_eq!(config.overnight.worker_model_chain, ["w1", "w2"]);
+    }
 }
 
 /// Main configuration struct
@@ -805,6 +819,9 @@ pub struct Config {
 
     /// Power-management configuration (prevent sleep while streaming)
     pub power: PowerConfig,
+
+    /// Overnight model chains (coordinator and worker fallback order).
+    pub overnight: OvernightConfig,
 
     /// `jcode companion`: per-login helper for desktop effects.
     pub companion: CompanionConfig,
