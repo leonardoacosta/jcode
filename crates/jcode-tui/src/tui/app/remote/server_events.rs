@@ -1806,6 +1806,9 @@ fn handle_server_event_inner(
             if session_changed {
                 app.pending_tool_list = None;
                 app.pending_tool_query = None;
+                // A visible overnight run survives a reload only if its client
+                // takes the run back (auto-poke is in-memory).
+                app.rearm_visible_overnight_run();
             }
             let failed_prompts = if !session_changed || prev_session_id.is_none() {
                 app.display_messages()

@@ -349,6 +349,36 @@ impl App {
         true
     }
 
+    /// After a reload or restart: a visible run for this session that is still
+    /// active is re-armed (auto-poke, plan route check, ownership, coordinator
+    /// policy), or closed with a reason when it cannot continue. Local and
+    /// remote-attached TUIs alike: the poke loop runs in the client.
+    pub(super) fn rearm_visible_overnight_run(&mut self) {
+        if self.is_replay || self.overnight_auto_poke.is_some() {
+            return;
+        }
+        let session_id = self.session.id.clone();
+        let rearmed = crate::overnight::model_chain::rearm_visible_run(&session_id, || {
+            overnight_provider_for_app(self)
+        });
+        match rearmed {
+            crate::overnight::model_chain::VisibleRearm::NotApplicable => {}
+            crate::overnight::model_chain::VisibleRearm::Active(manifest) => {
+                self.enable_overnight_auto_poke(&manifest);
+                self.upsert_overnight_display_card(&manifest);
+                self.push_display_message(DisplayMessage::system(format!(
+                    "↻ Overnight run {} re-armed after reload.",
+                    manifest.run_id
+                )));
+            }
+            crate::overnight::model_chain::VisibleRearm::Ended(reason) => {
+                self.push_display_message(DisplayMessage::system(format!(
+                    "🛑 Overnight run not continued after reload: {reason}"
+                )));
+            }
+        }
+    }
+
     pub(super) fn enable_overnight_auto_poke(
         &mut self,
         manifest: &crate::overnight::OvernightManifest,
@@ -1315,6 +1345,163 @@ mod tests {
                 "{error}: {shown}"
             );
             app.enable_overnight_auto_poke(&loaded);
+        }
+    }
+
+    /// Visible run, then a TUI reload: the new App starts with no auto-poke.
+    /// Re-arming takes the run back with a route-checked plan.
+    #[test]
+    fn visible_run_is_rearmed_after_a_reload_with_a_route_checked_plan() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let session_id = app.session.id.clone();
+        let mut manifest = saved_manifest("overnight_rearm", &session_id, 4_000_000_000);
+        manifest.parent_session_id = session_id.clone();
+        crate::overnight::save_manifest(&manifest).unwrap();
+        // Written by an older build: no usable plan.
+        std::fs::write(
+            manifest.run_dir.join("model-chains.json"),
+            r#"{"coordinator":["stale"],"worker":["stale"]}"#,
+        )
+        .unwrap();
+        assert!(app.overnight_auto_poke.is_none(), "fresh App after reload");
+
+        app.rearm_visible_overnight_run();
+
+        let state = app
+            .overnight_auto_poke
+            .as_ref()
+            .expect("auto-poke re-armed");
+        assert_eq!(state.run_id, "overnight_rearm");
+        let loaded = crate::overnight::load_manifest("overnight_rearm").unwrap();
+        assert_eq!(loaded.process_id, std::process::id());
+        let plan: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(manifest.run_dir.join("model-chains.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(plan["version"], 1);
+        assert_eq!(plan["derived"], true);
+        assert!(plan.get("route_unchecked").is_none(), "{plan}");
+        assert_ne!(plan["coordinator"], serde_json::json!(["stale"]));
+        // The poke loop and the chain hook both work again.
+        assert!(
+            crate::overnight::model_chain::try_advance_provider_for_session(
+                &session_id,
+                app.provider.as_ref(),
+                None,
+                &|| None,
+                "model m unavailable",
+            )
+            .is_some(),
+            "the chain hook governs the re-armed run"
+        );
+        assert!(
+            app.display_messages()
+                .iter()
+                .any(|m| m.content.contains("re-armed after reload"))
+        );
+        // A second call changes nothing.
+        app.rearm_visible_overnight_run();
+        assert_eq!(
+            app.overnight_auto_poke.as_ref().unwrap().run_id,
+            "overnight_rearm"
+        );
+    }
+
+    #[test]
+    fn visible_run_past_its_window_is_closed_not_left_looking_active_after_a_reload() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let session_id = app.session.id.clone();
+        let mut manifest = saved_manifest("overnight_late", &session_id, 4_000_000_000);
+        manifest.parent_session_id = session_id.clone();
+        manifest.post_wake_grace_until = Utc::now() - ChronoDuration::minutes(5);
+        crate::overnight::save_manifest(&manifest).unwrap();
+
+        app.rearm_visible_overnight_run();
+
+        assert!(app.overnight_auto_poke.is_none());
+        let loaded = crate::overnight::load_manifest("overnight_late").unwrap();
+        assert_eq!(loaded.status, OvernightRunStatus::Interrupted);
+        assert!(
+            app.display_messages()
+                .iter()
+                .any(|m| m.content.contains("not continued after reload"))
+        );
+    }
+
+    /// Mixed wording through the real guards. Rate-limit, quota and outage
+    /// errors that also mention the context window move the chain; real
+    /// context-limit and 413 errors reach recovery and never touch it.
+    #[test]
+    fn mixed_context_wording_moves_the_chain_only_when_it_is_a_model_failure() {
+        let _home = HomeGuard::new();
+        let advanced = |app: &mut super::super::App, run: &str, error: &str| {
+            let loaded = crate::overnight::load_manifest(run).unwrap();
+            let before = crate::overnight::read_events(&loaded)
+                .unwrap()
+                .iter()
+                .filter(|e| e.kind.starts_with("model_chain"))
+                .count();
+            let handled = app.advance_overnight_model_chain(error);
+            let loaded = crate::overnight::load_manifest(run).unwrap();
+            let after = crate::overnight::read_events(&loaded)
+                .unwrap()
+                .iter()
+                .filter(|e| e.kind.starts_with("model_chain"))
+                .count();
+            (handled, after > before)
+        };
+        let setup = |run: &str| {
+            let mut app = super::super::tests::create_test_app();
+            let session_id = app.session.id.clone();
+            let mut manifest = saved_manifest(run, &session_id, std::process::id());
+            manifest.parent_session_id = session_id;
+            crate::overnight::save_manifest(&manifest).unwrap();
+            // The mock provider's own model is the chain's first entry, so the
+            // next model is the one an advance would choose.
+            let current = app.provider.model();
+            std::fs::write(
+                manifest.run_dir.join("model-chains.json"),
+                format!(
+                    r#"{{"version":1,"coordinator":["{current}","next-model"],"worker":["w"]}}"#
+                ),
+            )
+            .unwrap();
+            app.enable_overnight_auto_poke(&manifest);
+            app
+        };
+
+        for (i, error) in [
+            "429 rate limit exceeded: prompt is too long for the context window",
+            "insufficient_quota: maximum context length is billed separately",
+            "503 service unavailable (context window overloaded)",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let run = format!("overnight_mixed_{i}");
+            let mut app = setup(&run);
+            let (handled, touched) = advanced(&mut app, &run, error);
+            // The chain took the error (switched, or reported that the route
+            // cannot switch); it did not fall through to context recovery.
+            assert!(touched || handled, "{error}: chain was not consulted");
+        }
+
+        for (i, error) in [
+            "prompt is too long: maximum context length is 200000 tokens",
+            "413 request_too_large: request exceeds the maximum size",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let run = format!("overnight_real_{i}");
+            let mut app = setup(&run);
+            let (handled, touched) = advanced(&mut app, &run, error);
+            assert!(
+                !handled && !touched,
+                "{error}: recovery must own this error"
+            );
         }
     }
 

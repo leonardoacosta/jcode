@@ -1307,14 +1307,19 @@ impl App {
     /// Visible overnight run only: a recoverable model failure moves to the
     /// next model of the coordinator chain on the same route and resends the
     /// turn. Any other session returns false and never switches automatically.
-    fn advance_overnight_model_chain(&mut self, error: &str) -> bool {
+    pub(super) fn advance_overnight_model_chain(&mut self, error: &str) -> bool {
         if self.is_remote || self.overnight_auto_poke.is_none() {
             return false;
         }
         // Context-limit and oversized-request errors are not model failures:
         // the session's own recovery (compaction, image stripping) handles
         // them, with the chain untouched.
-        if is_context_limit_error(error) || is_request_payload_too_large_error(error) {
+        // A message that also reads as a rate limit, quota or outage (for
+        // example a 429 that mentions the context window) is still a model
+        // failure the chain handles.
+        if (is_context_limit_error(error) || is_request_payload_too_large_error(error))
+            && !crate::overnight::model_chain::error_advances_chain(error)
+        {
             return false;
         }
         let provider_key = self.session.provider_key.clone();

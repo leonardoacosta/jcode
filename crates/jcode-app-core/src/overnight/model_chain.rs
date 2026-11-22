@@ -901,6 +901,111 @@ async fn finish_coordinator_block(
     }
 }
 
+/// Whether `error` is a failure the chain moves on from (rate limit, quota,
+/// transient or model unavailable). Callers that route context-limit or
+/// oversized-request errors to recovery use it so a mixed message such as a
+/// rate limit that mentions a context window still advances the chain.
+pub fn error_advances_chain(error: &str) -> bool {
+    kind_advances_chain(classify_provider_failure(error))
+}
+
+/// What re-arming a visible run after a TUI reload found.
+pub enum VisibleRearm {
+    /// No active visible run for this session (or another live process drives it).
+    NotApplicable,
+    /// The run is active again here: the caller re-arms auto-poke.
+    Active(Box<OvernightManifest>),
+    /// The run could not be continued and was closed (reason for the user).
+    Ended(String),
+}
+
+/// A visible run has no supervisor to resume it: after a TUI reload or restart
+/// nothing drives it. Re-establish it for `session_id`: close a run past its
+/// grace window as `interrupted`, route-check the plan (`ensure_plan_with`,
+/// blocking the run when the route serves no chain model), take ownership of
+/// the manifest (the old pid may be gone, and the chain hook only governs runs
+/// with a live owner) and reinstall the coordinator policy for this process.
+/// A remote-attached TUI does not run the policy: the daemon finds the active
+/// run from its manifest.
+pub fn rearm_visible_run(
+    session_id: &str,
+    provider: impl FnOnce() -> Arc<dyn Provider>,
+) -> VisibleRearm {
+    let Some(manifest) = session_manifests_newest_first(session_id)
+        .ok()
+        .and_then(|manifests| manifests.into_iter().next())
+    else {
+        return VisibleRearm::NotApplicable;
+    };
+    if manifest.status.is_terminal() || enforce::is_supervised(&manifest) {
+        return VisibleRearm::NotApplicable;
+    }
+    let me = std::process::id();
+    let other_owner_alive = manifest.process_id != me
+        && supervisor_is_alive(&manifest)
+        && !matches!(
+            manifest.supervisor_start_time,
+            Some(start) if crate::platform::process_start_time(manifest.process_id)
+                .is_some_and(|now| now != start)
+        );
+    if other_owner_alive {
+        return VisibleRearm::NotApplicable;
+    }
+    if manifest.status == OvernightRunStatus::Running && Utc::now() > manifest.post_wake_grace_until
+    {
+        let reason = "the run is past its wake time and grace window".to_string();
+        interrupt_visible_run(&manifest, &reason);
+        return VisibleRearm::Ended(reason);
+    }
+    // A cancel in progress starts nothing new, so its plan is left alone. The
+    // provider is only built when the plan has to be derived (older run).
+    if manifest.status == OvernightRunStatus::Running
+        && let Err(reasons) = ensure_plan_with(&manifest, || route_models(&provider()))
+    {
+        let reason = format!("Overnight blocked on resume: {}", reasons.join("; "));
+        block_visible_run(&manifest, &reason);
+        return VisibleRearm::Ended(reason);
+    }
+    let mut updated = load_manifest(&manifest.run_id).unwrap_or_else(|_| manifest.clone());
+    if updated.status.is_terminal() {
+        return VisibleRearm::NotApplicable;
+    }
+    updated.process_id = me;
+    updated.supervisor_start_time = crate::platform::process_start_time(me);
+    updated.heartbeat_at = Some(Utc::now());
+    updated.last_activity_at = Utc::now();
+    if save_manifest(&updated).is_err() {
+        return VisibleRearm::Ended("could not save the run manifest".to_string());
+    }
+    let _ = record_event(
+        &updated,
+        "visible_run_rearmed",
+        "Visible overnight run re-armed after a reload".to_string(),
+        json!({ "previous_pid": manifest.process_id }),
+        true,
+    );
+    crate::tool::coordinator_policy::install_for_overnight(session_id, &updated.run_id);
+    VisibleRearm::Active(Box::new(updated))
+}
+
+fn interrupt_visible_run(manifest: &OvernightManifest, reason: &str) {
+    let mut updated = load_manifest(&manifest.run_id).unwrap_or_else(|_| manifest.clone());
+    if updated.status != OvernightRunStatus::Running {
+        return;
+    }
+    updated.status = OvernightRunStatus::Interrupted;
+    updated.completed_at = Some(Utc::now());
+    updated.last_activity_at = Utc::now();
+    let _ = save_manifest(&updated);
+    let _ = record_event(
+        &updated,
+        "run_interrupted",
+        format!("Visible overnight run not continued after reload: {reason}"),
+        json!({ "reason": reason }),
+        true,
+    );
+}
+
 /// A visible run's session is the user's own and has no supervisor, so the run
 /// is marked blocked without revoking admission.
 fn block_visible_run(manifest: &OvernightManifest, reason: &str) {

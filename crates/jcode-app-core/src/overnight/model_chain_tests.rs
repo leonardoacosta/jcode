@@ -1413,6 +1413,178 @@ fn only_auth_failures_stop_a_visible_coordinator() {
     }
 }
 
+fn visible_run(run_id: &str, session: &str) -> OvernightManifest {
+    let mut manifest = test_run_manifest(run_id, session, OvernightLimits::default());
+    manifest.parent_session_id = session.to_string();
+    // A pid that no process can have: the previous client is gone.
+    manifest.process_id = 4_000_000_000;
+    save_manifest(&manifest).unwrap();
+    manifest
+}
+
+/// A visible run whose client reloaded is taken back: route-checked plan,
+/// ownership, event, and the coordinator policy reinstalled (a negative cache
+/// entry from before the run existed must not survive).
+#[test]
+fn rearm_takes_back_an_active_visible_run() {
+    let _env = fixture();
+    let config = crate::config::config().overnight.clone();
+    let session = "rearm-active";
+    assert!(!crate::tool::coordinator_policy::is_coordinator(session));
+    let manifest = visible_run("rearm-active", session);
+    raw_plan_file(&manifest, r#"{"coordinator":["stale"],"worker":["stale"]}"#);
+
+    let keep = [
+        config.coordinator_model_chain[0].clone(),
+        config.worker_model_chain[1].clone(),
+    ];
+    let provider: Arc<dyn Provider> = Arc::new(ChainProvider::new(
+        &keep[0],
+        &[],
+        &[keep[0].as_str(), keep[1].as_str()],
+        "x",
+    ));
+    let VisibleRearm::Active(updated) = rearm_visible_run(session, || provider) else {
+        panic!("an active visible run must be re-armed");
+    };
+    assert_eq!(updated.process_id, std::process::id());
+    // Route-checked plan, through the real file, picked up by new workers.
+    let stored: ChainPlan = storage::read_json(&manifest.run_dir.join(PLAN_FILE)).unwrap();
+    assert!(stored.derived && !stored.route_unchecked);
+    assert_eq!(stored.worker, [keep[1].clone()]);
+    assert_eq!(
+        resolve_spawn_request(None, session, None).as_deref(),
+        Some(keep[1].as_str())
+    );
+    assert!(kinds(&updated).contains(&"visible_run_rearmed".to_string()));
+    assert!(crate::tool::coordinator_policy::is_coordinator(session));
+    // The chain hook governs the run again (it needs a live owner).
+    assert!(role_for_session(session).is_some());
+}
+
+#[test]
+fn rearm_does_not_build_a_provider_when_the_plan_is_current() {
+    let _env = fixture();
+    let manifest = visible_run("rearm-current", "rearm-current");
+    persist_plan(
+        &manifest.run_dir,
+        &ChainPlan {
+            coordinator: names(&["c1"]),
+            worker: names(&["w1"]),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let VisibleRearm::Active(_) =
+        rearm_visible_run("rearm-current", || panic!("no provider needed"))
+    else {
+        panic!("expected re-arm");
+    };
+}
+
+#[test]
+fn rearm_closes_a_run_past_its_window_and_blocks_an_unservable_route() {
+    let _env = fixture();
+    // Past the grace window: interrupted with a reason, nothing re-armed.
+    let mut late = visible_run("rearm-late", "rearm-late");
+    late.post_wake_grace_until = Utc::now() - ChronoDuration::minutes(1);
+    save_manifest(&late).unwrap();
+    let provider: Arc<dyn Provider> = Arc::new(ChainProvider::new("m", &[], &["m"], "x"));
+    let VisibleRearm::Ended(reason) = rearm_visible_run("rearm-late", || provider.clone()) else {
+        panic!("a late run must be closed");
+    };
+    assert!(reason.contains("past its wake time"), "{reason}");
+    let done = load_manifest("rearm-late").unwrap();
+    assert_eq!(done.status, OvernightRunStatus::Interrupted);
+    assert!(kinds(&done).contains(&"run_interrupted".to_string()));
+
+    // A route that serves no chain model: blocked, old plan file untouched.
+    let manifest = visible_run("rearm-block", "rearm-block");
+    let body = r#"{"version":99,"coordinator":["x"],"worker":["x"]}"#;
+    raw_plan_file(&manifest, body);
+    let VisibleRearm::Ended(reason) = rearm_visible_run("rearm-block", || provider) else {
+        panic!("an unservable route must block");
+    };
+    assert!(
+        reason.contains("serves no coordinator chain model"),
+        "{reason}"
+    );
+    assert_eq!(
+        load_manifest("rearm-block").unwrap().status,
+        OvernightRunStatus::Blocked
+    );
+    assert_eq!(
+        std::fs::read_to_string(manifest.run_dir.join(PLAN_FILE)).unwrap(),
+        body
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn rearm_leaves_alone_terminal_supervised_and_live_owned_runs() {
+    let _env = fixture();
+    let provider: Arc<dyn Provider> = Arc::new(ChainProvider::new("m", &[], &["m"], "x"));
+    let never = || -> Arc<dyn Provider> { panic!("provider must not be built") };
+
+    let mut done = visible_run("rearm-done", "rearm-done");
+    done.status = OvernightRunStatus::Completed;
+    save_manifest(&done).unwrap();
+    assert!(matches!(
+        rearm_visible_run("rearm-done", never),
+        VisibleRearm::NotApplicable
+    ));
+
+    // Supervised: a daemon supervisor, not this client, drives it.
+    let mut supervised = visible_run("rearm-sup", "rearm-sup");
+    supervised.parent_session_id = "someone-else".into();
+    save_manifest(&supervised).unwrap();
+    assert!(matches!(
+        rearm_visible_run("rearm-sup", never),
+        VisibleRearm::NotApplicable
+    ));
+
+    // Another live process (our parent) still owns it.
+    let mut owned = visible_run("rearm-owned", "rearm-owned");
+    owned.process_id = std::os::unix::process::parent_id();
+    save_manifest(&owned).unwrap();
+    assert!(matches!(
+        rearm_visible_run("rearm-owned", || provider.clone()),
+        VisibleRearm::NotApplicable
+    ));
+    assert_eq!(
+        load_manifest("rearm-owned").unwrap().process_id,
+        std::os::unix::process::parent_id()
+    );
+    assert!(matches!(
+        rearm_visible_run("no-such-session", never),
+        VisibleRearm::NotApplicable
+    ));
+}
+
+/// Mixed wording: a rate limit, quota or outage that also mentions the context
+/// window still moves the chain; a plain context or size error does not.
+#[test]
+fn error_advances_chain_separates_mixed_messages_from_real_context_errors() {
+    for error in [
+        "429 rate limit exceeded: prompt is too long for the context window",
+        "insufficient_quota: maximum context length is billed separately",
+        "503 service unavailable (context window overloaded)",
+        "overloaded: too many tokens in flight (token limit)",
+        "429 too many requests; request_too_large retry later",
+        "model gpt-x unavailable for this context length",
+    ] {
+        assert!(error_advances_chain(error), "{error}");
+    }
+    for error in [
+        "prompt is too long: maximum context length is 200000 tokens",
+        "context window exceeded",
+        "413 request_too_large: request exceeds the maximum size",
+        "413 payload too large",
+    ] {
+        assert!(!error_advances_chain(error), "{error}");
+    }
+}
+
 #[test]
 fn preflight_event_notes_a_refreshed_catalog() {
     let _env = fixture();
