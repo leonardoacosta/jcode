@@ -14,6 +14,14 @@ pub(super) struct TerminalTitleState {
     pub last_sent: String,
     pub last_refresh: Option<Instant>,
     pub last_work: Option<Duration>,
+    /// First `requires_user_auth` reason, re-read at most once a second:
+    /// todo state may come from disk.
+    pub herdr_user_auth: Option<(Instant, Option<String>)>,
+}
+
+/// Swarm statuses in which a worker is actively running, as the dock ranks them.
+fn swarm_status_is_running(status: &str) -> bool {
+    matches!(status, "running" | "streaming" | "thinking")
 }
 
 pub(super) fn edit_line_counts(message: &DisplayMessage) -> (usize, usize) {
@@ -62,18 +70,66 @@ fn title_with_metrics(
 
 impl App {
     /// Tell herdr (when running in a herdr pane) whether this client is
-    /// working or idle and which session to resume. Tick-safe: unchanged
-    /// state is a cheap comparison and reports are sent off-thread.
+    /// blocked, working or idle and which session to resume. Tick-safe:
+    /// todo state is re-read at most once a second, unchanged state is a
+    /// cheap comparison, and reports are sent off-thread.
     pub(super) fn sync_herdr_agent_state(&self) {
         if self.suppress_terminal_title_updates || !self.is_remote_client() {
             return;
         }
-        let state = if self.is_processing() {
-            crate::tui::herdr::AgentState::Working
-        } else {
-            crate::tui::herdr::AgentState::Idle
-        };
-        crate::tui::herdr::sync(state, self.active_client_session_id());
+        if !crate::tui::herdr::active() {
+            return;
+        }
+        let (state, message) = self.herdr_state();
+        crate::tui::herdr::sync(state, message.as_deref(), self.active_client_session_id());
+    }
+
+    pub(super) fn herdr_state(&self) -> (crate::tui::herdr::AgentState, Option<String>) {
+        let session_id = self.active_client_session_id();
+        let user_auth_reason = self.herdr_user_auth_reason();
+        let processing = self.is_processing();
+        // The subtree walk clones members; skip it when its answer cannot
+        // change the state or no member runs at all.
+        let owned_worker_running = user_auth_reason.is_none()
+            && !processing
+            && self
+                .remote_swarm_members
+                .iter()
+                .any(|member| swarm_status_is_running(&member.status))
+            && session_id.is_some_and(|self_id| {
+                super::tui_state::filter_inline_swarm_subtree(&self.remote_swarm_members, self_id)
+                    .iter()
+                    .any(|member| swarm_status_is_running(&member.status))
+            });
+        let wake_task_running = self
+            .background_task_rows_ref()
+            .iter()
+            .any(|task| task.wake && task.status == crate::tui::BackgroundTaskRowStatus::Running);
+        crate::tui::herdr::derive_state(crate::tui::herdr::StateInputs {
+            processing,
+            user_auth_reason: user_auth_reason.as_deref(),
+            owned_worker_running,
+            wake_task_running,
+        })
+    }
+
+    fn herdr_user_auth_reason(&self) -> Option<String> {
+        const REFRESH: Duration = Duration::from_secs(1);
+        let mut title = self.terminal_title.borrow_mut();
+        if let Some((at, reason)) = &title.herdr_user_auth
+            && at.elapsed() < REFRESH
+        {
+            return reason.clone();
+        }
+        let state = self.current_todo_state();
+        let reason = state
+            .0
+            .iter()
+            .find(|todo| crate::todo::todo_requires_user_auth(todo))
+            .and_then(|todo| todo.requires_user_auth.as_ref())
+            .map(|auth| auth.reason.clone());
+        title.herdr_user_auth = Some((Instant::now(), reason.clone()));
+        reason
     }
 
     pub(super) fn set_terminal_title_base(&self, session_id: &str, base: String) {
@@ -233,5 +289,169 @@ mod tests {
         message.tool_data.as_mut().unwrap().name = "edit".into();
         message.content = "Error: could not apply patch\n-old\n+new".into();
         assert_eq!(edit_line_counts(&message), (0, 0));
+    }
+
+    fn swarm_member(
+        id: &str,
+        status: &str,
+        parent: Option<&str>,
+    ) -> crate::protocol::SwarmMemberStatus {
+        crate::protocol::SwarmMemberStatus {
+            session_id: id.to_string(),
+            friendly_name: None,
+            status: status.to_string(),
+            detail: None,
+            task_label: None,
+            role: None,
+            is_headless: Some(true),
+            live_attachments: None,
+            status_age_secs: None,
+            output_tail: None,
+            report_back_to_session_id: parent.map(str::to_string),
+            todo_progress: None,
+            todo_items: Vec::new(),
+            runtime: crate::protocol::SwarmMemberRuntime::default(),
+        }
+    }
+
+    fn set_remote_todos(app: &mut App, todos: serde_json::Value) {
+        let session = app.active_client_session_id().unwrap().to_string();
+        app.remote_todos_payload = Some((
+            session,
+            serde_json::json!({"todos": todos, "plan": {}, "goals": []}).to_string(),
+        ));
+        app.terminal_title.borrow_mut().herdr_user_auth = None;
+    }
+
+    fn todo(id: &str, status: &str, extra: serde_json::Value) -> serde_json::Value {
+        let mut todo = serde_json::json!({
+            "id": id, "content": id, "status": status, "priority": "high"
+        });
+        todo.as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        todo
+    }
+
+    #[test]
+    fn herdr_state_follows_user_auth_todos_workers_and_wake_tasks() {
+        use crate::tui::herdr::AgentState::{Blocked, Idle, Working};
+        let mut app = super::super::tests::create_test_app();
+        let self_id = app.active_client_session_id().unwrap().to_string();
+        set_remote_todos(&mut app, serde_json::json!([]));
+        assert_eq!(app.herdr_state(), (Idle, None));
+
+        // Dependency waits do not block the pane; a login todo does.
+        set_remote_todos(
+            &mut app,
+            serde_json::json!([
+                todo(
+                    "dep",
+                    "pending",
+                    serde_json::json!({"blocked_by": ["other"]})
+                ),
+                todo(
+                    "wait",
+                    "pending",
+                    serde_json::json!({"waiting_on": ["bg1"]})
+                ),
+            ]),
+        );
+        assert_eq!(app.herdr_state(), (Idle, None));
+        let reason = "Type login password into the Unlock Login Keyring prompt";
+        set_remote_todos(
+            &mut app,
+            serde_json::json!([
+                todo(
+                    "done",
+                    "completed",
+                    serde_json::json!({"requires_user_auth": {"reason": "stale"}})
+                ),
+                todo(
+                    "login",
+                    "in_progress",
+                    serde_json::json!({"requires_user_auth": {"reason": reason}})
+                ),
+            ]),
+        );
+        assert_eq!(app.herdr_state(), (Blocked, Some(reason.to_string())));
+        set_remote_todos(
+            &mut app,
+            serde_json::json!([todo(
+                "login",
+                "completed",
+                serde_json::json!({"requires_user_auth": {"reason": reason}})
+            )]),
+        );
+        assert_eq!(app.herdr_state(), (Idle, None));
+
+        // Only running workers in this session's own spawn subtree count.
+        app.remote_swarm_members = vec![
+            swarm_member("stranger", "running", None),
+            swarm_member("blocked-child", "blocked", Some(&self_id)),
+        ];
+        assert_eq!(app.herdr_state(), (Idle, None));
+        for status in ["running", "streaming", "thinking"] {
+            app.remote_swarm_members = vec![
+                swarm_member("child", "completed", Some(&self_id)),
+                swarm_member("grandchild", status, Some("child")),
+            ];
+            assert_eq!(app.herdr_state(), (Working, None), "{status}");
+        }
+        app.remote_swarm_members.clear();
+
+        // Only running background tasks that wake this session count.
+        let row = |wake, status| crate::tui::BackgroundTaskRow {
+            task_id: "bg".into(),
+            label: "sleep".into(),
+            percent: None,
+            status,
+            completed_at: None,
+            wake,
+        };
+        app.background_task_rows = vec![row(false, crate::tui::BackgroundTaskRowStatus::Running)];
+        assert_eq!(app.herdr_state(), (Idle, None));
+        app.background_task_rows = vec![row(true, crate::tui::BackgroundTaskRowStatus::Completed)];
+        assert_eq!(app.herdr_state(), (Idle, None));
+        app.background_task_rows = vec![row(true, crate::tui::BackgroundTaskRowStatus::Running)];
+        assert_eq!(app.herdr_state(), (Working, None));
+        // Finishing through the shared mutator (every completion path) idles.
+        app.finish_background_task(
+            "bg".into(),
+            "sleep".into(),
+            crate::tui::BackgroundTaskRowStatus::Completed,
+        );
+        assert_eq!(app.herdr_state(), (Idle, None));
+        app.background_task_rows = vec![row(true, crate::tui::BackgroundTaskRowStatus::Running)];
+
+        // Blocked wins over working.
+        set_remote_todos(
+            &mut app,
+            serde_json::json!([todo(
+                "login",
+                "pending",
+                serde_json::json!({"requires_user_auth": {"reason": reason}})
+            )]),
+        );
+        assert_eq!(app.herdr_state().0, Blocked);
+    }
+
+    #[test]
+    fn received_todo_snapshot_updates_herdr_state_inside_throttle_window() {
+        use crate::tui::herdr::AgentState::{Blocked, Idle};
+        let mut app = super::super::tests::create_test_app();
+        let session = app.active_client_session_id().unwrap().to_string();
+        let snapshot = |todos: serde_json::Value| {
+            serde_json::json!({"todos": todos, "plan": {}, "goals": []}).to_string()
+        };
+        assert!(app.receive_remote_todos(session.clone(), snapshot(serde_json::json!([]))));
+        assert_eq!(app.herdr_state(), (Idle, None));
+        let login = todo(
+            "login",
+            "pending",
+            serde_json::json!({"requires_user_auth": {"reason": "Log in"}}),
+        );
+        assert!(app.receive_remote_todos(session, snapshot(serde_json::json!([login]))));
+        assert_eq!(app.herdr_state(), (Blocked, Some("Log in".to_string())));
     }
 }

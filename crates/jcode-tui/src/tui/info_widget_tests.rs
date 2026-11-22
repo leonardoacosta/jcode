@@ -1244,6 +1244,7 @@ fn background_widget_renders_session_task_rows_with_progress() {
         percent,
         status,
         completed_at: None,
+        wake: false,
     };
     let info = BackgroundInfo {
         rows: vec![
@@ -1326,6 +1327,7 @@ fn running_background_task_outranks_passive_stat_widgets() {
         percent: Some(10.0),
         status,
         completed_at: None,
+        wake: false,
     };
     let with = |status| InfoWidgetData {
         background_info: Some(BackgroundInfo {

@@ -1078,3 +1078,24 @@ fn redact_preview_secrets_leaves_ordinary_prose_alone() {
         assert_eq!(redact_preview_secrets(text), text);
     }
 }
+
+#[test]
+fn background_task_started_parser_reads_wake_line() {
+    let base = "**Background task started** `bg1` · `cargo build`\n\nJcode is running this in the background. Progress, checkpoints, and completion will appear here.";
+    let legacy = parse_background_task_started_notification_markdown(base).unwrap();
+    assert_eq!(legacy.task_id, "bg1");
+    assert_eq!(legacy.label, "cargo build");
+    assert!(!legacy.wake);
+    let woke = parse_background_task_started_notification_markdown(&format!(
+        "{base}{BACKGROUND_TASK_STARTED_WAKE_LINE}"
+    ))
+    .unwrap();
+    assert!(woke.wake);
+    assert_eq!(woke.task_id, "bg1");
+    // A label that merely mentions the phrase in the header is not a wake task.
+    let header_only = parse_background_task_started_notification_markdown(
+        "**Background task started** `bg2` · `echo Wakes this session when it finishes.`",
+    )
+    .unwrap();
+    assert!(!header_only.wake);
+}

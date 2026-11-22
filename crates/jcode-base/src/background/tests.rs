@@ -29,6 +29,40 @@ async fn silent_background_task_still_publishes_started_activity() {
     assert!(activity.message.contains("`silent work`"));
 }
 
+#[tokio::test]
+async fn started_activity_marks_only_wake_tasks_and_keeps_header() {
+    let mut events = Bus::global().subscribe();
+    for (session, wake) in [("wake-start-off", false), ("wake-start-on", true)] {
+        BackgroundTaskManager::publish_task_started_activity(
+            "wake-start",
+            "bash",
+            Some("wake work"),
+            session,
+            wake,
+        );
+    }
+    let mut messages = std::collections::HashMap::new();
+    tokio::time::timeout(Duration::from_secs(2), async {
+        while messages.len() < 2 {
+            if let Ok(BusEvent::UiActivity(activity)) = events.recv().await
+                && let Some(session) = activity.session_id.clone()
+                && session.starts_with("wake-start-")
+            {
+                messages.insert(session, activity.message);
+            }
+        }
+    })
+    .await
+    .expect("both starts must be published");
+    let off = &messages["wake-start-off"];
+    let on = &messages["wake-start-on"];
+    assert_eq!(off.lines().next(), on.lines().next());
+    assert!(!off.contains(crate::message::BACKGROUND_TASK_STARTED_WAKE_LINE));
+    assert!(on.ends_with(crate::message::BACKGROUND_TASK_STARTED_WAKE_LINE));
+    let parsed = crate::message::parse_background_task_started_notification_markdown(on).unwrap();
+    assert!(parsed.wake);
+}
+
 struct SignalDrop(Option<tokio::sync::oneshot::Sender<()>>);
 
 impl Drop for SignalDrop {

@@ -163,7 +163,7 @@ impl BackgroundTaskManager {
         tool_name: &str,
         display_name: Option<&str>,
         session_id: &str,
-        _notify: bool,
+        wake: bool,
     ) {
         // Lifecycle visibility is independent of transcript delivery and agent wake.
         let label = crate::message::background_task_display_label(tool_name, display_name);
@@ -171,8 +171,14 @@ impl BackgroundTaskManager {
         Bus::global().publish(BusEvent::UiActivity(crate::bus::UiActivity::background(
             Some(session_id.to_string()),
             format!(
-                "**Background task started** `{}` · `{}`\n\nJcode is running this in the background. Progress, checkpoints, and completion will appear here.",
-                task_id, safe_label
+                "**Background task started** `{}` · `{}`\n\nJcode is running this in the background. Progress, checkpoints, and completion will appear here.{}",
+                task_id,
+                safe_label,
+                if wake {
+                    crate::message::BACKGROUND_TASK_STARTED_WAKE_LINE
+                } else {
+                    ""
+                }
             ),
             Some(format!("Background task started · {}", label)),
         )));
@@ -577,7 +583,7 @@ impl BackgroundTaskManager {
             tool_name,
             status.display_name.as_deref(),
             session_id,
-            notify,
+            wake,
         );
     }
 
@@ -626,7 +632,7 @@ impl BackgroundTaskManager {
         fs::create_dir_all(&self.output_dir).await?;
         let json = serde_json::to_string_pretty(&status)?;
         write_atomic(&info.status_file, &json).await?;
-        Self::publish_task_started_activity(&info.task_id, &tool_name, None, session_id, notify);
+        Self::publish_task_started_activity(&info.task_id, &tool_name, None, session_id, wake);
         if let Some(finish) = status.mcp_task.as_ref().and_then(McpTaskRecord::finish) {
             let _guard = self.progress_updates.lock().await;
             let _finalizing = self.finalize_lock.lock().await;
@@ -796,7 +802,7 @@ impl BackgroundTaskManager {
             tool_name,
             display_name.as_deref(),
             session_id,
-            notify,
+            wake,
         );
 
         let output_path_clone = output_path.clone();
@@ -1026,7 +1032,7 @@ impl BackgroundTaskManager {
             tool_name,
             display_name.as_deref(),
             session_id,
-            notify,
+            wake,
         );
 
         let output_path_clone = output_path.clone();

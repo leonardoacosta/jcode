@@ -206,6 +206,7 @@ fn test_handle_background_task_progress_updates_status_notice() {
             percent: Some(42.0),
             status: crate::tui::BackgroundTaskRowStatus::Running,
             completed_at: None,
+            wake: false,
         }]
     );
 }
@@ -230,8 +231,29 @@ fn test_background_task_started_activity_creates_running_row_without_card() {
             percent: None,
             status: crate::tui::BackgroundTaskRowStatus::Running,
             completed_at: None,
+            wake: false,
         }]
     );
+}
+
+#[test]
+fn test_background_task_started_activity_records_wake() {
+    let mut app = create_test_app();
+    let event = BusEvent::UiActivity(crate::bus::UiActivity::background(
+        Some(app.session.id.clone()),
+        format!(
+            "**Background task started** `bgwake` · `cargo test`\n\nJcode is running this in the background. Progress, checkpoints, and completion will appear here.{}",
+            crate::message::BACKGROUND_TASK_STARTED_WAKE_LINE
+        ),
+        Some("Background task started · cargo test"),
+    ));
+
+    super::local::handle_bus_event(&mut app, Ok(event));
+
+    let rows = app.background_task_rows_ref();
+    assert_eq!(rows.len(), 1);
+    assert!(rows[0].wake);
+    assert_eq!(rows[0].status, crate::tui::BackgroundTaskRowStatus::Running);
 }
 
 #[test]

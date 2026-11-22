@@ -724,6 +724,7 @@ mod substantive_footer_tests {
                     percent: Some(100.0),
                     status: crate::tui::BackgroundTaskRowStatus::Completed,
                     completed_at: Some(std::time::Instant::now()),
+                    wake: false,
                 }],
                 ..Default::default()
             }),

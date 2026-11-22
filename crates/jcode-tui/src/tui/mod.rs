@@ -28,6 +28,9 @@ pub struct BackgroundTaskRow {
     pub status: BackgroundTaskRowStatus,
     /// When a successful task stopped being actionable, retained until session closure.
     pub completed_at: Option<std::time::Instant>,
+    /// Started with wake: its completion resumes this session, so Herdr
+    /// reports the pane `working` while it runs. False when unknown.
+    pub wake: bool,
 }
 
 pub mod backend;

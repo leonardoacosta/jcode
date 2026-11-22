@@ -308,10 +308,15 @@ pub fn format_background_task_progress_markdown(task: &BackgroundTaskProgressEve
     )
 }
 
+/// Appended to a started notification only when the task wakes its session on
+/// completion. The client reads it to keep the Herdr pane `working`.
+pub const BACKGROUND_TASK_STARTED_WAKE_LINE: &str = "\n\nWakes this session when it finishes.";
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParsedBackgroundTaskStartedNotification {
     pub task_id: String,
     pub label: String,
+    pub wake: bool,
 }
 
 pub fn parse_background_task_started_notification_markdown(
@@ -327,6 +332,9 @@ pub fn parse_background_task_started_notification_markdown(
     Some(ParsedBackgroundTaskStartedNotification {
         task_id: task_id.to_string(),
         label: label.to_string(),
+        wake: content
+            .trim_end()
+            .ends_with(BACKGROUND_TASK_STARTED_WAKE_LINE.trim_start()),
     })
 }
 

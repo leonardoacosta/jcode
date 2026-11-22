@@ -11,6 +11,7 @@ fn background_row(
         percent: None,
         status,
         completed_at: None,
+        wake: false,
     }
 }
 

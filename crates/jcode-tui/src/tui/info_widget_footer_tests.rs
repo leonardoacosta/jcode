@@ -276,6 +276,7 @@ fn public_background_footer_distinguishes_states_and_preserves_overflow() {
         percent: Some(100.0),
         status,
         completed_at: Some(Instant::now()),
+        wake: false,
     };
     let mut data = InfoWidgetData::default();
     for (status, legend) in [
@@ -417,6 +418,7 @@ fn narrow_overview_background_row_keeps_progress_visible() {
                 percent: Some(20.0),
                 status: BackgroundTaskRowStatus::Running,
                 completed_at: None,
+                wake: false,
             }],
             ..Default::default()
         }),

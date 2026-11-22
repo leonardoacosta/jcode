@@ -399,6 +399,7 @@ impl App {
                 percent,
                 status: crate::tui::BackgroundTaskRowStatus::Running,
                 completed_at: None,
+                wake: false,
             });
         self.retain_latest_background_tasks();
     }
@@ -423,7 +424,17 @@ impl App {
         else {
             return false;
         };
+        let task_id = started.task_id.clone();
         self.upsert_running_background_task(started.task_id, started.label, None);
+        if let Some(row) = self
+            .background_task_rows
+            .iter_mut()
+            .find(|task| task.task_id == task_id)
+        {
+            row.wake = started.wake;
+        }
+        // Row changes need no repaint, so report the pane state now.
+        self.sync_herdr_agent_state();
         true
     }
 
@@ -447,6 +458,7 @@ impl App {
                 task.percent = Some(100.0);
             }
             self.background_task_rows.push(task);
+            self.sync_herdr_agent_state();
             return;
         }
         self.background_task_rows
@@ -458,8 +470,10 @@ impl App {
                 status,
                 completed_at: (status == crate::tui::BackgroundTaskRowStatus::Completed)
                     .then(std::time::Instant::now),
+                wake: false,
             });
         self.retain_latest_background_tasks();
+        self.sync_herdr_agent_state();
     }
 
     /// Successful tasks are useful as short-lived confirmation, but should not

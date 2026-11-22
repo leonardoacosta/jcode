@@ -16,7 +16,7 @@ const TODO_CARD_ROLE: &str = "todos";
 pub(super) mod remote_cache;
 
 impl App {
-    fn current_todo_state(
+    pub(super) fn current_todo_state(
         &self,
     ) -> std::sync::Arc<(
         Vec<TodoItem>,
@@ -114,6 +114,9 @@ impl App {
             return false;
         }
         self.remote_todos_payload = Some((session_id, payload));
+        // The herdr state throttles todo reads; a new snapshot must not wait
+        // for that window, because an idle client may not tick again soon.
+        self.terminal_title.borrow_mut().herdr_user_auth = None;
         self.refresh_todo_card_if_needed();
         self.refresh_todos_view_now();
         self.refresh_pinned_todos_now();

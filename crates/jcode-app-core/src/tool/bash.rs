@@ -3,7 +3,7 @@ use crate::background::TaskResult;
 use crate::bus::{
     BackgroundTaskProgress, BackgroundTaskProgressKind, BackgroundTaskProgressSource,
 };
-use crate::{terminal_launch::apply_client_terminal_env, util::truncate_str};
+use crate::util::truncate_str;
 use anyhow::Result;
 use async_trait::async_trait;
 use chrono::Utc;
@@ -784,6 +784,17 @@ fn own_shell_child() -> Result<Option<crate::server::session_control::OwnedChild
         .transpose()
 }
 
+/// Forward the client's terminal identity to a tool command, minus
+/// `HERDR_ENV`. Herdr agent integrations (Codex, Claude, ...) self-report
+/// only when `HERDR_ENV=1`, and a foreign report locks this Jcode pane in
+/// Herdr 0.9.5 (later Jcode reports are ignored). `HERDR_PANE_ID`,
+/// `HERDR_SOCKET_PATH` and `JCODE_CLIENT_HERDR_ENV` stay, so commands can
+/// still drive Herdr. Hooks keep the full environment.
+fn apply_tool_terminal_env(cmd: &mut StdCommand, env: &[(String, String)]) {
+    crate::terminal_launch::apply_client_terminal_env(cmd, env);
+    cmd.env_remove("HERDR_ENV");
+}
+
 fn build_detached_shell_wrapper(command: &str) -> StdCommand {
     let mut cmd = StdCommand::new("bash");
     cmd.arg("-lc")
@@ -1004,7 +1015,10 @@ impl BashTool {
         let timeout_duration = Duration::from_millis(timeout_ms);
 
         let mut command = build_shell_command(&params.command);
-        crate::terminal_launch::apply_scoped_client_terminal_env(command.as_std_mut());
+        apply_tool_terminal_env(
+            command.as_std_mut(),
+            &crate::terminal_launch::client_terminal_env_snapshot(),
+        );
         command.envs(cloud_command_environment(ctx.working_dir.as_deref())?);
         command.envs(crate::session_env::session_env(&ctx.session_id));
         command
@@ -1163,7 +1177,10 @@ impl BashTool {
         let display_name = summarize_background_command(params.intent.as_deref(), &params.command);
 
         let mut cmd = build_detached_shell_wrapper(&params.command);
-        crate::terminal_launch::apply_scoped_client_terminal_env(&mut cmd);
+        apply_tool_terminal_env(
+            &mut cmd,
+            &crate::terminal_launch::client_terminal_env_snapshot(),
+        );
         cmd.envs(cloud_command_environment(ctx.working_dir.as_deref())?);
         cmd.envs(crate::session_env::session_env(&ctx.session_id));
         cmd.env("JCODE_SESSION_ID", &ctx.session_id);
@@ -1330,7 +1347,7 @@ impl BashTool {
                     #[cfg(all(test, not(windows)))]
                     tests::wait_for_session_env_launch_gate(&session_id_env).await;
 					let mut cmd = build_shell_command(&command);
-					apply_client_terminal_env(cmd.as_std_mut(), &client_terminal_env);
+					apply_tool_terminal_env(cmd.as_std_mut(), &client_terminal_env);
 					cmd.envs(cloud_environment);
 					cmd.envs(session_environment);
 					cmd.env("JCODE_SESSION_ID", &session_id_env);
