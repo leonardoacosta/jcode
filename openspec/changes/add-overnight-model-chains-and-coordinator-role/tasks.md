@@ -22,14 +22,14 @@ File ownership for parallel work:
 
 ## 3. Coordinator tool policy
 
-- [ ] 3.1 Add `tool/coordinator_policy.rs`: `allows(tool, input) -> Result<(), String>` implementing the spec allowlist, `.md`-only `edit`/`write` (resolved path), `apply_patch` denied, MCP allowed, read-only bash parser (split on `&&`, `||`, `;`, `|`; deny `>`, `>>`, `$(`, backticks, trailing `&`; allow listed commands and git read subcommands; deny `find -exec/-delete`). Verify: table tests for every spec scenario plus `git push`, `rm`, `sed -i`, `cargo test`, `echo x > f.md` denied.
-- [ ] 3.2 Enforce in `tool/mod.rs` at the same point session tool policy is checked, including `batch` members, for sessions registered as overnight coordinators; denial returns the delegation hint. Add register/unregister keyed by session id. Verify: integration test executes `edit` on `.rs` (denied, file unchanged), `edit` on `.md` (runs), `batch` mixed (read runs, edit denied).
+- [x] 3.1 Add `tool/coordinator_policy.rs`: `allows(tool, input) -> Result<(), String>` implementing the spec allowlist, `.md`-only `edit`/`write` (resolved path), `apply_patch` denied, MCP allowed, read-only bash parser (split on `&&`, `||`, `;`, `|`; deny `>`, `>>`, `$(`, backticks, trailing `&`; allow listed commands and git read subcommands; deny `find -exec/-delete`). Verify: table tests for every spec scenario plus `git push`, `rm`, `sed -i`, `cargo test`, `echo x > f.md` denied.
+- [x] 3.2 Enforce in `tool/mod.rs` at the same point session tool policy is checked, including `batch` members, for sessions registered as overnight coordinators; denial returns the delegation hint. Add register/unregister keyed by session id. Verify: integration test executes `edit` on `.rs` (denied, file unchanged), `edit` on `.md` (runs), `batch` mixed (read runs, edit denied).
 - [ ] 3.3 Install the policy when a run starts (supervised child session and visible current session) and remove it when the run reaches a terminal status or the session's run is no longer active. Verify: test start → denied; terminal → allowed again.
-- [ ] 3.4 Record `coordinator_tool_denied` {tool, reason} in the run's events.jsonl. Verify: test reads events.jsonl after a denial.
+- [x] 3.4 Record `coordinator_tool_denied` {tool, reason} in the run's events.jsonl. Verify: test reads events.jsonl after a denial.
 
 ## 4. Prompts
 
-- [ ] 4.1 Add the delegation rule to `build_coordinator_prompt`, `build_visible_current_session_prompt` and continuation prompts in `jcode-overnight-core`. Verify: prompt tests assert the rule text.
+- [x] 4.1 Add the delegation rule to `build_coordinator_prompt`, `build_visible_current_session_prompt` and continuation prompts in `jcode-overnight-core`. Verify: prompt tests assert the rule text.
 
 ## 5. Verification and closeout
 
