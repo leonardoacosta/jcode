@@ -24,7 +24,7 @@ File ownership for parallel work:
 
 - [x] 3.1 Add `tool/coordinator_policy.rs`: `allows(tool, input) -> Result<(), String>` implementing the spec allowlist, `.md`-only `edit`/`write` (resolved path), `apply_patch` denied, MCP allowed, read-only bash parser (split on `&&`, `||`, `;`, `|`; deny `>`, `>>`, `$(`, backticks, trailing `&`; allow listed commands and git read subcommands; deny `find -exec/-delete`). Verify: table tests for every spec scenario plus `git push`, `rm`, `sed -i`, `cargo test`, `echo x > f.md` denied.
 - [x] 3.2 Enforce in `tool/mod.rs` at the same point session tool policy is checked, including `batch` members, for sessions registered as overnight coordinators; denial returns the delegation hint. Add register/unregister keyed by session id. Verify: integration test executes `edit` on `.rs` (denied, file unchanged), `edit` on `.md` (runs), `batch` mixed (read runs, edit denied).
-- [ ] 3.3 Install the policy when a run starts (supervised child session and visible current session) and remove it when the run reaches a terminal status or the session's run is no longer active. Verify: test start → denied; terminal → allowed again.
+- [x] 3.3 Install the policy when a run starts (supervised child session and visible current session) and remove it when the run reaches a terminal status or the session's run is no longer active. Verify: test start → denied; terminal → allowed again.
 - [x] 3.4 Record `coordinator_tool_denied` {tool, reason} in the run's events.jsonl. Verify: test reads events.jsonl after a denial.
 
 ## 4. Prompts
@@ -35,5 +35,5 @@ File ownership for parallel work:
 
 - [x] 5.1 `cargo test -p jcode-app-core overnight`, `cargo test -p jcode-app-core coordinator_policy`, `cargo test -p jcode-overnight-core`, `cargo test -p jcode-config-types`; record results. Results: overnight 107 passed; coordinator_policy 12 passed; jcode-overnight-core 29 passed; jcode-config-types 50 passed; agent::tests 115 passed / 1 ignored with isolated `JCODE_HOME` + `JCODE_TEST_SESSION=1` (in the default env 2 workspace-reminder-sensitive tests fail, pre-existing).
 - [x] 5.2 Runtime: selfdev build; private `JCODE_HOME` + socket, a config with an `omni`-like profile pointed at a local fake OpenAI-compatible server that returns `model_not_found` for the first two models; start overnight; confirm two `model_chain_advanced` events and a denied coordinator `.rs` edit in events.jsonl.
-- [ ] 5.3 `openspec validate add-overnight-model-chains-and-coordinator-role --strict`, dependency validator, `git diff --check`.
+- [x] 5.3 `openspec validate add-overnight-model-chains-and-coordinator-role --strict`, dependency validator, `git diff --check`.
 - [ ] 5.4 Independent review of the full diff; fix findings; archive.
