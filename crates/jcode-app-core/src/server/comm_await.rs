@@ -115,6 +115,39 @@ pub(super) fn timeout_summary(member_statuses: &[AwaitedMemberStatus]) -> String
     format!("Timed out. Still waiting on: {}", pending.join(", "))
 }
 
+fn observe_present(observed: &mut HashSet<String>, member_statuses: &[AwaitedMemberStatus]) {
+    observed.extend(
+        member_statuses
+            .iter()
+            .filter(|member| member.status != "unknown")
+            .map(|member| member.session_id.clone()),
+    );
+}
+
+/// Some when every unfinished member was seen in the registry and is now
+/// missing. Members never seen present stay pending.
+fn gone_members_summary(
+    member_statuses: &[AwaitedMemberStatus],
+    observed: &HashSet<String>,
+) -> Option<String> {
+    let mut pending = member_statuses
+        .iter()
+        .filter(|member| !member.done)
+        .peekable();
+    pending.peek()?;
+    let mut names = Vec::new();
+    for member in pending {
+        if member.status != "unknown" || !observed.contains(&member.session_id) {
+            return None;
+        }
+        names.push(short_member_name(member));
+    }
+    Some(format!(
+        "Ended early: watched members left the swarm: {}. Not confirmed complete.",
+        names.join(", ")
+    ))
+}
+
 fn completion_summary(member_statuses: &[AwaitedMemberStatus]) -> String {
     let done_names: Vec<String> = member_statuses.iter().map(short_member_name).collect();
     format!(
@@ -298,6 +331,25 @@ pub(super) async fn spawn_or_resume_await_members(
     let target_status = state.target_status.clone();
     let mode = state.mode.clone();
 
+    // "unknown" alone is ambiguous (the registry is empty until hydration
+    // after a reload), so only members seen present and later missing count
+    // as gone. Seed before spawning so a removal right after the await starts
+    // is still noticed.
+    let mut observed: HashSet<String> = HashSet::new();
+    observe_present(
+        &mut observed,
+        &awaited_member_statuses(
+            &req_session_id,
+            &swarm_id,
+            &requested_ids,
+            &target_status,
+            &state.bound_generations,
+            &swarm_members,
+            &swarms_by_id,
+        )
+        .await,
+    );
+
     tokio::spawn(async move {
         let mut event_rx = swarm_event_tx.subscribe();
         let deadline = deadline_to_instant(state.deadline_unix_ms);
@@ -313,6 +365,7 @@ pub(super) async fn spawn_or_resume_await_members(
                 &swarms_by_id,
             )
             .await;
+            observe_present(&mut observed, &member_statuses);
 
             // Empty membership during startup is not successful completion.
             if !member_statuses.is_empty() && mode_satisfied(&member_statuses, mode.as_deref()) {
@@ -325,6 +378,29 @@ pub(super) async fn spawn_or_resume_await_members(
                     summary,
                 )
                 .await;
+                return;
+            }
+
+            // Every unfinished member left the swarm: the wait can never
+            // resolve. End it now, never as success.
+            if let Some(summary) = gone_members_summary(&member_statuses, &observed) {
+                let actionable = member_statuses
+                    .iter()
+                    .any(|member| member.completion_report.is_some());
+                if let Some(mut event) = finish_await(
+                    &await_members_runtime,
+                    &state,
+                    false,
+                    member_statuses,
+                    summary,
+                )
+                .await
+                {
+                    event.wake = event.wake && actionable;
+                    if event.notify || event.wake {
+                        Bus::global().publish(BusEvent::SwarmAwaitCompleted(event));
+                    }
+                }
                 return;
             }
 
