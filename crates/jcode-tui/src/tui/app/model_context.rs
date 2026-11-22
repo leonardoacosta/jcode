@@ -1311,12 +1311,27 @@ impl App {
         if self.is_remote || self.overnight_auto_poke.is_none() {
             return false;
         }
+        // Context-limit and oversized-request errors are not model failures:
+        // the session's own recovery (compaction, image stripping) handles
+        // them, with the chain untouched.
+        if is_context_limit_error(error) || is_request_payload_too_large_error(error) {
+            return false;
+        }
         let provider_key = self.session.provider_key.clone();
+        let provider = self.provider.as_ref();
         let advance = crate::overnight::model_chain::try_advance_provider_for_session(
             &self.session.id,
-            self.provider.as_ref(),
+            provider,
             provider_key.as_deref(),
-            &|| self.current_route_api_method(),
+            // Provider identity for every route, plus this view's API method.
+            &|| {
+                Some(format!(
+                    "{}|{}",
+                    crate::overnight::model_chain::provider_route_identity(provider)
+                        .unwrap_or_default(),
+                    self.current_route_api_method().unwrap_or_default()
+                ))
+            },
             error,
         );
         match advance {

@@ -146,8 +146,9 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
     // be checked or switched; only routes that list models, or whose catalog
     // could not be loaded, are held to the chain.
     let route_has_model_list = !route.served.is_empty() || route.unfiltered_reason.is_some();
-    let chain_plan = model_chain::plan(&crate::config::config().overnight, &route)
+    let mut chain_plan = model_chain::plan(&crate::config::config().overnight, &route)
         .map_err(|reasons| anyhow::anyhow!("Overnight blocked: {}", reasons.join("; ")))?;
+    let mut coordinator_start = None;
     if options.use_current_session {
         // The visible session has no supervisor loop; pick its first served
         // coordinator model here. Same provider route, API method and account
@@ -155,20 +156,38 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
         // models blocks the start instead of running outside the chain.
         let provider_key = options.parent_session.provider_key.clone();
         let provider = options.provider.as_ref();
-        let (selected, skipped) = model_chain::select_first(&chain_plan.coordinator, |model| {
+        let first = model_chain::select_first(&chain_plan.coordinator, |model| {
             model_chain::set_provider_model_on_same_route(
                 provider,
                 provider_key.as_deref(),
-                &|| model_chain::provider_route_api_method(provider),
+                &|| model_chain::provider_route_identity(provider),
                 model,
             )
         });
-        if selected.is_none() && route_has_model_list {
+        if let Some(fatal) = first.fatal {
+            anyhow::bail!("Overnight blocked: {fatal}");
+        }
+        if first.selected.is_none() && route_has_model_list {
             anyhow::bail!(
                 "Overnight blocked: the selected route accepted no coordinator chain model ({})",
-                skipped.join("; ")
+                first.skipped.join("; ")
             );
         }
+        coordinator_start = Some(match first.selected {
+            Some(selected) => (
+                format!("Coordinator starts on {selected}"),
+                json!({ "model": selected, "skipped": first.skipped }),
+            ),
+            None => {
+                let current = provider.model();
+                let note = format!("route exposes no model list; kept session model {current}");
+                chain_plan.unfiltered_reason = Some(note.clone());
+                (
+                    format!("Route exposes no model list; coordinator stays on {current}"),
+                    json!({ "model": current, "skipped": first.skipped, "note": note }),
+                )
+            }
+        });
     }
     let run_id = crate::id::new_id("overnight");
     let started_at = Utc::now();
@@ -276,6 +295,9 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
         true,
     )?;
     model_chain::record_plan(&manifest, &chain_plan);
+    if let Some((summary, details)) = coordinator_start {
+        record_event(&manifest, "model_chain_started", summary, details, true)?;
+    }
     render_review_html(&manifest)?;
     // Policy hook: restrict the coordinator session to the coordinator tool
     // allowlist (supervised child session and visible current session alike).
@@ -411,6 +433,25 @@ async fn run_supervisor(
     ) {
         return block_on_reasons(&manifest, &reasons).await;
     }
+    // A run resumed by this build may hold no usable plan (older file layout):
+    // derive and route-filter it now, like a fresh start, so workers and chain
+    // advances use served models only. Blocks the run if the route serves none.
+    {
+        let plan_manifest = manifest.clone();
+        let plan_provider = provider.clone();
+        let ensured = tokio::task::spawn_blocking(move || {
+            model_chain::ensure_plan(&plan_manifest, &plan_provider)
+        })
+        .await
+        .map_err(|error| anyhow::anyhow!("model chain plan task failed: {error}"))?;
+        if let Err(reasons) = ensured {
+            let reasons: Vec<String> = reasons
+                .into_iter()
+                .map(|reason| format!("Overnight blocked: {reason}"))
+                .collect();
+            return block_on_reasons(&manifest, &reasons).await;
+        }
+    }
     record_event(
         &manifest,
         "preflight_started",
@@ -437,8 +478,12 @@ async fn run_supervisor(
     let mut agent = Agent::new_with_session(provider, registry, child, None);
     let mut coordinator_chain = {
         let models = model_chain::coordinator_models(&manifest);
-        let (selected, skipped) =
+        let first =
             model_chain::select_first(&models, |model| agent.set_model_on_same_route(model));
+        if let Some(fatal) = first.fatal {
+            return block_on_reasons(&manifest, &[format!("Overnight blocked: {fatal}")]).await;
+        }
+        let (selected, skipped) = (first.selected, first.skipped);
         match selected {
             Some(selected) => {
                 record_event(

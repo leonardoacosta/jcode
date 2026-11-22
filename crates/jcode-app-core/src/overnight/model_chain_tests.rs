@@ -147,15 +147,16 @@ fn plan_with_no_model_list_keeps_default_chains_whole() {
 
 #[test]
 fn select_first_skips_models_the_route_refuses() {
-    let (selected, skipped) = select_first(&names(&["a", "b", "c"]), |model| {
+    let first = select_first(&names(&["a", "b", "c"]), |model| {
         if model == "c" {
             Ok(())
         } else {
             anyhow::bail!("not served")
         }
     });
-    assert_eq!(selected.as_deref(), Some("c"));
-    assert_eq!(skipped.len(), 2);
+    assert_eq!(first.selected.as_deref(), Some("c"));
+    assert_eq!(first.skipped.len(), 2);
+    assert!(first.fatal.is_none());
 }
 
 /// Provider that fails the models in `failing` with `error` and serves the
@@ -788,6 +789,28 @@ async fn visible_start_keeps_the_session_model_on_a_route_without_a_model_list()
     })
     .expect("a route with no model list must not block the start");
     assert_eq!(launch.manifest.model, "not-in-chain");
+    // The run says what it did, like the supervised path does.
+    let events = read_events(&launch.manifest).unwrap();
+    let started = events
+        .iter()
+        .find(|e| e.kind == "model_chain_started")
+        .expect("model_chain_started is recorded");
+    assert!(
+        started.summary.contains("no model list") && started.summary.contains("not-in-chain"),
+        "{}",
+        started.summary
+    );
+    let preflight = events
+        .iter()
+        .find(|e| e.kind == "model_chain_preflight")
+        .expect("model_chain_preflight is recorded");
+    assert!(
+        preflight
+            .summary
+            .contains("route exposes no model list; kept session model not-in-chain"),
+        "{}",
+        preflight.summary
+    );
 }
 
 #[tokio::test]
@@ -941,6 +964,453 @@ fn plan_file_is_versioned_and_other_versions_are_derived_again() {
         dedupe(&config.coordinator_model_chain)
     );
     assert!(kinds(&missing).contains(&"model_chain_plan_derived".to_string()));
+}
+
+fn route_serving(served: &[&str]) -> RouteModels {
+    route(&names(served))
+}
+
+fn raw_plan_file(manifest: &OvernightManifest, body: &str) {
+    std::fs::create_dir_all(&manifest.run_dir).unwrap();
+    std::fs::write(manifest.run_dir.join(PLAN_FILE), body).unwrap();
+}
+
+fn count_kind(manifest: &OvernightManifest, kind: &str) -> usize {
+    kinds(manifest).iter().filter(|k| *k == kind).count()
+}
+
+/// H1: a run resumed without a usable plan is route-filtered once, at resume,
+/// through the real plan file; workers then start on the filtered worker chain.
+#[test]
+fn resume_filters_a_derived_plan_and_workers_use_it() {
+    let _env = fixture();
+    let config = crate::config::config().overnight.clone();
+    let served_worker = config.worker_model_chain[1].clone();
+    let served_coordinator = config.coordinator_model_chain[1].clone();
+    assert_ne!(served_worker, config.worker_model_chain[0]);
+
+    for (run_id, body) in [
+        (
+            "h1-v0",
+            Some(r#"{"coordinator":["stale"],"worker":["stale"]}"#),
+        ),
+        ("h1-none", None),
+        (
+            "h1-v99",
+            Some(r#"{"version":99,"coordinator":["x"],"worker":["x"]}"#),
+        ),
+    ] {
+        let owner = format!("{run_id}-owner");
+        let manifest = test_run_manifest(run_id, &owner, OvernightLimits::default());
+        if let Some(body) = body {
+            raw_plan_file(&manifest, body);
+        }
+        // Before resume: nothing checked against the route may drive a spawn.
+        assert_eq!(resolve_spawn_request(None, &owner, None), None, "{run_id}");
+
+        let route = route_serving(&[&served_coordinator, &served_worker]);
+        let plan = ensure_plan_with(&manifest, || route).unwrap();
+        // The served list is shared, so the coordinator chain keeps every model
+        // the route serves, in chain order (the worker model is in it too).
+        let (expected_coordinator, _) = filter_served(
+            &config.coordinator_model_chain,
+            &[served_coordinator.clone(), served_worker.clone()],
+        );
+        assert_eq!(plan.coordinator, expected_coordinator, "{run_id}");
+        assert!(plan.coordinator.len() < config.coordinator_model_chain.len());
+        assert_eq!(plan.worker, [served_worker.clone()], "{run_id}");
+        assert!(plan.derived && !plan.route_unchecked, "{run_id}");
+
+        // The persisted file is the filtered one, and the first spawn uses it.
+        let stored: ChainPlan = storage::read_json(&manifest.run_dir.join(PLAN_FILE)).unwrap();
+        assert_eq!(stored, plan, "{run_id}");
+        assert_eq!(
+            resolve_spawn_request(None, &owner, None).as_deref(),
+            Some(served_worker.as_str()),
+            "{run_id}: worker[0] of the filtered chain"
+        );
+        assert_eq!(
+            worker_chain_default_model(&owner).as_deref(),
+            Some(served_worker.as_str())
+        );
+        assert_eq!(
+            count_kind(&manifest, "model_chain_plan_derived"),
+            1,
+            "{run_id}"
+        );
+
+        // A second resume reads the stored plan: no new route load, no event.
+        let again = ensure_plan_with(&manifest, || panic!("route must not load twice")).unwrap();
+        assert_eq!(again, plan, "{run_id}");
+        assert_eq!(
+            count_kind(&manifest, "model_chain_plan_derived"),
+            1,
+            "{run_id}"
+        );
+    }
+}
+
+/// H1: a plan derived without a route (advance path before resume) is replaced
+/// by the route-filtered one at resume.
+#[test]
+fn resume_replaces_a_route_unchecked_plan() {
+    let _env = fixture();
+    let config = crate::config::config().overnight.clone();
+    let manifest = test_run_manifest(
+        "h1-unchecked",
+        "h1-unchecked-owner",
+        OvernightLimits::default(),
+    );
+    let unchecked = plan_for_run(&manifest);
+    assert!(unchecked.route_unchecked);
+    assert_eq!(worker_chain_default_model("h1-unchecked-owner"), None);
+
+    let keep = config.worker_model_chain[2].clone();
+    let route = route_serving(&[&config.coordinator_model_chain[0], &keep]);
+    let plan = ensure_plan_with(&manifest, || route).unwrap();
+    assert_eq!(plan.worker, [keep.clone()]);
+    assert!(!plan.route_unchecked);
+    assert_eq!(
+        worker_chain_default_model("h1-unchecked-owner").as_deref(),
+        Some(keep.as_str())
+    );
+}
+
+/// H1: a route that serves no model of a chain blocks the resume, and the old
+/// file is left alone.
+#[test]
+fn resume_blocks_when_the_route_serves_no_chain_model_and_keeps_the_file() {
+    let _env = fixture();
+    let manifest = test_run_manifest("h1-block", "h1-block-owner", OvernightLimits::default());
+    let body = r#"{"version":99,"coordinator":["x"],"worker":["x"]}"#;
+    raw_plan_file(&manifest, body);
+    let reasons = ensure_plan_with(&manifest, || route_serving(&["unrelated"])).unwrap_err();
+    assert!(
+        reasons
+            .iter()
+            .any(|r| r.contains("serves no coordinator chain model")),
+        "{reasons:?}"
+    );
+    assert_eq!(
+        std::fs::read_to_string(manifest.run_dir.join(PLAN_FILE)).unwrap(),
+        body
+    );
+    assert_eq!(count_kind(&manifest, "model_chain_plan_derived"), 0);
+}
+
+/// L: one stale plan yields one derived event even when several readers race,
+/// and the file it replaces is kept as `model-chains.json.v<N>.bak`.
+#[test]
+fn deriving_records_once_under_a_race_and_backs_up_the_old_file() {
+    let _env = fixture();
+    let manifest = test_run_manifest("l-race", "l-race-owner", OvernightLimits::default());
+    let body = r#"{"version":99,"coordinator":["newer"],"worker":["newer"],"extra":true}"#;
+    raw_plan_file(&manifest, body);
+
+    std::thread::scope(|scope| {
+        for _ in 0..8 {
+            scope.spawn(|| {
+                let _ = plan_for_run(&manifest);
+            });
+        }
+    });
+    assert_eq!(count_kind(&manifest, "model_chain_plan_derived"), 1);
+    let backup = manifest.run_dir.join("model-chains.json.v99.bak");
+    assert_eq!(std::fs::read_to_string(backup).unwrap(), body, "bytes kept");
+    let rewritten: ChainPlan = storage::read_json(&manifest.run_dir.join(PLAN_FILE)).unwrap();
+    assert_eq!(rewritten.version, PLAN_VERSION);
+
+    // A versionless v0 file and an unreadable one are kept too.
+    for (run_id, body, suffix) in [
+        ("l-v0", r#"{"coordinator":["old"],"worker":["old"]}"#, "v0"),
+        ("l-junk", "{not json", "unreadable"),
+    ] {
+        let manifest = test_run_manifest(run_id, run_id, OvernightLimits::default());
+        raw_plan_file(&manifest, body);
+        let _ = plan_for_run(&manifest);
+        let backup = manifest
+            .run_dir
+            .join(format!("model-chains.json.{suffix}.bak"));
+        assert_eq!(std::fs::read_to_string(backup).unwrap(), body, "{run_id}");
+    }
+}
+
+/// L: when the old file cannot be backed up it is not overwritten.
+#[cfg(unix)]
+#[test]
+fn an_unbackable_plan_file_is_never_overwritten() {
+    use std::os::unix::fs::PermissionsExt;
+    let _env = fixture();
+    let manifest = test_run_manifest("l-nobackup", "l-nobackup-owner", OvernightLimits::default());
+    let body = r#"{"version":99,"coordinator":["newer"],"worker":["newer"]}"#;
+    raw_plan_file(&manifest, body);
+    let dir = &manifest.run_dir;
+    std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o555)).unwrap();
+    // Root ignores directory modes; nothing to prove then.
+    let writable = std::fs::write(dir.join("probe"), "x").is_ok();
+    let plan = plan_for_run(&manifest);
+    std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o755)).unwrap();
+    if writable {
+        return;
+    }
+    assert!(plan.route_unchecked, "still usable in memory");
+    assert_eq!(std::fs::read_to_string(dir.join(PLAN_FILE)).unwrap(), body);
+}
+
+/// L: dropping the version filter in `current_plan` would let an old file with
+/// no route check pick a new worker's model.
+#[test]
+fn current_plan_ignores_files_without_the_current_version_or_a_route_check() {
+    let _env = fixture();
+    for (run_id, body) in [
+        ("cp-v0", r#"{"coordinator":["stale"],"worker":["stale"]}"#),
+        (
+            "cp-v99",
+            r#"{"version":99,"coordinator":["s"],"worker":["s"]}"#,
+        ),
+        (
+            "cp-unchecked",
+            r#"{"version":1,"coordinator":["s"],"worker":["s"],"route_unchecked":true}"#,
+        ),
+    ] {
+        let owner = format!("{run_id}-owner");
+        let manifest = test_run_manifest(run_id, &owner, OvernightLimits::default());
+        raw_plan_file(&manifest, body);
+        assert!(current_plan(&manifest).is_none(), "{run_id}");
+        assert_eq!(resolve_spawn_request(None, &owner, None), None, "{run_id}");
+        assert_eq!(worker_chain_default_model(&owner), None, "{run_id}");
+    }
+    let ok = run_with_plan("cp-ok", "cp-ok-owner", &["c1"], &["w1"]);
+    assert_eq!(current_plan(&ok).unwrap().worker, ["w1"]);
+}
+
+/// A provider whose switch drifts the route (name or display name changes with
+/// the model), and whose undo can be made to fail.
+#[derive(Clone)]
+struct DriftProvider {
+    model: Arc<Mutex<String>>,
+    served: Vec<String>,
+    fail_restore_to: Option<String>,
+}
+
+impl DriftProvider {
+    fn new(start: &str, served: &[String], fail_restore_to: Option<&str>) -> Self {
+        Self {
+            model: Arc::new(Mutex::new(start.to_string())),
+            served: served.to_vec(),
+            fail_restore_to: fail_restore_to.map(str::to_string),
+        }
+    }
+}
+
+#[async_trait]
+impl Provider for DriftProvider {
+    async fn complete(
+        &self,
+        _: &[Message],
+        _: &[ToolDefinition],
+        _: &str,
+        _: Option<&str>,
+    ) -> Result<crate::provider::EventStream> {
+        anyhow::bail!("unused")
+    }
+    fn name(&self) -> &str {
+        "drift-fake"
+    }
+    /// The profile in use follows the model: a switch changes the route.
+    fn display_name(&self) -> String {
+        format!("profile-for-{}", self.model.lock().unwrap())
+    }
+    fn model(&self) -> String {
+        self.model.lock().unwrap().clone()
+    }
+    fn set_model(&self, model: &str) -> Result<()> {
+        if self.fail_restore_to.as_deref() == Some(model) {
+            anyhow::bail!("cannot return to {model}");
+        }
+        *self.model.lock().unwrap() = model.to_string();
+        Ok(())
+    }
+    fn available_models_for_switching(&self) -> Vec<String> {
+        self.served.clone()
+    }
+    fn fork(&self) -> Arc<dyn Provider> {
+        Arc::new(self.clone())
+    }
+}
+
+fn all_chain_models() -> Vec<String> {
+    let config = OvernightConfig::default();
+    config
+        .coordinator_model_chain
+        .iter()
+        .chain(&config.worker_model_chain)
+        .cloned()
+        .collect()
+}
+
+/// M3: the route identity covers providers that are neither OpenAI nor Claude.
+/// With `&|| None` (the old closure) this switch would have been accepted.
+#[test]
+fn route_identity_catches_a_drift_on_any_provider() {
+    let provider = DriftProvider::new("start", &all_chain_models(), None);
+    let identity = || provider_route_identity(&provider);
+    let error = set_provider_model_on_same_route(&provider, None, &identity, "next")
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("refusing to switch"), "{error}");
+    assert_eq!(provider.model(), "start", "the switch is undone");
+
+    // The old closure accepted it: proof the identity is what refuses.
+    set_provider_model_on_same_route(&provider, None, &|| None, "next").unwrap();
+    assert_eq!(provider.model(), "next");
+}
+
+#[tokio::test]
+async fn visible_start_blocks_when_every_switch_drifts_the_route() {
+    let _env = fixture();
+    let provider: Arc<dyn Provider> =
+        Arc::new(DriftProvider::new("start", &all_chain_models(), None));
+    let registry = Registry::new(provider.clone()).await;
+    let error = match start_overnight_run(OvernightStartOptions {
+        duration: OvernightDuration { minutes: 60 },
+        mission: None,
+        parent_session: Session::create(None, None),
+        provider,
+        registry,
+        working_dir: None,
+        use_current_session: true,
+        limits: OvernightLimits::default(),
+    }) {
+        Ok(_) => panic!("a switch that drifts the route must not be accepted"),
+        Err(error) => error.to_string(),
+    };
+    assert!(
+        error.contains("accepted no coordinator chain model"),
+        "{error}"
+    );
+    assert!(error.contains("refusing to switch"), "{error}");
+}
+
+/// M1: a refused switch whose undo fails is fatal, not skipped.
+#[test]
+fn a_failed_route_restore_is_fatal_for_selection_and_advances() {
+    let _env = fixture();
+    let identity_of = |p: &DriftProvider| provider_route_identity(p);
+
+    let provider = DriftProvider::new("start", &all_chain_models(), Some("start"));
+    let error =
+        set_provider_model_on_same_route(&provider, None, &|| identity_of(&provider), "next")
+            .unwrap_err();
+    assert!(is_route_restore_failure(&error), "{error:#}");
+    assert!(
+        format!("{error:#}").contains("restoring start failed"),
+        "{error:#}"
+    );
+
+    // Selection stops at the first fatal error instead of trying the next model.
+    let tried = Mutex::new(Vec::new());
+    let first = select_first(&names(&["a", "b"]), |model| {
+        tried.lock().unwrap().push(model.to_string());
+        Err(RouteRestoreFailed("undo failed".into()).into())
+    });
+    assert!(first.selected.is_none());
+    assert!(first.fatal.as_deref().unwrap().contains("undo failed"));
+    assert_eq!(
+        tried.lock().unwrap().len(),
+        1,
+        "no further candidate is tried"
+    );
+
+    // A visible coordinator advance blocks the run with a distinct event.
+    let provider = DriftProvider::new("m1", &names(&["m1", "m2"]), Some("m1"));
+    let mut manifest = run_with_plan("m1-visible", "m1-visible", &["m1", "m2"], &["w1"]);
+    manifest.parent_session_id = "m1-visible".into();
+    save_manifest(&manifest).unwrap();
+    let advance = try_advance_provider_for_session(
+        "m1-visible",
+        &provider,
+        None,
+        &|| identity_of(&provider),
+        "model m1 unavailable",
+    );
+    let Some(SessionAdvance::Stop(Some(reason))) = advance else {
+        panic!("a failed restore must stop the run with a reason");
+    };
+    assert!(reason.contains("restoring m1 failed"), "{reason}");
+    let done = load_manifest("m1-visible").unwrap();
+    assert_eq!(done.status, OvernightRunStatus::Blocked);
+    let recorded = kinds(&done);
+    assert!(recorded.contains(&"model_chain_route_restore_failed".to_string()));
+    assert!(recorded.contains(&"run_blocked".to_string()));
+}
+
+/// M1 through an agent: the same-route setter reports the failed undo.
+#[tokio::test]
+async fn agent_route_restore_failure_is_fatal() {
+    let _env = fixture();
+    let drift = DriftProvider::new("start", &names(&["start", "next"]), Some("start"));
+    let provider: Arc<dyn Provider> = Arc::new(drift);
+    let registry = Registry::new(provider.clone()).await;
+    let mut agent = Agent::new(provider, registry);
+    let error = agent.set_model_on_same_route("next").unwrap_err();
+    assert!(is_route_restore_failure(&error), "{error:#}");
+    // The provider stayed on `next`, so selection through a fresh agent sees
+    // the same refusal and reports it as fatal too.
+    let drift = DriftProvider::new("start", &names(&["start", "next"]), Some("start"));
+    let provider: Arc<dyn Provider> = Arc::new(drift);
+    let registry = Registry::new(provider.clone()).await;
+    let mut agent = Agent::new(provider, registry);
+    let first = select_first(&names(&["next"]), |m| agent.set_model_on_same_route(m));
+    assert!(first.fatal.is_some(), "{:?}", first.skipped);
+}
+
+/// H2: a Permanent error (context limit, oversized request) does not stop a
+/// coordinator in the chain; only auth failures do.
+#[test]
+fn only_auth_failures_stop_a_visible_coordinator() {
+    let _env = fixture();
+    for (run_id, error, stops) in [
+        (
+            "h2-ctx",
+            "prompt is too long: maximum context length exceeded",
+            false,
+        ),
+        ("h2-413", "413 request_too_large", false),
+        ("h2-auth", "AuthRevoked: token revoked", true),
+        ("h2-expired", "401 unauthorized: token has expired", true),
+    ] {
+        let provider = ChainProvider::new("m1", &[], &["m1", "m2"], "x");
+        let mut manifest = run_with_plan(run_id, run_id, &["m1", "m2"], &["w1"]);
+        manifest.parent_session_id = run_id.into();
+        save_manifest(&manifest).unwrap();
+        let advance = try_advance_provider_for_session(run_id, &provider, None, &|| None, error);
+        match (stops, advance) {
+            (true, Some(SessionAdvance::Stop(Some(_)))) => {
+                assert_eq!(
+                    load_manifest(run_id).unwrap().status,
+                    OvernightRunStatus::Blocked
+                );
+            }
+            (false, Some(SessionAdvance::Stop(None))) => {
+                let loaded = load_manifest(run_id).unwrap();
+                assert_eq!(loaded.status, OvernightRunStatus::Running, "{run_id}");
+                assert!(
+                    !kinds(&loaded).contains(&"run_blocked".to_string()),
+                    "{run_id}"
+                );
+            }
+            (_, other) => panic!(
+                "{run_id}: unexpected {}",
+                match other {
+                    None => "none".to_string(),
+                    Some(SessionAdvance::Switched) => "switched".to_string(),
+                    Some(SessionAdvance::Stop(m)) => format!("stop({m:?})"),
+                }
+            ),
+        }
+        assert_eq!(provider.model(), "m1", "{run_id}: no switch");
+    }
 }
 
 #[test]

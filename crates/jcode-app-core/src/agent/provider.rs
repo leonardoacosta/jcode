@@ -244,6 +244,7 @@ impl Agent {
     /// chains use this; normal model switches use [`Self::set_model`].
     pub fn set_model_on_same_route(&mut self, model: &str) -> Result<()> {
         let name = self.provider.name().to_string();
+        let display = self.provider.display_name();
         let account = self.provider.oauth_account_label();
         let route = self.session_route_api_method();
         let provider_key = self.session.provider_key.clone();
@@ -251,12 +252,19 @@ impl Agent {
         let request = crate::overnight::pin_model_request(model, provider_key.as_deref());
         self.set_model(&request)?;
         if self.provider.name() != name
+            || self.provider.display_name() != display
             || self.provider.oauth_account_label() != account
             || self.session_route_api_method() != route
         {
             let restore = crate::overnight::pin_model_request(&previous, provider_key.as_deref());
-            let _ = self.set_model(&restore);
+            let restored = self.set_model(&restore);
             self.session.provider_key = provider_key;
+            if let Err(error) = restored {
+                return Err(crate::overnight::model_chain::RouteRestoreFailed(format!(
+                    "{model} left the selected route ({name}) and restoring {previous} failed: {error:#}"
+                ))
+                .into());
+            }
             anyhow::bail!(
                 "{model} is not served on the selected route ({name}); refusing to switch"
             );

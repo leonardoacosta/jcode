@@ -1262,6 +1262,62 @@ mod tests {
         );
     }
 
+    /// Visible coordinator: a context-limit error runs the session's own
+    /// recovery and never touches the model chain or blocks the run.
+    #[test]
+    fn visible_context_limit_error_still_runs_recovery_not_the_chain() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        let session_id = app.session.id.clone();
+        let mut manifest = saved_manifest("overnight_ctx", &session_id, std::process::id());
+        manifest.parent_session_id = session_id.clone();
+        crate::overnight::save_manifest(&manifest).unwrap();
+        std::fs::write(
+            manifest.run_dir.join("model-chains.json"),
+            r#"{"version":1,"coordinator":["m1","m2"],"worker":["w1"]}"#,
+        )
+        .unwrap();
+        app.enable_overnight_auto_poke(&manifest);
+
+        for error in [
+            "prompt is too long: 250000 tokens > 200000 maximum context length",
+            "413 request_too_large: request exceeds the maximum size",
+        ] {
+            app.handle_turn_error(error);
+            let loaded = crate::overnight::load_manifest("overnight_ctx").unwrap();
+            // The mock cannot compact, so the session's own handler gives up and
+            // stops auto-poke (`Failed`). The chain never blocked the run.
+            assert_ne!(loaded.status, OvernightRunStatus::Blocked, "{error}");
+            let kinds: Vec<String> = crate::overnight::read_events(&loaded)
+                .unwrap()
+                .into_iter()
+                .map(|event| event.kind)
+                .collect();
+            assert!(
+                !kinds
+                    .iter()
+                    .any(|k| k.starts_with("model_chain") || k == "run_blocked"),
+                "{error}: {kinds:?}"
+            );
+            let shown = app
+                .display_messages()
+                .iter()
+                .map(|m| m.content.clone())
+                .collect::<Vec<_>>()
+                .join("\n");
+            assert!(
+                shown.contains("Context limit exceeded")
+                    || shown.contains("Request body was too large"),
+                "{error}: recovery handler did not run: {shown}"
+            );
+            assert!(
+                !shown.contains("does not advance the model chain"),
+                "{error}: {shown}"
+            );
+            app.enable_overnight_auto_poke(&loaded);
+        }
+    }
+
     #[test]
     fn cancel_failure_keeps_tracked_auto_poke() {
         let _home = HomeGuard::new();
