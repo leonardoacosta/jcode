@@ -15,11 +15,19 @@ use tokio::sync::broadcast::{Receiver, error::TryRecvError};
 /// The login provider for the explicitly selected route. Precedence: the
 /// session's recorded API method (distinguishes API-key from OAuth), then its
 /// provider key, then the provider's own name. Never consults other accounts.
+/// A provider key that is not a login provider names a custom `[providers.<key>]`
+/// profile. Those all run on the openrouter runtime, so the provider name says
+/// nothing about their auth and is never consulted; they resolve to `None`.
 fn resolve_route(
     provider_name: &str,
     provider_key: Option<&str>,
     route_api_method: Option<&str>,
 ) -> Option<crate::provider_catalog::LoginProviderDescriptor> {
+    if let Some(key) = provider_key
+        && crate::provider_catalog::resolve_login_provider(key).is_none()
+    {
+        return None;
+    }
     let method_id =
         route_api_method.and_then(
             |method| match method.split('@').next().unwrap_or_default() {
@@ -52,13 +60,61 @@ pub(super) fn classify_route_auth(id: &str, state: AuthState) -> Option<Vec<Stri
     }
 }
 
+/// Auth verdict for a custom `[providers.<name>]` profile. `None` when the
+/// profile is unknown to config; `Some(None)` when usable; `Some(Some(reasons))`
+/// when its key is required but missing. Mirrors how
+/// `apply_named_provider_profile_env` picks the key variable and env file.
+fn custom_profile_auth_block(name: &str) -> Option<Option<Vec<String>>> {
+    use crate::config::{NamedProviderAuth, NamedProviderType};
+    let config = crate::config::Config::load();
+    let profile = config.providers.get(name)?;
+    let non_empty = |value: &Option<String>| {
+        value
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToString::to_string)
+    };
+    let anthropic = matches!(
+        profile.provider_type,
+        NamedProviderType::AnthropicCompatible
+    );
+    let requires_key = profile.auth != NamedProviderAuth::None
+        && profile.requires_api_key.unwrap_or_else(|| {
+            !crate::provider_catalog::api_base_uses_localhost(profile.base_url.trim())
+        });
+    if !requires_key || non_empty(&profile.api_key).is_some() {
+        return Some(None);
+    }
+    let (default_key, default_file) = if anthropic {
+        ("ANTHROPIC_API_KEY", "anthropic.env")
+    } else {
+        ("OPENROUTER_API_KEY", "openrouter.env")
+    };
+    let key_env = non_empty(&profile.api_key_env).unwrap_or_else(|| default_key.to_string());
+    let env_file = non_empty(&profile.env_file).unwrap_or_else(|| default_file.to_string());
+    if crate::provider_catalog::load_api_key_from_env_or_config(&key_env, &env_file).is_some() {
+        return Some(None);
+    }
+    Some(Some(vec![format!(
+        "{name}: API key not configured. Set {key_env} (or {env_file}), then restart the run."
+    )]))
+}
+
 /// Blocking reasons for the selected route. An unresolvable route is blocked as
-/// `unclassified` rather than assumed usable.
+/// `unclassified` rather than assumed usable, except a custom named profile,
+/// which is judged by its own configured key.
 pub(super) fn route_auth_block(
     provider_name: &str,
     provider_key: Option<&str>,
     route_api_method: Option<&str>,
 ) -> Option<Vec<String>> {
+    if let Some(key) = provider_key
+        && crate::provider_catalog::resolve_login_provider(key).is_none()
+        && let Some(verdict) = custom_profile_auth_block(key)
+    {
+        return verdict;
+    }
     let Some(descriptor) = resolve_route(provider_name, provider_key, route_api_method) else {
         return Some(vec![format!(
             "unclassified: selected route `{}` cannot be matched to a login provider, so its auth cannot be verified",
@@ -78,6 +134,12 @@ pub(super) fn resolved_route_auth_block(
     provider_key: Option<&str>,
     route_api_method: Option<&str>,
 ) -> Option<Vec<String>> {
+    if let Some(key) = provider_key
+        && resolve_route(provider_name, provider_key, route_api_method).is_none()
+        && custom_profile_auth_block(key).is_some()
+    {
+        return route_auth_block(provider_name, provider_key, route_api_method);
+    }
     resolve_route(provider_name, provider_key, route_api_method)?;
     route_auth_block(provider_name, provider_key, route_api_method)
 }
@@ -665,6 +727,54 @@ mod tests {
         // The visible start path does not refuse a custom, unclassified route.
         assert!(resolved_route_auth_block("synthetic-route", None, None).is_none());
         assert!(resolved_route_auth_block("OpenAI", None, Some("openai-api-key")).is_some());
+    }
+
+    fn write_omni_profile() {
+        let path = crate::config::Config::path().expect("config path");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(
+            &path,
+            "[providers.omni]\ntype = \"openai-compatible\"\nbase_url = \"https://omni.example.com/v1\"\napi_key_env = \"JCODE_PROVIDER_OMNI_API_KEY\"\nenv_file = \"omni.env\"\n",
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn custom_profile_route_is_judged_by_its_own_key_not_the_openrouter_runtime() {
+        let _env = sandbox();
+        write_omni_profile();
+        // Runtime name is `openrouter` (all compatible profiles run there) and
+        // OPENROUTER_API_KEY is set by `sandbox()`, so a wrong fallback would
+        // pass; clear it to prove the profile key decides.
+        crate::env::remove_var("OPENROUTER_API_KEY");
+        let blocked = route_auth_block("openrouter", Some("omni"), None).expect("key missing");
+        assert_eq!(blocked.len(), 1, "{blocked:?}");
+        assert!(blocked[0].starts_with("omni:"), "{blocked:?}");
+        assert!(
+            blocked[0].contains("JCODE_PROVIDER_OMNI_API_KEY") && blocked[0].contains("omni.env"),
+            "{blocked:?}"
+        );
+        assert!(!blocked[0].contains("openrouter"), "{blocked:?}");
+        assert!(resolved_route_auth_block("openrouter", Some("omni"), None).is_some());
+
+        crate::env::set_var("JCODE_PROVIDER_OMNI_API_KEY", "omni-key");
+        assert!(route_auth_block("openrouter", Some("omni"), None).is_none());
+        assert!(resolved_route_auth_block("openrouter", Some("omni"), None).is_none());
+    }
+
+    #[test]
+    fn custom_profile_unknown_to_config_stays_unclassified_and_openrouter_key_still_blocks() {
+        let _env = sandbox();
+        let unknown = route_auth_block("openrouter", Some("ghost"), None).unwrap();
+        assert!(unknown[0].starts_with("unclassified"), "{unknown:?}");
+        assert!(resolved_route_auth_block("openrouter", Some("ghost"), None).is_none());
+
+        // A real login-provider key keeps the normal login-provider check.
+        crate::env::remove_var("OPENROUTER_API_KEY");
+        let blocked = route_auth_block("openrouter", Some("openrouter"), None).unwrap();
+        assert!(blocked[0].starts_with("openrouter:"), "{blocked:?}");
+        crate::env::set_var("OPENROUTER_API_KEY", "test-key");
+        assert!(route_auth_block("openrouter", Some("openrouter"), None).is_none());
     }
 
     #[test]
