@@ -390,6 +390,17 @@ pub(super) async fn run_turn_monitored(
     manifest: &OvernightManifest,
     prompt: &str,
 ) -> Result<TurnOutcome> {
+    run_turn_monitored_with(agent, manifest, prompt, false).await
+}
+
+/// [`run_turn_monitored`]. With `resume`, the prompt is already persisted by a
+/// failed attempt, so the turn is re-run without appending it again.
+pub(super) async fn run_turn_monitored_with(
+    agent: &mut Agent,
+    manifest: &OvernightManifest,
+    prompt: &str,
+    resume: bool,
+) -> Result<TurnOutcome> {
     let started = Utc::now();
     // Never dispatch a provider request for a run that is already stopping.
     if let Some(cause) = pending_stop(&load_manifest(&manifest.run_id)?, None) {
@@ -410,7 +421,13 @@ pub(super) async fn run_turn_monitored(
     stop_poll.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     let mut unreadable_polls = 0u32;
 
-    let run_future = agent.run_once_capture(prompt);
+    let run_future = async {
+        if resume {
+            agent.retry_persisted_turn_capture().await
+        } else {
+            agent.run_once_capture(prompt).await
+        }
+    };
     tokio::pin!(run_future);
 
     loop {
@@ -488,7 +505,7 @@ static SPAWN_GATE: LazyLock<Arc<tokio::sync::Mutex<()>>> = LazyLock::new(Default
 /// A cancelled visible run has no supervisor to settle it, so it stays
 /// `CancelRequested` forever; it stops governing (cap and refusal) once
 /// cancelled instead of blocking the session's spawns until the process exits.
-fn governing_run(requester: &str) -> Option<OvernightManifest> {
+pub(super) fn governing_run(requester: &str) -> Option<OvernightManifest> {
     let active =
         usage::active_run_limits(requester).and_then(|(run_id, _)| load_manifest(&run_id).ok());
     // Visible-session runs have no supervisor registered in this process.

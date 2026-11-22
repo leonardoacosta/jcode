@@ -116,6 +116,16 @@ impl Agent {
         self.run_turn(false).await
     }
 
+    /// Re-run the turn for a request a failed attempt already persisted (last
+    /// message is the user prompt or tool results), without appending a new
+    /// user message. Used by overnight model-chain retries.
+    pub(crate) async fn retry_persisted_turn_capture(&mut self) -> Result<String> {
+        let _turn = self.claim_server_turn()?;
+        let _runtime_activity =
+            crate::runtime_activity::global().try_enter_session(&self.session.id)?;
+        self.run_turn(false).await
+    }
+
     /// Run one conversation turn with streaming events via mpsc channel (per-client)
     pub async fn run_once_streaming_mpsc(
         &mut self,

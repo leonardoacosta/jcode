@@ -41,6 +41,7 @@ const LONG_TURN_NOTICE_INTERVAL: Duration = Duration::from_secs(30 * 60);
 mod admission;
 mod admission_gate;
 mod enforce;
+pub mod model_chain;
 pub mod restart;
 mod usage;
 pub use admission::{
@@ -53,6 +54,7 @@ pub use enforce::{
     ensure_worker_spawn_allowed, is_supervised, resettle_in_background,
     visible_mode_limit_rejection, worker_spawn_gate,
 };
+pub(crate) use model_chain::pinned_request as pin_model_request;
 pub(crate) use usage::{note_session_account, observe_stream_usage};
 pub use usage::{read_usage_reconciled, reconciled_path};
 
@@ -137,6 +139,26 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
             "Overnight blocked: selected provider route has no usable auth. {}",
             reasons.join("; ")
         );
+    }
+    // Chain models the route does not serve are dropped; an empty chain blocks.
+    let chain_plan = model_chain::plan(
+        &crate::config::config().overnight,
+        &options.provider.available_models_for_switching(),
+    )
+    .map_err(|reasons| anyhow::anyhow!("Overnight blocked: {}", reasons.join("; ")))?;
+    if options.use_current_session {
+        // The visible session has no supervisor loop; pick its first served
+        // coordinator model here. Same provider route and account throughout.
+        let provider_key = options.parent_session.provider_key.clone();
+        // A route that cannot switch models keeps the session's current model;
+        // the chain still applies to later failures.
+        let _ = model_chain::select_first(&chain_plan.coordinator, |model| {
+            model_chain::set_provider_model_on_same_route(
+                options.provider.as_ref(),
+                provider_key.as_deref(),
+                model,
+            )
+        });
     }
     let run_id = crate::id::new_id("overnight");
     let started_at = Utc::now();
@@ -224,6 +246,7 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
     };
 
     save_manifest(&manifest)?;
+    model_chain::persist_plan(&manifest.run_dir, &chain_plan)?;
     write_initial_review_notes(&manifest)?;
     write_task_card_schema(&manifest)?;
     record_event(
@@ -242,7 +265,12 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
         }),
         true,
     )?;
+    model_chain::record_plan(&manifest, &chain_plan);
     render_review_html(&manifest)?;
+    // Policy hook: restrict the coordinator session to the coordinator tool
+    // allowlist (supervised child session and visible current session alike).
+    // It lifts itself once the run is terminal.
+    crate::tool::coordinator_policy::install_for_overnight(&coordinator_session_id, &run_id);
 
     let initial_prompt = if options.use_current_session {
         Some(build_visible_current_session_prompt(&manifest))
@@ -397,6 +425,37 @@ async fn run_supervisor(
 
     let _usage_run = usage::register_run(&manifest);
     let mut agent = Agent::new_with_session(provider, registry, child, None);
+    let mut coordinator_chain = {
+        let models = model_chain::coordinator_models(&manifest);
+        let (selected, skipped) =
+            model_chain::select_first(&models, |model| agent.set_model_on_same_route(model));
+        match selected {
+            Some(selected) => {
+                record_event(
+                    &manifest,
+                    "model_chain_started",
+                    format!("Coordinator starts on {selected}"),
+                    json!({ "model": selected, "skipped": skipped }),
+                    true,
+                )?;
+                model_chain::ModelChain::starting_at(models, &selected)
+            }
+            None => {
+                // The route lists its models at preflight, so reaching here means
+                // it cannot switch models at all. Keep the session's own model and
+                // keep the chain for later failures instead of ending the run.
+                let current = agent.provider_model();
+                record_event(
+                    &manifest,
+                    "model_chain_started",
+                    format!("Route accepted no chain model; coordinator stays on {current}"),
+                    json!({ "model": current, "skipped": skipped }),
+                    true,
+                )?;
+                model_chain::ModelChain::starting_at(models, &current)
+            }
+        }
+    };
     let mut watch = SignalWatch::new(&manifest.coordinator_session_id);
     let mut seen_cards: Option<String> = None;
     let mut last_waiting = false;
@@ -495,12 +554,21 @@ async fn run_supervisor(
         )?;
         render_review_html(&current)?;
 
-        let output = match enforce::run_turn_monitored(&mut agent, &current, &next_prompt).await? {
-            enforce::TurnOutcome::Finished(output) => output,
-            enforce::TurnOutcome::Stopped(cause) => {
+        let output = match model_chain::run_turn_with_chain(
+            &mut agent,
+            &current,
+            &next_prompt,
+            &mut coordinator_chain,
+        )
+        .await?
+        {
+            model_chain::ChainTurn::Finished(output) => output,
+            model_chain::ChainTurn::Stopped(cause) => {
                 enforce::stop_until_settled(&load_manifest(&manifest.run_id)?, cause).await?;
                 break;
             }
+            // The chain helper already ended the run `blocked`.
+            model_chain::ChainTurn::Ended => break,
         };
         let after_turn = load_manifest(&manifest.run_id)?;
         record_event(

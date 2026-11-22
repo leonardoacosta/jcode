@@ -238,6 +238,32 @@ impl Agent {
         )
     }
 
+    /// Switch the model without leaving the session's provider route or
+    /// account: the session's provider key pins the request, and a switch that
+    /// still changes provider or account is undone and refused. Overnight model
+    /// chains use this; normal model switches use [`Self::set_model`].
+    pub fn set_model_on_same_route(&mut self, model: &str) -> Result<()> {
+        let name = self.provider.name().to_string();
+        let account = self.provider.oauth_account_label();
+        let route = self.session_route_api_method();
+        let provider_key = self.session.provider_key.clone();
+        let previous = self.provider.model();
+        let request = crate::overnight::pin_model_request(model, provider_key.as_deref());
+        self.set_model(&request)?;
+        if self.provider.name() != name
+            || self.provider.oauth_account_label() != account
+            || self.session_route_api_method() != route
+        {
+            let restore = crate::overnight::pin_model_request(&previous, provider_key.as_deref());
+            let _ = self.set_model(&restore);
+            self.session.provider_key = provider_key;
+            anyhow::bail!(
+                "{model} is not served on the selected route ({name}); refusing to switch"
+            );
+        }
+        Ok(())
+    }
+
     pub fn set_route_selection(
         &mut self,
         selection: &crate::provider::RouteSelection,
