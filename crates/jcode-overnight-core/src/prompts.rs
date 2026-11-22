@@ -248,16 +248,18 @@ pub fn build_signal_prompt(signal: &str, manifest: &OvernightManifest) -> String
 
 pub fn build_handoff_ready_prompt(manifest: &OvernightManifest) -> String {
     format!(
-        "Handoff-ready reminder: target wake/report time is in about 30 minutes. Do not abandon useful work, but make the run easy to understand. Update `{}` and task-card JSON with current task, completed work, validation state, files changed, risks, skipped work, and next steps. Avoid starting large/risky new changes unless they are isolated and clearly verifiable.",
-        manifest.review_notes_path.display()
+        "Handoff-ready reminder: target wake/report time is in about 30 minutes. Do not abandon useful work, but make the run easy to understand. Update `{}` and task-card JSON with current task, completed work, validation state, files changed, risks, skipped work, and next steps. Avoid starting large/risky new changes unless they are isolated and clearly verifiable. {}",
+        manifest.review_notes_path.display(),
+        COORDINATOR_DELEGATION_REMINDER
     )
 }
 
 pub fn build_morning_report_prompt(manifest: &OvernightManifest) -> String {
     format!(
-        "Target wake/report time reached. Post a morning report now, even if work is still ongoing. Update `{}` plus task-card JSON and make sure `{}` is useful. Include completed work, current task, before/after evidence, files changed, validation, risks, usage/resource notes if relevant, and whether you plan to continue. You may continue only if the next chunk is bounded, safe, and verifiable.",
+        "Target wake/report time reached. Post a morning report now, even if work is still ongoing. Update `{}` plus task-card JSON and make sure `{}` is useful. Include completed work, current task, before/after evidence, files changed, validation, risks, usage/resource notes if relevant, and whether you plan to continue. You may continue only if the next chunk is bounded, safe, and verifiable. {}",
         manifest.review_notes_path.display(),
-        manifest.review_path.display()
+        manifest.review_path.display(),
+        COORDINATOR_DELEGATION_REMINDER
     )
 }
 
@@ -272,9 +274,10 @@ pub fn build_post_wake_continuation_prompt(manifest: &OvernightManifest) -> Stri
 
 pub fn build_final_wrapup_prompt(manifest: &OvernightManifest) -> String {
     format!(
-        "Final overnight wrap-up: the post-wake grace window has expired. Stop starting new work. Finish only immediate cleanup, update `{}`, task-card JSON, and `{}` with final before/after evidence, validation status, dirty repo state, remaining risks, and next steps, then stop.",
+        "Final overnight wrap-up: the post-wake grace window has expired. Stop starting new work. Finish only immediate cleanup, update `{}`, task-card JSON, and `{}` with final before/after evidence, validation status, dirty repo state, remaining risks, and next steps, then stop. {}",
         manifest.review_notes_path.display(),
-        manifest.review_path.display()
+        manifest.review_path.display(),
+        COORDINATOR_DELEGATION_REMINDER
     )
 }
 

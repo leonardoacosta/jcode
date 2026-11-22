@@ -317,7 +317,63 @@ fn continuation_prompts_remind_coordinator_to_delegate() {
         build_continuation_prompt(&manifest),
         build_post_wake_continuation_prompt(&manifest),
         build_signal_prompt("worker_done", &manifest),
+        build_handoff_ready_prompt(&manifest),
+        build_morning_report_prompt(&manifest),
+        build_final_wrapup_prompt(&manifest),
     ] {
         assert!(prompt.contains(COORDINATOR_DELEGATION_REMINDER), "{prompt}");
+    }
+}
+
+/// Every prompt builder that talks to the coordinator carries the role rule
+/// (full or one-line reminder), so a new builder cannot silently omit it.
+#[test]
+fn every_coordinator_prompt_builder_carries_the_delegation_rule() {
+    let now = Utc::now();
+    let manifest = test_manifest(now);
+    let preflight = OvernightPreflight {
+        captured_at: now,
+        usage: UsageProjection {
+            captured_at: now,
+            risk: "low".to_string(),
+            confidence: "high".to_string(),
+            projected_delta_min_percent: None,
+            projected_delta_max_percent: None,
+            projected_end_min_percent: None,
+            projected_end_max_percent: None,
+            providers: Vec::new(),
+            notes: Vec::new(),
+        },
+        resources: ResourceSnapshot {
+            captured_at: now,
+            ..Default::default()
+        },
+        git: GitSnapshot {
+            captured_at: now,
+            branch: None,
+            dirty_count: None,
+            dirty_summary: Vec::new(),
+            error: None,
+        },
+    };
+    let builders: [(&str, String); 8] = [
+        (
+            "coordinator",
+            build_coordinator_prompt(&manifest, &preflight),
+        ),
+        ("visible", build_visible_current_session_prompt(&manifest)),
+        ("continuation", build_continuation_prompt(&manifest)),
+        ("signal", build_signal_prompt("worker_done", &manifest)),
+        ("handoff", build_handoff_ready_prompt(&manifest)),
+        ("morning", build_morning_report_prompt(&manifest)),
+        ("post_wake", build_post_wake_continuation_prompt(&manifest)),
+        ("final", build_final_wrapup_prompt(&manifest)),
+    ];
+    for (name, prompt) in builders {
+        assert!(
+            prompt.contains(COORDINATOR_ROLE_RULE)
+                || prompt.contains(COORDINATOR_DELEGATION_REMINDER),
+            "{name} prompt lacks the delegation rule: {prompt}"
+        );
     }
 }
