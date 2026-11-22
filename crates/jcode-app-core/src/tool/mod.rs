@@ -16,6 +16,7 @@ mod communicate;
 mod computer;
 mod config_edit_notice;
 mod conversation_search;
+pub(crate) mod coordinator_policy;
 pub(crate) mod council;
 mod debug_socket;
 mod desktop_selfdev;
@@ -1016,6 +1017,18 @@ impl Registry {
                 }
             }
         };
+
+        // Overnight coordinator allowlist. Batch members re-enter `execute`,
+        // so they are checked here too.
+        if let Err(message) = coordinator_policy::enforce(
+            &ctx.session_id,
+            resolved_name,
+            &input,
+            tool.mcp_identity().is_some(),
+            &|path| ctx.resolve_path(path),
+        ) {
+            return Err(anyhow::anyhow!(message));
+        }
 
         // A completed local future cannot prove settlement of detached shell or
         // remote effects. Preserve that uncertainty durably before dispatch.
