@@ -137,9 +137,16 @@ pub(crate) fn filter_served(chain: &[String], served: &[String]) -> (Vec<String>
     (kept, dropped)
 }
 
+/// Layout version of `model-chains.json`. A file with another (or no) version
+/// is not trusted: the plan is derived again from config (see `plan_for_run`).
+const PLAN_VERSION: u32 = 1;
+
 /// Chains after the route filter, persisted next to the run's manifest.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct ChainPlan {
+    /// 0 when absent: files written before versioning.
+    #[serde(default)]
+    pub version: u32,
     pub coordinator: Vec<String>,
     pub worker: Vec<String>,
     #[serde(default)]
@@ -150,6 +157,23 @@ pub(crate) struct ChainPlan {
     /// kept whole instead of filtered.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unfiltered_reason: Option<String>,
+    /// The route catalog was cold at start and was refreshed before filtering.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub catalog_refreshed: bool,
+}
+
+impl Default for ChainPlan {
+    fn default() -> Self {
+        Self {
+            version: PLAN_VERSION,
+            coordinator: Vec::new(),
+            worker: Vec::new(),
+            dropped_coordinator: Vec::new(),
+            dropped_worker: Vec::new(),
+            unfiltered_reason: None,
+            catalog_refreshed: false,
+        }
+    }
 }
 
 const CATALOG_REFRESH_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
@@ -160,6 +184,8 @@ const CATALOG_UNAVAILABLE: &str = "route catalog unavailable; chains unfiltered"
 pub(crate) struct RouteModels {
     pub served: Vec<String>,
     pub unfiltered_reason: Option<String>,
+    /// The catalog was not loaded at start, so a refresh was attempted.
+    pub refreshed: bool,
 }
 
 /// Served models for `provider`'s route. A catalog-backed route whose catalog
@@ -175,16 +201,19 @@ fn route_models_with(
     refresh: impl FnOnce(&dyn Provider) -> std::result::Result<(), String>,
 ) -> RouteModels {
     let mut failure = None;
-    if !provider.model_list_is_authoritative() {
+    let refreshed = !provider.model_list_is_authoritative();
+    if refreshed {
         failure = refresh(provider).err();
     }
     if provider.model_list_is_authoritative() {
         return RouteModels {
             served: provider.available_models_for_switching(),
             unfiltered_reason: None,
+            refreshed,
         };
     }
     RouteModels {
+        refreshed,
         served: Vec::new(),
         unfiltered_reason: Some(match failure {
             Some(error) => format!("{CATALOG_UNAVAILABLE} ({error})"),
@@ -257,6 +286,8 @@ pub(crate) fn plan(
             dropped_coordinator,
             dropped_worker,
             unfiltered_reason: route.unfiltered_reason.clone(),
+            catalog_refreshed: route.refreshed,
+            ..Default::default()
         })
     } else {
         Err(reasons)
@@ -267,13 +298,51 @@ pub(crate) fn persist_plan(run_dir: &Path, plan: &ChainPlan) -> Result<()> {
     storage::write_json(&run_dir.join(PLAN_FILE), plan)
 }
 
-fn read_plan(run_dir: &Path) -> Option<ChainPlan> {
-    storage::read_json(&run_dir.join(PLAN_FILE)).ok()
+/// The run's plan. A missing, unreadable or other-version file (a run begun
+/// by an older build and resumed now) is derived again from config, persisted
+/// so later reads agree, and recorded. The route is not consulted here: the
+/// advance path already skips models the route refuses.
+fn plan_for_run(manifest: &OvernightManifest) -> ChainPlan {
+    let cause = match storage::read_json::<ChainPlan>(&manifest.run_dir.join(PLAN_FILE)) {
+        Ok(plan) if plan.version == PLAN_VERSION => return plan,
+        Ok(plan) => format!("plan version {} is not {PLAN_VERSION}", plan.version),
+        Err(_) => "plan missing or unreadable".to_string(),
+    };
+    let config = &crate::config::config().overnight;
+    let plan = ChainPlan {
+        coordinator: dedupe(&config.coordinator_model_chain),
+        worker: dedupe(&config.worker_model_chain),
+        unfiltered_reason: Some(format!(
+            "derived on resume ({cause}); route not consulted, chains unfiltered"
+        )),
+        ..Default::default()
+    };
+    let _ = persist_plan(&manifest.run_dir, &plan);
+    let _ = record_event(
+        manifest,
+        "model_chain_plan_derived",
+        format!("Model chain plan derived from config on resume: {cause}"),
+        serde_json::to_value(&plan).unwrap_or_else(|_| json!({})),
+        true,
+    );
+    plan
 }
 
 /// Record the plan as a run event (dropped models included).
 pub(crate) fn record_plan(manifest: &OvernightManifest, plan: &ChainPlan) {
-    let dropped = plan.dropped_coordinator.len() + plan.dropped_worker.len();
+    let mut notes = Vec::new();
+    if plan.catalog_refreshed {
+        notes.push("route catalog refreshed before filtering".to_string());
+    }
+    if let Some(reason) = plan.unfiltered_reason.as_deref() {
+        notes.push(reason.to_string());
+    } else if !plan.dropped_coordinator.is_empty() || !plan.dropped_worker.is_empty() {
+        notes.push(format!(
+            "dropped (not served by route): coordinator [{}], worker [{}]",
+            plan.dropped_coordinator.join(", "),
+            plan.dropped_worker.join(", ")
+        ));
+    }
     let _ = record_event(
         manifest,
         "model_chain_preflight",
@@ -281,17 +350,7 @@ pub(crate) fn record_plan(manifest: &OvernightManifest, plan: &ChainPlan) {
             "Model chains: coordinator [{}], worker [{}]{}",
             plan.coordinator.join(" > "),
             plan.worker.join(" > "),
-            if let Some(reason) = plan.unfiltered_reason.as_deref() {
-                format!("; {reason}")
-            } else if dropped == 0 {
-                String::new()
-            } else {
-                format!(
-                    "; dropped (not served by route): coordinator [{}], worker [{}]",
-                    plan.dropped_coordinator.join(", "),
-                    plan.dropped_worker.join(", ")
-                )
-            }
+            notes.iter().map(|n| format!("; {n}")).collect::<String>()
         ),
         serde_json::to_value(plan).unwrap_or_else(|_| json!({})),
         true,
@@ -304,19 +363,45 @@ pub(crate) fn pinned_request(model: &str, provider_key: Option<&str>) -> String 
     crate::provider::MultiProvider::model_switch_request_for_session_model(model, provider_key)
 }
 
-/// Select `model` on `provider` without leaving its route or account.
-/// Used for the visible run's first model; agents use
-/// `Agent::set_model_on_same_route`.
+/// API method of the route `provider` is serving, as far as the provider can
+/// tell: the account-qualified OAuth method, or the API-key method. `None` when
+/// it only knows its name (profile routes are told apart by `name()`).
+pub(crate) fn provider_route_api_method(provider: &dyn Provider) -> Option<String> {
+    use jcode_provider_core::ResolvedCredential;
+    let base = match provider.name().to_ascii_lowercase().as_str() {
+        "openai" => "openai",
+        "claude" | "anthropic" => "claude",
+        _ => return None,
+    };
+    match (
+        provider.oauth_account_label(),
+        provider.active_resolved_credential(),
+    ) {
+        (Some(label), _) => Some(format!("{base}-oauth@{label}")),
+        (None, Some(ResolvedCredential::Oauth)) => Some(format!("{base}-oauth")),
+        (None, Some(ResolvedCredential::ApiKey)) => Some(format!("{base}-api")),
+        (None, None) => None,
+    }
+}
+
+/// Select `model` on `provider` without leaving its route: provider name,
+/// OAuth account and API method (`route`) must all be unchanged afterwards,
+/// otherwise the switch is undone and refused. Used for the visible run's
+/// first model and its advances; agents use `Agent::set_model_on_same_route`.
+/// `route` reports the API method in use (the TUI passes its own richer view).
 pub(crate) fn set_provider_model_on_same_route(
     provider: &dyn Provider,
     provider_key: Option<&str>,
+    route: &dyn Fn() -> Option<String>,
     model: &str,
 ) -> Result<()> {
     let name = provider.name().to_string();
     let account = provider.oauth_account_label();
+    let api_method = route();
     let previous = provider.model();
     crate::provider::set_model_with_auth_refresh(provider, &pinned_request(model, provider_key))?;
-    if provider.name() != name || provider.oauth_account_label() != account {
+    if provider.name() != name || provider.oauth_account_label() != account || route() != api_method
+    {
         let _ = crate::provider::set_model_with_auth_refresh(
             provider,
             &pinned_request(&previous, provider_key),
@@ -417,21 +502,25 @@ pub(crate) fn role_for_session(session_id: &str) -> Option<(OvernightManifest, C
     None
 }
 
-/// Coordinator chain models for a run (route-filtered plan, else config).
+/// Coordinator chain models for a run (the run's plan, derived from config when absent).
 pub(super) fn coordinator_models(manifest: &OvernightManifest) -> Vec<String> {
     chain_models(manifest, ChainRole::Coordinator)
 }
 
+/// The persisted plan, only when it is current. A plan that would have to be
+/// derived again was never filtered against the route, so it must not decide
+/// which model a new worker is spawned on (the route may not serve it).
+fn current_plan(manifest: &OvernightManifest) -> Option<ChainPlan> {
+    storage::read_json::<ChainPlan>(&manifest.run_dir.join(PLAN_FILE))
+        .ok()
+        .filter(|plan| plan.version == PLAN_VERSION)
+}
+
 fn chain_models(manifest: &OvernightManifest, role: ChainRole) -> Vec<String> {
-    match (read_plan(&manifest.run_dir), role) {
-        (Some(plan), ChainRole::Coordinator) => plan.coordinator,
-        (Some(plan), ChainRole::Worker) => plan.worker,
-        (None, ChainRole::Coordinator) => {
-            dedupe(&crate::config::config().overnight.coordinator_model_chain)
-        }
-        // No persisted plan: the run did not go through start-time route
-        // filtering, so no worker model is forced on its spawns.
-        (None, ChainRole::Worker) => Vec::new(),
+    let plan = plan_for_run(manifest);
+    match role {
+        ChainRole::Coordinator => plan.coordinator,
+        ChainRole::Worker => plan.worker,
     }
 }
 
@@ -448,18 +537,14 @@ pub(crate) fn resolve_spawn_request(
         return requested;
     }
     let manifest = enforce::governing_run(requester_session_id)?;
-    let model = chain_models(&manifest, ChainRole::Worker)
-        .into_iter()
-        .next()?;
+    let model = current_plan(&manifest)?.worker.into_iter().next()?;
     Some(pinned_request(&model, coordinator_provider_key))
 }
 
 /// First served worker-chain model for display, without route pinning.
 pub fn worker_chain_default_model(requester_session_id: &str) -> Option<String> {
     let manifest = enforce::governing_run(requester_session_id)?;
-    chain_models(&manifest, ChainRole::Worker)
-        .into_iter()
-        .next()
+    current_plan(&manifest)?.worker.into_iter().next()
 }
 
 /// What a session-level failure hook decided.
@@ -498,6 +583,7 @@ pub fn try_advance_provider_for_session(
     session_id: &str,
     provider: &dyn Provider,
     provider_key: Option<&str>,
+    route: &dyn Fn() -> Option<String>,
     error: &str,
 ) -> Option<SessionAdvance> {
     let (manifest, role) = role_for_session(session_id)?;
@@ -510,7 +596,7 @@ pub fn try_advance_provider_for_session(
             Advance::Hold => break AdvanceOutcome::Held,
             Advance::Exhausted(tried) => break AdvanceOutcome::Exhausted { tried, skipped },
             Advance::Next(model) => {
-                match set_provider_model_on_same_route(provider, provider_key, &model) {
+                match set_provider_model_on_same_route(provider, provider_key, route, &model) {
                     Ok(()) => {
                         break AdvanceOutcome::Switched {
                             from: from.clone(),
@@ -573,6 +659,13 @@ fn settle_session_advance(
             // A worker only fails itself: the run keeps going and the swarm
             // status path notifies the coordinator of the failed worker.
             SessionAdvance::Stop(Some(message))
+        }
+        // A worker that hits a non-advancing failure just stops. For the
+        // coordinator it ends the run: say why, so the caller can block it.
+        AdvanceOutcome::Held if role == ChainRole::Coordinator => {
+            SessionAdvance::Stop(Some(format!(
+                "Overnight coordinator turn failed with {kind:?}, which does not advance the model chain: {error}"
+            )))
         }
         AdvanceOutcome::Held => SessionAdvance::Stop(None),
     }

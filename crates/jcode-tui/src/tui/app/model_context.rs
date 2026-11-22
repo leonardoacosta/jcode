@@ -1316,6 +1316,7 @@ impl App {
             &self.session.id,
             self.provider.as_ref(),
             provider_key.as_deref(),
+            &|| self.current_route_api_method(),
             error,
         );
         match advance {

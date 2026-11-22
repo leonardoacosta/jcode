@@ -141,24 +141,34 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
         );
     }
     // Chain models the route does not serve are dropped; an empty chain blocks.
-    let chain_plan = model_chain::plan(
-        &crate::config::config().overnight,
-        &model_chain::route_models(options.provider.as_ref()),
-    )
-    .map_err(|reasons| anyhow::anyhow!("Overnight blocked: {}", reasons.join("; ")))?;
+    let route = model_chain::route_models(options.provider.as_ref());
+    // A route with no model list at all (fixed single-model providers) cannot
+    // be checked or switched; only routes that list models, or whose catalog
+    // could not be loaded, are held to the chain.
+    let route_has_model_list = !route.served.is_empty() || route.unfiltered_reason.is_some();
+    let chain_plan = model_chain::plan(&crate::config::config().overnight, &route)
+        .map_err(|reasons| anyhow::anyhow!("Overnight blocked: {}", reasons.join("; ")))?;
     if options.use_current_session {
         // The visible session has no supervisor loop; pick its first served
-        // coordinator model here. Same provider route and account throughout.
+        // coordinator model here. Same provider route, API method and account
+        // throughout. A route that lists models but accepts none of the chain
+        // models blocks the start instead of running outside the chain.
         let provider_key = options.parent_session.provider_key.clone();
-        // A route that cannot switch models keeps the session's current model;
-        // the chain still applies to later failures.
-        let _ = model_chain::select_first(&chain_plan.coordinator, |model| {
+        let provider = options.provider.as_ref();
+        let (selected, skipped) = model_chain::select_first(&chain_plan.coordinator, |model| {
             model_chain::set_provider_model_on_same_route(
-                options.provider.as_ref(),
+                provider,
                 provider_key.as_deref(),
+                &|| model_chain::provider_route_api_method(provider),
                 model,
             )
         });
+        if selected.is_none() && route_has_model_list {
+            anyhow::bail!(
+                "Overnight blocked: the selected route accepted no coordinator chain model ({})",
+                skipped.join("; ")
+            );
+        }
     }
     let run_id = crate::id::new_id("overnight");
     let started_at = Utc::now();

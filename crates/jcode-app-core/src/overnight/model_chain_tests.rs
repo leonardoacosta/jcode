@@ -21,6 +21,7 @@ fn route(served: &[String]) -> RouteModels {
     RouteModels {
         served: served.to_vec(),
         unfiltered_reason: None,
+        refreshed: false,
     }
 }
 
@@ -544,6 +545,7 @@ fn visible_run_advances_a_bare_provider_and_blocks_on_exhaustion() {
         "visible-session",
         &provider,
         None,
+        &|| None,
         "model m1 unavailable",
     );
     assert!(matches!(advance, Some(SessionAdvance::Switched)));
@@ -554,6 +556,7 @@ fn visible_run_advances_a_bare_provider_and_blocks_on_exhaustion() {
         "visible-session",
         &provider,
         None,
+        &|| None,
         "model m2 unavailable",
     );
     let Some(SessionAdvance::Stop(Some(message))) = advance else {
@@ -568,8 +571,14 @@ fn visible_run_advances_a_bare_provider_and_blocks_on_exhaustion() {
 
     // Any other session is untouched.
     assert!(
-        try_advance_provider_for_session("normal", &provider, None, "model m2 unavailable")
-            .is_none()
+        try_advance_provider_for_session(
+            "normal",
+            &provider,
+            None,
+            &|| None,
+            "model m2 unavailable"
+        )
+        .is_none()
     );
     drop(rt);
 }
@@ -720,4 +729,236 @@ fn unfiltered_note_is_recorded_in_the_preflight_event() {
         event.details["unfiltered_reason"],
         "route catalog unavailable; chains unfiltered"
     );
+}
+
+/// Serves its whole list but refuses every `set_model`, like a route that
+/// lists models yet cannot switch to them.
+#[derive(Clone)]
+struct RefusingProvider(Vec<String>);
+
+#[async_trait]
+impl Provider for RefusingProvider {
+    async fn complete(
+        &self,
+        _: &[Message],
+        _: &[ToolDefinition],
+        _: &str,
+        _: Option<&str>,
+    ) -> Result<crate::provider::EventStream> {
+        anyhow::bail!("unused")
+    }
+    fn name(&self) -> &str {
+        "refusing-fake"
+    }
+    fn model(&self) -> String {
+        "not-in-chain".into()
+    }
+    fn set_model(&self, model: &str) -> Result<()> {
+        anyhow::bail!("cannot switch to {model}")
+    }
+    fn available_models_for_switching(&self) -> Vec<String> {
+        self.0.clone()
+    }
+    fn fork(&self) -> Arc<dyn Provider> {
+        Arc::new(self.clone())
+    }
+}
+
+#[tokio::test]
+async fn visible_start_keeps_the_session_model_on_a_route_without_a_model_list() {
+    let _env = fixture();
+    // Fixed single-model route: no list, cannot switch. Nothing to enforce.
+    let provider: Arc<dyn Provider> = Arc::new(RefusingProvider(Vec::new()));
+    let registry = Registry::new(provider.clone()).await;
+    let launch = start_overnight_run(OvernightStartOptions {
+        duration: OvernightDuration { minutes: 60 },
+        mission: None,
+        parent_session: Session::create(None, None),
+        provider,
+        registry,
+        working_dir: None,
+        use_current_session: true,
+        limits: OvernightLimits::default(),
+    })
+    .expect("a route with no model list must not block the start");
+    assert_eq!(launch.manifest.model, "not-in-chain");
+}
+
+#[tokio::test]
+async fn visible_start_blocks_when_the_route_accepts_no_chain_model() {
+    let _env = fixture();
+    let config = OvernightConfig::default();
+    let provider: Arc<dyn Provider> = Arc::new(RefusingProvider(
+        config
+            .coordinator_model_chain
+            .iter()
+            .chain(&config.worker_model_chain)
+            .cloned()
+            .collect(),
+    ));
+    let registry = Registry::new(provider.clone()).await;
+    let error = match start_overnight_run(OvernightStartOptions {
+        duration: OvernightDuration { minutes: 60 },
+        mission: None,
+        parent_session: Session::create(None, None),
+        provider,
+        registry,
+        working_dir: None,
+        use_current_session: true,
+        limits: OvernightLimits::default(),
+    }) {
+        Ok(_) => panic!("a route that refuses every chain model must block the start"),
+        Err(error) => error.to_string(),
+    };
+    assert!(
+        error.contains("accepted no coordinator chain model"),
+        "{error}"
+    );
+    assert!(error.contains("cannot switch to"), "{error}");
+    assert!(latest_manifest().unwrap().is_none(), "no run was created");
+}
+
+#[test]
+fn visible_held_failure_blocks_the_run_with_the_reason() {
+    let _env = fixture();
+    let provider = ChainProvider::new("m1", &[], &["m1", "m2"], "x");
+    let mut manifest = run_with_plan("chain-visible-held", "visible-held", &["m1", "m2"], &["w1"]);
+    manifest.parent_session_id = "visible-held".into();
+    save_manifest(&manifest).unwrap();
+
+    let advance = try_advance_provider_for_session(
+        "visible-held",
+        &provider,
+        None,
+        &|| None,
+        "AuthRevoked: token revoked",
+    );
+    let Some(SessionAdvance::Stop(Some(reason))) = advance else {
+        panic!("a held coordinator failure must stop with a reason");
+    };
+    assert!(
+        reason.contains("AuthRevoked") && reason.contains("does not advance"),
+        "{reason}"
+    );
+    assert_eq!(provider.model(), "m1", "a held chain does not move");
+    let done = load_manifest("chain-visible-held").unwrap();
+    assert_eq!(done.status, OvernightRunStatus::Blocked);
+    assert!(kinds(&done).contains(&"run_blocked".to_string()));
+}
+
+#[test]
+fn visible_setter_refuses_a_switch_that_changes_the_api_method() {
+    let provider = ChainProvider::new("m1", &[], &["m1", "m2"], "x");
+    let method = Mutex::new("openai-api".to_string());
+    // The route reports a different API method once the model changed.
+    let route = || {
+        let current = provider.model();
+        Some(if current == "m1" {
+            method.lock().unwrap().clone()
+        } else {
+            "openai-oauth".to_string()
+        })
+    };
+    let error = set_provider_model_on_same_route(&provider, None, &route, "m2")
+        .unwrap_err()
+        .to_string();
+    assert!(error.contains("refusing to switch"), "{error}");
+    assert_eq!(provider.model(), "m1", "the switch is undone");
+
+    // Same API method before and after: allowed.
+    let stable = || Some("openai-api".to_string());
+    set_provider_model_on_same_route(&provider, None, &stable, "m2").unwrap();
+    assert_eq!(provider.model(), "m2");
+}
+
+#[test]
+fn plan_file_is_versioned_and_other_versions_are_derived_again() {
+    let _env = fixture();
+    let config = crate::config::config().overnight.clone();
+
+    // Current version: read as written, nothing derived.
+    let current = run_with_plan("plan-current", "owner", &["c1"], &["w1"]);
+    assert_eq!(coordinator_models(&current), ["c1"]);
+    assert!(!kinds(&current).contains(&"model_chain_plan_derived".to_string()));
+    let raw = std::fs::read_to_string(current.run_dir.join(PLAN_FILE)).unwrap();
+    assert!(
+        raw.contains("\"version\": 1") || raw.contains("\"version\":1"),
+        "{raw}"
+    );
+
+    // Legacy file without a version: derived from config, persisted, recorded.
+    let legacy = test_run_manifest("plan-legacy", "owner", OvernightLimits::default());
+    std::fs::create_dir_all(&legacy.run_dir).unwrap();
+    std::fs::write(
+        legacy.run_dir.join(PLAN_FILE),
+        r#"{"coordinator":["stale"],"worker":["stale"]}"#,
+    )
+    .unwrap();
+    assert_eq!(
+        coordinator_models(&legacy),
+        dedupe(&config.coordinator_model_chain)
+    );
+    assert_eq!(
+        chain_models(&legacy, ChainRole::Worker),
+        dedupe(&config.worker_model_chain)
+    );
+    let events: Vec<_> = kinds(&legacy)
+        .into_iter()
+        .filter(|k| k == "model_chain_plan_derived")
+        .collect();
+    assert_eq!(
+        events.len(),
+        1,
+        "derived once, then read back from the persisted file"
+    );
+    let rewritten: ChainPlan = storage::read_json(&legacy.run_dir.join(PLAN_FILE)).unwrap();
+    assert_eq!(rewritten.version, PLAN_VERSION);
+    assert!(
+        rewritten
+            .unfiltered_reason
+            .unwrap()
+            .contains("derived on resume")
+    );
+
+    // A derived plan was never route-filtered: it drives advances, but does not
+    // pick the model of a newly spawned worker.
+    let stale = test_run_manifest("plan-stale", "stale-owner", OvernightLimits::default());
+    std::fs::create_dir_all(&stale.run_dir).unwrap();
+    save_manifest(&stale).unwrap();
+    assert_eq!(resolve_spawn_request(None, "stale-owner", None), None);
+    assert_eq!(worker_chain_default_model("stale-owner"), None);
+
+    // Missing file: same derivation.
+    let missing = test_run_manifest("plan-missing", "owner", OvernightLimits::default());
+    assert_eq!(
+        coordinator_models(&missing),
+        dedupe(&config.coordinator_model_chain)
+    );
+    assert!(kinds(&missing).contains(&"model_chain_plan_derived".to_string()));
+}
+
+#[test]
+fn preflight_event_notes_a_refreshed_catalog() {
+    let _env = fixture();
+    let manifest = test_run_manifest("chain-refreshed", "owner", OvernightLimits::default());
+    let plan = ChainPlan {
+        coordinator: names(&["a"]),
+        worker: names(&["b"]),
+        dropped_coordinator: names(&["x"]),
+        catalog_refreshed: true,
+        ..Default::default()
+    };
+    record_plan(&manifest, &plan);
+    let event = read_events(&manifest)
+        .unwrap()
+        .into_iter()
+        .find(|e| e.kind == "model_chain_preflight")
+        .unwrap();
+    assert!(
+        event
+            .summary
+            .contains("route catalog refreshed before filtering")
+    );
+    assert!(event.summary.contains("dropped (not served by route)"));
+    assert!(!event.summary.contains("unfiltered"));
 }
