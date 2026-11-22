@@ -107,6 +107,29 @@ fn custom_profile_auth_block(name: &str) -> Option<Option<Vec<String>>> {
         profile.provider_type,
         NamedProviderType::AnthropicCompatible
     );
+    // The Anthropic runtime refuses to start on an unsafe variable or file name
+    // (`apply_named_provider_profile_env_from_config`), so a key can never be
+    // loaded and admitting the route would only fail later. The OpenAI path has
+    // no such check: with an `env_file` the shared loader already ignores bad
+    // names, and without one a bare variable lookup is what the runtime does.
+    if anthropic {
+        if let Some(env) = key_env
+            .as_deref()
+            .filter(|env| !crate::provider_catalog::is_safe_env_key_name(env))
+        {
+            return Some(Some(vec![format!(
+                "{name}: invalid api_key_env '{env}' (use A-Z, 0-9 and _), then restart the run."
+            )]));
+        }
+        if let Some(file) = env_file
+            .as_deref()
+            .filter(|file| !crate::provider_catalog::is_safe_env_file_name(file))
+        {
+            return Some(Some(vec![format!(
+                "{name}: invalid env_file '{file}' (a plain file name), then restart the run."
+            )]));
+        }
+    }
 
     let (usable, key_label, file_label) = if anthropic {
         let usable = match key_env.as_deref() {
@@ -949,6 +972,35 @@ mod tests {
         crate::env::remove_var("ANTH_GW_KEY");
         assert!(!profile_blocked("anth_inline"));
         assert!(profile_blocked("anth_shadow"), "named env wins over inline");
+    }
+
+    /// The Anthropic runtime refuses an unsafe `api_key_env` or `env_file` at
+    /// start, whatever key is available, so admission blocks it too. The OpenAI
+    /// path degrades to "no key" through the shared loader and is unchanged.
+    #[test]
+    fn anthropic_profile_with_unsafe_env_names_is_blocked_like_the_runtime_refuses_it() {
+        let _env = sandbox();
+        crate::env::remove_var("OPENROUTER_API_KEY");
+        write_profile(
+            "[providers.badkey]\ntype = \"anthropic-compatible\"\nbase_url = \"https://gw.example.com\"\napi_key_env = \"lower_case\"\n\
+             [providers.badfile]\ntype = \"anthropic-compatible\"\nbase_url = \"https://gw.example.com\"\napi_key_env = \"ANTH_OK_KEY\"\nenv_file = \"../escape.env\"\n\
+             [providers.goodfile]\ntype = \"anthropic-compatible\"\nbase_url = \"https://gw.example.com\"\napi_key_env = \"ANTH_OK_KEY\"\nenv_file = \"anth.env\"\n",
+        );
+        crate::env::set_var("lower_case", "k");
+        crate::env::set_var("ANTH_OK_KEY", "k");
+        let reasons = route_auth_block("openrouter", Some("badkey"), None).expect("blocked");
+        assert!(
+            reasons[0].contains("invalid api_key_env 'lower_case'"),
+            "{reasons:?}"
+        );
+        let reasons = route_auth_block("openrouter", Some("badfile"), None).expect("blocked");
+        assert!(
+            reasons[0].contains("invalid env_file '../escape.env'"),
+            "{reasons:?}"
+        );
+        assert!(!profile_blocked("goodfile"));
+        crate::env::remove_var("lower_case");
+        crate::env::remove_var("ANTH_OK_KEY");
     }
 
     #[test]

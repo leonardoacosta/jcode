@@ -152,3 +152,95 @@ async fn session_env_background_snapshots_before_deferred_launch() {
         assert!(!output.contains("proxy-replaced"));
     }
 }
+
+/// An active overnight coordinator's bash children get the hardened git/rg
+/// environment (the one the policy probes with), whatever the session sets;
+/// every other session keeps its own overrides. Covers all three spawn paths.
+#[tokio::test]
+async fn coordinator_bash_children_get_the_hardened_git_environment() {
+    use crate::session_env::{remove_session_env, set_session_env};
+    let _home = crate::tool::coordinator_policy::tests::Home::new();
+    let coordinator = "env-bash-coordinator";
+    crate::tool::coordinator_policy::tests::write_run(
+        coordinator,
+        "overnight_env_bash_run",
+        jcode_overnight_core::OvernightRunStatus::Running,
+    );
+    crate::tool::coordinator_policy::install_for_overnight(coordinator, "overnight_env_bash_run");
+    for sid in [coordinator, "env-bash-plain"] {
+        set_session_env(
+            sid,
+            std::collections::HashMap::from([
+                ("GIT_DIR".into(), "/tmp/elsewhere".into()),
+                ("GIT_EXTERNAL_DIFF".into(), "/bin/hook".into()),
+                ("RIPGREP_CONFIG_PATH".into(), "/tmp/rg.conf".into()),
+                ("HTTPS_PROXY".into(), "proxy".into()),
+            ]),
+        )
+        .unwrap();
+    }
+    let probe = "printf '%s|%s|%s|%s|%s|%s' \"${GIT_DIR-unset}\" \"${GIT_EXTERNAL_DIFF-unset}\" \
+                 \"${RIPGREP_CONFIG_PATH-unset}\" \"$GIT_CONFIG_NOSYSTEM\" \"$GIT_CONFIG_KEY_0\" \"$HTTPS_PROXY\"";
+    let run = |sid: &'static str, extra: serde_json::Value| async move {
+        let mut ctx = make_ctx(None);
+        ctx.session_id = sid.into();
+        let mut input = json!({ "command": probe });
+        input
+            .as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        BashTool::new().execute(input, ctx).await.unwrap()
+    };
+    let hardened = "unset|unset|unset|1|core.fsmonitor|proxy";
+    let result = run(coordinator, json!({})).await;
+    assert_eq!(result.output.trim(), hardened, "foreground");
+    let result = run("env-bash-plain", json!({})).await;
+    assert_eq!(
+        result.output.trim(),
+        "/tmp/elsewhere|/bin/hook|/tmp/rg.conf|||proxy",
+        "a non-coordinator session keeps its overrides"
+    );
+
+    // Background path.
+    let result = run(
+        coordinator,
+        json!({"run_in_background": true, "notify": false}),
+    )
+    .await;
+    let task_id = result.metadata.unwrap()["task_id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        loop {
+            let status = crate::background::global().status(&task_id).await.unwrap();
+            if status.status != BackgroundTaskStatus::Running {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    let output = crate::background::global().output(&task_id).await.unwrap();
+    assert!(output.contains(hardened), "background: {output}");
+
+    // Detached (reload-persistable) path.
+    #[cfg(unix)]
+    {
+        let mut ctx = make_agent_ctx(jcode_agent_runtime::InterruptSignal::new());
+        ctx.session_id = coordinator.into();
+        let result = BashTool::new()
+            .execute(json!({ "command": probe }), ctx)
+            .await
+            .unwrap();
+        assert!(
+            result.output.contains(hardened),
+            "detached: {}",
+            result.output
+        );
+    }
+    remove_session_env(coordinator);
+    remove_session_env("env-bash-plain");
+    crate::tool::coordinator_policy::remove(coordinator);
+}

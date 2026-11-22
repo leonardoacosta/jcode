@@ -305,6 +305,8 @@ fn coordinator_prompts_state_delegation_rule() {
         assert!(prompt.contains(COORDINATOR_ROLE_RULE));
         assert!(prompt.contains("coordinate, facilitate, nudge and manage todos"));
         assert!(prompt.contains("assigned to a swarm worker"));
+        assert!(prompt.contains("git --no-optional-locks status"));
+        assert!(prompt.contains("--no-textconv --no-ext-diff"));
         assert!(!prompt.contains("Verify helper work yourself"));
         assert!(!prompt.contains("Verify their work yourself"));
     }

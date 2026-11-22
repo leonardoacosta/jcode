@@ -17,7 +17,7 @@ static COORDINATORS: LazyLock<RwLock<HashMap<String, String>>> =
 static NOT_COORDINATORS: LazyLock<RwLock<HashSet<String>>> =
     LazyLock::new(|| RwLock::new(HashSet::new()));
 
-const DELEGATION_HINT: &str = "The overnight coordinator only coordinates: assign every edit, build, review and judgement to a swarm worker (swarm spawn/assign), and keep your own tools to swarm, todo, bg, read-only inspection and markdown notes.";
+const DELEGATION_HINT: &str = "The overnight coordinator only coordinates: assign every edit, build, review and judgement to a swarm worker (swarm spawn/assign), and keep your own tools to swarm, todo, bg, read-only inspection and markdown notes. Read-only git needs `git --no-optional-locks status` or `git --no-optional-locks diff --no-textconv --no-ext-diff ...` (log and show take the same two flags, first after the subcommand).";
 
 /// Restrict `session_id` to the coordinator allowlist until `run_id` is terminal.
 pub fn install_for_overnight(session_id: &str, run_id: &str) {
@@ -242,6 +242,12 @@ struct Word {
 /// Quote-aware split into commands of unquoted words. Rejects redirection to
 /// files, command/process substitution, heredocs and background operators.
 fn split_segments(line: &str) -> Result<Vec<Vec<Word>>, String> {
+    // Bash keeps `\r` inside a word and deletes `\<LF>` (a line continuation
+    // that glues the next line onto the current word: `-ex\<LF>ec` is `-exec`).
+    // The checks below compare exact option spellings, so neither may reach them.
+    if line.contains('\r') {
+        return Err("carriage return".into());
+    }
     let chars: Vec<char> = line.chars().collect();
     let mut segments: Vec<Vec<Word>> = Vec::new();
     let mut words: Vec<Word> = Vec::new();
@@ -300,6 +306,9 @@ fn split_segments(line: &str) -> Result<Vec<Vec<Word>>, String> {
         if double {
             match c {
                 '"' => double = false,
+                '\\' if next == Some('\n') => {
+                    return Err("backslash-newline line continuation".into());
+                }
                 '\\' if next.is_some() => {
                     i += 1;
                     word.push(chars[i]);
@@ -322,6 +331,9 @@ fn split_segments(line: &str) -> Result<Vec<Vec<Word>>, String> {
                 let Some(n) = next else {
                     return Err("trailing backslash".into());
                 };
+                if n == '\n' {
+                    return Err("backslash-newline line continuation".into());
+                }
                 word.push(n);
                 in_word = true;
                 i += 1;
@@ -404,6 +416,11 @@ fn split_segments(line: &str) -> Result<Vec<Vec<Word>>, String> {
     if !words.is_empty() {
         segments.push(words);
     }
+    // A newline kept inside a quoted word means a continuation survived; no
+    // allowed command needs one.
+    if segments.iter().flatten().any(|w| w.text.contains('\n')) {
+        return Err("newline inside a word".into());
+    }
     Ok(segments)
 }
 
@@ -420,11 +437,19 @@ fn check_command(words: &[Word], cwd: &Path) -> Result<(), String> {
     let args = args.as_slice();
     match name {
         "rg" => {
-            // `--pre[-glob]` and `--hostname-bin` execute the named command.
-            match args
-                .iter()
-                .find(|a| a.starts_with("--pre") || a.starts_with("--hostname-bin"))
-            {
+            // `--pre[-glob]` and `--hostname-bin` execute the named command and
+            // `-z`/`--search-zip` (also inside a short cluster such as `-iz`) run
+            // external decompressors from PATH. `--config-path` would load a
+            // config file that can inject any of them.
+            let short_cluster_with_z =
+                |a: &str| a.starts_with('-') && !a.starts_with("--") && a[1..].contains('z');
+            match args.iter().find(|a| {
+                a.starts_with("--pre")
+                    || a.starts_with("--hostname-bin")
+                    || a.starts_with("--search-zip")
+                    || a.starts_with("--config-path")
+                    || short_cluster_with_z(a)
+            }) {
                 Some(a) => Err(format!("rg {a} runs a command")),
                 None => Ok(()),
             }
@@ -445,13 +470,20 @@ fn check_command(words: &[Word], cwd: &Path) -> Result<(), String> {
     }
 }
 
-/// Keys in the effective git configuration (system, global, repository,
-/// `include` files, `GIT_CONFIG_*` and `-c` environment) that make `status`,
-/// `diff`, `log` or `show` execute a configured program:
+/// Keys in the effective git configuration (repository and `include` files;
+/// the coordinator's own environment drops system and global files) that make
+/// `status`, `diff`, `log` or `show` execute a configured program:
 /// - `filter.<name>.clean|smudge|process` run on worktree files for `status`
 ///   and worktree `diff`.
 /// - `core.fsmonitor` runs a hook program (`true` starts git's own daemon).
-/// - `gpg.program`, `gpg.<fmt>.program` verify signatures for `log` and `show`.
+/// - `hook.<name>.command` runs a configured hook, such as the
+///   `post-index-change` that `status` and `diff` trigger.
+/// - `gpg.program`, `gpg.<fmt>.program` verify signatures for `log` and `show`,
+///   as do `log.showSignature` and `%G` placeholders in `format.pretty` or
+///   `pretty.<name>`.
+/// - `merge.<driver>.driver` runs for `--remerge-diff`, which `log.diffMerges`
+///   can turn on for `log` and `show`.
+/// - `diff.submodule = diff|log` enters submodules for `log`, `show` and `diff`.
 ///
 /// Other program-running keys were measured as unreachable from the
 /// allowlisted commands in the bash tool: `core.pager` and `pager.*` need a
@@ -461,53 +493,169 @@ fn check_command(words: &[Word], cwd: &Path) -> Result<(), String> {
 /// the required `--no-textconv --no-ext-diff`. They are not denied, because
 /// `core.pager = delta` and `diff.external = difft` are common and denying them
 /// would disable git for the coordinator without closing a path.
-const GIT_PROGRAM_KEYS: &str =
-    r"^(filter\..+\.(clean|smudge|process)|core\.fsmonitor|gpg\.program|gpg\.[^.]+\.program)$";
+const GIT_PROGRAM_KEYS: &str = r"^(filter\..+\.(clean|smudge|process)|core\.fsmonitor|hook\..+\.command|gpg\.program|gpg\.[^.]+\.program|log\.showsignature|log\.diffmerges|merge\..+\.driver|diff\.submodule|format\.pretty|pretty\..+)$";
+
+/// Environment changes for every coordinator git and rg, whether run by the
+/// policy probe or by the bash tool (`None` removes the variable). The probe
+/// reads configuration once and bash runs later, so the run must not be able to
+/// differ from what was probed:
+/// - System and global configuration are dropped, and command-line scope turns
+///   the program hooks off: `core.fsmonitor=false`, `core.hooksPath` empty,
+///   `protocol.allow=never`, and `diff.external=true` (a no-op program, since
+///   an empty value makes `git diff` fail with "cannot run").
+/// - Every inherited or session-supplied `GIT_*` variable (`GIT_DIR`,
+///   `GIT_CONFIG_PARAMETERS`, `GIT_EXTERNAL_DIFF`, ...) and
+///   `RIPGREP_CONFIG_PATH` is removed, so a session environment cannot make the
+///   probe and the run judge different repositories or configuration.
+pub(crate) fn hardened_env(
+    session_names: impl IntoIterator<Item = String>,
+) -> Vec<(String, Option<String>)> {
+    #[cfg(unix)]
+    const NULL: &str = "/dev/null";
+    #[cfg(not(unix))]
+    const NULL: &str = "NUL";
+    let set: [(&str, &str); 14] = [
+        ("GIT_CONFIG_NOSYSTEM", "1"),
+        ("GIT_CONFIG_GLOBAL", NULL),
+        ("GIT_CONFIG_COUNT", "4"),
+        ("GIT_CONFIG_KEY_0", "core.fsmonitor"),
+        ("GIT_CONFIG_VALUE_0", "false"),
+        ("GIT_CONFIG_KEY_1", "core.hooksPath"),
+        ("GIT_CONFIG_VALUE_1", NULL),
+        ("GIT_CONFIG_KEY_2", "protocol.allow"),
+        ("GIT_CONFIG_VALUE_2", "never"),
+        ("GIT_CONFIG_KEY_3", "diff.external"),
+        ("GIT_CONFIG_VALUE_3", "true"),
+        ("GIT_TERMINAL_PROMPT", "0"),
+        ("GIT_ASKPASS", "true"),
+        ("GIT_PAGER", "cat"),
+    ];
+    let mut names: std::collections::BTreeSet<String> = std::env::vars_os()
+        .filter_map(|(name, _)| name.into_string().ok())
+        .chain(session_names)
+        .filter(|name| name.starts_with("GIT_") || name == "RIPGREP_CONFIG_PATH")
+        .collect();
+    names.insert("RIPGREP_CONFIG_PATH".to_string());
+    let mut env: Vec<(String, Option<String>)> =
+        names.into_iter().map(|name| (name, None)).collect();
+    env.extend(
+        set.iter()
+            .map(|(key, value)| (key.to_string(), Some(value.to_string()))),
+    );
+    env
+}
+
+/// Apply `hardened_env` changes to a command.
+pub(crate) fn apply_env(command: &mut std::process::Command, env: &[(String, Option<String>)]) {
+    for (key, value) in env {
+        match value {
+            Some(value) => command.env(key, value),
+            None => command.env_remove(key),
+        };
+    }
+}
+
+/// `Some(env)` to apply (after the session environment) to the child of a bash
+/// call made by an active overnight coordinator, `None` for any other session.
+pub(crate) fn coordinator_command_env(session_id: &str) -> Option<Vec<(String, Option<String>)>> {
+    is_coordinator(session_id)
+        .then(|| hardened_env(crate::session_env::session_env(session_id).into_keys()))
+}
 
 #[cfg(test)]
 thread_local! {
-    /// Environment for the probe in tests, so a developer's own git
-    /// configuration cannot change the outcome.
+    /// Extra environment for the probe in tests; the hardened environment is
+    /// applied after it and wins.
     static PROBE_ENV: std::cell::RefCell<Vec<(String, String)>> = const { std::cell::RefCell::new(Vec::new()) };
 }
 
 fn git_probe(dir: &Path, args: &[&str]) -> Result<std::process::Output, String> {
     let mut command = std::process::Command::new("git");
     command.current_dir(dir).args(args);
+    // Names a test injects as if they came from the daemon's environment.
     #[cfg(test)]
-    PROBE_ENV.with(|env| {
+    let injected: Vec<String> = PROBE_ENV.with(|env| {
         for (key, value) in env.borrow().iter() {
             command.env(key, value);
         }
+        env.borrow().iter().map(|(key, _)| key.clone()).collect()
     });
+    #[cfg(not(test))]
+    let injected: Vec<String> = Vec::new();
+    apply_env(&mut command, &hardened_env(injected));
     command
         .stdin(std::process::Stdio::null())
         .output()
         .map_err(|error| format!("could not run git to inspect its configuration: {error}"))
 }
 
-fn git_flag_value(args: &[String], flag: &str) -> Option<String> {
-    args.iter().find_map(|a| {
-        if a == flag {
-            Some(String::new())
-        } else {
-            a.strip_prefix(flag)
-                .and_then(|v| v.strip_prefix('='))
-                .map(str::to_string)
-        }
+/// Value of the last `--ignore-submodules[=<v>]` in `flags` (git: last wins).
+fn ignore_submodules_value(flags: &[String]) -> Option<String> {
+    flags
+        .iter()
+        .filter_map(|a| {
+            if a == "--ignore-submodules" {
+                Some(String::new())
+            } else {
+                a.strip_prefix("--ignore-submodules=").map(str::to_string)
+            }
+        })
+        .next_back()
+}
+
+/// True when the repository has a gitlink (mode 160000: a committed nested
+/// repository, with or without `.gitmodules`), `submodule.*` configuration or a
+/// `modules` directory. git enters each of them for `status` and `diff`.
+fn has_submodules(dir: &Path) -> Result<bool, String> {
+    let staged = git_probe(dir, &["ls-files", "-s"])?;
+    if staged
+        .stdout
+        .split(|b| *b == b'\n')
+        .any(|line| line.starts_with(b"160000 "))
+    {
+        return Ok(true);
+    }
+    let has_config = git_probe(
+        dir,
+        &[
+            "config",
+            "-z",
+            "--get-regexp",
+            r"^submodule\..+\.(url|path|active)$",
+        ],
+    )?
+    .status
+    .success();
+    let modules = git_probe(dir, &["rev-parse", "--git-path", "modules"])?;
+    let modules = String::from_utf8_lossy(&modules.stdout).trim().to_string();
+    let has_modules = !modules.is_empty()
+        && std::fs::read_dir(dir.join(&modules)).is_ok_and(|mut entries| entries.next().is_some());
+    Ok(has_config || has_modules)
+}
+
+fn config_flag_is_false(value: Option<&str>) -> bool {
+    value.is_some_and(|v| {
+        matches!(
+            v.trim().to_ascii_lowercase().as_str(),
+            "false" | "no" | "off" | "0"
+        )
     })
 }
 
 /// Fail closed when running `sub` in `dir` could execute a configured program.
 /// `git config --get-regexp` reads configuration only: it runs no filter,
 /// fsmonitor, pager or hook (verified with marker scripts), and it follows
-/// `include` files, so included keys are seen.
+/// `include` files, so included keys are seen. `ignored` is true when a leading
+/// `--ignore-submodules=all|dirty` keeps git out of submodules.
 fn check_git_runs_no_program(
     sub: &str,
     rest: &[String],
     dir: &Path,
-    no_optional_locks: bool,
+    ignored: bool,
 ) -> Result<(), String> {
+    let signed = matches!(sub, "log" | "show");
+    let patches = matches!(sub, "log" | "show" | "diff");
+    let mut config_enters_submodules = false;
     let out = git_probe(dir, &["config", "-z", "--get-regexp", GIT_PROGRAM_KEYS])?;
     match out.status.code() {
         // Exit 1: no matching key.
@@ -519,23 +667,54 @@ fn check_git_runs_no_program(
                     .split_once('\n')
                     .map_or((&*entry, None), |(k, v)| (k, Some(v)));
                 let key = key.to_ascii_lowercase();
-                let is_gpg = key.starts_with("gpg.");
-                if is_gpg && !matches!(sub, "log" | "show") {
-                    continue;
+                let deny = |why: &str| Err(format!("git config `{key}` makes git {sub} {why}"));
+                let has_signature_atom = value.is_some_and(|v| v.contains("%G"));
+                match key.as_str() {
+                    "core.fsmonitor" => {
+                        if !config_flag_is_false(value) {
+                            return deny("run a configured program");
+                        }
+                    }
+                    "log.showsignature" => {
+                        if signed && !config_flag_is_false(value) {
+                            return deny("run gpg");
+                        }
+                    }
+                    "log.diffmerges" => {
+                        let remerge =
+                            value.is_some_and(|v| v.trim().to_ascii_lowercase().starts_with('r'));
+                        if signed && remerge {
+                            return deny("run merge drivers");
+                        }
+                    }
+                    "diff.submodule" => {
+                        if patches && value.is_some_and(|v| matches!(v.trim(), "diff" | "log")) {
+                            config_enters_submodules = true;
+                        }
+                    }
+                    "format.pretty" => {
+                        if signed && has_signature_atom {
+                            return deny("run gpg");
+                        }
+                    }
+                    k if k.starts_with("pretty.") => {
+                        if signed && has_signature_atom {
+                            return deny("run gpg");
+                        }
+                    }
+                    k if k.starts_with("gpg.") || k.starts_with("merge.") => {
+                        if signed {
+                            return deny("run a configured program");
+                        }
+                    }
+                    k if k.starts_with("hook.") => {
+                        if matches!(sub, "status" | "diff") {
+                            return deny("run a configured hook");
+                        }
+                    }
+                    // `filter.*`, for worktree files.
+                    _ => return deny("run a configured program"),
                 }
-                let disabled = key == "core.fsmonitor"
-                    && value.is_some_and(|v| {
-                        matches!(
-                            v.trim().to_ascii_lowercase().as_str(),
-                            "false" | "no" | "off" | "0"
-                        )
-                    });
-                if disabled {
-                    continue;
-                }
-                return Err(format!(
-                    "git config `{key}` makes git {sub} run a configured program"
-                ));
             }
         }
         _ => {
@@ -548,51 +727,20 @@ fn check_git_runs_no_program(
             ));
         }
     }
-    if !matches!(sub, "status" | "diff") {
-        return Ok(());
-    }
-
-    // `status` and `diff` refresh the index, which runs `post-index-change`
-    // unless optional locks are off. The hooks path honours `core.hooksPath`.
-    if !no_optional_locks {
-        let hook = git_probe(dir, &["rev-parse", "--git-path", "hooks/post-index-change"])?;
-        let path = String::from_utf8_lossy(&hook.stdout).trim().to_string();
-        if hook.status.success() && !path.is_empty() && dir.join(&path).is_file() {
-            return Err(
-                "git would run the post-index-change hook; add `--no-optional-locks` before the subcommand".into(),
-            );
-        }
-    }
 
     // A submodule's own configuration and hooks are invisible to the probe
     // above, and its fsmonitor runs for `status` and `diff` unless submodules
     // are ignored (`=all` and `=dirty` were measured safe; `=untracked` and
-    // `=none` still enter the submodule). Initialized submodules are those with
-    // `submodule.*` configuration or a `modules` directory.
-    let ignored = git_flag_value(rest, "--ignore-submodules")
-        .is_some_and(|v| matches!(v.as_str(), "" | "all" | "dirty"));
-    if !ignored {
-        let has_config = git_probe(
-            dir,
-            &[
-                "config",
-                "-z",
-                "--get-regexp",
-                r"^submodule\..+\.(url|path|active)$",
-            ],
-        )?
-        .status
-        .success();
-        let modules = git_probe(dir, &["rev-parse", "--git-path", "modules"])?;
-        let modules = String::from_utf8_lossy(&modules.stdout).trim().to_string();
-        let has_modules = !modules.is_empty()
-            && std::fs::read_dir(dir.join(&modules))
-                .is_ok_and(|mut entries| entries.next().is_some());
-        if has_config || has_modules {
-            return Err(format!(
-                "this repository has initialized submodules whose own configuration git {sub} would trust; add `--ignore-submodules=all`"
-            ));
-        }
+    // `=none` still enter the submodule). `--submodule=diff|log` or
+    // `diff.submodule` enters them for `log` and `show` as well.
+    let submodule_option = rest.iter().any(|a| is_abbrev_of(a, "--submodule"));
+    let enters = matches!(sub, "status" | "diff")
+        || config_enters_submodules
+        || (patches && submodule_option);
+    if enters && !ignored && has_submodules(dir)? {
+        return Err(format!(
+            "this repository has submodules or nested repositories whose own configuration git {sub} would trust; add `--ignore-submodules=all` right after `{sub}`"
+        ));
     }
     Ok(())
 }
@@ -603,6 +751,34 @@ fn check_git_runs_no_program(
 fn is_abbrev_of(arg: &str, full: &str) -> bool {
     let name = arg.split('=').next().unwrap_or(arg);
     name.len() >= 4 && full.starts_with(name)
+}
+
+/// Options that make `log`, `show` or `diff` write a file or run a program
+/// whatever the configuration says. Checked against every word, pathspecs
+/// included: an option that takes a value can consume a `--`, so a word after
+/// one may still be an option, and a denial there costs nothing.
+fn check_git_dangerous_options(sub: &str, rest: &[String]) -> Result<(), String> {
+    let signed = matches!(sub, "log" | "show");
+    for (i, a) in rest.iter().enumerate() {
+        let next = rest.get(i + 1).map_or("", String::as_str);
+        let remerge_merges = is_abbrev_of(a, "--diff-merges")
+            && a.split_once('=')
+                .map_or(next, |(_, value)| value)
+                .to_ascii_lowercase()
+                .starts_with('r');
+        let bad = a.starts_with("--output")
+            || is_abbrev_of(a, "--ext-diff")
+            || is_abbrev_of(a, "--textconv")
+            // `--remerge-diff` and `--diff-merges=remerge` run merge drivers.
+            || is_abbrev_of(a, "--remerge-diff")
+            || remerge_merges
+            // gpg verifies signatures for the flag and for `%G` placeholders.
+            || (signed && (is_abbrev_of(a, "--show-signature") || a.contains("%G")));
+        if bad {
+            return Err(format!("git {sub} {a} is not read-only"));
+        }
+    }
+    Ok(())
 }
 
 fn check_git(args: &[String], cwd: &Path) -> Result<(), String> {
@@ -631,28 +807,55 @@ fn check_git(args: &[String], cwd: &Path) -> Result<(), String> {
     if !matches!(sub.as_str(), "status" | "log" | "diff" | "show" | "branch") {
         return Err(format!("git {sub} is not a read-only subcommand"));
     }
+    // `status` and `diff` refresh the index, which writes `.git/index` and runs
+    // `post-index-change` hooks (a hook file or `hook.<name>.command`) unless
+    // optional locks are off. Required unconditionally: no probe can see a hook
+    // that is installed after it ran.
+    if matches!(sub.as_str(), "status" | "diff") && !no_optional_locks {
+        return Err(format!(
+            "git {sub} refreshes the index and may run hooks; use `git --no-optional-locks {sub}`"
+        ));
+    }
+    // The opt-out flags count only as the run of flags right after the
+    // subcommand. An option that takes a separate value (`-G`, `-S`,
+    // `--word-diff-regex`, `--src-prefix`) swallows the next word, so a flag
+    // placed after other options may never take effect (measured), and a word
+    // after `--` is a pathspec.
+    let leading = rest
+        .iter()
+        .take_while(|a| {
+            matches!(a.as_str(), "--no-textconv" | "--no-ext-diff")
+                || a.as_str() == "--ignore-submodules"
+                || a.starts_with("--ignore-submodules=")
+        })
+        .count();
+    let leading_flags = &rest[..leading];
+    // `status` has no option that takes a separate value, so its flag may sit
+    // anywhere before a bare `--` (git: last one wins).
+    let ignore_scope = if sub == "status" {
+        let end = rest.iter().position(|a| a == "--").unwrap_or(rest.len());
+        &rest[..end]
+    } else {
+        leading_flags
+    };
+    let ignored = ignore_submodules_value(ignore_scope)
+        .is_some_and(|v| matches!(v.as_str(), "" | "all" | "dirty"));
     // Configuration that makes an otherwise read-only subcommand run a program.
     // Checked before the subcommand's own rules so the denial names the key.
-    check_git_runs_no_program(sub, rest, &dir, no_optional_locks)?;
+    check_git_runs_no_program(sub, rest, &dir, ignored)?;
     match sub.as_str() {
         "status" => Ok(()),
         // These render patches, so git runs a `diff.<driver>.textconv` program
         // (named by `.gitattributes` plus repo or global config) or
         // `diff.external` for them unless told not to. The policy layer can
         // only allow or deny, not rewrite, so the coordinator must say so:
-        // both flags, spelled exactly, on every diff/log/show.
+        // both flags, spelled exactly, right after the subcommand.
         "log" | "diff" | "show" => {
-            if let Some(a) = rest.iter().find(|a| {
-                a.starts_with("--output")
-                    || is_abbrev_of(a, "--ext-diff")
-                    || is_abbrev_of(a, "--textconv")
-            }) {
-                return Err(format!("git {sub} {a} is not read-only"));
-            }
+            check_git_dangerous_options(sub, rest)?;
             for required in ["--no-textconv", "--no-ext-diff"] {
-                if !rest.iter().any(|a| a == required) {
+                if !leading_flags.iter().any(|a| a == required) {
                     return Err(format!(
-                        "git {sub} can run configured textconv or external diff programs; add `--no-textconv --no-ext-diff` (missing {required})"
+                        "git {sub} can run configured textconv or external diff programs; put `--no-textconv --no-ext-diff` immediately after `{sub}` (missing {required})"
                     ));
                 }
             }

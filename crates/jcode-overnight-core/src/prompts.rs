@@ -92,7 +92,7 @@ pub(crate) fn next_prompt_label(manifest: &OvernightManifest, now: DateTime<Utc>
 
 /// Role statement shared by every overnight coordinator prompt. The server
 /// enforces it with a tool allowlist (edits to `*.md`, read-only bash only).
-pub const COORDINATOR_ROLE_RULE: &str = "Your role is to coordinate, facilitate, nudge and manage todos. Every code change, build, test run, review and judgement is assigned to a swarm worker; you do none of them yourself. Your tools are limited to swarm, todo, schedule, bg, read-only inspection, MCP tools and edits to markdown notes, and other calls are denied.";
+pub const COORDINATOR_ROLE_RULE: &str = "Your role is to coordinate, facilitate, nudge and manage todos. Every code change, build, test run, review and judgement is assigned to a swarm worker; you do none of them yourself. Your tools are limited to swarm, todo, schedule, bg, read-only inspection, MCP tools and edits to markdown notes, and other calls are denied. Read-only git is `git --no-optional-locks status` and `git --no-optional-locks diff --no-textconv --no-ext-diff ...`, and `git log|show --no-textconv --no-ext-diff ...`, with those flags first and no line continuations; `git branch` only lists. Quote glob patterns, and do not use `rg -z`.";
 
 /// One-line reminder appended to continuation-style prompts.
 pub const COORDINATOR_DELEGATION_REMINDER: &str = "Reminder: you coordinate. Assign every code change, build, review and judgement to a swarm worker and nudge workers that stall.";

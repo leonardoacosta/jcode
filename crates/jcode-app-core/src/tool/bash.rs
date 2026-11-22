@@ -1021,6 +1021,11 @@ impl BashTool {
         );
         command.envs(cloud_command_environment(ctx.working_dir.as_deref())?);
         command.envs(crate::session_env::session_env(&ctx.session_id));
+        // An overnight coordinator's git and rg must run with the environment
+        // the policy probed, whatever the session environment says.
+        if let Some(env) = super::coordinator_policy::coordinator_command_env(&ctx.session_id) {
+            super::coordinator_policy::apply_env(command.as_std_mut(), &env);
+        }
         command
             .env("JCODE_SESSION_ID", &ctx.session_id)
             .kill_on_drop(true)
@@ -1183,6 +1188,9 @@ impl BashTool {
         );
         cmd.envs(cloud_command_environment(ctx.working_dir.as_deref())?);
         cmd.envs(crate::session_env::session_env(&ctx.session_id));
+        if let Some(env) = super::coordinator_policy::coordinator_command_env(&ctx.session_id) {
+            super::coordinator_policy::apply_env(&mut cmd, &env);
+        }
         cmd.env("JCODE_SESSION_ID", &ctx.session_id);
         let stdout = OpenOptions::new()
             .create(true)
@@ -1331,6 +1339,7 @@ impl BashTool {
         // Capture before handing work to the manager. Its closure can start
         // after a caller has already replaced or cleared these overrides.
         let session_environment = crate::session_env::session_env(&ctx.session_id);
+        let coordinator_env = super::coordinator_policy::coordinator_command_env(&ctx.session_id);
         let timeout_ms = background_timeout_ms(params.timeout);
         let timeout_duration = timeout_ms.map(Duration::from_millis);
 
@@ -1350,6 +1359,9 @@ impl BashTool {
 					apply_tool_terminal_env(cmd.as_std_mut(), &client_terminal_env);
 					cmd.envs(cloud_environment);
 					cmd.envs(session_environment);
+					if let Some(env) = &coordinator_env {
+						super::coordinator_policy::apply_env(cmd.as_std_mut(), env);
+					}
 					cmd.env("JCODE_SESSION_ID", &session_id_env);
 					// build_shell_command runs the child in its own session
 					// (setsid), so it is already its own process group leader.
