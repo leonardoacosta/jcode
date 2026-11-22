@@ -9,16 +9,16 @@ File ownership for parallel work:
 
 ## 1. Chain config and selection
 
-- [ ] 1.1 Add `[overnight] coordinator_model_chain` and `worker_model_chain` (`Vec<String>`, defaults from the spec) to config types and `Config`. Verify: config parse test with and without the section; defaults equal the spec lists.
-- [ ] 1.2 Add `overnight/model_chain.rs`: a pure `ModelChain` (ordered list, cursor, `advance(kind) -> Advance::{Next(model), Exhausted(tried)}`) that advances only on `Transient | RateLimited | ModelUnavailable | QuotaExhausted` from `jcode_provider_core::failover::classify_provider_failure`. Verify: table test for every `ProviderFailureKind`; exhaustion lists all tried models.
-- [ ] 1.3 Preflight filter: drop chain models absent from the provider's `available_models_for_switching()` (keep all when that list is empty); record dropped models in preflight; block start when either chain is empty. Verify: unit tests for skip, empty-block, empty-list-keeps-all.
+- [x] 1.1 Add `[overnight] coordinator_model_chain` and `worker_model_chain` (`Vec<String>`, defaults from the spec) to config types and `Config`. Verify: config parse test with and without the section; defaults equal the spec lists.
+- [x] 1.2 Add `overnight/model_chain.rs`: a pure `ModelChain` (ordered list, cursor, `advance(kind) -> Advance::{Next(model), Exhausted(tried)}`) that advances only on `Transient | RateLimited | ModelUnavailable | QuotaExhausted` from `jcode_provider_core::failover::classify_provider_failure`. Verify: table test for every `ProviderFailureKind`; exhaustion lists all tried models.
+- [x] 1.3 Preflight filter: drop chain models absent from the provider's `available_models_for_switching()` (keep all when that list is empty); record dropped models in preflight; block start when either chain is empty. Verify: unit tests for skip, empty-block, empty-list-keeps-all.
 
 ## 2. Chain execution
 
-- [ ] 2.1 Supervised loop: wrap `enforce::run_turn_monitored`; on `Err`, classify, `agent.set_model(next)` on the same provider, record `model_chain_advanced` {from,to,kind}, retry the same prompt; on non-advancing kinds or exhaustion, `block_run` with reasons naming every model tried. Set the first coordinator model at start. Verify: test with a fake provider that fails the first two models with `ModelUnavailable`, then succeeds; events show two advances; provider name/route unchanged. Test that `AuthRevoked` blocks without advancing.
-- [ ] 2.2 Visible current-session run: set the first served coordinator model at start, and apply the same advance on turn failure for the session that owns an active run. Verify: unit test of the shared advance helper with the visible path's inputs.
-- [ ] 2.3 Workers spawned by a session that owns an active overnight run: default model = first served worker-chain model (explicit `model` still wins); on worker turn failure advance through the worker chain; on exhaustion fail the worker and notify the coordinator. Verify: spawn-model resolution test (overnight owner vs normal session vs explicit model); exhaustion test asserts coordinator notice and run still `Running`.
-- [ ] 2.4 Normal sessions: prove no automatic switch. Verify: test that a non-overnight session failing with `ModelUnavailable` keeps its model.
+- [x] 2.1 Supervised loop: wrap `enforce::run_turn_monitored`; on `Err`, classify, `agent.set_model(next)` on the same provider, record `model_chain_advanced` {from,to,kind}, retry the same prompt; on non-advancing kinds or exhaustion, `block_run` with reasons naming every model tried. Set the first coordinator model at start. Verify: test with a fake provider that fails the first two models with `ModelUnavailable`, then succeeds; events show two advances; provider name/route unchanged. Test that `AuthRevoked` blocks without advancing.
+- [x] 2.2 Visible current-session run: set the first served coordinator model at start, and apply the same advance on turn failure for the session that owns an active run. Verify: unit test of the shared advance helper with the visible path's inputs.
+- [x] 2.3 Workers spawned by a session that owns an active overnight run: default model = first served worker-chain model (explicit `model` still wins); on worker turn failure advance through the worker chain; on exhaustion fail the worker and notify the coordinator. Verify: spawn-model resolution test (overnight owner vs normal session vs explicit model); exhaustion test asserts coordinator notice and run still `Running`.
+- [x] 2.4 Normal sessions: prove no automatic switch. Verify: test that a non-overnight session failing with `ModelUnavailable` keeps its model.
 
 ## 3. Coordinator tool policy
 

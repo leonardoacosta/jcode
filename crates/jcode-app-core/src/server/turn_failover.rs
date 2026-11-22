@@ -114,6 +114,20 @@ pub(super) fn pick_failover_target(agent: &Agent, error: &str) -> Option<Failove
         })
 }
 
+fn announce_model_change(agent: &Agent, event_tx: &mpsc::UnboundedSender<ServerEvent>) {
+    let _ = event_tx.send(ServerEvent::ModelChanged {
+        id: 0,
+        model: agent.provider_model(),
+        provider_name: Some(agent.provider_name()),
+        context_window: Some(agent.provider_context_window() as u64),
+        error: None,
+        resolved_credential: agent.active_resolved_credential(),
+        provider_oauth_email: super::provider_oauth_email(agent.provider_handle().as_ref()),
+        provider_oauth_account_label: agent.provider_handle().serving_oauth_account_label(),
+        reasoning_effort: agent.provider_reasoning_effort(),
+    });
+}
+
 /// Apply `target` to the agent and tell every attached client.
 pub(super) fn apply_failover_target(
     agent: &mut Agent,
@@ -134,17 +148,7 @@ pub(super) fn apply_failover_target(
             ("provider", agent.provider_name()),
         ],
     );
-    let _ = event_tx.send(ServerEvent::ModelChanged {
-        id: 0,
-        model: agent.provider_model(),
-        provider_name: Some(agent.provider_name()),
-        context_window: Some(agent.provider_context_window() as u64),
-        error: None,
-        resolved_credential: agent.active_resolved_credential(),
-        provider_oauth_email: super::provider_oauth_email(agent.provider_handle().as_ref()),
-        provider_oauth_account_label: agent.provider_handle().serving_oauth_account_label(),
-        reasoning_effort: agent.provider_reasoning_effort(),
-    });
+    announce_model_change(agent, event_tx);
     let _ = event_tx.send(ServerEvent::ConnectionPhase {
         phase: format!("retrying on {}", target.label),
     });
@@ -336,6 +340,27 @@ pub(super) async fn retry_turn_with_server_failover(
         // model already produced a partial reply.
         if agent.last_message_role() != Some(crate::message::Role::User) {
             break;
+        }
+        // Overnight-owned sessions walk their model chain on the same route.
+        // Every other session falls through to the account router below.
+        if let Some(advance) =
+            crate::overnight::model_chain::try_advance_for_session(agent, &message).await
+        {
+            match advance {
+                crate::overnight::model_chain::SessionAdvance::Switched => {
+                    announce_model_change(agent, &event_tx);
+                    result = agent
+                        .continue_turn_after_failover(lease, reminder.clone(), event_tx.clone())
+                        .await;
+                    continue;
+                }
+                crate::overnight::model_chain::SessionAdvance::Stop(replacement) => {
+                    if let Some(exhausted) = replacement {
+                        result = Err(anyhow::anyhow!(exhausted));
+                    }
+                    break;
+                }
+            }
         }
         let Some(target) = pick_failover_target(agent, &message) else {
             break;

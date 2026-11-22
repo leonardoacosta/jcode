@@ -1304,10 +1304,48 @@ impl App {
         self.set_status_notice("Prompt restored to input after error");
     }
 
+    /// Visible overnight run only: a recoverable model failure moves to the
+    /// next model of the coordinator chain on the same route and resends the
+    /// turn. Any other session returns false and never switches automatically.
+    fn advance_overnight_model_chain(&mut self, error: &str) -> bool {
+        if self.is_remote || self.overnight_auto_poke.is_none() {
+            return false;
+        }
+        let provider_key = self.session.provider_key.clone();
+        let advance = crate::overnight::model_chain::try_advance_provider_for_session(
+            &self.session.id,
+            self.provider.as_ref(),
+            provider_key.as_deref(),
+            error,
+        );
+        match advance {
+            Some(crate::overnight::model_chain::SessionAdvance::Switched) => {
+                self.session.model = Some(self.provider.model());
+                let _ = self.session.save();
+                self.push_display_message(DisplayMessage::system(format!(
+                    "↪ Overnight model chain: switched to {} and resending.",
+                    self.provider.model()
+                )));
+                self.pending_turn = true;
+                true
+            }
+            Some(crate::overnight::model_chain::SessionAdvance::Stop(Some(message))) => {
+                self.push_display_message(DisplayMessage::error(message));
+                self.overnight_auto_poke = None;
+                true
+            }
+            _ => false,
+        }
+    }
+
     pub(super) fn handle_turn_error(&mut self, error: impl Into<String>) {
         let error = error.into();
         self.refresh_openai_usage_after_quota_error(&error);
         self.last_stream_error = Some(error.clone());
+
+        if self.advance_overnight_model_chain(&error) {
+            return;
+        }
 
         if let Some(prompt) = crate::provider::parse_failover_prompt_message(&error) {
             self.handle_provider_failover_prompt(prompt);

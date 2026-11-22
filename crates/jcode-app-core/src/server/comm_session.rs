@@ -453,6 +453,14 @@ pub(super) async fn spawn_swarm_agent(
     )
     .await;
     let coordinator = resolve_coordinator_spawn_identity(req_session_id, sessions).await;
+    // A session that owns an active overnight run spawns workers on the first
+    // served worker-chain model, pinned to the coordinator's own route. An
+    // explicit or role/workspace model still wins.
+    let requested_model = crate::overnight::model_chain::resolve_spawn_request(
+        requested_model,
+        req_session_id,
+        coordinator.provider_key.as_deref(),
+    );
     let coordinator_is_canary = coordinator.is_canary;
     // Capture the requesting client's terminal env so spawn hooks place the new
     // window in the terminal the user is attached to, not the server's stale

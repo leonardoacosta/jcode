@@ -1564,6 +1564,24 @@ impl Tool for CommunicateTool {
                             env.as_deref(),
                             current.as_deref(),
                         );
+                        // A session owning an active overnight run spawns on the worker
+                        // model chain unless a model, role slot or workspace pinned one.
+                        let chain_default = params
+                            .model
+                            .as_deref()
+                            .is_none_or(|m| m.trim().is_empty())
+                            .then(|| {
+                                crate::overnight::model_chain::worker_chain_default_model(
+                                    &ctx.session_id,
+                                )
+                            })
+                            .flatten();
+                        let (model, source) = match (source, chain_default) {
+                            ("inherit" | "config" | "env" | "slot", Some(chain_model)) => {
+                                (Some(chain_model), "overnight-chain")
+                            }
+                            (source, _) => (model, source),
+                        };
                         if let Some(model) = &model {
                             spawned_worker_models()
                                 .lock()
