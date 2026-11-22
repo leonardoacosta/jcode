@@ -34,6 +34,6 @@ File ownership for parallel work:
 ## 5. Verification and closeout
 
 - [ ] 5.1 `cargo test -p jcode-app-core overnight`, `cargo test -p jcode-app-core coordinator_policy`, `cargo test -p jcode-overnight-core`, `cargo test -p jcode-config-types`; record results.
-- [ ] 5.2 Runtime: selfdev build; private `JCODE_HOME` + socket, a config with an `omni`-like profile pointed at a local fake OpenAI-compatible server that returns `model_not_found` for the first two models; start overnight; confirm two `model_chain_advanced` events and a denied coordinator `.rs` edit in events.jsonl.
+- [x] 5.2 Runtime: selfdev build; private `JCODE_HOME` + socket, a config with an `omni`-like profile pointed at a local fake OpenAI-compatible server that returns `model_not_found` for the first two models; start overnight; confirm two `model_chain_advanced` events and a denied coordinator `.rs` edit in events.jsonl.
 - [ ] 5.3 `openspec validate add-overnight-model-chains-and-coordinator-role --strict`, dependency validator, `git diff --check`.
 - [ ] 5.4 Independent review of the full diff; fix findings; archive.
