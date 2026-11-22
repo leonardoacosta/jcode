@@ -1,7 +1,7 @@
 ---
 execution:
   version: 1
-  depends_on: [surface-worker-stall-and-block-reasons]
+  depends_on: [surface-worker-stall-and-block-reasons, fix-herdr-pane-status-accuracy]
 ---
 # Proposal
 
@@ -27,6 +27,10 @@ Herdr can show `idle`, `working`, `blocked` and `done`, but Jcode reports only t
 ## Impact
 
 `crates/jcode-tui/src/tui/herdr.rs`, `crates/jcode-tui/src/tui/app/terminal_title.rs`, swarm member and background task status sources read by the info widget. No Herdr changes; uses its existing state set.
+
+## Relationship to fix-herdr-pane-status-accuracy
+
+`fix-herdr-pane-status-accuracy` ships `blocked` for `requires_user_auth` todos, `working` for owned running workers and wake background tasks, bash tool pane protection and report retry. This change extends that state derivation with `done`, blocked for pending approval/ask-user prompts, stalled or blocked worker projection and notifications, and does not re-implement those slices.
 
 ## Resolved defaults
 
