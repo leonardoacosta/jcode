@@ -444,6 +444,14 @@ fn check_command(words: &[Word]) -> Result<(), String> {
     }
 }
 
+/// True when `arg` is `full` or a unique-looking long-option abbreviation of it
+/// (git accepts `--ext-d` for `--ext-diff`). Four characters or more, so
+/// `--exit-code` and `--stat` never match.
+fn is_abbrev_of(arg: &str, full: &str) -> bool {
+    let name = arg.split('=').next().unwrap_or(arg);
+    name.len() >= 4 && full.starts_with(name)
+}
+
 fn check_git(args: &[String]) -> Result<(), String> {
     let mut i = 0;
     while i < args.len() {
@@ -458,14 +466,28 @@ fn check_git(args: &[String]) -> Result<(), String> {
     };
     let rest = &args[i + 1..];
     match sub.as_str() {
-        "status" | "log" | "diff" | "show" => {
-            match rest
-                .iter()
-                .find(|a| a.starts_with("--output") || *a == "--ext-diff" || *a == "--textconv")
-            {
-                Some(a) => Err(format!("git {sub} {a} is not read-only")),
-                None => Ok(()),
+        "status" => Ok(()),
+        // These render patches, so git runs a `diff.<driver>.textconv` program
+        // (named by `.gitattributes` plus repo or global config) or
+        // `diff.external` for them unless told not to. The policy layer can
+        // only allow or deny, not rewrite, so the coordinator must say so:
+        // both flags, spelled exactly, on every diff/log/show.
+        "log" | "diff" | "show" => {
+            if let Some(a) = rest.iter().find(|a| {
+                a.starts_with("--output")
+                    || is_abbrev_of(a, "--ext-diff")
+                    || is_abbrev_of(a, "--textconv")
+            }) {
+                return Err(format!("git {sub} {a} is not read-only"));
             }
+            for required in ["--no-textconv", "--no-ext-diff"] {
+                if !rest.iter().any(|a| a == required) {
+                    return Err(format!(
+                        "git {sub} can run configured textconv or external diff programs; add `--no-textconv --no-ext-diff` (missing {required})"
+                    ));
+                }
+            }
+            Ok(())
         }
         "branch" => {
             const FLAGS: [&str; 17] = [

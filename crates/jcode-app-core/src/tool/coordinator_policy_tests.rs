@@ -75,9 +75,9 @@ fn markdown_symlink_to_code_denied() {
 fn read_only_bash_allowed() {
     for c in [
         "git status",
-        "git diff --stat && rg -n TODO src",
-        "git log --oneline -5 | head -3",
-        "git -C /tmp show HEAD",
+        "git diff --stat --no-textconv --no-ext-diff && rg -n TODO src",
+        "git log --oneline -5 --no-textconv --no-ext-diff | head -3",
+        "git -C /tmp show HEAD --no-ext-diff --no-textconv",
         "git branch",
         "git branch -a",
         "git branch --list 'feat/*'",
@@ -224,6 +224,78 @@ fn bash_expansion_and_argv_injection_denied() {
     }
 }
 
+/// `git diff/log/show` run configured textconv and external diff programs
+/// without any flag; `blame` and `grep` can too. Only the explicit opt-out
+/// spelling passes, and `blame`/`grep` are not allowlisted at all.
+#[test]
+fn git_commands_that_can_run_configured_programs_denied_without_opt_out() {
+    for c in [
+        "git diff",
+        "git diff HEAD~1",
+        "git diff --stat",
+        "git diff --cached",
+        "git log",
+        "git log -p",
+        "git log -G foo",
+        "git log -S foo --oneline",
+        "git log --oneline -5",
+        "git show",
+        "git show HEAD",
+        "git show HEAD:file",
+        // One of the two flags is not enough.
+        "git diff --no-textconv",
+        "git diff --no-ext-diff",
+        "git log -p --no-textconv",
+        "git show --no-ext-diff",
+        // Abbreviated or inverted spellings do not count, and re-enabling wins.
+        "git diff --no-text --no-ext",
+        "git diff --no-textconv --no-ext-diff --textconv",
+        "git diff --no-textconv --no-ext-diff --ext-diff",
+        "git diff --no-textconv --no-ext-diff --ext-d",
+        "git diff --no-textconv --no-ext-diff --textc",
+        "git log --no-textconv --no-ext-diff --output=out",
+        // `blame` and `grep` run textconv / pagers and are not allowlisted.
+        "git blame f",
+        "git blame --no-textconv f",
+        "git grep foo",
+        "git grep -p foo",
+        "git grep --textconv foo",
+        "git grep -O foo",
+        "git grep --open-files-in-pager=sh foo",
+        "git --no-pager grep foo",
+        "git -C /tmp blame f",
+        // Pipelines and chains are checked segment by segment.
+        "git status && git diff",
+        "git log --oneline | head -3",
+    ] {
+        assert!(!bash(c), "must be denied: {c}");
+    }
+    let reason = allows("bash", &json!({"command": "git diff"}), &id).unwrap_err();
+    assert!(
+        reason.contains("--no-textconv") && reason.contains("--no-ext-diff"),
+        "the denial tells the coordinator what to add: {reason}"
+    );
+}
+
+#[test]
+fn git_commands_with_both_opt_out_flags_allowed() {
+    for c in [
+        "git diff --no-textconv --no-ext-diff",
+        "git diff --no-ext-diff --no-textconv HEAD~1 -- src",
+        "git diff --stat --no-textconv --no-ext-diff",
+        "git --no-pager diff --no-textconv --no-ext-diff",
+        "git -C /tmp log -p --no-textconv --no-ext-diff -3",
+        "git show HEAD --no-textconv --no-ext-diff",
+        "git log --oneline --no-textconv --no-ext-diff | head -3",
+        "git diff --exit-code --no-textconv --no-ext-diff",
+        "git status",
+        "git status --short",
+        "git branch -a",
+    ] {
+        assert!(bash(c), "must be allowed: {c}");
+    }
+}
+
 /// The hardening must not break ordinary inspection commands.
 #[test]
 fn bash_literal_dollar_in_single_quotes_and_regex_anchors_still_allowed() {
@@ -238,14 +310,14 @@ fn bash_literal_dollar_in_single_quotes_and_regex_anchors_still_allowed() {
         r#"echo "a\$HOME""#,
         "jq '.a | {b}' f.json",
         "find . -name '*.rs' -not -path './target/*'",
-        "git log --format='%h %s' -3",
-        "git log --pretty=format:'%H'",
+        "git log --format='%h %s' -3 --no-textconv --no-ext-diff",
+        "git log --pretty=format:'%H' --no-textconv --no-ext-diff",
         "ls *.rs",
         "cat src/*.rs | wc -l",
         "find . -name '*.rs'",
         "rg 'a*' src",
         "rg \"a?\" src",
-        "git log -- 'src/*'",
+        "git log --no-textconv --no-ext-diff -- 'src/*'",
         "ls ~",
         "ls ~/dev",
     ] {
