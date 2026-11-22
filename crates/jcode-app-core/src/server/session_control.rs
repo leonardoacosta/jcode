@@ -731,6 +731,35 @@ impl ControlStore {
         Ok(())
     }
 
+    /// Drop non-shell unresolved categories after an authorized requester has
+    /// confirmed out of band that the recorded external effects are settled.
+    /// Only valid once a stop is in progress; owned shell children stay tracked
+    /// because their liveness is still provable from /proc.
+    pub(crate) fn acknowledge_effects(&self, id: &str) -> Result<ControlRecord> {
+        let entry = self.entry(id)?;
+        let mut guard = entry
+            .lock()
+            .map_err(|_| anyhow::anyhow!("Session control lock poisoned"))?;
+        ensure!(!guard.fail_closed, "Session control persistence unresolved");
+        let mut record = self.required(id)?;
+        ensure!(
+            record.state != ControlState::Runnable,
+            "Session stop was not requested"
+        );
+        let before = record.unresolved_categories.len();
+        record
+            .unresolved_categories
+            .retain(|category| category == SHELL_CHILDREN);
+        if record.unresolved_categories.len() != before {
+            if let Err(error) = self.save_next(&mut record) {
+                guard.fail_closed = true;
+                return Err(error);
+            }
+            guard.changed.notify_waiters();
+        }
+        Ok(record)
+    }
+
     fn own_shell_child(&self, token: &GenerationToken) -> Result<OwnedChild> {
         ensure!(
             token.root == self.root,
@@ -1240,6 +1269,26 @@ mod tests {
                 .settle("external_worker", unknown.revision)
                 .is_err()
         );
+
+        // Acknowledgement clears only non-shell categories and lets the stop settle.
+        let acknowledged = restarted.acknowledge_effects("external_worker").unwrap();
+        assert!(acknowledged.unresolved_categories.is_empty());
+        assert_eq!(
+            restarted
+                .drain("external_worker", std::time::Duration::from_secs(1))
+                .await
+                .unwrap()
+                .state,
+            ControlState::Stopped
+        );
+
+        // A runnable session cannot have its effects acknowledged away.
+        store.register("runnable_worker", None).unwrap();
+        let runnable = store.admit("runnable_worker").unwrap();
+        store
+            .mark_external_effect(&runnable, "external_effects")
+            .unwrap();
+        assert!(store.acknowledge_effects("runnable_worker").is_err());
     }
 
     struct UnusedProvider;

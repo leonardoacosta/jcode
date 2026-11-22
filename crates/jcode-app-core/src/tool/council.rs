@@ -336,6 +336,7 @@ async fn stop_seats(ctx: &ToolContext, session_ids: &[String]) {
             session_id: ctx.session_id.clone(),
             target_session: target.clone(),
             force: Some(true),
+            acknowledge_effects: None,
         })
         .await;
         super::clear_session_tool_policy_entry(target);

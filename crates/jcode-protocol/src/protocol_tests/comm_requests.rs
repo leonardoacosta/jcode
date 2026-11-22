@@ -427,16 +427,19 @@ fn test_comm_stop_roundtrip_with_force() -> Result<()> {
         session_id: "sess_coord".to_string(),
         target_session: "sess_worker".to_string(),
         force: Some(true),
+        acknowledge_effects: Some(true),
     };
     let json = serde_json::to_string(&req)?;
     assert!(json.contains("\"type\":\"comm_stop\""));
     assert!(json.contains("\"force\":true"));
+    assert!(json.contains("\"acknowledge_effects\":true"));
     let decoded = parse_request_json(&json)?;
     assert_eq!(decoded.id(), 61);
     let Request::CommStop {
         session_id,
         target_session,
         force,
+        acknowledge_effects,
         ..
     } = decoded
     else {
@@ -445,6 +448,7 @@ fn test_comm_stop_roundtrip_with_force() -> Result<()> {
     assert_eq!(session_id, "sess_coord");
     assert_eq!(target_session, "sess_worker");
     assert_eq!(force, Some(true));
+    assert_eq!(acknowledge_effects, Some(true));
     Ok(())
 }
 

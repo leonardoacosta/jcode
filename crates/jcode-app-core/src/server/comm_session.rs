@@ -929,6 +929,7 @@ pub(super) async fn handle_comm_stop(
     req_session_id: String,
     target_session: String,
     force: bool,
+    acknowledge_effects: bool,
     client_event_tx: &mpsc::UnboundedSender<ServerEvent>,
     sessions: &SessionAgents,
     swarm_members: &Arc<RwLock<HashMap<String, SwarmMember>>>,
@@ -1011,6 +1012,11 @@ pub(super) async fn handle_comm_stop(
                 revision: requested.revision,
                 terminal: false,
             });
+        }
+        // request_stop above authorized the requester; acknowledgement only
+        // applies to a stop that is now in progress.
+        if acknowledge_effects {
+            store.acknowledge_effects(&target)?;
         }
         // Stop's existing public action deadline is 30s. Reserve 5s for the
         // legacy response transport instead of timing out without diagnostics.

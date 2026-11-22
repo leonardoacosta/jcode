@@ -236,6 +236,7 @@ async fn stop_swarm_sessions(
             session_id: ctx.session_id.clone(),
             target_session: target.clone(),
             force: Some(force),
+            acknowledge_effects: None,
         };
         match send_request(request).await {
             Ok(response) => match ensure_success(&response) {
@@ -800,6 +801,8 @@ struct CommunicateInput {
     #[serde(default)]
     force: Option<bool>,
     #[serde(default)]
+    acknowledge_effects: Option<bool>,
+    #[serde(default)]
     status: Option<String>,
     #[serde(default)]
     validation: Option<String>,
@@ -977,6 +980,10 @@ impl Tool for CommunicateTool {
                 "force": {
                     "type": "boolean",
                     "description": "stop: allow stopping non-owned/user-created sessions; default false."
+                },
+                "acknowledge_effects": {
+                    "type": "boolean",
+                    "description": "stop: clear recorded MCP/custom-tool external effects you verified as settled, so an unresolved stop can finish. Owned shell children stay tracked."
                 },
                 "wake": {
                     "type": "boolean",
@@ -1617,6 +1624,7 @@ impl Tool for CommunicateTool {
                     session_id: ctx.session_id.clone(),
                     target_session: target.clone(),
                     force: params.force,
+                    acknowledge_effects: params.acknowledge_effects,
                 };
 
                 format_stop_outcome(&target, send_request(request).await)

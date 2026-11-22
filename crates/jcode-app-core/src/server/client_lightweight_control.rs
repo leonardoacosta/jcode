@@ -718,12 +718,14 @@ pub(super) async fn handle_lightweight_control_request(
             session_id: req_session_id,
             target_session,
             force,
+            acknowledge_effects,
         } => {
             handle_comm_stop(
                 id,
                 req_session_id,
                 target_session,
                 force.unwrap_or(false),
+                acknowledge_effects.unwrap_or(false),
                 &client_event_tx,
                 sessions,
                 swarm_members,

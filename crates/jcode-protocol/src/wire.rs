@@ -816,6 +816,10 @@ pub enum Request {
         target_session: String,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         force: Option<bool>,
+        /// Clear recorded non-shell external effects the requester has verified
+        /// as settled, so the stop can complete.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        acknowledge_effects: Option<bool>,
     },
 
     /// Assign a role to an agent (coordinator only)
