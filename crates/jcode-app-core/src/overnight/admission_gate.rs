@@ -62,8 +62,18 @@ pub(super) fn classify_route_auth(id: &str, state: AuthState) -> Option<Vec<Stri
 
 /// Auth verdict for a custom `[providers.<name>]` profile. `None` when the
 /// profile is unknown to config; `Some(None)` when usable; `Some(Some(reasons))`
-/// when its key is required but missing. Mirrors how
-/// `apply_named_provider_profile_env` picks the key variable and env file.
+/// when its key is required but missing.
+///
+/// This mirrors `apply_named_provider_profile_env_from_config` plus the
+/// runtime key loaders. The runtime helper cannot be called here because it
+/// applies the profile by mutating process-wide environment variables, so the
+/// decision rules are repeated against the config only:
+/// - `auth = "none"` never needs a key.
+/// - OpenAI-compatible profiles need a key unless `requires_api_key = false`
+///   (default: only localhost-style bases skip it). Anthropic-compatible
+///   profiles ignore `requires_api_key`.
+/// - `api_key_env` wins over an inline `api_key`, which the runtime only uses
+///   when no `api_key_env` is set.
 fn custom_profile_auth_block(name: &str) -> Option<Option<Vec<String>>> {
     use crate::config::{NamedProviderAuth, NamedProviderType};
     let config = crate::config::Config::load();
@@ -80,24 +90,69 @@ fn custom_profile_auth_block(name: &str) -> Option<Option<Vec<String>>> {
         NamedProviderType::AnthropicCompatible
     );
     let requires_key = profile.auth != NamedProviderAuth::None
-        && profile.requires_api_key.unwrap_or_else(|| {
-            !crate::provider_catalog::api_base_uses_localhost(profile.base_url.trim())
+        && (anthropic || {
+            let base = profile.base_url.trim();
+            let base = crate::provider_catalog::normalize_api_base(base)
+                .unwrap_or_else(|| base.to_string());
+            profile
+                .requires_api_key
+                .unwrap_or_else(|| !crate::provider_catalog::api_base_uses_localhost(&base))
         });
-    if !requires_key || non_empty(&profile.api_key).is_some() {
+    if !requires_key {
         return Some(None);
     }
-    let (default_key, default_file) = if anthropic {
-        ("ANTHROPIC_API_KEY", "anthropic.env")
+    let key_env = non_empty(&profile.api_key_env);
+    if key_env.is_none() && non_empty(&profile.api_key).is_some() {
+        return Some(None);
+    }
+    let env_file = non_empty(&profile.env_file);
+    let usable = if anthropic {
+        match key_env.as_deref() {
+            Some(env) => {
+                let non_blank = |v: String| !v.trim().is_empty();
+                std::env::var(env).ok().is_some_and(non_blank)
+                    || env_file.as_deref().is_some_and(|file| {
+                        crate::provider_catalog::load_env_value_from_config_file(env, file)
+                            .is_some_and(non_blank)
+                    })
+            }
+            None => {
+                std::env::var("ANTHROPIC_AUTH_TOKEN")
+                    .ok()
+                    .is_some_and(|v| !v.trim().is_empty())
+                    || crate::provider_catalog::load_api_key_from_env_or_config(
+                        "ANTHROPIC_API_KEY",
+                        "anthropic.env",
+                    )
+                    .is_some()
+            }
+        }
     } else {
-        ("OPENROUTER_API_KEY", "openrouter.env")
+        crate::provider_catalog::load_api_key_from_env_or_config(
+            key_env.as_deref().unwrap_or("OPENROUTER_API_KEY"),
+            env_file.as_deref().unwrap_or("openrouter.env"),
+        )
+        .is_some()
     };
-    let key_env = non_empty(&profile.api_key_env).unwrap_or_else(|| default_key.to_string());
-    let env_file = non_empty(&profile.env_file).unwrap_or_else(|| default_file.to_string());
-    if crate::provider_catalog::load_api_key_from_env_or_config(&key_env, &env_file).is_some() {
+    if usable {
         return Some(None);
     }
+    let shown_key = key_env.unwrap_or_else(|| {
+        if anthropic {
+            "ANTHROPIC_API_KEY".to_string()
+        } else {
+            "OPENROUTER_API_KEY".to_string()
+        }
+    });
+    let shown_file = env_file.unwrap_or_else(|| {
+        if anthropic {
+            "anthropic.env".to_string()
+        } else {
+            "openrouter.env".to_string()
+        }
+    });
     Some(Some(vec![format!(
-        "{name}: API key not configured. Set {key_env} (or {env_file}), then restart the run."
+        "{name}: API key not configured. Set {shown_key} (or {shown_file}), then restart the run."
     )]))
 }
 
@@ -760,6 +815,81 @@ mod tests {
         crate::env::set_var("JCODE_PROVIDER_OMNI_API_KEY", "omni-key");
         assert!(route_auth_block("openrouter", Some("omni"), None).is_none());
         assert!(resolved_route_auth_block("openrouter", Some("omni"), None).is_none());
+    }
+
+    fn write_profile(body: &str) {
+        let path = crate::config::Config::path().expect("config path");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, body).unwrap();
+    }
+
+    fn profile_blocked(name: &str) -> bool {
+        route_auth_block("openrouter", Some(name), None).is_some()
+    }
+
+    #[test]
+    fn custom_profile_auth_none_and_requires_api_key_false_are_not_blocked() {
+        let _env = sandbox();
+        crate::env::remove_var("OPENROUTER_API_KEY");
+        write_profile(
+            "[providers.noauth]\ntype = \"openai-compatible\"\nbase_url = \"https://gw.example.com/v1\"\nauth = \"none\"\n\
+             [providers.nokey]\ntype = \"openai-compatible\"\nbase_url = \"https://gw.example.com/v1\"\nrequires_api_key = false\n\
+             [providers.local]\ntype = \"openai-compatible\"\nbase_url = \"http://localhost:8080/v1\"\n\
+             [providers.anth_none]\ntype = \"anthropic-compatible\"\nbase_url = \"https://gw.example.com\"\nauth = \"none\"\n",
+        );
+        for name in ["noauth", "nokey", "local", "anth_none"] {
+            assert!(!profile_blocked(name), "{name} must not be blocked");
+            assert!(resolved_route_auth_block("openrouter", Some(name), None).is_none());
+        }
+    }
+
+    #[test]
+    fn custom_profile_missing_key_blocks_and_each_key_source_unblocks() {
+        let _env = sandbox();
+        crate::env::remove_var("OPENROUTER_API_KEY");
+        write_profile(
+            "[providers.inline]\ntype = \"openai-compatible\"\nbase_url = \"https://gw.example.com/v1\"\napi_key = \"inline-secret\"\n\
+             [providers.envfile]\ntype = \"openai-compatible\"\nbase_url = \"https://gw.example.com/v1\"\napi_key_env = \"GW_FILE_KEY\"\nenv_file = \"gw.env\"\n\
+             [providers.envvar]\ntype = \"openai-compatible\"\nbase_url = \"https://gw.example.com/v1\"\napi_key_env = \"GW_VAR_KEY\"\n\
+             [providers.missing]\ntype = \"openai-compatible\"\nbase_url = \"https://gw.example.com/v1\"\napi_key_env = \"GW_MISSING_KEY\"\nenv_file = \"missing.env\"\n\
+             [providers.shadowed]\ntype = \"openai-compatible\"\nbase_url = \"https://gw.example.com/v1\"\napi_key = \"ignored\"\napi_key_env = \"GW_SHADOW_KEY\"\n",
+        );
+        // Inline key is usable on its own.
+        assert!(!profile_blocked("inline"));
+        // Env file source.
+        assert!(profile_blocked("envfile"));
+        let file = crate::storage::app_config_dir().unwrap().join("gw.env");
+        std::fs::write(&file, "GW_FILE_KEY=from-file\n").unwrap();
+        assert!(!profile_blocked("envfile"));
+        // Env var source.
+        assert!(profile_blocked("envvar"));
+        crate::env::set_var("GW_VAR_KEY", "from-env");
+        assert!(!profile_blocked("envvar"));
+        crate::env::remove_var("GW_VAR_KEY");
+        // Missing key blocks with an actionable reason naming the variable.
+        let reasons = route_auth_block("openrouter", Some("missing"), None).expect("blocked");
+        assert!(
+            reasons[0].contains("GW_MISSING_KEY") && reasons[0].contains("missing.env"),
+            "{reasons:?}"
+        );
+        // The runtime ignores an inline key when api_key_env is set.
+        assert!(profile_blocked("shadowed"));
+        crate::env::set_var("GW_SHADOW_KEY", "set");
+        assert!(!profile_blocked("shadowed"));
+        crate::env::remove_var("GW_SHADOW_KEY");
+    }
+
+    #[test]
+    fn anthropic_compatible_profile_ignores_requires_api_key_and_needs_its_key() {
+        let _env = sandbox();
+        crate::env::remove_var("OPENROUTER_API_KEY");
+        write_profile(
+            "[providers.anth]\ntype = \"anthropic-compatible\"\nbase_url = \"https://gw.example.com\"\nrequires_api_key = false\napi_key_env = \"ANTH_GW_KEY\"\n",
+        );
+        assert!(profile_blocked("anth"), "runtime still loads the key");
+        crate::env::set_var("ANTH_GW_KEY", "k");
+        assert!(!profile_blocked("anth"));
+        crate::env::remove_var("ANTH_GW_KEY");
     }
 
     #[test]
