@@ -7,9 +7,7 @@ mod memory;
 pub use memory::{MemoryConfig, MemoryRetentionConfig};
 mod menubar;
 mod overnight;
-pub use overnight::{
-    DEFAULT_COORDINATOR_MODEL_CHAIN, DEFAULT_WORKER_MODEL_CHAIN, OvernightConfig,
-};
+pub use overnight::{DEFAULT_COORDINATOR_MODEL_CHAIN, DEFAULT_WORKER_MODEL_CHAIN, OvernightConfig};
 mod power;
 mod session;
 pub use session::{HibernationMode, SessionConfig, SessionRetentionConfig, SessionsConfig};

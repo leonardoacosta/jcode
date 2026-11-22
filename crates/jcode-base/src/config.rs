@@ -11,11 +11,11 @@ pub use jcode_config_types::{
     HookCommands, HookEntry, HooksConfig, KeybindingsConfig, LatexRenderingMode, LaunchHotkeyEntry,
     LaunchHotkeysConfig, MarkdownSpacingMode, MemoryConfig, MenubarConfig, NamedProviderAuth,
     NamedProviderConfig, NamedProviderModelConfig, NamedProviderType, NativeScrollbarConfig,
-    NotificationsConfig, OvernightConfig, PowerConfig, ProviderConfig, ReasoningDisplayMode, ResumeOpenElsewhere,
-    ResumeTimeMode, SafetyConfig, SessionConfig, SessionPickerResumeAction, SessionRetentionConfig,
-    SessionsConfig, SponsorsConfig, SwarmConfig, SwarmSpawnMode, TaskAdmissionSnapshot,
-    TaskAuthorization, TasksConfig, TerminalConfig, UpdateChannel, WebSearchConfig,
-    WebSearchEngine, WorkspaceRule, WorkspacesConfig, WorktreesConfig,
+    NotificationsConfig, OvernightConfig, PowerConfig, ProviderConfig, ReasoningDisplayMode,
+    ResumeOpenElsewhere, ResumeTimeMode, SafetyConfig, SessionConfig, SessionPickerResumeAction,
+    SessionRetentionConfig, SessionsConfig, SponsorsConfig, SwarmConfig, SwarmSpawnMode,
+    TaskAdmissionSnapshot, TaskAuthorization, TasksConfig, TerminalConfig, UpdateChannel,
+    WebSearchConfig, WebSearchEngine, WorkspaceRule, WorkspacesConfig, WorktreesConfig,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
