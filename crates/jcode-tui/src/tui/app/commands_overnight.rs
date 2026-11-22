@@ -38,12 +38,13 @@ pub(super) fn handle_overnight_command(app: &mut App, trimmed: &str) -> bool {
             if refuse_duplicate_overnight_start(app) {
                 return true;
             }
+            let parent_session = visible_run_session(app);
             let provider = overnight_provider_for_app(app);
             let visible_provider = provider.clone();
             let options = OvernightStartOptions {
                 duration,
                 mission,
-                parent_session: app.session.clone(),
+                parent_session,
                 provider,
                 registry: app.registry.clone(),
                 working_dir,
@@ -80,7 +81,9 @@ pub(super) fn handle_overnight_command(app: &mut App, trimmed: &str) -> bool {
 /// Returns true (after showing an error) when this session already has a live
 /// active run. A stale active run only produces a notice.
 fn refuse_duplicate_overnight_start(app: &mut App) -> bool {
-    let Ok(manifests) = crate::overnight::session_manifests_newest_first(&app.session.id) else {
+    let Ok(manifests) =
+        crate::overnight::session_manifests_newest_first(&super::commands::active_session_id(app))
+    else {
         return false;
     };
     let mut active = manifests.into_iter().filter(|manifest| {
@@ -107,6 +110,22 @@ fn refuse_duplicate_overnight_start(app: &mut App) -> bool {
         )));
     }
     false
+}
+
+/// The session a visible run governs. A remote-attached TUI holds a local
+/// placeholder session; the daemon runs the turns in `remote_session_id`, so the
+/// manifest (and the daemon-side coordinator policy and re-arm lookups) must
+/// key on that one. Use the daemon's own record: relabelling the placeholder
+/// would make `start_overnight_run` overwrite it on save. A daemon session not
+/// persisted yet starts from an empty record with that id.
+fn visible_run_session(app: &App) -> crate::session::Session {
+    match app.remote_session_id.as_deref() {
+        Some(id) if app.is_remote && id != app.session.id => crate::session::Session::load(id)
+            .unwrap_or_else(|_| {
+                crate::session::Session::create_with_id(id.to_string(), None, None)
+            }),
+        _ => app.session.clone(),
+    }
 }
 
 fn start_visible_overnight_turn(app: &mut App, content: String) {
@@ -357,7 +376,7 @@ impl App {
         if self.is_replay || self.overnight_auto_poke.is_some() {
             return;
         }
-        let session_id = self.session.id.clone();
+        let session_id = super::commands::active_session_id(self);
         let rearmed = crate::overnight::model_chain::rearm_visible_run(&session_id, || {
             overnight_provider_for_app(self)
         });
@@ -1150,6 +1169,33 @@ mod tests {
                 .iter()
                 .any(|event| event.kind == "auto_poke_turn_error")
         );
+    }
+
+    #[test]
+    fn remote_visible_run_keys_on_the_daemon_session_not_the_local_placeholder() {
+        let _home = HomeGuard::new();
+        let mut app = super::super::tests::create_test_app();
+        app.is_remote = true;
+        let mut daemon = crate::session::Session::create_with_id(
+            "session_daemon_visible_run".into(),
+            None,
+            None,
+        );
+        daemon.save().unwrap();
+        app.remote_session_id = Some(daemon.id.clone());
+        assert_ne!(app.session.id, daemon.id);
+
+        let loaded = visible_run_session(&app);
+        assert_eq!(loaded.id, daemon.id);
+
+        // The duplicate guard and the re-arm both look runs up by the daemon id.
+        saved_manifest("overnight_remote_live", &daemon.id, std::process::id());
+        assert!(refuse_duplicate_overnight_start(&mut app));
+
+        app.remote_session_id = Some("session_daemon_unsaved".into());
+        assert_eq!(visible_run_session(&app).id, "session_daemon_unsaved");
+        app.remote_session_id = None;
+        assert_eq!(visible_run_session(&app).id, app.session.id);
     }
 
     #[test]

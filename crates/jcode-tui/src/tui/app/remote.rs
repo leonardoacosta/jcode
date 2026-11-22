@@ -1871,6 +1871,8 @@ async fn handle_debug_command(app: &mut App, cmd: &str, remote: &mut RemoteConne
             "pending_soft_interrupt_requests": app.pending_soft_interrupt_requests.len(),
             "pending_queued_dispatch": app.pending_queued_dispatch,
             "remote_session_id": app.remote_session_id,
+            "local_session_id": app.session.id,
+            "overnight_auto_poke_run": app.overnight_auto_poke.as_ref().map(|s| s.run_id.clone()),
             "messages": app.messages.len(),
             "display_messages": app.display_messages.len(),
             "input": app.input,

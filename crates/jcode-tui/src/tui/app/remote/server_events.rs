@@ -1803,9 +1803,15 @@ fn handle_server_event_inner(
             crate::set_current_session(&session_id);
             app.note_client_focus(true);
             let session_changed = prev_session_id.as_deref() != Some(session_id.as_str());
+            // The first History of a client start also counts: a resumed client
+            // restores its transcript early and pre-sets the session id, so
+            // `session_changed` is false for it.
+            let first_history_of_startup = app.remote_startup_phase.is_some();
             if session_changed {
                 app.pending_tool_list = None;
                 app.pending_tool_query = None;
+            }
+            if session_changed || first_history_of_startup {
                 // A visible overnight run survives a reload only if its client
                 // takes the run back (auto-poke is in-memory).
                 app.rearm_visible_overnight_run();
