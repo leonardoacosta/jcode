@@ -524,6 +524,14 @@ pub trait Provider: Send + Sync {
         String::new()
     }
 
+    /// Whether `available_models_for_switching` is the route's real model list.
+    /// False when a catalog-backed route has not loaded its catalog yet, so the
+    /// list is only a placeholder (typically the current model). Callers that
+    /// filter on the list must treat it as unknown, not as "serves only these".
+    fn model_list_is_authoritative(&self) -> bool {
+        true
+    }
+
     /// Returns true if jcode should use its own compaction for this provider.
     fn supports_compaction(&self) -> bool {
         false

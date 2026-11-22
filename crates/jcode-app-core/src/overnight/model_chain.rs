@@ -146,11 +146,92 @@ pub(crate) struct ChainPlan {
     pub dropped_coordinator: Vec<String>,
     #[serde(default)]
     pub dropped_worker: Vec<String>,
+    /// Set when the route's model list could not be loaded, so the chains were
+    /// kept whole instead of filtered.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unfiltered_reason: Option<String>,
+}
+
+const CATALOG_REFRESH_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(15);
+const CATALOG_UNAVAILABLE: &str = "route catalog unavailable; chains unfiltered";
+
+/// The route's served models for preflight filtering, plus why the list is
+/// empty when the catalog could not be loaded.
+pub(crate) struct RouteModels {
+    pub served: Vec<String>,
+    pub unfiltered_reason: Option<String>,
+}
+
+/// Served models for `provider`'s route. A catalog-backed route whose catalog
+/// is not loaded gets one bounded refresh; if that does not produce a real
+/// list, `served` is empty (unknown) so `filter_served` keeps every chain
+/// model instead of shrinking the chains to the current model.
+pub(crate) fn route_models(provider: &dyn Provider) -> RouteModels {
+    route_models_with(provider, refresh_catalog_bounded)
+}
+
+fn route_models_with(
+    provider: &dyn Provider,
+    refresh: impl FnOnce(&dyn Provider) -> std::result::Result<(), String>,
+) -> RouteModels {
+    let mut failure = None;
+    if !provider.model_list_is_authoritative() {
+        failure = refresh(provider).err();
+    }
+    if provider.model_list_is_authoritative() {
+        return RouteModels {
+            served: provider.available_models_for_switching(),
+            unfiltered_reason: None,
+        };
+    }
+    RouteModels {
+        served: Vec::new(),
+        unfiltered_reason: Some(match failure {
+            Some(error) => format!("{CATALOG_UNAVAILABLE} ({error})"),
+            None => CATALOG_UNAVAILABLE.to_string(),
+        }),
+    }
+}
+
+/// Run `refresh_model_catalog` on a scratch runtime in a scoped thread, so the
+/// synchronous start path works from any caller (TUI thread, current-thread
+/// or multi-thread tokio) and the wait is bounded.
+fn refresh_catalog_bounded(provider: &dyn Provider) -> std::result::Result<(), String> {
+    std::thread::scope(|scope| {
+        scope
+            .spawn(|| {
+                let runtime = tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                    .map_err(|error| error.to_string())?;
+                runtime.block_on(async {
+                    match tokio::time::timeout(
+                        CATALOG_REFRESH_TIMEOUT,
+                        provider.refresh_model_catalog(),
+                    )
+                    .await
+                    {
+                        Ok(Ok(_)) => Ok(()),
+                        Ok(Err(error)) => Err(format!("{error:#}")),
+                        Err(_) => Err(format!(
+                            "timed out after {}s",
+                            CATALOG_REFRESH_TIMEOUT.as_secs()
+                        )),
+                    }
+                })
+            })
+            .join()
+            .unwrap_or_else(|_| Err("catalog refresh panicked".to_string()))
+    })
 }
 
 /// Filter both chains against the route. `Err` carries the block reasons when
 /// either chain is left empty.
-pub(crate) fn plan(config: &OvernightConfig, served: &[String]) -> Result<ChainPlan, Vec<String>> {
+pub(crate) fn plan(
+    config: &OvernightConfig,
+    route: &RouteModels,
+) -> Result<ChainPlan, Vec<String>> {
+    let served = route.served.as_slice();
     let (coordinator, dropped_coordinator) = filter_served(&config.coordinator_model_chain, served);
     let (worker, dropped_worker) = filter_served(&config.worker_model_chain, served);
     let mut reasons = Vec::new();
@@ -175,6 +256,7 @@ pub(crate) fn plan(config: &OvernightConfig, served: &[String]) -> Result<ChainP
             worker,
             dropped_coordinator,
             dropped_worker,
+            unfiltered_reason: route.unfiltered_reason.clone(),
         })
     } else {
         Err(reasons)
@@ -199,7 +281,9 @@ pub(crate) fn record_plan(manifest: &OvernightManifest, plan: &ChainPlan) {
             "Model chains: coordinator [{}], worker [{}]{}",
             plan.coordinator.join(" > "),
             plan.worker.join(" > "),
-            if dropped == 0 {
+            if let Some(reason) = plan.unfiltered_reason.as_deref() {
+                format!("; {reason}")
+            } else if dropped == 0 {
                 String::new()
             } else {
                 format!(

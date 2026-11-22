@@ -697,6 +697,15 @@ impl Provider for OpenRouterProvider {
         self.available_models_display()
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        if !self.supports_model_catalog {
+            return true;
+        }
+        // Same sources `available_models_display` reads, without scheduling a fetch.
+        self.cached_live_model_ids_for_display()
+            .is_some_and(|live| !live.is_empty())
+    }
+
     fn model_routes(&self) -> Vec<jcode_provider_core::ModelRoute> {
         let (provider_label, api_method, detail) = self
             .direct_openai_compatible_route_parts()

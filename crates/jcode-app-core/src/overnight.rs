@@ -143,7 +143,7 @@ pub fn start_overnight_run(options: OvernightStartOptions) -> Result<OvernightLa
     // Chain models the route does not serve are dropped; an empty chain blocks.
     let chain_plan = model_chain::plan(
         &crate::config::config().overnight,
-        &options.provider.available_models_for_switching(),
+        &model_chain::route_models(options.provider.as_ref()),
     )
     .map_err(|reasons| anyhow::anyhow!("Overnight blocked: {}", reasons.join("; ")))?;
     if options.use_current_session {

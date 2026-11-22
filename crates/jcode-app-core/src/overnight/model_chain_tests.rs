@@ -17,6 +17,13 @@ fn names(models: &[&str]) -> Vec<String> {
     models.iter().map(|m| m.to_string()).collect()
 }
 
+fn route(served: &[String]) -> RouteModels {
+    RouteModels {
+        served: served.to_vec(),
+        unfiltered_reason: None,
+    }
+}
+
 #[test]
 fn every_failure_kind_has_the_specified_advance_behaviour() {
     for kind in ALL_KINDS {
@@ -108,7 +115,7 @@ fn empty_served_list_keeps_every_chain_model() {
 fn plan_blocks_when_a_chain_is_left_empty_and_names_unserved_models() {
     let config = OvernightConfig::default();
     let served = names(&["claude-opus-5.5", "gpt-6-sol"]);
-    let reasons = plan(&config, &served).unwrap_err();
+    let reasons = plan(&config, &route(&served)).unwrap_err();
     assert_eq!(reasons.len(), 1, "{reasons:?}");
     assert!(reasons[0].contains("worker"), "{reasons:?}");
     for model in &config.worker_model_chain {
@@ -120,7 +127,7 @@ fn plan_blocks_when_a_chain_is_left_empty_and_names_unserved_models() {
 fn plan_starts_on_the_next_served_model_and_records_dropped() {
     let config = OvernightConfig::default();
     let served = names(&["gpt-6-sol", "claude-sonnet-5.5"]);
-    let plan = plan(&config, &served).unwrap();
+    let plan = plan(&config, &route(&served)).unwrap();
     assert_eq!(
         plan.coordinator.first().map(String::as_str),
         Some("gpt-6-sol")
@@ -132,7 +139,7 @@ fn plan_starts_on_the_next_served_model_and_records_dropped() {
 #[test]
 fn plan_with_no_model_list_keeps_default_chains_whole() {
     let config = OvernightConfig::default();
-    let plan = plan(&config, &[]).unwrap();
+    let plan = plan(&config, &route(&[])).unwrap();
     assert_eq!(plan.coordinator, config.coordinator_model_chain);
     assert_eq!(plan.worker, config.worker_model_chain);
 }
@@ -565,4 +572,152 @@ fn visible_run_advances_a_bare_provider_and_blocks_on_exhaustion() {
             .is_none()
     );
     drop(rt);
+}
+
+/// Catalog-backed route: until `loaded` is set, the model list is only the
+/// current model. `refresh_model_catalog` loads it when `refresh_ok`.
+struct CatalogProvider {
+    loaded: Arc<std::sync::atomic::AtomicBool>,
+    refresh_ok: bool,
+    refreshes: Arc<std::sync::atomic::AtomicUsize>,
+    served: Vec<String>,
+}
+
+impl CatalogProvider {
+    fn new(refresh_ok: bool, served: &[&str]) -> Self {
+        Self {
+            loaded: Arc::default(),
+            refresh_ok,
+            refreshes: Arc::default(),
+            served: names(served),
+        }
+    }
+}
+
+#[async_trait]
+impl Provider for CatalogProvider {
+    async fn complete(
+        &self,
+        _: &[Message],
+        _: &[ToolDefinition],
+        _: &str,
+        _: Option<&str>,
+    ) -> Result<crate::provider::EventStream> {
+        anyhow::bail!("unused")
+    }
+    fn name(&self) -> &str {
+        "catalog-fake"
+    }
+    fn model(&self) -> String {
+        "claude-sonnet-5.5".into()
+    }
+    fn set_model(&self, _: &str) -> Result<()> {
+        Ok(())
+    }
+    fn available_models_for_switching(&self) -> Vec<String> {
+        if self.loaded.load(std::sync::atomic::Ordering::SeqCst) {
+            self.served.clone()
+        } else {
+            vec![self.model()]
+        }
+    }
+    fn model_list_is_authoritative(&self) -> bool {
+        self.loaded.load(std::sync::atomic::Ordering::SeqCst)
+    }
+    async fn refresh_model_catalog(
+        &self,
+    ) -> Result<jcode_provider_core::ModelCatalogRefreshSummary> {
+        self.refreshes
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if !self.refresh_ok {
+            anyhow::bail!("catalog endpoint unreachable");
+        }
+        self.loaded.store(true, std::sync::atomic::Ordering::SeqCst);
+        Ok(Default::default())
+    }
+    fn fork(&self) -> Arc<dyn Provider> {
+        unimplemented!()
+    }
+}
+
+#[test]
+fn cold_catalog_that_stays_cold_keeps_full_chains_and_notes_it() {
+    let config = OvernightConfig::default();
+    let provider = CatalogProvider::new(false, &[]);
+    let routes = route_models(&provider);
+    assert!(routes.served.is_empty(), "unknown, not the current model");
+    let reason = routes.unfiltered_reason.clone().unwrap();
+    assert!(reason.contains("route catalog unavailable; chains unfiltered"));
+    assert!(reason.contains("catalog endpoint unreachable"));
+    assert_eq!(
+        provider.refreshes.load(std::sync::atomic::Ordering::SeqCst),
+        1
+    );
+
+    let plan = plan(&config, &routes).expect("a cold catalog must not block the run");
+    assert_eq!(plan.coordinator, config.coordinator_model_chain);
+    assert_eq!(plan.worker, config.worker_model_chain);
+    assert!(plan.dropped_coordinator.is_empty() && plan.dropped_worker.is_empty());
+    assert_eq!(plan.unfiltered_reason, Some(reason));
+}
+
+#[test]
+fn cold_catalog_that_loads_after_refresh_filters_normally() {
+    let config = OvernightConfig::default();
+    let provider = CatalogProvider::new(true, &["gpt-6-sol", "claude-sonnet-5.5", "gpt-6-luna"]);
+    let routes = route_models(&provider);
+    assert_eq!(routes.unfiltered_reason, None);
+    assert_eq!(routes.served.len(), 3);
+    let plan = plan(&config, &routes).unwrap();
+    assert_eq!(
+        plan.coordinator,
+        ["gpt-6-sol", "claude-sonnet-5.5", "gpt-6-luna"]
+    );
+    assert_eq!(plan.dropped_coordinator[0], "claude-opus-5.5");
+    assert_eq!(plan.unfiltered_reason, None);
+}
+
+#[test]
+fn warm_or_catalogless_route_never_refreshes() {
+    let provider = CatalogProvider::new(true, &["claude-sonnet-5.5"]);
+    provider
+        .loaded
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    let routes = route_models(&provider);
+    assert_eq!(routes.served, ["claude-sonnet-5.5"]);
+    assert_eq!(
+        provider.refreshes.load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
+
+    // Default `model_list_is_authoritative` is true: static-list routes skip the refresh.
+    let fixed = ChainProvider::new("m1", &[], &["m1", "m2"], "");
+    assert_eq!(route_models(&fixed).served, ["m1", "m2"]);
+}
+
+#[test]
+fn unfiltered_note_is_recorded_in_the_preflight_event() {
+    let _env = fixture();
+    let manifest = test_run_manifest("chain-unfiltered", "owner", OvernightLimits::default());
+    let plan = ChainPlan {
+        coordinator: names(&["a"]),
+        worker: names(&["b"]),
+        unfiltered_reason: Some("route catalog unavailable; chains unfiltered".into()),
+        ..Default::default()
+    };
+    record_plan(&manifest, &plan);
+    let event = read_events(&manifest)
+        .unwrap()
+        .into_iter()
+        .find(|e| e.kind == "model_chain_preflight")
+        .unwrap();
+    assert!(
+        event
+            .summary
+            .contains("route catalog unavailable; chains unfiltered")
+    );
+    assert_eq!(
+        event.details["unfiltered_reason"],
+        "route catalog unavailable; chains unfiltered"
+    );
 }

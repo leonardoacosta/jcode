@@ -2296,6 +2296,15 @@ impl Provider for MultiProvider {
         }
     }
 
+    fn model_list_is_authoritative(&self) -> bool {
+        match self.active_provider() {
+            ActiveProvider::OpenRouter => self
+                .active_openrouter_execution_provider()
+                .is_none_or(|openrouter| openrouter.model_list_is_authoritative()),
+            _ => true,
+        }
+    }
+
     fn available_models_display(&self) -> Vec<String> {
         self.fresh_routes_memo_entry().listable_models.clone()
     }
