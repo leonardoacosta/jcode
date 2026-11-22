@@ -1044,9 +1044,10 @@ pub fn format_log_markdown_from_events(
 mod prompts;
 
 pub use prompts::{
-    build_continuation_prompt, build_coordinator_prompt, build_final_wrapup_prompt,
-    build_handoff_ready_prompt, build_morning_report_prompt, build_post_wake_continuation_prompt,
-    build_signal_prompt, build_visible_current_session_prompt, prompt_event_summary,
+    COORDINATOR_DELEGATION_REMINDER, COORDINATOR_ROLE_RULE, build_continuation_prompt,
+    build_coordinator_prompt, build_final_wrapup_prompt, build_handoff_ready_prompt,
+    build_morning_report_prompt, build_post_wake_continuation_prompt, build_signal_prompt,
+    build_visible_current_session_prompt, prompt_event_summary,
 };
 use prompts::{next_prompt_label, overnight_phase, relative_time, time_relation_to_target};
 

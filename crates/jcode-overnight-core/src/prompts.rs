@@ -90,6 +90,13 @@ pub(crate) fn next_prompt_label(manifest: &OvernightManifest, now: DateTime<Utc>
     "final wrap after current turn".to_string()
 }
 
+/// Role statement shared by every overnight coordinator prompt. The server
+/// enforces it with a tool allowlist (edits to `*.md`, read-only bash only).
+pub const COORDINATOR_ROLE_RULE: &str = "Your role is to coordinate, facilitate, nudge and manage todos. Every code change, build, test run, review and judgement is assigned to a swarm worker; you do none of them yourself. Your tools are limited to swarm, todo, schedule, bg, read-only inspection, MCP tools and edits to markdown notes, and other calls are denied.";
+
+/// One-line reminder appended to continuation-style prompts.
+pub const COORDINATOR_DELEGATION_REMINDER: &str = "Reminder: you coordinate. Assign every code change, build, review and judgement to a swarm worker and nudge workers that stall.";
+
 pub fn build_coordinator_prompt(
     manifest: &OvernightManifest,
     preflight: &OvernightPreflight,
@@ -106,13 +113,16 @@ The user expects to be away until approximately `{target_wake_at}`. This is a ta
 Mission:
 {mission}
 
+Role:
+{role_rule}
+
 Operating contract:
 - Optimize for verified, low-risk progress.
 - Prefer GH bug issues with objective reproduction, failing tests, static-analysis findings, regression tests, bounded code-quality fixes, and clear crash/panic/wrong-output bugs.
 - Avoid taste-based work, vague product decisions, broad rewrites, risky migrations, payments, sending email, pushing to remotes, deleting data, or other external side effects unless explicitly allowed by the user.
 - If a bug is found, reproduce/prove it before fixing it.
 - Only fix issues that are important, bounded, and verifiable. Otherwise draft a high-quality issue in `{issue_drafts}`.
-- You own the run. Spawn swarm/helper agents only if the expected value exceeds usage/resource cost. The server enforces these run limits and refuses or stops work beyond them: {limits}. Helpers should implement scoped, verifiable changes with clear file ownership. Do not spawn reviewer, auditor, or verifier agents. Verify helper work yourself.
+- You own the run. Spawn swarm/helper agents only if the expected value exceeds usage/resource cost. The server enforces these run limits and refuses or stops work beyond them: {limits}. Workers implement scoped, verifiable changes with clear file ownership, and also run builds and tests, review and judge each other's results. Assign verification of worker output to a worker and read their reports.
 - Be aware of RAM/load/battery, especially around compiles, browser automation, indexing, and full test suites. Do not run multiple heavy activities at once unless resources are clearly healthy.
 - Do not wait for the user. If you need user judgment/credentials/taste, record it and switch to another useful task.
 - Work only on eligible, authorized, verifiable tasks. When none remain, say so and end the turn: the supervisor waits for a worker/background completion, a user message or the wake boundary instead of issuing another turn. Do not poll or re-check unchanged state.
@@ -135,6 +145,7 @@ Initial steps:
 5. Validate and update review notes.
 6. If done early and no eligible authorized task remains, report that and end the turn.
 "#,
+        role_rule = COORDINATOR_ROLE_RULE,
         limits = manifest.limits.summary(),
         run_id = manifest.run_id,
         target_wake_at = manifest.target_wake_at.to_rfc3339(),
@@ -171,11 +182,14 @@ Soft post-wake grace window ends: `{post_wake_grace_until}`
 Mission:
 {mission}
 
+Role:
+{role_rule}
+
 Operating contract:
 - Do not wait for the user. If you need user judgment/credentials/taste, record it and switch to another useful task.
 - Optimize for verified, low-risk progress. Prefer objective bugs, repros, regression tests, bounded quality fixes, and clear validation.
 - Avoid broad rewrites, taste-based decisions, risky migrations, payments, sending email, pushing to remotes, deleting data, or external side effects unless explicitly allowed.
-- Spawn helper/swarm agents only when valuable, and keep their work headed/visible from this session. Use helpers for scoped implementation work, not reviewers, auditors, or verifiers. Verify their work yourself.
+- Spawn helper/swarm agents only when valuable, and keep their work headed/visible from this session. Use workers for scoped implementation, builds, tests, reviews and judging, and read their reports.
 - Watch RAM/load/battery and avoid concurrent heavy builds or tests unless resources are clearly healthy.
 
 Review/log requirements:
@@ -193,6 +207,7 @@ Initial steps:
 4. Prove/reproduce before fixing.
 5. Validate, update review notes/task cards, and continue with the next bounded task until the target wake/report time.
 "#,
+        role_rule = COORDINATOR_ROLE_RULE,
         run_id = manifest.run_id,
         target_wake_at = manifest.target_wake_at.to_rfc3339(),
         post_wake_grace_until = manifest.post_wake_grace_until.to_rfc3339(),
@@ -216,16 +231,18 @@ pub fn build_continuation_prompt(manifest: &OvernightManifest) -> String {
         .num_minutes()
         .max(0) as u32;
     format!(
-        "Overnight continuation: there is about {} remaining until the target wake/report time. If your current task is complete and another eligible, authorized task remains, continue with it. If none remains, report that and end the turn; do not re-run discovery on unchanged state. If you are stuck, record why in `{}` and the relevant task-card JSON, then switch to a smaller bounded task. Update review notes and task cards before continuing.",
+        "Overnight continuation: there is about {} remaining until the target wake/report time. If your current task is complete and another eligible, authorized task remains, continue with it. If none remains, report that and end the turn; do not re-run discovery on unchanged state. If you are stuck, record why in `{}` and the relevant task-card JSON, then switch to a smaller bounded task. Update review notes and task cards before continuing. {}",
         format_minutes(remaining),
-        manifest.review_notes_path.display()
+        manifest.review_notes_path.display(),
+        COORDINATOR_DELEGATION_REMINDER
     )
 }
 
 pub fn build_signal_prompt(signal: &str, manifest: &OvernightManifest) -> String {
     format!(
-        "Overnight signal `{signal}` arrived. Handle what it reports, then continue only with eligible, authorized, verifiable tasks. Update `{}` and task-card JSON. If no eligible task remains, say so and end the turn; the supervisor waits for the next signal or the wake boundary.",
-        manifest.review_notes_path.display()
+        "Overnight signal `{signal}` arrived. Handle what it reports, then continue only with eligible, authorized, verifiable tasks. Update `{}` and task-card JSON. If no eligible task remains, say so and end the turn; the supervisor waits for the next signal or the wake boundary. {}",
+        manifest.review_notes_path.display(),
+        COORDINATOR_DELEGATION_REMINDER
     )
 }
 
@@ -246,9 +263,10 @@ pub fn build_morning_report_prompt(manifest: &OvernightManifest) -> String {
 
 pub fn build_post_wake_continuation_prompt(manifest: &OvernightManifest) -> String {
     format!(
-        "Post-wake continuation: the target wake/report time has passed and the morning report should already be available. You may continue only with bounded, safe, verifiable work that is already in progress or clearly high-value. Do not start broad/risky new changes. Keep `{}` and task-card JSON current so the user can safely inspect or interrupt at any time. Soft grace window ends at `{}`.",
+        "Post-wake continuation: the target wake/report time has passed and the morning report should already be available. You may continue only with bounded, safe, verifiable work that is already in progress or clearly high-value. Do not start broad/risky new changes. Keep `{}` and task-card JSON current so the user can safely inspect or interrupt at any time. Soft grace window ends at `{}`. {}",
         manifest.review_notes_path.display(),
-        manifest.post_wake_grace_until.to_rfc3339()
+        manifest.post_wake_grace_until.to_rfc3339(),
+        COORDINATOR_DELEGATION_REMINDER
     )
 }
 

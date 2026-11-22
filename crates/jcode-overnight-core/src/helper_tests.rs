@@ -268,3 +268,56 @@ fn review_html_builder_includes_core_sections() {
     assert!(html.contains("Finished &lt;task&gt;"));
     assert!(html.contains("verify &lt;things&gt;"));
 }
+
+#[test]
+fn coordinator_prompts_state_delegation_rule() {
+    let now = Utc::now();
+    let manifest = test_manifest(now);
+    let preflight = OvernightPreflight {
+        captured_at: now,
+        usage: UsageProjection {
+            captured_at: now,
+            risk: "low".to_string(),
+            confidence: "high".to_string(),
+            projected_delta_min_percent: None,
+            projected_delta_max_percent: None,
+            projected_end_min_percent: None,
+            projected_end_max_percent: None,
+            providers: Vec::new(),
+            notes: Vec::new(),
+        },
+        resources: ResourceSnapshot {
+            captured_at: now,
+            ..Default::default()
+        },
+        git: GitSnapshot {
+            captured_at: now,
+            branch: None,
+            dirty_count: None,
+            dirty_summary: Vec::new(),
+            error: None,
+        },
+    };
+    for prompt in [
+        build_coordinator_prompt(&manifest, &preflight),
+        build_visible_current_session_prompt(&manifest),
+    ] {
+        assert!(prompt.contains(COORDINATOR_ROLE_RULE));
+        assert!(prompt.contains("coordinate, facilitate, nudge and manage todos"));
+        assert!(prompt.contains("assigned to a swarm worker"));
+        assert!(!prompt.contains("Verify helper work yourself"));
+        assert!(!prompt.contains("Verify their work yourself"));
+    }
+}
+
+#[test]
+fn continuation_prompts_remind_coordinator_to_delegate() {
+    let manifest = test_manifest(Utc::now());
+    for prompt in [
+        build_continuation_prompt(&manifest),
+        build_post_wake_continuation_prompt(&manifest),
+        build_signal_prompt("worker_done", &manifest),
+    ] {
+        assert!(prompt.contains(COORDINATOR_DELEGATION_REMINDER), "{prompt}");
+    }
+}
