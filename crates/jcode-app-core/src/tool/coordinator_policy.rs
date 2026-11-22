@@ -213,20 +213,21 @@ pub fn allows(tool: &str, input: &Value, resolve: &dyn Fn(&Path) -> PathBuf) -> 
                 .get("command")
                 .and_then(Value::as_str)
                 .ok_or_else(|| "`bash` without command".to_string())?;
-            read_only_bash(command).map_err(|why| format!("bash is read-only: {why}"))
+            read_only_bash(command, &resolve(Path::new(".")))
+                .map_err(|why| format!("bash is read-only: {why}"))
         }
         other => Err(format!("`{other}` is not in the coordinator allowlist")),
     }
 }
 
 /// Accept only lines made of read-only commands joined by `&&`, `||`, `;`, `|`.
-fn read_only_bash(line: &str) -> Result<(), String> {
+fn read_only_bash(line: &str, cwd: &Path) -> Result<(), String> {
     let segments = split_segments(line)?;
     if segments.is_empty() {
         return Err("empty command".into());
     }
     for words in segments {
-        check_command(&words)?;
+        check_command(&words, cwd)?;
     }
     Ok(())
 }
@@ -406,7 +407,7 @@ fn split_segments(line: &str) -> Result<Vec<Vec<Word>>, String> {
     Ok(segments)
 }
 
-fn check_command(words: &[Word]) -> Result<(), String> {
+fn check_command(words: &[Word], cwd: &Path) -> Result<(), String> {
     let name = words[0].text.as_str();
     // Commands with writing or executing options must not receive words that a
     // glob could turn into such an option; quote the pattern instead.
@@ -439,9 +440,161 @@ fn check_command(words: &[Word]) -> Result<(), String> {
                 None => Ok(()),
             }
         }
-        "git" => check_git(args),
+        "git" => check_git(args, cwd),
         other => Err(format!("`{other}` is not a read-only command")),
     }
+}
+
+/// Keys in the effective git configuration (system, global, repository,
+/// `include` files, `GIT_CONFIG_*` and `-c` environment) that make `status`,
+/// `diff`, `log` or `show` execute a configured program:
+/// - `filter.<name>.clean|smudge|process` run on worktree files for `status`
+///   and worktree `diff`.
+/// - `core.fsmonitor` runs a hook program (`true` starts git's own daemon).
+/// - `gpg.program`, `gpg.<fmt>.program` verify signatures for `log` and `show`.
+///
+/// Other program-running keys were measured as unreachable from the
+/// allowlisted commands in the bash tool: `core.pager` and `pager.*` need a
+/// terminal and the tool sets `GIT_PAGER=cat` with a piped, tty-less stdout;
+/// `credential.helper` only runs for network operations; `diff.*.textconv`,
+/// `diff.*.command`, `diff.external` and `GIT_EXTERNAL_DIFF` are switched off by
+/// the required `--no-textconv --no-ext-diff`. They are not denied, because
+/// `core.pager = delta` and `diff.external = difft` are common and denying them
+/// would disable git for the coordinator without closing a path.
+const GIT_PROGRAM_KEYS: &str =
+    r"^(filter\..+\.(clean|smudge|process)|core\.fsmonitor|gpg\.program|gpg\.[^.]+\.program)$";
+
+#[cfg(test)]
+thread_local! {
+    /// Environment for the probe in tests, so a developer's own git
+    /// configuration cannot change the outcome.
+    static PROBE_ENV: std::cell::RefCell<Vec<(String, String)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn git_probe(dir: &Path, args: &[&str]) -> Result<std::process::Output, String> {
+    let mut command = std::process::Command::new("git");
+    command.current_dir(dir).args(args);
+    #[cfg(test)]
+    PROBE_ENV.with(|env| {
+        for (key, value) in env.borrow().iter() {
+            command.env(key, value);
+        }
+    });
+    command
+        .stdin(std::process::Stdio::null())
+        .output()
+        .map_err(|error| format!("could not run git to inspect its configuration: {error}"))
+}
+
+fn git_flag_value(args: &[String], flag: &str) -> Option<String> {
+    args.iter().find_map(|a| {
+        if a == flag {
+            Some(String::new())
+        } else {
+            a.strip_prefix(flag)
+                .and_then(|v| v.strip_prefix('='))
+                .map(str::to_string)
+        }
+    })
+}
+
+/// Fail closed when running `sub` in `dir` could execute a configured program.
+/// `git config --get-regexp` reads configuration only: it runs no filter,
+/// fsmonitor, pager or hook (verified with marker scripts), and it follows
+/// `include` files, so included keys are seen.
+fn check_git_runs_no_program(
+    sub: &str,
+    rest: &[String],
+    dir: &Path,
+    no_optional_locks: bool,
+) -> Result<(), String> {
+    let out = git_probe(dir, &["config", "-z", "--get-regexp", GIT_PROGRAM_KEYS])?;
+    match out.status.code() {
+        // Exit 1: no matching key.
+        Some(1) => {}
+        Some(0) => {
+            for entry in out.stdout.split(|b| *b == 0).filter(|e| !e.is_empty()) {
+                let entry = String::from_utf8_lossy(entry);
+                let (key, value) = entry
+                    .split_once('\n')
+                    .map_or((&*entry, None), |(k, v)| (k, Some(v)));
+                let key = key.to_ascii_lowercase();
+                let is_gpg = key.starts_with("gpg.");
+                if is_gpg && !matches!(sub, "log" | "show") {
+                    continue;
+                }
+                let disabled = key == "core.fsmonitor"
+                    && value.is_some_and(|v| {
+                        matches!(
+                            v.trim().to_ascii_lowercase().as_str(),
+                            "false" | "no" | "off" | "0"
+                        )
+                    });
+                if disabled {
+                    continue;
+                }
+                return Err(format!(
+                    "git config `{key}` makes git {sub} run a configured program"
+                ));
+            }
+        }
+        _ => {
+            return Err(format!(
+                "could not inspect git configuration ({})",
+                String::from_utf8_lossy(&out.stderr)
+                    .lines()
+                    .next()
+                    .unwrap_or("git failed")
+            ));
+        }
+    }
+    if !matches!(sub, "status" | "diff") {
+        return Ok(());
+    }
+
+    // `status` and `diff` refresh the index, which runs `post-index-change`
+    // unless optional locks are off. The hooks path honours `core.hooksPath`.
+    if !no_optional_locks {
+        let hook = git_probe(dir, &["rev-parse", "--git-path", "hooks/post-index-change"])?;
+        let path = String::from_utf8_lossy(&hook.stdout).trim().to_string();
+        if hook.status.success() && !path.is_empty() && dir.join(&path).is_file() {
+            return Err(
+                "git would run the post-index-change hook; add `--no-optional-locks` before the subcommand".into(),
+            );
+        }
+    }
+
+    // A submodule's own configuration and hooks are invisible to the probe
+    // above, and its fsmonitor runs for `status` and `diff` unless submodules
+    // are ignored (`=all` and `=dirty` were measured safe; `=untracked` and
+    // `=none` still enter the submodule). Initialized submodules are those with
+    // `submodule.*` configuration or a `modules` directory.
+    let ignored = git_flag_value(rest, "--ignore-submodules")
+        .is_some_and(|v| matches!(v.as_str(), "" | "all" | "dirty"));
+    if !ignored {
+        let has_config = git_probe(
+            dir,
+            &[
+                "config",
+                "-z",
+                "--get-regexp",
+                r"^submodule\..+\.(url|path|active)$",
+            ],
+        )?
+        .status
+        .success();
+        let modules = git_probe(dir, &["rev-parse", "--git-path", "modules"])?;
+        let modules = String::from_utf8_lossy(&modules.stdout).trim().to_string();
+        let has_modules = !modules.is_empty()
+            && std::fs::read_dir(dir.join(&modules))
+                .is_ok_and(|mut entries| entries.next().is_some());
+        if has_config || has_modules {
+            return Err(format!(
+                "this repository has initialized submodules whose own configuration git {sub} would trust; add `--ignore-submodules=all`"
+            ));
+        }
+    }
+    Ok(())
 }
 
 /// True when `arg` is `full` or a unique-looking long-option abbreviation of it
@@ -452,12 +605,22 @@ fn is_abbrev_of(arg: &str, full: &str) -> bool {
     name.len() >= 4 && full.starts_with(name)
 }
 
-fn check_git(args: &[String]) -> Result<(), String> {
+fn check_git(args: &[String], cwd: &Path) -> Result<(), String> {
+    let mut dir = cwd.to_path_buf();
+    let mut no_optional_locks = false;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
             "--no-pager" => i += 1,
-            "-C" if i + 1 < args.len() => i += 2,
+            "--no-optional-locks" => {
+                no_optional_locks = true;
+                i += 1;
+            }
+            // `-C` is relative to the previous `-C`, like git itself.
+            "-C" if i + 1 < args.len() => {
+                dir = dir.join(&args[i + 1]);
+                i += 2;
+            }
             _ => break,
         }
     }
@@ -465,6 +628,12 @@ fn check_git(args: &[String]) -> Result<(), String> {
         return Err("git without subcommand".into());
     };
     let rest = &args[i + 1..];
+    if !matches!(sub.as_str(), "status" | "log" | "diff" | "show" | "branch") {
+        return Err(format!("git {sub} is not a read-only subcommand"));
+    }
+    // Configuration that makes an otherwise read-only subcommand run a program.
+    // Checked before the subcommand's own rules so the denial names the key.
+    check_git_runs_no_program(sub, rest, &dir, no_optional_locks)?;
     match sub.as_str() {
         "status" => Ok(()),
         // These render patches, so git runs a `diff.<driver>.textconv` program

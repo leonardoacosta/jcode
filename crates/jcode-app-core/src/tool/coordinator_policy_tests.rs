@@ -9,8 +9,133 @@ fn ok(tool: &str, input: Value) -> bool {
     allows(tool, &input, &id).is_ok()
 }
 
+/// Throwaway git repository with an isolated environment: no system or global
+/// git configuration, so a developer's own `core.pager`, hooks or filters can
+/// never change a test outcome.
+struct Repo {
+    dir: tempfile::TempDir,
+}
+
+const ISOLATED_GIT_ENV: [(&str, &str); 4] = [
+    ("GIT_CONFIG_GLOBAL", "/dev/null"),
+    ("GIT_CONFIG_NOSYSTEM", "1"),
+    ("GIT_TERMINAL_PROMPT", "0"),
+    ("GIT_PAGER", "cat"),
+];
+
+fn isolate_probe() {
+    PROBE_ENV.with(|env| {
+        *env.borrow_mut() = ISOLATED_GIT_ENV
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_string()))
+            .collect();
+    });
+}
+
+impl Repo {
+    fn new() -> Self {
+        let repo = Self {
+            dir: tempfile::tempdir().unwrap(),
+        };
+        repo.git(&["init", "-q", "."]);
+        std::fs::write(repo.path().join("f"), "a\n").unwrap();
+        repo.git(&["add", "f"]);
+        repo.git(&[
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@t",
+            "commit",
+            "-q",
+            "-m",
+            "x",
+        ]);
+        isolate_probe();
+        repo
+    }
+
+    fn path(&self) -> &Path {
+        self.dir.path()
+    }
+
+    /// Run real git here, isolated, stdin closed and stdout piped like the
+    /// bash tool, so a configured program that really runs leaves its marker.
+    fn git(&self, args: &[&str]) -> std::process::Output {
+        let mut command = std::process::Command::new("git");
+        command
+            .current_dir(self.path())
+            .args(args)
+            .stdin(std::process::Stdio::null());
+        for (key, value) in ISOLATED_GIT_ENV {
+            command.env(key, value);
+        }
+        command.output().unwrap()
+    }
+
+    fn config(&self, key: &str, value: &str) {
+        assert!(self.git(&["config", key, value]).status.success(), "{key}");
+    }
+
+    /// Executable script that records `label` in the repo's marker file.
+    fn script(&self, name: &str, label: &str) -> String {
+        let path = self.path().join(name);
+        let marker = self.marker_path();
+        std::fs::write(
+            &path,
+            format!("#!/bin/sh\necho {label} >> '{}'\ncat\n", marker.display()),
+        )
+        .unwrap();
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        path.display().to_string()
+    }
+
+    fn marker_path(&self) -> PathBuf {
+        // Outside the worktree, so it never shows up as an untracked file.
+        self.dir.path().parent().unwrap().join(format!(
+            "marker-{}",
+            self.dir.path().file_name().unwrap().to_string_lossy()
+        ))
+    }
+
+    fn ran(&self) -> Vec<String> {
+        std::fs::read_to_string(self.marker_path())
+            .unwrap_or_default()
+            .lines()
+            .map(str::to_string)
+            .collect()
+    }
+
+    fn reset_marker(&self) {
+        let _ = std::fs::remove_file(self.marker_path());
+    }
+
+    /// Make the index stat-dirty so `git status` refreshes it.
+    fn touch(&self) {
+        std::fs::write(self.path().join("f"), "a\n").unwrap();
+    }
+
+    fn allows(&self, command: &str) -> Result<(), String> {
+        let root = self.path().to_path_buf();
+        allows("bash", &json!({ "command": command }), &move |p| {
+            root.join(p)
+        })
+    }
+}
+
+impl Drop for Repo {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(self.marker_path());
+    }
+}
+
+thread_local! {
+    static CLEAN_REPO: Repo = Repo::new();
+}
+
+/// Bash allowlist decision with git resolved in a clean throwaway repo.
 fn bash(cmd: &str) -> bool {
-    ok("bash", json!({ "command": cmd }))
+    CLEAN_REPO.with(|repo| repo.allows(cmd).is_ok())
 }
 
 #[test]
@@ -369,6 +494,302 @@ fn denial_survives_an_unwritable_event_log() {
         )
         .is_err()
     );
+}
+
+/// Reproduction: a clean filter and `core.fsmonitor` run programs from plain
+/// `git status`/`git diff`. The policy must deny them, naming the key, while
+/// the same commands stay allowed in a repository with clean configuration.
+#[test]
+fn git_with_filter_or_fsmonitor_configured_is_denied_but_clean_repo_is_allowed() {
+    let clean = Repo::new();
+    for c in [
+        "git status",
+        "git diff --no-textconv --no-ext-diff",
+        "git log --no-textconv --no-ext-diff",
+        "git show --no-textconv --no-ext-diff",
+        "git -C . status",
+    ] {
+        assert!(clean.allows(c).is_ok(), "clean repo allows: {c}");
+    }
+
+    let repo = Repo::new();
+    std::fs::write(repo.path().join(".gitattributes"), "f filter=p\n").unwrap();
+    repo.config("filter.p.clean", &repo.script("clean.sh", "clean-filter"));
+    repo.config("core.fsmonitor", &repo.script("fsmon.sh", "fsmonitor"));
+
+    // The danger is real: ordinary git runs both programs.
+    repo.touch();
+    repo.reset_marker();
+    repo.git(&["status"]);
+    let ran = repo.ran();
+    assert!(ran.contains(&"clean-filter".to_string()), "{ran:?}");
+    assert!(ran.contains(&"fsmonitor".to_string()), "{ran:?}");
+
+    // The policy denies git in this repo, so neither can be reached.
+    for c in [
+        "git status",
+        "git --no-optional-locks status",
+        "git diff --no-textconv --no-ext-diff",
+        "git log --no-textconv --no-ext-diff",
+        "git show --no-textconv --no-ext-diff",
+        "git -C . status",
+        "git log --no-textconv --no-ext-diff | head -3",
+    ] {
+        let err = repo.allows(c).unwrap_err();
+        assert!(
+            err.contains("filter.p.clean") || err.contains("core.fsmonitor"),
+            "{c}: {err}"
+        );
+    }
+    repo.reset_marker();
+    assert!(repo.ran().is_empty());
+
+    // Unrelated segments in a pipeline do not hide it.
+    assert!(repo.allows("ls && git status").is_err());
+    // Other commands are untouched by git configuration.
+    assert!(repo.allows("ls").is_ok());
+    assert!(repo.allows("rg foo").is_ok());
+}
+
+#[test]
+fn each_filter_kind_and_fsmonitor_hook_denied_while_disabled_fsmonitor_allowed() {
+    for (key, value, denied) in [
+        ("filter.x.clean", "prog", true),
+        ("filter.x.smudge", "prog", true),
+        ("filter.x.process", "prog", true),
+        ("core.fsmonitor", "/bin/hook", true),
+        ("core.fsmonitor", "true", true),
+        ("core.fsmonitor", "false", false),
+        ("core.fsmonitor", "0", false),
+        ("core.fsmonitor", "off", false),
+        // Not a program key, so unrelated configuration never blocks git.
+        ("filter.x.required", "true", false),
+        ("core.editor", "vim", false),
+        ("user.name", "me", false),
+    ] {
+        let repo = Repo::new();
+        repo.config(key, value);
+        let result = repo.allows("git status");
+        assert_eq!(result.is_err(), denied, "{key}={value}: {result:?}");
+    }
+}
+
+#[test]
+fn included_and_environment_configuration_is_seen_by_the_probe() {
+    // `include.path` pulls a program key in from another file.
+    let repo = Repo::new();
+    let extra = repo.path().join("extra.cfg");
+    std::fs::write(&extra, "[core]\n\tfsmonitor = /bin/hook\n").unwrap();
+    repo.config("include.path", &extra.display().to_string());
+    let err = repo.allows("git status").unwrap_err();
+    assert!(err.contains("core.fsmonitor"), "{err}");
+
+    // `GIT_CONFIG_COUNT` style injection reaches the bash tool's git too.
+    let repo = Repo::new();
+    PROBE_ENV.with(|env| {
+        let mut env = env.borrow_mut();
+        env.push(("GIT_CONFIG_COUNT".into(), "1".into()));
+        env.push(("GIT_CONFIG_KEY_0".into(), "filter.e.clean".into()));
+        env.push(("GIT_CONFIG_VALUE_0".into(), "/bin/hook".into()));
+    });
+    let err = repo.allows("git status").unwrap_err();
+    assert!(err.contains("filter.e.clean"), "{err}");
+    isolate_probe();
+    assert!(repo.allows("git status").is_ok());
+}
+
+#[test]
+fn gpg_program_denied_only_where_signatures_are_verified() {
+    let repo = Repo::new();
+    repo.config("gpg.program", "/bin/hook");
+    let flags = "--no-textconv --no-ext-diff";
+    for sub in ["log", "show"] {
+        let err = repo.allows(&format!("git {sub} {flags}")).unwrap_err();
+        assert!(err.contains("gpg.program"), "{sub}: {err}");
+    }
+    assert!(repo.allows("git status").is_ok());
+    assert!(repo.allows(&format!("git diff {flags}")).is_ok());
+    repo.git(&["config", "--unset", "gpg.program"]);
+    repo.config("gpg.ssh.program", "/bin/hook");
+    assert!(repo.allows(&format!("git log {flags}")).is_err());
+}
+
+#[test]
+fn index_refresh_hook_requires_no_optional_locks_and_hookspath_is_honoured() {
+    let repo = Repo::new();
+    let hook = repo.path().join(".git/hooks/post-index-change");
+    std::fs::write(
+        &hook,
+        format!(
+            "#!/bin/sh\necho hook >> '{}'\n",
+            repo.marker_path().display()
+        ),
+    )
+    .unwrap();
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(&hook, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    // Reproduction: an ordinary refresh runs the hook; `--no-optional-locks` does not.
+    repo.touch();
+    repo.reset_marker();
+    repo.git(&["status"]);
+    assert_eq!(repo.ran(), ["hook"]);
+    repo.touch();
+    repo.reset_marker();
+    repo.git(&["--no-optional-locks", "status"]);
+    assert!(repo.ran().is_empty());
+
+    let err = repo.allows("git status").unwrap_err();
+    assert!(err.contains("--no-optional-locks"), "{err}");
+    assert!(repo.allows("git diff --no-textconv --no-ext-diff").is_err());
+    assert!(repo.allows("git --no-optional-locks status").is_ok());
+    assert!(
+        repo.allows("git --no-optional-locks diff --no-textconv --no-ext-diff")
+            .is_ok()
+    );
+    // `log` and `show` never refresh the index.
+    assert!(repo.allows("git log --no-textconv --no-ext-diff").is_ok());
+
+    // `core.hooksPath` moves the hook directory: the probe follows it.
+    let empty = tempfile::tempdir().unwrap();
+    repo.config("core.hooksPath", &empty.path().display().to_string());
+    assert!(repo.allows("git status").is_ok());
+    std::fs::copy(&hook, empty.path().join("post-index-change")).unwrap();
+    assert!(repo.allows("git status").is_err());
+}
+
+#[test]
+fn initialized_submodule_requires_ignore_submodules_all() {
+    let sub = Repo::new();
+    let repo = Repo::new();
+    let added = std::process::Command::new("git")
+        .current_dir(repo.path())
+        .args(["-c", "protocol.file.allow=always", "submodule", "add", "-q"])
+        .arg(sub.path())
+        .arg("sm")
+        .envs(ISOLATED_GIT_ENV)
+        .output()
+        .unwrap();
+    assert!(added.status.success(), "{added:?}");
+
+    // Reproduction: the submodule's own fsmonitor runs for a plain `status`.
+    let child = repo.path().join("sm");
+    let run = |args: &[&str]| {
+        std::process::Command::new("git")
+            .current_dir(&child)
+            .args(args)
+            .envs(ISOLATED_GIT_ENV)
+            .output()
+            .unwrap()
+    };
+    let script = repo.script("fsmon.sh", "submodule-fsmonitor");
+    assert!(run(&["config", "core.fsmonitor", &script]).status.success());
+    std::fs::write(child.join("f"), "dirty\n").unwrap();
+    repo.reset_marker();
+    repo.git(&["status"]);
+    assert_eq!(repo.ran(), ["submodule-fsmonitor"]);
+    repo.reset_marker();
+    repo.git(&["status", "--ignore-submodules=all"]);
+    assert!(repo.ran().is_empty());
+
+    let flags = "--no-textconv --no-ext-diff";
+    for c in [
+        "git --no-optional-locks status".to_string(),
+        format!("git diff {flags}"),
+        format!("git --no-optional-locks status --ignore-submodules=untracked"),
+        format!("git diff {flags} --ignore-submodules=none"),
+    ] {
+        let err = repo.allows(&c).unwrap_err();
+        assert!(err.contains("--ignore-submodules=all"), "{c}: {err}");
+    }
+    for c in [
+        "git --no-optional-locks status --ignore-submodules=all".to_string(),
+        "git --no-optional-locks status --ignore-submodules".to_string(),
+        format!("git diff {flags} --ignore-submodules=dirty"),
+        // `log` and `show` do not enter submodules.
+        format!("git log {flags}"),
+    ] {
+        assert!(repo.allows(&c).is_ok(), "{c}");
+    }
+    // A repository without submodules is unaffected.
+    assert!(Repo::new().allows("git --no-optional-locks status").is_ok());
+}
+
+#[test]
+fn dash_c_directory_is_probed_relative_to_the_base_directory() {
+    let outer = tempfile::tempdir().unwrap();
+    let repo = Repo::new();
+    repo.config("core.fsmonitor", "/bin/hook");
+    let clean = outer.path().join("clean");
+    std::fs::create_dir(&clean).unwrap();
+    let init = std::process::Command::new("git")
+        .current_dir(&clean)
+        .args(["init", "-q", "."])
+        .envs(ISOLATED_GIT_ENV)
+        .output()
+        .unwrap();
+    assert!(init.status.success());
+    // From a clean cwd, `-C` into the configured repo is still denied...
+    let dirty = repo.path().display().to_string();
+    let result = allows(
+        "bash",
+        &json!({ "command": format!("git -C {dirty} status") }),
+        &|p| clean.join(p),
+    );
+    assert!(result.unwrap_err().contains("core.fsmonitor"));
+    // ...and a clean cwd alone is allowed.
+    isolate_probe();
+    assert!(
+        allows("bash", &json!({"command": "git status"}), &|p| clean
+            .join(p))
+        .is_ok()
+    );
+}
+
+/// Measured with real git: these configured programs cannot be reached from the
+/// allowlisted commands in the bash tool's environment, so they do not block
+/// git (`core.pager = delta` and `diff.external = difft` are common).
+#[test]
+fn configured_pager_credential_and_diff_programs_are_inert_and_not_blocked() {
+    let repo = Repo::new();
+    std::fs::write(repo.path().join(".gitattributes"), "f diff=probe\n").unwrap();
+    let prog = repo.script("prog.sh", "RAN");
+    for key in [
+        "core.pager",
+        "pager.log",
+        "pager.diff",
+        "pager.status",
+        "credential.helper",
+        "diff.external",
+        "diff.probe.textconv",
+        "diff.probe.command",
+    ] {
+        repo.config(key, &prog);
+    }
+    std::fs::write(repo.path().join("f"), "changed\n").unwrap();
+    let flags = "--no-textconv --no-ext-diff";
+    for c in [
+        format!("git --no-optional-locks status"),
+        format!("git diff {flags}"),
+        format!("git log -p {flags}"),
+        format!("git show {flags}"),
+        "git branch -a".to_string(),
+    ] {
+        assert!(repo.allows(&c).is_ok(), "{c}");
+        // And really running the allowed command executes nothing. Piped
+        // stdout and GIT_PAGER=cat match the bash tool.
+        let words: Vec<&str> = c.split_whitespace().skip(1).collect();
+        repo.reset_marker();
+        let mut command = std::process::Command::new("git");
+        command
+            .current_dir(repo.path())
+            .args(&words)
+            .stdin(std::process::Stdio::null())
+            .env("GIT_EXTERNAL_DIFF", &prog)
+            .envs(ISOLATED_GIT_ENV);
+        command.output().unwrap();
+        assert!(repo.ran().is_empty(), "{c} ran {:?}", repo.ran());
+    }
 }
 
 pub(in crate::tool) struct Home {
