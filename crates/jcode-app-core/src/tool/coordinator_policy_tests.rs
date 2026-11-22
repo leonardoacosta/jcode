@@ -135,6 +135,170 @@ fn mutating_bash_denied() {
     assert!(!ok("bash", json!({})));
 }
 
+/// Argument-injection and write/execute vectors found in review. Each must be
+/// denied; none may rely on a later parser stage to notice the injected word.
+#[test]
+fn bash_expansion_and_argv_injection_denied() {
+    for c in [
+        // Expansion can smuggle a find predicate or git option past the checks.
+        r#"find . "$F""#,
+        "find . $F",
+        "find . ${F}",
+        "find . `echo -delete`",
+        "find . $(echo -delete)",
+        "find . $((1+1))",
+        "find . $'-delete'",
+        r#"find . "${F}""#,
+        r#"find . "$(echo -delete)""#,
+        r#"find . "`echo -delete`""#,
+        "sort -o$X f",
+        "git -c $X log",
+        "git log $X",
+        "echo $HOME",
+        r#"echo "$HOME""#,
+        r#"echo "a$HOME""#,
+        // Brace expansion builds `-delete` from unquoted parts.
+        "find . {-delete,x}",
+        "find . -{d,}elete",
+        "ls {a,b}",
+        // An unquoted glob can expand to a file named like an option.
+        "find . *",
+        "find * -name x",
+        "rg foo *.rs",
+        "rg foo ?",
+        "git log [a-z]*",
+        "git diff *",
+        // Process substitution, both directions.
+        "cat <(ls)",
+        "cat >(tee x)",
+        // Commands that write or execute are not on the allowlist at all.
+        "sort -o out f",
+        "sort -ofile f",
+        "less file",
+        "man ls",
+        "env ls",
+        "xargs rm",
+        "awk 'BEGIN{system(\"rm x\")}'",
+        "awk '{print > \"f\"}' x",
+        "sed -i s/a/b/ f",
+        "sed 'w out' f",
+        "tee out",
+        "dd of=out",
+        "python3 -c 1",
+        "bash -c ls",
+        "sh -c ls",
+        "/bin/rm x",
+        "\\rm x",
+        // find: every writing or executing predicate.
+        "find . -fprint out",
+        "find . -fprint0 out",
+        "find . -fprintf out %p",
+        "find . -fls out",
+        "find . -exec rm {} +",
+        "find . -execdir rm {} ;",
+        "find . -ok rm {} ;",
+        "find . -okdir rm {} ;",
+        "find . '-delete'",
+        r#"find . "-delete""#,
+        "find . \\-delete",
+        // git: output files and external programs.
+        "git log --output=out",
+        "git log --output out",
+        "git show --output=out",
+        "git diff --output=out",
+        "git diff --ext-diff",
+        "git diff --textconv",
+        "git -c core.pager=x log",
+        "git -c alias.x='!rm' x",
+        "git --exec-path=/tmp log",
+        "git config --global x y",
+        "git fetch",
+        // ripgrep runs external programs.
+        "rg --pre ./x foo",
+        "rg --pre=./x foo",
+        "rg --pre-glob '*' foo",
+        "rg --hostname-bin=./x foo",
+        "rg --hostname-bin ./x foo",
+    ] {
+        assert!(!bash(c), "must be denied: {c}");
+    }
+}
+
+/// The hardening must not break ordinary inspection commands.
+#[test]
+fn bash_literal_dollar_in_single_quotes_and_regex_anchors_still_allowed() {
+    for c in [
+        "rg 'foo$' src",
+        "rg '\\$HOME' src",
+        "rg 'a|b' src",
+        "echo '${F}'",
+        "echo '$(not run)'",
+        r#"rg "end$" src"#,
+        r#"echo "price: $ 5""#,
+        r#"echo "a\$HOME""#,
+        "jq '.a | {b}' f.json",
+        "find . -name '*.rs' -not -path './target/*'",
+        "git log --format='%h %s' -3",
+        "git log --pretty=format:'%H'",
+        "ls *.rs",
+        "cat src/*.rs | wc -l",
+        "find . -name '*.rs'",
+        "rg 'a*' src",
+        "rg \"a?\" src",
+        "git log -- 'src/*'",
+        "ls ~",
+        "ls ~/dev",
+    ] {
+        assert!(bash(c), "must stay allowed: {c}");
+    }
+}
+
+#[test]
+fn denial_survives_an_unwritable_event_log() {
+    use jcode_overnight_core::OvernightRunStatus::Running;
+    let _home = Home::new();
+    let session = format!("coord-{}", uuid::Uuid::new_v4());
+    let run = format!("run-{}", uuid::Uuid::new_v4());
+    write_run(&session, &run, Running);
+    install_for_overnight(&session, &run);
+    // A directory where events.jsonl should be makes every append fail, even
+    // for a privileged user.
+    let run_dir = crate::overnight::run_dir(&run).unwrap();
+    let events = run_dir.join("events.jsonl");
+    let _ = std::fs::remove_file(&events);
+    std::fs::create_dir_all(&events).unwrap();
+    let manifest = crate::overnight::load_manifest(&run).unwrap();
+    assert!(
+        crate::overnight::record_event(&manifest, "x", String::new(), json!({}), false).is_err(),
+        "the event log really is unwritable"
+    );
+
+    let err = enforce(
+        &session,
+        "edit",
+        &json!({"file_path": "src/main.rs"}),
+        false,
+        &id,
+    )
+    .unwrap_err();
+    assert!(
+        err.contains("denied for the overnight coordinator"),
+        "{err}"
+    );
+    assert!(err.contains("swarm worker"), "{err}");
+    // Still restricted afterwards.
+    assert!(
+        enforce(
+            &session,
+            "bash",
+            &json!({"command": "cargo build"}),
+            false,
+            &id
+        )
+        .is_err()
+    );
+}
+
 pub(in crate::tool) struct Home {
     _guard: std::sync::MutexGuard<'static, ()>,
     prev: Option<std::ffi::OsString>,

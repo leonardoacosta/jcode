@@ -121,14 +121,20 @@ pub(crate) fn enforce(
     {
         return Ok(());
     }
-    if let Some(manifest) = manifest {
-        let _ = crate::overnight::record_event(
+    if let Some(manifest) = manifest
+        && let Err(error) = crate::overnight::record_event(
             &manifest,
             "coordinator_tool_denied",
             format!("Coordinator call to `{tool}` denied: {reason}"),
             json!({ "tool": tool, "reason": reason }),
             false,
-        );
+        )
+    {
+        // The denial still stands; only its audit record is lost.
+        crate::logging::warn(&format!(
+            "Could not record coordinator_tool_denied for `{tool}` ({reason}) in run {}: {error:#}",
+            manifest.run_id
+        ));
     }
     Err(format!(
         "Tool '{tool}' denied for the overnight coordinator: {reason}. {DELEGATION_HINT}"
@@ -225,13 +231,21 @@ fn read_only_bash(line: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// One shell word. `glob` marks an unquoted `*`, `?` or `[`: bash expands it to
+/// file names, and a file named `-delete` or `--pre=x` becomes an option.
+struct Word {
+    text: String,
+    glob: bool,
+}
+
 /// Quote-aware split into commands of unquoted words. Rejects redirection to
 /// files, command/process substitution, heredocs and background operators.
-fn split_segments(line: &str) -> Result<Vec<Vec<String>>, String> {
+fn split_segments(line: &str) -> Result<Vec<Vec<Word>>, String> {
     let chars: Vec<char> = line.chars().collect();
-    let mut segments: Vec<Vec<String>> = Vec::new();
-    let mut words: Vec<String> = Vec::new();
+    let mut segments: Vec<Vec<Word>> = Vec::new();
+    let mut words: Vec<Word> = Vec::new();
     let mut word = String::new();
+    let mut glob = false;
     let mut in_word = false;
     let (mut single, mut double) = (false, false);
     let mut i = 0;
@@ -239,7 +253,10 @@ fn split_segments(line: &str) -> Result<Vec<Vec<String>>, String> {
     macro_rules! end_word {
         () => {
             if in_word {
-                words.push(std::mem::take(&mut word));
+                words.push(Word {
+                    text: std::mem::take(&mut word),
+                    glob: std::mem::take(&mut glob),
+                });
                 in_word = false;
             }
         };
@@ -266,8 +283,18 @@ fn split_segments(line: &str) -> Result<Vec<Vec<String>>, String> {
             i += 1;
             continue;
         }
-        if c == '`' || (c == '$' && next == Some('(')) {
+        if c == '`' {
             return Err("command substitution".into());
+        }
+        // Any expansion (`$VAR`, `${..}`, `$(..)`, `$((..))`, `$'..'`) can
+        // produce arguments this parser never sees, such as `find . "$F"` with
+        // F=-delete. Fail closed. Only single-quoted text and a `$` that bash
+        // keeps literal (end of a double-quoted string, before a space) pass.
+        if c == '$' {
+            let literal = double && matches!(next, None | Some(' ') | Some('\t') | Some('"'));
+            if !literal {
+                return Err("shell expansion (`$`) can inject arguments".into());
+            }
         }
         if double {
             match c {
@@ -298,6 +325,8 @@ fn split_segments(line: &str) -> Result<Vec<Vec<String>>, String> {
                 in_word = true;
                 i += 1;
             }
+            // Unquoted braces brace-expand (`{-delete,x}`) into extra argv words.
+            '{' | '}' => return Err("brace expansion".into()),
             ' ' | '\t' => end_word!(),
             '\n' | ';' => end_segment!(),
             '&' => {
@@ -358,6 +387,7 @@ fn split_segments(line: &str) -> Result<Vec<Vec<String>>, String> {
                 i = j + target.chars().count() - 1;
             }
             _ => {
+                glob |= matches!(c, '*' | '?' | '[');
                 word.push(c);
                 in_word = true;
             }
@@ -368,7 +398,7 @@ fn split_segments(line: &str) -> Result<Vec<Vec<String>>, String> {
         return Err("unterminated quote".into());
     }
     if in_word {
-        words.push(word);
+        words.push(Word { text: word, glob });
     }
     if !words.is_empty() {
         segments.push(words);
@@ -376,15 +406,27 @@ fn split_segments(line: &str) -> Result<Vec<Vec<String>>, String> {
     Ok(segments)
 }
 
-fn check_command(words: &[String]) -> Result<(), String> {
-    let name = words[0].as_str();
-    let args = &words[1..];
+fn check_command(words: &[Word]) -> Result<(), String> {
+    let name = words[0].text.as_str();
+    // Commands with writing or executing options must not receive words that a
+    // glob could turn into such an option; quote the pattern instead.
+    if matches!(name, "find" | "rg" | "git") && words[1..].iter().any(|w| w.glob) {
+        return Err(format!(
+            "`{name}` with an unquoted glob could expand to an option; quote the pattern"
+        ));
+    }
+    let args: Vec<String> = words[1..].iter().map(|w| w.text.clone()).collect();
+    let args = args.as_slice();
     match name {
         "rg" => {
-            if args.iter().any(|a| a == "--pre" || a.starts_with("--pre=")) {
-                return Err("rg --pre runs a command".into());
+            // `--pre[-glob]` and `--hostname-bin` execute the named command.
+            match args
+                .iter()
+                .find(|a| a.starts_with("--pre") || a.starts_with("--hostname-bin"))
+            {
+                Some(a) => Err(format!("rg {a} runs a command")),
+                None => Ok(()),
             }
-            Ok(())
         }
         "grep" | "ls" | "cat" | "head" | "tail" | "wc" | "jq" | "pwd" | "echo" => Ok(()),
         "find" => {
