@@ -429,4 +429,4 @@ fn check_git(args: &[String]) -> Result<(), String> {
 
 #[cfg(test)]
 #[path = "coordinator_policy_tests.rs"]
-mod tests;
+pub(in crate::tool) mod tests;

@@ -2809,3 +2809,64 @@ async fn dump_tool_definitions() {
 
 #[path = "tests_additional_tests.rs"]
 mod additional_base_tools_do_not_expose_invalid_reporting_tool;
+
+#[tokio::test]
+async fn coordinator_policy_enforced_through_registry_and_batch() {
+    use super::coordinator_policy::tests::{Home, write_run};
+    use jcode_overnight_core::OvernightRunStatus::{Completed, Running};
+    let _home = Home::new();
+    let dir = tempfile::tempdir().unwrap();
+    let rs = dir.path().join("main.rs");
+    let md = dir.path().join("plan.md");
+    std::fs::write(&rs, "before").unwrap();
+    std::fs::write(&md, "before").unwrap();
+    let session = format!("coord-reg-{}", uuid::Uuid::new_v4());
+    let run = format!("run-{}", uuid::Uuid::new_v4());
+    write_run(&session, &run, Running);
+    super::coordinator_policy::install_for_overnight(&session, &run);
+    let registry = Registry::new(Arc::new(MockProvider)).await;
+    let ctx = || ToolContext {
+        session_id: session.clone(),
+        message_id: "test".into(),
+        tool_call_id: uuid::Uuid::new_v4().to_string(),
+        working_dir: Some(dir.path().into()),
+        stdin_request_tx: None,
+        graceful_shutdown_signal: None,
+        execution_mode: ToolExecutionMode::Direct,
+    };
+    let edit = |path: &std::path::Path| serde_json::json!({"file_path": path, "old_string": "before", "new_string": "after"});
+
+    let err = registry
+        .execute("edit", edit(&rs), ctx())
+        .await
+        .unwrap_err();
+    assert!(err.to_string().contains("swarm worker"), "{err}");
+    assert_eq!(std::fs::read_to_string(&rs).unwrap(), "before");
+
+    registry.execute("edit", edit(&md), ctx()).await.unwrap();
+    assert_eq!(std::fs::read_to_string(&md).unwrap(), "after");
+
+    std::fs::write(&md, "before").unwrap();
+    let out = registry
+        .execute(
+            "batch",
+            serde_json::json!({"tool_calls": [
+                {"tool": "read", "file_path": md},
+                {"tool": "edit", "file_path": rs, "old_string": "before", "new_string": "after"},
+            ]}),
+            ctx(),
+        )
+        .await
+        .unwrap();
+    assert!(
+        out.output.contains("Completed: 1 succeeded, 1 failed"),
+        "{}",
+        out.output
+    );
+    assert!(out.output.contains("swarm worker"), "{}", out.output);
+    assert_eq!(std::fs::read_to_string(&rs).unwrap(), "before");
+
+    write_run(&session, &run, Completed);
+    registry.execute("edit", edit(&rs), ctx()).await.unwrap();
+    assert_eq!(std::fs::read_to_string(&rs).unwrap(), "after");
+}

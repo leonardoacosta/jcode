@@ -135,14 +135,14 @@ fn mutating_bash_denied() {
     assert!(!ok("bash", json!({})));
 }
 
-struct Home {
+pub(in crate::tool) struct Home {
     _guard: std::sync::MutexGuard<'static, ()>,
     prev: Option<std::ffi::OsString>,
     _dir: tempfile::TempDir,
 }
 
 impl Home {
-    fn new() -> Self {
+    pub(in crate::tool) fn new() -> Self {
         let guard = crate::storage::lock_test_env();
         let dir = tempfile::tempdir().unwrap();
         let prev = std::env::var_os("JCODE_HOME");
@@ -164,7 +164,11 @@ impl Drop for Home {
     }
 }
 
-fn write_run(session: &str, run_id: &str, status: jcode_overnight_core::OvernightRunStatus) {
+pub(in crate::tool) fn write_run(
+    session: &str,
+    run_id: &str,
+    status: jcode_overnight_core::OvernightRunStatus,
+) {
     let run_dir = crate::overnight::run_dir(run_id).unwrap();
     let now = chrono::Utc::now();
     let mut manifest: jcode_overnight_core::OvernightManifest = serde_json::from_value(json!({
