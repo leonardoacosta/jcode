@@ -383,15 +383,21 @@ impl ResponsesStream {
                     self.pending.push(StreamEvent::ThinkingEnd);
                     self.thinking = false;
                 }
-                let message = value
-                    .get("error")
-                    .and_then(|error| error.get("message"))
-                    .and_then(Value::as_str)
-                    .or_else(|| value.get("message").and_then(Value::as_str))
-                    .unwrap_or("OpenCode Go Responses API error");
+                // `response.failed` nests the error under `response.error`;
+                // bare `error` frames carry it at the top level or as `message`.
+                let top_level = value.get("error").cloned().or_else(|| {
+                    value
+                        .get("message")
+                        .map(|message| serde_json::json!({ "message": message }))
+                });
+                let (message, retry_after_secs) =
+                    jcode_provider_openai::stream::extract_error_with_retry(
+                        &value.get("response").cloned(),
+                        &top_level,
+                    );
                 self.pending.push(StreamEvent::Error {
-                    message: message.to_string(),
-                    retry_after_secs: None,
+                    message,
+                    retry_after_secs,
                 });
                 self.ended = true;
             }
@@ -570,6 +576,23 @@ mod tests {
                 .collect::<Vec<_>>();
             assert_eq!(models, ["actual-snapshot", "other-snapshot"]);
         }
+    }
+
+    #[test]
+    fn nested_response_failed_keeps_type_code_and_message() {
+        let mut stream = super::ResponsesStream::new(futures::stream::empty());
+        stream.parse_event(
+            r#"{"type":"response.failed","response":{"error":{"message":"terminated","type":"server_error","code":"stream_terminated"}}}"#,
+        );
+        let message = stream
+            .pending
+            .iter()
+            .find_map(|event| match event {
+                super::StreamEvent::Error { message, .. } => Some(message.as_str()),
+                _ => None,
+            })
+            .expect("error event");
+        assert_eq!(message, "server_error (stream_terminated): terminated");
     }
 
     use super::*;

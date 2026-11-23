@@ -20,7 +20,9 @@ fn truncated_stream_payload_context(data: &str) -> String {
 
 use crate::websocket_health::{is_structured_response_event, is_websocket_fallback_notice};
 
-fn extract_error_with_retry(
+/// Extract a Responses `error`/`response.failed` message, keeping its type and
+/// code, plus any retry hint. Shared with other Responses-wire parsers.
+pub fn extract_error_with_retry(
     response: &Option<Value>,
     top_level_error: &Option<Value>,
 ) -> (String, Option<u64>) {

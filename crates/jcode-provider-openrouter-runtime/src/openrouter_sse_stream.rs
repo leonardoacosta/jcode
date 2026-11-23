@@ -446,7 +446,9 @@ async fn stream_response(
     } else if openai_responses_api {
         "OpenAI Responses"
     } else if responses_api {
-        "OpenCode Go Responses"
+        // Every non-Azure, non-OpenAI Responses route: OpenCode Go, Muse, and
+        // named gateway profiles such as OmniRoute.
+        "Responses API"
     } else {
         "OpenAI-compatible chat"
     };
@@ -629,14 +631,28 @@ async fn stream_response(
                 );
             }
         };
-        if azure_responses || openai_responses_api {
+        if azure_responses || openai_responses_api || responses_api {
             if let StreamEvent::Error {
                 message,
                 retry_after_secs,
             } = &event
             {
                 if azure_responses {
-                    return Err(azure_response_failure(message, *retry_after_secs));
+                    return Err(responses_stream_failure(
+                        "Azure OpenAI Responses",
+                        message,
+                        *retry_after_secs,
+                    ));
+                }
+                if responses_api {
+                    // Gateways report upstream transport drops in-band as
+                    // `response.failed`; classify them so they retry instead
+                    // of ending the turn.
+                    return Err(responses_stream_failure(
+                        request_kind,
+                        message,
+                        *retry_after_secs,
+                    ));
                 }
                 anyhow::bail!("Responses request failed: {}", message);
             }
@@ -652,11 +668,9 @@ async fn stream_response(
 
     if (azure_responses || openai_responses_api) && !saw_message_end {
         if azure_responses {
-            return Err(anyhow::Error::new(AzureResponseFailure {
+            return Err(anyhow::Error::new(ResponsesStreamFailure {
                 retryable: true,
-                source: anyhow::anyhow!(
-                    "Azure OpenAI Responses stream ended before response.completed"
-                ),
+                source: anyhow::anyhow!("{request_kind} stream ended before response.completed"),
             }));
         }
         anyhow::bail!("Responses stream ended before message completion marker");
@@ -665,37 +679,42 @@ async fn stream_response(
     Ok(())
 }
 
-/// An Azure protocol failure is not necessarily a transient transport failure.
+/// An in-band Responses failure (Azure or gateway) is not necessarily a
+/// transient transport failure.
 /// Keep its retry decision separate from the legacy string classifier, and
 /// retain the shared retry-hint error as a source for deadline extraction.
 #[derive(Debug)]
-struct AzureResponseFailure {
+struct ResponsesStreamFailure {
     retryable: bool,
     source: anyhow::Error,
 }
 
-impl std::fmt::Display for AzureResponseFailure {
+impl std::fmt::Display for ResponsesStreamFailure {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(&self.source, formatter)
     }
 }
 
-impl std::error::Error for AzureResponseFailure {
+impl std::error::Error for ResponsesStreamFailure {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         Some(self.source.as_ref())
     }
 }
 
 fn retryable_stream_failure(error: &anyhow::Error) -> bool {
-    if let Some(failure) = error.downcast_ref::<AzureResponseFailure>() {
+    if let Some(failure) = error.downcast_ref::<ResponsesStreamFailure>() {
         return failure.retryable;
     }
     // Preserve the existing classifier and full transport context for every
-    // non-Azure failure, including HTTP errors and reqwest body errors.
+    // other failure, including HTTP errors and reqwest body errors.
     is_retryable_error(&format!("{error:#}").to_lowercase())
 }
 
-fn azure_response_failure(message: &str, retry_after_secs: Option<u64>) -> anyhow::Error {
+fn responses_stream_failure(
+    label: &str,
+    message: &str,
+    retry_after_secs: Option<u64>,
+) -> anyhow::Error {
     let lower = message.to_ascii_lowercase();
     // The shared Responses parser preserves error type/code in the message.
     // Permanent failures must win even if their prose mentions a timeout or
@@ -725,6 +744,9 @@ fn azure_response_failure(message: &str, retry_after_secs: Option<u64>) -> anyho
         "internal server error",
         "service_unavailable",
         "overloaded",
+        // OmniRoute codes for an upstream stream cut or stall mid-response.
+        "stream_terminated",
+        "stream_content_stall",
     ]
     .iter()
     .any(|marker| lower.contains(marker))
@@ -734,10 +756,10 @@ fn azure_response_failure(message: &str, retry_after_secs: Option<u64>) -> anyho
             &serde_json::json!({"retry_after_seconds": seconds}).to_string(),
         )
     });
-    anyhow::Error::new(AzureResponseFailure {
+    anyhow::Error::new(ResponsesStreamFailure {
         retryable: !permanent && (transient || retry_after.is_some()),
         source: jcode_provider_core::retry_after::error_with_retry_after(
-            format!("Azure OpenAI Responses stream error: {message}"),
+            format!("{label} stream error: {message}"),
             retry_after,
         ),
     })

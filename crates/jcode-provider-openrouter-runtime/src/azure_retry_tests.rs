@@ -93,6 +93,11 @@ impl Drop for Server {
 }
 
 fn run_azure(base: String) -> Vec<Result<StreamEvent>> {
+    run_responses(base, true)
+}
+
+/// `azure: false` drives the generic gateway Responses route (OmniRoute etc.).
+fn run_responses(base: String, azure: bool) -> Vec<Result<StreamEvent>> {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -111,11 +116,11 @@ fn run_azure(base: String) -> Vec<Result<StreamEvent>> {
                 "azure-retry-test".into(),
                 None,
                 serde_json::json!({"model":"deployment", "input":[], "stream":true}),
-                true,
+                azure,
                 tx,
                 Arc::new(Mutex::new(None)),
                 "deployment".into(),
-                false,
+                !azure,
                 false,
             ),
         )
@@ -214,15 +219,68 @@ fn azure_transient_structured_failure_honors_retry_after() {
 
 #[test]
 fn azure_unknown_failure_does_not_inherit_stream_error_retry_heuristic() {
-    let error = azure_response_failure("Unrecognized deployment rejection", None);
+    let error = responses_stream_failure(
+        "Azure OpenAI Responses",
+        "Unrecognized deployment rejection",
+        None,
+    );
     assert!(!retryable_stream_failure(&error));
     // Non-Azure errors still use exactly the legacy heuristic.
     let legacy = anyhow::anyhow!("OpenAI-compatible stream error: unknown");
     assert!(retryable_stream_failure(&legacy));
-    let error = azure_response_failure("rate_limit_exceeded", Some(u64::MAX));
+    let error = responses_stream_failure(
+        "Azure OpenAI Responses",
+        "rate_limit_exceeded",
+        Some(u64::MAX),
+    );
     assert!(retryable_stream_failure(&error));
     assert!(
         jcode_provider_core::retry_after::retry_after_from_error(&error).unwrap()
             <= jcode_provider_core::retry_after::MAX_RETRY_AFTER
     );
+}
+
+/// OmniRoute's in-band frame for an upstream HTTP/2 stream cut.
+const GATEWAY_TERMINATED: &str = concat!(
+    "data: {\"type\":\"response.output_text.delta\",\"delta\":\"partial\"}\n\n",
+    "data: {\"type\":\"response.failed\",\"response\":{\"error\":{\"message\":\"terminated (transport: ERR_HTTP2_STREAM_ERROR)\",\"type\":\"server_error\",\"code\":\"stream_terminated\"}}}\n\n",
+);
+
+#[test]
+fn gateway_stream_terminated_retries_with_rollback() {
+    let server = Server::new(vec![GATEWAY_TERMINATED.into(), COMPLETE.into()]);
+    let events: Vec<_> = run_responses(server.base.clone(), false)
+        .into_iter()
+        .map(Result::unwrap)
+        .collect();
+    assert_eq!(
+        server.finish().len(),
+        2,
+        "transient gateway failure must retry"
+    );
+    let rollback = events
+        .iter()
+        .position(|event| matches!(event, StreamEvent::RetryRollback { .. }))
+        .expect("partial output must be rolled back");
+    assert!(
+        events[rollback + 1..]
+            .iter()
+            .any(|event| matches!(event, StreamEvent::TextDelta(text) if text == "final"))
+    );
+}
+
+#[test]
+fn gateway_permanent_failure_surfaces_upstream_detail_without_retry() {
+    let body = "data: {\"type\":\"response.failed\",\"response\":{\"error\":{\"type\":\"invalid_request_error\",\"code\":\"context_length_exceeded\",\"message\":\"Input too long\"}}}\n\n";
+    let server = Server::new(vec![body.into(), COMPLETE.into()]);
+    let events = run_responses(server.base.clone(), false);
+    assert_eq!(server.finish().len(), 1, "permanent failure must not retry");
+    let error = events
+        .into_iter()
+        .find_map(Result::err)
+        .expect("must surface error")
+        .to_string();
+    assert!(error.contains("Responses API stream error"), "{error}");
+    assert!(error.contains("context_length_exceeded"), "{error}");
+    assert!(!error.contains("OpenCode Go"), "{error}");
 }
