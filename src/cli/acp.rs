@@ -18,7 +18,6 @@ const JSONRPC_INVALID_REQUEST: i64 = -32600;
 const JSONRPC_METHOD_NOT_FOUND: i64 = -32601;
 const JSONRPC_INVALID_PARAMS: i64 = -32602;
 const JSONRPC_INTERNAL_ERROR: i64 = -32603;
-const JSONRPC_SERVER_ERROR: i64 = -32000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum AcpProfile {
@@ -514,7 +513,7 @@ impl AcpRuntime {
         {
             self.write_error_value(
                 id,
-                JSONRPC_SERVER_ERROR,
+                JSONRPC_INTERNAL_ERROR,
                 format!("Session {session_id} is already processing a prompt"),
             )
             .await?;
@@ -630,7 +629,7 @@ impl AcpRuntime {
         if session.prompt_running.load(Ordering::SeqCst) {
             self.write_error_value(
                 id,
-                JSONRPC_SERVER_ERROR,
+                JSONRPC_INTERNAL_ERROR,
                 format!("Session {session_id} is processing a prompt; retry when it finishes"),
             )
             .await?;
@@ -682,7 +681,7 @@ impl AcpRuntime {
             Err(err) => {
                 self.write_error_value(
                     id,
-                    JSONRPC_SERVER_ERROR,
+                    JSONRPC_INTERNAL_ERROR,
                     format!("Failed to set {config_id}: {err:#}"),
                 )
                 .await?;
@@ -983,7 +982,7 @@ impl AcpRuntime {
                 }
                 ServerEvent::Error { id, message, .. } if id == prompt_id => {
                     cleanup_prompt_state(&session).await;
-                    self.write_error_value(rpc_id, JSONRPC_SERVER_ERROR, message)
+                    self.write_error_value(rpc_id, JSONRPC_INTERNAL_ERROR, message)
                         .await?;
                     return Ok(());
                 }
@@ -1583,13 +1582,6 @@ impl EventMapper {
             ServerEvent::SessionRenamed { display_title, .. } => vec![json!({
                 "sessionUpdate": "session_info_update",
                 "title": display_title,
-            })],
-            ServerEvent::McpStatus { servers } if self.profile.is_extended() => vec![json!({
-                "sessionUpdate": "agent_message_chunk",
-                "content": {
-                    "type": "text",
-                    "text": format!("\n[Jcode MCP status: {}]\n", servers.join(", ")),
-                }
             })],
             _ => {
                 let _ = &self.session_id;
