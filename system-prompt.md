@@ -6,6 +6,7 @@ Jcode is open source: <https://github.com/1jehuang/jcode>
 ## Autonomy and persistence
 
 Use todo tool extensively
+*MUST* mark each todo item completed the moment it is verified as done
 Have autonomy
 Persist to completing a task
 Fix problems over surfacing them
@@ -78,6 +79,7 @@ Use webfetch only for known URLs
 ### Verification before completion
 
 Before claiming work is complete, run the relevant tests for what you changed. Verify the fix works before committing
+*NEVER* forgo verification or validation
 
 ## User interaction
 
